@@ -3,3 +3,4 @@ testing*.py
 .idea/
 .xml/
 renderer_pygame/assets/
+*.mp3
