@@ -19,6 +19,24 @@ class ColoredBoxButton:
                 self.checked = not self.checked
                 return True  # an event was handled
 
+class Button:
+    def __init__(self, x, y, w, h, label):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.label = label
+        self.rect = pg.Rect(self.x, self.y, self.w, self.h)
+
+    def draw(self, surface):
+        pg.draw.rect(surface, (70, 70, 70), self.rect, border_radius=6)
+        label = pg.font.SysFont("arial", 32).render(self.label, True, (220, 220, 220))
+        label_rect = label.get_rect(center=self.rect.center)
+        surface.blit(label, label_rect)
+
+    def handle_event(self, event) -> bool:
+        ...
+
 class Toggle:
     def __init__(self, x, y, label, label_w=125, slider_w=50, slider_h=30, checked=False):
         self.label_x = x

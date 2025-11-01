@@ -4,7 +4,8 @@ from build_deck import DeckBuilder
 import pygame as pg
 from renderer_pygame.config import COLOR_DICT
 from renderer_pygame.scenes.scene_abc import Scene
-from renderer_pygame.common.components import ColoredBoxButton, Toggle
+from renderer_pygame.common.components import ColoredBoxButton, Toggle, Button
+from renderer_pygame.common.image_carousel import ImageCarousel
 from renderer_pygame.common.table import Table
 
 @dataclass
@@ -26,11 +27,7 @@ class BuildDeckScene(Scene):
         self.BG_COLOR = (25, 25, 25)
         self.FILTERS_X = 10
         self.FILTERS_Y = 10
-        self.CAROUSEL_Y = 100
         self.IMG_SIZE = (200, 285)
-        self.IMG_SPACING = 15
-        self.VISIBLE_COUNT = 5
-        self.SLIDE_SPEED = 8.0
 
         self.deck_builder = DeckBuilder(self.game.card_univ, 0)
 
@@ -45,7 +42,7 @@ class BuildDeckScene(Scene):
         if not self.images:
             raise SystemExit("No images found!")
 
-        self.active_carousel_images = self.images.copy()
+        self.img_carousel = ImageCarousel(50, 100, 1200, self.IMG_SIZE[1], self.IMG_SIZE, 5, self.images)
 
         # Card Carousel Filters
         self.color_boxes: dict[str, ColoredBoxButton | None] = {c: None for c in COLOR_DICT}
@@ -56,17 +53,8 @@ class BuildDeckScene(Scene):
 
         self.creatures_only_btn = Toggle(self.FILTERS_X + 300, self.FILTERS_Y + 10, 'Creatures Only')
 
-        # Carousel logic
-        self.index_offset = 0
-        self.target_offset = 0.0
-        self.slide_offset = 0.0
-
-        self.select_this_card_outline = pg.Rect(self.game.width // 2 - 110, self.CAROUSEL_Y - 15, 220, self.IMG_SIZE[1] + 30)
-
-        # Carousel accessories (initialized later, depend on layout)
-        self.left_btn = None
-        self.right_btn = None
-        self.add_to_deck_btn = None
+        self.select_this_card_outline = pg.Rect(self.img_carousel.x + (self.img_carousel.visible_count // 2 * (self.IMG_SIZE[0] + self.img_carousel.img_spacing)) - 10, self.img_carousel.y - 15, 220, self.IMG_SIZE[1] + 30)
+        self.add_to_deck_btn: Button = None
 
         # ----- Your Deck table -----
         self.table = Table(self.game.screen, 50, 550, 50, 35, pg.font.SysFont('arial', 24, bold=True),
@@ -76,21 +64,10 @@ class BuildDeckScene(Scene):
         self.rows_built = False
 
     @property
-    def in_focus_idx(self) -> int:
-        return self.index_offset + (self.VISIBLE_COUNT // 2)
-
-    @property
     def selected_slug(self) -> str | None:
-        if self.in_focus_idx > len(self.active_carousel_images) - 1:
+        if self.img_carousel.in_focus_idx > len(self.img_carousel.images) - 1:
             return None
-        return self.active_carousel_images[self.in_focus_idx].slug
-
-    # --- Helper: draw a button ---
-    def draw_button(self, surface, rect, text):
-        pg.draw.rect(surface, (70, 70, 70), rect, border_radius=6)
-        label = self.font.render(text, True, (220, 220, 220))
-        label_rect = label.get_rect(center=rect.center)
-        surface.blit(label, label_rect)
+        return self.img_carousel.images[self.img_carousel.in_focus_idx].slug
 
     # --- Handle events (ex: mouse clicks) ---
     def handle_events(self, events):
@@ -103,20 +80,10 @@ class BuildDeckScene(Scene):
 
             self.creatures_only_btn.handle_event(event)
 
+            self.img_carousel.handle_event(event)
+
             if event.type == pg.MOUSEBUTTONDOWN:
-                x, y = event.pos
-
-                if self.left_btn and self.left_btn.collidepoint(x, y):
-                    if self.index_offset > -(self.VISIBLE_COUNT // 2):
-                        self.index_offset -= 1
-                        self.target_offset += self.IMG_SIZE[0] + self.IMG_SPACING
-
-                elif self.right_btn and self.right_btn.collidepoint(x, y):
-                    if self.index_offset < len(self.active_carousel_images) - self.VISIBLE_COUNT // 2 - 1:
-                        self.index_offset += 1
-                        self.target_offset -= self.IMG_SIZE[0] + self.IMG_SPACING
-
-                elif self.add_to_deck_btn and self.add_to_deck_btn.collidepoint(x, y):
+                if self.add_to_deck_btn and self.add_to_deck_btn.rect.collidepoint(event.pos):
                     if not self.selected_slug:
                         continue
                     card = self.game.card_univ[self.selected_slug]
@@ -129,7 +96,7 @@ class BuildDeckScene(Scene):
     # --- Update slide animation ---
     def update(self, dt):
         # Smooth interpolation
-        self.slide_offset += (self.target_offset - self.slide_offset) * min(self.SLIDE_SPEED * dt, 1)
+        self.img_carousel.slide_offset += (self.img_carousel.target_offset - self.img_carousel.slide_offset) * min(self.img_carousel.slide_speed * dt, 1)
 
         # only build rows once per deck state change
         if not self.rows_built:
@@ -137,8 +104,8 @@ class BuildDeckScene(Scene):
             self.rows_built = True
 
         # update the active carousel images
-        self.active_carousel_images = [i for i in self.images if self.color_boxes[i.colors[0]].checked and
-                                       ('Creature' in i.card_types or not self.creatures_only_btn.checked)]
+        self.img_carousel.images = [i for i in self.images if self.color_boxes[i.colors[0]].checked and
+                                    ('Creature' in i.card_types or not self.creatures_only_btn.checked)]
 
     def build_table_rows(self) -> None:
         """Rebuild the table when deck contents change"""
@@ -155,9 +122,6 @@ class BuildDeckScene(Scene):
         screen = self.game.screen
         screen.fill(self.BG_COLOR)
 
-        total_width = self.IMG_SIZE[0] * self.VISIBLE_COUNT + self.IMG_SPACING * (self.VISIBLE_COUNT - 1)
-        start_x = (self.game.width - total_width) // 2 + self.slide_offset
-
         # Draw filters
         pg.draw.rect(screen, (220, 220, 220), pg.Rect(10, 10, 800, 60), 1, 6)
         text = self.font_smaller.render('Filters', True, (220, 220, 220))
@@ -168,30 +132,14 @@ class BuildDeckScene(Scene):
         for color_box in self.color_boxes.values():
             color_box.draw(screen)
 
-        # Draw placeholder spaces at the front of carousel, else can never grab index 0
-        placeholder_card_surf = pg.Surface((self.IMG_SIZE[0], self.IMG_SIZE[1]))
-        screen.blit(placeholder_card_surf, (start_x - self.IMG_SPACING - self.IMG_SIZE[0], self.CAROUSEL_Y))
-        screen.blit(placeholder_card_surf, (start_x - (self.IMG_SPACING + self.IMG_SIZE[0]) * 2, self.CAROUSEL_Y))
-        # Draw all images based on filters
-        displayed_card_cnt = 0
-        for card_image in self.active_carousel_images:
-            x = start_x + displayed_card_cnt * (self.IMG_SIZE[0] + self.IMG_SPACING)
-            displayed_card_cnt += 1
-            if -self.IMG_SIZE[0] <= x <= self.game.width:
-                screen.blit(card_image.image, (x, self.CAROUSEL_Y))
-
-        # Carousel buttons
-        self.left_btn = pg.Rect(80, self.CAROUSEL_Y + self.IMG_SIZE[1] // 2 - 25, 50, 50)
-        self.right_btn = pg.Rect(self.game.width - 130, self.CAROUSEL_Y + self.IMG_SIZE[1] // 2 - 25, 50, 50)
-        self.draw_button(screen, self.left_btn, "<")
-        self.draw_button(screen, self.right_btn, ">")
+        self.img_carousel.draw(screen)
 
         # Select This Card rectangle outline
         pg.draw.rect(screen, (220, 220, 220), self.select_this_card_outline, width=5, border_radius=6)
 
         # Add to Deck button
-        self.add_to_deck_btn = pg.Rect(self.game.width // 2 - 100, self.CAROUSEL_Y + self.IMG_SIZE[1] + 50, 200, 50)
-        self.draw_button(screen, self.add_to_deck_btn, "Add to Deck")
+        self.add_to_deck_btn = Button(self.game.width // 2 - 100, self.img_carousel.y + self.IMG_SIZE[1] + 50, 200, 50, "Add to Deck")
+        self.add_to_deck_btn.draw(screen)
 
         screen.fill((128, 128, 128), self.table.table_rect)
         for surf, pos in self.table.items_to_blit:
