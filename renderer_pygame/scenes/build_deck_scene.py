@@ -76,17 +76,14 @@ class BuildDeckScene(Scene):
         self.rows_built = False
 
     @property
-    def in_focus_card_idx(self) -> int:
+    def in_focus_idx(self) -> int:
         return self.index_offset + (self.VISIBLE_COUNT // 2)
 
     @property
     def selected_slug(self) -> str | None:
-        if self.in_focus_card_idx > len(self.active_carousel_images) - 1:
+        if self.in_focus_idx > len(self.active_carousel_images) - 1:
             return None
-        return self.active_carousel_images[self.in_focus_card_idx].slug
-        # for i, card_image in enumerate(self.images):
-        #     if i == self.in_focus_card_idx:
-        #         return card_image.slug
+        return self.active_carousel_images[self.in_focus_idx].slug
 
     # --- Helper: draw a button ---
     def draw_button(self, surface, rect, text):
@@ -95,7 +92,7 @@ class BuildDeckScene(Scene):
         label_rect = label.get_rect(center=rect.center)
         surface.blit(label, label_rect)
 
-    # --- Handle events (mouse clicks) ---
+    # --- Handle events (ex: mouse clicks) ---
     def handle_events(self, events):
         for event in events:
             if event.type == pg.K_m:
@@ -195,13 +192,6 @@ class BuildDeckScene(Scene):
         # Add to Deck button
         self.add_to_deck_btn = pg.Rect(self.game.width // 2 - 100, self.CAROUSEL_Y + self.IMG_SIZE[1] + 50, 200, 50)
         self.draw_button(screen, self.add_to_deck_btn, "Add to Deck")
-
-        # Optionally: show current image keys (for debugging)
-        # for i, (slug, _) in enumerate(self.images.items()):
-        #     if i == self.in_focus_card_idx:
-        #         in_focus_text = self.font.render(f"In-focus slug: {slug}", True, (200, 200, 200))
-        #         screen.blit(in_focus_text, (40, 70))
-        #         break
 
         screen.fill((128, 128, 128), self.table.table_rect)
         for surf, pos in self.table.items_to_blit:
