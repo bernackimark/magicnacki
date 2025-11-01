@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from functools import cached_property
 from typing import Iterator
 
 from ability import creature_keyword_abilities
@@ -6,6 +7,8 @@ from file_utils import read_json_file
 
 COLOR_LETTERS = ('W', 'G', 'R', 'U', 'B')
 
+
+# TODO: should Card be: (frozen=True)?
 
 @dataclass
 class Ruling:
@@ -40,21 +43,21 @@ class Card:
     #     return (f"{self.name} ({self.casting_cost or 0}, {'/'.join(self.card_types)}"
     #             f"{f', {self.oracle_rules_text}' if self.oracle_rules_text else ''})")
 
-    @property
+    @cached_property
     def is_permanent(self) -> bool:
         if 'Artifact' in self.card_types or 'Creature' in self.card_types or 'Enchantment' in self.card_types or 'Land' in self.card_types:
             return True
         return False
 
-    @property
+    @cached_property
     def is_land(self) -> bool:
         return 'Land' in self.card_types
 
-    @property
+    @cached_property
     def is_creature(self) -> bool:
         return 'Creature' in self.card_types
 
-    @property
+    @cached_property
     def casting_weight(self) -> int:
         # TODO: what happens if there's a "10" colorless"?
         if not self.casting_cost:
@@ -71,7 +74,7 @@ class Card:
                 weight += 1
         return weight
 
-    @property
+    @cached_property
     def casting_dict(self) -> dict:
         d = {color: 0 for color in COLOR_LETTERS}
         d['C'] = 0  # colorless
@@ -92,6 +95,12 @@ class Card:
         except ValueError:
             return 0
 
+    @cached_property
+    def colors(self) -> str:
+        if not self.casting_cost:
+            return 'C'
+        colors = ''.join({char for char in self.casting_cost if not char.isnumeric() and char != 'X'})
+        return colors if colors else 'C'
 
 @dataclass
 class CardUniverse:
