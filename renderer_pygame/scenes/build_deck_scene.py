@@ -31,7 +31,7 @@ class BuildDeckScene(Scene):
 
         self.deck_builder = DeckBuilder(self.game.card_univ, 0)
 
-        # For all cards in the universe, load those images to a nested dictionary
+        # For all cards in the universe, load CardImages to a list
         self.images = []
         for card in sorted(self.game.card_univ.cards, key=lambda c: c.slug):
             for img in self.game.images[card.slug].values():  # load the first image for each card
@@ -45,7 +45,7 @@ class BuildDeckScene(Scene):
         self.img_carousel = ImageCarousel(50, 100, 1200, self.IMG_SIZE[1], self.IMG_SIZE, 5, self.images)
 
         # Card Carousel Filters
-        self.color_boxes: dict[str, ColoredBoxButton | None] = {c: None for c in COLOR_DICT}
+        self.color_boxes = {}
         x = self.FILTERS_X + 10
         for color_letter, color_name in COLOR_DICT.items():
             self.color_boxes[color_letter] = ColoredBoxButton(x, self.FILTERS_Y + 10, color_name)
@@ -93,9 +93,8 @@ class BuildDeckScene(Scene):
                     for c in self.deck_builder.cards:
                         print(c)
 
-    # --- Update slide animation ---
     def update(self, dt):
-        # Smooth interpolation
+        # Smooth interpolation; update slide animation
         self.img_carousel.slide_offset += (self.img_carousel.target_offset - self.img_carousel.slide_offset) * min(self.img_carousel.slide_speed * dt, 1)
 
         # only build rows once per deck state change
@@ -123,15 +122,19 @@ class BuildDeckScene(Scene):
         screen.fill(self.BG_COLOR)
 
         # Draw filters
+        # Filters Box
         pg.draw.rect(screen, (220, 220, 220), pg.Rect(10, 10, 800, 60), 1, 6)
         text = self.font_smaller.render('Filters', True, (220, 220, 220))
         screen.blit(text, (15, 0))
 
+        # Creatures Only Toggle
         self.creatures_only_btn.draw(screen)
 
+        # Color Boxes
         for color_box in self.color_boxes.values():
             color_box.draw(screen)
 
+        # Image Carousel
         self.img_carousel.draw(screen)
 
         # Select This Card rectangle outline
@@ -141,6 +144,7 @@ class BuildDeckScene(Scene):
         self.add_to_deck_btn = Button(self.game.width // 2 - 100, self.img_carousel.y + self.IMG_SIZE[1] + 50, 200, 50, "Add to Deck")
         self.add_to_deck_btn.draw(screen)
 
+        # Deck Table
         screen.fill((128, 128, 128), self.table.table_rect)
         for surf, pos in self.table.items_to_blit:
             screen.blit(surf, pos)

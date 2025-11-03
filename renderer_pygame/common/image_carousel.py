@@ -2,6 +2,8 @@ import pygame as pg
 from renderer_pygame.common.components import Button
 
 class ImageCarousel:
+    """A pygame component that displays a series of horizontal images with smooth transitioning via a
+    left & right button."""
     def __init__(self, x, y, w, h, img_size: tuple[int, int], visible_cnt: int, carousel_images: list,
                  img_spacing: int = 15, slide_speed: float = 8.0):
         self.x = x
@@ -29,7 +31,6 @@ class ImageCarousel:
         return self.index_offset + (self.visible_count // 2)
 
     def draw(self, surface):
-        total_width = self.img_size[0] * self.visible_count + self.img_spacing * (self.visible_count - 1)
         start_x = self.x
 
         # Draw placeholder spaces at the front of carousel, else can never grab index 0
