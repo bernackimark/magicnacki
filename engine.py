@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from build_deck import CardUniverse, Deck, DeckBuilder
-from game_state import GameState, Phase, Action, PlayNonBasicLandToBoard, PlayLand, PassTheTurn
+from game_state import GameState, Phase, Action, PlayNonBasicLandToBoard, PassTheTurn
 from players import Player, ConsolePlayer
 from renderers import Renderer, ConsoleRenderer
 
@@ -17,31 +17,12 @@ class Engine:
         return len(self.players)
 
     def play(self) -> None:
-        # ... this might be where the decks are built?
-
         while True:
-            self.gs.action_on_idx = self.gs.player_turn_idx
-            self.gs.turn_number += 1
-            self.gs.has_played_land = False
-            self.gs.phase = Phase.UNTAP
-            for c in self.gs.boards[self.gs.player_turn_idx].cards:
-                c.untap()
-                for turn_num, act in self.gs.game_history:
-                    if (isinstance(act, PlayNonBasicLandToBoard) and act.card.id == c.id and
-                            self.gs.turn_number - turn_num == 2):
-                        c.has_summoning_sickness = False
-            # phase = Phase.UPKEEP
-            # phase = Phase.DRAW
-            self.gs.phase = Phase.CAST
-            while True:
-                self.renderer.render(self.gs, self.players)
+            self.renderer.render(self.gs, self.players)
+            if self.gs.get_available_actions(self.gs.action_on_idx):
                 action = self.players[self.gs.action_on_idx].make_move(self.gs)
                 action.play()
                 self.gs.game_history.append((self.gs.turn_number, action))
-                if isinstance(action, PlayLand):
-                    self.gs.has_played_land = True
-                if isinstance(action, PassTheTurn):
-                    break
 
 
 # build decks
