@@ -15,6 +15,8 @@ class GameCard:
     can_attack: bool = False
     can_block: bool = True
     has_summoning_sickness: bool = True
+    power: int = None
+    toughness: int = None
 
     def __post_init__(self):
         self.img_url = next(iter(self.props.images.values()))  # set to the earliest set's image
@@ -23,6 +25,8 @@ class GameCard:
             self.has_summoning_sickness = False
         if self.props.is_creature:
             self.can_attack = True
+        self.power = self.props.power
+        self.toughness = self.props.toughness
 
     def __repr__(self) -> str:
         text = f'{self.props.name} ({self.props.power}/{self.props.toughness})' if self.props.is_creature else self.props.name
