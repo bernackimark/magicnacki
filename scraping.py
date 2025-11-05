@@ -6,6 +6,9 @@ import requests
 
 def scrape_pages_until_text_not_found(base_url: str, required_text: str,
                                       begin_page_num: int = 0, end_page_num: int = 100) -> list[str]:
+    """Ex base_url: http://www.example.com/page/  ex required_text: 'item_price' ...
+    for range(begin_page_num, end_page_num), if the page contains 'item_price' ...
+    return each html as a string in a list of pages"""
     page_scrapes: list[str] = []
     for i in range(begin_page_num, end_page_num + 1):
         url_w_page_number = f'{base_url}{i}'
@@ -30,6 +33,7 @@ def find_all_matched(html_str: str, preceding_text: list[str] | str, succeeding_
     return pattern.findall(html_str)
 
 def find_all_matched_until(html_str: str, preceding_text: list[str] | str, succeeding_text: str, until_text: str) -> list[str]:
+    """like find_all_matched() except it will stop looking when it encounters until_text"""
     until_text_pos: int = html_str.find(until_text)
     if until_text_pos == -1:
         return find_all_matched(html_str, preceding_text, succeeding_text)
@@ -38,6 +42,7 @@ def find_all_matched_until(html_str: str, preceding_text: list[str] | str, succe
 
 
 def find_first_match(html_str: str, preceding_text: list[str] | str, succeeding_text: str) -> str | None:
+    """ex html_str='abcdefg xZfg', preceding_text='abc', succeeding_text='Zfg', returns 'defg x' """
     if isinstance(preceding_text, list):
         pattern = re.compile(r'(?:' + '|'.join(map(re.escape, preceding_text)) + f')(.*?){succeeding_text}')
     else:
@@ -47,6 +52,7 @@ def find_first_match(html_str: str, preceding_text: list[str] | str, succeeding_
 
 
 def clean_raw_html(text: str) -> str:
+    """handles HTML entities like &amp;, &#x27; replaces characters like \\\\\n, \\t, \\\\ with a space"""
     tmp1 = html.unescape(text)  # html.unescape handles HTML entities like &amp;, &#x27;
     tmp2 = re.sub(r'\\+n', ' ', tmp1)  # handles escaped characters like \\\\n, \\t, \\\"
     return tmp2
