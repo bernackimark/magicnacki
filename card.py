@@ -3,7 +3,7 @@ from functools import cached_property
 from typing import Iterator
 
 from ability import creature_keyword_abilities
-from file_utils import read_json_file
+from common.file_utils import read_json_file
 
 COLOR_LETTERS = ('W', 'G', 'R', 'U', 'B')
 

@@ -2,9 +2,8 @@ from dataclasses import dataclass, field
 
 import requests
 
-from file_utils import update_json_file_with_dict
-from scraping import (scrape_pages_until_text_not_found, find_all_matched, find_all_matched_until,
-                      find_first_match, clean_raw_html)
+from common.file_utils import update_json_file_with_dict
+from scraping import (scrape_pages_until_text_not_found, find_all_matched, find_first_match, clean_raw_html)
 
 
 @dataclass

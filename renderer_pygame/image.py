@@ -2,7 +2,7 @@
 from io import BytesIO
 from pathlib import Path
 
-from file_utils import read_json_file
+from common.file_utils import read_json_file
 from PIL import Image
 import requests
 
