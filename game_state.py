@@ -42,49 +42,76 @@ class Turn:
     in_turn_player_idx: int
     out_turn_player_idx: int
     has_played_land: bool = False
-    
+
+
+@dataclass
+class CombatDamage:
+    damage_dealer: GameCard
+    damage_receiver: GameCard
+    amt: int
+
+    def __post_init__(self):
+        self.damage_dealer.power -= self.amt
+        self.damage_receiver.toughness -= self.amt
+
+    def __repr__(self):
+        return f"Combat Damage: ID#{self.damage_dealer.id} {self.damage_dealer} deals {self.amt} damage to creature ID#{self.damage_receiver.id} {self.damage_receiver}"
 
 @dataclass
 class Combat:
+    gs: "GameState"
     attacker: GameCard
     blockers: list[GameCard] = field(default_factory=list)
-    
+
+    def __repr__(self):
+        return f'{self.attacker} attacking {self.blockers}'
+
     def handle_first_strike_damage(self):
         if 'First Strike' not in self.attacker.props.keyword_abilities and \
                 'First Strike' not in [kwa for b in self.blockers for kwa in b.props.keyword_abilities]:
             return
         if 'First Strike' in self.attacker.props.keyword_abilities:
             # TODO: this is hard-coded to assign damage to the first blocker
-            self.blockers[0].toughness -= self.attacker.power
+            combat_damage = CombatDamage(self.attacker, self.blockers[0], self.attacker.power)
+            self.gs.effects.append(combat_damage.__repr__())
         for blocker in self.blockers:
             if 'First Strike' in blocker.props.keyword_abilities:
-                self.attacker.toughness -= blocker.power
-    
+                combat_damage = CombatDamage(blocker, self.attacker, blocker.power)
+                self.gs.effects.append(combat_damage.__repr__())
+
     def handle_combat_damage(self):
         # TODO: this is hard-coded to assign damage to the first blocker
         if 'First Strike' not in self.attacker.props.keyword_abilities:
-            self.blockers[0].toughness -= self.attacker.power
+            combat_damage = CombatDamage(self.attacker, self.blockers[0], self.attacker.power)
+            self.gs.effects.append(combat_damage.__repr__())
         for blocker in self.blockers:
             if 'First Strike' not in self.attacker.props.keyword_abilities:
-                self.attacker.toughness -= blocker.power
-                
+                combat_damage = CombatDamage(blocker, self.attacker, blocker.power)
+                self.gs.effects.append(combat_damage.__repr__())
+
     def end_combat(self, gs: "GameState"):
+        killed_creatures = []
         if self.attacker.toughness <= 0:
-            gs.remove_from_board(self.attacker)
-            gs.send_to_graveyard(self.attacker)
-            print(f'{self.attacker.props.name} has died and been sent to the graveyard')
+            killed_creatures.append(self.attacker)
+            # gs.send_to_graveyard(self.attacker)
         for blocker in self.blockers:
             if blocker.toughness <= 0:
-                gs.remove_from_board(blocker)
-                gs.send_to_graveyard(blocker)
-                print(f'{blocker.props.name} has died and been sent to the graveyard')
+                if blocker not in killed_creatures:
+                    killed_creatures.append(blocker)
+                # gs.send_to_graveyard(blocker)
+
+        for c in killed_creatures:
+            gs.send_to_graveyard(c)
 
 
 @dataclass
 class Board:
     player_idx: int
-    cards: list[GameCard] = field(default_factory=list)
-    attacking_creatures: list[GameCard] = field(default_factory=list)
+    _cards: list[GameCard] = field(default_factory=list)
+
+    @property
+    def cards(self) -> list[GameCard]:
+        return self._cards
 
     @property
     def available_mana(self) -> dict:
@@ -112,6 +139,14 @@ class Board:
                 return False
         return True
 
+    def play_to_board(self, c: GameCard):
+        self._cards.append(c)
+        self._cards.sort(key=lambda c: c.props.is_land)
+
+    def remove_from_board(self, c: GameCard):
+        self._cards.remove(c)
+        self._cards.sort(key=lambda c: c.props.is_land)
+
     def add_mana(self, mana_color: str, cnt: int) -> None:
         self.available_mana[mana_color] += cnt
 
@@ -122,9 +157,6 @@ class Board:
         for _ in casting_cost:
             untapped_lands = [c for c in self.cards if c.props.is_land and not c.is_tapped]
             untapped_lands[0].tap()
-
-    def add_defender(self, attacker: GameCard):
-        ...
 
 
 @dataclass
@@ -172,6 +204,7 @@ class DrawCard(Action):
 
     def play(self) -> None:
         self.hand.cards.append(self.deck.cards.pop())
+        self.hand.sort_cards()
         self.gs.phase = Phase.CAST
 
 @dataclass
@@ -186,12 +219,27 @@ class PlayLand(Action):
         return f"Play {self.card.props.name} land to board"
 
     def play(self) -> None:
-        self.board.cards.append(self.source_hand.cards.pop(self.card_in_hand_idx))
+        self.board.play_to_board(self.source_hand.cards.pop(self.card_in_hand_idx))
         mana = LAND_MANA_DICT.get(self.card.props.slug)
         if not mana:
             raise NotImplementedError("I can't handle non-basic lands")
         self.board.add_mana(mana, 1)
         self.turn.has_played_land = True
+
+
+@dataclass
+class PlayAura(Action):
+    card: GameCard
+    target: GameCard
+    board: Board
+    gs: "GameState"
+
+    def __repr__(self):
+        return f"Add aura {self.card.props.name} to {self.target.props.name}"
+
+    def play(self) -> None:
+        self.board.pay_casting_cost(self.card.props.casting_cost)
+        self.target.enchant_creatures.append(self.card)
 
 
 @dataclass
@@ -206,8 +254,7 @@ class PlayNonBasicLandToBoard(Action):
 
     def play(self) -> None:
         self.board.pay_casting_cost(self.card.props.casting_cost)
-        self.board.cards.append(self.source_hand.cards.pop(self.card_in_hand_idx))
-        # TODO: find land card(s) to tap
+        self.board.play_to_board(self.source_hand.cards.pop(self.card_in_hand_idx))
 
 
 @dataclass
@@ -224,21 +271,37 @@ class PlaySorceryOrInstant(Action):
         return f"Play {self.card.props.name} as sorcery/instant{target_text}"
 
     def play(self) -> None:
+        self.board.pay_casting_cost(self.card.props.casting_cost)
         self.source_hand.cards.remove(self.card)
         self.action_stack.add(self, self.gs)
 
+    def accept(self) -> None:
+        if self.card.props.slug == 'swords-to-plowshares':
+            self.gs.send_to_exile(self.targets[0])
+            self.gs.life[self.targets[0].orig_owner_id] += self.targets[0].power
+            print(f'Swords to Plowshares accepted; life is now {self.gs.life}')
+        elif self.card.props.slug == 'wrath-of-god':
+            for t in self.targets:
+                self.gs.send_to_exile(t)
+            print(f'Wrath of God accepted; all creatures should now be in exile')
+        elif self.card.props.slug == 'jump':
+            self.targets[0].has_flying = True
+            self.gs.effects.append(f"Creature ID#{self.targets[0].id} gains Flying until end of turn")
+            print(f"{self.targets[0].props.name} gains Flying until end of turn")
+        elif self.card.props.slug == 'creature-bond':
+            self.targets[0].enchant_creatures.append(self.card)
 
 @dataclass
 class CreatureAttack(Action):
     card: GameCard
-    board: Board
+    gs: "GameState"
 
     def __repr__(self) -> str:
         return f"Add {self.card.props.name} to attack"
 
     def play(self) -> None:
         self.card.tap()
-        self.board.attacking_creatures.append(self.card)
+        self.gs.combats.append(Combat(self.gs, self.card))
 
 
 @dataclass
@@ -261,7 +324,6 @@ class FinishDeclaringAttackers(Action):
 
     def play(self) -> None:
         self.gs.phase = Phase.DECLARE_BLOCKERS
-        self.gs.combats = [[c, []] for c in self.gs.boards[self.gs.player_turn_idx].attacking_creatures]
         self.gs.action_on_idx = 1 if self.gs.action_on_idx == 0 else 0
 
 
@@ -275,9 +337,9 @@ class AssignBlocker(Action):
         return f"Block {self.attacker} with {self.blocker}"
 
     def play(self) -> None:
-        for i, (attacker, blockers) in enumerate(self.gs.combats):
-            if attacker == self.attacker:
-                blockers.append(self.blocker)
+        for com in self.gs.combats:
+            if com.attacker == self.attacker:
+                com.blockers.append(self.blocker)
 
 
 @dataclass
@@ -304,13 +366,13 @@ class MoveToEndStep(Action):
 class DiscardCard(Action):
     hand: list[GameCard]
     card: GameCard
-    graveyard: list[GameCard]
+    gs: "GameState"
 
     def __repr__(self) -> str:
         return f"Discard {self.card} to graveyard"
 
     def play(self) -> None:
-        self.graveyard.append(self.card)
+        self.gs.send_to_graveyard(self.card)
         self.hand.remove(self.card)
 
 @dataclass
@@ -336,7 +398,8 @@ class AcceptAction(Action):
         return f"Accept {self.action_stack.last_action}"
 
     def play(self) -> None:
-        self.action_stack.last_action.play()
+        if isinstance(self.action_stack.last_action, PlaySorceryOrInstant):
+            self.action_stack.last_action.accept()
         self.action_stack.clear()
         self.gs.action_on_idx = 1 if self.gs.action_on_idx == 0 else 0
 
@@ -359,6 +422,7 @@ class GameState:
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
         self.decks = decks
+        self.life = [20, 20]
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, 1 if self.player_turn_idx == 0 else 1)
         self.boards: list[Board] = [Board(i) for i in range(self.player_cnt)]
@@ -367,9 +431,10 @@ class GameState:
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
         self.phase = Phase.UNTAP
         self.action_stack = ActionStack()
-        self.game_history: list[tuple[int, Action]] = []
+        self.game_history: list[tuple[int, Action]] = []  # turn number & Action; appended to in engine.play()
         self.turn_number = 1
         self.combats: list[Combat] = []
+        self.effects: list[str] = []
         
         for i in range(self.player_cnt):
             deck = self.decks[i]
@@ -378,18 +443,38 @@ class GameState:
             draw(hand.cards, deck.cards, 7)
             hand.sort_cards()
 
-    def remove_from_board(self, c: GameCard):
+    def get_card_from_boards(self, card_id: int) -> GameCard | None:
+        return next((c for b in self.boards for c in b.cards if c.id == card_id), None)
+
+    def _remove_from_board(self, c: GameCard) -> GameCard | None:
         for board in self.boards:
             for card in board.cards:
                 if card.id == c.id:
-                    board.cards.remove(c)
-                    return
+                    board.remove_from_board(c)
+                    return c
 
     def send_to_graveyard(self, c: GameCard):
+        if not self._remove_from_board(c):
+            return
         self.graveyards[c.orig_owner_id].append(c)
+        print(f'{c} has been sent to the graveyard')
+        self._send_to_graveyard_or_exile(c)
 
     def send_to_exile(self, c: GameCard):
+        if not self._remove_from_board(c):
+            return
         self.exiles[c.orig_owner_id].append(c)
+        print(f'{c} has been exiled')
+        self._send_to_graveyard_or_exile(c)
+
+    def _send_to_graveyard_or_exile(self, c: GameCard):
+        if 'Creature' in c.props.card_types:
+            c.power = c.props.power
+            c.toughness = c.props.toughness
+            c.has_flying = 'Flying' in c.props.keyword_abilities
+        if 'creature-bond' in [card.props.slug for card in c.enchant_creatures]:
+            self.life[c.orig_owner_id] -= c.props.toughness
+            print(f"Creature Bond reduces player #{c.orig_owner_id}'s life by {c.props.toughness}")
 
     def untap(self):
         for c in self.boards[self.player_turn_idx].cards:
@@ -400,6 +485,10 @@ class GameState:
                     c.has_summoning_sickness = False
 
         self.phase = Phase.UPKEEP
+
+    @staticmethod
+    def get_card_id_from_effects_list(effect_row: str) -> int:
+        return int(effect_row[effect_row.find('ID#') + 4:effect_row.find(' ', effect_row.find('ID#') + 4)])
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         available_actions: list[Action] = []
@@ -421,7 +510,7 @@ class GameState:
                 available_actions.append(AcceptAction(p_id, self.action_stack, self))
                 playable_cards: list[GameCard] = hand.instants + hand.sorceries
                 for c in playable_cards:
-                    if c.props.slug in ('swords-to-plowshares', 'jump'):
+                    if c.props.slug in ('swords-to-plowshares', 'jump', 'creature-bond'):
                         targets: list[GameCard] = get_all_creatures(self)
                         for t in targets:
                             available_actions.append(PlaySorceryOrInstant(p_id, c, hand, board,
@@ -444,10 +533,9 @@ class GameState:
         if self.phase == Phase.DRAW:
             available_actions.append(DrawCard(p_id, deck, hand, self))
             return available_actions
-        else:
-            available_actions.append(PassTheTurn(p_id, self))
 
         if self.phase == Phase.CAST:
+            available_actions.append(PassTheTurn(p_id, self))
             # play a land
             if not self.turn.has_played_land:
                 available_actions.extend([PlayLand(p_id, i, c, hand, board, self.turn) for i, c in enumerate(hand.cards)
@@ -458,13 +546,13 @@ class GameState:
                 if c.props.is_land or not board.can_card_meet_casting_cost(c):
                     continue
 
-                if c.props.is_permanent:  # play to board
-                    available_actions.append(PlayNonBasicLandToBoard(p_id, i, c, hand, board))
+                if c.props.is_permanent:
+                    if 'Aura' in c.props.card_sub_types:  # play Enchant Creature
+                        ...
+                    else:  # play to board
+                        available_actions.append(PlayNonBasicLandToBoard(p_id, i, c, hand, board))
                 else:  # add to stack
                     opp_board = self.boards[1] if p_id == 0 else self.boards[0]
-
-                    # TODO: next: need to associate logic (ex: send_all_creatures_to_graveyard w Wrath)
-                    #  it would go in the "play" method
 
                     if c.props.slug in ('swords-to-plowshares', 'jump'):
                         targets: list[GameCard] = get_all_creatures(self)
@@ -484,41 +572,62 @@ class GameState:
         if self.phase == Phase.DECLARE_ATTACKERS:
             # add attackers
             for c in board.cards:
-                if c not in board.attacking_creatures and c.can_attack and not c.has_summoning_sickness:
-                    available_actions.append(CreatureAttack(p_id, c, board))
+                if c not in [com.attacker for com in self.combats] and c.can_attack and not c.has_summoning_sickness:
+                    available_actions.append(CreatureAttack(p_id, c, self))
 
             # finish declaring attackers; move to declare blockers
-            if board.attacking_creatures:
+            if self.combats:
                 available_actions.append(FinishDeclaringAttackers(p_id, self))
 
         if self.phase == Phase.DECLARE_BLOCKERS:
             already_assigned_blockers = [c for com in self.combats for c in com.blockers]
-            remaining_blockers = [c for c in self.boards[self.action_on_idx].available_blockers if c not in already_assigned_blockers]
+            remaining_blockers = [c for c in self.boards[self.action_on_idx].available_blockers
+                                  if c not in already_assigned_blockers]
             for blocker in remaining_blockers:
                 for com in self.combats:
                     available_actions.append(AssignBlocker(self.action_on_idx, blocker, com.attacker, self))
+            available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
         if self.phase == Phase.END_STEP:
+            available_actions.append(PassTheTurn(p_id, self))
             self.phase = Phase.DISCARD
             return
 
         if self.phase == Phase.DISCARD:
             hand = self.hands[self.player_turn_idx]
             if len(hand.cards) > 7:
-                graveyard = self.graveyards[self.player_turn_idx]
                 for c in hand.cards:
-                    available_actions.append(DiscardCard(self.player_turn_idx, hand.cards, c, graveyard))
+                    available_actions.append(DiscardCard(self.player_turn_idx, hand.cards, c, self))
             else:
                 self.phase = Phase.CREATURES_HEAL
                 return
 
         if self.phase == Phase.CREATURES_HEAL:
-            ...  # TODO: i'm not yet storing how much damage was assessed in combat & has to be reinstated at this point
+            for e in self.effects[:]:
+                print(type(e), e)
+                if 'Combat Damage' in e:
+                    card_id = self.get_card_id_from_effects_list(e)  # the card dealing the damage
+                    damage = int(e[e.find('deals ') + 6:e.find('damage') - 1])
+                    card = self.get_card_from_boards(card_id)
+                    if card:
+                        card.power += damage
+                    card_id = int(e[e.find('to creature ID#') + 15:e.find(' ', e.find('to creature ID#') + 15)])  # card receiving the damage
+                    card = self.get_card_from_boards(card_id)
+                    if card:
+                        card.toughness += damage
+                    self.effects.remove(e)
             self.phase = Phase.END_TURN_EFFECTS
             return
 
         if self.phase == Phase.END_TURN_EFFECTS:
-            ...  # TODO: end 'this turn' & 'til end of turn' effects
+            for e in self.effects[:]:
+                card_id = self.get_card_id_from_effects_list(e)
+                card = self.get_card_from_boards(card_id)
+                if 'until end of turn' in e:
+                    if 'gains Flying' in e:
+                        card.has_flying = 'Flying' in card.props.keyword_abilities
+                        self.effects.remove(e)
+                        print(f'{card.props.name} no longer has Flying')
             self.phase = Phase.PASS_THE_TURN
             return
 
@@ -535,6 +644,7 @@ class GameState:
             self.phase = Phase.COMBAT_END
             for com in self.combats:
                 com.end_combat(self)
+            self.combats.clear()
             self.phase = Phase.END_STEP
 
         return available_actions
