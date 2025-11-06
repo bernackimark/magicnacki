@@ -14,9 +14,11 @@ class GameCard:
     is_tapped: bool = False
     can_attack: bool = False
     can_block: bool = True
-    has_summoning_sickness: bool = True
     power: int = None
     toughness: int = None
+    enchant_creatures: list["GameCard"] = field(default_factory=list)
+    has_summoning_sickness: bool = True
+    has_flying: bool = False
 
     def __post_init__(self):
         self.img_url = next(iter(self.props.images.values()))  # set to the earliest set's image
@@ -27,16 +29,28 @@ class GameCard:
             self.can_attack = True
         self.power = self.props.power
         self.toughness = self.props.toughness
+        self.has_flying = True if 'Flying' in self.props.keyword_abilities else False
 
     def __repr__(self) -> str:
-        text = f'{self.props.name} ({self.props.power}/{self.props.toughness})' if self.props.is_creature else self.props.name
+        if not self.props.is_creature:
+            text = self.props.name
+        else:
+            if self.enchant_creatures:
+                ec_text = 'w ' + ', '.join([ec.props.name for ec in self.enchant_creatures])
+            else:
+                ec_text = ''
+            text = f'{self.props.name} {ec_text}({self.props.power}/{self.props.toughness})'
         return text.upper() if not self.is_tapped else text.lower()
 
     def tap(self) -> None:
         self.is_tapped = True
+        for ec in self.enchant_creatures:
+            self.is_tapped = True
 
     def untap(self) -> None:
         self.is_tapped = False
+        for ec in self.enchant_creatures:
+            self.is_tapped = False
 
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
