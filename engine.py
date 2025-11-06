@@ -30,7 +30,7 @@ universe = CardUniverse(['4E'])
 my_cards = (('plains', 16), ('serra-angel', 4), ('savannah-lions', 4), ('white-knight', 4), ('tundra-wolves', 4),
             ('swords-to-plowshares', 4), ('wrath-of-god', 4))
 his_cards = (('island', 16), ('air-elemental', 4), ('merfolk-of-the-pearl-trident', 4), ('counterspell', 4),
-             ('jump', 4), ('zephyr-falcon', 4), ('lord-of-atlantis', 4))
+             ('jump', 4), ('zephyr-falcon', 4), ('lord-of-atlantis', 4), ('creature-bond', 4))
 
 decks = []
 for i, cards in enumerate((my_cards, his_cards)):
