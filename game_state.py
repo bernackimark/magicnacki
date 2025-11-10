@@ -1,13 +1,13 @@
 import abc
 from abc import ABC
-from itertools import combinations
 from dataclasses import dataclass, field
 from enum import Enum
 import random
 
 from ability_2 import get_all_creatures
 from build_deck import GameCard, Deck
-from card import COLOR_LETTERS
+from models.board import Board
+from models.combat import Combat
 from phase_fsm import Phase
 
 LAND_MANA_DICT = {'island': 'U', 'forest': 'G', 'swamp': 'B', 'mountain': 'R', 'plains': 'W'}
@@ -42,121 +42,6 @@ class Turn:
     in_turn_player_idx: int
     out_turn_player_idx: int
     has_played_land: bool = False
-
-
-@dataclass
-class CombatDamage:
-    damage_dealer: GameCard
-    damage_receiver: GameCard
-    amt: int
-
-    def __post_init__(self):
-        self.damage_dealer.power -= self.amt
-        self.damage_receiver.toughness -= self.amt
-
-    def __repr__(self):
-        return f"Combat Damage: ID#{self.damage_dealer.id} {self.damage_dealer} deals {self.amt} damage to creature ID#{self.damage_receiver.id} {self.damage_receiver}"
-
-@dataclass
-class Combat:
-    gs: "GameState"
-    attacker: GameCard
-    blockers: list[GameCard] = field(default_factory=list)
-
-    def __repr__(self):
-        return f'{self.attacker} attacking {self.blockers}'
-
-    def handle_first_strike_damage(self):
-        if 'First Strike' not in self.attacker.props.keyword_abilities and \
-                'First Strike' not in [kwa for b in self.blockers for kwa in b.props.keyword_abilities]:
-            return
-        if 'First Strike' in self.attacker.props.keyword_abilities:
-            # TODO: this is hard-coded to assign damage to the first blocker
-            combat_damage = CombatDamage(self.attacker, self.blockers[0], self.attacker.power)
-            self.gs.effects.append(combat_damage.__repr__())
-        for blocker in self.blockers:
-            if 'First Strike' in blocker.props.keyword_abilities:
-                combat_damage = CombatDamage(blocker, self.attacker, blocker.power)
-                self.gs.effects.append(combat_damage.__repr__())
-
-    def handle_combat_damage(self):
-        # TODO: this is hard-coded to assign damage to the first blocker
-        if 'First Strike' not in self.attacker.props.keyword_abilities:
-            combat_damage = CombatDamage(self.attacker, self.blockers[0], self.attacker.power)
-            self.gs.effects.append(combat_damage.__repr__())
-        for blocker in self.blockers:
-            if 'First Strike' not in self.attacker.props.keyword_abilities:
-                combat_damage = CombatDamage(blocker, self.attacker, blocker.power)
-                self.gs.effects.append(combat_damage.__repr__())
-
-    def end_combat(self, gs: "GameState"):
-        killed_creatures = []
-        if self.attacker.toughness <= 0:
-            killed_creatures.append(self.attacker)
-            # gs.send_to_graveyard(self.attacker)
-        for blocker in self.blockers:
-            if blocker.toughness <= 0:
-                if blocker not in killed_creatures:
-                    killed_creatures.append(blocker)
-                # gs.send_to_graveyard(blocker)
-
-        for c in killed_creatures:
-            gs.send_to_graveyard(c)
-
-
-@dataclass
-class Board:
-    player_idx: int
-    _cards: list[GameCard] = field(default_factory=list)
-
-    @property
-    def cards(self) -> list[GameCard]:
-        return self._cards
-
-    @property
-    def available_mana(self) -> dict:
-        # TODO: needs to be thought thru; needs to handle cards that can spontaneously add mana
-        d = {color: 0 for color in COLOR_LETTERS}
-        d['C'] = 0
-        d['W'] = sum([1 for c in self.cards if c.props.slug == 'plains' and not c.is_tapped])
-        d['U'] = sum([1 for c in self.cards if c.props.slug == 'island' and not c.is_tapped])
-        d['B'] = sum([1 for c in self.cards if c.props.slug == 'swamp' and not c.is_tapped])
-        return d
-
-    @property
-    def available_mana_cnt(self) -> int:
-        return sum([v for v in self.available_mana.values()])
-
-    @property
-    def available_blockers(self) -> list[GameCard]:
-        return [c for c in self.cards if c.can_block and not c.is_tapped]
-
-    def can_card_meet_casting_cost(self, c: GameCard) -> bool:
-        for color_code, color_cnt in c.props.casting_dict.items():
-            if color_code != 'C' and color_cnt > self.available_mana[color_code]:
-                return False
-            if color_code == 'C' and c.props.casting_weight > self.available_mana_cnt:
-                return False
-        return True
-
-    def play_to_board(self, c: GameCard):
-        self._cards.append(c)
-        self._cards.sort(key=lambda c: c.props.is_land)
-
-    def remove_from_board(self, c: GameCard):
-        self._cards.remove(c)
-        self._cards.sort(key=lambda c: c.props.is_land)
-
-    def add_mana(self, mana_color: str, cnt: int) -> None:
-        self.available_mana[mana_color] += cnt
-
-    def subtract_mana(self, mana_color: str, cnt: int) -> None:
-        self.available_mana[mana_color] -= cnt
-
-    def pay_casting_cost(self, casting_cost: str) -> None:
-        for _ in casting_cost:
-            untapped_lands = [c for c in self.cards if c.props.is_land and not c.is_tapped]
-            untapped_lands[0].tap()
 
 
 @dataclass
