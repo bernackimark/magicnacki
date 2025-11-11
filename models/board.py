@@ -53,7 +53,7 @@ class Board:
     def subtract_mana(self, mana_color: str, cnt: int) -> None:
         self.available_mana[mana_color] -= cnt
 
-    def pay_casting_cost(self, casting_cost: str) -> None:
-        for _ in casting_cost:
+    def pay_casting_weight(self, casting_weight: int) -> None:
+        for _ in range(casting_weight):
             untapped_lands = [c for c in self.cards if c.props.is_land and not c.is_tapped]
             untapped_lands[0].tap()

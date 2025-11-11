@@ -30,17 +30,22 @@ class GameCard:
         self.power = self.props.power
         self.toughness = self.props.toughness
         self.has_flying = True if 'Flying' in self.props.keyword_abilities else False
+        self.can_block = True if self.props.is_creature else False
 
     def __repr__(self) -> str:
         if not self.props.is_creature:
             text = self.props.name
         else:
             if self.enchant_creatures:
-                ec_text = 'w ' + ', '.join([ec.props.name for ec in self.enchant_creatures])
+                ec_text = 'w ' + '& '.join([ec.props.name for ec in self.enchant_creatures])
             else:
                 ec_text = ''
             text = f'{self.props.name} {ec_text}({self.props.power}/{self.props.toughness})'
         return text.upper() if not self.is_tapped else text.lower()
+
+    @property
+    def owner_and_id(self) -> str:
+        return f"{self.orig_owner_id}-{self.id}"
 
     def tap(self) -> None:
         self.is_tapped = True

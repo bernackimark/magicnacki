@@ -4,5 +4,9 @@ def get_all_creatures(gs: "GameState") -> list["GameCard"]:
 def send_all_creatures_to_graveyard(gs: "GameState") -> None:
     for c in get_all_creatures(gs):
         gs.send_to_graveyard(c)
-        gs.remove_from_board(c)
+
+
+game_card_abilities = [
+
+]
 
