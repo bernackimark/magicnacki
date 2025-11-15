@@ -322,6 +322,7 @@ class GameState:
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
         self.decks = decks
+        self.decks_all_cards = self.decks.copy()
         self.life = [20, 20]
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, 1 if self.player_turn_idx == 0 else 1)
@@ -531,27 +532,17 @@ class GameState:
                 return
 
         if self.phase == Phase.CREATURES_HEAL:
-            for e in self.effects[:]:
-                print(type(e), e)
-                if 'Combat Damage' in e:
-                    owner_id, card_id = self.get_card_owner_and_id_from_effects_list(e)  # the card dealing the damage
-                    damage = int(e[e.find('deals ') + 6:e.find('damage') - 1])
-                    card = self.get_card_from_board(owner_id, card_id)
-                    if card:
-                        print(card, card.power, damage)
-                        card.power += damage
-                    owner_id, card_id = self.get_card_owner_and_id_from_effects_list(e, 'to creature ID#')  # card receiving the damage
-                    card = self.get_card_from_board(owner_id, card_id)
-                    if card:
-                        card.toughness += damage
-                    self.effects.remove(e)
+            for deck in self.decks_all_cards:
+                for c in deck.cards:
+                    c.combat_damage_dealt = 0
+                    c.combat_damage_received = 0
             self.phase = Phase.END_TURN_EFFECTS
             return
 
         if self.phase == Phase.END_TURN_EFFECTS:
             for e in self.effects[:]:
-                card_id = self.get_card_owner_and_id_from_effects_list(e)
-                card = self.get_card_from_boards(card_id)
+                owner_id, card_id = self.get_card_owner_and_id_from_effects_list(e)
+                card = self.get_card_from_board(owner_id, card_id)
                 if 'until end of turn' in e:
                     if 'gains Flying' in e:
                         card.has_flying = 'Flying' in card.props.keyword_abilities

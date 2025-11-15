@@ -19,6 +19,8 @@ class GameCard:
     enchant_creatures: list["GameCard"] = field(default_factory=list)
     has_summoning_sickness: bool = True
     has_flying: bool = False
+    combat_damage_dealt: int = 0
+    combat_damage_received: int = 0
 
     def __post_init__(self):
         self.img_url = next(iter(self.props.images.values()))  # set to the earliest set's image

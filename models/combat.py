@@ -4,20 +4,6 @@ from build_deck import GameCard
 
 
 @dataclass
-class CombatDamage:
-    damage_dealer: GameCard
-    damage_receiver: GameCard
-    amt: int
-
-    def __post_init__(self):
-        self.damage_dealer.power -= self.amt
-        self.damage_receiver.toughness -= self.amt
-
-    def __repr__(self):
-        return f"Combat Damage: ID#{self.damage_dealer.owner_and_id} {self.damage_dealer} deals {self.amt} damage to creature ID#{self.damage_receiver.owner_and_id} {self.damage_receiver}"
-
-
-@dataclass
 class Combat:
     gs: "GameState"
     attacker: GameCard
@@ -30,52 +16,75 @@ class Combat:
     def handle_damage(self):
         self._handle_first_strike_damage()
 
-    def _handle_first_strike_damage(self):
-        if 'First Strike' not in self.attacker.props.keyword_abilities and \
-                'First Strike' not in [kwa for b in self.blockers for kwa in b.props.keyword_abilities]:
-            self._handle_combat_damage()
-        else:
-            if not self.blockers:
-                self._handle_no_blockers()
-            else:
-                if 'First Strike' in self.attacker.props.keyword_abilities:
-                    # TODO: this is hard-coded to assign damage to the first blocker
-                    combat_damage = CombatDamage(self.attacker, self.blockers[0], self.attacker.power)
-                    self.gs.effects.append(combat_damage.__repr__())
-                for blocker in self.blockers:
-                    if 'First Strike' in blocker.props.keyword_abilities:
-                        combat_damage = CombatDamage(blocker, self.attacker, blocker.power)
-                        self.gs.effects.append(combat_damage.__repr__())
-                self._end_combat(self.gs)
-                self._handle_combat_damage()
+    def _deal_damage(self, source: GameCard, target: GameCard):
+        amt = source.power
+        source.combat_damage_dealt += amt
+        target.combat_damage_received += amt
+        text = (f"Combat Damage: ID#{source.owner_and_id} {source} deals {amt} damage to "
+                f"creature ID#{target.owner_and_id} {target}")
+        self.gs.effects.append(text)
 
-    def _handle_combat_damage(self):
-        # TODO: this is hard-coded to assign damage to the first blocker
+    @staticmethod
+    def _has_first_strike(creature: GameCard) -> bool:
+        return 'First Strike' in creature.props.keyword_abilities
+
+    def _any_blocker_has_first_strike(self) -> bool:
+        return any(self._has_first_strike(b) for b in self.blockers)
+
+    def _handle_first_strike_damage(self):
+        attacker_has_first_strike = self._has_first_strike(self.attacker)
+        any_blocker_has_first_strike = self._any_blocker_has_first_strike()
+
+        # If no first strike anywhere, just do regular combat damage
+        if not attacker_has_first_strike and not any_blocker_has_first_strike:
+            self._handle_combat_damage()
+            return
+
+        # First-Strike Phase
         if not self.blockers:
             self._handle_no_blockers()
         else:
-            if 'First Strike' not in self.attacker.props.keyword_abilities and self.attacker not in self.killed_creatures:
-                combat_damage = CombatDamage(self.attacker, self.blockers[0], self.attacker.power)
-                self.gs.effects.append(combat_damage.__repr__())
+            if attacker_has_first_strike:
+                self._deal_damage(self.attacker, self.blockers[0])
             for blocker in self.blockers:
-                if 'First Strike' not in self.attacker.props.keyword_abilities and blocker not in self.killed_creatures:
-                    combat_damage = CombatDamage(blocker, self.attacker, blocker.power)
-                    self.gs.effects.append(combat_damage.__repr__())
-            self._end_combat(self.gs)
+                if self._has_first_strike(blocker):
+                    self._deal_damage(blocker, self.attacker)
+            self._end_combat()
 
-    def _end_combat(self, gs: "GameState"):
-        if self.attacker.toughness <= 0:
-            self.killed_creatures.append(self.attacker)
+            # Continue to normal combat if attacker is still alive
+            self._handle_combat_damage()
+
+    def _handle_combat_damage(self):
+        if not self.blockers:
+            self._handle_no_blockers()
+            return
+
+        # Attacker normal damage (only if attacker survived first strike)
+        if not self._has_first_strike(self.attacker) and self.attacker not in self.killed_creatures:
+            self._deal_damage(self.attacker, self.blockers[0])
+
+        # Blocker normal damage
         for blocker in self.blockers:
-            if blocker.toughness <= 0:
+            if blocker not in self.killed_creatures:
+                self._deal_damage(blocker, self.attacker)
+
+        self._end_combat()
+
+    def _end_combat(self):
+        if self.attacker.toughness - self.attacker.combat_damage_received <= 0:
+            self.killed_creatures.append(self.attacker)
+
+        for blocker in self.blockers:
+            if blocker.toughness - blocker.combat_damage_received <= 0:
                 if blocker not in self.killed_creatures:
                     self.killed_creatures.append(blocker)
 
         for c in self.killed_creatures:
-            gs.send_to_graveyard(c)
+            self.gs.send_to_graveyard(c)
 
     def _handle_no_blockers(self):
-        print(f"{self.attacker} deals {self.attacker.power} damage to player #{self.gs.turn.out_turn_player_idx}")
-        self.gs.decrement_life(self.gs.turn.out_turn_player_idx, self.attacker.power)
-        self._end_combat(self.gs)
-        return
+        dmg = self.attacker.power
+        defender = self.gs.turn.out_turn_player_idx
+        print(f"{self.attacker} deals {dmg} damage to player #{defender}")
+        self.gs.decrement_life(defender, dmg)
+        self._end_combat()
