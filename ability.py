@@ -4,7 +4,7 @@ KEYWORD_ABILITIES = ['Defender', 'First Strike', 'Flying', 'Forestwalk', 'Haste'
                      'Protection from White', 'Rampage', 'Reach', 'Swampwalk', 'Foresthome', 'Islandhome',
                      'Mountainhome', 'Swamphome', 'Trample', 'Vigilance']
 
-creature_keyword_abilities = {
+CREATURE_KW_ABILITIES = {
     'abbey-gargoyles': ['Flying', 'Protection from Red'],
     'abomination': [],
     'abyssal-specter': ['Flying'],

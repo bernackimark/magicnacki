@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from build_deck import GameCard
-from card import COLOR_LETTERS
+from constants import COLOR_LETTERS
 
 
 @dataclass
