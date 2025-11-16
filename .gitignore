@@ -5,3 +5,5 @@ testing*.py
 .xml/
 renderer_pygame/assets/
 *.mp3
+*.json
+gatherer/card_data*.json
