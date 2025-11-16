@@ -3,12 +3,10 @@ from io import BytesIO
 from pathlib import Path
 
 from common.file_utils import read_json_file
+from config import CARD_DATA_FILE_PATH, IMAGES_OUTPUT_PATH
 from PIL import Image
 import requests
 
-# TODO: get these into an .env file
-URL_FILE_PATH = Path('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/gatherer/card_data.json')
-OUTPUT_PATH = Path('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/renderer_pygame/assets/images/')
 
 OUTPUT_EXTENSION = '.jpg'
 
@@ -34,13 +32,13 @@ def save_image_file(image_object: Image, file_path_dir: Path, file_name: str, fi
 if __name__ == '__main__':
     if input("Are you sure you want to create all these image files? (Y/n) ") != 'Y':
         exit()
-    file_w_links: dict[str: dict[str: str]] = read_json_file(URL_FILE_PATH)
+    file_w_links: dict[str: dict[str: str]] = read_json_file(CARD_DATA_FILE_PATH)
     for set_code, set_data in file_w_links.items():
         for slug, card_data in set_data.items():
             url = card_data['img_url']
             bytes_ = get_bytes_from_url(url)
             image_obj = create_image_object(bytes_)
             image_file_name = set_code
-            save_image_file(image_obj, OUTPUT_PATH / slug, image_file_name)
+            save_image_file(image_obj, IMAGES_OUTPUT_PATH / slug, image_file_name)
             print(f'Saved {image_file_name} {slug}')
 
