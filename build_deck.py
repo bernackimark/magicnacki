@@ -2,65 +2,7 @@ from dataclasses import dataclass, field
 
 from card import Card, CardUniverse
 from constants import BASIC_LANDS
-
-
-@dataclass
-class GameCard:
-    props: Card
-    id: int
-    orig_owner_id: int
-    img_url: str = field(init=False)
-    casting_cost: str = field(init=False)
-    is_tapped: bool = False
-    can_attack: bool = False
-    can_block: bool = True
-    power: int = None
-    toughness: int = None
-    enchant_creatures: list["GameCard"] = field(default_factory=list)
-    has_summoning_sickness: bool = True
-    has_flying: bool = False
-    combat_damage_dealt: int = 0
-    combat_damage_received: int = 0
-
-    def __post_init__(self):
-        self.img_url = next(iter(self.props.images.values()))  # set to the earliest set's image
-        self.casting_cost = self.props.casting_cost
-        if 'Haste' in self.props.keyword_abilities:
-            self.has_summoning_sickness = False
-        if self.props.is_creature:
-            self.can_attack = True
-        self.power = self.props.power
-        self.toughness = self.props.toughness
-        self.has_flying = True if 'Flying' in self.props.keyword_abilities else False
-        self.can_block = True if self.props.is_creature else False
-
-    def __repr__(self) -> str:
-        if not self.props.is_creature:
-            text = self.props.name
-        else:
-            if self.enchant_creatures:
-                ec_text = 'w ' + '& '.join([ec.props.name for ec in self.enchant_creatures])
-            else:
-                ec_text = ''
-            text = f'{self.props.name} {ec_text}({self.props.power}/{self.props.toughness})'
-        return text.upper() if not self.is_tapped else text.lower()
-
-    @property
-    def owner_and_id(self) -> str:
-        return f"{self.orig_owner_id}-{self.id}"
-
-    def tap(self) -> None:
-        self.is_tapped = True
-        for ec in self.enchant_creatures:
-            self.is_tapped = True
-
-    def untap(self) -> None:
-        self.is_tapped = False
-        for ec in self.enchant_creatures:
-            self.is_tapped = False
-
-    def set_image(self, set_code: str):
-        self.img_url = self.props.images.get(set_code) or self.img_url
+from models.game_card import GameCard
 
 
 @dataclass
@@ -88,9 +30,7 @@ class DeckBuilder:
         return sorted({c.props.slug: c for c in self.cards}.values(), key=lambda x: x.props.slug)
 
     def get_slug_cnt(self, slug: str) -> int:
-        if not self.cards:
-            return 0
-        return sum([1 for c in self.cards if c.props.slug == slug])
+        return sum([1 for c in self.cards if c.props.slug == slug]) if self.cards else 0
 
     def add_card(self, c: Card) -> None:
         if c.slug not in BASIC_LANDS and self.get_slug_cnt(c.slug) >= self.max_non_basic_land_instances:

@@ -5,7 +5,8 @@ from enum import Enum
 import random
 
 from ability_2 import get_all_creatures
-from build_deck import GameCard, Deck
+from build_deck import Deck
+from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
 from phase_fsm import Phase
@@ -133,7 +134,7 @@ class PlayAura(Action):
 
     def play(self) -> None:
         self.board.pay_casting_weight(self.card.props.casting_weight)
-        self.target.enchant_creatures.append(self.card)
+        self.target.auras.append(self.card)
 
 
 @dataclass
@@ -183,7 +184,7 @@ class PlaySorceryOrInstant(Action):
             self.gs.effects.append(f"Creature ID#{self.targets[0].owner_and_id} gains Flying until end of turn")
             print(f"{self.targets[0].props.name} gains Flying until end of turn")
         elif self.card.props.slug == 'creature-bond':
-            self.targets[0].enchant_creatures.append(self.card)
+            self.targets[0].auras.append(self.card)
 
 
 @dataclass
@@ -374,7 +375,7 @@ class GameState:
             c.power = c.props.power
             c.toughness = c.props.toughness
             c.has_flying = 'Flying' in c.props.keyword_abilities
-        for card in c.enchant_creatures:
+        for card in c.auras:
             if card.props.slug == 'creature-bond':
                 self.decrement_life(c.orig_owner_id, c.props.toughness)
                 print(f"Creature Bond reduces player #{c.orig_owner_id}'s life by {c.props.toughness}")

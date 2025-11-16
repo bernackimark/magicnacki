@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from build_deck import GameCard
+from models.game_card import GameCard
 
 
 @dataclass
