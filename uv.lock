@@ -80,6 +80,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "pillow" },
     { name = "pygame-ce" },
+    { name = "python-dotenv" },
     { name = "requests" },
 ]
 
@@ -87,6 +88,7 @@ dependencies = [
 requires-dist = [
     { name = "pillow", specifier = ">=12.0.0" },
     { name = "pygame-ce", specifier = ">=2.5.5" },
+    { name = "python-dotenv", specifier = ">=1.2.1" },
     { name = "requests", specifier = ">=2.32.5" },
 ]
 
@@ -217,6 +219,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1c/45/f7de742f0892fb67fcd550b3a19cdd084ee11e5bdc9314bdefc058d96f12/pygame_ce-2.5.5-pp311-pypy311_pp73-manylinux2014_i686.manylinux_2_17_i686.whl", hash = "sha256:5f6c99999bd2e5c7f33e472b1154e6e72b340458ce4d2a61d39d4bb180224bf9", size = 12744365, upload-time = "2025-07-28T07:49:39.758Z" },
     { url = "https://files.pythonhosted.org/packages/48/4f/587f55265edb1994e3a03aa29f261d3e57daf4b4b826b8734bf0ceb1ddab/pygame_ce-2.5.5-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:15bae81bff1750dfe0f087f1ba6a4395d9154bcb962118c87cc35da74d116b0a", size = 12392705, upload-time = "2025-07-28T07:49:49.53Z" },
     { url = "https://files.pythonhosted.org/packages/39/42/919e9acaf40b5828edd5f039becb9c0594e2d0846a0100bcb26fd96f72b7/pygame_ce-2.5.5-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:3f106be1d9daaf0f44c9b588a01efb6e520fe52de3da7332bc97eaa950e751ff", size = 10311535, upload-time = "2025-07-28T07:49:57.804Z" },
+]
+
+[[package]]
+name = "python-dotenv"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/26/19cadc79a718c5edbec86fd4919a6b6d3f681039a2f6d66d14be94e75fb9/python_dotenv-1.2.1.tar.gz", hash = "sha256:42667e897e16ab0d66954af0e60a9caa94f0fd4ecf3aaf6d2d260eec1aa36ad6", size = 44221, upload-time = "2025-10-26T15:12:10.434Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/14/1b/a298b06749107c305e1fe0f814c6c74aea7b2f1e10989cb30f544a1b3253/python_dotenv-1.2.1-py3-none-any.whl", hash = "sha256:b81ee9561e9ca4004139c6cbba3a238c32b03e4894671e181b671e8cb8425d61", size = 21230, upload-time = "2025-10-26T15:12:09.109Z" },
 ]
 
 [[package]]
