@@ -2,20 +2,16 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Iterator
 
-from ability import creature_keyword_abilities
+from ability import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
-
-COLOR_LETTERS = ('W', 'G', 'R', 'U', 'B')
-
-
-# TODO: should Card be: (frozen=True)?
+from constants import COLOR_LETTERS
 
 @dataclass
 class Ruling:
     ruling_date: str
     ruling_statement: str
 
-@dataclass
+@dataclass(frozen=True)
 class Card:
     slug: str
     name: str
@@ -35,9 +31,9 @@ class Card:
     keyword_abilities: list[str] = field(default=list)
 
     def __post_init__(self):
-        self.keyword_abilities = creature_keyword_abilities.get(self.slug) or []
-        self.power = self._str_to_int(self.power) if self.power else None
-        self.toughness = self._str_to_int(self.toughness) if self.toughness else None
+        object.__setattr__(self, 'keyword_abilities', CREATURE_KW_ABILITIES.get(self.slug, []).copy())
+        object.__setattr__(self, 'power', self._str_to_int(self.power) if self.power else None)
+        object.__setattr__(self, 'toughness', self._str_to_int(self.toughness) if self.power else None)
 
     # def __repr__(self) -> str:
     #     return (f"{self.name} ({self.casting_cost or 0}, {'/'.join(self.card_types)}"
