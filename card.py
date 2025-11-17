@@ -22,8 +22,8 @@ class Card:
     rarity: str
     rules_text: str
     oracle_rules_text: str  # more modern & logical than rules_text, ex. '{X}, {T}' instead of 'oX, ocT'
-    power: int | None
-    toughness: int | None
+    power: str | int | None
+    toughness: str | int | None
     set_codes: list[str]
     data_url: str
     images: dict[str]
@@ -32,8 +32,8 @@ class Card:
 
     def __post_init__(self):
         object.__setattr__(self, 'keyword_abilities', CREATURE_KW_ABILITIES.get(self.slug, []).copy())
-        object.__setattr__(self, 'power', self._str_to_int(self.power) if self.power else None)
-        object.__setattr__(self, 'toughness', self._str_to_int(self.toughness) if self.power else None)
+        object.__setattr__(self, 'power', self._str_to_int(self.power) if self.power is not None else None)
+        object.__setattr__(self, 'toughness', self._str_to_int(self.toughness) if self.toughness is not None else None)
 
     # def __repr__(self) -> str:
     #     return (f"{self.name} ({self.casting_cost or 0}, {'/'.join(self.card_types)}"
