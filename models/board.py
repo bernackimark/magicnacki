@@ -32,6 +32,8 @@ class Board:
         return [c for c in self.cards if c.can_block and not c.is_tapped]
 
     def can_card_meet_casting_cost(self, c: GameCard) -> bool:
+        if not c.casting_cost:
+            return True
         for color_code, color_cnt in c.props.casting_dict.items():
             if color_code != 'C' and color_cnt > self.available_mana[color_code]:
                 return False
@@ -47,13 +49,9 @@ class Board:
         self._cards.remove(c)
         self._cards.sort(key=lambda c: c.props.is_land)
 
-    def add_mana(self, mana_color: str, cnt: int) -> None:
-        self.available_mana[mana_color] += cnt
-
-    def subtract_mana(self, mana_color: str, cnt: int) -> None:
-        self.available_mana[mana_color] -= cnt
-
     def pay_casting_weight(self, casting_weight: int) -> None:
+        if not casting_weight:
+            return
         for _ in range(casting_weight):
             untapped_lands = [c for c in self.cards if c.props.is_land and not c.is_tapped]
             untapped_lands[0].tap()
