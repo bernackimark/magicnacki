@@ -6,18 +6,16 @@ import random
 
 from ability_2 import get_all_creatures
 from build_deck import Deck
-from models.game_card import GameCard
+from models.game_card import GameCard, KWATemp
 from models.board import Board
 from models.combat import Combat
 from phase_fsm import Phase
 
 LAND_MANA_DICT = {'island': 'U', 'forest': 'G', 'swamp': 'B', 'mountain': 'R', 'plains': 'W'}
 
-
 def draw(dest_pile: list[GameCard], source_pile: list[GameCard], card_cnt: int):
     for i in range(card_cnt):
         dest_pile.append(source_pile.pop(0))
-
 
 @dataclass
 class Hand:
@@ -39,22 +37,20 @@ class Hand:
     def sort_cards(self):
         self.cards.sort(key=lambda x: x.props.casting_weight, reverse=self.sort_pref.value)
 
-
 @dataclass
 class Turn:
     in_turn_player_idx: int
     out_turn_player_idx: int
     has_played_land: bool = False
 
-
 @dataclass
 class Action(ABC):
     player_idx: int
+    gs: "GameState"
 
     @abc.abstractmethod
     def play(self) -> None:
         ...
-
 
 @dataclass
 class ActionStack:
@@ -86,111 +82,72 @@ class ActionStack:
     def clear(self) -> None:
         self._actions.clear()
 
-
 @dataclass
 class DrawCard(Action):
-    deck: Deck
-    hand: Hand
-    gs: "GameState"
-
     def __repr__(self) -> str:
         return 'Draw a Card'
 
     def play(self) -> None:
-        self.hand.cards.append(self.deck.cards.pop())
-        self.hand.sort_cards()
+        hand = self.gs.hands[self.player_idx]
+        deck = self.gs.hands[self.player_idx]
+        hand.cards.append(deck.cards.pop())
+        hand.sort_cards()
         self.gs.phase = Phase.CAST
 
-
 @dataclass
-class PlayLand(Action):
-    card_in_hand_idx: int
+class CastToBoard(Action):
     card: GameCard
-    source_hand: Hand
-    board: Board
-    turn: Turn
 
     def __repr__(self) -> str:
-        return f"Play {self.card.props.name} land to board"
+        return f"Cast {self.card.props.name}"
 
     def play(self) -> None:
-        self.board.play_to_board(self.source_hand.cards.pop(self.card_in_hand_idx))
-        mana = LAND_MANA_DICT.get(self.card.props.slug)
-        if not mana:
-            raise NotImplementedError("I can't handle non-basic lands")
-        self.board.add_mana(mana, 1)
-        self.turn.has_played_land = True
-
+        board = self.gs.boards[self.player_idx]
+        board.pay_casting_weight(self.card.props.casting_weight)
+        hand = self.gs.hands[self.player_idx]
+        hand.cards.remove(self.card)
+        board.play_to_board(self.card)
+        if self.card.props.is_land:
+            self.gs.turn.has_played_land = True
 
 @dataclass
-class PlayAura(Action):
+class CastToTargetAddToStack(Action):
     card: GameCard
-    target: GameCard
-    board: Board
-    gs: "GameState"
+    target: GameCard | list[GameCard] | None
+
+    def __repr__(self) -> str:
+        target_text = ', targeting '
+        if isinstance(self.target, list):
+            target_text = f"{', '.join([c.props.name for c in self.target])}"
+        if isinstance(self.target, GameCard):
+            target_text = self.target.props.name
+        return f"Cast {self.card.props.name}{target_text}"
+
+    def play(self) -> None:
+        board = self.gs.boards[self.player_idx]
+        board.pay_casting_weight(self.card.props.casting_weight)
+        hand = self.gs.hands[self.player_idx]
+        hand.cards.remove(self.card)
+        self.gs.action_stack.add(self, self.gs)
+
+@dataclass
+class CastCounter(Action):
+    card: GameCard
+    target: Action
 
     def __repr__(self):
-        return f"Add aura {self.card.props.name} to {self.target.props.name}"
+        return f"Cast {self.card.props.name} to counter {self.target}"
 
     def play(self) -> None:
-        self.board.pay_casting_weight(self.card.props.casting_weight)
-        self.target.auras.append(self.card)
-
-
-@dataclass
-class PlayNonBasicLandToBoard(Action):
-    card_in_hand_idx: int
-    card: GameCard
-    source_hand: Hand
-    board: Board
-
-    def __repr__(self) -> str:
-        return f"Play {self.card.props.name} creature to board"
-
-    def play(self) -> None:
-        self.board.pay_casting_weight(self.card.props.casting_weight)
-        self.board.play_to_board(self.source_hand.cards.pop(self.card_in_hand_idx))
-
-
-@dataclass
-class PlaySorceryOrInstant(Action):
-    card: GameCard
-    source_hand: Hand
-    board: Board
-    action_stack: ActionStack
-    targets: list[GameCard]
-    gs: "GameState"
-
-    def __repr__(self) -> str:
-        target_text = f", targeting {', '.join([c.props.name for c in self.targets])}" if self.targets else ''
-        return f"Play {self.card.props.name} as sorcery/instant{target_text}"
-
-    def play(self) -> None:
-        self.board.pay_casting_weight(self.card.props.casting_weight)
-        self.source_hand.cards.remove(self.card)
-        self.action_stack.add(self, self.gs)
-
-    def accept(self) -> None:
-        if self.card.props.slug == 'swords-to-plowshares':
-            self.gs.send_to_exile(self.targets[0])
-            self.gs.increment_life(self.targets[0].orig_owner_id, self.targets[0].power)
-            print(f'Swords to Plowshares accepted; life is now {self.gs.life}')
-        elif self.card.props.slug == 'wrath-of-god':
-            for t in self.targets:
-                self.gs.send_to_exile(t)
-            print(f'Wrath of God accepted; all creatures should now be in exile')
-        elif self.card.props.slug == 'jump':
-            self.targets[0].has_flying = True
-            self.gs.effects.append(f"Creature ID#{self.targets[0].owner_and_id} gains Flying until end of turn")
-            print(f"{self.targets[0].props.name} gains Flying until end of turn")
-        elif self.card.props.slug == 'creature-bond':
-            self.targets[0].auras.append(self.card)
-
+        board = self.gs.boards[self.player_idx]
+        board.pay_casting_weight(self.card.props.casting_weight)
+        hand = self.gs.hands[self.player_idx]
+        hand.cards.remove(self.card)
+        self.gs.action_stack.add(self, self.gs)
 
 @dataclass
 class CreatureAttack(Action):
     card: GameCard
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return f"Add {self.card.__repr__()} to attack"
@@ -199,10 +156,8 @@ class CreatureAttack(Action):
         self.card.tap()
         self.gs.combats.append(Combat(self.gs, self.card))
 
-
 @dataclass
 class BeginCombat(Action):
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return "Begin Combat"
@@ -210,10 +165,8 @@ class BeginCombat(Action):
     def play(self) -> None:
         self.gs.phase = Phase.DECLARE_ATTACKERS
 
-
 @dataclass
 class FinishDeclaringAttackers(Action):
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return "Done Declaring Attackers"
@@ -222,12 +175,10 @@ class FinishDeclaringAttackers(Action):
         self.gs.phase = Phase.DECLARE_BLOCKERS
         self.gs.action_on_idx = 1 if self.gs.action_on_idx == 0 else 0
 
-
 @dataclass
 class AssignBlocker(Action):
     blocker: GameCard
     attacker: GameCard
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return f"Block {self.attacker} with {self.blocker}"
@@ -237,10 +188,8 @@ class AssignBlocker(Action):
             if com.attacker == self.attacker:
                 com.blockers.append(self.blocker)
 
-
 @dataclass
 class FinishBlocking(Action):
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return f"Finish Blocks"
@@ -248,10 +197,8 @@ class FinishBlocking(Action):
     def play(self) -> None:
         self.gs.phase = Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES
 
-
 @dataclass
 class MoveToEndStep(Action):
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return "Moving to End Step"
@@ -259,24 +206,20 @@ class MoveToEndStep(Action):
     def play(self) -> None:
         self.gs.phase = Phase.END_STEP
 
-
 @dataclass
 class DiscardCard(Action):
-    hand: list[GameCard]
     card: GameCard
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return f"Discard {self.card} to graveyard"
 
     def play(self) -> None:
         self.gs.send_to_graveyard(self.card)
-        self.hand.remove(self.card)
-
+        hand = self.gs.hands[self.player_idx]
+        hand.cards.remove(self.card)
 
 @dataclass
 class PassTheTurn(Action):
-    gs: "GameState"
 
     def __repr__(self) -> str:
         return "Pass the Turn"
@@ -288,33 +231,44 @@ class PassTheTurn(Action):
         self.gs.turn_number += 1
         self.gs.phase = Phase.UNTAP
 
-
 @dataclass
 class AcceptAction(Action):
-    action_stack: ActionStack
-    gs: "GameState"
-
     def __repr__(self) -> str:
-        return f"Accept {self.action_stack.last_action}"
+        return f"Accept {self.gs.action_stack.last_action}"
 
     def play(self) -> None:
-        if isinstance(self.action_stack.last_action, PlaySorceryOrInstant):
-            self.action_stack.last_action.accept()
-        self.gs.action_on_idx = self.action_stack.first_actor_idx  # action returns to the first actor
-        self.action_stack.clear()
+        last_action: CastToTargetAddToStack = self.gs.action_stack.last_action
+        card = last_action.card
+        target = last_action.target
+        if card.props.slug == 'swords-to-plowshares':
+            self.gs.send_to_exile(target)
+            self.gs.increment_life(target.orig_owner_id, target.power)
+            print(f'Swords to Plowshares accepted; life is now {self.gs.life}')
+        elif card.props.slug == 'wrath-of-god':
+            for b in self.gs.boards:
+                for c in b.cards:
+                    self.gs.send_to_exile(c)
+            print(f'Wrath of God accepted; all creatures should now be in exile')
+        elif card.props.slug == 'jump':
+            kwa_mod = KWATemp('add', 'Flying')
+            target.kwa_temps.append(kwa_mod)
+            self.gs.effects.append(f"Creature ID#{target.owner_and_id} {kwa_mod.__repr__()}")
+            print(f"{target.props.name} {kwa_mod.__repr__()}")
+        elif card.props.slug == 'creature-bond':
+            target.auras.append(card)
+        self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
+        self.gs.action_stack.clear()
 
 
 @dataclass
 class CounterAction(Action):
-    action_stack: ActionStack
     action: Action
-    gs: "GameState"
 
     def __repr__(self) -> str:
-        return f"In response to {self.action_stack.last_action}: {self.action}"
+        return f"In response to {self.gs.action_stack.last_action}: {self.action}"
 
     def play(self) -> None:
-        self.action_stack.add(self.action, self.gs)
+        self.gs.action_stack.add(self.action, self.gs)
         self.gs.action_on_idx = 1 if self.gs.action_on_idx == 0 else 0
 
 
@@ -371,10 +325,6 @@ class GameState:
         self._send_to_graveyard_or_exile(c)
 
     def _send_to_graveyard_or_exile(self, c: GameCard):
-        if 'Creature' in c.props.card_types:
-            c.power = c.props.power
-            c.toughness = c.props.toughness
-            c.has_flying = 'Flying' in c.props.keyword_abilities
         for card in c.auras:
             if card.props.slug == 'creature-bond':
                 self.decrement_life(c.orig_owner_id, c.props.toughness)
@@ -395,10 +345,8 @@ class GameState:
         for c in self.boards[self.player_turn_idx].cards:
             c.untap()
             for turn_num, act in self.game_history:
-                if (isinstance(act, PlayNonBasicLandToBoard) and act.card.id == c.id and
-                        self.turn_number - turn_num == 2):
+                if isinstance(act, CastToBoard) and act.card.id == c.id and self.turn_number - turn_num == 2:
                     c.has_summoning_sickness = False
-
         self.phase = Phase.UPKEEP
 
     @staticmethod
@@ -409,40 +357,35 @@ class GameState:
         owner_id_str, card_id_str = owner_id_and_card_id.split('-')
         return int(owner_id_str), int(card_id_str)
 
+    def get_target_cards(self, slug: str) -> list[GameCard] | None:
+        if slug in ('swords-to-plowshares', 'jump', 'creature-bond'):
+            return get_all_creatures(self)
+
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         available_actions: list[Action] = []
-        deck = self.decks[p_id]
         hand = self.hands[p_id]
         board = self.boards[p_id]
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
-            if p_id != self.player_turn_idx:
-                available_actions.append(AcceptAction(p_id, self.action_stack, self))
-                playable_cards = [c for c in hand.instants if board.can_card_meet_casting_cost(c)]
-                for c in playable_cards:
-                    if c.props.slug in ('swords-to-plowshares', 'jump'):
-                        targets: list[GameCard] = get_all_creatures(self)
-                        for t in targets:
-                            available_actions.append(PlaySorceryOrInstant(p_id, c, hand, board,
-                                                                          self.action_stack, [t], self))
-                    if c.props.slug in ('counterspell',):
-                        play = PlaySorceryOrInstant(p_id, c, hand, board, self.action_stack, [], self)
-                        available_actions.append(play)
-                        available_actions.append(CounterAction(p_id, self.action_stack, play, self))
-            else:
-                available_actions.append(AcceptAction(p_id, self.action_stack, self))
+            if p_id == self.player_turn_idx:
                 playable_cards: list[GameCard] = hand.instants + hand.sorceries
-                for c in playable_cards:
-                    if c.props.slug in ('swords-to-plowshares', 'jump', 'creature-bond'):
-                        targets: list[GameCard] = get_all_creatures(self)
-                        for t in targets:
-                            available_actions.append(PlaySorceryOrInstant(p_id, c, hand, board,
-                                                                          self.action_stack, [t], self))
-                    elif c.props.slug in ('wrath-of-god',):
-                        targets: list[GameCard] = get_all_creatures(self)
-                        available_actions.append(PlaySorceryOrInstant(p_id, c, hand, board,
-                                                                      self.action_stack, targets, self))
+            else:
+                playable_cards = [c for c in hand.instants if board.can_card_meet_casting_cost(c)]
+
+            available_actions.append(AcceptAction(p_id, self))
+
+            for c in playable_cards:
+                if c.props.slug in ('counterspell',):
+                    target: Action = self.action_stack.last_action
+                    available_actions.append(CastCounter(p_id, self, c, target))
+                    continue
+                target_cards: list[GameCard] = self.get_target_cards(c.props.slug)
+                if not target_cards:
+                    available_actions.append(CastToTargetAddToStack(p_id, self, c, None))
+                    continue
+                for t in target_cards:
+                    available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
 
             return available_actions
 
@@ -459,39 +402,29 @@ class GameState:
             return
 
         if self.phase == Phase.DRAW:
-            return [DrawCard(p_id, deck, hand, self)]
+            return [DrawCard(p_id, self)]
 
         if self.phase == Phase.CAST:
             available_actions.append(PassTheTurn(p_id, self))
-            # play a land
-            if not self.turn.has_played_land:
-                available_actions.extend([PlayLand(p_id, i, c, hand, board, self.turn) for i, c in enumerate(hand.cards)
-                                          if c.props.is_land])
-
-            # play a non-land card; compare its casting cost to the board to see if it can cast
+            # cast; compare its casting cost to the board to see if it can cast
             for i, c in enumerate(hand.cards):
-                if c.props.is_land or not board.can_card_meet_casting_cost(c):
+                if not board.can_card_meet_casting_cost(c):
                     continue
+                elif c.props.is_land and self.turn.has_played_land:
+                    continue
+                elif c.props.is_permanent and 'Aura' not in c.props.card_sub_types:
+                    available_actions.append(CastToBoard(p_id, self, c))
+                else:
 
-                if c.props.is_permanent:
-                    if 'Aura' in c.props.card_sub_types:  # play Enchant Creature
-                        targets: list[GameCard] = get_all_creatures(self)
-                        for t in targets:
-                            available_actions.append(PlayAura(p_id, c, t, board, self))
-                    else:  # play to board
-                        available_actions.append(PlayNonBasicLandToBoard(p_id, i, c, hand, board))
-                else:  # add to stack
-                    opp_board = self.boards[1] if p_id == 0 else self.boards[0]
+                    # TODO: i shouldn't be able to play creature-bond, jump, or swords here if there's no targets
+                    #  but playing wrath is ok, even though that doesn't have targets
 
-                    if c.props.slug in ('swords-to-plowshares', 'jump'):
-                        targets: list[GameCard] = get_all_creatures(self)
-                        for t in targets:
-                            available_actions.append(PlaySorceryOrInstant(p_id, c, hand, board,
-                                                                          self.action_stack, [t], self))
-                    elif c.props.slug in ('wrath-of-god',):
-                        targets: list[GameCard] = get_all_creatures(self)
-                        available_actions.append(PlaySorceryOrInstant(p_id, c, hand, board,
-                                                                      self.action_stack, targets, self))
+                    target_cards: list[GameCard] = self.get_target_cards(c.props.slug)
+                    if not target_cards:
+                        available_actions.append(CastToTargetAddToStack(p_id, self, c, None))
+                        continue
+                    for t in target_cards:
+                        available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
 
             # declare combat
             for c in board.cards:
@@ -503,19 +436,20 @@ class GameState:
             # add attackers
             for c in board.cards:
                 if c not in [com.attacker for com in self.combats] and c.can_attack and not c.has_summoning_sickness:
-                    available_actions.append(CreatureAttack(p_id, c, self))
+                    available_actions.append(CreatureAttack(p_id, self, c))
 
             # finish declaring attackers; move to declare blockers
             if self.combats:
                 available_actions.append(FinishDeclaringAttackers(p_id, self))
 
         if self.phase == Phase.DECLARE_BLOCKERS:
-            already_assigned_blockers = [c for com in self.combats for c in com.blockers]
             remaining_blockers = [c for c in self.boards[self.action_on_idx].available_blockers
-                                  if c not in already_assigned_blockers]
+                                  if c not in [c for com in self.combats for c in com.blockers]]
             for blocker in remaining_blockers:
                 for com in self.combats:
-                    available_actions.append(AssignBlocker(self.action_on_idx, blocker, com.attacker, self))
+                    if 'Flying' in com.attacker.keyword_abilities and 'Flying' not in blocker.keyword_abilities and 'Reach' not in blocker.keyword_abilities:
+                        continue
+                    available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
         if self.phase == Phase.END_STEP:
@@ -527,7 +461,7 @@ class GameState:
             hand = self.hands[self.player_turn_idx]
             if len(hand.cards) > 7:
                 for c in hand.cards:
-                    available_actions.append(DiscardCard(self.player_turn_idx, hand.cards, c, self))
+                    available_actions.append(DiscardCard(self.player_turn_idx, self, c))
             else:
                 self.phase = Phase.CREATURES_HEAL
                 return
@@ -541,14 +475,10 @@ class GameState:
             return
 
         if self.phase == Phase.END_TURN_EFFECTS:
-            for e in self.effects[:]:
-                owner_id, card_id = self.get_card_owner_and_id_from_effects_list(e)
-                card = self.get_card_from_board(owner_id, card_id)
-                if 'until end of turn' in e:
-                    if 'gains Flying' in e:
-                        card.has_flying = 'Flying' in card.props.keyword_abilities
-                        self.effects.remove(e)
-                        print(f'{card.props.name} no longer has Flying')
+            for d in self.decks_all_cards:
+                for c in d.cards:
+                    c.pt_temps.clear()
+                    c.kwa_temps.clear()
             self.phase = Phase.PASS_THE_TURN
             return
 
@@ -568,5 +498,3 @@ class GameState:
 
     def make_move(self, action: Action):
         ...
-
-
