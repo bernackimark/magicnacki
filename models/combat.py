@@ -16,13 +16,11 @@ class Combat:
     def handle_damage(self):
         self._handle_first_strike_damage()
 
-    def _deal_damage(self, source: GameCard, target: GameCard):
+    @staticmethod
+    def _deal_damage(source: GameCard, target: GameCard):
         amt = source.power
         source.combat_damage_dealt += amt
         target.combat_damage_received += amt
-        text = (f"Combat Damage: ID#{source.owner_and_id} {source} deals {amt} damage to "
-                f"creature ID#{target.owner_and_id} {target}")
-        self.gs.effects.append(text)
 
     @staticmethod
     def _has_first_strike(creature: GameCard) -> bool:
@@ -62,6 +60,7 @@ class Combat:
         # Attacker normal damage (only if attacker survived first strike)
         if not self._has_first_strike(self.attacker) and self.attacker not in self.killed_creatures:
             self._deal_damage(self.attacker, self.blockers[0])
+            # TODO: this deals all damage to the first blocker
 
         # Blocker normal damage
         for blocker in self.blockers:
