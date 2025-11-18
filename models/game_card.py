@@ -9,8 +9,12 @@ class BasePT:
 
 @dataclass
 class PTModifier:
+    slug: str
     power_delta: int = 0
     toughness_delta: int = 0
+
+    def __repr__(self):
+        return f'{self.slug}({self.power_delta}/{self.toughness_delta})'
 
 @dataclass
 class PTTemp:
@@ -20,6 +24,7 @@ class PTTemp:
 
 @dataclass
 class KWAModifier:
+    slug: str
     add_or_remove: str
     kwa: str
 
@@ -41,7 +46,7 @@ class GameCard:
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost
         self.is_tapped: bool = False
-        self.can_attack: bool = self.props.is_creature
+        self.can_attack: bool = self.props.is_creature and 'Defender' not in self.props.card_sub_types
         self.can_block: bool = self.props.is_creature
         self.has_summoning_sickness: bool = 'Haste' not in self.props.keyword_abilities
         self.has_flying: bool = 'Flying' in self.props.keyword_abilities
@@ -62,8 +67,8 @@ class GameCard:
         if not self.props.is_creature:
             text = self.props.name
         else:
-            ec_text = 'w ' + '& '.join([ec.props.name for ec in self.auras]) if self.auras else ''
-            text = f'{self.props.name} {ec_text}({self.power}/{self.toughness})'
+            mods = self.auras + self.pt_modifiers + self.pt_temps + self.kwa_modifiers + self.kwa_temps
+            text = f'{self.props.name} ({self.power}/{self.toughness}) {mods}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
