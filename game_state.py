@@ -119,7 +119,6 @@ class CastToTargetAddToStack(Action):
     target: GameCard | list[GameCard] | None
 
     def __repr__(self) -> str:
-        print(f"{self.card} sees target {self.target}")
         target_text = ', targeting '
         if isinstance(self.target, list):
             target_text = f"{', '.join([c.props.name for c in self.target])}"
@@ -269,8 +268,17 @@ class AcceptAction(Action):
             kwa_mod = KWATemp('add', 'Flying')
             target.kwa_temps.append(kwa_mod)
             print(f"{target.props.name} {kwa_mod.__repr__()}")
+        elif card.props.slug == 'unsummon':
+            board = self.gs.boards[target.orig_owner_id]
+            return_to_hand = self.gs.hands[target.orig_owner_id]
+            c = next(c for c in board.cards if target.id == c.id)
+            board.remove_from_board(c)
+            return_to_hand.cards.append(c)
         elif card.props.slug == 'creature-bond':
             target.auras.append(card)
+        elif card.props.slug == 'divine-transformation':
+            target.auras.append(card)
+            target.pt_modifiers.append(PTModifier(card.props.slug, 3, 3))
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
         self.gs.action_stack.clear()
 
@@ -293,7 +301,6 @@ class GameState:
         self.player_turn_idx = player_turn_idx
         self.decks = decks
         self.decks_all_cards = self.decks.copy()
-        self.card_filter = CardFilter(self)
         self.life = [20, 20]
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
@@ -306,6 +313,7 @@ class GameState:
         self.game_history: list[tuple[int, Action]] = []  # turn number & Action; appended to in engine.play()
         self.turn_number = 1
         self.combats: list[Combat] = []
+        self.card_filter = CardFilter(self)
         self.is_game_over: bool = False
 
         for i in range(self.player_cnt):
@@ -317,9 +325,9 @@ class GameState:
 
     @property
     def all_cards(self) -> list[GameCard]:
-        piles = [(b.cards for b in self.decks), (h.cards for h in self.hands), (g for g in self.graveyards),
-                 (e for e in self.exiles), (b.cards for b in self.boards)]
-        return [c for pile in piles for cards in pile for c in cards]
+        return ([c for b in self.decks for c in b.cards] + [c for h in self.hands for c in h.cards] +
+                [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
+                [c for b in self.boards for c in b.cards])
 
     @staticmethod
     def draw(dest_pile: list[GameCard], source_pile: list[GameCard], card_cnt: int):
@@ -356,17 +364,10 @@ class GameState:
             if card.props.slug == 'creature-bond':
                 self.decrement_life(c.orig_owner_id, c.props.toughness)
                 print(f"Creature Bond reduces player #{c.orig_owner_id}'s life by {c.props.toughness}")
-            if card.props.slug == 'crusade':
-                for creature in self.card_filter.by_type('Creature').by_color('W').result():
-                    for pt_mod in creature.pt_modifiers:
-                        if pt_mod.slug == 'crusade':
-                            creature.pt_modifiers.remove(pt_mod)
-                            print(f"Removed Crusade from {creature}")
-
-                            # TODO: this doesn't seem to be working
-
-                            break
-        c.auras.clear()
+        if c.props.slug == 'crusade':
+            for white_creature in self.card_filter.by_type('Creature').by_color('W').result():
+                white_creature.remove_perm_mod_by_slug('crusade')
+        c.clear_all_mods()
 
     def increment_life(self, p_id: int, amt: int):
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
@@ -388,7 +389,7 @@ class GameState:
                     c.has_summoning_sickness = False
 
     def get_target_cards(self, slug: str) -> list[GameCard] | None:
-        if slug in ('swords-to-plowshares', 'jump', 'creature-bond'):
+        if slug in ('creature-bond', 'divine-transformation', 'jump', 'swords-to-plowshares', 'unsummon'):
             return self.card_filter.in_play().by_type('Creature').result()
         if slug in ('disenchant',):
             return self.card_filter.in_play().by_type(['Artifact', 'Enchantment']).result()

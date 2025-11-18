@@ -103,6 +103,27 @@ class GameCard:
 
         return list(kwa)
 
+    def clear_all_mods(self) -> None:
+        self.auras.clear()
+        self.kwa_modifiers.clear()
+        self.kwa_temps.clear()
+        self.pt_modifiers.clear()
+        self.pt_temps.clear()
+
+    def remove_perm_mod_by_slug(self, slug: str):
+        for mod in self.auras:
+            if mod.props.slug == slug:
+                self.auras.remove(mod)
+                break
+        for mod in self.pt_modifiers:
+            if mod.slug == slug:
+                self.pt_modifiers.remove(mod)
+                break
+        for mod in self.kwa_modifiers:
+            if mod.slug == slug:
+                self.kwa_modifiers.remove(mod)
+                break
+
     def tap(self) -> None:
         self.is_tapped = True
         for ec in self.auras:
