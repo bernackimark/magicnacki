@@ -85,5 +85,5 @@ class Combat:
         dmg = self.attacker.power
         defender = self.gs.turn.out_turn_player_idx
         print(f"{self.attacker} deals {dmg} damage to player #{defender}")
-        self.gs.decrement_life(defender, dmg)
+        self.gs.decrement_life(defender, dmg, self.attacker)
         self._end_combat()

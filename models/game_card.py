@@ -28,6 +28,9 @@ class KWAModifier:
     add_or_remove: str
     kwa: str
 
+    def __repr__(self):
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa}"
+
 @dataclass
 class KWATemp:
     add_or_remove: str
@@ -123,16 +126,6 @@ class GameCard:
             if mod.slug == slug:
                 self.kwa_modifiers.remove(mod)
                 break
-
-    def tap(self) -> None:
-        self.is_tapped = True
-        for ec in self.auras:
-            ec.is_tapped = True
-
-    def untap(self) -> None:
-        self.is_tapped = False
-        for ec in self.auras:
-            ec.is_tapped = False
 
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url

@@ -46,6 +46,10 @@ class Card:
         return False
 
     @cached_property
+    def is_aura(self) -> bool:
+        return 'Aura' in self.card_sub_types
+
+    @cached_property
     def is_land(self) -> bool:
         return 'Land' in self.card_types
 
