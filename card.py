@@ -164,6 +164,3 @@ class CardUniverse:
 
         return cards
 
-
-# cuniv = CardUniverse(['1E', '2E', '3E', '4E', '5E'])
-
