@@ -16,7 +16,8 @@ class CardFilter:
         return self
 
     def on_player_board(self, p_id: int):
-        self._cards = [c for c in self._gs.boards[p_id]]
+        self._cards = [c for c in self._gs.boards[p_id].cards]
+        return self
 
     def in_graveyards(self):
         self._cards = [c for g in self._gs.graveyards for c in g]
@@ -75,21 +76,15 @@ class CardFilter:
 
 """
 Just added, needs testing:
-    animate-wall
-    backfire
+    animate-wall  # this didn't work
     castle
     feedback: Enchant enchantment. Begin of upkeep, enchanted controller, this Aura deals 1 damage to that player
-    flight 'Aura', Enchant creature Enchanted creature has flying.
-    giant-tortoise This creature gets +0/+3 as long as it's untapped
     holy-strength: Aura +1/+2
     karma: Enchantment. Begin of each player's upkeep, deal damage to that player = number of Swamps they control
     lance: Aura Enchanted creature has first strike
     mahamoti-djinn
     psychic-venom: Enchant land Whenever enchanted land becomes tapped, deal 2 damage to that land's controller
-    seeker: Aura Enchanted creature can't be blocked except by artifact creatures and/or white creatures
     serendib-efreet Flying At the beginning of your upkeep, this creature deals 1 damage to you
-    twiddle Tap or untap any card in play
-    wall-of-air
     wall-of-swords
 
 Remaining:
