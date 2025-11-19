@@ -1,10 +1,16 @@
 from models.game_card import GameCard
 
 class CardFilter:
+    """Filters a list of cards based on chained predicates; does not modify the original list.
+    ex usage: card_filter.in_play().creatures().result(); .result() must always be at end of chain to return cards.
+    in_play(), on_player_board(p_id), in_graveyards(), in_player_graveyard(p_id), by_slug(slug),
+    creatures(), by_type(type_: str | list), by_sub_type(type_: str | list), by_color(color: str | list),
+    is_tapped(is_tapped: bool = True), has(kwa: str, bool_: bool = True)"""
     def __init__(self, gs: "GameState"):
         self._gs = gs
         self._cards = self._gs.all_cards
 
+    # --- in what pile, card is located ---
     def in_play(self):
         self._cards = [c for b in self._gs.boards for c in b.cards]
         return self
@@ -20,8 +26,13 @@ class CardFilter:
         self._cards = [_ for _ in self._gs.graveyards[p_id]]
         return self
 
+    # --- by identity/attribute ---
     def by_slug(self, slug: str):
         self._cards = [c for c in self._cards if c.props.slug == slug]
+        return self
+
+    def creatures(self):
+        self._cards = [c for c in self._cards if 'Creature' in c.props.card_types]
         return self
 
     def by_type(self, type_: str | list):
@@ -43,6 +54,17 @@ class CardFilter:
             self._cards = [c for c in self._cards for col in color if col in c.props.colors]
         else:
             self._cards = [c for c in self._cards if color in c.props.colors]
+        return self
+
+    def is_tapped(self, is_tapped: bool = True):
+        self._cards = [c for c in self._cards if c.is_tapped == is_tapped]
+        return self
+
+    def has(self, kwa: str, bool_: bool = True):
+        if bool_:
+            self._cards = [c for c in self._cards if kwa in c.keyword_abilities]
+        else:
+            self._cards = [c for c in self._cards if kwa not in c.keyword_abilities]
         return self
 
     def result(self) -> list[GameCard]:
@@ -123,9 +145,15 @@ Remaining:
 
 -   Activated Ability:
         apprentice-wizard: 'Creature', {U}, {T}: Add {CCC}.
-        blessing: {'card_type': 'Aura', '{W}: Enchanted creature gets +1/+1 until end of turn.'}
-        flood: {'card_type': 'Enchantment', 'kwa': [], 'rules': '{UU}: Tap target creature without flying.'},
-        ghost-ship: 'creature' ['Flying'], 'rules': 'Flying {UUU}: Regenerate this creature.
+        blessing: 'Aura', '{W}: Enchanted creature gets +1/+1 until end of turn.'}
+        
+        
+        flood: 'Enchantment', '{UU}: Tap target creature without flying.'},
+        
+        will try "Activated Ability" with flood first
+        
+        
+        ghost-ship: ['Flying'], {UUU}: Regenerate this creature.
         northern-paladin: 'creature', {WW}, {T}: Destroy target black permanent
         prodigal-sorcerer: Creature {T}: This creature deals 1 damage to any target
         psionic-entity: 'Creature' {T}: This creature deals 2 damage to any target and 3 damage to itself
