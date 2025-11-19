@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from typing import Iterator
 
-from ability import CREATURE_KW_ABILITIES
+from kw_ability import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
 from constants import COLOR_LETTERS
 
