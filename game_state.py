@@ -1,46 +1,22 @@
 import abc
 from abc import ABC
 from dataclasses import dataclass, field
-from enum import Enum
 import random
 
 from card_filter import CardFilter
 from build_deck import Deck
+from models.activated_ability import ActivatedAbility
 from models.game_card import GameCard, KWAModifier, KWATemp, PTModifier
-from models.board import Board
+from models.board import Board, casting_weight
 from models.combat import Combat
+from models.hand import Hand
+from models.turn import Turn
 from phase_fsm import Phase
 
 LAND_MANA_DICT = {'island': 'U', 'forest': 'G', 'swamp': 'B', 'mountain': 'R', 'plains': 'W'}
 
 def flip(idx: int) -> int:
     return int(not idx)
-
-@dataclass
-class Hand:
-    class SortOrient(Enum):
-        L_TO_R = False
-        R_TO_L = True
-
-    cards: list[GameCard] = field(default_factory=list)
-    sort_pref: SortOrient = SortOrient.R_TO_L
-
-    @property
-    def instants(self) -> list[GameCard]:
-        return [c for c in self.cards if 'Instant' in c.props.card_types]
-
-    @property
-    def sorceries(self) -> list[GameCard]:
-        return [c for c in self.cards if 'Sorcery' in c.props.card_types]
-
-    def sort_cards(self):
-        self.cards.sort(key=lambda x: x.props.casting_weight, reverse=self.sort_pref.value)
-
-@dataclass
-class Turn:
-    in_turn_player_idx: int
-    out_turn_player_idx: int
-    has_played_land: bool = False
 
 @dataclass
 class Action(ABC):
@@ -113,7 +89,7 @@ class CastToBoard(Action):
                 if 'W' in creature.props.colors:
                     creature.pt_modifiers.append(PTModifier('crusade', 1, 1))
         elif self.card.props.slug == 'castle':
-            for creature in self.gs.card_filter.on_player_board(self.player_idx).result():
+            for creature in self.gs.card_filter.creatures().on_player_board(self.player_idx).result():
                 if not creature.is_tapped:
                     creature.pt_modifiers.append(PTModifier('castle', 0, 2))
         if self.card.props.slug == 'giant-tortoise':
@@ -241,6 +217,26 @@ class PassTheTurn(Action):
         self.gs.phase = Phase.UNTAP
 
 @dataclass
+class ActivateAbility(Action):
+    ability: ActivatedAbility
+    target: GameCard | None = None
+
+    def __repr__(self) -> str:
+        return f"Activating Ability: {self.ability.card.props.name}"
+
+    def play(self) -> None:
+        # Pay tap cost
+        if self.ability.cost_tap:
+            self.gs.tap_card(self.ability.card)
+
+        # Pay mana cost
+        if self.ability.cost_mana:
+            self.gs.boards[self.ability.card.orig_owner_id].pay_casting_weight(casting_weight(self.ability.cost_mana))
+
+        # Execute effect
+        self.ability.effect(self.gs, self.ability.card, self.target)
+
+@dataclass
 class AcceptAction(Action):
     def __repr__(self) -> str:
         return f"Accept {self.gs.action_stack.last_action}"
@@ -249,18 +245,18 @@ class AcceptAction(Action):
         last_action: CastToTargetAddToStack = self.gs.action_stack.last_action
         card = last_action.card
         target = last_action.target
+        if card.props.is_aura:
+            target.auras.append(card)
         if card.props.slug == 'swords-to-plowshares':
             self.gs.send_to_exile(target)
             self.gs.increment_life(target.orig_owner_id, target.power)
             print(f'Swords to Plowshares accepted; life is now {self.gs.life}')
         elif card.props.slug == 'wrath-of-god':
-            [self.gs.send_to_exile(c) for c in self.gs.card_filter.in_play().by_type('Creature').result()]
+            [self.gs.send_to_exile(c) for c in self.gs.card_filter.in_play().creatures().result()]
             print(f'Wrath of God accepted; all creatures should now be in exile')
         elif card.props.slug == 'armageddon':
             [self.gs.send_to_graveyard(c) for c in self.gs.card_filter.in_play().by_type('Land').result()]
             print(f'Armageddon accepted; all lands should now be in graveyards')
-        elif card.props.slug in ('creature-bond', 'feedback', 'psychic-venom'):
-            target.auras.append(card)
         elif card.props.slug == 'disenchant':
             # TODO: if standalone enchantment, send to graveyard/exile, remove modifiers
             if target.props.is_creature:
@@ -273,14 +269,12 @@ class AcceptAction(Action):
                         break
             self.gs.send_to_graveyard(target)
         elif card.props.slug == 'divine-transformation':
-            target.auras.append(card)
             target.pt_modifiers.append(PTModifier(card.props.slug, 3, 3))
         elif card.props.slug == 'flight':
             kwa_mod = KWAModifier('flight', 'add', 'Flying')
             target.kwa_modifiers.append(kwa_mod)
             print(f"{target.props.name} {kwa_mod.__repr__()}")
         elif card.props.slug == 'holy_strength':
-            target.auras.append(card)
             target.pt_modifiers.append(PTModifier(card.props.slug, 1, 2))
         elif card.props.slug == 'jump':
             kwa_mod = KWATemp('add', 'Flying')
@@ -294,10 +288,9 @@ class AcceptAction(Action):
             self.gs.untap_card(target) if target.is_tapped else self.gs.tap_card(target)
         elif card.props.slug == 'unsummon':
             board = self.gs.boards[target.orig_owner_id]
-            return_to_hand = self.gs.hands[target.orig_owner_id]
-            c = next(c for c in board.cards if target.id == c.id)
-            board.remove_from_board(c)
-            return_to_hand.cards.append(c)
+            t = next(c for c in board.cards if target.id == c.id)
+            board.remove_from_board(t)
+            self.gs.return_to_hand(t)
 
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
         self.gs.action_stack.clear()
@@ -340,7 +333,7 @@ class GameState:
             deck = self.decks[i]
             random.shuffle(deck.cards)
             hand = self.hands[i]
-            self.draw(hand.cards, deck.cards, 7)
+            self.draw(hand, deck.cards, 7)
             hand.sort_cards()
 
     @property
@@ -350,9 +343,10 @@ class GameState:
                 [c for b in self.boards for c in b.cards])
 
     @staticmethod
-    def draw(dest_pile: list[GameCard], source_pile: list[GameCard], card_cnt: int):
+    def draw(hand: Hand, source_pile: list[GameCard], card_cnt: int):
         for i in range(card_cnt):
-            dest_pile.append(source_pile.pop(0))
+            hand.cards.append(source_pile.pop(0))
+            hand.sort_cards()
 
     def get_card_from_boards(self, card_id: int) -> GameCard | None:
         return next((c for b in self.boards for c in b.cards if c.id == card_id), None)
@@ -385,9 +379,17 @@ class GameState:
                 self.decrement_life(c.orig_owner_id, c.props.toughness, card)
                 print(f"Creature Bond reduces player #{c.orig_owner_id}'s life by {c.props.toughness}")
         if c.props.slug == 'crusade':
-            for white_creature in self.card_filter.by_type('Creature').by_color('W').result():
+            for white_creature in self.card_filter.creatures().by_color('W').result():
                 white_creature.remove_perm_mod_by_slug('crusade')
         c.clear_all_mods()
+
+    def return_to_hand(self, c: GameCard):
+        hand = self.hands[c.orig_owner_id]
+        hand.cards.append(c)
+        for a in c.auras:
+            self.send_to_graveyard(a)
+        c.auras.clear()
+        hand.sort_cards()
 
     def increment_life(self, p_id: int, amt: int):
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
@@ -409,16 +411,16 @@ class GameState:
     def untap_card(c: GameCard):
         c.is_tapped = False
         for ec in c.auras:
-            ec.is_tapped = True
+            ec.is_tapped = False
         if 'castle' in {a.props.slug for a in c.auras}:
             c.pt_modifiers.append(PTModifier('castle', 0, 2))
         elif c.props.slug == 'giant-tortoise':
             c.pt_modifiers.append(PTModifier('giant-tortoise', 0, 3))
 
     def tap_card(self, c: GameCard):
-        c.is_tapped = False
+        c.is_tapped = True
         for ec in c.auras:
-            ec.is_tapped = False
+            ec.is_tapped = True
         if 'castle' in {a.props.slug for a in c.auras}:
             c.remove_perm_mod_by_slug('castle')
         elif c.props.slug == 'giant-tortoise':
@@ -429,25 +431,52 @@ class GameState:
     def untap(self):
         """Untap all cards on in-turn player's board; remove summoning sickness"""
         for c in self.boards[self.player_turn_idx].cards:
-            self.untap_card(c)
-            if 'castle' in {a.props.slug for a in c.auras}:
-                c.pt_modifiers.append(PTModifier('castle', 0, 2))
             for turn_num, act in self.game_history:
                 if isinstance(act, CastToBoard) and act.card.id == c.id and self.turn_number - turn_num == 2:
                     c.has_summoning_sickness = False
+            if not c.is_tapped:
+                continue
+            self.untap_card(c)
+            if 'castle' in {a.props.slug for a in c.auras}:
+                c.pt_modifiers.append(PTModifier('castle', 0, 2))
+
+    def get_activated_abilities(self, c: GameCard) -> list["ActivateAbility"]:
+        actions: list[ActivateAbility] = []
+
+        for ability in c.abilities:
+            # Skip abilities that can't currently be activated
+            if not ability.can_activate(self):
+                continue
+
+            # No target needed → create a single action
+            if ability.target_filter is None:
+                actions.append(ActivateAbility(self.action_on_idx, self, ability, None))
+                continue
+
+            # Target needed → get all legal targets
+            targets = ability.target_filter(self, c)
+
+            for t in targets:
+                actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+
+        return actions
 
     def get_target_cards(self, source: GameCard) -> list[GameCard] | None:
         # Note: some auras may only be eligible for specific creatures
-        if source.props.slug == 'feedback':  # feedback is an Aura that doesn't target a creature
+        if source.props.slug == 'animate-wall':
+            return self.card_filter.in_play().by_sub_type(['Wall', 'Defender']).result()
+        elif source.props.slug == 'feedback':  # feedback is an Aura that doesn't target a creature
             return self.card_filter.in_play().by_type('Enchantment').result()
-        if source.props.slug == 'psychic-venom':  # targets land
+        elif source.props.slug == 'psychic-venom':  # targets land
             return self.card_filter.in_play().by_type('Land').result()
         elif source.props.is_aura:
-            return self.card_filter.in_play().by_type('Creature').result()
+            return self.card_filter.in_play().creatures().result()
         elif source.props.slug in ('disenchant',):
             return self.card_filter.in_play().by_type(['Artifact', 'Enchantment']).result()
         elif source.props.slug in ('twiddle',):
             return self.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).result()
+        elif source.props.slug in ('unsummon',):
+            return self.card_filter.in_play().creatures().result()
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         available_actions: list[Action] = []
@@ -560,10 +589,9 @@ class GameState:
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
         if self.phase == Phase.END_STEP:
-            for c in self.card_filter.in_play().by_type('Creature').result():
+            for c in self.card_filter.in_play().creatures().result():
                 c.pt_temps.clear()
                 c.kwa_temps.clear()
-            available_actions.append(PassTheTurn(p_id, self))
             self.phase = Phase.DISCARD
             return
 
