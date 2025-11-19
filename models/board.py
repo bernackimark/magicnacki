@@ -4,6 +4,35 @@ from models.game_card import GameCard
 from constants import COLOR_LETTERS
 
 
+def casting_dict(casting_cost: str) -> dict[str: int]:
+    d = {color: 0 for color in COLOR_LETTERS}
+    d['C'] = 0  # colorless
+    for char in casting_cost:
+        if char in COLOR_LETTERS:
+            d[char] += 1
+        elif char in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'):
+            d['C'] += int(char)
+        else:
+            raise NotImplementedError(f"This card has a casting cost of '{casting_cost}' that I can't handle")
+    return d
+
+def casting_weight(casting_cost: str) -> int:
+    # TODO: what happens if there's a "10" colorless"?
+    if not casting_cost:
+        return 0
+    weight = 0
+    for char in casting_cost:
+        try:
+            colorless = int(char)
+            weight += colorless
+            continue
+        except ValueError:
+            pass
+        if char in COLOR_LETTERS:
+            weight += 1
+    return weight
+
+
 @dataclass
 class Board:
     player_idx: int
@@ -41,6 +70,17 @@ class Board:
                 return False
         return True
 
+    def can_meet_casting_cost(self, casting_cost: str) -> bool:
+        # using this for activating abilities
+        if not casting_cost:
+            return True
+        for color_code, color_cnt in casting_dict(casting_cost).items():
+            if color_code != 'C' and color_cnt > self.available_mana[color_code]:
+                return False
+            if color_code == 'C' and casting_weight(casting_cost) > self.available_mana_cnt:
+                return False
+        return True
+
     def play_to_board(self, c: GameCard):
         self._cards.append(c)
         self._cards.sort(key=lambda c: c.props.is_land)
@@ -49,9 +89,9 @@ class Board:
         self._cards.remove(c)
         self._cards.sort(key=lambda c: c.props.is_land)
 
-    def pay_casting_weight(self, casting_weight: int) -> None:
-        if not casting_weight:
+    def pay_casting_weight(self, cast_weight: int) -> None:
+        if not cast_weight:
             return
-        for _ in range(casting_weight):
+        for _ in range(cast_weight):
             untapped_lands = [c for c in self.cards if c.props.is_land and not c.is_tapped]
             untapped_lands[0].tap()
