@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from card import Card
+from models.activated_ability import ActivatedAbility
 
 @dataclass(frozen=True)
 class BasePT:
@@ -49,6 +50,8 @@ class GameCard:
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost
         self.is_tapped: bool = False
+        self.abilities: list[ActivatedAbility] = []
+
         self.can_attack: bool = self.props.is_creature and 'Defender' not in self.props.card_sub_types
         self.can_block: bool = self.props.is_creature
         self.has_summoning_sickness: bool = 'Haste' not in self.props.keyword_abilities
@@ -126,6 +129,18 @@ class GameCard:
             if mod.slug == slug:
                 self.kwa_modifiers.remove(mod)
                 break
+
+    def tap(self) -> None:
+        # Warning: if an effect is supposed to occur when tapping, no event is raised here
+        self.is_tapped = True
+        for ec in self.auras:
+            ec.is_tapped = True
+
+    def untap(self) -> None:
+        # Warning: if an effect is supposed to occur when untapping, no event is raised here
+        self.is_tapped = False
+        for ec in self.auras:
+            ec.is_tapped = False
 
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
