@@ -24,6 +24,6 @@ class ConsoleRenderer(Renderer):
         print(f"{players[p_idx].name}'s turn; {players[action_idx].name}'s action; current phase: {gs.phase}; current life: {gs.life}")
         print(f"Their board: {gs.boards[opp_idx].cards}")
         print(f"Combats: {gs.combats}")
-        print(f"Board: {gs.boards[action_idx].cards}")
+        print(f"Board: {[c for c in gs.boards[action_idx].cards if not c.props.is_aura]}")
         print(f"Hand: {gs.hands[action_idx].cards}")
         print()
