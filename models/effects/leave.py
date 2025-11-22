@@ -32,4 +32,6 @@ def default_clear_on_leave():
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             # default cleanup call (clear mods)
             source.clear_all_mods()
+            if source.props.is_aura:
+                source.attached_to = None
     return E()

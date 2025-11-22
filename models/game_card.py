@@ -1,10 +1,47 @@
-from dataclasses import dataclass
-from typing import Callable, Self
+from typing import Callable
 
 from card import Card
 from card_filter import CardFilter
+from effects.base import Effect
+from effects.cast import *
+from effects.common import *
+from effects.leave import *
+from effects.tap import *
+from effects.upkeep import *
+from effects.untap import *
 from models.activated_ability import ActivatedAbility
+from models.modifiers import BasePT, PTModifier, PTTemp, KWAModifier, KWATemp
 from utils import flip
+
+def build_effects_for_slug(slug: str) -> list[Effect]:
+    """
+    Instantiate and return effect instances for known slugs.
+    This centralizes where slugs map to behaviors.
+    """
+    mapping = {
+        'armageddon': [send_to_graveyard_all_lands()],
+        'castle': [castle_on_cast(), castle_on_tap(), castle_on_untap()],
+        'creature-bond': [creature_bond_on_leave()],
+        'crusade': [crusade_on_cast(), crusade_on_leave()],
+        'disenchant': [disenchant_on_cast()],
+        'divine-transformation': [divine_transformation_on_cast()],
+        'feedback': [feedback_on_upkeep()],
+        'flight': [add_flying_on_cast()],
+        'giant-tortoise': [giant_tortoise_on_cast(), giant_tortoise_on_tap(), giant_tortoise_on_untap()],
+        'holy-armor': [holy_armor_on_cast()],
+        'holy-strength': [holy_strength_on_cast()],
+        'jump': [jump_on_cast()],
+        'karma': [karma_on_upkeep()],
+        'lance': [lance_on_cast()],
+        'serendib-efreet': [serendib_efreet_on_upkeep()],
+        'swords-to-plowshares': [swords_to_plowshares_on_cast()],
+        'twiddle': [twiddle_on_cast()],
+        'unsummon': [unsummon_on_cast()],
+        'wrath-of-god': [wrath_of_god_on_cast()],
+
+        '_default_leave': [default_clear_on_leave()],
+    }
+    return mapping.get(slug, [])
 
 
 CAST_TARGETS = {
@@ -17,95 +54,62 @@ CAST_TARGETS = {
     'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result()
 }
 
-def swords_to_plowshares_success_cast(gs, t):
-    gs.send_to_exile(t)
-    gs.increment_life(t.orig_owner_id, t.power)
-
-def unsummon_success_cast(gs, t):
-    print(f"UNSUMMONING: {t}")
-    board = gs.boards[t.orig_owner_id]
-    board.remove_from_board(t)
-    gs.return_to_hand(t)
-
-
-SUCCESSFUL_CAST = {
-    'armageddon': lambda gs, c, t: [gs.send_to_graveyard(c) for c in CardFilter(gs).in_play().by_type('Land').result()],
-    'castle': lambda gs, c, t: [c.pt_modifiers.append(PTModifier(c, 0, 2)) for c in CardFilter(gs).creatures().on_player_board(gs.player_idx).is_tapped(False).result()],
-    'crusade': lambda gs, c, t: [c.pt_modifiers.append(PTModifier(c, 1, 1)) for c in CardFilter(gs).in_play().creatures().white().result()],
-    'disenchant': lambda gs, c, t: gs.send_to_graveyard(t),
-    'divine-transformation': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 3, 3)),
-    'flight': lambda gs, c, t: t.kwa_modifiers.append(KWAModifier(c, 'add', 'Flying')),
-    'giant-tortoise': lambda gs, c, t: c.pt_modifiers.append(PTModifier(c, 0, 3)),
-    'holy-strength': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 1, 2)),
-    'jump': lambda gs, c, t: t.kwa_temps.append(KWATemp('add', 'Flying')),
-    'lance': lambda gs, c, t: t.kwa_modifiers.append(KWAModifier(c, 'add', 'First Strike')),
-    'swords-to-plowshares': lambda gs, c, t: swords_to_plowshares_success_cast(gs, t),
-    'twiddle': lambda gs, c, t: t.tap(gs) if t.is_tapped else t.tap(gs),
-    'unsummon': lambda gs, c, t: unsummon_success_cast(gs, t),
-    'wrath-of-god': lambda gs, c, t: [gs.send_to_exile(c) for c in CardFilter(gs).in_play().creatures().result()]
-}
-
-UPKEEP_FUNCS = {
-    'feedback': lambda gs, c: gs.decrement_life(gs.player_turn_idx, 1, c),
-    'karma': lambda gs, c: [gs.decrement_life(gs.player_turn_idx, 1, c) for _ in CardFilter(gs).on_player_board(flip(gs.player_turn_idx)).by_slug('swamp').result()],
-    'serendib-efreet': lambda gs, c: gs.decrement_life(gs.player_turn_idx, 1, c),
-}
-
-TAP_REGISTRY = [
-    # If Castle exists and card becomes tapped, remove Castle from its Power/Toughness Modifiers
-    (lambda gs, c: any(m for m in c.pt_modifiers if m.slug == 'castle'), lambda gs, c: c.remove_perm_mod_by_slug('castle')),
-    # If Giant Tortoise taps, shed its +0/+3 mod
-    (lambda gs, c: c.props.slug == "giant-tortoise", lambda gs, c: c.remove_perm_mod_by_slug("giant-tortoise")),
-    # If a card w Psychic Venom taps, deal 2 damage to its controller
-    (lambda gs, c: any(a.props.slug == "psychic-venom" for a in c.auras), lambda gs, c: gs.decrement_life(c.orig_owner_id, 2, c)),
-]
-
-UNTAP_REGISTRY = [
-    # If the player has a Castle in-play and the card is White, add one Castle to its PT Modifiers for each Castle owned
-    (lambda gs, c: CardFilter(gs).on_player_board(c.orig_owner_id).by_slug('castle').result() and 'W' in c.props.colors,
-     lambda gs, c: [c.pt_modifiers.append(PTModifier(c, 0, 2)) for _ in CardFilter(gs).on_player_board(c.orig_owner_id).by_slug('castle').result()]),
-    # If Giant Tortoise untaps, give it its +0/+3 mod
-    (lambda gs, c: c.props.slug == "giant-tortoise", lambda gs, c: c.pt_modifiers.append(PTModifier(c, 0, 3))),
-]
-
-
-@dataclass(frozen=True)
-class BasePT:
-    power: int
-    toughness: int
-
-@dataclass
-class PTModifier:
-    card: "GameCard"
-    power_delta: int = 0
-    toughness_delta: int = 0
-
-    def __repr__(self):
-        return f'{self.card.props.name}({self.power_delta}/{self.toughness_delta})'
-
-@dataclass
-class PTTemp:
-    power_delta: int
-    toughness_delta: int
-    expires_end_of_turn: bool = True
-
-@dataclass
-class KWAModifier:
-    card: "GameCard"
-    add_or_remove: str
-    kwa: str
-
-    def __repr__(self):
-        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa}"
-
-@dataclass
-class KWATemp:
-    add_or_remove: str
-    kwa: str
-    expires_end_of_turn: bool = True
-
-    def __repr__(self):
-        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa} until end of turn"
+# def swords_to_plowshares_success_cast(gs, t):
+#     gs.send_to_exile(t)
+#     gs.increment_life(t.orig_owner_id, t.power)
+# 
+# def unsummon_success_cast(gs, t):
+#     print(f"UNSUMMONING: {t}")
+#     board = gs.boards[t.orig_owner_id]
+#     board.remove_from_board(t)
+#     gs.return_to_hand(t)
+# 
+# 
+# SUCCESSFUL_CAST = {
+#     'armageddon': lambda gs, c, t: [gs.send_to_graveyard(c) for c in CardFilter(gs).in_play().by_type('Land').result()],
+#     'castle': lambda gs, c, t: [c.pt_modifiers.append(PTModifier(c, 0, 2)) for c in
+#                                 CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result()],
+#     'crusade': lambda gs, c, t: [c.pt_modifiers.append(PTModifier(c, 1, 1)) for c in
+#                                  CardFilter(gs).in_play().creatures().white().result()],
+#     'disenchant': lambda gs, c, t: gs.send_to_graveyard(t),
+#     'divine-transformation': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 3, 3)),
+#     'flight': lambda gs, c, t: t.kwa_modifiers.append(KWAModifier(c, 'add', 'Flying')),
+#     'giant-tortoise': lambda gs, c, t: c.pt_modifiers.append(PTModifier(c, 0, 3)),
+#     'holy-armor': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 0, 2)),
+#     'holy-strength': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 1, 2)),
+#     'jump': lambda gs, c, t: t.kwa_temps.append(KWATemp('add', 'Flying')),
+#     'lance': lambda gs, c, t: t.kwa_modifiers.append(KWAModifier(c, 'add', 'First Strike')),
+#     'swords-to-plowshares': lambda gs, c, t: swords_to_plowshares_success_cast(gs, t),
+#     'twiddle': lambda gs, c, t: t.tap(gs) if t.tapped else t.tap(gs),
+#     'unsummon': lambda gs, c, t: unsummon_success_cast(gs, t),
+#     'wrath-of-god': lambda gs, c, t: [gs.send_to_exile(c) for c in CardFilter(gs).in_play().creatures().result()]
+# }
+# 
+# UPKEEP_FUNCS = {
+#     'feedback': lambda gs, c: gs.decrement_life(gs.player_turn_idx, 1, c),
+#     'karma': lambda gs, c: [gs.decrement_life(gs.player_turn_idx, 1, c) for _ in
+#                             CardFilter(gs).on_player_board(flip(gs.player_turn_idx)).by_slug('swamp').result()],
+#     'serendib-efreet': lambda gs, c: gs.decrement_life(gs.player_turn_idx, 1, c),
+# }
+# 
+# TAP_REGISTRY = [
+#     # If Castle exists and card becomes tapped, remove all Castles from its Power/Toughness Modifiers
+#     (lambda gs, c: any(m for m in c.pt_modifiers if m.card.props.slug == 'castle'),
+#      lambda gs, c: [c.remove_perm_mod(m.card) for m in c.pt_modifiers if m.card.props.slug == 'castle']),
+#     # If Giant Tortoise taps, shed its +0/+3 mod
+#     (lambda gs, c: c.props.slug == "giant-tortoise", lambda gs, c: c.remove_perm_mod(c)),
+#     # If a card w Psychic Venom taps, deal 2 damage to its controller
+#     (lambda gs, c: any(a.props.slug == "psychic-venom" for a in c.auras),
+#      lambda gs, c: gs.decrement_life(c.orig_owner_id, 2, c)),
+# ]
+# 
+# UNTAP_REGISTRY = [
+#     # If the player has a Castle in-play and the card is White, add one Castle to its PT Modifiers for each Castle owned
+#     (lambda gs, c: CardFilter(gs).on_player_board(c.orig_owner_id).by_slug('castle').result() and 'W' in c.props.colors,
+#      lambda gs, c: [c.pt_modifiers.append(PTModifier(c, 0, 2)) for _ in CardFilter(gs).on_player_board(c.orig_owner_id).by_slug('castle').result()]),
+#     # If Giant Tortoise untaps, give it its +0/+3 mod
+#     (lambda gs, c: c.props.slug == "giant-tortoise", lambda gs, c: c.pt_modifiers.append(PTModifier(c, 0, 3))),
+# ]
 
 
 class GameCard:
@@ -136,6 +140,13 @@ class GameCard:
         self.kwa_modifiers: list[KWAModifier] = []
         self.kwa_temps: list[KWATemp] = []
 
+        # Build effect instances for this card based on slug
+        self.effects: list[Effect] = []
+        # global mapping for slug-based effects
+        slug_effects = build_effects_for_slug(self.props.slug)
+        if slug_effects:
+            self.effects.extend(slug_effects)
+
     def __repr__(self) -> str:
         if not self.props.is_creature:
             text = self.props.name
@@ -162,7 +173,7 @@ class GameCard:
     def keyword_abilities(self) -> list[str]:
         kwa = set(self.base_kwa)
 
-        # TODO: a modifying method inside of a property?!
+        # TODO: a modifying method inside a property?!
         def add_remove_kwa(m: KWAModifier | KWATemp):
             if m.add_or_remove == 'add':
                 kwa.add(m.kwa)
@@ -186,37 +197,46 @@ class GameCard:
         self.pt_modifiers.clear()
         self.pt_temps.clear()
 
-    def remove_perm_mod_by_slug(self, slug: str):
-        for mod in self.auras:
-            if mod.props.slug == slug:
+    def remove_perm_mod(self, mod: "GameCard"):
+        for a in self.auras:
+            if a == mod:
                 self.auras.remove(mod)
                 break
-        for mod in self.pt_modifiers:
-            if mod.slug == slug:
-                self.pt_modifiers.remove(mod)
+        for pt_mod in self.pt_modifiers:
+            if pt_mod.card == mod:
+                self.pt_modifiers.remove(pt_mod)
                 break
-        for mod in self.kwa_modifiers:
-            if mod.slug == slug:
-                self.kwa_modifiers.remove(mod)
+        for kwa_mod in self.kwa_modifiers:
+            if kwa_mod.card == mod:
+                self.kwa_modifiers.remove(kwa_mod)
                 break
 
     def tap(self, gs: "GameState") -> None:
-        # Core tap behavior: affects the card itself
+        if self.is_tapped:
+            return
         self.is_tapped = True
         for a in self.auras:
             a.is_tapped = True
-
-        # Delegate special-case triggers to the GameState registry
-        gs.apply_tap_effects(self)
+        gs.trigger('tap', self)
 
     def untap(self, gs: "GameState") -> None:
-        # Core tap behavior: affects the card itself
+        if not self.is_tapped:
+            return
         self.is_tapped = False
         for a in self.auras:
             a.is_tapped = False
+        gs.trigger('untap', self)
 
-        # Delegate special-case triggers to the GameState registry
-        gs.apply_untap_effects(self)
+    def deal_damage_to_card(self, gs: "GameState", amt: int, target: "GameCard"):
+        target.receive_damage(gs, amt, self)
+
+    def deal_damage_to_player(self, gs: "GameState", amt: int, target_player_idx: int):
+        gs.decrement_life(target_player_idx, amt, self)
+
+    def receive_damage(self, gs: "GameState", amt: int, source: "GameCard"):
+        self.pt_temps.append(PTTemp(0, -amt))
+        if self.toughness <= 0:
+            gs.send_to_graveyard_from_play(self)
 
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
@@ -229,9 +249,4 @@ class GameCard:
             return CardFilter(gs).in_play().creatures().result()
 
     def on_upkeep(self, gs):
-        """If self.props.slug is found in UPKEEP_FUNCS registry, execute function"""
-        if func := UPKEEP_FUNCS.get(self.props.slug):
-            func(gs, self)
-
-    def cast(self):
-        ...
+        gs.trigger('upkeep', self)

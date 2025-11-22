@@ -2,14 +2,16 @@ import abc
 from abc import ABC
 from dataclasses import dataclass, field
 import random
+from typing import Callable, Optional
 
 from card_filter import CardFilter
 from build_deck import Deck
-from models.activated_ability import ActivatedAbility
-from models.game_card import GameCard, TAP_REGISTRY, UNTAP_REGISTRY, SUCCESSFUL_CAST
+from models.activated_ability import ActivatedAbility, add_activated_abilities
+from models.game_card import GameCard, build_effects_for_slug
 from models.board import Board, casting_weight
 from models.combat import Combat
 from models.hand import Hand
+from models.modifiers import PTTemp
 from models.turn import Turn
 from phase_fsm import Phase
 from utils import flip
@@ -82,10 +84,9 @@ class CastToBoard(Action):
         if self.card.props.is_land:
             self.gs.turn.has_played_land = True
 
-        # TODO: for the sake of testing, perms are being auto-cast, instead of being added to the stack
-        if func := SUCCESSFUL_CAST.get(self.card.props.slug):
-            print(f"Successfully cast {self.card.props.name}")
-            func(self.gs, self.card, None)
+        # TODO: for speed of testing, perms are being auto-cast, instead of being added to the stack
+        self.gs.trigger('cast', self.card)
+        print(f"Successfully cast {self.card.props.name}")
 
 @dataclass
 class CastToTargetAddToStack(Action):
@@ -97,7 +98,7 @@ class CastToTargetAddToStack(Action):
         if isinstance(self.target, list) and self.target:
             target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
         elif isinstance(self.target, GameCard):
-            target_text = ', targeting' + self.target.props.name
+            target_text = ', targeting ' + self.target.props.name
         return f"Cast {self.card.props.name}{target_text}"
 
     def play(self) -> None:
@@ -123,6 +124,32 @@ class CastCounter(Action):
         self.gs.action_stack.add(self, self.gs)
 
 @dataclass
+class ActivateAbility(Action):
+    ability: ActivatedAbility
+    target: GameCard | None = None
+
+    def __repr__(self) -> str:
+        target_text = ''
+        if isinstance(self.target, list) and self.target:
+            target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
+        elif isinstance(self.target, GameCard):
+            target_text = ', targeting ' + self.target.props.name
+        return f"Activate Ability: {self.ability.card}{target_text}"
+
+    def play(self) -> None:
+        # Pay tap cost
+        if self.ability.cost_tap:
+            self.ability.card.tap(self.gs)
+
+        # Pay mana cost
+        if self.ability.cost_mana:
+            self.gs.boards[self.ability.card.orig_owner_id].pay_casting_weight(casting_weight(self.ability.cost_mana), self.gs)
+
+        # Execute effect
+        # TODO: for the sake of testing, perms are being auto-cast, instead of being added to the stack
+        self.ability.effect(self.gs, self.ability.card, self.target)
+
+@dataclass
 class CreatureAttack(Action):
     card: GameCard
 
@@ -130,7 +157,8 @@ class CreatureAttack(Action):
         return f"Add {self.card.__repr__()} to attack"
 
     def play(self) -> None:
-        self.card.tap(self.gs)
+        if 'Vigilance' not in self.card.keyword_abilities:
+            self.card.tap(self.gs)
         self.gs.combats.append(Combat(self.gs, self.card))
 
 @dataclass
@@ -175,6 +203,32 @@ class FinishBlocking(Action):
         self.gs.phase = Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES
 
 @dataclass
+class DamageCreature(Action):
+    card: GameCard
+    target: GameCard
+    amt: int
+
+    def __repr__(self) -> str:
+        return f"{self.card.props.name} deals {self.amt} to {self.target}"
+
+    def play(self) -> None:
+        self.target.pt_temps.append(PTTemp(0, -self.amt))
+        if self.target.toughness <= 0:
+            self.gs.send_to_graveyard_from_play(self.target)
+
+@dataclass
+class DamagePlayer(Action):
+    card: GameCard
+    target_player: int
+    amt: int
+
+    def __repr__(self) -> str:
+        return f"{self.card.props.name} deals {self.amt} to player #{self.target_player}"
+
+    def play(self) -> None:
+        self.gs.decrement_life(self.target_player, self.amt, self.card)
+
+@dataclass
 class MoveToEndStep(Action):
 
     def __repr__(self) -> str:
@@ -209,26 +263,6 @@ class PassTheTurn(Action):
         self.gs.phase = Phase.UNTAP
 
 @dataclass
-class ActivateAbility(Action):
-    ability: ActivatedAbility
-    target: GameCard | None = None
-
-    def __repr__(self) -> str:
-        return f"Activating Ability: {self.ability.card.props.name}"
-
-    def play(self) -> None:
-        # Pay tap cost
-        if self.ability.cost_tap:
-            self.ability.card.tap(self.gs)
-
-        # Pay mana cost
-        if self.ability.cost_mana:
-            self.gs.boards[self.ability.card.orig_owner_id].pay_casting_weight(casting_weight(self.ability.cost_mana), self.gs)
-
-        # Execute effect
-        self.ability.effect(self.gs, self.ability.card, self.target)
-
-@dataclass
 class AcceptAction(Action):
     def __repr__(self) -> str:
         return f"Accept {self.gs.action_stack.last_action}"
@@ -242,9 +276,8 @@ class AcceptAction(Action):
             target.auras.append(card)
             self.gs.boards[target.orig_owner_id].play_to_board(card)
 
-        if func := SUCCESSFUL_CAST.get(card.props.slug):
-            print(f"Successfully cast {card.props.name}")
-            func(self.gs, card, target)
+        self.gs.trigger('cast', card)
+        print(f"Successfully cast {card.props.name}")
 
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
         self.gs.action_stack.clear()
@@ -267,6 +300,8 @@ class GameState:
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
         self.decks = decks
+        for d in self.decks:
+            add_activated_abilities(d.cards)
         self.decks_all_cards = self.decks.copy()
         self.life = [20, 20]
         self.action_on_idx: int = self.player_turn_idx
@@ -290,6 +325,31 @@ class GameState:
             self.draw(hand, deck.cards, 7)
             hand.sort_cards()
 
+        # registries for side effects that are not captured in card effects
+        # life-loss registry uses (cond, effect) tuples similar to your TAP_REGISTRY style
+        self.life_loss_registry: list[tuple[Callable, Callable]] = [
+            # backfire: if the source has an aura with slug 'backfire', deal the same life loss to opponent
+            (lambda gs, p_id, amt, source: any(a.props.slug == "backfire" for a in source.auras),
+             lambda gs, p_id, amt, source: gs._apply_opponent_life_loss(p_id, amt))
+        ]
+
+        # default leave handlers: ensure cleanup always occurs even if no slug specific handler
+        self.leave_default_handlers: list[Callable] = [lambda gs, c, tgt: c.clear_all_mods()]
+
+    # Event Dispatcher
+    def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
+        """Dispatch an event (string) to the card's effects; event in {'cast','upkeep','tap','untap','leave'}"""
+        # First, run effects attached to the card itself
+        for eff in getattr(card, "effects", []):
+            if getattr(eff, "event", None) == event:
+                eff.resolve(self, card, target)
+
+    def _apply_opponent_life_loss(self, p_id: int, amt: int):
+        """Helper for self.life_loss_registry"""
+        opp = flip(p_id)
+        self.life[opp] -= amt
+
+    # Pile Helpers & card movement
     @property
     def all_cards(self) -> list[GameCard]:
         return ([c for b in self.decks for c in b.cards] + [c for h in self.hands for c in h.cards] +
@@ -302,21 +362,29 @@ class GameState:
             hand.cards.append(source_pile.pop(0))
             hand.sort_cards()
 
-    def get_card_from_boards(self, card_id: int) -> GameCard | None:
-        return next((c for b in self.boards for c in b.cards if c.id == card_id), None)
-
     def get_card_from_board(self, board_idx: int, card_id: int) -> GameCard | None:
         return next((c for c in self.boards[board_idx].cards if c.id == card_id), None)
 
     def _remove_from_board(self, c: GameCard) -> GameCard | None:
+        """Remove card from board; all auras sent to graveyard; trigger leave event for card; return GameCard"""
+        # TODO: why am i returning the card?
         if self.get_card_from_board(c.orig_owner_id, c.id):
             self.boards[c.orig_owner_id].remove_from_board(c)
             for a in c.auras:
                 self.send_to_graveyard(a)
             c.clear_all_mods()
+            self.trigger('leave', c)
+            for h in self.leave_default_handlers:
+                h(self, c, None)
             return c
 
+    def send_to_graveyard_from_play(self, c: GameCard):
+        self._remove_from_board(c)
+        self.graveyards[c.orig_owner_id].append(c)
+        self._send_to_graveyard_or_exile(c)
+
     def send_to_graveyard(self, c: GameCard):
+        # TODO: reconcile send_to_gy_from_play & send_to_gy
         if not self._remove_from_board(c):
             return
         self.graveyards[c.orig_owner_id].append(c)
@@ -331,34 +399,46 @@ class GameState:
         self._send_to_graveyard_or_exile(c)
 
     def _send_to_graveyard_or_exile(self, c: GameCard):
-        if c.props.is_aura:
-            c.attached_to = None
-        for card in c.auras:
-            if card.props.slug == 'creature-bond':
-                self.decrement_life(c.orig_owner_id, c.props.toughness, card)
-                print(f"Creature Bond reduces player #{c.orig_owner_id}'s life by {c.props.toughness}")
-        if c.props.slug == 'crusade':
-            for white_creature in self.card_filter.creatures().by_color('W').result():
-                white_creature.remove_perm_mod_by_slug('crusade')
-        c.clear_all_mods()
+        for a in c.auras:
+            self.graveyards[a.orig_owner_id].append(a)
+            print(f'{a} has been sent to the graveyard')
+        self._remove_aura_attachment(c)
+        self.trigger('leave', c)
+        for h in self.leave_default_handlers:
+            h(self, c, None)
 
     def return_to_hand(self, c: GameCard):
         hand = self.hands[c.orig_owner_id]
         hand.cards.append(c)
         for a in c.auras:
-            self.send_to_graveyard(a)
-        c.clear_all_mods()
+            self.graveyards[a.orig_owner_id].append(a)
+            print(f'{a} has been sent to the graveyard')
+        self._remove_aura_attachment(c)
         hand.sort_cards()
 
+    @staticmethod
+    def _remove_aura_attachment(c: GameCard):
+        """If the card itself is an aura, detach it; if the card is enchanted, detach the auras & send to graveyard"""
+        if c.props.is_aura:
+            c.attached_to = None
+        for a in c.auras:
+            a.attached_to = None
+
+    # Life Operations; using Registry Pattern
     def increment_life(self, p_id: int, amt: int):
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
         self.life[p_id] += amt
 
     def decrement_life(self, p_id: int, amt: int, source: GameCard):
+        """Reduce player life; lookup life loss condition in self.life_loss_registry; check for end game condition"""
         self.life[p_id] -= amt
         print(f"Reducing player #{p_id}'s life by {amt}. Life is now at {self.life}")
-        if 'backfire' in {a.props.slug for a in source.auras}:
-            self.life[flip(p_id)] -= amt
+
+        # run life-loss registry conditions (pattern: (cond, effect))
+        for cond, effect in self.life_loss_registry:
+            if cond(self, p_id, amt, source):
+                effect(self, p_id, amt, source)
+
         if self.life[p_id] <= 0 < self.life[flip(p_id)]:
             print(f"Player #{p_id} has lost")
             self.is_game_over = True
@@ -367,14 +447,10 @@ class GameState:
             self.is_game_over = True
 
     def apply_tap_effects(self, c: GameCard):
-        for cond, func in TAP_REGISTRY:
-            if cond(self, c):
-                func(self, c)
+        self.trigger('tap', c)
 
     def apply_untap_effects(self, c: GameCard):
-        for cond, func in UNTAP_REGISTRY:
-            if cond(self, c):
-                func(self, c)
+        self.trigger('untap', c)
 
     def untap(self):
         """Untap all cards on in-turn player's board; remove summoning sickness"""
@@ -386,25 +462,25 @@ class GameState:
                 continue
             c.untap(self)
 
-    def get_activated_abilities(self, c: GameCard) -> list["ActivateAbility"]:
+    def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
-
         for ability in c.abilities:
-            # Skip abilities that can't currently be activated
             if not ability.can_activate(self):
                 continue
-
             # No target needed → create a single action
             if ability.target_filter is None:
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, None))
                 continue
-
+            # Targeting a player
+            if ability.target_filter and isinstance(ability.target_filter(self, c)[0], int):
+                targets = ability.target_filter(self, c)
+                for t in targets:
+                    actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
             # Target needed → get all legal targets
-            targets = ability.target_filter(self, c)
-
-            for t in targets:
-                actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
-
+            else:
+                targets = ability.target_filter(self, c)
+                for t in targets:
+                    actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
         return actions
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
@@ -445,9 +521,9 @@ class GameState:
 
         if self.phase == Phase.UPKEEP:
             for c in self.boards[self.player_turn_idx].cards:
-                c.on_upkeep(self)
+                self.trigger('upkeep', c)
                 for a in c.auras:
-                    a.on_upkeep(self)
+                    self.trigger('upkeep', a)
 
             self.phase = Phase.DRAW
             return
@@ -458,7 +534,7 @@ class GameState:
         if self.phase == Phase.CAST:
             available_actions.append(MoveToEndStep(p_id, self))
             # cast; compare its casting cost to the board to see if it can cast
-            for i, c in enumerate(hand.cards):
+            for c in hand.cards:
                 if not board.can_card_meet_casting_cost(c):
                     continue
                 elif c.props.is_land and self.turn.has_played_land:
@@ -478,6 +554,10 @@ class GameState:
                     for t in target_cards:
                         available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
 
+            # activate abilities
+            for c in board.cards:
+                available_actions.extend(self.get_available_activated_abilities(c))
+
             # declare combat
             for c in board.cards:
                 if c.can_attack and not c.has_summoning_sickness:
@@ -488,6 +568,7 @@ class GameState:
             # add attackers
             for c in board.cards:
                 if c not in [com.attacker for com in self.combats] and not c.has_summoning_sickness:
+                    # TODO: animate-wall is unique; "attack" isn't a KWAMod or PTMod; there is no KWA for "attack"
                     if 'Wall' in c.props.card_sub_types and 'animate-wall' in {a.props.slug for a in c.auras}:
                         c.can_attack = True
                     if c.can_attack:
