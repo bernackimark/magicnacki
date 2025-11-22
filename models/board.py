@@ -83,15 +83,15 @@ class Board:
 
     def play_to_board(self, c: GameCard):
         self._cards.append(c)
-        self._cards.sort(key=lambda c: c.props.is_land)
+        self._cards.sort(key=lambda c: (c.props.is_land, c.props.is_creature))
 
     def remove_from_board(self, c: GameCard):
         self._cards.remove(c)
-        self._cards.sort(key=lambda c: c.props.is_land)
+        self._cards.sort(key=lambda c: (c.props.is_land, c.props.is_creature))
 
-    def pay_casting_weight(self, cast_weight: int) -> None:
+    def pay_casting_weight(self, cast_weight: int, gs: "GameState") -> None:
         if not cast_weight:
             return
         for _ in range(cast_weight):
             untapped_lands = [c for c in self.cards if c.props.is_land and not c.is_tapped]
-            untapped_lands[0].tap()
+            untapped_lands[0].tap(gs)
