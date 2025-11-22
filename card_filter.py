@@ -1,5 +1,3 @@
-from models.game_card import GameCard
-
 class CardFilter:
     """Filters a list of cards based on chained predicates; does not modify the original list.
     ex usage: card_filter.in_play().creatures().result(); .result() must always be at end of chain to return cards.
@@ -27,13 +25,22 @@ class CardFilter:
         self._cards = [_ for _ in self._gs.graveyards[p_id]]
         return self
 
-    # --- by identity/attribute ---
+    # --- by slug ---
     def by_slug(self, slug: str):
         self._cards = [c for c in self._cards if c.props.slug == slug]
         return self
 
+    # --- by type/sub-type ---
     def creatures(self):
         self._cards = [c for c in self._cards if 'Creature' in c.props.card_types]
+        return self
+
+    def lands(self):
+        self._cards = [c for c in self._cards if 'Land' in c.props.card_types]
+        return self
+
+    def walls(self):
+        self._cards = [c for c in self._cards if 'Wall' in c.props.card_sub_types]
         return self
 
     def by_type(self, type_: str | list):
@@ -50,11 +57,32 @@ class CardFilter:
             self._cards = [c for c in self._cards if type_ in c.props.card_sub_types]
         return self
 
+    # --- by color ---
     def by_color(self, color: str | list):
         if isinstance(color, list):
             self._cards = [c for c in self._cards for col in color if col in c.props.colors]
         else:
             self._cards = [c for c in self._cards if color in c.props.colors]
+        return self
+
+    def white(self):
+        self._cards = [c for c in self._cards if 'W' in c.props.colors]
+        return self
+
+    def black(self):
+        self._cards = [c for c in self._cards if 'B' in c.props.colors]
+        return self
+
+    def blue(self):
+        self._cards = [c for c in self._cards if 'U' in c.props.colors]
+        return self
+
+    def red(self):
+        self._cards = [c for c in self._cards if 'R' in c.props.colors]
+        return self
+
+    def green(self):
+        self._cards = [c for c in self._cards if 'G' in c.props.colors]
         return self
 
     def is_tapped(self, is_tapped: bool = True):
@@ -68,7 +96,7 @@ class CardFilter:
             self._cards = [c for c in self._cards if kwa not in c.keyword_abilities]
         return self
 
-    def result(self) -> list[GameCard]:
+    def result(self) -> list["GameCard"]:
         cards_to_return = self._cards
         self._cards = self._gs.all_cards  # since self._cards continuously filters, must reset it for subsequent use
         return cards_to_return
