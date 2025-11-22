@@ -23,6 +23,6 @@ def add_activated_abilities(cards: list["GameCard"]) -> None:
     for c in cards:
         if c.props.slug == 'flood':
             aa = ActivatedAbility(c, False, 'UU', target_filter=lambda gs, source: gs.card_filter.in_play().creatures().is_tapped(False).has('Flying').result(),
-                                  effect=lambda gs, source, target: gs.tap_card(target))
+                                  effect=lambda gs, source, target: target.tap(gs))
             c.abilities.append(aa)
 
