@@ -129,6 +129,9 @@ class ActivateAbility(Action):
     ability: ActivatedAbility
     target: GameCard | None = None
 
+    def __post_init__(self):
+        print(f"{self.ability=} ... {self.target=}")
+
     def __repr__(self) -> str:
         target_text = ''
         if isinstance(self.target, list) and self.target:
@@ -347,9 +350,6 @@ class GameState:
         for e in card.effects:
             if e.event == event:
                 e.resolve(self, card, target)
-        # for eff in getattr(card, "effects", []):
-        #     if getattr(eff, "event", None) == event:
-        #         eff.resolve(self, card, target)
 
     def _apply_opponent_life_loss(self, p_id: int, amt: int):
         """Helper for self.life_loss_registry"""
@@ -372,64 +372,67 @@ class GameState:
     def get_card_from_board(self, board_idx: int, card_id: int) -> GameCard | None:
         return next((c for c in self.boards[board_idx].cards if c.id == card_id), None)
 
-    def _remove_from_board(self, c: GameCard) -> GameCard | None:
-        """Remove card from board; all auras sent to graveyard; trigger leave event for card; return GameCard"""
-        # TODO: why am i returning the card?
-        if self.get_card_from_board(c.orig_owner_id, c.id):
-            self.boards[c.orig_owner_id].remove_from_board(c)
-            for a in c.auras:
-                self.send_to_graveyard(a)
-            c.clear_all_mods()
-            self.trigger('leave', c)
-            for h in self.leave_default_handlers:
-                h(self, c, None)
-            return c
+    def remove_from_board(self, c: GameCard) -> None:
+        """Trigger leave event for card (ex Crusade, Castle); remove card from board; remove all auras from board"""
+        self.trigger('leave', c)
+        board = self.boards[c.orig_owner_id]
+        board.remove_from_board(c)
+        print(f"{c} has been removed from the board")
+        for a in c.auras:
+            board.remove_from_board(a)
+            print(f"{a} has been removed from the board")
 
     def send_to_graveyard_from_play(self, c: GameCard):
-        self._remove_from_board(c)
+        """Send card to graveyard; send all auras to graveyard"""
+        self.remove_from_board(c)
         self.graveyards[c.orig_owner_id].append(c)
+        print(f"{c} has been sent to graveyard")
+        for a in c.auras:
+            self.graveyards[c.orig_owner_id].append(a)
+            print(f"{a} has been sent to graveyard")
         self._send_to_graveyard_or_exile(c)
 
     def send_to_graveyard(self, c: GameCard):
         # TODO: reconcile send_to_gy_from_play & send_to_gy
-        if not self._remove_from_board(c):
-            return
         self.graveyards[c.orig_owner_id].append(c)
         print(f'{c} has been sent to the graveyard')
         self._send_to_graveyard_or_exile(c)
 
     def send_to_exile(self, c: GameCard):
-        if not self._remove_from_board(c):
-            return
         self.exiles[c.orig_owner_id].append(c)
         print(f'{c} has been exiled')
         self._send_to_graveyard_or_exile(c)
 
-    def _send_to_graveyard_or_exile(self, c: GameCard):
+    def send_to_exile_from_play(self, c: GameCard):
+        self.remove_from_board(c)
+        self.exiles[c.orig_owner_id].append(c)
+        print(f'{c} has been exiled')
         for a in c.auras:
-            self.graveyards[a.orig_owner_id].append(a)
-            print(f'{a} has been sent to the graveyard')
-        self._remove_aura_attachment(c)
-        self.trigger('leave', c)
-        for h in self.leave_default_handlers:
-            h(self, c, None)
+            self.exiles[c.orig_owner_id].append(a)
+            print(f'{a} has been exiled')
+        self._send_to_graveyard_or_exile(c)
+
+    def _send_to_graveyard_or_exile(self, c: GameCard):
+        """Remove card from board if not done yet;
+        clear all attached_to relationships & clear .auras(), .pt_modifiers(), etc"""
+        # if board removal slipped through the cracks, do that here
+        board = self.boards[c.orig_owner_id]
+        if c in board.cards:
+            board.remove_from_board(c)
+        c.clear_all_mods()  # clear all attached_to relationships
 
     def return_to_hand(self, c: GameCard):
         hand = self.hands[c.orig_owner_id]
         hand.cards.append(c)
         for a in c.auras:
-            self.graveyards[a.orig_owner_id].append(a)
-            print(f'{a} has been sent to the graveyard')
-        self._remove_aura_attachment(c)
+            self.send_to_graveyard_from_play(a)
+        c.clear_all_mods()
         hand.sort_cards()
 
-    @staticmethod
-    def _remove_aura_attachment(c: GameCard):
-        """If the card itself is an aura, detach it; if the card is enchanted, detach the auras & send to graveyard"""
-        if c.props.is_aura:
-            c.attached_to = None
-        for a in c.auras:
-            a.attached_to = None
+    def return_to_hand_from_board(self, c: GameCard):
+        board = self.boards[c.orig_owner_id]
+        board.remove_from_board(c)
+        self.return_to_hand(c)
 
     # Life Operations; using Registry Pattern
     def increment_life(self, p_id: int, amt: int):
@@ -474,20 +477,32 @@ class GameState:
         for ability in c.abilities:
             if not ability.can_activate(self):
                 continue
+            if ability.target_filter is None:  # janky solution; auras have target_filter = None
+                actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
+                continue
+            targets = ability.target_filter(self, c)
+            print(f"{ability.card=} ... {targets=}")
+            # Returns None | GameCard | list[GameCard] | tuple[int] (if it targets a player) | int (targets a single player)
             # No target needed → create a single action
-            if ability.target_filter is None:
+            if targets is None:
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, None))
                 continue
             # Targeting a player
-            if ability.target_filter and isinstance(ability.target_filter(self, c)[0], int):
-                targets = ability.target_filter(self, c)
+            elif targets and isinstance(targets, tuple) and isinstance(targets[0], int):
+                print("I'm targeting players")
                 for t in targets:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+            # Targeting a GameCard
             # Target needed → get all legal targets
-            else:
-                targets = ability.target_filter(self, c)
+            elif isinstance(targets, GameCard):
+                print("got a single GameCard")
+                actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
+            elif isinstance(targets, list) and isinstance(targets[0], GameCard):
+                print("got a list of GameCard")
                 for t in targets:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+            else:
+                raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card} {targets}")
         return actions
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
@@ -648,5 +663,5 @@ class GameState:
 
 
 # TODO:
-#  Global effects like Crusade & Castle are handled stupidly IMO; feels like Cards' PT/KWA, etc should be able to ... pull in such Global effects at property run-time
-#  but to do that, it would need store a reference to game_state.  need to figure that out.
+#  PTModifiers & KWAModifiers should be stored in/removed from game_card.auras(); PTTemp & KWATemp should not
+#  PTMod & KWMod ARE Auras.

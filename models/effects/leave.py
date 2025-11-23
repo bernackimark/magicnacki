@@ -43,8 +43,9 @@ def default_clear_on_leave():
         event = 'leave'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            # default cleanup call (clear mods)
-            source.clear_all_mods()
-            if source.props.is_aura:
-                source.attached_to = None
+            ...
+            # gs.send_to_graveyard_from_play(source)  # removes from board; appends to graveyard
+            # for a in source.auras:
+            #     gs.send_to_graveyard_from_play(a)
+            # source.clear_all_mods()
     return E()

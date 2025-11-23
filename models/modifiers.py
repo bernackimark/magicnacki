@@ -23,6 +23,12 @@ class PTTemp:
     toughness_delta: int
     expires_end_of_turn: bool = True
 
+    def __repr__(self):
+        power_symbol = '+' if self.power_delta > 0 else '-' if self.power_delta < 0 else ''
+        toughness_symbol = '+' if self.toughness_delta > 0 else '-' if self.toughness_delta < 0 else ''
+        end_of_turn_text = ' until end of turn' if self.expires_end_of_turn else ''
+        return f"({power_symbol}{self.power_delta}/{toughness_symbol}{self.toughness_delta}){end_of_turn_text}"
+
 
 @dataclass
 class KWAModifier:

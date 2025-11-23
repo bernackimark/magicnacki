@@ -35,8 +35,11 @@ def disenchant_on_cast():
         event = 'cast'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            if not target:
+                raise ValueError("Disenchant needs a target")
             if target:
-                gs.send_to_graveyard(target)
+                print(f"Disenchant's target is {target}")
+                gs.send_to_graveyard_from_play(target)
     return E()
 
 
@@ -74,6 +77,8 @@ def holy_armor_on_cast():
         event = 'cast'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            if not target:
+                raise ValueError("Holy armor didn't get a target!")
             if target:
                 target.pt_modifiers.append(PTModifier(source, 0, 2))
     return E()

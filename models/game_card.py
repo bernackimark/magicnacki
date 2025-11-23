@@ -139,12 +139,26 @@ class GameCard:
         return list(kwa)
 
     def clear_all_mods(self) -> None:
-        for a in self.auras:
-            a.attached_to = None
+        """attached_to = None for auras and host; all lists of auras, perm_mods, and temp_mods are emptied"""
+        if self.props.is_aura:
+            # I'm an aura. remove relationship from host & remove from host.auras(), .pt_modifiers(), .kwa_modifiers()
+            host = self.attached_to
+            host.attached_to = None
+            host.auras.remove(self)
+            for kwa_mod in host.kwa_modifiers:
+                if kwa_mod.card == self:
+                    host.kwa_modifiers.remove(kwa_mod)
+                    break
+            for pt_mod in host.pt_modifiers:
+                if pt_mod.card == self:
+                    host.pt_modifiers.remove(pt_mod)
+                    break
+        # Remove all attachments
+        self.attached_to = None
         self.auras.clear()
         self.kwa_modifiers.clear()
-        self.kwa_temps.clear()
         self.pt_modifiers.clear()
+        self.kwa_temps.clear()
         self.pt_temps.clear()
 
     def remove_perm_mod(self, mod: "GameCard"):

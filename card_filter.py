@@ -3,7 +3,7 @@ class CardFilter:
     ex usage: card_filter.in_play().creatures().result(); .result() must always be at end of chain to return cards.
     in_play(), on_player_board(p_id), in_graveyards(), in_player_graveyard(p_id), by_slug(slug),
     creatures(), by_type(type_: str | list), by_sub_type(type_: str | list), by_color(color: str | list),
-    is_tapped(is_tapped: bool = True), has(kwa: str, bool_: bool = True)"""
+    tapped(is_tapped: bool = True), has(kwa: str, bool_: bool = True)"""
     def __init__(self, gs: "GameState"):
         self._gs = gs
         self._cards = self._gs.all_cards
@@ -86,7 +86,7 @@ class CardFilter:
         return self
 
     def tapped(self, is_tapped: bool = True):
-        self._cards = [c for c in self._cards if c.tapped == is_tapped]
+        self._cards = [c for c in self._cards if c.is_tapped == is_tapped]
         return self
 
     def has(self, kwa: str, bool_: bool = True):
