@@ -14,15 +14,28 @@ def creature_bond_on_leave():
                     gs.decrement_life(target.orig_owner_id, target.props.toughness, aura)
     return E()
 
+
+def castle_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            for e in gs.global_effects:
+                if source == e[0]:
+                    gs.global_effects.remove(e)
+                    break
+    return E()
+
 def crusade_on_leave():
     class E(Effect):
         event = 'leave'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            # If a crusade permanent leaves, remove its perm mod from all white creatures.
-            if source.props.slug == 'crusade':
-                for white_creature in CardFilter(gs).in_play().creatures().white().result():
-                    white_creature.remove_perm_mod(source)
+            for e in gs.global_effects:
+                if source == e[0]:
+                    gs.global_effects.remove(e)
+                    print("Removing Crusade from gs.global_effects")
+                    break
     return E()
 
 def default_clear_on_leave():

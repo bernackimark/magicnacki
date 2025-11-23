@@ -7,6 +7,7 @@ from typing import Callable, Optional
 from card_filter import CardFilter
 from build_deck import Deck
 from models.activated_ability import ActivatedAbility, add_activated_abilities
+from models.effects.global_ import GlobalEffect
 from models.game_card import GameCard, build_effects_for_slug
 from models.board import Board, casting_weight
 from models.combat import Combat
@@ -276,7 +277,7 @@ class AcceptAction(Action):
             target.auras.append(card)
             self.gs.boards[target.orig_owner_id].play_to_board(card)
 
-        self.gs.trigger('cast', card)
+        self.gs.trigger('cast', card, target)
         print(f"Successfully cast {card.props.name}")
 
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
@@ -302,6 +303,8 @@ class GameState:
         self.decks = decks
         for d in self.decks:
             add_activated_abilities(d.cards)
+            for c in d.cards:
+                c.game_state = self
         self.decks_all_cards = self.decks.copy()
         self.life = [20, 20]
         self.action_on_idx: int = self.player_turn_idx
@@ -325,6 +328,8 @@ class GameState:
             self.draw(hand, deck.cards, 7)
             hand.sort_cards()
 
+        self.global_effects: list[tuple[GameCard, GlobalEffect]] = []
+
         # registries for side effects that are not captured in card effects
         # life-loss registry uses (cond, effect) tuples similar to your TAP_REGISTRY style
         self.life_loss_registry: list[tuple[Callable, Callable]] = [
@@ -339,10 +344,12 @@ class GameState:
     # Event Dispatcher
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
         """Dispatch an event (string) to the card's effects; event in {'cast','upkeep','tap','untap','leave'}"""
-        # First, run effects attached to the card itself
-        for eff in getattr(card, "effects", []):
-            if getattr(eff, "event", None) == event:
-                eff.resolve(self, card, target)
+        for e in card.effects:
+            if e.event == event:
+                e.resolve(self, card, target)
+        # for eff in getattr(card, "effects", []):
+        #     if getattr(eff, "event", None) == event:
+        #         eff.resolve(self, card, target)
 
     def _apply_opponent_life_loss(self, p_id: int, amt: int):
         """Helper for self.life_loss_registry"""
@@ -638,3 +645,8 @@ class GameState:
             self.phase = Phase.END_STEP
 
         return available_actions
+
+
+# TODO:
+#  Global effects like Crusade & Castle are handled stupidly IMO; feels like Cards' PT/KWA, etc should be able to ... pull in such Global effects at property run-time
+#  but to do that, it would need store a reference to game_state.  need to figure that out.

@@ -1,6 +1,7 @@
 from typing import Optional
 
 from models.effects.base import Effect
+from models.effects.global_ import CastleEffect, CrusadeEffect
 from models.modifiers import KWAModifier, KWATemp, PTModifier, PTTemp
 from card_filter import CardFilter
 
@@ -10,9 +11,11 @@ def castle_on_cast():
         event = 'cast'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, CastleEffect(source.orig_owner_id)))
             # add +0/+2 mod for in-turn player's creatures that are untapped
-            for c in CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).is_tapped(False).result():
-                c.pt_modifiers.append(PTModifier(source, 0, 2))
+            # for c in CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result():
+            #     c.pt_modifiers.append(PTModifier(source, 0, 2))
     return E()
 
 
@@ -21,8 +24,9 @@ def crusade_on_cast():
         event = 'cast'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            for c in CardFilter(gs).in_play().creatures().white().result():
-                c.pt_modifiers.append(PTModifier(source, 1, 1))
+            gs.global_effects.append((source, CrusadeEffect(source.orig_owner_id)))
+            # for c in CardFilter(gs).in_play().creatures().white().result():
+            #     c.pt_modifiers.append(PTModifier(source, 1, 1))
     return E()
 
 
@@ -74,7 +78,6 @@ def holy_armor_on_cast():
                 target.pt_modifiers.append(PTModifier(source, 0, 2))
     return E()
 
-
 def holy_strength_on_cast():
     class E(Effect):
         event = 'cast'
@@ -83,7 +86,6 @@ def holy_strength_on_cast():
             if target:
                 target.pt_modifiers.append(PTModifier(source, 1, 2))
     return E()
-
 
 def jump_on_cast():
     class E(Effect):

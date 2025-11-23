@@ -3,18 +3,6 @@ from typing import Optional
 from models.effects.base import Effect
 from card_filter import CardFilter
 
-def castle_on_tap():
-    class E(Effect):
-        event = 'tap'
-        
-        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            # remove castle perm mods from source's pt_modifiers if present
-            to_remove = [m for m in source.pt_modifiers if getattr(m.card, "props", None) and m.card.props.slug == 'castle']
-            for m in to_remove:
-                source.remove_perm_mod(m.card)
-    return E()
-
-
 def giant_tortoise_on_tap():
     class E(Effect):
         event = 'tap'

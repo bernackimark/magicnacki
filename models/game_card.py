@@ -1,17 +1,14 @@
 from typing import Callable
 
 from card import Card
-from card_filter import CardFilter
-from effects.base import Effect
-from effects.cast import *
-from effects.common import *
-from effects.leave import *
-from effects.tap import *
-from effects.upkeep import *
-from effects.untap import *
+from models.effects.cast import *
+from models.effects.common import *
+from models.effects.leave import *
+from models.effects.tap import *
+from models.effects.upkeep import *
+from models.effects.untap import *
 from models.activated_ability import ActivatedAbility
 from models.modifiers import BasePT, PTModifier, PTTemp, KWAModifier, KWATemp
-from utils import flip
 
 def build_effects_for_slug(slug: str) -> list[Effect]:
     """
@@ -20,7 +17,7 @@ def build_effects_for_slug(slug: str) -> list[Effect]:
     """
     mapping = {
         'armageddon': [send_to_graveyard_all_lands()],
-        'castle': [castle_on_cast(), castle_on_tap(), castle_on_untap()],
+        'castle': [castle_on_cast(), castle_on_leave()],
         'creature-bond': [creature_bond_on_leave()],
         'crusade': [crusade_on_cast(), crusade_on_leave()],
         'disenchant': [disenchant_on_cast()],
@@ -46,7 +43,7 @@ def build_effects_for_slug(slug: str) -> list[Effect]:
 
 CAST_TARGETS = {
     'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
-    'disenchant': lambda gs: CardFilter(gs).by_type(['Artifact', 'Enchantment']).result(),
+    'disenchant': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Enchantment']).result(),
     'feedback': lambda gs: CardFilter(gs).in_play().by_type('Enchantment').result(),
     'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
@@ -54,69 +51,12 @@ CAST_TARGETS = {
     'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result()
 }
 
-# def swords_to_plowshares_success_cast(gs, t):
-#     gs.send_to_exile(t)
-#     gs.increment_life(t.orig_owner_id, t.power)
-# 
-# def unsummon_success_cast(gs, t):
-#     print(f"UNSUMMONING: {t}")
-#     board = gs.boards[t.orig_owner_id]
-#     board.remove_from_board(t)
-#     gs.return_to_hand(t)
-# 
-# 
-# SUCCESSFUL_CAST = {
-#     'armageddon': lambda gs, c, t: [gs.send_to_graveyard(c) for c in CardFilter(gs).in_play().by_type('Land').result()],
-#     'castle': lambda gs, c, t: [c.pt_modifiers.append(PTModifier(c, 0, 2)) for c in
-#                                 CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result()],
-#     'crusade': lambda gs, c, t: [c.pt_modifiers.append(PTModifier(c, 1, 1)) for c in
-#                                  CardFilter(gs).in_play().creatures().white().result()],
-#     'disenchant': lambda gs, c, t: gs.send_to_graveyard(t),
-#     'divine-transformation': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 3, 3)),
-#     'flight': lambda gs, c, t: t.kwa_modifiers.append(KWAModifier(c, 'add', 'Flying')),
-#     'giant-tortoise': lambda gs, c, t: c.pt_modifiers.append(PTModifier(c, 0, 3)),
-#     'holy-armor': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 0, 2)),
-#     'holy-strength': lambda gs, c, t: t.pt_modifiers.append(PTModifier(c, 1, 2)),
-#     'jump': lambda gs, c, t: t.kwa_temps.append(KWATemp('add', 'Flying')),
-#     'lance': lambda gs, c, t: t.kwa_modifiers.append(KWAModifier(c, 'add', 'First Strike')),
-#     'swords-to-plowshares': lambda gs, c, t: swords_to_plowshares_success_cast(gs, t),
-#     'twiddle': lambda gs, c, t: t.tap(gs) if t.tapped else t.tap(gs),
-#     'unsummon': lambda gs, c, t: unsummon_success_cast(gs, t),
-#     'wrath-of-god': lambda gs, c, t: [gs.send_to_exile(c) for c in CardFilter(gs).in_play().creatures().result()]
-# }
-# 
-# UPKEEP_FUNCS = {
-#     'feedback': lambda gs, c: gs.decrement_life(gs.player_turn_idx, 1, c),
-#     'karma': lambda gs, c: [gs.decrement_life(gs.player_turn_idx, 1, c) for _ in
-#                             CardFilter(gs).on_player_board(flip(gs.player_turn_idx)).by_slug('swamp').result()],
-#     'serendib-efreet': lambda gs, c: gs.decrement_life(gs.player_turn_idx, 1, c),
-# }
-# 
-# TAP_REGISTRY = [
-#     # If Castle exists and card becomes tapped, remove all Castles from its Power/Toughness Modifiers
-#     (lambda gs, c: any(m for m in c.pt_modifiers if m.card.props.slug == 'castle'),
-#      lambda gs, c: [c.remove_perm_mod(m.card) for m in c.pt_modifiers if m.card.props.slug == 'castle']),
-#     # If Giant Tortoise taps, shed its +0/+3 mod
-#     (lambda gs, c: c.props.slug == "giant-tortoise", lambda gs, c: c.remove_perm_mod(c)),
-#     # If a card w Psychic Venom taps, deal 2 damage to its controller
-#     (lambda gs, c: any(a.props.slug == "psychic-venom" for a in c.auras),
-#      lambda gs, c: gs.decrement_life(c.orig_owner_id, 2, c)),
-# ]
-# 
-# UNTAP_REGISTRY = [
-#     # If the player has a Castle in-play and the card is White, add one Castle to its PT Modifiers for each Castle owned
-#     (lambda gs, c: CardFilter(gs).on_player_board(c.orig_owner_id).by_slug('castle').result() and 'W' in c.props.colors,
-#      lambda gs, c: [c.pt_modifiers.append(PTModifier(c, 0, 2)) for _ in CardFilter(gs).on_player_board(c.orig_owner_id).by_slug('castle').result()]),
-#     # If Giant Tortoise untaps, give it its +0/+3 mod
-#     (lambda gs, c: c.props.slug == "giant-tortoise", lambda gs, c: c.pt_modifiers.append(PTModifier(c, 0, 3))),
-# ]
-
-
 class GameCard:
     def __init__(self, props: Card, id_: int, orig_owner_id: int, cast_target_func: Callable = None):
         self.props: Card = props
         self.id: int = id_
         self.orig_owner_id: int = orig_owner_id
+        self.game_state: "GameState" = None
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost
         self.is_tapped: bool = False
@@ -161,13 +101,23 @@ class GameCard:
 
     @property
     def power(self) -> int:
-        return (self.base.power + sum(m.power_delta for m in self.pt_modifiers) +
+        # could probably be re-written to reduce calls
+        global_power_adj, _ = self.get_global_pt_adj()
+        return (self.base.power + global_power_adj + sum(m.power_delta for m in self.pt_modifiers) +
                 sum(t.power_delta for t in self.pt_temps))
 
     @property
     def toughness(self) -> int:
-        return (self.base.toughness + sum(m.toughness_delta for m in self.pt_modifiers)
+        # could probably be re-written to reduce calls
+        _, global_toughness_adj = self.get_global_pt_adj()
+        return (self.base.toughness + global_toughness_adj + sum(m.toughness_delta for m in self.pt_modifiers)
                 + sum(t.toughness_delta for t in self.pt_temps))
+
+    def get_global_pt_adj(self) -> tuple[int, int]:
+        for card, global_effect in self.game_state.global_effects:
+            if global_effect.applies_to(self, self.game_state):
+                return global_effect.pt_offset()
+        return 0, 0
 
     @property
     def keyword_abilities(self) -> list[str]:
