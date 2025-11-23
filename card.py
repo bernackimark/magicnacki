@@ -5,6 +5,8 @@ from typing import Iterator
 from kw_ability import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
 from constants import COLOR_LETTERS
+from utils import str_to_int
+
 
 @dataclass
 class Ruling:
@@ -32,8 +34,8 @@ class Card:
 
     def __post_init__(self):
         object.__setattr__(self, 'keyword_abilities', CREATURE_KW_ABILITIES.get(self.slug, []).copy())
-        object.__setattr__(self, 'power', self._str_to_int(self.power) if self.power is not None else None)
-        object.__setattr__(self, 'toughness', self._str_to_int(self.toughness) if self.toughness is not None else None)
+        object.__setattr__(self, 'power', str_to_int(self.power) if self.power is not None else None)
+        object.__setattr__(self, 'toughness', str_to_int(self.toughness) if self.toughness is not None else None)
 
     # def __repr__(self) -> str:
     #     return (f"{self.name} ({self.casting_cost or 0}, {'/'.join(self.card_types)}"
@@ -86,14 +88,6 @@ class Card:
             else:
                 raise NotImplementedError(f"This card has a casting cost of '{self.casting_cost}' that I can't handle")
         return d
-
-    @staticmethod
-    def _str_to_int(string_: str) -> int:
-        try:
-            number = int(string_)
-            return number
-        except ValueError:
-            return 0
 
     @cached_property
     def colors(self) -> str:
