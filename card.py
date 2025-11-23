@@ -37,15 +37,9 @@ class Card:
         object.__setattr__(self, 'power', str_to_int(self.power) if self.power is not None else None)
         object.__setattr__(self, 'toughness', str_to_int(self.toughness) if self.toughness is not None else None)
 
-    # def __repr__(self) -> str:
-    #     return (f"{self.name} ({self.casting_cost or 0}, {'/'.join(self.card_types)}"
-    #             f"{f', {self.oracle_rules_text}' if self.oracle_rules_text else ''})")
-
     @cached_property
     def is_permanent(self) -> bool:
-        if 'Artifact' in self.card_types or 'Creature' in self.card_types or 'Enchantment' in self.card_types or 'Land' in self.card_types:
-            return True
-        return False
+        return any(t in ('Artifact', 'Creature', 'Enchantment', 'Land') for t in self.card_types)
 
     @cached_property
     def is_aura(self) -> bool:
