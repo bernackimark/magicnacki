@@ -48,12 +48,14 @@ def add_activated_abilities(cards: list["GameCard"]) -> None:
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
                                effect=lambda gs, source, t: source.deal_damage_to_card(gs, 1, t)))
             # damage to player
-            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: [0, 1],
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: (0, 1),
                                effect=lambda gs, source, t: source.deal_damage_to_player(gs, 1, t)))
         if c.props.slug in ('psionic-entity'):
+            # damage to card
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
                                effect=lambda gs, source, t: psionic_entity_deals_damage(gs, source, t)))
-            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: [0, 1],
+            # damage to player
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: (0, 1),
                                effect=lambda gs, source, p_id: psionic_entity_deals_damage(gs, source, p_id)))
         if c.props.slug == 'wall-of-water':
             c.abilities.append(ActivatedAbility(c, False, 'U', target_filter=None,
