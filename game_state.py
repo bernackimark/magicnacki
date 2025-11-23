@@ -134,10 +134,14 @@ class ActivateAbility(Action):
 
     def __repr__(self) -> str:
         target_text = ''
-        if isinstance(self.target, list) and self.target:
-            target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
+        if isinstance(self.target, list) and self.target and isinstance(self.target[0], GameCard):
+            target_text = f", targeting {', '.join([_ for _ in self.target])}"
         elif isinstance(self.target, GameCard):
             target_text = ', targeting ' + self.target.props.name
+        elif (isinstance(self.target, list) or isinstance(self.target, tuple)) and self.target and isinstance(self.target[0], int):
+            target_text = ', targeting Player #' + '& '.join([_ for _ in self.target])
+        elif isinstance(self.target, int):
+            target_text = f', targeting Player #{self.target}'
         return f"Activate Ability: {self.ability.card}{target_text}"
 
     def play(self) -> None:
@@ -477,30 +481,40 @@ class GameState:
         for ability in c.abilities:
             if not ability.can_activate(self):
                 continue
+            if c.has_summoning_sickness:
+                continue
+
             if ability.target_filter is None:  # janky solution; auras have target_filter = None
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
                 continue
+
             targets = ability.target_filter(self, c)
+            # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
             print(f"{ability.card=} ... {targets=}")
-            # Returns None | GameCard | list[GameCard] | tuple[int] (if it targets a player) | int (targets a single player)
+
             # No target needed → create a single action
             if targets is None:
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, None))
                 continue
-            # Targeting a player
+
+            # I need at least one target, but I don't have any
+            elif isinstance(targets, list) and targets == []:
+                continue
+
+            # Targeting a player (player indices are returned as a tuple ex (0, 1)
             elif targets and isinstance(targets, tuple) and isinstance(targets[0], int):
-                print("I'm targeting players")
                 for t in targets:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
-            # Targeting a GameCard
-            # Target needed → get all legal targets
+
+            # Targeting a single GameCard
             elif isinstance(targets, GameCard):
-                print("got a single GameCard")
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
+
+            # I need a target and got a valid list of GameCards
             elif isinstance(targets, list) and isinstance(targets[0], GameCard):
-                print("got a list of GameCard")
                 for t in targets:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+
             else:
                 raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card} {targets}")
         return actions
