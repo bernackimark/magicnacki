@@ -530,7 +530,7 @@ class GameState:
 
             # TODO: activated abilities should also be allowed
             allowed_cards = hand.instants + hand.sorceries if p_id == self.player_turn_idx else hand.sorceries
-            playable_cards: list[GameCard] = [c for c in allowed_cards if board.can_card_meet_casting_cost(c)]
+            playable_cards: list[GameCard] = [c for c in allowed_cards if board.can_meet_casting_cost(c.casting_cost)]
 
             for c in playable_cards:
                 if c.props.slug in ('counterspell',):
@@ -571,7 +571,7 @@ class GameState:
             available_actions.append(MoveToEndStep(p_id, self))
             # cast; compare its casting cost to the board to see if it can cast
             for c in hand.cards:
-                if not board.can_card_meet_casting_cost(c):
+                if not board.can_meet_casting_cost(c.casting_cost):
                     continue
                 elif c.props.is_land and self.turn.has_played_land:
                     continue
@@ -677,5 +677,15 @@ class GameState:
 
 
 # TODO:
-#  PTModifiers & KWAModifiers should be stored in/removed from game_card.auras(); PTTemp & KWATemp should not
-#  PTMod & KWMod ARE Auras.
+#  PTModifiers & KWAModifiers should be stored in/removed from game_card.auras()
+#  - They ARE Auras.
+#  - PTTemp & KWATemp should not be stored in game_card.auras()
+# TODO:
+#  Approach mana differently (Board is not where Mana amounts should be stored, since Mana can come from elsewhere)
+#  - Maybe GameState.extra_mana or Turn
+#  - Might be best to have a mana.py
+#  - Re-visit board & Card (not GameCard) for its convoluted handling of casting_cost/casting_dict, etc
+#  - Cards manipulate mana:
+#    - apprentice-wizard: 'Creature', {U}, {T}: Add {CCC}
+#    - energy-tap: 'Sorcery', "Tap target untapped creature you control; add an amount of {C} = its mana value.
+#  - When deciding which mana to tap; tap colorless mana where possible

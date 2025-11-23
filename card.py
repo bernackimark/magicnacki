@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from functools import cached_property
+import re
 from typing import Iterator
 
 from kw_ability import CREATURE_KW_ABILITIES
@@ -55,33 +56,13 @@ class Card:
 
     @cached_property
     def casting_weight(self) -> int:
-        # TODO: what happens if there's a "10" colorless"?
+        # TODO: variable casting should presumably be handled in main game, correct?
         if not self.casting_cost:
             return 0
-        weight = 0
-        for char in self.casting_cost:
-            try:
-                colorless = int(char)
-                weight += colorless
-                continue
-            except ValueError:
-                pass
-            if char in COLOR_LETTERS:
-                weight += 1
-        return weight
-
-    @cached_property
-    def casting_dict(self) -> dict:
-        d = {color: 0 for color in COLOR_LETTERS}
-        d['C'] = 0  # colorless
-        for char in self.casting_cost:
-            if char in COLOR_LETTERS:
-                d[char] += 1
-            elif char in ('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'):
-                d['C'] += int(char)
-            else:
-                raise NotImplementedError(f"This card has a casting cost of '{self.casting_cost}' that I can't handle")
-        return d
+        # find numbers (could be multiple digits) and letters separately
+        numbers = re.findall(r'\d+', self.casting_cost)
+        letters = re.findall(r'[A-Za-z]', self.casting_cost)
+        return sum(map(int, numbers)) + len(letters)
 
     @cached_property
     def colors(self) -> str:
