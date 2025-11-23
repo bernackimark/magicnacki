@@ -82,7 +82,7 @@ card_statuses = {
     'pirate-ship': 'test',  # Creature {T}: This creature deals 1 damage to any target.
     'power-leak': '',
     'power-sink': '',
-    'prodigal-sorcerer': 'test',  # Creature {T}: This creature deals 1 damage to any target
+    'prodigal-sorcerer': 'done',
     'psionic-entity': 'test',  # Creature {T}: This creature deals 2 damage to any target and 3 damage to itself
     'psychic-venom': '',
     'purelace': '',
