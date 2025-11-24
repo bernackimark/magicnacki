@@ -129,6 +129,12 @@ card_statuses = {
     'zephyr-falcon': 'done',
 }
 
+if __name__ == '__main__':
+    print("Cards to be tested:")
+    for k, v in card_statuses.items():
+        if v == 'test':
+            print(k)
+
 """
 Remaining:
 -   Identity changers:
@@ -149,8 +155,8 @@ Remaining:
 -   Conditional Attack:
         brainwash: {'card_type': 'Aura', "Enchanted creature can't attack unless its controller pays {3}."}
 
--   Deals Damage:
-        spirit-link: Aura Whenever enchanted creature deals damage, you gain that much life.
+-   Deals Damage (combat damage is currently handled in a completely separate place):
+        spirit-link: Aura Whenever enchanted creature deals damage, you gain that much life
 
 -   Home:
         sea-serpent: Islandhome
@@ -160,6 +166,9 @@ Remaining:
         farmstead: Enchanted land has "At the beginning of your upkeep, {WW}: you gain 1 life
         
 -   Mana mod:
+
+        ### TODO NEXT ### MANA MODIFIERS ... RE-WORK HOW MANA IS HANDLED
+
         apprentice-wizard: 'Creature', {U}, {T}: Add {CCC}
         drain-power Sorcery UU Target player activates a mana ability of each land they control. Then that player loses all unspent mana and you add the mana lost this way
         energy-tap: 'Sorcery', "Tap target untapped creature you control; add an amount of {C} = its mana value.

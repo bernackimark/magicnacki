@@ -9,7 +9,7 @@ def giant_tortoise_on_tap():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             if source.props.slug == "giant-tortoise":
-                source.remove_perm_mod(source)
+                source.modifiers.remove_aura(source)
     return E()
 
 

@@ -3,7 +3,7 @@ from typing import Optional
 from card_filter import CardFilter
 
 class GlobalEffect:
-    """A continuous non-target-specific effect that can modify card properties"""
+    """A continuous non-target-specific effect that can modify card properties (ex Castle, Crusade)"""
     def applies_to(self, card, gs: "GameState") -> bool:
         return False
 

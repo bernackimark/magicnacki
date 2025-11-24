@@ -10,5 +10,5 @@ def send_to_graveyard_all_lands():
 
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             for land in CardFilter(gs).in_play().by_type('Land').result():
-                gs.send_to_graveyard(land)
+                gs.send_to_graveyard_from_play(land)
     return E()

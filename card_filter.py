@@ -1,10 +1,17 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card import GameCard
+    from game_state import GameState
+
 class CardFilter:
     """Filters a list of cards based on chained predicates; does not modify the original list.
     ex usage: card_filter.in_play().creatures().result(); .result() must always be at end of chain to return cards.
     in_play(), on_player_board(p_id), in_graveyards(), in_player_graveyard(p_id), by_slug(slug),
     creatures(), by_type(type_: str | list), by_sub_type(type_: str | list), by_color(color: str | list),
     tapped(is_tapped: bool = True), has(kwa: str, bool_: bool = True)"""
-    def __init__(self, gs: "GameState"):
+    def __init__(self, gs: GameState):
         self._gs = gs
         self._cards = self._gs.all_cards
 
@@ -96,7 +103,7 @@ class CardFilter:
             self._cards = [c for c in self._cards if kwa not in c.keyword_abilities]
         return self
 
-    def result(self) -> list["GameCard"]:
+    def result(self) -> list[GameCard]:
         cards_to_return = self._cards
         self._cards = self._gs.all_cards  # since self._cards continuously filters, must reset it for subsequent use
         return cards_to_return

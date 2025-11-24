@@ -49,7 +49,7 @@ def divine_transformation_on_cast():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             if target:
-                target.pt_modifiers.append(PTModifier(source, 3, 3))
+                target.modifiers.auras.append(PTModifier(source, 3, 3))
     return E()
 
 
@@ -59,7 +59,7 @@ def add_flying_on_cast():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             if target:
-                target.kwa_modifiers.append(KWAModifier(source, 'add', 'Flying'))
+                target.modifiers.auras.append(KWAModifier(source, 'add', 'Flying'))
     return E()
 
 
@@ -68,7 +68,7 @@ def giant_tortoise_on_cast():
         event = 'cast'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            source.pt_modifiers.append(PTModifier(source, 0, 3))
+            source.modifiers.auras.append(PTModifier(source, 0, 3))
     return E()
 
 
@@ -80,7 +80,7 @@ def holy_armor_on_cast():
             if not target:
                 raise ValueError("Holy armor didn't get a target!")
             if target:
-                target.pt_modifiers.append(PTModifier(source, 0, 2))
+                target.modifiers.auras.append(PTModifier(source, 0, 2))
     return E()
 
 def holy_strength_on_cast():
@@ -89,7 +89,7 @@ def holy_strength_on_cast():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             if target:
-                target.pt_modifiers.append(PTModifier(source, 1, 2))
+                target.modifiers.auras.append(PTModifier(source, 1, 2))
     return E()
 
 def jump_on_cast():
@@ -98,7 +98,7 @@ def jump_on_cast():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             if target:
-                target.kwa_temps.append(KWATemp('add', 'Flying'))
+                target.modifiers.temps.append(KWATemp('add', 'Flying'))
     return E()
 
 
@@ -108,7 +108,7 @@ def lance_on_cast():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             if target:
-                target.kwa_modifiers.append(KWAModifier(source, 'add', 'First Strike'))
+                target.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
     return E()
 
 

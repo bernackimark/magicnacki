@@ -11,5 +11,5 @@ def giant_tortoise_on_untap():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             if source.props.slug == "giant-tortoise":
-                source.pt_modifiers.append(PTModifier(source, 0, 3))
+                source.modifiers.auras.append(PTModifier(source, 0, 3))
     return E()

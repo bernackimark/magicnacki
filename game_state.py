@@ -220,7 +220,7 @@ class DamageCreature(Action):
         return f"{self.card.props.name} deals {self.amt} to {self.target}"
 
     def play(self) -> None:
-        self.target.pt_temps.append(PTTemp(0, -self.amt))
+        self.target.modifiers.temps.append(PTTemp(0, -self.amt))
         if self.target.toughness <= 0:
             self.gs.send_to_graveyard_from_play(self.target)
 
@@ -630,9 +630,8 @@ class GameState:
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
         if self.phase == Phase.END_STEP:
-            for c in self.card_filter.in_play().creatures().result():
-                c.pt_temps.clear()
-                c.kwa_temps.clear()
+            for c in self.card_filter.in_play().result():
+                c.modifiers.clear_temps()
             self.phase = Phase.DISCARD
             return
 
@@ -656,8 +655,7 @@ class GameState:
         if self.phase == Phase.END_TURN_EFFECTS:
             for d in self.decks_all_cards:
                 for c in d.cards:
-                    c.pt_temps.clear()
-                    c.kwa_temps.clear()
+                    c.modifiers.clear_temps()
             self.phase = Phase.PASS_THE_TURN
             return
 

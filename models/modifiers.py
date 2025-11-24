@@ -1,4 +1,10 @@
-from dataclasses import dataclass
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game_card import GameCard
+
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -9,7 +15,7 @@ class BasePT:
 
 @dataclass
 class PTModifier:
-    card: "GameCard"
+    card: GameCard
     power_delta: int = 0
     toughness_delta: int = 0
 
@@ -32,7 +38,7 @@ class PTTemp:
 
 @dataclass
 class KWAModifier:
-    card: "GameCard"
+    card: GameCard
     add_or_remove: str
     kwa: str
 
@@ -48,3 +54,58 @@ class KWATemp:
 
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa} until end of turn"
+
+
+@dataclass
+class Modifiers:
+    """Contains general auras (ex Creature Bond), PTModifiers (ex Holy Strength), and KWA Modifiers (ex Flight)"""
+    auras: list[GameCard | PTModifier | KWAModifier] = field(default_factory=list)
+    temps: list[PTTemp | KWATemp] = field(default_factory=list)
+
+    def __repr__(self):
+        return ', '.join([a.__repr__() for a in self.auras] + [t.__repr__() for t in self.temps])
+
+    def __bool__(self) -> bool:
+        """True if anything contained in self.auras or self.temps"""
+        return bool(self.auras or self.temps)
+
+    @property
+    def power_delta(self) -> int:
+        return (sum(a.power_delta for a in self.auras if isinstance(a, PTModifier)) +
+                sum(a.power_delta for a in self.temps if isinstance(a, PTTemp)))
+
+    @property
+    def toughness_delta(self) -> int:
+        return (sum(a.toughness_delta for a in self.auras if isinstance(a, PTModifier)) +
+                sum(a.toughness_delta for a in self.temps if isinstance(a, PTTemp)))
+
+    @property
+    def kwa_delta(self) -> tuple[set[str], set[str]]:
+        """KWAMod('add', 'Flying'), KWAMod('add', 'Trample'), KWA('remove', 'Trample') returns ({'Flying'}, {})"""
+        return self._kwa_adds - self._kwa_subtracts, self._kwa_subtracts - self._kwa_adds
+
+    @property
+    def _kwa_adds(self) -> set[str]:
+        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'add'} |
+                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'add'})
+
+    @property
+    def _kwa_subtracts(self) -> set[str]:
+        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'remove'} |
+                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'remove'})
+
+    def remove_aura(self, item: GameCard | PTModifier | KWAModifier) -> None:
+        for a in self.auras:
+            if a == item:
+                self.auras.remove(a)
+        else:
+            print(f"Warning: Attempted to remove {item} but it wasn't found")
+
+    def clear_temps(self) -> None:
+        self.temps.clear()
+
+    def clear_perms(self) -> None:
+        self.auras.clear()
+
+    def clear_all(self) -> None:
+        self.auras.clear()

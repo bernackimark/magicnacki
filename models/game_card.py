@@ -8,7 +8,8 @@ from models.effects.tap import *
 from models.effects.upkeep import *
 from models.effects.untap import *
 from models.activated_ability import ActivatedAbility
-from models.modifiers import BasePT, PTModifier, PTTemp, KWAModifier, KWATemp
+from models.modifiers import Modifiers
+
 
 def build_effects_for_slug(slug: str) -> list[Effect]:
     """
@@ -72,13 +73,9 @@ class GameCard:
         self.combat_damage_dealt: int = 0
         self.combat_damage_received: int = 0
 
-        self.base: BasePT = BasePT(self.props.power, self.props.toughness)
-        self.pt_modifiers: list[PTModifier] = []
-        self.pt_temps: list[PTTemp] = []
-
+        self.base_pt = (self.props.power, self.props.toughness)
         self.base_kwa: tuple[str, ...] = tuple(self.props.keyword_abilities)
-        self.kwa_modifiers: list[KWAModifier] = []
-        self.kwa_temps: list[KWATemp] = []
+        self.modifiers = Modifiers()
 
         # Build effect instances for this card based on slug
         self.effects: list[Effect] = []
@@ -88,11 +85,12 @@ class GameCard:
             self.effects.extend(slug_effects)
 
     def __repr__(self) -> str:
-        if not self.props.is_creature:
+        if not self.props.is_creature and not self.modifiers:
             text = self.props.name
+        elif not self.props.is_creature and self.modifiers:
+            text = f'{self.props.name} [{self.modifiers}]'
         else:
-            mods = self.auras + self.pt_modifiers + self.pt_temps + self.kwa_modifiers + self.kwa_temps
-            text = f'{self.props.name} ({self.power}/{self.toughness}) {mods}'
+            text = f'{self.props.name} ({self.power}/{self.toughness}) {self.modifiers}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
@@ -101,79 +99,45 @@ class GameCard:
 
     @property
     def power(self) -> int:
-        # could probably be re-written to reduce calls
-        global_power_adj, _ = self.get_global_pt_adj()
-        return (self.base.power + global_power_adj + sum(m.power_delta for m in self.pt_modifiers) +
-                sum(t.power_delta for t in self.pt_temps))
+        return self._pt[0]
 
     @property
     def toughness(self) -> int:
-        # could probably be re-written to reduce calls
-        _, global_toughness_adj = self.get_global_pt_adj()
-        return (self.base.toughness + global_toughness_adj + sum(m.toughness_delta for m in self.pt_modifiers)
-                + sum(t.toughness_delta for t in self.pt_temps))
+        return self._pt[1]
 
-    def get_global_pt_adj(self) -> tuple[int, int]:
+    @property
+    def _pt(self) -> tuple[int, int]:
+        global_power_adj, global_toughness_adj = self._get_global_pt_adj()
+        power = self.base_pt[0] + global_power_adj + self.modifiers.power_delta
+        toughness = self.base_pt[1] + global_toughness_adj + self.modifiers.toughness_delta
+        return power, toughness
+
+    def _get_global_pt_adj(self) -> tuple[int, int]:
+        power, toughness = 0, 0
         for card, global_effect in self.game_state.global_effects:
             if global_effect.applies_to(self, self.game_state):
-                return global_effect.pt_offset()
-        return 0, 0
+                p_offset, t_offset = global_effect.pt_offset()
+                power += p_offset
+                toughness += t_offset
+        return power, toughness
 
     @property
     def keyword_abilities(self) -> list[str]:
+        """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, mod removes = {'Reach', 'First Strike'}
+        returns ['Flying', 'Trample']"""
         kwa = set(self.base_kwa)
-
-        # TODO: a modifying method inside a property?!
-        def add_remove_kwa(m: KWAModifier | KWATemp):
-            if m.add_or_remove == 'add':
-                kwa.add(m.kwa)
-            else:
-                if m.kwa in kwa:
-                    kwa.remove(m.kwa)
-
-        for mod in self.kwa_modifiers:
-            add_remove_kwa(mod)
-        for mod in self.kwa_temps:
-            add_remove_kwa(mod)
-
-        return list(kwa)
+        adds, removes = self.modifiers.kwa_delta
+        return list((kwa | adds) - removes)
 
     def clear_all_mods(self) -> None:
-        """attached_to = None for auras and host; all lists of auras, perm_mods, and temp_mods are emptied"""
+        """attached_to = None for all auras and host; all modifiers are emptied"""
         if self.props.is_aura:
-            # I'm an aura. remove relationship from host & remove from host.auras(), .pt_modifiers(), .kwa_modifiers()
             host = self.attached_to
             host.attached_to = None
-            host.auras.remove(self)
-            for kwa_mod in host.kwa_modifiers:
-                if kwa_mod.card == self:
-                    host.kwa_modifiers.remove(kwa_mod)
-                    break
-            for pt_mod in host.pt_modifiers:
-                if pt_mod.card == self:
-                    host.pt_modifiers.remove(pt_mod)
-                    break
+            host.modifiers.clear_all()
         # Remove all attachments
         self.attached_to = None
-        self.auras.clear()
-        self.kwa_modifiers.clear()
-        self.pt_modifiers.clear()
-        self.kwa_temps.clear()
-        self.pt_temps.clear()
-
-    def remove_perm_mod(self, mod: "GameCard"):
-        for a in self.auras:
-            if a == mod:
-                self.auras.remove(mod)
-                break
-        for pt_mod in self.pt_modifiers:
-            if pt_mod.card == mod:
-                self.pt_modifiers.remove(pt_mod)
-                break
-        for kwa_mod in self.kwa_modifiers:
-            if kwa_mod.card == mod:
-                self.kwa_modifiers.remove(kwa_mod)
-                break
+        self.modifiers.clear_all()
 
     def tap(self, gs: "GameState") -> None:
         if self.is_tapped:
@@ -198,7 +162,7 @@ class GameCard:
         gs.decrement_life(target_player_idx, amt, self)
 
     def receive_damage(self, gs: "GameState", amt: int, source: "GameCard"):
-        self.pt_temps.append(PTTemp(0, -amt))
+        self.modifiers.temps.append(PTTemp(0, -amt))
         if self.toughness <= 0:
             gs.send_to_graveyard_from_play(self)
 

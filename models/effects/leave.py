@@ -3,11 +3,15 @@ from typing import Optional
 from models.effects.base import Effect
 from card_filter import CardFilter
 
+
+"""Effects for when cards leave the playing field (ex Castle, Crusade)"""
+
 def creature_bond_on_leave():
     class E(Effect):
         event = 'leave'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            # TODO: i think this is wrong; i think it's only if creature goes to graveyard
             # creature leaving: for every attached aura that is creature-bond, do life loss to creature's owner
             for aura in list(target.auras):
                 if aura.props.slug == 'creature-bond':
@@ -44,8 +48,5 @@ def default_clear_on_leave():
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
             ...
-            # gs.send_to_graveyard_from_play(source)  # removes from board; appends to graveyard
-            # for a in source.auras:
-            #     gs.send_to_graveyard_from_play(a)
-            # source.clear_all_mods()
+            # TODO: should this remove cards from board?
     return E()
