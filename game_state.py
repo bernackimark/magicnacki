@@ -1,303 +1,25 @@
-import abc
-from abc import ABC
-from dataclasses import dataclass, field
 import random
 from typing import Callable, Optional
 
+from action_stack import ActionStack
 from card_filter import CardFilter
 from build_deck import Deck
-from models.activated_ability import ActivatedAbility, add_activated_abilities
+from models.actions.activate_ability import ActivateAbility
+from models.actions.base import Action
+from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
+from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking
+from models.actions.draw_discard import DrawCard, DiscardCard
+from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
+from models.actions.stack_accept_counter import AcceptAction
+from models.activated_ability import add_activated_abilities
 from models.effects.global_ import GlobalEffect
-from models.game_card import GameCard, build_effects_for_slug
-from models.board import Board, casting_weight
+from models.game_card import GameCard
+from models.board import Board
 from models.combat import Combat
 from models.hand import Hand
-from models.modifiers import PTTemp
 from models.turn import Turn
 from phase_fsm import Phase
 from utils import flip
-
-
-@dataclass
-class Action(ABC):
-    player_idx: int
-    gs: "GameState"
-
-    @abc.abstractmethod
-    def play(self) -> None:
-        ...
-
-@dataclass
-class ActionStack:
-    _actions: list[Action] = field(default_factory=list)
-
-    def __len__(self) -> int:
-        return len(self._actions)
-
-    @property
-    def first_actor_idx(self) -> int:
-        return self._actions[0].player_idx
-
-    @property
-    def last_actor_idx(self) -> int:
-        return self._actions[-1].player_idx
-
-    @property
-    def action_on_idx(self) -> int:
-        return flip(self.last_actor_idx)
-
-    @property
-    def last_action(self) -> Action:
-        return self._actions[-1]
-
-    def add(self, action: Action, gs: "GameState") -> None:
-        self._actions.append(action)
-        gs.action_on_idx = flip(gs.action_on_idx)
-
-    def clear(self) -> None:
-        self._actions.clear()
-
-@dataclass
-class DrawCard(Action):
-    def __repr__(self) -> str:
-        return 'Draw a Card'
-
-    def play(self) -> None:
-        hand = self.gs.hands[self.player_idx]
-        deck = self.gs.decks[self.player_idx]
-        hand.cards.append(deck.cards.pop())
-        hand.sort_cards()
-        self.gs.phase = Phase.CAST
-
-@dataclass
-class CastToBoard(Action):
-    card: GameCard
-
-    def __repr__(self) -> str:
-        return f"Cast {self.card.props.name}"
-
-    def play(self) -> None:
-        board = self.gs.boards[self.player_idx]
-        board.pay_casting_weight(self.card.props.casting_weight, self.gs)
-        hand = self.gs.hands[self.player_idx]
-        hand.cards.remove(self.card)
-        board.play_to_board(self.card)
-        if self.card.props.is_land:
-            self.gs.turn.has_played_land = True
-
-        # TODO: for speed of testing, perms are being auto-cast, instead of being added to the stack
-        self.gs.trigger('cast', self.card)
-        print(f"Successfully cast {self.card.props.name}")
-
-@dataclass
-class CastToTargetAddToStack(Action):
-    card: GameCard
-    target: GameCard | list[GameCard] | None
-
-    def __repr__(self) -> str:
-        target_text = ''
-        if isinstance(self.target, list) and self.target:
-            target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
-        elif isinstance(self.target, GameCard):
-            target_text = ', targeting ' + self.target.props.name
-        return f"Cast {self.card.props.name}{target_text}"
-
-    def play(self) -> None:
-        board = self.gs.boards[self.player_idx]
-        board.pay_casting_weight(self.card.props.casting_weight, self.gs)
-        hand = self.gs.hands[self.player_idx]
-        hand.cards.remove(self.card)
-        self.gs.action_stack.add(self, self.gs)
-
-@dataclass
-class CastCounter(Action):
-    card: GameCard
-    target: Action
-
-    def __repr__(self):
-        return f"Cast {self.card.props.name} to counter {self.target}"
-
-    def play(self) -> None:
-        board = self.gs.boards[self.player_idx]
-        board.pay_casting_weight(self.card.props.casting_weight, self.gs)
-        hand = self.gs.hands[self.player_idx]
-        hand.cards.remove(self.card)
-        self.gs.action_stack.add(self, self.gs)
-
-@dataclass
-class ActivateAbility(Action):
-    ability: ActivatedAbility
-    target: GameCard | None = None
-
-    def __repr__(self) -> str:
-        target_text = ''
-        if isinstance(self.target, list) and self.target and isinstance(self.target[0], GameCard):
-            target_text = f", targeting {', '.join([_ for _ in self.target])}"
-        elif isinstance(self.target, GameCard):
-            target_text = ', targeting ' + self.target.props.name
-        elif (isinstance(self.target, list) or isinstance(self.target, tuple)) and self.target and isinstance(self.target[0], int):
-            target_text = ', targeting Player #' + '& '.join([_ for _ in self.target])
-        elif isinstance(self.target, int):
-            target_text = f', targeting Player #{self.target}'
-        return f"Activate Ability: {self.ability.card}{target_text}"
-
-    def play(self) -> None:
-        # Pay tap cost
-        if self.ability.cost_tap:
-            self.ability.card.tap(self.gs)
-
-        # Pay mana cost
-        if self.ability.cost_mana:
-            self.gs.boards[self.ability.card.orig_owner_id].pay_casting_weight(casting_weight(self.ability.cost_mana), self.gs)
-
-        # Execute effect
-        # TODO: for the sake of testing, perms are being auto-cast, instead of being added to the stack
-        self.ability.effect(self.gs, self.ability.card, self.target)
-
-@dataclass
-class CreatureAttack(Action):
-    card: GameCard
-
-    def __repr__(self) -> str:
-        return f"Add {self.card.__repr__()} to attack"
-
-    def play(self) -> None:
-        if 'Vigilance' not in self.card.keyword_abilities:
-            self.card.tap(self.gs)
-        self.gs.combats.append(Combat(self.gs, self.card))
-
-@dataclass
-class BeginCombat(Action):
-
-    def __repr__(self) -> str:
-        return "Begin Combat"
-
-    def play(self) -> None:
-        self.gs.phase = Phase.DECLARE_ATTACKERS
-
-@dataclass
-class FinishDeclaringAttackers(Action):
-
-    def __repr__(self) -> str:
-        return "Done Declaring Attackers"
-
-    def play(self) -> None:
-        self.gs.phase = Phase.DECLARE_BLOCKERS
-        self.gs.action_on_idx = flip(self.gs.action_on_idx)
-
-@dataclass
-class AssignBlocker(Action):
-    blocker: GameCard
-    attacker: GameCard
-
-    def __repr__(self) -> str:
-        return f"Block {self.attacker} with {self.blocker}"
-
-    def play(self) -> None:
-        for com in self.gs.combats:
-            if com.attacker == self.attacker:
-                com.blockers.append(self.blocker)
-
-@dataclass
-class FinishBlocking(Action):
-
-    def __repr__(self) -> str:
-        return f"Finish Blocks"
-
-    def play(self) -> None:
-        self.gs.phase = Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES
-
-@dataclass
-class DamageCreature(Action):
-    card: GameCard
-    target: GameCard
-    amt: int
-
-    def __repr__(self) -> str:
-        return f"{self.card.props.name} deals {self.amt} to {self.target}"
-
-    def play(self) -> None:
-        self.target.modifiers.temps.append(PTTemp(0, -self.amt))
-        if self.target.toughness <= 0:
-            self.gs.send_to_graveyard_from_play(self.target)
-
-@dataclass
-class DamagePlayer(Action):
-    card: GameCard
-    target_player: int
-    amt: int
-
-    def __repr__(self) -> str:
-        return f"{self.card.props.name} deals {self.amt} to player #{self.target_player}"
-
-    def play(self) -> None:
-        self.gs.decrement_life(self.target_player, self.amt, self.card)
-
-@dataclass
-class MoveToEndStep(Action):
-
-    def __repr__(self) -> str:
-        return "Move to End Step"
-
-    def play(self) -> None:
-        self.gs.phase = Phase.END_STEP
-
-@dataclass
-class DiscardCard(Action):
-    card: GameCard
-
-    def __repr__(self) -> str:
-        return f"Discard {self.card} to graveyard"
-
-    def play(self) -> None:
-        self.gs.send_to_graveyard(self.card)
-        hand = self.gs.hands[self.player_idx]
-        hand.cards.remove(self.card)
-
-@dataclass
-class PassTheTurn(Action):
-
-    def __repr__(self) -> str:
-        return "Pass the Turn"
-
-    def play(self) -> None:
-        self.gs.player_turn_idx = flip(self.gs.player_turn_idx)
-        self.gs.action_on_idx = self.gs.player_turn_idx
-        self.gs.turn = Turn(self.gs.player_turn_idx, flip(self.gs.player_turn_idx))
-        self.gs.turn_number += 1
-        self.gs.phase = Phase.UNTAP
-
-@dataclass
-class AcceptAction(Action):
-    def __repr__(self) -> str:
-        return f"Accept {self.gs.action_stack.last_action}"
-
-    def play(self) -> None:
-        last_action: CastToTargetAddToStack = self.gs.action_stack.last_action
-        card = last_action.card
-        target = last_action.target
-        if card.props.is_aura:
-            card.attached_to = target
-            target.auras.append(card)
-            self.gs.boards[target.orig_owner_id].play_to_board(card)
-
-        self.gs.trigger('cast', card, target)
-        print(f"Successfully cast {card.props.name}")
-
-        self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
-        self.gs.action_stack.clear()
-
-
-@dataclass
-class CounterAction(Action):
-    action: Action
-
-    def __repr__(self) -> str:
-        return f"In response to {self.gs.action_stack.last_action}: {self.action}"
-
-    def play(self) -> None:
-        self.gs.action_stack.add(self.action, self.gs)
-        self.gs.action_on_idx = flip(self.gs.action_on_idx)
 
 
 class GameState:
@@ -371,9 +93,8 @@ class GameState:
     def can_attack(self, card: GameCard) -> bool:
         """Base rules, card effects (such as MAPPING['sea-serpent]: lambda c: IslandhomeEffect(), global effects."""
         # Base rules first
-        if not card.props.is_creature or card.has_summoning_sickness or card.is_tapped or 'Defender' in card.keyword_abilities:
-            return False
-        if card in [combat.attacker for combat in self.combats]:
+        if (not card.props.is_creature or card.has_summoning_sickness or card.is_tapped
+                or 'Defender' in card.keyword_abilities or card in [combat.attacker for combat in self.combats]):
             return False
 
         # Ask global effects and card effects
