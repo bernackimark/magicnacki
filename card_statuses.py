@@ -50,7 +50,7 @@ card_statuses = {
     'green-ward': 'excluded',
     'guardian-angel': '',
     'healing-salve': '',
-    'holy-armor': 'test',
+    'holy-armor': 'done',
     'holy-strength': 'done',
     'hurkyls-recall': 'excluded',
     'island-fish-jasconius': '',
@@ -64,13 +64,13 @@ card_statuses = {
     'lifetap': 'excluded',
     'lord-of-atlantis': '',
     'magical-hack': '',
-    'mahamoti-djinn': 'test',
+    'mahamoti-djinn': 'done',
     'mana-short': '',
     'merfolk-of-the-pearl-trident': 'done',
     'mesa-pegasus': 'excluded',
     'mind-bomb': '',
     'morale': '',
-    'northern-paladin': 'test',  # Creature 2WW {WW}, {T}: Destroy target black permanent
+    'northern-paladin': '',  # Creature 2WW {WW}, {T}: Destroy target black permanent
     'osai-vultures': '',
     'pearled-unicorn': 'done',
     'personal-incarnation': '',
@@ -79,11 +79,11 @@ card_statuses = {
     'phantom-monster': '',
     'piety': '',
     'pikemen': 'excluded',
-    'pirate-ship': 'test',  # Creature {T}: This creature deals 1 damage to any target.
+    'pirate-ship': 'done',
     'power-leak': '',
     'power-sink': '',
     'prodigal-sorcerer': 'done',
-    'psionic-entity': 'test',  # Creature {T}: This creature deals 2 damage to any target and 3 damage to itself
+    'psionic-entity': 'done',
     'psychic-venom': '',
     'purelace': '',
     'reconstruction': '',
@@ -95,7 +95,7 @@ card_statuses = {
     'righteousness': '',
     'samite-healer': '',
     'savannah-lions': 'done',
-    'sea-serpent': '',
+    'sea-serpent': 'done',
     'seeker': 'done',
     'segovian-leviathan': '',
     'serendib-efreet': 'done',
@@ -157,10 +157,6 @@ Remaining:
 
 -   Deals Damage (combat damage is currently handled in a completely separate place):
         spirit-link: Aura Whenever enchanted creature deals damage, you gain that much life
-
--   Home:
-        sea-serpent: Islandhome
-        pirate-ship: Islandhome
 
 -   Activated Ability at a specific time:
         farmstead: Enchanted land has "At the beginning of your upkeep, {WW}: you gain 1 life
