@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from dataclasses import dataclass
 
-from game_state import Action, GameState
+from game_state import GameState
+from models.actions.base import Action
 
 
 @dataclass
