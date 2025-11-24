@@ -28,7 +28,7 @@ card_statuses = {
     'conversion': 'excluded',
     'copy-artifact': 'excluded',
     'counterspell': '',
-    'creature-bond': 'test',  # When creature dies, deal damage = creature's toughness to the creature's controller
+    'creature-bond': 'broken',  # When creature dies, deal damage = creature's toughness to the creature's controller
     'crusade': 'done',
     'death-ward': '',
     'disenchant': 'done',
