@@ -1,4 +1,9 @@
-from typing import Optional
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from ..game_card import GameCard
+    from game_state import GameState
 
 class Effect:
     """
@@ -13,6 +18,9 @@ class Effect:
     """
     event: str = 'generic'
 
-    def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         raise NotImplementedError()
+
+    def on_query(self, gs, event: str, card: GameCard, **kwargs):
+        return None  # default: no opinion
 

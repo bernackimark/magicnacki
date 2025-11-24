@@ -129,9 +129,6 @@ class ActivateAbility(Action):
     ability: ActivatedAbility
     target: GameCard | None = None
 
-    def __post_init__(self):
-        print(f"{self.ability=} ... {self.target=}")
-
     def __repr__(self) -> str:
         target_text = ''
         if isinstance(self.target, list) and self.target and isinstance(self.target[0], GameCard):
@@ -352,8 +349,41 @@ class GameState:
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
         """Dispatch an event (string) to the card's effects; event in {'cast','upkeep','tap','untap','leave'}"""
         for e in card.effects:
+            print(e)
             if e.event == event:
                 e.resolve(self, card, target)
+
+    def on_query(self, event: str, card: GameCard, **kwargs):
+        """Ask all effects whether this event is permitted. If any effect returns False, the action is denied.
+        If none return False, action is allowed."""
+        # Check local effects on the card
+        for eff in card.effects:
+            r = eff.on_query(self, event, card=card)
+            if r is False:
+                return False
+
+        # Check global effects
+        for card, eff in self.global_effects:
+            pass  # TODO: update this
+
+        return True
+
+    def can_attack(self, card: GameCard) -> bool:
+        """Base rules, card effects (such as MAPPING['sea-serpent]: lambda c: IslandhomeEffect(), global effects."""
+        # Base rules first
+        if not card.props.is_creature or card.has_summoning_sickness or card.is_tapped or 'Defender' in card.keyword_abilities:
+            return False
+        if card in [combat.attacker for combat in self.combats]:
+            return False
+
+        # Ask global effects and card effects
+        global_effects = [eff for card, eff in self.global_effects]
+        for effect in card.effects + global_effects:
+            result = effect.on_query(self, "can_attack", card=card)
+            if result is False:  # hard veto
+                return False
+
+        return True
 
     def _apply_opponent_life_loss(self, p_id: int, amt: int):
         """Helper for self.life_loss_registry"""
@@ -372,9 +402,6 @@ class GameState:
         for i in range(card_cnt):
             hand.cards.append(source_pile.pop(0))
             hand.sort_cards()
-
-    def get_card_from_board(self, board_idx: int, card_id: int) -> GameCard | None:
-        return next((c for c in self.boards[board_idx].cards if c.id == card_id), None)
 
     def remove_from_board(self, c: GameCard) -> None:
         """Trigger leave event for card (ex Crusade, Castle); remove card from board; remove all auras from board"""
@@ -595,20 +622,20 @@ class GameState:
                 available_actions.extend(self.get_available_activated_abilities(c))
 
             # declare combat
-            for c in board.cards:
-                if c.can_attack and not c.has_summoning_sickness:
-                    available_actions.append(BeginCombat(p_id, self))
-                    break
+            if any(self.can_attack(card) for card in board.cards):
+                available_actions.append(BeginCombat(p_id, self))
 
         if self.phase == Phase.DECLARE_ATTACKERS:
-            # add attackers
+            # TODO: animate-wall is unique; "attack" isn't a KWAMod or PTMod; there is no KWA for "attack"
             for c in board.cards:
-                if c not in [com.attacker for com in self.combats] and not c.has_summoning_sickness:
-                    # TODO: animate-wall is unique; "attack" isn't a KWAMod or PTMod; there is no KWA for "attack"
-                    if 'Wall' in c.props.card_sub_types and 'animate-wall' in {a.props.slug for a in c.auras}:
-                        c.can_attack = True
-                    if c.can_attack:
-                        available_actions.append(CreatureAttack(p_id, self, c))
+                if self.can_attack(c):
+                    available_actions.append(CreatureAttack(p_id, self, c))
+
+                # if c not in [com.attacker for com in self.combats] and not c.has_summoning_sickness:
+                #     if 'Wall' in c.props.card_sub_types and 'animate-wall' in {a.props.slug for a in c.auras}:
+                #         c.can_attack = True
+                #     if c.can_attack:
+                #         available_actions.append(CreatureAttack(p_id, self, c))
 
             # finish declaring attackers; move to declare blockers
             if self.combats:
@@ -674,10 +701,6 @@ class GameState:
         return available_actions
 
 
-# TODO:
-#  PTModifiers & KWAModifiers should be stored in/removed from game_card.auras()
-#  - They ARE Auras.
-#  - PTTemp & KWATemp should not be stored in game_card.auras()
 # TODO:
 #  Approach mana differently (Board is not where Mana amounts should be stored, since Mana can come from elsewhere)
 #  - Maybe GameState.extra_mana or Turn

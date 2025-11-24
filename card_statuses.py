@@ -4,7 +4,7 @@ card_statuses = {
     'amrou-kithkin': 'done',
     'angry-mob': '',
     'animate-artifact': 'excluded',
-    'animate-wall': 'broken',
+    'animate-wall': 'done',
     'apprentice-wizard': '',
     'armageddon': 'done',
     'backfire': 'done',

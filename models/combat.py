@@ -79,7 +79,7 @@ class Combat:
                     self.killed_creatures.append(blocker)
 
         for c in self.killed_creatures:
-            self.gs.send_to_graveyard(c)
+            self.gs.send_to_graveyard_from_play(c)
 
     def _handle_no_blockers(self):
         dmg = self.attacker.power

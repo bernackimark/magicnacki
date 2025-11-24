@@ -1,16 +1,33 @@
-from typing import Optional
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from ..game_card import GameCard
+    from game_state import GameState
 
 from models.effects.base import Effect
+from models.modifiers import KWAModifier
 from card_filter import CardFilter
 
-
 """Effects for when cards leave the playing field (ex Castle, Crusade)"""
+
+# TODO: don't all of the auras need an on_leave ... or is that handled in the default_handler?
+#  therefore, i wouldn't need an animate_wall_on_leave()
+
+def animate_wall_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            source.modifiers.remove_aura(source)
+
+    return E()
 
 def creature_bond_on_leave():
     class E(Effect):
         event = 'leave'
         
-        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: i think this is wrong; i think it's only if creature goes to graveyard
             # creature leaving: for every attached aura that is creature-bond, do life loss to creature's owner
             for aura in list(target.auras):
@@ -23,7 +40,7 @@ def castle_on_leave():
     class E(Effect):
         event = 'leave'
 
-        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             for e in gs.global_effects:
                 if source == e[0]:
                     gs.global_effects.remove(e)
@@ -34,7 +51,7 @@ def crusade_on_leave():
     class E(Effect):
         event = 'leave'
         
-        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             for e in gs.global_effects:
                 if source == e[0]:
                     gs.global_effects.remove(e)
@@ -42,11 +59,27 @@ def crusade_on_leave():
                     break
     return E()
 
+
+def island_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """If out of islands, send all of your creatures with Islandhome to the graveyard"""
+            p_id = source.orig_owner_id
+            my_islands = CardFilter(gs).on_player_board(p_id).by_slug('island').result()
+            if len(my_islands) > 1:
+                return
+            my_island_home_creatures = CardFilter(gs).on_player_board(p_id).has('Islandhome').result()
+            for creature in my_island_home_creatures:
+                gs.send_to_graveyard_from_play(creature)
+    return E()
+
 def default_clear_on_leave():
     class E(Effect):
         event = 'leave'
         
-        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             ...
             # TODO: should this remove cards from board?
     return E()

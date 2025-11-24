@@ -1,6 +1,7 @@
 from typing import Callable
 
 from card import Card
+from models.effects.can_attack import *
 from models.effects.cast import *
 from models.effects.common import *
 from models.effects.leave import *
@@ -17,6 +18,7 @@ def build_effects_for_slug(slug: str) -> list[Effect]:
     This centralizes where slugs map to behaviors.
     """
     mapping = {
+        'animate-wall': [animate_wall_on_cast(), animate_wall_on_leave()],
         'armageddon': [send_to_graveyard_all_lands()],
         'castle': [castle_on_cast(), castle_on_leave()],
         'creature-bond': [creature_bond_on_leave()],
@@ -28,9 +30,12 @@ def build_effects_for_slug(slug: str) -> list[Effect]:
         'giant-tortoise': [giant_tortoise_on_cast(), giant_tortoise_on_tap(), giant_tortoise_on_untap()],
         'holy-armor': [holy_armor_on_cast()],
         'holy-strength': [holy_strength_on_cast()],
+        'island': [island_on_leave()],
         'jump': [jump_on_cast()],
         'karma': [karma_on_upkeep()],
         'lance': [lance_on_cast()],
+        'pirate-ship': [islandhome_can_attack_effect()],
+        'sea-serpent': [islandhome_can_attack_effect()],
         'serendib-efreet': [serendib_efreet_on_upkeep()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
         'twiddle': [twiddle_on_cast()],
@@ -74,7 +79,8 @@ class GameCard:
         self.combat_damage_received: int = 0
 
         self.base_pt = (self.props.power, self.props.toughness)
-        self.base_kwa: tuple[str, ...] = tuple(self.props.keyword_abilities)
+        # self.base_kwa: tuple[str, ...] = tuple(self.props.keyword_abilities)
+        self.base_kwa: tuple[str, ...] = self.construct_base_kwas()
         self.modifiers = Modifiers()
 
         # Build effect instances for this card based on slug
@@ -90,7 +96,7 @@ class GameCard:
         elif not self.props.is_creature and self.modifiers:
             text = f'{self.props.name} [{self.modifiers}]'
         else:
-            text = f'{self.props.name} ({self.power}/{self.toughness}) {self.modifiers}'
+            text = f'{self.props.name} ({self.power}/{self.toughness}){self.modifiers}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
@@ -120,6 +126,15 @@ class GameCard:
                 power += p_offset
                 toughness += t_offset
         return power, toughness
+
+    def construct_base_kwas(self) -> tuple[str, ...]:
+        """Add 'Attack' to non-wall creatures"""
+        base_kwas = self.props.keyword_abilities
+        if 'Creature' not in self.props.card_types:
+            return tuple(base_kwas)
+        if 'Wall' not in self.props.card_sub_types and 'Attack' not in base_kwas:
+            base_kwas.append('Attack')
+        return tuple(base_kwas)
 
     @property
     def keyword_abilities(self) -> list[str]:

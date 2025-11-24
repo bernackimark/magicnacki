@@ -17,7 +17,7 @@ class Engine:
         return len(self.players)
 
     def play(self) -> None:
-        while True:
+        while not self.gs.is_game_over:
             self.renderer.render(self.gs, self.players)
             if self.gs.get_available_actions(self.gs.action_on_idx):
                 action = self.players[self.gs.action_on_idx].make_move(self.gs)
@@ -26,11 +26,12 @@ class Engine:
 
 
 # build decks
-universe = CardUniverse(['4E'])
-my_cards = (('plains', 16), ('serra-angel', 4), ('savannah-lions', 4), ('white-knight', 4), ('tundra-wolves', 4),
-            ('swords-to-plowshares', 4), ('wrath-of-god', 4))
-his_cards = (('island', 16), ('air-elemental', 4), ('merfolk-of-the-pearl-trident', 4), ('counterspell', 4),
-             ('jump', 4), ('zephyr-falcon', 4), ('lord-of-atlantis', 4), ('creature-bond', 4))
+universe = CardUniverse(['3E', '4E'])
+my_cards = (('plains', 24), ('tundra-wolves', 4), ('wall-of-swords', 4), ('animate-wall', 4),
+            ('disenchant', 4))
+his_cards = (('island', 32), ('pirate-ship', 4),  # ('merfolk-of-the-pearl-trident', 4),
+             ('sea-serpent', 4)  # ('psionic-entity', 4), ('flight', 4), ('flood', 4))
+            )
 
 decks = []
 for i, cards in enumerate((my_cards, his_cards)):
