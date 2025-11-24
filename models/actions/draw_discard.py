@@ -1,0 +1,31 @@
+from dataclasses import dataclass
+
+from models.actions.base import Action
+from models.game_card import GameCard
+from phase_fsm import Phase
+
+
+@dataclass
+class DrawCard(Action):
+    def __repr__(self) -> str:
+        return 'Draw a Card'
+
+    def play(self) -> None:
+        hand = self.gs.hands[self.player_idx]
+        deck = self.gs.decks[self.player_idx]
+        hand.cards.append(deck.cards.pop())
+        hand.sort_cards()
+        self.gs.phase = Phase.CAST
+
+
+@dataclass
+class DiscardCard(Action):
+    card: GameCard
+
+    def __repr__(self) -> str:
+        return f"Discard {self.card} to graveyard"
+
+    def play(self) -> None:
+        self.gs.send_to_graveyard(self.card)
+        hand = self.gs.hands[self.player_idx]
+        hand.cards.remove(self.card)
