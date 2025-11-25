@@ -13,12 +13,11 @@ if TYPE_CHECKING:
 from card_filter import CardFilter
 from models.modifiers import PTTemp, KWATemp
 
-# a Target can be a GameCard, list of GameCard, a single integer represents
 Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
 @dataclass
 class ActivatedAbility:
-    """A Target can be: GameCard, list[ameCard], int (a single player's index), tuple[int, int] (both players' indices),
+    """A Target can be: GameCard, list[GameCard], int (a single player's index), tuple[int, int] (both players' indices),
     None (I need review why this is needed by game_state.get_available_targets())
     """
     class AllowedPlayerTurn(Enum):
@@ -34,7 +33,8 @@ class ActivatedAbility:
     allowed_player_turns: list[AllowedPlayerTurn] = field(default_factory=list)
 
     def __post_init__(self):
-        self.allowed_player_turn = list(self.AllowedPlayerTurn)
+        if not self.allowed_player_turns:
+            self.allowed_player_turns = list(self.AllowedPlayerTurn)
 
     def _get_allowed_player_idx_turns(self) -> list[int]:
         allowed_p_idx_turns = []
@@ -49,8 +49,9 @@ class ActivatedAbility:
             return False
         if self.cost_mana and not gs.mana_pools[self.card.orig_owner_id].can_pay(self.cost_mana):
             return False
-        if (self.allowed_phases and gs.phase not in self.allowed_phases and
-                self.card.orig_owner_id in self._get_allowed_player_idx_turns()):
+        if self.allowed_phases and gs.phase not in self.allowed_phases:
+            return False
+        if self.card.orig_owner_id not in self._get_allowed_player_idx_turns():
             return False
         return True
 
