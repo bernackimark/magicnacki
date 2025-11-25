@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.base import Action
 from models.game_card import GameCard
 
@@ -13,12 +14,16 @@ class CastToBoard(Action):
 
     def play(self) -> None:
         board = self.gs.boards[self.player_idx]
-        board.pay_casting_weight(self.card.props.casting_weight, self.gs)
+        self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
         board.play_to_board(self.card)
         if self.card.props.is_land:
             self.gs.turn.has_played_land = True
+        if self.card.props.is_basic_land:
+            color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
+            print(color)
+            self.gs.mana_pools[self.player_idx].add(color)
 
         # TODO: for speed of testing, perms are being auto-cast, instead of being added to the stack
         self.gs.trigger('cast', self.card)
@@ -39,8 +44,7 @@ class CastToTargetAddToStack(Action):
         return f"Cast {self.card.props.name}{target_text}"
 
     def play(self) -> None:
-        board = self.gs.boards[self.player_idx]
-        board.pay_casting_weight(self.card.props.casting_weight, self.gs)
+        self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
         self.gs.action_stack.add(self, self.gs)
@@ -55,8 +59,7 @@ class CastCounter(Action):
         return f"Cast {self.card.props.name} to counter {self.target}"
 
     def play(self) -> None:
-        board = self.gs.boards[self.player_idx]
-        board.pay_casting_weight(self.card.props.casting_weight, self.gs)
+        self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
         self.gs.action_stack.add(self, self.gs)

@@ -1,5 +1,10 @@
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import Callable, Optional, Union
+from typing import TYPE_CHECKING, Callable, Optional, Union
+
+if TYPE_CHECKING:
+    from models.game_card import GameCard
+    from game_state import GameState
 
 from card_filter import CardFilter
 from models.modifiers import PTTemp
@@ -17,7 +22,7 @@ class ActivatedAbility:
     def can_activate(self, gs: "GameState") -> bool:
         if self.cost_tap and self.card.is_tapped:
             return False
-        if self.cost_mana and not gs.boards[self.card.orig_owner_id].can_meet_casting_cost(self.cost_mana):
+        if self.cost_mana and not gs.mana_pools[self.card.orig_owner_id].can_pay(self.cost_mana):
             return False
         return True
 

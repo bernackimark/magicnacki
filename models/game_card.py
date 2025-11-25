@@ -34,6 +34,7 @@ def build_effects_for_slug(slug: str) -> list[Effect]:
         'jump': [jump_on_cast()],
         'karma': [karma_on_upkeep()],
         'lance': [lance_on_cast()],
+        'mana-short': [mana_short_on_cast()],
         'pirate-ship': [islandhome_can_attack_effect()],
         'sea-serpent': [islandhome_can_attack_effect()],
         'serendib-efreet': [serendib_efreet_on_upkeep()],
@@ -49,9 +50,11 @@ def build_effects_for_slug(slug: str) -> list[Effect]:
 
 CAST_TARGETS = {
     'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
+    'braingeyser': lambda gs: list(range(gs.player_cnt)),
     'disenchant': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Enchantment']).result(),
     'feedback': lambda gs: CardFilter(gs).in_play().by_type('Enchantment').result(),
     'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'mana-short': lambda gs: list(range(gs.player_cnt)),
     'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
     'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
     'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result()

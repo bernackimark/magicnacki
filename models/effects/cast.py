@@ -60,7 +60,7 @@ def disenchant_on_cast():
 def divine_transformation_on_cast():
     class E(Effect):
         event = 'cast'
-        
+
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(PTModifier(source, 3, 3))
@@ -75,7 +75,6 @@ def add_flying_on_cast():
             if target:
                 target.modifiers.auras.append(KWAModifier(source, 'add', 'Flying'))
     return E()
-
 
 def giant_tortoise_on_cast():
     class E(Effect):
@@ -123,6 +122,20 @@ def lance_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
+    return E()
+
+def mana_short_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
+            """target = player_id whose lands should be tapped"""
+            if target is None:
+                return
+            player_lands = (CardFilter(gs).on_player_board(target).lands().result())
+            for land in player_lands:
+                land.tap(gs)
+            print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
     return E()
 
 

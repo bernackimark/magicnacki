@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from models.actions.base import Action
 from models.activated_ability import ActivatedAbility
-from models.board import casting_weight
 from models.game_card import GameCard
 
 
@@ -30,7 +29,7 @@ class ActivateAbility(Action):
 
         # Pay mana cost
         if self.ability.cost_mana:
-            self.gs.boards[self.ability.card.orig_owner_id].pay_casting_weight(casting_weight(self.ability.cost_mana), self.gs)
+            self.gs.mana_pools[self.ability.card.orig_owner_id].pay(self.ability.cost_mana)
 
         # Execute effect
         # TODO: for the sake of testing, perms are being auto-cast, instead of being added to the stack

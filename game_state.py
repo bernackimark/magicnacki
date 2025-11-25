@@ -2,8 +2,9 @@ import random
 from typing import Callable, Optional
 
 from action_stack import ActionStack
-from card_filter import CardFilter
 from build_deck import Deck
+from card_filter import CardFilter
+from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
@@ -17,6 +18,7 @@ from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
 from models.hand import Hand
+from models.mana import ManaPool
 from models.turn import Turn
 from phase_fsm import Phase
 from utils import flip
@@ -39,6 +41,7 @@ class GameState:
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
+        self.mana_pools: list[ManaPool] = [ManaPool() for _ in range(self.player_cnt)]
         self.phase = Phase.UNTAP
         self.action_stack = ActionStack()
         self.game_history: list[tuple[int, Action]] = []  # turn number & Action; appended to in engine.play()
@@ -278,7 +281,7 @@ class GameState:
 
             # TODO: activated abilities should also be allowed
             allowed_cards = hand.instants + hand.sorceries if p_id == self.player_turn_idx else hand.sorceries
-            playable_cards: list[GameCard] = [c for c in allowed_cards if board.can_meet_casting_cost(c.casting_cost)]
+            playable_cards: list[GameCard] = [c for c in allowed_cards if self.mana_pools[p_id].can_pay(c.casting_cost)]
 
             for c in playable_cards:
                 if c.props.slug in ('counterspell',):
@@ -300,6 +303,9 @@ class GameState:
 
         if self.phase == Phase.UNTAP:
             self.untap()
+            for basic_land in self.card_filter.on_player_board(p_id).basic_lands().result():
+                color = BASIC_LAND_MANA_PRODUCED[basic_land.props.slug]
+                self.mana_pools[p_id].add(color)
             self.phase = Phase.UPKEEP
             return
 
@@ -319,7 +325,7 @@ class GameState:
             available_actions.append(MoveToEndStep(p_id, self))
             # cast; compare its casting cost to the board to see if it can cast
             for c in hand.cards:
-                if not board.can_meet_casting_cost(c.casting_cost):
+                if not self.mana_pools[p_id].can_pay(c.casting_cost):
                     continue
                 elif c.props.is_land and self.turn.has_played_land:
                     continue
@@ -423,11 +429,14 @@ class GameState:
 
 
 # TODO:
-#  Approach mana differently (Board is not where Mana amounts should be stored, since Mana can come from elsewhere)
-#  - Maybe GameState.extra_mana or Turn
-#  - Might be best to have a mana.py
-#  - Re-visit board & Card (not GameCard) for its convoluted handling of casting_cost/casting_dict, etc
+#  Created ManaPool & GameState.mana_pools ...
+#  - Need to remove all unused temp mana (ex: Apprentice Wizard could give me CCC; if I don't use all of it, it's gone at end of turn, not beginning of my next turn)
 #  - Cards manipulate mana:
 #    - apprentice-wizard: 'Creature', {U}, {T}: Add {CCC}
 #    - energy-tap: 'Sorcery', "Tap target untapped creature you control; add an amount of {C} = its mana value.
 #  - When deciding which mana to tap; tap colorless mana where possible
+
+# TODO:
+#  Build a CardUniverseFilter (modeled after CardFilter)
+#  - helpful when I'm trying to figure out what are good cards to test
+#  - would be helpful to the User when Building a Deck
