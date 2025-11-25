@@ -5,6 +5,8 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
     from game_state import GameState
 
+from constants import BASIC_LANDS
+
 class CardFilter:
     """Filters a list of cards based on chained predicates; does not modify the original list.
     ex usage: card_filter.in_play().creatures().result(); .result() must always be at end of chain to return cards.
@@ -44,6 +46,10 @@ class CardFilter:
 
     def lands(self):
         self._cards = [c for c in self._cards if 'Land' in c.props.card_types]
+        return self
+
+    def basic_lands(self):
+        self._cards = [c for c in self._cards if c.props.slug in BASIC_LANDS]
         return self
 
     def walls(self):
