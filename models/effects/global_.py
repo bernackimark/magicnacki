@@ -19,6 +19,9 @@ class GlobalEffect:
     def on_query(self, gs: GameState, event: str, **kwargs):
         return None
 
+    def resolve(self):
+        ...
+
 
 class CastleEffect(GlobalEffect):
     def __init__(self, owner_id: int):
