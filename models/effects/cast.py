@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from utils import flip
+
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
@@ -17,6 +19,15 @@ def animate_wall_on_cast():
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             target.modifiers.auras.append(KWAModifier(source, 'remove', 'Defender'))
+
+    return E()
+
+def brainwash_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            target.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
 
     return E()
 
@@ -66,8 +77,46 @@ def divine_transformation_on_cast():
                 target.modifiers.auras.append(PTModifier(source, 3, 3))
     return E()
 
+def drain_power_on_cast():
+    class E(Effect):
+        event = 'cast'
 
-def add_flying_on_cast():
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
+            """target = player_id whose available mana will be targeted & given to the other player"""
+            if target is None:
+                return
+            land_giver_mana = gs.mana_pools[target].mana
+            land_receiver_mana = gs.mana_pools[flip(target)].mana
+            land_receiver_mana = {k: land_giver_mana[k] + land_receiver_mana[k] for k in land_giver_mana}
+            print(f"{source} steals all of Player #{target}'s unused mana.")
+    return E()
+
+
+def energy_tap_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """target = GameCard to be tapped"""
+            if target is None:
+                return
+            target.tap(gs)
+            mana_value = source.props.casting_weight
+            gs.mana_pools[source.orig_owner_id].add('C', mana_value)
+            print(f"{source} taps to add {mana_value} colorless to your mana pool.")
+    return E()
+
+
+def farmstead_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            target.modifiers.auras.append(source)
+
+    return E()
+
+def flying_on_cast():
     class E(Effect):
         event = 'cast'
         
@@ -122,6 +171,17 @@ def lance_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
+    return E()
+
+def lord_of_atlantis_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Merfolk').result()
+            for t in targets:
+                t.modifiers.auras.append(KWAModifier(source, 'add', 'Islandwalk'))
+                t.modifiers.auras.append(PTModifier(source, 1, 1))
     return E()
 
 def mana_short_on_cast():
