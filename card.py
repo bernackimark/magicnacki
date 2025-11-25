@@ -5,7 +5,7 @@ from typing import Iterator
 
 from kw_ability import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
-from constants import COLOR_LETTERS
+from constants import COLOR_LETTERS, BASIC_LANDS
 from utils import str_to_int
 
 
@@ -51,12 +51,15 @@ class Card:
         return 'Land' in self.card_types
 
     @cached_property
+    def is_basic_land(self) -> bool:
+        return self.slug in BASIC_LANDS
+
+    @cached_property
     def is_creature(self) -> bool:
         return 'Creature' in self.card_types
 
     @cached_property
     def casting_weight(self) -> int:
-        # TODO: variable casting should presumably be handled in main game, correct?
         if not self.casting_cost:
             return 0
         # find numbers (could be multiple digits) and letters separately
