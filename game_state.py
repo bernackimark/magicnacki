@@ -13,6 +13,7 @@ from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.activated_ability import add_activated_abilities
+from models.effects.can_block import can_block_base_rule
 from models.effects.global_ import GlobalEffect
 from models.game_card import GameCard
 from models.board import Board
@@ -83,7 +84,7 @@ class GameState:
         If none return False, action is allowed."""
         # Check local effects on the card
         for eff in card.effects:
-            r = eff.on_query(self, event, card=card)
+            r = eff.on_query(self, event, card, **kwargs)
             if r is False:
                 return False
 
@@ -104,6 +105,20 @@ class GameState:
         global_effects = [eff for card, eff in self.global_effects]
         for effect in card.effects + global_effects:
             result = effect.on_query(self, "can_attack", card=card)
+            if result is False:  # hard veto
+                return False
+
+        return True
+
+    def can_block(self, blocker: GameCard, attacker: GameCard):
+        # Base rules first
+        if can_block_base_rule() is False:
+            return False
+
+        # Ask global effects, card effects, and card's aura effects
+        global_effects = [eff for card, eff in self.global_effects]
+        for effect in blocker.effects + global_effects + [a.effects for a in blocker.auras]:
+            result = effect.on_query(self, 'can_block', card=blocker, attacker=attacker)
             if result is False:  # hard veto
                 return False
 
@@ -229,6 +244,7 @@ class GameState:
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
+
         for ability in c.abilities:
             if not ability.can_activate(self):
                 continue
@@ -303,9 +319,10 @@ class GameState:
 
         if self.phase == Phase.UNTAP:
             self.untap()
-            for basic_land in self.card_filter.on_player_board(p_id).basic_lands().result():
-                color = BASIC_LAND_MANA_PRODUCED[basic_land.props.slug]
-                self.mana_pools[p_id].add(color)
+            for i in range(self.player_cnt):
+                for basic_land in self.card_filter.on_player_board(i).basic_lands().result():
+                    color = BASIC_LAND_MANA_PRODUCED[basic_land.props.slug]
+                    self.mana_pools[i].add(color)
             self.phase = Phase.UPKEEP
             return
 
@@ -347,22 +364,17 @@ class GameState:
             # activate abilities
             for c in board.cards:
                 available_actions.extend(self.get_available_activated_abilities(c))
+                for a in c.auras:
+                    available_actions.extend(self.get_available_activated_abilities(a))
 
             # declare combat
             if any(self.can_attack(card) for card in board.cards):
                 available_actions.append(BeginCombat(p_id, self))
 
         if self.phase == Phase.DECLARE_ATTACKERS:
-            # TODO: animate-wall is unique; "attack" isn't a KWAMod or PTMod; there is no KWA for "attack"
             for c in board.cards:
                 if self.can_attack(c):
                     available_actions.append(CreatureAttack(p_id, self, c))
-
-                # if c not in [com.attacker for com in self.combats] and not c.has_summoning_sickness:
-                #     if 'Wall' in c.props.card_sub_types and 'animate-wall' in {a.props.slug for a in c.auras}:
-                #         c.can_attack = True
-                #     if c.can_attack:
-                #         available_actions.append(CreatureAttack(p_id, self, c))
 
             # finish declaring attackers; move to declare blockers
             if self.combats:
@@ -373,14 +385,9 @@ class GameState:
                                   if c not in [c for com in self.combats for c in com.blockers]]
             for blocker in remaining_blockers:
                 for com in self.combats:
-                    if 'Flying' in com.attacker.keyword_abilities and 'Flying' not in blocker.keyword_abilities and 'Reach' not in blocker.keyword_abilities:
-                        continue
-                    if com.attacker.props.slug == 'amrou-kithkin' and blocker.power > 3:
-                        continue
-                    if 'seeker' in {a.props.slug for a in com.attacker.auras}:
-                        if 'Artifact' not in blocker.props.card_types or 'U' not in blocker.props.colors:
-                            continue
-                    available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
+                    if self.can_block(blocker, com.attacker):
+                        available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
+
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
         if self.phase == Phase.END_STEP:
@@ -429,14 +436,20 @@ class GameState:
 
 
 # TODO:
-#  Created ManaPool & GameState.mana_pools ...
-#  - Need to remove all unused temp mana (ex: Apprentice Wizard could give me CCC; if I don't use all of it, it's gone at end of turn, not beginning of my next turn)
-#  - Cards manipulate mana:
-#    - apprentice-wizard: 'Creature', {U}, {T}: Add {CCC}
-#    - energy-tap: 'Sorcery', "Tap target untapped creature you control; add an amount of {C} = its mana value.
-#  - When deciding which mana to tap; tap colorless mana where possible
+#  - Test can_block() since that is new functionality; setting amrou-kithkin & seeker back to "test" status
+
+# TODO:
+#  - When deciding which mana to tap, as a strategy, tap colorless mana where possible
 
 # TODO:
 #  Build a CardUniverseFilter (modeled after CardFilter)
 #  - helpful when I'm trying to figure out what are good cards to test
 #  - would be helpful to the User when Building a Deck
+
+# TODO:
+#  Aura storage location
+#  - Right now:
+#     for c in board.cards:
+#        for a in c.auras:
+#  - Should auras & mods just be played to the board of the card owner?
+#    There's already a tie back to its host
