@@ -1,13 +1,9 @@
 from typing import Callable
 
 from card import Card
-from models.effects.can_attack import *
-from models.effects.can_block import *
-from models.effects.cast import *
-from models.effects.common import *
+from cast_targets import CAST_TARGETS
 from models.effects.leave import *
-from models.effects.tap import *
-from models.effects.upkeep import *
+from models.effects.slug_effect_mapping import SLUG_EFFECTS
 from models.effects.untap import *
 from models.activated_ability import ActivatedAbility
 from models.modifiers import Modifiers
@@ -15,63 +11,8 @@ from models.modifiers import Modifiers
 
 def build_effects_for_slug(slug: str) -> list[Effect]:
     """Instantiate and return effect instances for known slugs. This centralizes where slugs map to behaviors."""
-    mapping = {
-        'animate-wall': [animate_wall_on_cast()],
-        'amrou-kithkin': [amrou_kithkin_can_be_blocked()],
-        'armageddon': [send_to_graveyard_all_lands()],
-        'brainwash': [brainwash_on_cast()],
-        'castle': [castle_on_cast(), castle_on_leave()],
-        'creature-bond': [creature_bond_on_leave()],
-        'crusade': [crusade_on_cast(), crusade_on_leave()],
-        'disenchant': [disenchant_on_cast()],
-        'divine-transformation': [divine_transformation_on_cast()],
-        'drain-power': [drain_power_on_cast()],
-        'energy-tap': [energy_tap_on_cast()],
-        'farmstead': [farmstead_on_cast()],
-        'feedback': [feedback_on_upkeep()],
-        'flight': [flying_on_cast()],
-        'giant-tortoise': [giant_tortoise_on_cast(), giant_tortoise_on_tap(), giant_tortoise_on_untap()],
-        'holy-armor': [holy_armor_on_cast()],
-        'holy-strength': [holy_strength_on_cast()],
-        'island': [island_on_leave()],
-        'jump': [jump_on_cast()],
-        'karma': [karma_on_upkeep()],
-        'lance': [lance_on_cast()],
-        'lord-of-atlantis': [lord_of_atlantis_on_cast(), lord_of_atlantis_on_leave()],
-        'mana-short': [mana_short_on_cast()],
-        'pirate-ship': [islandhome_can_attack_effect()],
-        'sea-serpent': [islandhome_can_attack_effect()],
-        'seeker': [seeker_enchanted_creature_can_be_blocked()],
-        'serendib-efreet': [serendib_efreet_on_upkeep()],
-        'swords-to-plowshares': [swords_to_plowshares_on_cast()],
-        'twiddle': [twiddle_on_cast()],
-        'unsummon': [unsummon_on_cast()],
-        'wrath-of-god': [wrath_of_god_on_cast()],
+    return SLUG_EFFECTS.get(slug, [])
 
-        '_default_leave': [default_clear_on_leave()],
-    }
-    return mapping.get(slug, [])
-
-
-def all_player_indices(gs):
-    return list(range(gs.player_cnt))
-
-
-CAST_TARGETS = {
-    'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
-    'braingeyser': lambda gs: all_player_indices(gs),
-    'brainwash': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'disenchant': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Enchantment']).result(),
-    'drain-power': lambda gs: all_player_indices(gs),
-    'energy-tap': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().tapped(False).result(),
-    'farmstead': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands.result(),
-    'feedback': lambda gs: CardFilter(gs).in_play().by_type('Enchantment').result(),
-    'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'mana-short': lambda gs: all_player_indices(gs),
-    'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
-    'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
-    'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result()
-}
 
 class GameCard:
     def __init__(self, props: Card, id_: int, orig_owner_id: int, cast_target_func: Callable = None):
