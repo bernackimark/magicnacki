@@ -38,7 +38,19 @@ class ManaPool:
             return True
         if isinstance(cost, str):
             cost = parse_casting_cost(cost)
-        return all(self.mana.get(c, 0) >= amt for c, amt in cost.items())
+
+        # 1. Pay colored mana first
+        remaining_mana = self.mana.copy()
+
+        for color in ('W', 'U', 'B', 'R', 'G'):
+            if remaining_mana[color] < cost[color]:
+                return False
+            remaining_mana[color] -= cost[color]
+
+        # 2. Pay colorless cost with any remaining mana
+        total_remaining = sum(remaining_mana.values())
+
+        return total_remaining >= cost['C']
 
     def pay(self, cost: dict[str: int] | str | None):
         if cost is None:
