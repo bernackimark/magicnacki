@@ -5,6 +5,7 @@ import requests
 from common.file_utils import update_json_file_with_dict
 from scraping import (scrape_pages_until_text_not_found, find_all_matched, find_first_match, clean_raw_html)
 
+SLUGS_W_0A_URLS = {'army-of-allah', 'bird-maiden'}
 
 @dataclass
 class CardScraper:
@@ -28,10 +29,6 @@ class CardScraper:
         print(f'Successfully scraped slugs for set code: {self.set_code}')
         return card_slugs
 
-    def _get_card_url(self, slug: str) -> str:
-        land_sub_str = '0a' if slug in self.LANDS else '0'
-        return f'https://gatherer.wizards.com/{self.set_code}/en-us/{land_sub_str}/{slug}'
-
     @staticmethod
     def _clean_rules_text(text: str) -> str:
         text = text[:-1]  # removes backslash in the succeeding text
@@ -50,10 +47,20 @@ class CardScraper:
         cards_data = {}
         for slug in card_slugs:
             # try:
-            url = self._get_card_url(slug)
-            print('Scraping', url)
-            html_str = requests.get(url).text
-            print(f'Found {len(html_str)} characters')
+            for url_sub_str in ('0', '0a'):
+                url = f'https://gatherer.wizards.com/{self.set_code}/en-us/{url_sub_str}/{slug}'
+                print('Scraping', url)
+                html_str = requests.get(url).text
+                print(f'Found {len(html_str)} characters')
+
+                # Card Not Found HTML seems to be under 60_000 chars, successes much greater
+                if len(html_str) >= 75000 or slug in self.LANDS:
+                    break
+                print(f'Likely URL failure for {url}; attempting to use "0a" URL')
+
+            if len(html_str) < 75000:
+                raise ValueError(f'Exiting ... Scrape likely failed for {url}\nHere is the HTML dump:\n{html_str}')
+
             name = find_first_match(html_str, '"cardDetailsCardName">', '</')
             name = clean_raw_html(name)
             casting_cost = find_first_match(html_str, 'instanceManaText\\":\\"', '\\\\"')
@@ -103,22 +110,18 @@ class CardScraper:
 
 
 if __name__ == '__main__':
-    card_scraper = CardScraper('1E')
+    card_scraper = CardScraper('AN')
     data = card_scraper.scrape_card_data()
     update_json_file_with_dict('card_data.json', data)
 
-    card_scraper = CardScraper('2E')
+    card_scraper = CardScraper('AQ')
     data = card_scraper.scrape_card_data()
     update_json_file_with_dict('card_data.json', data)
 
-    card_scraper = CardScraper('3E')
+    card_scraper = CardScraper('LE')
     data = card_scraper.scrape_card_data()
     update_json_file_with_dict('card_data.json', data)
 
-    card_scraper = CardScraper('4E')
-    data = card_scraper.scrape_card_data()
-    update_json_file_with_dict('card_data.json', data)
-
-    card_scraper = CardScraper('5E')
+    card_scraper = CardScraper('DK')
     data = card_scraper.scrape_card_data()
     update_json_file_with_dict('card_data.json', data)
