@@ -69,7 +69,7 @@ class CardScraper:
             rules_text = find_first_match(html_str, 'instanceText\\":\\"', '\\",')
             if rules_text:
                 rules_text = self._clean_rules_text(rules_text)
-            oracle_rules_text = find_all_matched(html_str, 'oracleText\\":\\"', '\\",')[-1]
+            oracle_rules_text = find_all_matched(html_str, 'oracleText\\":\\"', '\\",')[0]
             if oracle_rules_text:
                 oracle_rules_text = self._clean_rules_text(oracle_rules_text)
             power = find_first_match(html_str, 'cardDetailsPower">', '<')
