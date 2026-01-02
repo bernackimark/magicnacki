@@ -11,6 +11,30 @@ from card_filter import CardFilter
 
 """Effects for when cards leave the playing field (ex Castle, Crusade)"""
 
+def global_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            for e in gs.global_effects:
+                if source == e[0]:
+                    gs.global_effects.remove(e)
+                    break
+    return E()
+
+def akron_legionnaire_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack
+            my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
+            for my_creature in my_creatures:
+                for aura in my_creature.auras:
+                    if aura.props.slug == 'akron-legionnaire':
+                        my_creature.auras.remove(aura)
+                        break
+    return E()
 
 def creature_bond_on_leave():
     class E(Effect):
@@ -24,29 +48,6 @@ def creature_bond_on_leave():
                     gs.decrement_life(target.orig_owner_id, target.props.toughness, aura)
     return E()
 
-
-def castle_on_leave():
-    class E(Effect):
-        event = 'leave'
-
-        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-            for e in gs.global_effects:
-                if source == e[0]:
-                    gs.global_effects.remove(e)
-                    break
-    return E()
-
-def crusade_on_leave():
-    class E(Effect):
-        event = 'leave'
-        
-        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-            for e in gs.global_effects:
-                if source == e[0]:
-                    gs.global_effects.remove(e)
-                    print("Removing Crusade from gs.global_effects")
-                    break
-    return E()
 
 def island_on_leave():
     class E(Effect):
