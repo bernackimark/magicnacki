@@ -438,6 +438,9 @@ class GameState:
 
 
 # TODO:
+#  - Where are auras being stored self.auras or self.modifiers.auras???
+
+# TODO:
 #  - Test can_block() since that is new functionality; setting amrou-kithkin & seeker back to "test" status
 
 # TODO:
