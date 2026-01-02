@@ -112,7 +112,7 @@ class GameState:
 
     def can_block(self, blocker: GameCard, attacker: GameCard):
         # Base rules first
-        if can_block_base_rule() is False:
+        if can_block_base_rule().on_query(self, 'can_block', card=blocker, attacker=attacker) is False:
             return False
 
         # Ask global effects, card effects, and card's aura effects
@@ -417,6 +417,8 @@ class GameState:
             for d in self.decks_all_cards:
                 for c in d.cards:
                     c.modifiers.clear_temps()
+            for pool in self.mana_pools:
+                pool.clear()
             self.phase = Phase.PASS_THE_TURN
             return
 
@@ -442,6 +444,11 @@ class GameState:
 #  - When deciding which mana to tap, as a strategy, tap colorless mana where possible
 
 # TODO:
+#  Unify get_cast_targets() & ActivatedAbility.target_filter:
+#  - when casting, i use CAST_TARGETS look-up which maps to a lambda function
+#  - when activating, i use a lambda function in the creation of the ActivatedAbility
+
+# TODO:
 #  Build a CardUniverseFilter (modeled after CardFilter)
 #  - helpful when I'm trying to figure out what are good cards to test
 #  - would be helpful to the User when Building a Deck
@@ -452,4 +459,4 @@ class GameState:
 #     for c in board.cards:
 #        for a in c.auras:
 #  - Should auras & mods just be played to the board of the card owner?
-#    There's already a tie back to its host
+#    There's already a tie back to its host via .attached_to
