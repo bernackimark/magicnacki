@@ -4,6 +4,25 @@ from models.effects.base import Effect
 from card_filter import CardFilter
 from utils import flip
 
+
+def copper_tablet_on_upkeep():
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            gs.decrement_life(gs.player_turn_idx, 1, source)
+    return E()
+
+
+def cursed_land_on_upkeep():
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            gs.decrement_life(target.orig_owner_id, 1, source)
+
+    return E()
+
 def feedback_on_upkeep():
     class E(Effect):
         event = 'upkeep'

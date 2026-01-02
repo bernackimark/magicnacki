@@ -62,6 +62,19 @@ def bog_rats_can_be_blocked():
                 return False
     return E()
 
+def elven_riders_can_be_blocked():
+    class E(Effect):
+        event = "query"
+
+        def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+            """Query: can_block, card = 'bog-rats', mandatory kwargs: blocker"""
+            blocker: GameCard = kwargs.get("blocker")
+            if event != "can_block" or card.props.slug != 'elven-riders' or not blocker:
+                return None
+            if 'Wall' not in blocker.props.card_sub_types or 'Flying' not in blocker.keyword_abilities:
+                return False
+    return E()
+
 def seeker_enchanted_creature_can_be_blocked():
     class E(Effect):
         event = "query"

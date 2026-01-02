@@ -55,6 +55,22 @@ class ActivatedAbility:
             return False
         return True
 
+def book_of_rass_pay_life_draw_card(gs: GameState, c: GameCard, _: Target):
+    gs.decrement_life(c.orig_owner_id, 2, c)
+    gs.draw(gs.hands[c.orig_owner_id], gs.decks[c.orig_owner_id].cards, 1)
+
+def brothers_of_fire_deals_damage(gs: GameState, source: GameCard, t: Target):
+    """1 damage to target; 1 damage to caster/owner"""
+    source.deal_damage_to_player(gs, 1, t) if isinstance(t, int) else source.deal_damage_to_card(gs, 1, t)
+    source.deal_damage_to_player(gs, 1, source.orig_owner_id)
+
+def electric_eel_pump_and_damage(gs: GameState, source: GameCard, t: Target):
+    source.modifiers.temps.append(PTTemp(2, 0))
+    source.deal_damage_to_player(gs, 1, source.orig_owner_id)
+
+def elves_of_deep_shadow_add_mana_but_damage(gs: GameState, source: GameCard, _: Target):
+    gs.mana_pools[source.orig_owner_id].add('B')
+    source.deal_damage_to_player(gs, 1, source.orig_owner_id)
 
 def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
     source.deal_damage_to_player(gs, 2, t) if isinstance(t, int) else source.deal_damage_to_card(gs, 2, t)
@@ -62,6 +78,17 @@ def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
 
 def add_activated_abilities(cards: list["GameCard"]) -> None:
     for c in cards:
+        if c.props.slug == 'aladdins-ring':
+            # damage to card
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
+                               effect=lambda gs, source, t: source.deal_damage_to_card(gs, 4, t)))
+            # damage to player
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: (0, 1),
+                               effect=lambda gs, source, t: source.deal_damage_to_player(gs, 4, t)))
+        if c.props.slug == 'ali-baba':
+            c.abilities.append(ActivatedAbility(
+                c, True, 'R', target_filter=lambda gs, source: CardFilter(gs).in_play().by_sub_type('Wall').result(),
+                                  effect=lambda gs, source, t: t.tap(gs)))
         if c.props.slug == 'apprentice-wizard':
             c.abilities.append(ActivatedAbility(c, True, 'U', target_filter=lambda gs, _: (0, 1),
                                effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add('C', 3)))
@@ -69,9 +96,42 @@ def add_activated_abilities(cards: list["GameCard"]) -> None:
             c.abilities.append(ActivatedAbility(
                 c, False, 'W', target_filter=None,
                 effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 1))))
+        if c.props.slug == 'book-of-rass':
+            c.abilities.append(ActivatedAbility(c, False, '2', target_filter=lambda gs, source: source.orig_owner_id,
+                               effect=lambda gs, source, t: book_of_rass_pay_life_draw_card(gs, source, t)))
         if c.props.slug == 'brainwash':
             c.abilities.append(ActivatedAbility(c, False, '3', target_filter=None,
                                effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Attack'))))
+        if c.props.slug == 'brothers-of-fire':
+            # damage to card
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
+                               effect=lambda gs, source, t: brothers_of_fire_deals_damage(gs, source, t)))
+            # damage to player
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: (0, 1),
+                               effect=lambda gs, source, p_id: brothers_of_fire_deals_damage(gs, source, p_id)))
+        if c.props.slug == 'carrion-ants':
+            c.abilities.append(ActivatedAbility(c, False, '1', target_filter=None,
+                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 1))))
+        if c.props.slug == 'dragon-engine':
+            c.abilities.append(ActivatedAbility(c, False, '2', target_filter=None,
+                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 0))))
+        if c.props.slug == 'dwarven-demolition-team':
+            c.abilities.append(ActivatedAbility(
+                c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().by_sub_type('Wall').result(),
+                                  effect=lambda gs, source, t: gs.send_to_graveyard_from_play(t)))
+        if c.props.slug == 'electric-eel':
+            c.abilities.append(ActivatedAbility(c, False, 'RR', target_filter=None,
+                               effect=lambda gs, s, t: electric_eel_pump_and_damage(gs, s, t)))
+        if c.props.slug == 'elves-of-deep-shadow':
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=None,
+                               effect=lambda gs, s, t: elves_of_deep_shadow_add_mana_but_damage(gs, s, t)))
+        if c.props.slug == 'emerald-dragonfly':
+            c.abilities.append(ActivatedAbility(c, False, 'GG', target_filter=None,
+                               effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'First Strike'))))
+        if c.props.slug == 'exorcist':
+            c.abilities.append(ActivatedAbility(
+                c, True, '1W', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().black().result(),
+                                  effect=lambda gs, source, t: gs.send_to_graveyard_from_play(t)))
         if c.props.slug == 'farmstead':
             c.abilities.append(ActivatedAbility(c, True, 'WW', target_filter=lambda gs, _: gs.player_turn_idx,
                                effect=lambda gs, _, t: gs.increment_life(gs.player_turn_idx, 1)))

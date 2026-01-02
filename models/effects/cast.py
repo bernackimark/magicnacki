@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 from typing import TYPE_CHECKING, Optional
 
 from utils import flip
@@ -8,10 +9,61 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Effect
-from models.effects.global_ import CastleEffect, CrusadeEffect
+from models.effects.global_ import AngelicVoicesEffect, BadMoonEffect, CastleEffect, CrusadeEffect
 from models.modifiers import KWAModifier, KWATemp, PTModifier
 from card_filter import CardFilter
 
+
+def acid_rain_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: "GameCard", target: Optional["GameCard"] = None):
+            for forest in CardFilter(gs).in_play().by_slug('forest').result():
+                gs.send_to_graveyard_from_play(forest)
+    return E()
+
+def akron_legionnaire_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack
+            my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
+            artifact_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).by_color('C').result()
+            akron_legionnaires = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).by_slug(
+                'akron-legionnaire').result()
+            for my_creature in my_creatures:
+                if my_creature not in [artifact_creatures + akron_legionnaires]:
+                    my_creature.auras.append(KWAModifier(source, 'remove', 'Attack'))
+
+    return E()
+
+def ancestral_recall_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
+            """target = player_id whose lands should be tapped"""
+            if target is None:
+                return
+            gs.draw(gs.hands[target], gs.decks[target].cards, 3)
+            print(f"Ancestral Recall has player #{target} draw three cards.")
+    return E()
+
+
+def angelic_voices_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, AngelicVoicesEffect(source.orig_owner_id)))
+            # add +0/+2 mod for in-turn player's creatures that are untapped
+            # for c in CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result():
+            #     c.pt_modifiers.append(PTModifier(source, 0, 2))
+
+    return E()
 
 def animate_wall_on_cast():
     class E(Effect):
@@ -22,12 +74,56 @@ def animate_wall_on_cast():
 
     return E()
 
+
+def bad_moon_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, BadMoonEffect(source.orig_owner_id)))
+
+    return E()
+
+def blood_lust_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # Target creatures gain +4/-4 until end of turn. If this reduces creature's toughness < 1, toughness = 1.
+            if target:
+                new_toughness = max(1, target.toughness - 4)
+                toughness_mod = new_toughness - target.toughness
+                target.modifiers.auras.append(PTModifier(source, 4, toughness_mod))
+    return E()
+
+def boomerang_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                board = gs.boards[target.orig_owner_id]
+                board.remove_from_board(target)
+                gs.return_to_hand(target)
+    return E()
+
 def brainwash_on_cast():
     class E(Effect):
         event = 'cast'
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             target.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
+
+    return E()
+
+def burrowing_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                target.modifiers.auras.append(KWAModifier(source, 'add', 'Mountainwalk'))
 
     return E()
 
@@ -43,17 +139,69 @@ def castle_on_cast():
             #     c.pt_modifiers.append(PTModifier(source, 0, 2))
     return E()
 
+def cleanse_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            for c in CardFilter(gs).in_play().creatures().black().result():
+                gs.send_to_graveyard_from_play(c)
+
+    return E()
+
+
+def crumble_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                gs.send_to_graveyard_from_play(target)
+                gs.increment_life(target.orig_owner_id, target.props.casting_weight)
+
+    return E()
 
 def crusade_on_cast():
     class E(Effect):
         event = 'cast'
         
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
             gs.global_effects.append((source, CrusadeEffect(source.orig_owner_id)))
             # for c in CardFilter(gs).in_play().creatures().white().result():
             #     c.pt_modifiers.append(PTModifier(source, 1, 1))
     return E()
 
+def dark_ritual_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
+            gs.mana_pools[source.orig_owner_id].add('B', 3)
+    return E()
+
+def demonic_torment_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError("Demonic Torment needs a target")
+            target.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
+
+    return E()
+
+def desert_twister_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError("Desert Twister needs a target")
+            if target:
+                gs.send_to_graveyard_from_play(target)
+
+    return E()
 
 def disenchant_on_cast():
     class E(Effect):
@@ -67,6 +215,18 @@ def disenchant_on_cast():
                 gs.send_to_graveyard_from_play(target)
     return E()
 
+def divine_offering_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError("Divine Offering needs a target")
+            if target:
+                gs.increment_life(source.orig_owner_id, target.power)
+                gs.send_to_graveyard_from_play(target)
+
+    return E()
 
 def divine_transformation_on_cast():
     class E(Effect):
@@ -91,6 +251,26 @@ def drain_power_on_cast():
             print(f"{source} steals all of Player #{target}'s unused mana.")
     return E()
 
+def earthbind_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                target.modifiers.auras.append(KWAModifier(source, 'remove', 'Flying'))
+            if 'Flying' in target.keyword_abilities:
+                gs.decrement_life(target.orig_owner_id, 2, source)
+
+    return E()
+
+
+def electric_eel_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            gs.decrement_life(source.orig_owner_id, 1, source)
+    return E()
 
 def energy_tap_on_cast():
     class E(Effect):
@@ -106,6 +286,27 @@ def energy_tap_on_cast():
             print(f"{source} taps to add {mana_value} colorless to your mana pool.")
     return E()
 
+def eternal_flame_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """x = number of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
+            x = len(CardFilter(gs).on_player_board(gs.player_turn_idx).by_slug('mountain').result())
+            gs.decrement_life(flip(gs.player_turn_idx), x, source)
+            gs.decrement_life(gs.player_turn_idx, math.ceil(x/2), source)
+    return E()
+
+def eternal_warrior_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError("Eternal Warrior needs a target")
+            target.modifiers.auras.append(KWAModifier(source, 'add', 'Vigilance'))
+
+    return E()
 
 def farmstead_on_cast():
     class E(Effect):
@@ -198,7 +399,6 @@ def mana_short_on_cast():
             print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
     return E()
 
-
 def swords_to_plowshares_on_cast():
     class E(Effect):
         event = 'cast'
@@ -208,7 +408,6 @@ def swords_to_plowshares_on_cast():
                 gs.send_to_exile(target)
                 gs.increment_life(target.orig_owner_id, target.power)
     return E()
-
 
 def twiddle_on_cast():
     class E(Effect):
@@ -223,7 +422,6 @@ def twiddle_on_cast():
                     target.tap(gs)
     return E()
 
-
 def unsummon_on_cast():
     class E(Effect):
         event = 'cast'
@@ -234,7 +432,6 @@ def unsummon_on_cast():
                 board.remove_from_board(target)
                 gs.return_to_hand(target)
     return E()
-
 
 def wrath_of_god_on_cast():
     class E(Effect):
