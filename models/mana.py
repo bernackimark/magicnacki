@@ -59,8 +59,21 @@ class ManaPool:
             cost = parse_casting_cost(cost)
         if not self.can_pay(cost):
             raise ValueError("Cannot pay mana cost")
-        for c, amt in cost.items():
-            self.mana[c] -= amt
+
+        # 1. Pay colored costs first
+        for color in ('W', 'U', 'B', 'R', 'G'):
+            self.mana[color] -= cost[color]
+
+        # 2. Pay colorless from ANY remaining mana
+        remaining_colorless = cost['C']
+
+        for color in ('W', 'U', 'B', 'R', 'G', 'C'):
+            if remaining_colorless == 0:
+                break
+
+            spend = min(self.mana[color], remaining_colorless)
+            self.mana[color] -= spend
+            remaining_colorless -= spend
 
     @staticmethod
     def untap_lands(gs: GameState, p_idx: int):
