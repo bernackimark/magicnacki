@@ -17,7 +17,7 @@ Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
 @dataclass
 class ActivatedAbility:
-    """A Target can be: GameCard, list[GameCard], int (a single player's index), tuple[int, int] (both players' indices),
+    """A Target can be: GameCard, list[GameCard], int (single player's index), tuple[int, int] (both players' indices),
     None (I need review why this is needed by game_state.get_available_targets())
     """
     class AllowedPlayerTurn(Enum):
@@ -31,6 +31,8 @@ class ActivatedAbility:
     effect: Callable[[GameState, GameCard, Target], None] = None
     allowed_phases: list[Phase] = field(default_factory=list)
     allowed_player_turns: list[AllowedPlayerTurn] = field(default_factory=list)
+    activated_cnt_this_turn: int = 0
+    max_activations_per_turn: int = 0
 
     def __post_init__(self):
         if not self.allowed_player_turns:
@@ -52,6 +54,8 @@ class ActivatedAbility:
         if self.allowed_phases and gs.phase not in self.allowed_phases:
             return False
         if self.card.orig_owner_id not in self._get_allowed_player_idx_turns():
+            return False
+        if self.activated_cnt_this_turn >= self.max_activations_per_turn:
             return False
         return True
 
@@ -135,6 +139,9 @@ def add_activated_abilities(cards: list["GameCard"]) -> None:
         if c.props.slug == 'farmstead':
             c.abilities.append(ActivatedAbility(c, True, 'WW', target_filter=lambda gs, _: gs.player_turn_idx,
                                effect=lambda gs, _, t: gs.increment_life(gs.player_turn_idx, 1)))
+        if c.props.slug == 'fire-drake':
+            c.abilities.append(ActivatedAbility(c, False, 'R', target_filter=None, max_activations_per_turn=1,
+                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 0))))
         if c.props.slug == 'flood':
             c.abilities.append(ActivatedAbility(
                 c, False, 'UU', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().tapped(False).has('Flying', False).result(),
