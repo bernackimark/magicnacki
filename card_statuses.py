@@ -29,7 +29,8 @@ Remaining:
         dream-coat Aura U [] Enchant creature {0}: Enchanted creature becomes the color or colors of your choice. Activate only once each turn.
         dwarven-song Instant R [] One or more target creatures become red until end of turn.
         evil-presence Aura B [] Enchant land Enchanted land is a Swamp.
-        
+        heavens-gate Instant W [] One or more target creatures become white until end of turn.
+
         phantasmal-terrain: Enchant land As Aura enters, choose a basic land type. Enchanted land is the chosen type
         purelace: Instant Target spell/permanent becomes white. (Mana symbols on that permanent remain unchanged.)
         magical-hack: Change the text of target spell or permanent by replacing all instances of one basic land type with another. u003cIu003e(For example, you may change "swampwalk" to "plainswalk." This effect lasts indefinitely.
@@ -47,11 +48,23 @@ Remaining:
         desert Land None [] {T}: Add {C}. {T}: This land deals 1 damage to target attacking creature. Activate only during the end of combat step.
         disharmony Instant 2R [] Cast this spell only during combat before blockers are declared. Untap target attacking creature and remove it from combat. Gain control of that creature until end of turn.
         ebony-horse Artifact 3 [] {2}, {T}: Untap target attacking creature you control. Prevent all combat damage that would be dealt to and dealt by that creature this turn.
+        false-orders Instant R [] Cast this spell only during the declare blockers step. Remove target creature defending player controls from combat. Creatures it was blocking that had become blocked by only that creature this combat become unblocked. You may have it block an attacking creature of your choice.
+        feint Instant R [] Tap all creatures blocking target attacking creature. Prevent all combat damage that would be dealt this turn by that creature and each creature blocking it.
+        fire-and-brimstone Instant 3WW [] Fire and Brimstone deals 4 damage to target player who attacked this turn and 4 damage to you.
+        floral-spuzzem Creature 3G [] Whenever this creature attacks and isn't blocked, you may destroy target artifact defending player controls. If you do, this creature assigns no combat damage this turn.
+        giant-shark Creature 5U [] Islandhome  Whenever this creature blocks or becomes blocked by a creature that has been dealt damage this turn, This creature gets +2/+0 and gains trample until end of turn.
+        glyph-of-doom Instant B [] Choose target Wall creature. At this turn's next end of combat, destroy all creatures that were blocked by that creature this turn.
+        glyph-of-life Instant W [] Choose target Wall creature. Whenever that creature is dealt damage by an attacking creature this turn, you gain that much life.
+        glyph-of-reincarnation Instant G [] Cast this spell only after combat. Destroy all creatures that were blocked by target Wall this turn. They can't be regenerated. For each creature that died this way, put a creature card from the graveyard of the player who controlled that creature the last time it became blocked by that Wall onto the battlefield under its owner's control.
+        hasran-ogress Creature BB [] Whenever this creature attacks, it deals 3 damage to you unless you pay {2}.
+        infernal-medusa Creature 3BB [] Whenever this creature blocks a creature, destroy that creature at end of combat. Whenever this creature becomes blocked by a non-Wall creature, destroy that creature at end of combat.
+        infinite-authority Aura WWW [] Enchant creature Whenever enchanted creature blocks or becomes blocked by a creature with toughness 3 or less, destroy the other creature at end of combat. At the beginning of the next end step, if that creature was destroyed this way, put a +1/+1 counter on the first creature.
 
 
--   Card Theft:
+-   Card Theft / Control:
         aladdin Creature 2RR [] {1RR}, {T}: Gain control of target artifact for as long as you control this creature.
         control-magic Aura 2UU [] Enchant creature You control enchanted creature.
+        ghazbán-ogre Creature G [] At the beginning of your upkeep, if a player has more life than each other player, the player with the most life gains control of this creature.
 
 -   Combat End:
         abomination Creature 3BB [] Whenever this creature blocks or becomes blocked by a green or white creature, destroy that creature at end of combat.
@@ -62,6 +75,10 @@ Remaining:
         avoid-fate Instant G [] Counter target instant or Aura spell that targets a permanent you control.
         counterspell Instant UU [] Counter target spell.
         deathgrip Enchantment BB [] {BB}: Counter target green spell.
+        flash-counter Instant 1U [] Counter target instant spell.
+        force-spike Instant U [] Counter target spell unless its controller pays {1}.
+        in-the-eye-of-chaos Enchantment 2U [] Whenever a player casts an instant spell, counter it unless that player pays {X}, where X is its mana value.
+
 
 -   Counter Tokens:
         ashnods-transmogrant Artifact 1 [] {T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature. That creature becomes an artifact in addition to its other types.
@@ -74,12 +91,17 @@ Remaining:
         cocoon Aura G [] Enchant creature you control When this Aura enters, tap enchanted creature and put three pupa counters on this Aura. Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it. At the beginning of your upkeep, remove a pupa counter from this Aura. If you can't, sacrifice it, put a +1/+1 counter on enchanted creature, and that creature gains flying.
         cyclone Enchantment 2GG [] At the beginning of your upkeep, put a wind counter on this enchantment, then sacrifice this enchantment unless you pay {G} for each wind counter on it. If you pay, this enchantment deals damage equal to the number of wind counters on it to each creature and each player.
         cyclopean-tomb Artifact 4 [] {2}, {T}: Put a mire counter on target non-Swamp land. That land is a Swamp for as long as it has a mire counter on it. Activate only during your upkeep. When this artifact is put into a graveyard from the battlefield, at the beginning of each of your upkeeps for the rest of the game, remove all mire counters from a land that a mire counter was put onto with this artifact but that a mire counter has not been removed from with this artifact.
+        fasting Enchantment W [] At the beginning of your upkeep, put a hunger counter on this enchantment. Then destroy this enchantment if it has five or more hunger counters on it. If you would begin your draw step, you may skip that step instead. If you do, you gain 2 life. When you draw a card, destroy this enchantment.
+        fungusaur Creature 3G [] Whenever this creature is dealt damage, put a +1/+1 counter on it.
+        green-mana-battery Artifact 4 [] {2}, {T}: Put a charge counter on this artifact. {T}, Remove any number of charge counters from this artifact: Add {G}, then add an additional {G} for each charge counter removed this way.
 
         unstable-mutation: Aura gets +3/+3. At the beginning of controller upkeep, put a -1/-1 counter on that creature
 
 -   Deals Damage (combat damage is currently handled in a completely separate place):
         el-hajjâj Creature 1BB [] Whenever this creature deals damage, you gain that much life.
         spirit-link: Aura Whenever enchanted creature deals damage, you gain that much life
+        fungusaur Creature 3G [] Whenever this creature is dealt damage, put a +1/+1 counter on it.
+        hypnotic-specter Creature 1BB ['Flying'] Flying Whenever this creature deals damage to an opponent, that player discards a card at random.
 
 -   Draw Variability:
         chains-of-mephistopheles Enchantment 1B [] If a player would draw a card except the first one they draw in each of their draw steps, that player discards a card instead. If the player discards a card this way, they draw a card. If the player doesn't discard a card this way, they mill a card.
@@ -93,18 +115,37 @@ Remaining:
         concordant-crossroads Enchantment G [] All creatures have haste.
         crevasse Enchantment 2R [] Creatures with mountainwalk can be blocked as though they didn't have mountainwalk.
         deadfall Enchantment 2G [] Creatures with forestwalk can be blocked as though they didn't have forestwalk.
+        gloom Enchantment 2B [] White spells cost {3} more to cast. Activated abilities of white enchantments cost {3} more to activate.
+        goblin-caves Aura 1RR [] Enchant land As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2. [* a condition global that's not on_cast()/on_leave()]
+        goblin-shrine Aura 1RR [] Enchant land As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0. When this Aura leaves the battlefield, it deals 1 damage to each Goblin creature.
+        gravity-sphere Enchantment 2R [] All creatures lose flying.
+        great-wall Enchantment 2W [] Creatures with plainswalk can be blocked as though they didn't have plainswalk.
+        hell-swarm Instant B [] All creatures get -1/-0 until end of turn.  [* global temp]
+        holy-light Instant 2W [] Nonwhite creatures get -1/-1 until end of turn.
+        hidden-path Enchantment 2GGGG [] Green creatures have forestwalk.
+        ivory-cup Artifact 1 [] Whenever a player casts a white spell, you may pay {1}. If you do, you gain 1 life.
+
 
 -   Graveyard to Exile:
         eater-of-the-dead Creature 4B [] {0}: If this creature is tapped, exile target creature card from a graveyard and untap this creature.
+        frankensteins-monster Creature XBB [] As this creature enters, exile X creature cards from your graveyard. If you can't, put this creature into its owner's graveyard instead of onto the battlefield. ...
+        grave-robbers Creature 1BB [] {B}, {T}: Exile target artifact card from a graveyard. You gain 2 life.
+
 
 -   Hand Reveal:
         amnesia Sorcery 3UUU [] Target player reveals their hand and discards all nonland cards.
+        inquisition Sorcery 2B [] Target player reveals their hand. Inquisition deals damage to that player equal to the number of white cards in their hand.
+
 
 -   Hand Size:
         cursed-rack Artifact 4 [] As this artifact enters, choose an opponent. The chosen player's maximum hand size is four.
 
+-   Hand to Battlefield:
+        goblin-wizard Creature 2RR [] {T}: You may put a Goblin permanent card from your hand onto the battlefield. {R}: Target Goblin gains protection from white until end of turn.
+
 -   Indestructible:
         consecrate-land Aura W [] Enchant land Enchanted land has indestructible and can't be enchanted by other Auras.
+        guardian-beast Creature 3B [] As long as this creature is untapped, noncreature artifacts you control can't be enchanted, they have indestructible, and other players can't gain control of them. This effect doesn't remove Auras already attached to those artifacts.
 
 
 -   Life Reduction:
@@ -129,11 +170,17 @@ Remaining:
         darkness Instant B [] Prevent all combat damage that would be dealt this turn.
         enchanted-being Creature 1WW [] Prevent all combat damage that would be dealt to this creature by enchanted creatures.
         eye-for-an-eye Instant WW [] The next time a source of your choice would deal damage to you this turn, instead that source deals that much damage to you and Eye for an Eye deals that much damage to that source's controller.
-
-        gaseous-form: Enchant creature Prevent all combat damage that would be dealt to and dealt by enchanted creature
-        guardian-angel Instant Prevent the next X damage that would be dealt to any target this turn. Until end of turn, you may pay {1} any time you could cast an instant. If you do, prevent the next 1 damage that would be dealt to that permanent or player this turn
-        healing-salve: Instant Choose one - * Target player gains 3 life. * Prevent the next 3 damage that would be dealt to any target this turn.
+        feint Instant R [] Tap all creatures blocking target attacking creature. Prevent all combat damage that would be dealt this turn by that creature and each creature blocking it.
+        fog Instant G [] Prevent all combat damage that would be dealt this turn.
+        forcefield Artifact 3 [] {1}: The next time an unblocked creature of your choice would deal combat damage to you this turn, prevent all but 1 of that damage.
+        gaseous-form Aura 2U [] Enchant creature Prevent all combat damage that would be dealt to and dealt by enchanted creature.guardian-angel Instant Prevent the next X damage that would be dealt to any target this turn. Until end of turn, you may pay {1} any time you could cast an instant. If you do, prevent the next 1 damage that would be dealt to that permanent or player this turn
+        greater-realm-of-preservation Enchantment 1W [] {1W}: The next time a black or red source of your choice would deal damage to you this turn, prevent that damage.
+        guardian-angel Instant XW [] Prevent the next X damage that would be dealt to any target this turn. Until end of turn, you may pay {1} any time you could cast an instant. If you do, prevent the next 1 damage that would be dealt to that permanent or player this turn.
+        healing-salve Instant W [] Choose one - * Target player gains 3 life. * Prevent the next 3 damage that would be dealt to any target this turn.
+        holy-day Instant W [] Prevent all combat damage that would be dealt this turn.
         samite-healer: {T}: Prevent the next 1 damage that would be dealt to any target this turn
+        horn-of-deafening Artifact 4 [] {2}, {T}: Prevent all combat damage that would be dealt by target creature this turn.
+        indestructible-aura Instant W [] Prevent all damage that would be dealt to target creature this turn.
 
 -   Non-basic Land:  (just need to validate I can only cast one, etc)
         bazaar-of-baghdad Land None [] {T}: Draw two cards, then discard three cards.
@@ -143,24 +190,34 @@ Remaining:
         black-knight Creature BB ['First Strike', 'Protection from White'] First strike  Protection from white (This creature can't be blocked, targeted, dealt damage, or enchanted by anything white.)
         black-ward Aura W [] Enchant creature Enchanted creature has protection from black. This effect doesn't remove this Aura.
         blue-ward Aura W [] Enchant creature Enchanted creature has protection from blue. This effect doesn't remove this Aura.
+        goblin-wizard Creature 2RR [] {T}: You may put a Goblin permanent card from your hand onto the battlefield. {R}: Target Goblin gains protection from white until end of turn.
+        green-ward Aura W [] Enchant creature Enchanted creature has protection from green. This effect doesn't remove this Aura.
+        ivory-guardians Creature 4WW ['Protection from Red'] Protection from red Creatures named Ivory Guardians get +1/+1 as long as an opponent controls a nontoken red permanent.
+
+
         red-ward
         white-knight
         
 -   Rampage:
         aerathi-berserker Creature 2RRR [] Rampage 3  (Whenever this creature becomes blocked, it gets +3/+3 until end of turn for each creature blocking it beyond the first.)
         craw-giant Creature 3GGGG [] Trample Rampage 2 (Whenever this creature becomes blocked, it gets +2/+2 until end of turn for each creature blocking it beyond the first.)
+        frost-giant Creature 3RRR [] Rampage 2  (Whenever this creature becomes blocked, it gets +2/+2 until end of turn for each creature blocking it beyond the first.)
 
 
 -   Randomizer Simulation:
         bottle-of-suleiman Artifact 4 [] {1}, Sacrifice this artifact: Flip a coin. If you win the flip, create a 5/5 colorless Djinn artifact creature token with flying. If you lose the flip, this artifact deals 5 damage to you.
         chaos-orb Artifact 2 [] {1}, {T}: If this artifact is on the battlefield, flip it onto the battlefield from a height of at least one foot. If this artifact turns over completely at least once during the flip, destroy all nontoken permanents it touches. Then destroy this artifact.
         coral-helm Artifact 3 [] {3}, Discard a card at random: Target creature gets +2/+2 until end of turn.
+        falling-star Sorcery 2R [] Flip Falling Star onto the playing area from a height of at least one foot. Falling Star deals 3 damage to each creature it lands on. Tap all creatures dealt damage by Falling Star. If Falling Star doesn't turn completely over at least once during the flip, it has no effect.
+        goblin-artisans Creature R [] {T}: Flip a coin. If you win the flip, draw a card. If you lose the flip, counter target artifact spell you control that isn't the target of an ability from another creature named Goblin Artisans.
+
 
 -   Reanimate:
         adun-oakenshield Creature BRG [] {BRG}, {T}: Return target creature card from your graveyard to your hand.
         animate-dead Aura 1B [] Enchant creature card in a graveyard When this Aura enters, if it's on the battlefield, it loses "enchant creature card in a graveyard" and gains "enchant creature put onto the battlefield with this Aura." Return enchanted creature card to the battlefield under your control and attach this Aura to it. When this Aura leaves the battlefield, that creature's controller sacrifices it. Enchanted creature gets -1/-0.
         argivian-archaeologist Creature 1WW [] {WW}, {T}: Return target artifact card from your graveyard to your hand.
         drafnas-restoration Sorcery U [] Put any number of target artifact cards from target player's graveyard on top of their library in any order.
+        hells-caretaker Creature 3B [] {T}, Sacrifice a creature: Return target creature card from your graveyard to the battlefield. Activate only during your upkeep.
 
 
 -   Regeneration:
@@ -175,8 +232,10 @@ Remaining:
         drowned Creature 1U [] {B}: Regenerate this creature.
         drudge-skeletons Creature 1B [] {B}: Regenerate this creature. (The next time this creature would be destroyed this turn, instead tap it, remove it from combat, and heal all damage on it.)
         elephant-graveyard Land None [] {T}: Add {C}. {T}: Regenerate target Elephant.
-        
+        fissure Instant 3RR [] Destroy target creature or land. It can't be regenerated.  [* PREVENTS Re-gen]
         ghost-ship Creature 2UU ['Flying'] Flying {UUU}: Regenerate this creature.
+        horror-of-horrors Enchantment 3BB [] Sacrifice a Swamp: Regenerate target black creature.
+        hurr-jackal Creature R [] {T}: Target creature can't be regenerated this turn.
 
 -   Sacrifice:
         ashnods-altar Artifact 3 [] Sacrifice a creature: Add {CC}.
@@ -189,6 +248,14 @@ Remaining:
         dwarven-weaponsmith Creature 1R [] {T}, Sacrifice an artifact: Put a +1/+1 counter on target creature. Activate only during your upkeep.
         elder-spawn Creature 4UUU [] At the beginning of your upkeep, unless you sacrifice an Island, sacrifice this creature and it deals 6 damage to you. This creature can't be blocked by red creatures.
         energy-flux Enchantment 2U [] All artifacts have "At the beginning of your upkeep, sacrifice this artifact unless you pay {2}."
+        fallen-angel Creature 3BB ['Flying'] Flying Sacrifice a creature: This creature gets +2/+1 until end of turn.
+        feldons-cane Artifact 1 [] {T}, Exile this artifact: Shuffle your graveyard into your library.  [* This is an exile, not a standard sac.]
+        gaeas-touch Enchantment GG [] {0}: You may put a basic Forest card from your hand onto the battlefield. Activate only as a sorcery and only once each turn. Sacrifice this enchantment: Add {GG}.
+        gate-to-phyrexia Enchantment BB [] Sacrifice a creature: Destroy target artifact. Activate only during your upkeep and only once each turn.
+        goblin-digging-team Creature R [] {T}, Sacrifice this creature: Destroy target Wall.
+        hells-caretaker Creature 3B [] {T}, Sacrifice a creature: Return target creature card from your graveyard to the battlefield. Activate only during your upkeep.
+        horror-of-horrors Enchantment 3BB [] Sacrifice a Swamp: Regenerate target black creature.
+
 
 -   Search Library:
         demonic-tutor Sorcery 1B [] Search your library for a card, put that card into your hand, then shuffle.
@@ -197,6 +264,8 @@ Remaining:
         ashes-to-ashes Sorcery 1BB [] Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you.
         dust-to-dust Sorcery 1WW [] Exile two target artifacts.
         dwarven-song Instant R [] One or more target creatures become red until end of turn.
+        fireball Sorcery XR [] This spell costs {1} more to cast for each target beyond the first. Fireball deals X damage divided evenly, rounded down, among any number of targets.
+
 
 -   Trample:
         angry-mob
@@ -204,6 +273,7 @@ Remaining:
         bronze-horse Artifact 7 [] Trample As long as you control another creature, prevent all damage that would be dealt to this creature by spells that target it.
         colossus-of-sardia Artifact 9 ['Trample'] Trample  This creature doesn't untap during your untap step. {9}: Untap this creature. Activate only during your upkeep.
         craw-giant Creature 3GGGG [] Trample Rampage 2 (Whenever this creature becomes blocked, it gets +2/+2 until end of turn for each creature blocking it beyond the first.)
+        giant-shark Creature 5U [] Islandhome  Whenever this creature blocks or becomes blocked by a creature that has been dealt damage this turn, This creature gets +2/+0 and gains trample until end of turn.
 
 
 -   Upkeep Conditional:
@@ -214,6 +284,8 @@ Remaining:
         elder-spawn Creature 4UUU [] At the beginning of your upkeep, unless you sacrifice an Island, sacrifice this creature and it deals 6 damage to you. This creature can't be blocked by red creatures.
         energy-flux Enchantment 2U [] All artifacts have "At the beginning of your upkeep, sacrifice this artifact unless you pay {2}."
         erosion Aura UUU [] Enchant land At the beginning of the upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life.
+        force-of-nature Creature 2GGGG [] Trample  At the beginning of your upkeep, this creature deals 8 damage to you unless you pay {GGGG}.
+        forethought-amulet Artifact 5 [] At the beginning of your upkeep, sacrifice this artifact unless you pay {3}. If an instant or sorcery source would deal 3 or more damage to you, it deals 2 damage to you instead.
 
 
 -   Untap as Conditional:
@@ -222,6 +294,7 @@ Remaining:
         basalt-monolith Artifact 3 [] This artifact doesn't untap during your untap step. {T}: Add {CCC}. {3}: Untap this artifact.
         brass-man Artifact 1 [] This creature doesn't untap during your untap step. At the beginning of your upkeep, you may pay {1}. If you do, untap this creature.
         colossus-of-sardia Artifact 9 ['Trample'] Trample  This creature doesn't untap during your untap step. {9}: Untap this creature. Activate only during your upkeep.
+        island-fish-jasconius Creature 4UUU [] Islandhome. This creature doesn't untap during your untap step. At the beginning of your upkeep, you may pay {UUU}. If you do, untap this creature.
 
 
 -   User choice:
@@ -231,22 +304,26 @@ Remaining:
         birds-of-paradise Creature G [] Flying {T}: Add one mana of any color.
         blue-elemental-blast Instant U [] Choose one - * Counter target red spell. * Destroy target red permanent.
         celestial-prism Artifact 3 [] {2}, {T}: Add one mana of any color.
+        city-of-brass Land None [] Whenever this land becomes tapped, it deals 1 damage to you. {T}: Add one mana of any color.
         cuombajj-witches Creature BB [] {T}: This creature deals 1 damage to any target and 1 damage to any target of an opponent's choice.
         dream-coat Aura U [] Enchant creature {0}: Enchanted creature becomes the color or colors of your choice. Activate only once each turn.
         drop-of-honey Enchantment G [] At the beginning of your upkeep, destroy the creature with the least power. It can't be regenerated. If two or more creatures are tied for least power, you choose one of them. When there are no creatures on the battlefield, sacrifice this enchantment.
         dwarven-song Instant R [] One or more target creatures become red until end of turn.
         erhnam-djinn Creature 3G [] At the beginning of your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep. 
-        
         erosion: Enchant land At begin of upkeep of controller, destroy that land unless that player pays {1} or 1 life
+        flash-flood Instant U [] Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand.
+        frankensteins-monster Creature XBB [] ... For each creature card exiled this way, this creature enters with a +2/+0, +1/+1, or +0/+2 counter on it.
+        giant-slug Creature 1B [] {5}: At the beginning of your next upkeep, choose a basic land type. This creature gains landwalk of the chosen type until the end of that turn.
         healing-salve: Instant Choose one - * Target player gains 3 life. * Prevent the next 3 damage that would be dealt to any target this turn.
+        ivory-cup Artifact 1 [] Whenever a player casts a white spell, you may pay {1}. If you do, you gain 1 life.
         phantasmal-forces: 'Creature', 'Flying' At begin of your upkeep, sac unless you pay {U}
         sunken-city: Enchantment', At the begin of your upkeep, sac unless you pay {UU}. Blue creatures get +1/+1
+        
 
 -   Variable Activation:
         aladdins-lamp Artifact 10 [] {X}, {T}: The next time you would draw a card this turn, instead look at the top X cards of your library, put all but one of them on the bottom of your library in a random order, then draw a card. X can't be 0.
         banshee Creature 2BB [] {X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up, to you.
         candelabra-of-tawnos Artifact 1 [] {X}, {T}: Untap X target lands.
-        city-of-brass Land None [] Whenever this land becomes tapped, it deals 1 damage to you. {T}: Add one mana of any color.
 
 -   Variable cast:
         alabaster-potion: Choose one - * Target player gains X life. * Prevent the next X damage that would be dealt to any target this turn.
@@ -255,8 +332,9 @@ Remaining:
         disintegrate Sorcery XR [] Disintegrate deals X damage to any target. If it's a creature, it can't be regenerated this turn, and if it would die this turn, exile it instead.
         drain-life Sorcery X1B [] Spend only black mana on X. Drain Life deals X damage to any target. You gain life equal to the damage dealt, but not more life than the player's life total before the damage was dealt, the planeswalker's loyalty before the damage was dealt, or the creature's toughness.
         earthquake Sorcery XR [] Earthquake deals X damage to each creature without flying and each player.
-
+        howl-from-beyond Instant XB [] Target creature gets +X/+0 until end of turn.
         spell-blast: Instant Counter target spell with mana value X
+        hurricane Sorcery XG [] Hurricane deals X damage to each creature with flying and each player.
         
         
 -   Variable PT:
@@ -264,6 +342,9 @@ Remaining:
         animate-artifact Aura 3U [] Enchant artifact As long as enchanted artifact isn't a creature, it's an artifact creature with power and toughness each equal to its mana value.   
         aspect-of-wolf Aura 1G [] Enchant creature Enchanted creature gets +X/+Y, where X is half the number of Forests you control, rounded down, and Y is half the number of Forests you control, rounded up.
         cave-people Creature 1RR [] Whenever this creature attacks, it gets +1/-2 until end of turn. {1RR}, {T}: Target creature gains mountainwalk until end of turn. (It can't be blocked as long as defending player controls a Mountain.)
+        gaeas-avenger Creature 1GG [] Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control.
+        gaeas-liege Creature 3GGG [] As long as Gaea's Liege isn't attacking, its power and toughness are each equal to the number of Forests you control. As long as Gaea's Liege is attacking, its power and toughness are each equal to the number of Forests defending player controls. {T}: Target land becomes a Forest until this creature leaves the battlefield.
+
         
 -   Unclassified BS:
         all-hallows-eve Sorcery 2BB [] Exile All Hallow's Eve with two scream counters on it. At the beginning of your upkeep, if this card is exiled with a scream counter on it, remove a scream counter from it. If there are no more scream counters on it, put it into your graveyard and each player returns all creature cards from their graveyard to the battlefield.
@@ -301,138 +382,40 @@ Remaining:
         equinox Aura W [] Enchant land Enchanted land has "{T}: Counter target spell if it would destroy a land you control."
         erg-raiders Creature 1B [] At the beginning of your end step, if this creature didn't attack this turn, it deals 2 damage to you unless it came under your control this turn.
         eureka Sorcery 2GG [] Both players may take any permanent in their hand and put it directly into play. Players take turns playing one card from their hand until neither wants to play more permanents. No other spells or effects of any kind may be used while Eureka is in effect. If a spell has an X in its casting cost, X is 0."
+        fastbond Enchantment G [] You may play any number of lands on each of your turns. Whenever you play a land, if it wasn't the first land you played this turn, this enchantment deals 1 damage to you.
+        fear Aura BB [] Enchant creature  Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)
+        fellwar-stone Artifact 2 [] {T}: Add one mana of any color that a land an opponent controls could produce.
+        festival Instant W [] Cast this spell only during an opponent's upkeep. Creatures can't attack this turn.
+        field-of-dreams Enchantment U [] Players play with the top card of their libraries revealed.
+        firestorm-phoenix Creature 4RR [] Flying If this creature would die, return it to its owner's hand instead. Until that player's next turn, that player plays with that card revealed in their hand and can't play it.
+        fork Instant RR [] Copy target instant or sorcery spell, except that the copy is red. You may choose new targets for the copy.
+        gauntlet-of-might Artifact 4 [] Red creatures get +1/+1. Whenever a Mountain is tapped for mana, its controller adds an additional {R}.
+        gauntlets-of-chaos Artifact 5 [] {5}, Sacrifice this artifact: Exchange control of target artifact, creature, or land you control and target permanent an opponent controls that shares one of those types with it. If those permanents are exchanged this way, destroy all Auras attached to them.
+        glasses-of-urza Artifact 1 [] {T}: Look at target player's hand.
+        giant-turtle Creature 1GG [] This creature can't attack if it attacked during your last turn.
+        glyph-of-delusion Instant U [] Put X glyph counters on target creature that target Wall blocked this turn, where X is the power of that blocked creature. The creature gains "This creature doesn't untap during your untap step if it has a glyph counter on it" and "At the beginning of your upkeep, remove a glyph counter from this creature."
+        glyph-of-destruction Instant R [] Target blocking Wall you control gets +10/+0 until end of combat. Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step.
+        goblin-rock-sled Creature 1R [] Trample This creature doesn't untap during your untap step if it attacked during your last turn. This creature can't attack unless defending player controls a Mountain.
+        goblins-of-the-flarg Creature R [] Mountainwalk (This creature can't be blocked as long as defending player controls a Mountain.) When you control a Dwarf, sacrifice this creature.
+        golgothian-sylex Artifact 4 [] {1}, {T}: Each nontoken permanent with a name originally printed in the Antiquities expansion is sacrificed by its controller.
+        haunting-wind Enchantment 3B [] Whenever an artifact becomes tapped or a player activates an artifact's ability without {T} in its activation cost, this enchantment deals 1 damage to that artifact's controller.
+        hellfire Sorcery 2BBB [] Destroy all nonblack creatures. Hellfire deals X plus 3 damage to you, where X is the number of creatures that died this way.  [* The 2nd part needs to wait to see how many creatures actually died this way]
+        howling-mine Artifact 2 [] At the beginning of each player's draw step, if this artifact is untapped, that player draws an additional card.
+        hurkyls-recall Instant 1U [] Return all artifacts target player owns to their hand.  [cast.py resolve() can't accept a player, only a GameCard]
+        ichneumon-druid Creature 1GG [] Whenever an opponent casts an instant spell other than the first instant spell that player casts each turn, this creature deals 4 damage to that player.
+        ifh-bíff-efreet Creature 2GG [] Flying {G}: This creature deals 1 damage to each creature with flying and each player. Any player may activate this ability.
+        illusionary-mask Artifact 2 [] {X}: You may choose a creature card in your hand whose mana cost could be paid by some amount of, or all of, the mana you spent on {X}. If you do, you may cast that card face down as a 2/2 creature spell without paying its mana cost. If the creature that spell becomes as it resolves has not been turned face up and would assign or deal damage, be dealt damage, or become tapped, instead it's turned face up and assigns or deals damage, is dealt damage, or becomes tapped. Activate only as a sorcery.
+        imprison Aura B [] Enchant creature Whenever a player activates an ability of enchanted creature with {T} in its activation cost that isn't a mana ability, you may pay {1}. If you do, counter that ability. If you don't, destroy this Aura. Whenever enchanted creature attacks or blocks, you may pay {1}. If you do, tap the creature, remove it from combat, and creatures it was blocking that had become blocked by only that creature this combat become unblocked. If you don't, destroy this Aura.
+        invisibility Aura UU [] Enchant creature Enchanted creature can't be blocked except by Walls.
+        invoke-prejudice Enchantment UUUU [] Whenever an opponent casts a creature spell that doesn't share a color with a creature you control, counter that spell unless that player pays {X}, where X is its mana value.
+        iron-star Artifact 1 [] Whenever a player casts a red spell, you may pay {1}. If you do, you gain 1 life.
+        ironclaw-orcs Creature 1R [] This creature can't block creatures with power 2 or greater.  [* can_block.py actually = "can be blocked"]
+        island-of-wak-wak Land None [] {T}: Target creature with flying has base power 0 until end of turn.  [* not actually a PTOffset, it's absolute value]
+        island-sanctuary Enchantment 1W [] If you would draw a card during your draw step, instead you may skip that draw. If you do, until your next turn, you can't be attacked except by creatures with flying and/or islandwalk.
 
 """
 
 """
-evil-eye-of-orms-by-gore Creature 4B [] Non-Eye creatures you control can't attack. This creature can't be blocked except by Walls.
-fallen-angel Creature 3BB ['Flying'] Flying Sacrifice a creature: This creature gets +2/+1 until end of turn.
-falling-star Sorcery 2R [] Flip Falling Star onto the playing area from a height of at least one foot. Falling Star deals 3 damage to each creature it lands on. Tap all creatures dealt damage by Falling Star. If Falling Star doesn't turn completely over at least once during the flip, it has no effect.
-false-orders Instant R [] Cast this spell only during the declare blockers step. Remove target creature defending player controls from combat. Creatures it was blocking that had become blocked by only that creature this combat become unblocked. You may have it block an attacking creature of your choice.
-fastbond Enchantment G [] You may play any number of lands on each of your turns. Whenever you play a land, if it wasn't the first land you played this turn, this enchantment deals 1 damage to you.
-fasting Enchantment W [] At the beginning of your upkeep, put a hunger counter on this enchantment. Then destroy this enchantment if it has five or more hunger counters on it. If you would begin your draw step, you may skip that step instead. If you do, you gain 2 life. When you draw a card, destroy this enchantment.
-fear Aura BB [] Enchant creature  Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)
-feint Instant R [] Tap all creatures blocking target attacking creature. Prevent all combat damage that would be dealt this turn by that creature and each creature blocking it.
-feldons-cane Artifact 1 [] {T}, Exile this artifact: Shuffle your graveyard into your library.
-fellwar-stone Artifact 2 [] {T}: Add one mana of any color that a land an opponent controls could produce.
-festival Instant W [] Cast this spell only during an opponent's upkeep. Creatures can't attack this turn.
-field-of-dreams Enchantment U [] Players play with the top card of their libraries revealed.
-fire-and-brimstone Instant 3WW [] Fire and Brimstone deals 4 damage to target player who attacked this turn and 4 damage to you.
-fire-drake Creature 1RR [] Flying {R}: This creature gets +1/+0 until end of turn. Activate only once each turn.
-fire-sprites Creature 1G [] Flying {G}, {T}: Add {R}.
-fireball Sorcery XR [] This spell costs {1} more to cast for each target beyond the first. Fireball deals X damage divided evenly, rounded down, among any number of targets.
-firebreathing Aura R [] Enchant creature {R}: Enchanted creature gets +1/+0 until end of turn.
-firestorm-phoenix Creature 4RR [] Flying If this creature would die, return it to its owner's hand instead. Until that player's next turn, that player plays with that card revealed in their hand and can't play it.
-fishliver-oil Aura 1U [] Enchant creature  Enchanted creature has islandwalk. (It can't be blocked as long as defending player controls an Island.)
-fissure Instant 3RR [] Destroy target creature or land. It can't be regenerated.
-flash-counter Instant 1U [] Counter target instant spell.
-flash-flood Instant U [] Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand.
-flashfires Sorcery 3R [] Destroy all Plains.
-floral-spuzzem Creature 3G [] Whenever this creature attacks and isn't blocked, you may destroy target artifact defending player controls. If you do, this creature assigns no combat damage this turn.
-flying-carpet Artifact 4 [] {2}, {T}: Target creature gains flying until end of turn.
-flying-men Creature U [] Flying
-fog Instant G [] Prevent all combat damage that would be dealt this turn.
-force-of-nature Creature 2GGGG [] Trample  At the beginning of your upkeep, this creature deals 8 damage to you unless you pay {GGGG}.
-force-spike Instant U [] Counter target spell unless its controller pays {1}.
-forcefield Artifact 3 [] {1}: The next time an unblocked creature of your choice would deal combat damage to you this turn, prevent all but 1 of that damage.
-forethought-amulet Artifact 5 [] At the beginning of your upkeep, sacrifice this artifact unless you pay {3}. If an instant or sorcery source would deal 3 or more damage to you, it deals 2 damage to you instead.
-fork Instant RR [] Copy target instant or sorcery spell, except that the copy is red. You may choose new targets for the copy.
-fortified-area Enchantment 1WW [] Wall creatures you control get +1/+0 and have banding. 
-fountain-of-youth Artifact 0 [] {2}, {T}: You gain 1 life.
-frankensteins-monster Creature XBB [] As this creature enters, exile X creature cards from your graveyard. If you can't, put this creature into its owner's graveyard instead of onto the battlefield. For each creature card exiled this way, this creature enters with a +2/+0, +1/+1, or +0/+2 counter on it.
-frost-giant Creature 3RRR [] Rampage 2  (Whenever this creature becomes blocked, it gets +2/+2 until end of turn for each creature blocking it beyond the first.)
-frozen-shade Creature 2B [] {B}: This creature gets +1/+1 until end of turn.
-fungusaur Creature 3G [] Whenever this creature is dealt damage, put a +1/+1 counter on it.
-gaeas-avenger Creature 1GG [] Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control.
-gaeas-liege Creature 3GGG [] As long as Gaea's Liege isn't attacking, its power and toughness are each equal to the number of Forests you control. As long as Gaea's Liege is attacking, its power and toughness are each equal to the number of Forests defending player controls. {T}: Target land becomes a Forest until this creature leaves the battlefield.
-gaeas-touch Enchantment GG [] {0}: You may put a basic Forest card from your hand onto the battlefield. Activate only as a sorcery and only once each turn. Sacrifice this enchantment: Add {GG}.
-gaseous-form Aura 2U [] Enchant creature Prevent all combat damage that would be dealt to and dealt by enchanted creature.
-gate-to-phyrexia Enchantment BB [] Sacrifice a creature: Destroy target artifact. Activate only during your upkeep and only once each turn.
-gauntlet-of-might Artifact 4 [] Red creatures get +1/+1. Whenever a Mountain is tapped for mana, its controller adds an additional {R}.
-gauntlets-of-chaos Artifact 5 [] {5}, Sacrifice this artifact: Exchange control of target artifact, creature, or land you control and target permanent an opponent controls that shares one of those types with it. If those permanents are exchanged this way, destroy all Auras attached to them.
-ghazbán-ogre Creature G [] At the beginning of your upkeep, if a player has more life than each other player, the player with the most life gains control of this creature.
-ghosts-of-the-damned Creature 1BB [] {T}: Target creature gets -1/-0 until end of turn.
-giant-growth Instant G [] Target creature gets +3/+3 until end of turn.
-giant-shark Creature 5U [] This creature can't attack unless defending player controls an Island. Whenever this creature blocks or becomes blocked by a creature that has been dealt damage this turn, This creature gets +2/+0 and gains trample until end of turn. When you control no Islands, sacrifice this creature.
-giant-slug Creature 1B [] {5}: At the beginning of your next upkeep, choose a basic land type. This creature gains landwalk of the chosen type until the end of that turn. (It can't be blocked as long as defending player controls a land of that type.)
-giant-spider Creature 3G [] Reach (This creature can block creatures with flying.)
-giant-strength Aura RR [] Enchant creature Enchanted creature gets +2/+2.
-giant-turtle Creature 1GG [] This creature can't attack if it attacked during your last turn.
-glasses-of-urza Artifact 1 [] {T}: Look at target player's hand.
-gloom Enchantment 2B [] White spells cost {3} more to cast. Activated abilities of white enchantments cost {3} more to activate.
-glyph-of-delusion Instant U [] Put X glyph counters on target creature that target Wall blocked this turn, where X is the power of that blocked creature. The creature gains "This creature doesn't untap during your untap step if it has a glyph counter on it" and "At the beginning of your upkeep, remove a glyph counter from this creature."
-glyph-of-destruction Instant R [] Target blocking Wall you control gets +10/+0 until end of combat. Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step.
-glyph-of-doom Instant B [] Choose target Wall creature. At this turn's next end of combat, destroy all creatures that were blocked by that creature this turn.
-glyph-of-life Instant W [] Choose target Wall creature. Whenever that creature is dealt damage by an attacking creature this turn, you gain that much life.
-glyph-of-reincarnation Instant G [] Cast this spell only after combat. Destroy all creatures that were blocked by target Wall this turn. They can't be regenerated. For each creature that died this way, put a creature card from the graveyard of the player who controlled that creature the last time it became blocked by that Wall onto the battlefield under its owner's control.
-goblin-artisans Creature R [] {T}: Flip a coin. If you win the flip, draw a card. If you lose the flip, counter target artifact spell you control that isn't the target of an ability from another creature named Goblin Artisans.
-goblin-balloon-brigade Creature R [] {R}: This creature gains flying until end of turn.
-goblin-caves Aura 1RR [] Enchant land As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2.
-goblin-digging-team Creature R [] {T}, Sacrifice this creature: Destroy target Wall.
-goblin-king Creature 1RR [] Other Goblins get +1/+1 and have mountainwalk.
-goblin-rock-sled Creature 1R [] Trample This creature doesn't untap during your untap step if it attacked during your last turn. This creature can't attack unless defending player controls a Mountain.
-goblin-shrine Aura 1RR [] Enchant land As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0. When this Aura leaves the battlefield, it deals 1 damage to each Goblin creature.
-goblin-wizard Creature 2RR [] {T}: You may put a Goblin permanent card from your hand onto the battlefield. {R}: Target Goblin gains protection from white until end of turn.
-goblins-of-the-flarg Creature R [] Mountainwalk (This creature can't be blocked as long as defending player controls a Mountain.) When you control a Dwarf, sacrifice this creature.
-golgothian-sylex Artifact 4 [] {1}, {T}: Each nontoken permanent with a name originally printed in the Antiquities expansion is sacrificed by its controller.
-granite-gargoyle Creature 2R [] Flying {R}: This creature gets +0/+1 until end of turn.
-grapeshot-catapult Artifact 4 [] {T}: This creature deals 1 damage to target creature with flying.
-grave-robbers Creature 1BB [] {B}, {T}: Exile target artifact card from a graveyard. You gain 2 life.
-gravity-sphere Enchantment 2R [] All creatures lose flying.
-great-defender Instant W [] Target creature gets +0/+X until end of turn, where X is its mana value.
-great-wall Enchantment 2W [] Creatures with plainswalk can be blocked as though they didn't have plainswalk.
-greater-realm-of-preservation Enchantment 1W [] {1W}: The next time a black or red source of your choice would deal damage to you this turn, prevent that damage.
-greed Enchantment 3B [] {B}, Pay 2 life: Draw a card.
-green-mana-battery Artifact 4 [] {2}, {T}: Put a charge counter on this artifact. {T}, Remove any number of charge counters from this artifact: Add {G}, then add an additional {G} for each charge counter removed this way.
-green-ward Aura W [] Enchant creature Enchanted creature has protection from green. This effect doesn't remove this Aura.
-guardian-angel Instant XW [] Prevent the next X damage that would be dealt to any target this turn. Until end of turn, you may pay {1} any time you could cast an instant. If you do, prevent the next 1 damage that would be dealt to that permanent or player this turn.
-guardian-beast Creature 3B [] As long as this creature is untapped, noncreature artifacts you control can't be enchanted, they have indestructible, and other players can't gain control of them. This effect doesn't remove Auras already attached to those artifacts.
-hammerheim Land None [] {T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn.
-hasran-ogress Creature BB [] Whenever this creature attacks, it deals 3 damage to you unless you pay {2}.
-haunting-wind Enchantment 3B [] Whenever an artifact becomes tapped or a player activates an artifact's ability without {T} in its activation cost, this enchantment deals 1 damage to that artifact's controller.
-healing-salve Instant W [] Choose one - * Target player gains 3 life. * Prevent the next 3 damage that would be dealt to any target this turn.
-heavens-gate Instant W [] One or more target creatures become white until end of turn.
-hell-swarm Instant B [] All creatures get -1/-0 until end of turn.
-hellfire Sorcery 2BBB [] Destroy all nonblack creatures. Hellfire deals X plus 3 damage to you, where X is the number of creatures that died this way.
-hells-caretaker Creature 3B [] {T}, Sacrifice a creature: Return target creature card from your graveyard to the battlefield. Activate only during your upkeep.
-helm-of-chatzuk Artifact 1 [] {1}, {T}: Target creature gains banding until end of turn. (Any creatures with banding, and up to one without, can attack in a band. Bands are blocked as a group. If any creatures with banding a player controls are blocking or being blocked by a creature, that player divides that creature's combat damage, not its controller, among any of the creatures it's being blocked by or is blocking.)
-hidden-path Enchantment 2GGGG [] Green creatures have forestwalk. (They can't be blocked as long as defending player controls a Forest.)
-holy-day Instant W [] Prevent all combat damage that would be dealt this turn.
-holy-light Instant 2W [] Nonwhite creatures get -1/-1 until end of turn.
-horn-of-deafening Artifact 4 [] {2}, {T}: Prevent all combat damage that would be dealt by target creature this turn.
-hornet-cobra Creature 1GG [] First strike
-horror-of-horrors Enchantment 3BB [] Sacrifice a Swamp: Regenerate target black creature. (The next time that creature would be destroyed this turn, instead tap it, remove it from combat, and heal all damage on it.)
-howl-from-beyond Instant XB [] Target creature gets +X/+0 until end of turn.
-howling-mine Artifact 2 [] At the beginning of each player's draw step, if this artifact is untapped, that player draws an additional card.
-hurkyls-recall Instant 1U [] Return all artifacts target player owns to their hand.
-hurr-jackal Creature R [] {T}: Target creature can't be regenerated this turn.
-hurricane Sorcery XG [] Hurricane deals X damage to each creature with flying and each player.
-hyperion-blacksmith Creature 1RR [] {T}: You may tap or untap target artifact an opponent controls.
-hypnotic-specter Creature 1BB ['Flying'] Flying Whenever this creature deals damage to an opponent, that player discards a card at random.
-ice-storm Sorcery 2G [] Destroy target land.
-ichneumon-druid Creature 1GG [] Whenever an opponent casts an instant spell other than the first instant spell that player casts each turn, this creature deals 4 damage to that player.
-icy-manipulator Artifact 4 [] {1}, {T}: Tap target artifact, creature, or land.
-ifh-bíff-efreet Creature 2GG [] Flying {G}: This creature deals 1 damage to each creature with flying and each player. Any player may activate this ability.
-illusionary-mask Artifact 2 [] {X}: You may choose a creature card in your hand whose mana cost could be paid by some amount of, or all of, the mana you spent on {X}. If you do, you may cast that card face down as a 2/2 creature spell without paying its mana cost. If the creature that spell becomes as it resolves has not been turned face up and would assign or deal damage, be dealt damage, or become tapped, instead it's turned face up and assigns or deals damage, is dealt damage, or becomes tapped. Activate only as a sorcery.
-immolation Aura R [] Enchant creature Enchanted creature gets +2/-2.
-imprison Aura B [] Enchant creature Whenever a player activates an ability of enchanted creature with {T} in its activation cost that isn't a mana ability, you may pay {1}. If you do, counter that ability. If you don't, destroy this Aura. Whenever enchanted creature attacks or blocks, you may pay {1}. If you do, tap the creature, remove it from combat, and creatures it was blocking that had become blocked by only that creature this combat become unblocked. If you don't, destroy this Aura.
-in-the-eye-of-chaos Enchantment 2U [] Whenever a player casts an instant spell, counter it unless that player pays {X}, where X is its mana value.
-indestructible-aura Instant W [] Prevent all damage that would be dealt to target creature this turn.
-infernal-medusa Creature 3BB [] Whenever this creature blocks a creature, destroy that creature at end of combat. Whenever this creature becomes blocked by a non-Wall creature, destroy that creature at end of combat.
-inferno Instant 5RR [] Inferno deals 6 damage to each creature and each player.
-infinite-authority Aura WWW [] Enchant creature Whenever enchanted creature blocks or becomes blocked by a creature with toughness 3 or less, destroy the other creature at end of combat. At the beginning of the next end step, if that creature was destroyed this way, put a +1/+1 counter on the first creature.
-inquisition Sorcery 2B [] Target player reveals their hand. Inquisition deals damage to that player equal to the number of white cards in their hand.
-instill-energy Aura G [] Enchant creature Enchanted creature can attack as though it had haste. {0}: Untap enchanted creature. Activate only during your turn and only once each turn.
-invisibility Aura UU [] Enchant creature Enchanted creature can't be blocked except by Walls.
-invoke-prejudice Enchantment UUUU [] Whenever an opponent casts a creature spell that doesn't share a color with a creature you control, counter that spell unless that player pays {X}, where X is its mana value.
-iron-star Artifact 1 [] Whenever a player casts a red spell, you may pay {1}. If you do, you gain 1 life.
-ironclaw-orcs Creature 1R [] This creature can't block creatures with power 2 or greater.
-island-fish-jasconius Creature 4UUU [] This creature doesn't untap during your untap step. At the beginning of your upkeep, you may pay {UUU}. If you do, untap this creature. This creature can't attack unless defending player controls an Island. When you control no Islands, sacrifice this creature.
-island-of-wak-wak Land None [] {T}: Target creature with flying has base power 0 until end of turn.
-island-sanctuary Enchantment 1W [] If you would draw a card during your draw step, instead you may skip that draw. If you do, until your next turn, you can't be attacked except by creatures with flying and/or islandwalk.
-ivory-cup Artifact 1 [] Whenever a player casts a white spell, you may pay {1}. If you do, you gain 1 life.
-ivory-guardians Creature 4WW ['Protection from Red'] Protection from red Creatures named Ivory Guardians get +1/+1 as long as an opponent controls a nontoken red permanent.
-ivory-tower Artifact 1 [] At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4.
 jade-monolith Artifact 4 [] {1}: The next time a source of your choice would deal damage to target creature this turn, that source deals that damage to you instead.
 jade-statue Artifact 4 [] {2}: This artifact becomes a 3/6 Golem artifact creature until end of combat. Activate only during combat.
 jalum-tome Artifact 3 [] {2}, {T}: Draw a card, then discard a card.
@@ -452,7 +435,6 @@ killer-bees Creature 1GG [] Flying {G}: This creature gets +1/+1 until end of tu
 king-suleiman Creature 1W [] {T}: Destroy target Djinn or Efreet.
 kird-ape Creature R [] This creature gets +1/+2 as long as you control a Forest.
 kismet Enchantment 3W [] Artifacts, creatures, and lands your opponents control enter tapped.
-knights-of-thorn Creature 3W [] Protection from red; banding 
 knowledge-vault Artifact 4 [] {2}, {T}: Exile the top card of your library face down. {0}: Sacrifice this artifact. If you do, discard your hand, then put all cards exiled with this artifact into their owner's hand. When this artifact leaves the battlefield, put all cards exiled with it into their owner's graveyard.
 kobold-drill-sergeant Creature 1R [] Other Kobold creatures you control get +0/+1 and have trample.
 kobold-overlord Creature 1R [] First strike Other Kobold creatures you control have first strike.
@@ -731,7 +713,6 @@ time-walk Sorcery 1U [] Take an extra turn after this one.
 timetwister Sorcery 2U [] Each player shuffles their hand and graveyard into their library, then draws seven cards. (Then put Timetwister into its owner's graveyard.)
 titanias-song Enchantment 3G [] Each noncreature artifact loses all abilities and becomes an artifact creature with power and toughness each equal to its mana value. If this enchantment leaves the battlefield, this effect continues until end of turn.
 tivadars-crusade Sorcery 1WW [] Destroy all Goblins.
-tolaria Land None [] {T}: Add {U}. {T}: Target creature loses banding and all "bands with other" abilities until end of turn. Activate only during any upkeep step.
 tormods-crypt Artifact 0 [] {T}, Sacrifice this artifact: Exile target player's graveyard.
 touch-of-darkness Instant B [] One or more target creatures become black until end of turn.
 tower-of-coireall Artifact 2 [] {T}: Target creature can't be blocked by Walls this turn.
@@ -776,7 +757,6 @@ voodoo-doll Artifact 6 [] At the beginning of your upkeep, put a pin counter on 
 walking-dead Creature 1B [] {B}: Regenerate this creature.
 wall-of-bone Creature 2B ['Defender'] Defender  {B}: Regenerate this creature. (The next time this creature would be destroyed this turn, instead tap it, remove it from combat, and heal all damage on it.)
 wall-of-brambles Creature 2G [] Defender  {G}: Regenerate this creature.
-wall-of-caltrops Creature 1W [] Defender  Whenever this creature blocks a creature, if at least one other Wall creature is blocking that creature and no non-Wall creatures are blocking that creature, this creature gains banding until end of turn. (If any creatures with banding you control are blocking a creature, you divide that creature's combat damage, not its controller, among any of the creatures it's being blocked by.)
 wall-of-dust Creature 2R [] Defender  Whenever this creature blocks a creature, that creature can't attack during its controller's next turn.
 wall-of-earth Creature 1R [] Defender 
 wall-of-fire Creature 1RR [] Defender  {R}: This creature gets +1/+0 until end of turn.
@@ -795,7 +775,6 @@ wall-of-wood Creature G [] Defender
 wand-of-ith Artifact 4 [] {3}, {T}: Target player reveals a card at random from their hand. If it's a land card, that player discards it unless they pay 1 life. If it isn't a land card, the player discards it unless they pay life equal to its mana value. Activate only during your turn.
 wanderlust Aura 2G [] Enchant creature At the beginning of the upkeep of enchanted creature's controller, this Aura deals 1 damage to that player.
 war-barge Artifact 4 [] {3}: Target creature gains islandwalk until end of turn. When this artifact leaves the battlefield this turn, destroy that creature. A creature destroyed this way can't be regenerated. 
-war-elephant Creature 3W [] Trample; banding 
 war-mammoth Creature 3G [] Trample
 warp-artifact Aura BB [] Enchant artifact At the beginning of the upkeep of enchanted artifact's controller, this Aura deals 1 damage to that player.
 water-wurm Creature U [] This creature gets +0/+1 as long as an opponent controls an Island.
