@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 from models.effects.global_ import AngelicVoicesEffect, BadMoonEffect, CastleEffect, CrusadeEffect
-from models.modifiers import KWAModifier, KWATemp, PTModifier
+from models.modifiers import KWAModifier, KWATemp, PTModifier, PTTemp
 from card_filter import CardFilter
 
 
@@ -36,7 +36,6 @@ def akron_legionnaire_on_cast():
             for my_creature in my_creatures:
                 if my_creature not in [artifact_creatures + akron_legionnaires]:
                     my_creature.auras.append(KWAModifier(source, 'remove', 'Attack'))
-
     return E()
 
 def ancestral_recall_on_cast():
@@ -305,7 +304,19 @@ def eternal_warrior_on_cast():
             if not target:
                 raise ValueError("Eternal Warrior needs a target")
             target.modifiers.auras.append(KWAModifier(source, 'add', 'Vigilance'))
+    return E()
 
+def evil_eye_of_orms_by_gore_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            """Non-Eye creatures you control can't attack."""
+            my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
+            my_eyes = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).by_sub_type('Eye').result()
+            for my_creature in my_creatures:
+                if my_creature not in my_eyes:
+                    my_creature.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
     return E()
 
 def farmstead_on_cast():
@@ -317,13 +328,49 @@ def farmstead_on_cast():
 
     return E()
 
-def flying_on_cast():
+def flight_on_cast():
     class E(Effect):
         event = 'cast'
         
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(KWAModifier(source, 'add', 'Flying'))
+    return E()
+
+def fishliver_oil_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError("Fishliver Oil needs a target")
+            target.modifiers.auras.append(KWAModifier(source, 'add', 'Islandwalk'))
+    return E()
+
+def flashfires_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """Destroy all plains"""
+            for plains in gs.card_filter.in_play().by_slug('plains').result():
+                gs.send_to_graveyard_from_play(plains)
+    return E()
+
+def giant_growth_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            target.modifiers.auras.append(PTTemp(3, 3))
+    return E()
+
+def giant_strength_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            target.modifiers.auras.append(PTModifier(source, 2, 2))
     return E()
 
 def giant_tortoise_on_cast():
@@ -334,6 +381,18 @@ def giant_tortoise_on_cast():
             source.modifiers.auras.append(PTModifier(source, 0, 3))
     return E()
 
+def goblin_king_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """All of your other Goblins gain +1+/+1 and Mountainwalk"""
+            targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Goblin').result()
+            for t in targets:
+                if source != t:
+                    t.modifiers.auras.append(KWAModifier(source, 'add', 'Mountainwalk'))
+                    t.modifiers.auras.append(PTModifier(source, 1, 1))
+    return E()
 
 def holy_armor_on_cast():
     class E(Effect):
@@ -379,10 +438,12 @@ def lord_of_atlantis_on_cast():
         event = 'cast'
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """All of your other Merfolk gain +1/+1 and Islandwalk"""
             targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Merfolk').result()
             for t in targets:
-                t.modifiers.auras.append(KWAModifier(source, 'add', 'Islandwalk'))
-                t.modifiers.auras.append(PTModifier(source, 1, 1))
+                if source != t:
+                    t.modifiers.auras.append(KWAModifier(source, 'add', 'Islandwalk'))
+                    t.modifiers.auras.append(PTModifier(source, 1, 1))
     return E()
 
 def mana_short_on_cast():
