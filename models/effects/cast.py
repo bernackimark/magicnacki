@@ -145,7 +145,6 @@ def cleanse_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             for c in CardFilter(gs).in_play().creatures().black().result():
                 gs.send_to_graveyard_from_play(c)
-
     return E()
 
 
@@ -394,6 +393,17 @@ def goblin_king_on_cast():
                     t.modifiers.auras.append(PTModifier(source, 1, 1))
     return E()
 
+def great_defender_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            """Target creature gets +0/+X until end of turn, where X is its mana value."""
+            if target:
+                target.modifiers.auras.append(PTTemp(0, target.props.casting_weight))
+
+    return E()
+
 def holy_armor_on_cast():
     class E(Effect):
         event = 'cast'
@@ -412,6 +422,44 @@ def holy_strength_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(PTModifier(source, 1, 2))
+    return E()
+
+def ice_storm_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """Destroy one land"""
+            gs.send_to_graveyard_from_play(target)
+    return E()
+
+def immolation_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                target.modifiers.auras.append(PTModifier(source, 2, -2))
+    return E()
+
+def inferno_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            # Inferno deals 6 damage to each creature and each player
+            [source.deal_damage_to_player(gs, 6, p_id) for p_id in (0, 1)]
+            [source.deal_damage_to_card(gs, 6, creature) for creature in gs.card_filter.in_play().creatures().result()]
+    return E()
+
+def instill_energy_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError("Instill Energy needs a target")
+            target.modifiers.auras.append(KWAModifier(source, 'add', 'Haste'))
     return E()
 
 def jump_on_cast():
@@ -477,10 +525,7 @@ def twiddle_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 # toggle tapped state
-                if target.is_tapped:
-                    target.untap(gs)
-                else:
-                    target.tap(gs)
+                target.untap(gs) if target.is_tapped else target.tap(gs)
     return E()
 
 def unsummon_on_cast():
