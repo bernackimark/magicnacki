@@ -44,6 +44,10 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'Artifact' in c.props.card_types]
         return self
 
+    def basic_lands(self):
+        self._cards = [c for c in self._cards if c.props.slug in BASIC_LANDS]
+        return self
+
     def creatures(self):
         self._cards = [c for c in self._cards if 'Creature' in c.props.card_types]
         return self
@@ -52,8 +56,9 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'Land' in c.props.card_types]
         return self
 
-    def basic_lands(self):
-        self._cards = [c for c in self._cards if c.props.slug in BASIC_LANDS]
+    def permanents(self):
+        permanent_types = {'Artifact', 'Enchantment', 'Creature', 'Land'}
+        self._cards = [c for c in self._cards if any(t in c.props.card_types for t in permanent_types)]
         return self
 
     def walls(self):
