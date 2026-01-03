@@ -76,7 +76,16 @@ def elves_of_deep_shadow_add_mana_but_damage(gs: GameState, source: GameCard, _:
     gs.mana_pools[source.orig_owner_id].add('B')
     source.deal_damage_to_player(gs, 1, source.orig_owner_id)
 
+def greed_pay_life_draw_card(gs: GameState, source: GameCard, _: Target):
+    gs.decrement_life(source.orig_owner_id, 2, source)
+    gs.draw(gs.hands[source.orig_owner_id], gs.decks[source.orig_owner_id].cards, 1)
+
+def hammerheim_remove_all_walks(gs: GameState, source: GameCard, t: Target):
+    for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
+        t.modifiers.temps.append(KWATemp('remove', f'{land}walk'))
+
 def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
+    # {T}: This creature deals 2 damage to any target and 3 damage to itself
     source.deal_damage_to_player(gs, 2, t) if isinstance(t, int) else source.deal_damage_to_card(gs, 2, t)
     source.deal_damage_to_card(gs, 3, source)
 
@@ -173,9 +182,37 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
         if c.props.slug == 'granite-gargoyle':
             c.abilities.append(ActivatedAbility(c, False, 'R', target_filter=lambda gs, source: source,  # Is this the best way to do this?
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1))))
+        if c.props.slug == 'grapeshot-catapult':
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().has('Flying').result(),
+                               effect=lambda gs, source, t: source.deal_damage_to_card(gs, 1, t)))
+        if c.props.slug == 'greed':
+            c.abilities.append(ActivatedAbility(c, False, 'B', target_filter=lambda _, source: source.orig_owner_id,
+                               effect=lambda gs, source, t: greed_pay_life_draw_card(gs, source, t)))
+        if c.props.slug == 'hammerheim':
+            # {T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn.
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda _, source: source.orig_owner_id,
+                               effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add('R', 1)))
+            c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
+                               effect=lambda gs, source, t: hammerheim_remove_all_walks(gs, source, t)))
         if c.props.slug == 'holy-armor':
             c.abilities.append(ActivatedAbility(c, False, 'W', target_filter=None,
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1))))
+        if c.props.slug == 'hyperion-blacksmith':
+            # {T}: You may tap or untap target artifact an opponent controls.
+            c.abilities.append(ActivatedAbility(c, True, '',
+                               target_filter=lambda gs, source: CardFilter(gs).on_player_board(flip(c.orig_owner_id)).artifacts().result(),
+                               effect=lambda gs, source, t: t.untap(gs) if t.is_tapped else t.tap(gs)))
+        if c.props.slug == 'icy-manipulator':
+            # {1}, {T}: Tap target artifact, creature, or land.
+            c.abilities.append(ActivatedAbility(c, True, '1',
+                               target_filter=lambda gs, source: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).tapped(False).result(),
+                               effect=lambda gs, source, t: t.tap(gs)))
+        if c.props.slug == 'instill-energy':
+            # {0}: Untap enchanted creature. Activate only during your turn and only once each turn.
+            c.abilities.append(ActivatedAbility(c, False, '', target_filter=None,
+                               effect=lambda gs, source, t: t.untap(gs),
+                               allowed_player_turns=[ActivatedAbility.AllowedPlayerTurn.CASTER],
+                               max_activations_per_turn=1))
         if c.props.slug == 'northern-paladin':
             c.abilities.append(ActivatedAbility(
                 c, True, 'WW', target_filter=lambda gs, source: CardFilter(gs).in_play().black().by_type(['Creature', 'Enchantment']).result(),
