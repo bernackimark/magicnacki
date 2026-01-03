@@ -445,7 +445,7 @@ class GameState:
 #  - Where are auras being stored self.auras or self.modifiers.auras???
 
 # TODO:
-#  - Test can_block() since that is new functionality; setting amrou-kithkin & seeker back to "test" status
+#  leave.py: should there just be a common on_leave so when card leaves, all mods for which it's the source are removed?
 
 # TODO:
 #  - When deciding which mana to tap, as a strategy, tap colorless mana where possible
