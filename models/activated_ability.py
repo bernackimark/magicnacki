@@ -80,7 +80,7 @@ def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
     source.deal_damage_to_player(gs, 2, t) if isinstance(t, int) else source.deal_damage_to_card(gs, 2, t)
     source.deal_damage_to_card(gs, 3, source)
 
-def add_activated_abilities(cards: list["GameCard"]) -> None:
+def add_activated_abilities(cards: list[GameCard]) -> None:
     for c in cards:
         if c.props.slug == 'aladdins-ring':
             # damage to card
@@ -142,10 +142,37 @@ def add_activated_abilities(cards: list["GameCard"]) -> None:
         if c.props.slug == 'fire-drake':
             c.abilities.append(ActivatedAbility(c, False, 'R', target_filter=None, max_activations_per_turn=1,
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 0))))
+        if c.props.slug == 'fire-sprites':
+            c.abilities.append(ActivatedAbility(c, True, 'G', target_filter=lambda _, source: source.orig_owner_id,
+                               effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add('R', 1)))
+        if c.props.slug == 'firebreathing':
+            c.abilities.append(ActivatedAbility(c, False, 'R', target_filter=None,
+                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 0))))
         if c.props.slug == 'flood':
             c.abilities.append(ActivatedAbility(
                 c, False, 'UU', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().tapped(False).has('Flying', False).result(),
                                   effect=lambda gs, source, t: t.tap(gs)))
+        if c.props.slug == 'flying-carpet':
+            c.abilities.append(ActivatedAbility(c, True, '2',
+                               target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
+                               effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Flying'))))
+        if c.props.slug == 'fountain-of-youth':
+            c.abilities.append(ActivatedAbility(c, True, '2', target_filter=lambda _, source: source.orig_owner_id,
+                               effect=lambda gs, source, _: gs.increment_life(source.orig_owner_id, 1, c)))
+        if c.props.slug == 'frozen-shade':
+            c.abilities.append(ActivatedAbility(c, False, 'B', target_filter=lambda gs, source: source,  # Is this the best way to do this?
+                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 1))))
+        if c.props.slug == 'ghosts-of-the-damned':
+            c.abilities.append(ActivatedAbility(c, True, '',
+                               lambda gs, source: CardFilter(gs).in_play().creatures().result(),
+                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(-1, 0))))
+        if c.props.slug == 'goblin-balloon-brigade':
+            c.abilities.append(ActivatedAbility(c, False, 'R',
+                               target_filter=lambda gs, source: source,
+                               effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Flying'))))
+        if c.props.slug == 'granite-gargoyle':
+            c.abilities.append(ActivatedAbility(c, False, 'R', target_filter=lambda gs, source: source,  # Is this the best way to do this?
+                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1))))
         if c.props.slug == 'holy-armor':
             c.abilities.append(ActivatedAbility(c, False, 'W', target_filter=None,
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1))))
