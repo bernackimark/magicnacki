@@ -75,6 +75,19 @@ def elven_riders_can_be_blocked():
                 return False
     return E()
 
+def evil_eye_of_orms_by_gore_can_be_blocked():
+    class E(Effect):
+        event = "query"
+
+        def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+            """Query: can_block, card = 'EEOOBG', req'd kwargs: blocker. This creature can only be blocked by Walls"""
+            blocker: GameCard = kwargs.get("blocker")
+            if event != "can_block" or card.props.slug != 'evil-eye-of-orms-by-gore' or not blocker:
+                return None
+            if 'Wall' not in blocker.props.card_sub_types:
+                return False
+    return E()
+
 def seeker_enchanted_creature_can_be_blocked():
     class E(Effect):
         event = "query"
