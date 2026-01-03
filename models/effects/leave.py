@@ -48,6 +48,31 @@ def creature_bond_on_leave():
                     gs.decrement_life(target.orig_owner_id, target.props.toughness, aura)
     return E()
 
+def evil_eye_of_orms_by_gore_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            """Non-Eye creatures you control can't attack."""
+            my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
+            for my_creature in my_creatures:
+                for aura in my_creature.auras:
+                    if aura.props.slug == 'evil-eye-of-orms-by-gore':
+                        my_creature.modifiers.auras.remove(aura)
+                        break
+    return E()
+
+def goblin_king_on_leave():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Goblin').result()
+            for t in targets[:]:
+                for mod in t.modifiers.auras:  # remove both the Mountainwalk and +1/+1
+                    if mod.card == source:
+                        t.modifiers.remove_aura(t)
+    return E()
 
 def island_on_leave():
     class E(Effect):
