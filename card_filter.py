@@ -40,6 +40,10 @@ class CardFilter:
         return self
 
     # --- by type/sub-type ---
+    def artifacts(self):
+        self._cards = [c for c in self._cards if 'Artifact' in c.props.card_types]
+        return self
+
     def creatures(self):
         self._cards = [c for c in self._cards if 'Creature' in c.props.card_types]
         return self
