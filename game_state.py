@@ -294,7 +294,6 @@ class GameState:
 
             targets = ability.target_filter(self, c)
             # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
-            print(f"{ability.card=} ... {targets=}")
 
             # No target needed → create a single action
             if targets is None:
@@ -305,10 +304,14 @@ class GameState:
             elif isinstance(targets, list) and targets == []:
                 continue
 
-            # Targeting a player (player indices are returned as a tuple ex (0, 1)
-            elif targets and isinstance(targets, tuple) and isinstance(targets[0], int):
+            # Targeting multiple player indices
+            elif targets == (0, 1) or targets == (1, 0):
                 for t in targets:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+
+            # Targeting a single player index
+            elif targets == 0 or targets == 1:
+                actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
 
             # Targeting a single GameCard
             elif isinstance(targets, GameCard):
@@ -320,7 +323,7 @@ class GameState:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
 
             else:
-                raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card} {targets}")
+                raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card=} {targets=}")
         return actions
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
@@ -331,11 +334,13 @@ class GameState:
         board = self.boards[p_id]
 
         # Helper: add all activated abilities for all phases
-        def add_activated_abilities_from_board():
+        def add_activated_abilities_from_board() -> list[ActivateAbility] | list[None]:
             actions: list[ActivateAbility] = []
             for card in board.cards:
                 actions.extend(self.get_available_activated_abilities(card))
                 for aura in card.modifiers.auras:
+                    if not isinstance(aura, GameCard):  # some auras can be KWAModifier/PTModifiers (this is confusing)
+                        continue
                     actions.extend(self.get_available_activated_abilities(aura))
             return actions
 
@@ -365,11 +370,6 @@ class GameState:
                 # Activated abilities can also respond
                 available_actions.extend(add_activated_abilities_from_board())
 
-            # for c in self.boards[p_id].cards:
-            #     available_actions.extend(self.get_available_activated_abilities(c))
-            #     for a in c.auras:
-            #         available_actions.extend(self.get_available_activated_abilities(a))
-
             return available_actions
 
         if self.phase == Phase.PASS_THE_TURN:
@@ -389,6 +389,8 @@ class GameState:
             for c in self.boards[self.player_turn_idx].cards:
                 self.trigger('upkeep', c)
                 for a in c.modifiers.auras:
+                    if not isinstance(a, GameCard):  # KWAModifiers/PTModifiers are auras but aren't actually GameCards
+                        continue
                     self.trigger('upkeep', a)
             self.phase = Phase.DRAW
             return
