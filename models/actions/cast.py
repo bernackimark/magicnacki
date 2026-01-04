@@ -20,9 +20,9 @@ class CastToBoard(Action):
         board.play_to_board(self.card)
         if self.card.props.is_land:
             self.gs.turn.has_played_land = True
-        if self.card.props.is_basic_land:
-            color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
-            self.gs.mana_pools[self.player_idx].add(color)
+        # if self.card.props.is_basic_land:
+        #     color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
+        #     self.gs.mana_pools[self.player_idx].add(color)
 
         # TODO: for speed of testing, perms are being auto-cast, instead of being added to the stack
         self.gs.trigger('cast', self.card)
@@ -46,7 +46,7 @@ class CastToTargetAddToStack(Action):
         self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
-        self.gs.action_stack.add(self, self.gs)
+        self.gs.action_stack.add_(self, self.gs)
 
 
 @dataclass
@@ -61,4 +61,4 @@ class CastCounter(Action):
         self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
-        self.gs.action_stack.add(self, self.gs)
+        self.gs.action_stack.add_(self, self.gs)
