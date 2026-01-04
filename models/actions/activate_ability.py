@@ -8,7 +8,7 @@ from models.game_card import GameCard
 @dataclass
 class ActivateAbility(Action):
     ability: ActivatedAbility
-    target: GameCard | None = None
+    target: GameCard | list[GameCard] | tuple[int] | int | None = None
 
     def __repr__(self) -> str:
         target_text = ''
