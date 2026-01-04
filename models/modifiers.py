@@ -52,6 +52,10 @@ class KWATemp:
     kwa: str
     expires_end_of_turn: bool = True
 
+    def __post_init__(self):
+        if self.add_or_remove not in ('add', 'remove'):
+            raise ValueError(f"attribute add_or_remove must be: 'add' or 'remove', instead got {self.add_or_remove}")
+
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa} until end of turn"
 
