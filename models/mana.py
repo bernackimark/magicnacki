@@ -4,10 +4,10 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
     from game_state import GameState
 
-from constants import BASIC_LANDS, BASIC_LAND_MANA_PRODUCED, COLOR_LETTERS_W_COLORLESS
+from constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTER_SLUG, BASIC_LAND_MANA_PRODUCED, COLOR_LETTERS
+
 
 def parse_casting_cost(casting_cost: str) -> dict[str, int]:
     """ex '2U' returns {'C': 2, 'U': 1, 'G': 0, ...} where C = colorless."""
@@ -28,31 +28,38 @@ def casting_weight(casting_cost: str) -> int:
 
 @dataclass
 class ManaPool:
-    mana: dict[str, int] = field(default_factory=lambda: {c: 0 for c in COLOR_LETTERS_W_COLORLESS})
+    gs: GameState
+    owner_id: int
+    _floating_mana: dict[str, int] = field(default_factory=lambda: {c: 0 for c in COLOR_LETTERS_W_COLORLESS})
 
-    def add(self, color: str, amount: int = 1):
-        self.mana[color] += amount
+    def add_floating(self, color: str, amount: int = 1):
+        self._floating_mana[color] += amount
 
-    def can_pay(self, cost: dict[str: int] | str | None) -> bool:
+    def clear_floating(self):
+        for c in COLOR_LETTERS_W_COLORLESS:
+            self._floating_mana[c] = 0
+
+    def can_pay(self, cost: dict[str, int] | str | None) -> bool:
         if cost is None:
             return True
         if isinstance(cost, str):
-            cost = parse_casting_cost(cost)
+            cost: dict[str, int] = parse_casting_cost(cost)
 
-        # 1. Pay colored mana first
-        remaining_mana = self.mana.copy()
+        available = self.available_mana.copy()
 
-        for color in ('W', 'U', 'B', 'R', 'G'):
-            if remaining_mana[color] < cost[color]:
+        # Pay colored first
+        for color in COLOR_LETTERS:
+            if available[color] < cost[color]:
                 return False
-            remaining_mana[color] -= cost[color]
+            available[color] -= cost[color]
 
-        # 2. Pay colorless cost with any remaining mana
-        total_remaining = sum(remaining_mana.values())
+        # Can/Can't Pay colorless
+        return sum(available.values()) >= cost['C']
 
-        return total_remaining >= cost['C']
-
-    def pay(self, cost: dict[str: int] | str | None):
+    def pay(self, cost: dict[str, int] | str | None):
+        """Payment order: pay color cost w floating, pay color w basic land,
+        pay colorless w floating, pay colorless w random basic land.
+        Other land sources (ex: colorless producers) are not yet considered."""
         if cost is None:
             return
         if isinstance(cost, str):
@@ -60,33 +67,91 @@ class ManaPool:
         if not self.can_pay(cost):
             raise ValueError("Cannot pay mana cost")
 
-        # 1. Pay colored costs first
-        for color in ('W', 'U', 'B', 'R', 'G'):
-            self.mana[color] -= cost[color]
+        # 1. Pay colored costs (everything except 'C')
+        for c in cost:
+            if c == 'C':
+                continue
 
-        # 2. Pay colorless from ANY remaining mana
-        remaining_colorless = cost['C']
+            paid = min(self._floating_mana[c], cost[c])
+            self._floating_mana[c] -= paid
+            cost[c] -= paid
 
-        for color in ('W', 'U', 'B', 'R', 'G', 'C'):
-            if remaining_colorless == 0:
-                break
+            paid = min(self._untapped_basic_land_mana[c], cost[c])
+            self._untapped_basic_land_mana[c] -= paid
+            self._tap_lands_for_color(c, paid)
+            cost[c] -= paid
 
-            spend = min(self.mana[color], remaining_colorless)
-            self.mana[color] -= spend
-            remaining_colorless -= spend
+        # 2. Pay colorless cost using ANY remaining mana
+        remaining = cost['C']
 
-    @staticmethod
-    def untap_lands(gs: GameState, p_idx: int):
-        for land in gs.card_filter.on_player_board(p_idx).lands().result():
-            land.untap()
+        if remaining:
+            # floating mana first
+            for c in self._floating_mana:
+                paid = min(self._floating_mana[c], remaining)
+                self._floating_mana[c] -= paid
+                remaining -= paid
+                if not remaining:
+                    break
 
-    def add_mana_from_basic_land_tap(self, card: GameCard):
-        if card.props.slug not in BASIC_LANDS:
-            print(f"{card} tried to call ManaPool.add_mana_from_basic_land_tap")
-            return
-        color = BASIC_LAND_MANA_PRODUCED[card.props.slug]
-        self.add(color, 1)
+        if remaining:
+            # then iterate over basic land items until cost is zeroed out
+            for c, amt in self._untapped_basic_land_mana.items():
+                if not amt:
+                    continue
+                paid = min(self._untapped_basic_land_mana[c], remaining)
+                self._untapped_basic_land_mana[c] -= paid
+                self._tap_lands_for_color(c, paid)
+                remaining -= paid
+                if not remaining:
+                    break
 
-    def clear(self):
-        for c in COLOR_LETTERS_W_COLORLESS:
-            self.mana[c] = 0
+        cost['C'] = remaining
+
+        # use other sources (not yet considered)
+        # a to-do
+
+        assert sum(cost.values()) == 0, "The cost wasn't fully paid"
+
+    @property
+    def _untapped_basic_land_mana(self) -> dict[str, int]:
+        basic_land_mana = {c: 0 for c in COLOR_LETTERS_W_COLORLESS}
+        untapped_lands = self.gs.card_filter.on_player_board(self.owner_id).basic_lands().untapped().result()
+        for land in untapped_lands:
+            color = BASIC_LAND_MANA_PRODUCED[land.props.slug]  # ex: 'W' for plains
+            basic_land_mana[color] += 1
+        return basic_land_mana
+
+    @property
+    def available_mana(self) -> dict[str, int]:
+        """Single dictionary with six key-values summing all untapped basic land & floating mana.
+        Ex: {'W': 1, 'U': 0, 'G': 3, 'B': 2, 'R': 0, 'C': 0}.
+        Note: other mana sources aren't yet considered (ex: Birds of Paradise),
+        so those would have to be tapped/activated first to add floating mana"""
+        return {color: self._untapped_basic_land_mana[color] + self._floating_mana[color]
+                for color in self._untapped_basic_land_mana}
+
+    def _tap_lands_for_color(self, color: str, amount: int):
+        lands = self.gs.card_filter.on_player_board(self.owner_id).by_slug(COLOR_LETTER_SLUG[color]).untapped().result()
+        if len(lands) < amount:
+            raise RuntimeError("Not enough untapped lands")
+        for land in lands[:amount]:
+            land.tap(self.gs)
+
+    def _tap_lands_for_colorless(self, amount: int):
+        # currently unused, but may be helpful if functionality is added?
+        lands = self.gs.card_filter.on_player_board(self.owner_id).basic_lands().tapped(False).result()
+        if len(lands) < amount:
+            raise RuntimeError("Not enough untapped lands")
+        for land in lands[:amount]:
+            land.tap(self.gs)
+
+
+# TODO:
+#  1) Tally Available Mana:
+#  - untapped basic lands
+#  - floating
+#  - other mana (ignore for now)
+#  2) Pay:
+#  - reduce floating
+#  - tap basic lands
+#  - other mana sources (ignore for now)

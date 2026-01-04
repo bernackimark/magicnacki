@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum, Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
+from constants import BASIC_LAND_MANA_PRODUCED
 from models.damage import PreventNextDamage
 from models.effects.activate import cop_blue_effect
 from phase_fsm import Phase
@@ -75,7 +76,7 @@ def electric_eel_pump_and_damage(gs: GameState, source: GameCard, _: Target):
     gs.apply_damage(source, 1, source.orig_owner_id)
 
 def elves_of_deep_shadow_add_mana_but_damage(gs: GameState, source: GameCard, _: Target):
-    gs.mana_pools[source.orig_owner_id].add('B')
+    gs.mana_pools[source.orig_owner_id].add_floating('B')
     gs.apply_damage(source, 1, source.orig_owner_id)
 
 def greed_pay_life_draw_card(gs: GameState, source: GameCard, _: Target):
@@ -93,6 +94,11 @@ def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
 
 def add_activated_abilities(cards: list[GameCard]) -> None:
     for c in cards:
+        # commenting this for now, as land is being auto-paid & tapped
+        # if c.props.is_basic_land:
+        #     color = BASIC_LAND_MANA_PRODUCED[c.props.slug]
+        #     c.abilities.append(ActivatedAbility(c, '', True, target_filter=None,
+        #                        effect=lambda gs, source, _: gs.mana_pools[source.orig_owner_id].add(color)))
         if c.props.slug == 'aladdins-ring':
             # damage to card
             c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
@@ -106,7 +112,7 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
                                   effect=lambda gs, source, t: t.tap(gs)))
         if c.props.slug == 'apprentice-wizard':
             c.abilities.append(ActivatedAbility(c, 'U', True, target_filter=lambda gs, source: source.orig_owner_id,
-                               effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add('C', 3)))
+                                                effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add_floating('C', 3)))
         if c.props.slug == 'blessing':
             c.abilities.append(ActivatedAbility(
                 c, 'W', False, target_filter=None,
@@ -158,7 +164,7 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 0))))
         if c.props.slug == 'fire-sprites':
             c.abilities.append(ActivatedAbility(c, 'G', True, target_filter=lambda _, source: source.orig_owner_id,
-                               effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add('R', 1)))
+                                                effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add_floating('R', 1)))
         if c.props.slug == 'firebreathing':
             c.abilities.append(ActivatedAbility(c, 'R', False, target_filter=None,
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 0))))
@@ -196,7 +202,7 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
         if c.props.slug == 'hammerheim':
             # {T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn.
             c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda _, source: source.orig_owner_id,
-                               effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add('R', 1)))
+                                                effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add_floating('R', 1)))
             c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
                                effect=lambda gs, source, t: hammerheim_remove_all_walks(gs, source, t)))
         if c.props.slug == 'holy-armor':
