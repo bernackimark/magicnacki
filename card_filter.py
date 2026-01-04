@@ -111,6 +111,10 @@ class CardFilter:
         self._cards = [c for c in self._cards if c.is_tapped == is_tapped]
         return self
 
+    def untapped(self):
+        self._cards = [c for c in self._cards if not c.is_tapped]
+        return self
+
     def has(self, kwa: str, bool_: bool = True):
         if bool_:
             self._cards = [c for c in self._cards if kwa in c.keyword_abilities]
