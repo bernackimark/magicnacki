@@ -39,12 +39,8 @@ class GameCard:
         self.base_kwa: tuple[str, ...] = self.construct_base_kwas()
         self.modifiers = Modifiers()
 
-        # Build effect instances for this card based on slug
-        self.effects: list[Effect] = []
-        # global mapping for slug-based effects
-        slug_effects = build_effects_for_slug(self.props.slug)
-        if slug_effects:
-            self.effects.extend(slug_effects)
+        # lookup effects from centralized effects dictionary
+        self.effects: list[Effect] = build_effects_for_slug(self.props.slug)
 
     def __repr__(self) -> str:
         text = self.props.name
