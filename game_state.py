@@ -8,7 +8,8 @@ from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
-from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking
+from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking, \
+    AssignCombatDamage
 from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
@@ -65,7 +66,7 @@ class GameState:
         # life-loss registry uses (cond, effect) tuples similar to your TAP_REGISTRY style
         self.life_loss_registry: list[tuple[Callable, Callable]] = [
             # backfire: if the source has an aura with slug 'backfire', deal the same life loss to opponent
-            (lambda gs, p_id, amt, source: any(a.props.slug == "backfire" for a in source.auras),
+            (lambda gs, p_id, amt, source: any(a.props.slug == "backfire" for a in source.modifiers.auras),
              lambda gs, p_id, amt, source: gs._apply_opponent_life_loss(p_id, amt))
         ]
 
@@ -121,7 +122,7 @@ class GameState:
 
         # Ask global effects, card effects, and card's aura effects
         global_effects = [eff for card, eff in self.global_effects]
-        for effect in blocker.effects + global_effects + [a.effects for a in blocker.auras]:
+        for effect in blocker.effects + global_effects + [a.effects for a in blocker.modifiers.auras]:
             result = effect.on_query(self, 'can_block', card=blocker, attacker=attacker)
             if result is False:  # hard veto
                 return False
@@ -184,7 +185,7 @@ class GameState:
         board = self.boards[c.orig_owner_id]
         board.remove_from_board(c)
         print(f"{c} has been removed from the board")
-        for a in c.auras:
+        for a in c.modifiers.auras:
             board.remove_from_board(a)
             print(f"{a} has been removed from the board")
 
@@ -193,7 +194,7 @@ class GameState:
         self.remove_from_board(c)
         self.graveyards[c.orig_owner_id].append(c)
         print(f"{c} has been sent to graveyard")
-        for a in c.auras:
+        for a in c.modifiers.auras:
             self.graveyards[c.orig_owner_id].append(a)
             print(f"{a} has been sent to graveyard")
         self._send_to_graveyard_or_exile(c)
@@ -213,7 +214,7 @@ class GameState:
         self.remove_from_board(c)
         self.exiles[c.orig_owner_id].append(c)
         print(f'{c} has been exiled')
-        for a in c.auras:
+        for a in c.modifiers.auras:
             self.exiles[c.orig_owner_id].append(a)
             print(f'{a} has been exiled')
         self._send_to_graveyard_or_exile(c)
@@ -230,7 +231,7 @@ class GameState:
     def return_to_hand(self, c: GameCard):
         hand = self.hands[c.orig_owner_id]
         hand.cards.append(c)
-        for a in c.auras:
+        for a in c.modifiers.auras:
             self.send_to_graveyard_from_play(a)
         c.clear_all_mods()
         hand.sort_cards()
@@ -278,17 +279,6 @@ class GameState:
                 continue
             c.untap(self)
 
-    def can_activate_abilities_now(self, p_id: int) -> bool:
-        if self.phase in {Phase.CAST, Phase.DECLARE_ATTACKERS, Phase.DECLARE_BLOCKERS,
-                          Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES, Phase.FIRST_STRIKE_DAMAGE,
-                          Phase.COMBAT_DAMAGE}:
-            return True
-
-        if len(self.action_stack):
-            return True
-
-        return False
-
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
 
@@ -334,18 +324,51 @@ class GameState:
         return actions
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
+        """Determine all legal actions available to player_id in the current phase ...
+         (casting, activating abilities, combat, phase-specific actions, etc.)"""
         available_actions: list[Action] = []
         hand = self.hands[p_id]
         board = self.boards[p_id]
+
+        # Helper: add all activated abilities for all phases
+        def add_activated_abilities_from_board():
+            actions: list[ActivateAbility] = []
+            for card in board.cards:
+                actions.extend(self.get_available_activated_abilities(card))
+                for aura in card.modifiers.auras:
+                    actions.extend(self.get_available_activated_abilities(aura))
+            return actions
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
             available_actions.append(AcceptAction(p_id, self))
 
-            for c in self.boards[p_id].cards:
-                available_actions.extend(self.get_available_activated_abilities(c))
-                for a in c.auras:
-                    available_actions.extend(self.get_available_activated_abilities(a))
+            # Check instants (or other spells allowed to respond)
+            allowed_cards = hand.instants + hand.sorceries if p_id == self.player_turn_idx else hand.sorceries
+            playable_cards: list[GameCard] = [c for c in allowed_cards if self.mana_pools[p_id].can_pay(c.casting_cost)]
+
+            for c in playable_cards:
+                # Handle counterspells separately
+                if c.props.slug in ('counterspell',):
+                    target: Action = self.action_stack.last_action
+                    available_actions.append(CastCounter(p_id, self, c, target))
+                    continue
+
+                # Handle other spells
+                target_cards = c.get_cast_targets(self)
+                if not target_cards:
+                    available_actions.append(CastToTargetAddToStack(p_id, self, c, None))
+                    continue
+                for t in target_cards:
+                    available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
+
+                # Activated abilities can also respond
+                available_actions.extend(add_activated_abilities_from_board())
+
+            # for c in self.boards[p_id].cards:
+            #     available_actions.extend(self.get_available_activated_abilities(c))
+            #     for a in c.auras:
+            #         available_actions.extend(self.get_available_activated_abilities(a))
 
             return available_actions
 
@@ -365,9 +388,8 @@ class GameState:
         if self.phase == Phase.UPKEEP:
             for c in self.boards[self.player_turn_idx].cards:
                 self.trigger('upkeep', c)
-                for a in c.auras:
+                for a in c.modifiers.auras:
                     self.trigger('upkeep', a)
-
             self.phase = Phase.DRAW
             return
 
@@ -376,7 +398,8 @@ class GameState:
 
         if self.phase == Phase.CAST:
             available_actions.append(MoveToEndStep(p_id, self))
-            # cast; compare its casting cost to the board to see if it can cast
+
+            # cast cards from hand
             for c in hand.cards:
                 if not self.mana_pools[p_id].can_pay(c.casting_cost):
                     continue
@@ -398,10 +421,7 @@ class GameState:
                         available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
 
             # activate abilities
-            for c in board.cards:
-                available_actions.extend(self.get_available_activated_abilities(c))
-                for a in c.auras:
-                    available_actions.extend(self.get_available_activated_abilities(a))
+            available_actions.extend(add_activated_abilities_from_board())
 
             # declare combat
             if any(self.can_attack(card) for card in board.cards):
@@ -424,14 +444,10 @@ class GameState:
                     if self.can_block(blocker, com.attacker):
                         available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
 
-            available_actions.append((FinishBlocking(self.action_on_idx, self)))
+            # Activated abilities allowed during blockers (instant-speed)
+            available_actions.extend(add_activated_abilities_from_board())
 
-        # regardless of any specific phase, add activated ability actions if the phase permits
-        if self.can_activate_abilities_now(p_id):
-            for c in self.boards[p_id].cards:
-                available_actions.extend(self.get_available_activated_abilities(c))
-                for a in c.auras:
-                    available_actions.extend(self.get_available_activated_abilities(a))
+            available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
         if self.phase == Phase.END_STEP:
             for c in self.card_filter.in_play().result():
@@ -440,13 +456,11 @@ class GameState:
             return
 
         if self.phase == Phase.DISCARD:
-            hand = self.hands[self.player_turn_idx]
             if len(hand.cards) > 7:
                 for c in hand.cards:
                     available_actions.append(DiscardCard(self.player_turn_idx, self, c))
             else:
                 self.phase = Phase.CREATURES_HEAL
-                return
 
         if self.phase == Phase.CREATURES_HEAL:
             for deck in self.decks_all_cards:
@@ -454,7 +468,6 @@ class GameState:
                     c.combat_damage_dealt = 0
                     c.combat_damage_received = 0
             self.phase = Phase.END_TURN_EFFECTS
-            return
 
         if self.phase == Phase.END_TURN_EFFECTS:
             # Expire all temporary damage prevention
@@ -466,7 +479,7 @@ class GameState:
             # Empty mana pools
             for pool in self.mana_pools:
                 pool.clear()
-            # Set all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
+            # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
             for c in self.card_filter.in_play().result():
                 for aa in c.abilities:
                     aa.activated_cnt_this_turn = 0
@@ -474,9 +487,13 @@ class GameState:
             return
 
         if self.phase == Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES:
-            #  TODO: attackers & blockers have been declared
-            #   this would normally allow players to cast instants, but let's skip that and instead ...
-            #   we're also not yielding control after first strike, instead bundling all together
+            # resolve all combat & instant-speed actions
+            # Activated abilities allowed after blockers have all been declared (instant-speed)
+            available_actions.extend(add_activated_abilities_from_board())
+
+            available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
+
+        if self.phase == Phase.ASSIGN_COMBAT_DAMAGE:
             self.phase = Phase.FIRST_STRIKE_DAMAGE
             self.phase = Phase.COMBAT_DAMAGE
             for com in self.combats:
@@ -487,9 +504,6 @@ class GameState:
 
         return available_actions
 
-
-# TODO:
-#  - Where are auras being stored self.auras or self.modifiers.auras???
 
 # TODO:
 #  leave.py: should there just be a common on_leave so when card leaves, all mods for which it's the source are removed?

@@ -19,7 +19,6 @@ class CreatureAttack(Action):
             self.card.tap(self.gs)
         self.gs.combats.append(Combat(self.gs, self.card))
 
-
 @dataclass
 class BeginCombat(Action):
 
@@ -28,7 +27,6 @@ class BeginCombat(Action):
 
     def play(self) -> None:
         self.gs.phase = Phase.DECLARE_ATTACKERS
-
 
 @dataclass
 class FinishDeclaringAttackers(Action):
@@ -39,7 +37,6 @@ class FinishDeclaringAttackers(Action):
     def play(self) -> None:
         self.gs.phase = Phase.DECLARE_BLOCKERS
         self.gs.action_on_idx = flip(self.gs.action_on_idx)
-
 
 @dataclass
 class AssignBlocker(Action):
@@ -54,7 +51,6 @@ class AssignBlocker(Action):
             if com.attacker == self.attacker:
                 com.blockers.append(self.blocker)
 
-
 @dataclass
 class FinishBlocking(Action):
 
@@ -63,3 +59,11 @@ class FinishBlocking(Action):
 
     def play(self) -> None:
         self.gs.phase = Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES
+
+@dataclass
+class AssignCombatDamage(Action):
+    def __repr__(self):
+        return "Assign Combat Damage"
+
+    def play(self) -> None:
+        self.gs.phase = Phase.ASSIGN_COMBAT_DAMAGE
