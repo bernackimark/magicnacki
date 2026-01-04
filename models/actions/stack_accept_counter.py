@@ -16,7 +16,7 @@ class AcceptAction(Action):
         target = last_action.target
         if card.props.is_aura:
             card.attached_to = target
-            target.auras.append(card)
+            target.modifiers.auras.append(card)
             self.gs.boards[target.orig_owner_id].play_to_board(card)
 
         self.gs.trigger('cast', card, target)
