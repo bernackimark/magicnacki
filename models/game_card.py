@@ -27,7 +27,7 @@ class GameCard:
 
         self.can_attack: bool = self.props.is_creature and 'Wall' not in self.props.card_sub_types
         self.can_block: bool = self.props.is_creature
-        self.has_summoning_sickness: bool = 'Haste' not in self.props.keyword_abilities
+        self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
         self.has_flying: bool = 'Flying' in self.props.keyword_abilities
         self.attached_to: "GameCard" = None
 
