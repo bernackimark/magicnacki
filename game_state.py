@@ -44,7 +44,7 @@ class GameState:
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
-        self.mana_pools: list[ManaPool] = [ManaPool() for _ in range(self.player_cnt)]
+        self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
         self.phase = Phase.UNTAP
         self.action_stack = ActionStack()
         self.game_history: list[tuple[int, Action]] = []  # turn number & Action; appended to in engine.play()
@@ -80,7 +80,6 @@ class GameState:
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
         """Dispatch an event (string) to the card's effects; event in {'cast','upkeep','tap','untap','leave'}"""
         for e in card.effects:
-            print(e)
             if e.event == event:
                 e.resolve(self, card, target)
 
@@ -100,7 +99,7 @@ class GameState:
         return True
 
     def can_attack(self, card: GameCard) -> bool:
-        """Base rules, card effects (such as MAPPING['sea-serpent]: lambda c: IslandhomeEffect(), global effects."""
+        """Base rules, card effects (such as MAPPING['sea-serpent']: lambda c: IslandhomeEffect(), global effects."""
         # Base rules first
         if (not card.props.is_creature or card.has_summoning_sickness or card.is_tapped
                 or 'Defender' in card.keyword_abilities or card in [combat.attacker for combat in self.combats]):
@@ -294,6 +293,7 @@ class GameState:
 
             targets = ability.target_filter(self, c)
             # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
+            print(f"{c=}, {ability=}, {targets=}")
 
             # No target needed → create a single action
             if targets is None:
@@ -378,10 +378,6 @@ class GameState:
 
         if self.phase == Phase.UNTAP:
             self.untap()
-            for i in range(self.player_cnt):
-                for basic_land in self.card_filter.on_player_board(i).basic_lands().result():
-                    color = BASIC_LAND_MANA_PRODUCED[basic_land.props.slug]
-                    self.mana_pools[i].add(color)
             self.phase = Phase.UPKEEP
             return
 
@@ -480,7 +476,7 @@ class GameState:
                     c.modifiers.clear_temps()
             # Empty mana pools
             for pool in self.mana_pools:
-                pool.clear()
+                pool.clear_floating()
             # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
             for c in self.card_filter.in_play().result():
                 for aa in c.abilities:

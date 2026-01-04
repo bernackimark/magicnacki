@@ -9,7 +9,12 @@ def tap_for_mana(color: str):
         event = 'tap'
 
         def resolve(self, gs, source, target=None):
-            gs.mana_pools[source.orig_owner_id].add(color)
+            raise NotImplementedError("Handling mana in a different way")
+            # current approach is to not tap land to generate mana, but instead,
+            # pre-calculate the mana needed and tap down from there
+            # will probably need to change this if moving to a user-selects-their-own-mana-source system
+            ...
+            # gs.mana_pools[source.orig_owner_id].add_floating(color)
     return E()
 
 def giant_tortoise_on_tap():
