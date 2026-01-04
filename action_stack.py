@@ -37,5 +37,5 @@ class ActionStack:
         self._actions.append(action)
         gs.action_on_idx = flip(gs.action_on_idx)
 
-    def clear(self) -> None:
+    def clear_(self) -> None:
         self._actions.clear()
