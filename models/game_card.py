@@ -47,12 +47,11 @@ class GameCard:
             self.effects.extend(slug_effects)
 
     def __repr__(self) -> str:
-        if not self.props.is_creature and not self.modifiers:
-            text = self.props.name
-        elif not self.props.is_creature and self.modifiers:
-            text = f'{self.props.name} [{self.modifiers}]'
-        else:
-            text = f'{self.props.name} ({self.power}/{self.toughness}) w {self.modifiers}'
+        text = self.props.name
+        if self.props.is_creature:
+            text += f' ({self.power}/{self.toughness})'
+        if self.modifiers:
+            text += f' w {self.modifiers}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
