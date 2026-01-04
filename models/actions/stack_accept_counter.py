@@ -23,7 +23,7 @@ class AcceptAction(Action):
         print(f"Successfully cast {card.props.name}")
 
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
-        self.gs.action_stack.clear()
+        self.gs.action_stack.clear_()
 
 
 @dataclass
@@ -34,5 +34,5 @@ class CounterAction(Action):
         return f"In response to {self.gs.action_stack.last_action}: {self.action}"
 
     def play(self) -> None:
-        self.gs.action_stack.add(self.action, self.gs)
+        self.gs.action_stack.add_(self.action, self.gs)
         self.gs.action_on_idx = flip(self.gs.action_on_idx)
