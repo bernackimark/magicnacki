@@ -129,17 +129,6 @@ class GameCard:
             a.is_tapped = False
         gs.trigger('untap', self)
 
-    def deal_damage_to_card(self, gs: "GameState", amt: int, target: "GameCard"):
-        target.receive_damage(gs, amt, self)
-
-    def deal_damage_to_player(self, gs: "GameState", amt: int, target_player_idx: int):
-        gs.decrement_life(target_player_idx, amt, self)
-
-    def receive_damage(self, gs: "GameState", amt: int, source: "GameCard"):
-        self.modifiers.temps.append(PTTemp(0, -amt))
-        if self.toughness <= 0:
-            gs.send_to_graveyard_from_play(self)
-
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
 

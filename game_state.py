@@ -13,6 +13,7 @@ from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.activated_ability import add_activated_abilities
+from models.damage import DamageEvent, PreventNextDamage
 from models.effects.can_block import can_block_base_rule
 from models.effects.global_ import GlobalEffect
 from models.game_card import GameCard
@@ -70,6 +71,9 @@ class GameState:
 
         # default leave handlers: ensure cleanup always occurs even if no slug specific handler
         self.leave_default_handlers: list[Callable] = [lambda gs, c, tgt: c.clear_all_mods()]
+
+        self.damage_preventions: list[PreventNextDamage] = []
+        self.end_of_turn_effects: list = []
 
     # Event Dispatcher
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
@@ -142,6 +146,38 @@ class GameState:
             hand.cards.append(source_pile.pop(0))
             hand.sort_cards()
 
+    # --- DAMAGE ---
+    def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
+        event = DamageEvent(source, amount, target, is_combat)
+
+        # 1. Give all effects a chance to prevent/redirect
+        self.trigger_damage_prevention(event)
+
+        # 2. Apply remaining damage
+        if event.remaining <= 0:
+            return
+        if isinstance(target, GameCard):
+            target.combat_damage_received += event.remaining
+        else:
+            self.decrement_life(target, event.remaining, source)
+
+    def trigger_damage_prevention(self, event: DamageEvent):
+        """Give all prevention / replacement effects a chance to modify the damage event in this order:
+        1. Card-specific continuous effects; 2. Global continuous effects; 3. Temporary 'next damage' shields"""
+
+        for card in self.card_filter.in_play().result():
+            for eff in card.effects:
+                eff.on_damage(self, event)
+
+        for _, eff in self.global_effects:
+            eff.on_damage(self, event)
+
+        for p in self.damage_preventions:
+            p.apply(event)
+            if p.amt <= 0:
+                self.damage_preventions.remove(p)
+
+    # --- CARD MOVEMENT ---
     def remove_from_board(self, c: GameCard) -> None:
         """Trigger leave event for card (ex Crusade, Castle); remove card from board; remove all auras from board"""
         self.trigger('leave', c)
@@ -414,12 +450,16 @@ class GameState:
             return
 
         if self.phase == Phase.END_TURN_EFFECTS:
+            # Expire all temporary damage prevention
+            self.damage_preventions.clear()
+            # Clear temp modifiers
             for d in self.decks_all_cards:
                 for c in d.cards:
                     c.modifiers.clear_temps()
+            # Empty mana pools
             for pool in self.mana_pools:
                 pool.clear()
-            # set all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
+            # Set all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
             for c in self.card_filter.in_play().result():
                 for aa in c.abilities:
                     aa.activated_cnt_this_turn = 0

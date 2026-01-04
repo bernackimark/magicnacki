@@ -448,8 +448,8 @@ def inferno_on_cast():
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             # Inferno deals 6 damage to each creature and each player
-            [source.deal_damage_to_player(gs, 6, p_id) for p_id in (0, 1)]
-            [source.deal_damage_to_card(gs, 6, creature) for creature in gs.card_filter.in_play().creatures().result()]
+            [gs.apply_damage(source, 6, p_id, is_combat=False) for p_id in (0, 1)]
+            [gs.apply_damage(source, 6, creature) for creature in gs.card_filter.in_play().creatures().result()]
     return E()
 
 def instill_energy_on_cast():

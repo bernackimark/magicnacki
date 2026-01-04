@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum, Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
+from models.damage import PreventNextDamage
+from models.effects.activate import cop_blue_effect
 from phase_fsm import Phase
 from utils import flip
 
@@ -65,16 +67,16 @@ def book_of_rass_pay_life_draw_card(gs: GameState, c: GameCard, _: Target):
 
 def brothers_of_fire_deals_damage(gs: GameState, source: GameCard, t: Target):
     """1 damage to target; 1 damage to caster/owner"""
-    source.deal_damage_to_player(gs, 1, t) if isinstance(t, int) else source.deal_damage_to_card(gs, 1, t)
-    source.deal_damage_to_player(gs, 1, source.orig_owner_id)
+    gs.apply_damage(source, 1, t)
+    gs.apply_damage(source, 1, source.orig_owner_id)
 
-def electric_eel_pump_and_damage(gs: GameState, source: GameCard, t: Target):
+def electric_eel_pump_and_damage(gs: GameState, source: GameCard, _: Target):
     source.modifiers.temps.append(PTTemp(2, 0))
-    source.deal_damage_to_player(gs, 1, source.orig_owner_id)
+    gs.apply_damage(source, 1, source.orig_owner_id)
 
 def elves_of_deep_shadow_add_mana_but_damage(gs: GameState, source: GameCard, _: Target):
     gs.mana_pools[source.orig_owner_id].add('B')
-    source.deal_damage_to_player(gs, 1, source.orig_owner_id)
+    gs.apply_damage(source, 1, source.orig_owner_id)
 
 def greed_pay_life_draw_card(gs: GameState, source: GameCard, _: Target):
     gs.decrement_life(source.orig_owner_id, 2, source)
@@ -86,18 +88,18 @@ def hammerheim_remove_all_walks(gs: GameState, source: GameCard, t: Target):
 
 def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
     # {T}: This creature deals 2 damage to any target and 3 damage to itself
-    source.deal_damage_to_player(gs, 2, t) if isinstance(t, int) else source.deal_damage_to_card(gs, 2, t)
-    source.deal_damage_to_card(gs, 3, source)
+    gs.apply_damage(source, 2, t)
+    gs.apply_damage(source, 3, source)
 
 def add_activated_abilities(cards: list[GameCard]) -> None:
     for c in cards:
         if c.props.slug == 'aladdins-ring':
             # damage to card
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                               effect=lambda gs, source, t: source.deal_damage_to_card(gs, 4, t)))
+                               effect=lambda gs, source, t: gs.apply_damage(source, 4, t)))
             # damage to player
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: (0, 1),
-                               effect=lambda gs, source, t: source.deal_damage_to_player(gs, 4, t)))
+                               effect=lambda gs, source, t: gs.apply_damage(source, 4, t)))
         if c.props.slug == 'ali-baba':
             c.abilities.append(ActivatedAbility(
                 c, True, 'R', target_filter=lambda gs, source: CardFilter(gs).in_play().by_sub_type('Wall').result(),
@@ -125,6 +127,9 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
         if c.props.slug == 'carrion-ants':
             c.abilities.append(ActivatedAbility(c, False, '1', target_filter=None,
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 1))))
+        if c.props.slug == 'circle-of-protection-blue':
+            c.abilities.append(ActivatedAbility(c, False, '2', target_filter=lambda gs, source: CardFilter(gs).blue().result(),
+                               effect=lambda gs, source, t: cop_blue_effect()))
         if c.props.slug == 'dragon-engine':
             c.abilities.append(ActivatedAbility(c, False, '2', target_filter=None,
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(1, 0))))
@@ -184,7 +189,7 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
                                effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1))))
         if c.props.slug == 'grapeshot-catapult':
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().has('Flying').result(),
-                               effect=lambda gs, source, t: source.deal_damage_to_card(gs, 1, t)))
+                               effect=lambda gs, source, t: gs.apply_damage(source, 4, t)))
         if c.props.slug == 'greed':
             c.abilities.append(ActivatedAbility(c, False, 'B', target_filter=lambda _, source: source.orig_owner_id,
                                effect=lambda gs, source, t: greed_pay_life_draw_card(gs, source, t)))
@@ -220,10 +225,10 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
         if c.props.slug in ('pirate-ship', 'prodigal-sorcerer'):
             # damage to card
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                               effect=lambda gs, source, t: source.deal_damage_to_card(gs, 1, t)))
+                               effect=lambda gs, source, t: gs.apply_damage(source, 1, t)))
             # damage to player
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, _: (0, 1),
-                               effect=lambda gs, source, t: source.deal_damage_to_player(gs, 1, t)))
+                               effect=lambda gs, source, t: gs.apply_damage(source, 1, t)))
         if c.props.slug in ('psionic-entity'):
             # damage to card
             c.abilities.append(ActivatedAbility(c, True, '', target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),

@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from ..damage import DamageEvent
+
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
@@ -15,6 +17,9 @@ class GlobalEffect:
     def pt_offset(self, card=None, power=None, toughness=None):
         # Returns the delta to power/toughness
         return 0, 0
+
+    def on_damage(self, gs: GameState, event: DamageEvent):
+        return
 
     def on_query(self, gs: GameState, event: str, **kwargs):
         return None
