@@ -278,6 +278,17 @@ class GameState:
                 continue
             c.untap(self)
 
+    def can_activate_abilities_now(self, p_id: int) -> bool:
+        if self.phase in {Phase.CAST, Phase.DECLARE_ATTACKERS, Phase.DECLARE_BLOCKERS,
+                          Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES, Phase.FIRST_STRIKE_DAMAGE,
+                          Phase.COMBAT_DAMAGE}:
+            return True
+
+        if len(self.action_stack):
+            return True
+
+        return False
+
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
 
@@ -331,21 +342,10 @@ class GameState:
         if len(self.action_stack):
             available_actions.append(AcceptAction(p_id, self))
 
-            # TODO: activated abilities should also be allowed
-            allowed_cards = hand.instants + hand.sorceries if p_id == self.player_turn_idx else hand.sorceries
-            playable_cards: list[GameCard] = [c for c in allowed_cards if self.mana_pools[p_id].can_pay(c.casting_cost)]
-
-            for c in playable_cards:
-                if c.props.slug in ('counterspell',):
-                    target: Action = self.action_stack.last_action
-                    available_actions.append(CastCounter(p_id, self, c, target))
-                    continue
-                target_cards: list[GameCard] = c.get_cast_targets(self)
-                if not target_cards:
-                    available_actions.append(CastToTargetAddToStack(p_id, self, c, None))
-                    continue
-                for t in target_cards:
-                    available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
+            for c in self.boards[p_id].cards:
+                available_actions.extend(self.get_available_activated_abilities(c))
+                for a in c.auras:
+                    available_actions.extend(self.get_available_activated_abilities(a))
 
             return available_actions
 
@@ -425,6 +425,13 @@ class GameState:
                         available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
 
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
+
+        # regardless of any specific phase, add activated ability actions if the phase permits
+        if self.can_activate_abilities_now(p_id):
+            for c in self.boards[p_id].cards:
+                available_actions.extend(self.get_available_activated_abilities(c))
+                for a in c.auras:
+                    available_actions.extend(self.get_available_activated_abilities(a))
 
         if self.phase == Phase.END_STEP:
             for c in self.card_filter.in_play().result():
