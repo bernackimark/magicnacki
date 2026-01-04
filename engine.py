@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from build_deck import CardUniverse, Deck, DeckBuilder
-from game_state import GameState
+from game_state import GameState, Action
 from players import Player, ConsolePlayer
 from renderers import Renderer, ConsoleRenderer
 
@@ -18,20 +18,21 @@ class Engine:
 
     def play(self) -> None:
         while not self.gs.is_game_over:
+            actions = self.gs.get_available_actions(self.gs.action_on_idx)
             self.renderer.render(self.gs, self.players)
-            if self.gs.get_available_actions(self.gs.action_on_idx):
-                action = self.players[self.gs.action_on_idx].make_move(self.gs)
-                action.play()
-                self.gs.game_history.append((self.gs.turn_number, action))
+            if not actions:
+                continue
+            action = self.players[self.gs.action_on_idx].make_move(self.gs, actions)
+            action.play()
+            self.gs.game_history.append((self.gs.turn_number, action))
 
 
 # build decks
-universe = CardUniverse(['3E', '4E'])
-my_cards = (('plains', 24), ('tundra-wolves', 4), ('wall-of-swords', 4), ('animate-wall', 4),
-            ('disenchant', 4))
-his_cards = (('island', 32), ('pirate-ship', 4),  # ('merfolk-of-the-pearl-trident', 4),
-             ('sea-serpent', 4)  # ('psionic-entity', 4), ('flight', 4), ('flood', 4))
-            )
+universe = CardUniverse(['1E', '3E', '4E', 'DK'])
+his_cards = (('plains', 24), ('tundra-wolves', 4), ('savannah-lions', 4),
+             ('disenchant', 4), ('blessing', 4))
+my_cards = (('island', 32), ('merfolk-of-the-pearl-trident', 4), ('lord-of-atlantis', 4), ('apprentice-wizard', 4),
+            ('air-elemental', 4))
 
 decks = []
 for i, cards in enumerate((my_cards, his_cards)):
