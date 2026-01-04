@@ -22,7 +22,6 @@ class CastToBoard(Action):
             self.gs.turn.has_played_land = True
         if self.card.props.is_basic_land:
             color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
-            print(color)
             self.gs.mana_pools[self.player_idx].add(color)
 
         # TODO: for speed of testing, perms are being auto-cast, instead of being added to the stack
