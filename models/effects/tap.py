@@ -26,6 +26,6 @@ def psychic_venom_on_tap():
         event = 'tap'
         
         def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            if any(a.props.slug == "psychic-venom" for a in source.auras):
+            if any(a.props.slug == "psychic-venom" for a in source.modifiers.auras):
                 gs.decrement_life(source.orig_owner_id, 2, source)
     return E()

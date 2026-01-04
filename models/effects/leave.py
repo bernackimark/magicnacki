@@ -28,11 +28,11 @@ def akron_legionnaire_on_leave():
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack
-            my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
+            my_creatures: list[GameCard] = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
             for my_creature in my_creatures:
-                for aura in my_creature.auras:
+                for aura in my_creature.modifiers.auras:
                     if aura.props.slug == 'akron-legionnaire':
-                        my_creature.auras.remove(aura)
+                        my_creature.modifiers.auras.remove(aura)
                         break
     return E()
 
@@ -43,7 +43,7 @@ def creature_bond_on_leave():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: i think this is wrong; i think it's only if creature goes to graveyard
             # creature leaving: for every attached aura that is creature-bond, do life loss to creature's owner
-            for aura in list(target.auras):
+            for aura in target.modifiers.auras:
                 if aura.props.slug == 'creature-bond':
                     gs.decrement_life(target.orig_owner_id, target.props.toughness, aura)
     return E()
@@ -56,7 +56,7 @@ def evil_eye_of_orms_by_gore_on_leave():
             """Non-Eye creatures you control can't attack."""
             my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
             for my_creature in my_creatures:
-                for aura in my_creature.auras:
+                for aura in my_creature.modifiers.auras:
                     if aura.props.slug == 'evil-eye-of-orms-by-gore':
                         my_creature.modifiers.auras.remove(aura)
                         break

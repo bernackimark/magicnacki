@@ -29,7 +29,6 @@ class GameCard:
         self.can_block: bool = self.props.is_creature
         self.has_summoning_sickness: bool = 'Haste' not in self.props.keyword_abilities
         self.has_flying: bool = 'Flying' in self.props.keyword_abilities
-        self.auras: list["GameCard"] = []
         self.attached_to: "GameCard" = None
 
         self.combat_damage_dealt: int = 0
@@ -53,7 +52,7 @@ class GameCard:
         elif not self.props.is_creature and self.modifiers:
             text = f'{self.props.name} [{self.modifiers}]'
         else:
-            text = f'{self.props.name} ({self.power}/{self.toughness}){self.modifiers}'
+            text = f'{self.props.name} ({self.power}/{self.toughness}) w {self.modifiers}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
@@ -117,7 +116,7 @@ class GameCard:
         if self.is_tapped:
             return
         self.is_tapped = True
-        for a in self.auras:
+        for a in self.modifiers.auras:
             a.is_tapped = True
         gs.trigger('tap', self)
 
@@ -125,7 +124,7 @@ class GameCard:
         if not self.is_tapped:
             return
         self.is_tapped = False
-        for a in self.auras:
+        for a in self.modifiers.auras:
             a.is_tapped = False
         gs.trigger('untap', self)
 

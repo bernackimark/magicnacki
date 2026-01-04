@@ -35,7 +35,7 @@ def akron_legionnaire_on_cast():
                 'akron-legionnaire').result()
             for my_creature in my_creatures:
                 if my_creature not in [artifact_creatures + akron_legionnaires]:
-                    my_creature.auras.append(KWAModifier(source, 'remove', 'Attack'))
+                    my_creature.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
     return E()
 
 def ancestral_recall_on_cast():
