@@ -33,7 +33,7 @@ class ActionStack:
     def last_action(self) -> Action:
         return self._actions[-1]
 
-    def add(self, action: Action, gs: GameState) -> None:
+    def add_(self, action: Action, gs: GameState) -> None:
         self._actions.append(action)
         gs.action_on_idx = flip(gs.action_on_idx)
 
