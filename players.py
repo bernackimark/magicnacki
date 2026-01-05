@@ -37,5 +37,6 @@ class ConsolePlayer(Player):
                         continue
                     props = card_info.props
                     print(props.name, props.casting_cost, props.card_types, props.card_sub_types,
-                          props.keyword_abilities, props.oracle_rules_text)
+                          props.keyword_abilities, props.oracle_rules_text,
+                          f"({props.power}/{props.toughness})")
             return available_actions[sel_action]
