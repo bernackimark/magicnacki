@@ -33,6 +33,7 @@ CAST_TARGETS = {
     'great-defender': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'ice-storm': lambda gs: CardFilter(gs).in_play().lands().result(),
     'immolation': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'indestructible-aura': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'instill-energy': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'mana-short': lambda gs: all_player_indices(gs),

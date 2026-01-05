@@ -57,6 +57,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'holy-strength': [holy_strength_on_cast()],
         'ice-storm': [ice_storm_on_cast()],
         'immolation': [immolation_on_cast()],
+        'indestructible-aura': [indestructible_aura_on_cast()],
         'inferno': [inferno_on_cast()],
         'instill-energy': [instill_energy_on_cast()],
         # 'island': [island_on_leave(), tap_for_mana('U')],
