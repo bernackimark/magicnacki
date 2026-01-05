@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Callable, TYPE_CHECKING
-
+from typing import Callable, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from game_card import GameCard
@@ -21,16 +20,41 @@ class DamageEvent:
 
 @dataclass
 class PreventNextDamage:
-    source_filter: Callable[[GameCard], bool]
-    target_player: int
-    amt: int = 999
+    remaining: int | None = None  # None = prevent all
+    target_player: Optional[int] = None
+    target_card: Optional[GameCard] = None
+    source_filter: Optional[Callable[[GameCard | None], bool]] = None
+    target_filter: Callable[[GameCard | int], bool] | None = None
 
-    def apply(self, event: DamageEvent):
-        if event.target != self.target_player:
-            return
-        if not self.source_filter(event.source):
-            return
+    def apply(self, event: DamageEvent) -> int:
+        """Returns amt of damage prevented or 0"""
+        if self.remaining and self.remaining <= 0:
+            print('a')
+            return 0
 
-        prevented = min(self.amt, event.remaining)
-        event.prevented += prevented
+        if self.source_filter and event.source and not self.source_filter(event.source):
+            print('b')
+            return 0
+
+        if self.target_player is not None:
+            if not isinstance(event.target, int) or event.target != self.target_player:
+                print('c')
+                return 0
+
+        if self.target_card:
+            if event.target is not self.target_card:
+                print('d')
+                return 0
+
+        if self.target_filter and not self.target_filter(event.target):
+            print('e')
+            return 0
+
+        # uncapped prevention
+        if self.remaining is None:
+            return event.amt
+
+        prevented = min(self.remaining, event.remaining)
+        self.remaining -= prevented
+        return prevented
 

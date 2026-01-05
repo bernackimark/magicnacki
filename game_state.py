@@ -164,7 +164,6 @@ class GameState:
     def trigger_damage_prevention(self, event: DamageEvent):
         """Give all prevention / replacement effects a chance to modify the damage event in this order:
         1. Card-specific continuous effects; 2. Global continuous effects; 3. Temporary 'next damage' shields"""
-
         for card in self.card_filter.in_play().result():
             for eff in card.effects:
                 eff.on_damage(self, event)
@@ -172,9 +171,16 @@ class GameState:
         for _, eff in self.global_effects:
             eff.on_damage(self, event)
 
-        for p in self.damage_preventions:
-            p.apply(event)
-            if p.amt <= 0:
+        for p in list(self.damage_preventions):
+            if event.remaining <= 0:
+                break
+
+            prevented = p.apply(event)
+
+            if prevented > 0:
+                event.prevented += prevented
+
+            if p.remaining is not None and p.remaining <= 0:
                 self.damage_preventions.remove(p)
 
     # --- CARD MOVEMENT ---
@@ -185,21 +191,21 @@ class GameState:
         board.remove_from_board(c)
         print(f"{c} has been removed from the board")
         for a in c.modifiers.auras:
+            self.trigger('leave', a) if isinstance(a, GameCard) else self.trigger('leave', a.card)
             board.remove_from_board(a)
             print(f"{a} has been removed from the board")
 
     def send_to_graveyard_from_play(self, c: GameCard):
-        """Send card to graveyard; send all auras to graveyard"""
+        """Send card to graveyard; send all card's auras to graveyard"""
         self.remove_from_board(c)
         self.graveyards[c.orig_owner_id].append(c)
-        print(f"{c} has been sent to graveyard")
+        print(f"{c} has been sent to graveyard from play")
         for a in c.modifiers.auras:
             self.graveyards[c.orig_owner_id].append(a)
-            print(f"{a} has been sent to graveyard")
+            print(f"{a} has been sent to graveyard from play")
         self._send_to_graveyard_or_exile(c)
 
     def send_to_graveyard(self, c: GameCard):
-        # TODO: reconcile send_to_gy_from_play & send_to_gy
         self.graveyards[c.orig_owner_id].append(c)
         print(f'{c} has been sent to the graveyard')
         self._send_to_graveyard_or_exile(c)
@@ -248,7 +254,7 @@ class GameState:
     def decrement_life(self, p_id: int, amt: int, source: GameCard):
         """Reduce player life; lookup life loss condition in self.life_loss_registry; check for end game condition"""
         self.life[p_id] -= amt
-        print(f"Reducing player #{p_id}'s life by {amt}. Life is now at {self.life}")
+        print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
 
         # run life-loss registry conditions (pattern: (cond, effect))
         for cond, effect in self.life_loss_registry:
@@ -344,6 +350,31 @@ class GameState:
                     actions.extend(self.get_available_activated_abilities(aura))
             return actions
 
+        def available_actions_from_hand() -> list[Action] | list[None]:
+            avail_actions_from_hand: list[Action] = []
+            for c in hand.cards:
+                if not self.mana_pools[p_id].can_pay(c.casting_cost):
+                    continue
+                elif c.props.is_land and self.turn.has_played_land:
+                    continue
+                elif self.player_turn_idx != p_id and 'Instant' not in c.props.card_types:
+                    continue
+                elif c.props.is_permanent and not c.props.is_aura:
+                    avail_actions_from_hand.append(CastToBoard(p_id, self, c))
+                else:
+                    target_cards: list[GameCard] = c.get_cast_targets(self)
+                    # cards that need targets but can't find any, skip ... ex. creature-bond needs a creature
+                    if isinstance(target_cards, list) and not target_cards:  # target_cards = []
+                        continue
+                    # cards that do not require a target
+                    if target_cards is None:
+                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None))
+                        continue
+                    # for all possible targets, add as an available action
+                    for t in target_cards:
+                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t))
+            return avail_actions_from_hand
+
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
             available_actions.append(AcceptAction(p_id, self))
@@ -396,29 +427,7 @@ class GameState:
 
         if self.phase == Phase.CAST:
             available_actions.append(MoveToEndStep(p_id, self))
-
-            # cast cards from hand
-            for c in hand.cards:
-                if not self.mana_pools[p_id].can_pay(c.casting_cost):
-                    continue
-                elif c.props.is_land and self.turn.has_played_land:
-                    continue
-                elif c.props.is_permanent and not c.props.is_aura:
-                    available_actions.append(CastToBoard(p_id, self, c))
-                else:
-                    target_cards: list[GameCard] = c.get_cast_targets(self)
-                    # cards that need targets but can't find any, skip ... ex. creature-bond needs a creature
-                    if isinstance(target_cards, list) and not target_cards:  # target_cards = []
-                        continue
-                    # cards that do not require a target
-                    if target_cards is None:
-                        available_actions.append(CastToTargetAddToStack(p_id, self, c, None))
-                        continue
-                    # for all possible targets, add as an available action
-                    for t in target_cards:
-                        available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
-
-            # activate abilities
+            available_actions.extend(available_actions_from_hand())
             available_actions.extend(add_activated_abilities_from_board())
 
             # declare combat
@@ -442,10 +451,23 @@ class GameState:
                     if self.can_block(blocker, com.attacker):
                         available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
 
-            # Activated abilities allowed during blockers (instant-speed)
+            available_actions.extend(available_actions_from_hand())
             available_actions.extend(add_activated_abilities_from_board())
-
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
+
+        if self.phase == Phase.PRE_COMBAT_DAMAGE:
+            available_actions.extend(available_actions_from_hand())
+            available_actions.extend(add_activated_abilities_from_board())
+            available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
+
+        if self.phase == Phase.ASSIGN_COMBAT_DAMAGE:
+            self.phase = Phase.FIRST_STRIKE_DAMAGE
+            self.phase = Phase.COMBAT_DAMAGE
+            for com in self.combats:
+                com.handle_damage()
+            self.phase = Phase.COMBAT_END
+            self.combats.clear()
+            self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
             for c in self.card_filter.in_play().result():
@@ -483,22 +505,6 @@ class GameState:
                     aa.activated_cnt_this_turn = 0
             self.phase = Phase.PASS_THE_TURN
             return
-
-        if self.phase == Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES:
-            # resolve all combat & instant-speed actions
-            # Activated abilities allowed after blockers have all been declared (instant-speed)
-            available_actions.extend(add_activated_abilities_from_board())
-
-            available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
-
-        if self.phase == Phase.ASSIGN_COMBAT_DAMAGE:
-            self.phase = Phase.FIRST_STRIKE_DAMAGE
-            self.phase = Phase.COMBAT_DAMAGE
-            for com in self.combats:
-                com.handle_damage()
-            self.phase = Phase.COMBAT_END
-            self.combats.clear()
-            self.phase = Phase.END_STEP
 
         return available_actions
 

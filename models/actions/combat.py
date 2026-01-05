@@ -58,7 +58,7 @@ class FinishBlocking(Action):
         return f"Finish Blocks"
 
     def play(self) -> None:
-        self.gs.phase = Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES
+        self.gs.phase = Phase.PRE_COMBAT_DAMAGE
 
 @dataclass
 class AssignCombatDamage(Action):
