@@ -12,7 +12,7 @@ class Phase(Enum):
     DECLARE_COMBAT = auto()  # CIAA
     DECLARE_ATTACKERS = auto()  # declare who is attacking; tap those w/o vigil
     DECLARE_BLOCKERS = auto()  # declare who's blocking whom
-    ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES = auto()  # CIAA
+    PRE_COMBAT_DAMAGE = auto()  # CIAA
     ASSIGN_COMBAT_DAMAGE = auto()
     FIRST_STRIKE_DAMAGE = auto()  # 1st/double strike assigned; CIAA
     COMBAT_DAMAGE = auto()  # non-1st/double strike deal combat damage; CIAA
