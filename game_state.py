@@ -179,6 +179,8 @@ class GameState:
 
             if prevented > 0:
                 event.prevented += prevented
+                target_text = p.target_card.props.name if p.target_card else f'Player #{p.target_player}'
+                print(f"{p.preventer_card.props.name} prevents {prevented} damage to {target_text}")
 
             if p.remaining is not None and p.remaining <= 0:
                 self.damage_preventions.remove(p)
@@ -451,14 +453,14 @@ class GameState:
                     if self.can_block(blocker, com.attacker):
                         available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
 
+            available_actions.append((FinishBlocking(self.action_on_idx, self)))
             available_actions.extend(available_actions_from_hand())
             available_actions.extend(add_activated_abilities_from_board())
-            available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
         if self.phase == Phase.PRE_COMBAT_DAMAGE:
+            available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
             available_actions.extend(available_actions_from_hand())
             available_actions.extend(add_activated_abilities_from_board())
-            available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
 
         if self.phase == Phase.ASSIGN_COMBAT_DAMAGE:
             self.phase = Phase.FIRST_STRIKE_DAMAGE
