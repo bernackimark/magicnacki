@@ -3,6 +3,7 @@ import math
 from typing import TYPE_CHECKING, Optional
 
 from utils import flip
+from ..damage import PreventNextDamage
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -441,6 +442,15 @@ def immolation_on_cast():
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(PTModifier(source, 2, -2))
+    return E()
+
+def indestructible_aura_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """target = the GameCard being protected"""
+            gs.damage_preventions.append(PreventNextDamage(source, target_card=target))
     return E()
 
 def inferno_on_cast():
