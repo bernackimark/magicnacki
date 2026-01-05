@@ -20,11 +20,16 @@ class DamageEvent:
 
 @dataclass
 class PreventNextDamage:
+    preventer_card: GameCard
     remaining: int | None = None  # None = prevent all
     target_player: Optional[int] = None
     target_card: Optional[GameCard] = None
+    source_card: Optional[GameCard] = None
     source_filter: Optional[Callable[[GameCard | None], bool]] = None
     target_filter: Callable[[GameCard | int], bool] | None = None
+
+    def __post_init__(self):
+        print(self)
 
     def apply(self, event: DamageEvent) -> int:
         """Returns amt of damage prevented or 0"""
