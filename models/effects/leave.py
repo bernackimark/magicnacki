@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Effect
-from models.modifiers import KWAModifier
+from models.modifiers import KWAModifier, PTModifier
 from card_filter import CardFilter
 
 """Effects for when cards leave the playing field (ex Castle, Crusade)"""
@@ -62,9 +62,21 @@ def evil_eye_of_orms_by_gore_on_leave():
                         break
     return E()
 
+def forest_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            for c in gs.card_filter.on_player_board(s).by_slug('kird-ape').result():
+                if len(gs.card_filter.on_player_board(s).by_slug('forest').result()) == 1:  # should this be 0 or 1?
+                    for mod in c.modifiers.auras:
+                        if mod == PTModifier(c, 1, 2):
+                            c.modifiers.remove_aura(mod)
+    return E()
+
 def goblin_king_on_leave():
     class E(Effect):
-        event = 'cast'
+        event = 'leave'
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Goblin').result()
@@ -89,9 +101,22 @@ def island_on_leave():
                 gs.send_to_graveyard_from_play(creature)
     return E()
 
+def kobold_overlord_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result()
+            for t in targets[:]:
+                for mod in t.modifiers.auras:
+                    if mod.card == source:
+                        t.modifiers.remove_aura(t)
+                        break
+    return E()
+
 def lord_of_atlantis_on_leave():
     class E(Effect):
-        event = 'cast'
+        event = 'leave'
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Merfolk').result()
