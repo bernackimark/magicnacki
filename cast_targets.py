@@ -1,4 +1,5 @@
 from card_filter import CardFilter
+from utils import flip
 
 
 def all_player_indices(gs):
@@ -35,6 +36,7 @@ CAST_TARGETS = {
     'immolation': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'indestructible-aura': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'instill-energy': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'jovial-evil': lambda gs: flip(gs.action_on_idx),  # test this
     'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'mana-short': lambda gs: all_player_indices(gs),
     'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
