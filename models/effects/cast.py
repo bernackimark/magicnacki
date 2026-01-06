@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Effect
-from models.effects.global_ import AngelicVoicesEffect, BadMoonEffect, CastleEffect, CrusadeEffect
+from models.effects.global_ import AngelicVoicesEffect, BadMoonEffect, CastleEffect, CrusadeEffect, all_combat_damage_prevented
 from models.modifiers import KWAModifier, KWATemp, PTModifier, PTTemp
 from card_filter import CardFilter
 
@@ -58,7 +58,7 @@ def angelic_voices_on_cast():
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: Review this new approach where global effects don't directly influence GameCards
-            gs.global_effects.append((source, AngelicVoicesEffect(source.orig_owner_id)))
+            gs.global_effects.append((source, AngelicVoicesEffect(source.orig_owner_id), False))
             # add +0/+2 mod for in-turn player's creatures that are untapped
             # for c in CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result():
             #     c.pt_modifiers.append(PTModifier(source, 0, 2))
@@ -81,7 +81,7 @@ def bad_moon_on_cast():
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: Review this new approach where global effects don't directly influence GameCards
-            gs.global_effects.append((source, BadMoonEffect(source.orig_owner_id)))
+            gs.global_effects.append((source, BadMoonEffect(source.orig_owner_id), False))
 
     return E()
 
@@ -133,7 +133,7 @@ def castle_on_cast():
         
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: Review this new approach where global effects don't directly influence GameCards
-            gs.global_effects.append((source, CastleEffect(source.orig_owner_id)))
+            gs.global_effects.append((source, CastleEffect(source.orig_owner_id), False))
             # add +0/+2 mod for in-turn player's creatures that are untapped
             # for c in CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result():
             #     c.pt_modifiers.append(PTModifier(source, 0, 2))
@@ -166,7 +166,7 @@ def crusade_on_cast():
         
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: Review this new approach where global effects don't directly influence GameCards
-            gs.global_effects.append((source, CrusadeEffect(source.orig_owner_id)))
+            gs.global_effects.append((source, CrusadeEffect(source.orig_owner_id), False))
             # for c in CardFilter(gs).in_play().creatures().white().result():
             #     c.pt_modifiers.append(PTModifier(source, 1, 1))
     return E()
@@ -177,6 +177,14 @@ def dark_ritual_on_cast():
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
             gs.mana_pools[source.orig_owner_id].add_floating('B', 3)
+    return E()
+
+def darkness_or_fog_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.global_effects.append((source, all_combat_damage_prevented(), True))
     return E()
 
 def demonic_torment_on_cast():
@@ -263,7 +271,6 @@ def earthbind_on_cast():
 
     return E()
 
-
 def electric_eel_on_cast():
     class E(Effect):
         event = 'cast'
@@ -326,7 +333,6 @@ def farmstead_on_cast():
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             target.modifiers.auras.append(source)
-
     return E()
 
 def flight_on_cast():
