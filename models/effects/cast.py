@@ -358,6 +358,16 @@ def flashfires_on_cast():
                 gs.send_to_graveyard_from_play(plains)
     return E()
 
+def forest_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            for c in gs.card_filter.on_player_board(source).result():
+                if c.props.slug == 'kird-ape' and PTModifier(c, 1, 2) not in c.modifiers.auras:
+                    c.modifiers.auras.append(PTModifier(c, 1, 2))
+    return E()
+
 def giant_growth_on_cast():
     class E(Effect):
         event = 'cast'
@@ -473,6 +483,16 @@ def instill_energy_on_cast():
             target.modifiers.auras.append(KWAModifier(source, 'add', 'Haste'))
     return E()
 
+def jovial_evil_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            # deals X damage to target opponent, where X is twice the number of white creatures that player controls
+            opp_white_creature_cnt = len(gs.card_filter.on_player_board(target).creatures().result())
+            gs.apply_damage(source, opp_white_creature_cnt * 2, target)
+    return E()
+
 def jump_on_cast():
     class E(Effect):
         event = 'cast'
@@ -482,6 +502,17 @@ def jump_on_cast():
                 target.modifiers.temps.append(KWATemp('add', 'Flying'))
     return E()
 
+def kobold_overlord_on_cast():
+    """Other Kobold creatures you control have first strike"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result()
+            for t in targets:
+                if source != t:
+                    t.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
+    return E()
 
 def lance_on_cast():
     class E(Effect):
