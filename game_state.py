@@ -60,7 +60,7 @@ class GameState:
             self.draw(hand, deck.cards, 7)
             hand.sort_cards()
 
-        self.global_effects: list[tuple[GameCard, GlobalEffect]] = []
+        self.global_effects: list[tuple[GameCard, GlobalEffect, bool]] = []  # bool is for expires_at_end_of_turn
 
         # registries for side effects that are not captured in card effects
         # life-loss registry uses (cond, effect) tuples similar to your TAP_REGISTRY style
@@ -106,7 +106,7 @@ class GameState:
             return False
 
         # Ask global effects and card effects
-        global_effects = [eff for card, eff in self.global_effects]
+        global_effects = [eff for _, eff, _ in self.global_effects]
         for effect in card.effects + global_effects:
             result = effect.on_query(self, "can_attack", card=card)
             if result is False:  # hard veto
@@ -120,7 +120,7 @@ class GameState:
             return False
 
         # Ask global effects, card effects, and card's aura effects
-        global_effects = [eff for card, eff in self.global_effects]
+        global_effects = [eff for _, eff, _ in self.global_effects]
         for effect in blocker.effects + global_effects + [a.effects for a in blocker.modifiers.auras]:
             result = effect.on_query(self, 'can_block', card=blocker, attacker=attacker)
             if result is False:  # hard veto
@@ -168,7 +168,7 @@ class GameState:
             for eff in card.effects:
                 eff.on_damage(self, event)
 
-        for _, eff in self.global_effects:
+        for _, eff, _ in self.global_effects:
             eff.on_damage(self, event)
 
         for p in list(self.damage_preventions):
@@ -494,6 +494,8 @@ class GameState:
         if self.phase == Phase.END_TURN_EFFECTS:
             # Expire all temporary damage prevention
             self.damage_preventions.clear()
+            # Remove all temp global effects
+            self.global_effects = [e for e in self.global_effects if not e[2]]
             # Clear temp modifiers
             for d in self.decks_all_cards:
                 for c in d.cards:
