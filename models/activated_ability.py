@@ -77,6 +77,7 @@ class ActivatedAbility:
         return True
 
 
+# --- COMMON/COMPLEX TARGET FUNCS
 TARGET_FUNCS = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
@@ -87,8 +88,11 @@ TARGET_FUNCS = {
     'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
 }
 
+def auras_on_creatures_by_owner(gs: GameState, source: GameCard):
+    return [a for c in gs.card_filter.on_player_board(source).creatures().result() for a in c.modifiers.auras]
 
-# --- COMMON EFFECT FUNCS ---
+
+# --- COMMON/COMPLEX EFFECT FUNCS ---
 def prevent_next_damage_func(amt: int = None):
     def _effect(gs, src, _):
         gs.damage_preventions.append(PreventNextDamage(src, amt))
@@ -129,6 +133,10 @@ def greed_pay_life_draw_card(gs: GameState, source: GameCard, _: Target):
 def hammerheim_remove_all_walks(gs: GameState, source: GameCard, t: Target):
     for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
         t.modifiers.temps.append(KWATemp('remove', f'{land}walk'))
+
+def destroy_all_non_land_perms(gs: GameState, s: GameCard, t: Target):
+    for c in gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Enchantment']).result():
+        gs.send_to_graveyard_from_play(c)
 
 def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
     # {T}: This creature deals 2 damage to any target and 3 damage to itself
@@ -249,6 +257,35 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'king-suleiman':
         [ActAbilitySpec('', True, lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
                         lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
+    'ley-druid':
+        [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().lands().tapped().result(),
+                        lambda gs, source, t: t.untap(gs))],
+    'llanowar-elves':
+        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
+                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('G', 1))],
+    'merfolk-assassin':
+        [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().has('Islandwalk').result(),
+                        lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
+    'miracle-worker':
+        [ActAbilitySpec('', True, lambda gs, s: auras_on_creatures_by_owner(gs, s),
+                        lambda gs, s, t: gs.send_to_graveyard_from_play(t))],  # should i send an aura to the graveyard w/o using host.remove_aura()?
+    'mox-emerald':
+        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
+                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('G', 1))],
+    'mox-jet':
+        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
+                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('B', 1))],
+    'mox-pearl':
+        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
+                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('W', 1))],
+    'mox-ruby':
+        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
+                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('R', 1))],
+    'mox-sapphire':
+        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
+                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('U', 1))],
+    'nevinyrrals-disk':
+        [ActAbilitySpec('1', True, None, lambda gs, s, t: destroy_all_non_land_perms(gs, s, t))],
     'northern-paladin':
         [ActAbilitySpec('WW', True, lambda gs, source: CardFilter(gs).in_play().black().by_type(['Creature', 'Enchantment']).result(),
                         lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
