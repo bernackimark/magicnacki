@@ -81,6 +81,7 @@ class ActivatedAbility:
 TARGET_FUNCS = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
+    'creatures_in_play': lambda gs, source: gs.card_filter.in_play.creatures().result(),
     'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
     'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
@@ -91,6 +92,8 @@ TARGET_FUNCS = {
 def auras_on_creatures_by_owner(gs: GameState, source: GameCard):
     return [a for c in gs.card_filter.on_player_board(source).creatures().result() for a in c.modifiers.auras]
 
+def one_one_creatures_in_play(gs: GameState, _: GameCard):
+    return [c for c in gs.card_filter.in_play().creatures().result() if c.power == 1 and c.toughness == 1]
 
 # --- COMMON/COMPLEX EFFECT FUNCS ---
 def prevent_next_damage_func(amt: int = None):
@@ -118,6 +121,10 @@ def brothers_of_fire_deals_damage(gs: GameState, source: GameCard, t: Target):
     gs.apply_damage(source, 1, t)
     gs.apply_damage(source, 1, source.orig_owner_id)
 
+def destroy_all_non_land_perms(gs: GameState, s: GameCard, t: Target):
+    for c in gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Enchantment']).result():
+        gs.send_to_graveyard_from_play(c)
+
 def electric_eel_pump_and_damage(gs: GameState, source: GameCard, _: Target):
     source.modifiers.temps.append(PTTemp(2, 0))
     gs.apply_damage(source, 1, source.orig_owner_id)
@@ -134,9 +141,10 @@ def hammerheim_remove_all_walks(gs: GameState, source: GameCard, t: Target):
     for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
         t.modifiers.temps.append(KWATemp('remove', f'{land}walk'))
 
-def destroy_all_non_land_perms(gs: GameState, s: GameCard, t: Target):
-    for c in gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Enchantment']).result():
-        gs.send_to_graveyard_from_play(c)
+def orcish_artillery_damage(gs: GameState, s: GameCard, t: Target):
+    """{T}: This creature deals 2 damage to any target and 3 damage to you"""
+    gs.apply_damage(s, 2, t)
+    gs.apply_damage(s, 3, s.orig_owner_id)
 
 def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
     # {T}: This creature deals 2 damage to any target and 3 damage to itself
@@ -289,6 +297,14 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'northern-paladin':
         [ActAbilitySpec('WW', True, lambda gs, source: CardFilter(gs).in_play().black().by_type(['Creature', 'Enchantment']).result(),
                         lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
+    'oasis':
+        [ActAbilitySpec('', True, TARGET_FUNCS['creatures_in_play'], prevent_next_damage_func(1))],
+    'orcish-artillery':
+        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], orcish_artillery_damage)],
+    'pendelhaven':
+        [ActAbilitySpec('', True, lambda gs, s: s.orig_owner_id,
+                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('G', 1)),
+         ActAbilitySpec('', True, one_one_creatures_in_play, pump_func(1, 2))],
     'pirate-ship':
         [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'prodigal-sorcerer':
