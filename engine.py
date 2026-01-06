@@ -28,11 +28,13 @@ class Engine:
 
 
 # build decks
-universe = CardUniverse(['1E', '3E', '4E', 'DK'])
-his_cards = (('plains', 24), ('tundra-wolves', 4), ('savannah-lions', 4),
-             ('disenchant', 4), ('blessing', 4))
-my_cards = (('island', 32), ('merfolk-of-the-pearl-trident', 4), ('lord-of-atlantis', 4), ('apprentice-wizard', 4),
-            ('air-elemental', 4))
+universe = CardUniverse(['1E', '2U', '3E', 'DK', 'LE', 'AN', 'AQ'])
+# my_cards = (('plains', 24), ('tundra-wolves', 4), ('savannah-lions', 4),
+#              ('disenchant', 4), ('samite-healer', 4))
+my_cards = (('plains', 24), ('argothian-pixies', 4), ('savannah-lions', 4),
+             ('holy-day', 4), ('samite-healer', 4))
+his_cards = (('island', 32), ('merfolk-of-the-pearl-trident', 4), ('lord-of-atlantis', 4), ('dragon-engine', 4),
+            ('electric-eel', 4))
 
 decks = []
 for i, cards in enumerate((my_cards, his_cards)):
