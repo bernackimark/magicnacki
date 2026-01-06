@@ -82,7 +82,7 @@ TARGET_FUNCS = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
-    'creatures_in_play': lambda gs, source: gs.card_filter.in_play.creatures().result(),
+    'creatures_in_play': lambda gs, source: gs.card_filter.in_play().creatures().result(),
     'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
     'black_and_red_in_play': lambda gs, source: [gs.card_filter.in_play().black().result() +
                                                  gs.card_filter.in_play().red().result()],
@@ -90,6 +90,7 @@ TARGET_FUNCS = {
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
     'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
+    'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
 }
 
 def auras_on_creatures_by_owner(gs: GameState, source: GameCard):
@@ -144,6 +145,12 @@ def hammerheim_remove_all_walks(gs: GameState, source: GameCard, t: Target):
     for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
         t.modifiers.temps.append(KWATemp('remove', f'{land}walk'))
 
+def kry_shield_prevent_damage_and_pump(gs: GameState, s: GameCard, t: Target):
+    """Prevent all damage that would be dealt this turn by target creature you control.
+    That creature gets +0/+X until end of turn, where X is its mana value"""
+    gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
+    t.modifiers.temps.append(PTTemp(0, t.props.casting_weight))
+
 def orcish_artillery_damage(gs: GameState, s: GameCard, t: Target):
     """{T}: This creature deals 2 damage to any target and 3 damage to you"""
     gs.apply_damage(s, 2, t)
@@ -153,6 +160,11 @@ def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
     # {T}: This creature deals 2 damage to any target and 3 damage to itself
     gs.apply_damage(source, 2, t)
     gs.apply_damage(source, 3, source)
+
+def rakalite_prevent_damage_and_hand_return(gs: GameState, s: GameCard, _: Target):
+    prevent_next_damage_func(1)
+    gs.return_to_hand(s)
+
 
 ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'aladdins-ring':
@@ -251,6 +263,10 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
                         lambda gs, source, t: hammerheim_remove_all_walks(gs, source, t))],
     'holy-armor':
         [ActAbilitySpec('W', False, None, lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1)))],
+    'horn-of-deafening':
+        [ActAbilitySpec('2', True, TARGET_FUNCS['creatures_in_play'],
+                        lambda gs, s, t: gs.damage_preventions.append(PreventNextDamage(s, source_card=t,
+                                                                                        combat_only=True)))],
     'hyperion-blacksmith':
         # {T}: You may tap or untap target artifact an opponent controls
         [ActAbilitySpec('', True, lambda gs, s: CardFilter(gs).on_player_board(flip(s.orig_owner_id)).artifacts().result(),
@@ -274,6 +290,8 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'king-suleiman':
         [ActAbilitySpec('', True, lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
                         lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
+    'kry-shield':
+        [ActAbilitySpec('2', True, TARGET_FUNCS['your_creatures_in_play'], kry_shield_prevent_damage_and_pump)],
     'ley-druid':
         [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().lands().tapped().result(),
                         lambda gs, source, t: t.untap(gs))],
@@ -321,6 +339,8 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'psionic-entity':
         [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'],
                         lambda gs, source, t: psionic_entity_deals_damage(gs, source, t))],
+    'rakalite':
+        [ActAbilitySpec('2', False, TARGET_FUNCS['all_creatures_and_players'], rakalite_prevent_damage_and_hand_return)],
     'samite-healer':
         [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
     'wall-of-water':
