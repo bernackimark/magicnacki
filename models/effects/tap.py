@@ -25,7 +25,7 @@ def forest_on_tap():
     class E(Effect):
         event = 'tap'
 
-        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        def resolve(self, gs, s: "GameCard", target: Optional["GameCard"] = None):
             for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifetap').result():
                 gs.increment_life(flip(s.orig_owner_id), 1)
     return E()
@@ -44,7 +44,7 @@ def mountain_on_tap():
     class E(Effect):
         event = 'tap'
 
-        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        def resolve(self, gs: "GameState", s: "GameCard", target: Optional["GameCard"] = None):
             for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifeblood').result():
                 gs.increment_life(flip(s.orig_owner_id), 1)
     return E()
