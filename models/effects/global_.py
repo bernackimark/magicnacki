@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
 
+from base import Effect
 from card_filter import CardFilter
 
 class GlobalEffect:
@@ -74,3 +75,10 @@ class CrusadeEffect(GlobalEffect):
 
     def pt_offset(self, card=None, power=None, toughness=None):
         return 1, 1
+
+def all_combat_damage_prevented():
+    class E(Effect):
+        def on_damage(self, gs: GameState, event: DamageEvent):
+            if event.is_combat:
+                event.prevented += event.remaining
+    return E()
