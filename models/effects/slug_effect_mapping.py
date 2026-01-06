@@ -19,6 +19,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'argothian-pixies': [argothian_pixies_can_be_blocked(), argothian_pixies_damage_prevention()],
         'argothian-treefolk': [argothian_treefolk_damage_prevention()],
         'armageddon': [send_to_graveyard_all_lands()],
+        'artifact-ward': [artifact_ward_can_be_blocked(), artifact_ward_damage_prevention()],
         'bad-moon': [bad_moon_on_cast(), global_on_leave()],
         'blood-lust': [blood_lust_on_cast()],
         'bog-rats': [bog_rats_can_be_blocked()],
@@ -76,6 +77,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'lightning-bolt': [lightning_bolt_on_cast()],
         'lord-of-atlantis': [lord_of_atlantis_on_cast(), lord_of_atlantis_on_leave()],
         'mana-short': [mana_short_on_cast()],
+        'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED!! All Walls able to block this creature do so
         'martyrs-cry': [martyrs_cry_on_cast()],
         'mountain': [mountain_on_tap()],
         'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
