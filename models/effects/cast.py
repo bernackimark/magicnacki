@@ -179,7 +179,7 @@ def dark_ritual_on_cast():
             gs.mana_pools[source.orig_owner_id].add_floating('B', 3)
     return E()
 
-def darkness_or_fog_on_cast():
+def darkness_or_fog_or_holy_day_on_cast():
     class E(Effect):
         event = 'cast'
 

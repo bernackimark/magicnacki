@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
 
-from base import Effect
+from .base import Effect
 from card_filter import CardFilter
 
 class GlobalEffect:

@@ -72,9 +72,9 @@ class GameCard:
     def _get_global_pt_adj(self) -> tuple[int, int]:
         power, toughness = 0, 0
         for card, global_effect, _ in self.game_state.global_effects:
+            if not hasattr(global_effect, 'pt_offset'):
+                continue
             if global_effect.applies_to(self, self.game_state):
-                if not hasattr(global_effect, 'pt_offset'):
-                    continue
                 p_offset, t_offset = global_effect.pt_offset()
                 power += p_offset
                 toughness += t_offset
