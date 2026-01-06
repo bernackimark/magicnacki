@@ -81,6 +81,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
         'pirate-ship': [islandhome_can_attack_effect()],
         # 'plains': [tap_for_mana('W')],
+        'reverse-damage': [reverse_damage_on_cast()],
         'sea-serpent': [islandhome_can_attack_effect()],
         'seeker': [seeker_enchanted_creature_can_be_blocked()],
         'serendib-efreet': [serendib_efreet_on_upkeep()],

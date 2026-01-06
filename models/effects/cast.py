@@ -363,7 +363,7 @@ def forest_on_cast():
         event = 'cast'
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            for c in gs.card_filter.on_player_board(source).result():
+            for c in gs.card_filter.on_player_board(source.orig_owner_id).result():
                 if c.props.slug == 'kird-ape' and PTModifier(c, 1, 2) not in c.modifiers.auras:
                     c.modifiers.auras.append(PTModifier(c, 1, 2))
     return E()
@@ -588,6 +588,23 @@ def nevinyrrals_disk_on_cast():
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             source.tap(gs)  # what is the correct way to handle tapping a card: gs.apply_tap_effects() or c.tap()?
             gs.apply_tap_effects(source)
+    return E()
+
+def reverse_damage_on_cast():
+    """The next time a source of your choice would deal damage to you this turn, prevent that damage.
+    You gain life equal to the damage prevented this way.
+    Since amount prevented isn't known upon cast, use PreventNextDamage.on_prevent() callback to later call gain_life"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            """target = the GameCard doing the damage"""
+            def gain_life(prevented: int):
+                gs.increment_life(s.orig_owner_id, prevented)
+
+            gs.damage_preventions.append(
+                PreventNextDamage(s, None, target_player=s.orig_owner_id, source_card=target, on_prevent=gain_life))
+
     return E()
 
 def swords_to_plowshares_on_cast():
