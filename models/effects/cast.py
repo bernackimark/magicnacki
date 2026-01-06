@@ -413,7 +413,6 @@ def great_defender_on_cast():
             """Target creature gets +0/+X until end of turn, where X is its mana value."""
             if target:
                 target.modifiers.auras.append(PTTemp(0, target.props.casting_weight))
-
     return E()
 
 def holy_armor_on_cast():
@@ -514,6 +513,17 @@ def kobold_overlord_on_cast():
                     t.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
     return E()
 
+def kobold_taskmaster_on_cast():
+    """Other Kobold creatures you control get +1/+0"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            for t in gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result():
+                if source != t:
+                    t.modifiers.auras.append(PTModifier(source, 1, 0))
+    return E()
+
 def lance_on_cast():
     class E(Effect):
         event = 'cast'
@@ -521,6 +531,14 @@ def lance_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
+    return E()
+
+def lightning_bolt_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            gs.apply_damage(source, 3, target)
     return E()
 
 def lord_of_atlantis_on_cast():
@@ -550,13 +568,35 @@ def mana_short_on_cast():
             print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
     return E()
 
+def martyrs_cry_on_cast():
+    """"Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            for white_creature in gs.card_filter.in_play().white().creatures().result():
+                owner_id = white_creature.orig_owner_id
+                gs.send_to_exile_from_play(white_creature)  # which is correct?  exile_from_play() or exile()
+                gs.draw(gs.hands[owner_id], gs.decks[owner_id].cards, 1)
+    return E()
+
+def nevinyrrals_disk_on_cast():
+    """This artifact enters tapped"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            source.tap(gs)  # what is the correct way to handle tapping a card: gs.apply_tap_effects() or c.tap()?
+            gs.apply_tap_effects(source)
+    return E()
+
 def swords_to_plowshares_on_cast():
     class E(Effect):
         event = 'cast'
         
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
-                gs.send_to_exile(target)
+                gs.send_to_exile(target)  # which is correct?  exile_from_play() or exile()
                 gs.increment_life(target.orig_owner_id, target.power)
     return E()
 
