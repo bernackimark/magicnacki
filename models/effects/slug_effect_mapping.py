@@ -1,7 +1,9 @@
 from models.effects.can_attack import *
 from models.effects.can_block import *
+from models.effects.can_be_blocked import *
 from models.effects.cast import *
 from models.effects.common import *
+from models.effects.damage_prevention import *
 from models.effects.leave import *
 from models.effects.tap import *
 from models.effects.upkeep import *
@@ -14,6 +16,8 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'angelic-voices': [angelic_voices_on_cast(), global_on_leave()],
         'animate-wall': [animate_wall_on_cast()],
         'amrou-kithkin': [amrou_kithkin_can_be_blocked()],
+        'argothian-pixies': [argothian_pixies_can_be_blocked(), argothian_pixies_damage_prevention()],
+        'argothian-treefolk': [argothian_treefolk_damage_prevention()],
         'armageddon': [send_to_graveyard_all_lands()],
         'bad-moon': [bad_moon_on_cast(), global_on_leave()],
         'blood-lust': [blood_lust_on_cast()],

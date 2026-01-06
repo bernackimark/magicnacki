@@ -20,6 +20,20 @@ def amrou_kithkin_can_be_blocked():
                 return False
     return E()
 
+def argothian_pixies_can_be_blocked():
+    """This creature can't be blocked by artifact creatures"""
+    class E(Effect):
+        event = "query"
+
+        def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+            """Query: can_block, card = 'bog-rats', mandatory kwargs: blocker"""
+            blocker: GameCard = kwargs.get("blocker")
+            if event != "can_block" or card.props.slug != 'bog-rats' or not blocker:
+                return None
+            if 'Artifact' in blocker.props.card_types:
+                return False
+    return E()
+
 def bog_rats_can_be_blocked():
     class E(Effect):
         event = "query"
