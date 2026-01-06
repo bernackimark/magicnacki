@@ -101,7 +101,7 @@ def island_on_leave():
                 gs.send_to_graveyard_from_play(creature)
     return E()
 
-def kobold_overlord_on_leave():
+def kobold_overlord_and_taskmaster_on_leave():
     class E(Effect):
         event = 'leave'
 
