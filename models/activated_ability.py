@@ -238,6 +238,17 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
         # {0}: Untap enchanted creature. Activate only during your turn and only once each turn
         [ActAbilitySpec('', False, None, lambda gs, source, t: t.untap(gs),
                         allowed_player_turn=[ActivatedAbility.AllowedPlayerTurn.CASTER], max_activations_per_turn=1)],
+    'jandors-saddlebags':
+        [ActAbilitySpec('3', True, lambda gs, source: CardFilter(gs).in_play().creatures().tapped().result(),
+                        lambda gs, source, t: t.untap(gs))],
+    'jayemdae-tome':
+        [ActAbilitySpec('4', True, lambda gs, s: s.orig_owner_id,
+                        lambda gs, s, t: gs.draw(gs.hands[s.orig_owner_id], gs.decks[s.orig_owner_id].cards, 1))],
+    'killer-bees':
+        [ActAbilitySpec('G', False, lambda gs, source: source, pump_func(1, 1))],
+    'king-suleiman':
+        [ActAbilitySpec('', True, lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
+                        lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
     'northern-paladin':
         [ActAbilitySpec('WW', True, lambda gs, source: CardFilter(gs).in_play().black().by_type(['Creature', 'Enchantment']).result(),
                         lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
