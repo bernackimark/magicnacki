@@ -35,25 +35,20 @@ class PreventNextDamage:
     def apply(self, event: DamageEvent) -> int:
         """Returns amt of damage prevented or 0"""
         if self.remaining and self.remaining <= 0:
-            print('a')
             return 0
 
         if self.source_filter and event.source and not self.source_filter(event.source):
-            print('b')
             return 0
 
         if self.target_player is not None:
             if not isinstance(event.target, int) or event.target != self.target_player:
-                print('c')
                 return 0
 
         if self.target_card:
             if event.target is not self.target_card:
-                print('d')
                 return 0
 
         if self.target_filter and not self.target_filter(event.target):
-            print('e')
             return 0
 
         # uncapped prevention
