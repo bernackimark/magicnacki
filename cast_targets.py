@@ -9,6 +9,7 @@ def all_player_indices(gs):
 CAST_TARGETS = {
     'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
     'ancestral-recall': lambda gs: all_player_indices(gs),
+    'artifact-ward': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'blood-lust': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'boomerang': lambda gs: CardFilter(gs).in_play().permanents().result(),
     'braingeyser': lambda gs: all_player_indices(gs),
