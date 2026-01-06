@@ -80,6 +80,7 @@ class ActivatedAbility:
 # --- COMMON/COMPLEX TARGET FUNCS
 TARGET_FUNCS = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
+    'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
     'creatures_in_play': lambda gs, source: gs.card_filter.in_play.creatures().result(),
     'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
@@ -162,6 +163,8 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
         [ActAbilitySpec('2', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
     'apprentice-wizard':
         [ActAbilitySpec('U', True, lambda gs, source: source.orig_owner_id, lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('C', 3))],
+    'argivian-blacksmith':
+        [ActAbilitySpec('', True, TARGET_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
     'blessing':
         [ActAbilitySpec('W', False, None, pump_func(1, 1))],
     'book-of-rass':
@@ -333,189 +336,6 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
                                       allowed_phases=spec.allowed_phases, allowed_player_turn=spec.allowed_player_turn,
                                       max_activations_per_turn=spec.max_activations_per_turn)
                 c.abilities.append(aa)
-
-
-# DON'T DELETE THIS UNTIL PRETTY HAPPY W THE NEWER ABOVE APPROACH
-def add_activated_abilities_2(cards: list[GameCard]) -> None:
-    for c in cards:
-        # commenting this for now, as land is being auto-paid & tapped
-        # if c.props.is_basic_land:
-        #     color = BASIC_LAND_MANA_PRODUCED[c.props.slug]
-        #     [ActAbilitySpec('', True, target_filter=None,
-        #                        effect=lambda gs, source, _: gs.mana_pools[source.orig_owner_id].add(color)))
-        if c.props.slug == 'aladdins-ring':
-            # all creatures & players are targets
-            c.abilities.append(ActivatedAbility(c, '', True,
-                                                target_filter=TARGET_FUNCS['all_creatures_and_players'],
-                                                effect=deal_damage_func(4)))
-        if c.props.slug == 'ali-baba':
-            c.abilities.append(ActivatedAbility(
-                c, 'R', True, target_filter=lambda gs, source: CardFilter(gs).in_play().walls().result(),
-                                  effect=lambda gs, source, t: t.tap(gs)))
-        if c.props.slug == 'amulet-of-kroog':
-            # same target_filter & effect as samite-healer
-            c.abilities.append(ActivatedAbility(c, '2', True,
-                                                target_filter=TARGET_FUNCS['all_creatures_and_players'],
-                                                effect=prevent_next_damage_func(1)))
-        if c.props.slug == 'apprentice-wizard':
-            c.abilities.append(ActivatedAbility(c, 'U', True, target_filter=lambda gs, source: source.orig_owner_id,
-                                                effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add_floating('C', 3)))
-        if c.props.slug == 'blessing':
-            c.abilities.append(ActivatedAbility(
-                c, 'W', False, target_filter=None,
-                effect=pump_func(1, 1)))
-        if c.props.slug == 'book-of-rass':
-            c.abilities.append(ActivatedAbility(c, '2', False, target_filter=lambda gs, source: source.orig_owner_id,
-                               effect=lambda gs, source, t: book_of_rass_pay_life_draw_card(gs, source, t)))
-        if c.props.slug == 'brainwash':
-            c.abilities.append(ActivatedAbility(c, '3', False, target_filter=None,
-                               effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Attack'))))
-        if c.props.slug == 'brothers-of-fire':
-            # damage to card
-            c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                               effect=lambda gs, source, t: brothers_of_fire_deals_damage(gs, source, t)))
-            # damage to player
-            c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda gs, _: (0, 1),
-                               effect=lambda gs, source, p_id: brothers_of_fire_deals_damage(gs, source, p_id)))
-        if c.props.slug == 'carrion-ants':
-            c.abilities.append(ActivatedAbility(c, '1', False, target_filter=None,
-                               effect=pump_func(1, 1)))
-        if c.props.slug == 'circle-of-protection-artifacts':
-            c.abilities.append(ActivatedAbility(c, '1', False, target_filter=TARGET_FUNCS['artifacts_in_play'],  # would this include instants/sorceries?
-                                                effect=lambda gs, src, t: gs.damage_preventions.append(
-                                                    PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id))))
-        if c.props.slug == 'circle-of-protection-black':
-            c.abilities.append(ActivatedAbility(c, '1', False, target_filter=TARGET_FUNCS['black-in-play'],  # would this include instants/sorceries?
-                                                effect=lambda gs, src, t: gs.damage_preventions.append(
-                                                    PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id))))
-        if c.props.slug == 'circle-of-protection-blue':
-            c.abilities.append(ActivatedAbility(c, '1', False, target_filter=TARGET_FUNCS['blue_in_play'],  # would this include instants/sorceries?
-                                                effect=lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id))))
-        if c.props.slug == 'circle-of-protection-green':
-            c.abilities.append(ActivatedAbility(c, '1', False, target_filter=TARGET_FUNCS['green_in_play'],  # would this include instants/sorceries?
-                                                effect=lambda gs, src, t: gs.damage_preventions.append(
-                                                    PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id))))
-        if c.props.slug == 'circle-of-protection-red':
-            c.abilities.append(ActivatedAbility(c, '1', False, target_filter=TARGET_FUNCS['red-in-play'],  # would this include instants/sorceries?
-                                                effect=lambda gs, src, t: gs.damage_preventions.append(
-                                                    PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id))))
-        if c.props.slug == 'circle-of-protection-white':
-            c.abilities.append(ActivatedAbility(c, '1', False, target_filter=TARGET_FUNCS['white-in-play'],  # would this include instants/sorceries?
-                                                effect=lambda gs, src, t: gs.damage_preventions.append(
-                                                    PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id))))
-        if c.props.slug == 'conservator':
-            c.abilities.append(ActivatedAbility(c, '3', True,
-                               effect=lambda gs, src, _: gs.damage_preventions.append(PreventNextDamage(src, remaining=2, target_player=src.orig_owner_id))))
-        if c.props.slug == 'dragon-engine':
-            c.abilities.append(ActivatedAbility(c, '2', False, target_filter=None,
-                               effect=pump_func(1, 0)))
-        if c.props.slug == 'dwarven-demolition-team':
-            c.abilities.append(ActivatedAbility(
-                c, '', True, target_filter=lambda gs, source: CardFilter(gs).in_play().by_sub_type('Wall').result(),
-                                  effect=lambda gs, source, t: gs.send_to_graveyard_from_play(t)))
-        if c.props.slug == 'electric-eel':
-            c.abilities.append(ActivatedAbility(c, 'RR', False, target_filter=None,
-                               effect=lambda gs, s, t: electric_eel_pump_and_damage(gs, s, t)))
-        if c.props.slug == 'elves-of-deep-shadow':
-            c.abilities.append(ActivatedAbility(c, '', True, target_filter=None,
-                               effect=lambda gs, s, t: elves_of_deep_shadow_add_mana_but_damage(gs, s, t)))
-        if c.props.slug == 'emerald-dragonfly':
-            c.abilities.append(ActivatedAbility(c, 'GG', False, target_filter=None,
-                               effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'First Strike'))))
-        if c.props.slug == 'exorcist':
-            c.abilities.append(ActivatedAbility(
-                c, '1W', True, target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().black().result(),
-                                  effect=lambda gs, source, t: gs.send_to_graveyard_from_play(t)))
-        if c.props.slug == 'farmstead':
-            c.abilities.append(ActivatedAbility(c, 'WW', True, target_filter=lambda gs, _: gs.player_turn_idx,
-                               effect=lambda gs, _, t: gs.increment_life(gs.player_turn_idx, 1)))
-        if c.props.slug == 'fire-drake':
-            c.abilities.append(ActivatedAbility(c, 'R', False, target_filter=None, max_activations_per_turn=1,
-                               effect=pump_func(1, 0)))
-        if c.props.slug == 'fire-sprites':
-            c.abilities.append(ActivatedAbility(c, 'G', True, target_filter=lambda _, source: source.orig_owner_id,
-                                                effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add_floating('R', 1)))
-        if c.props.slug == 'firebreathing':
-            c.abilities.append(ActivatedAbility(c, 'R', False, target_filter=None,
-                               effect=pump_func(1, 0)))
-        if c.props.slug == 'flood':
-            c.abilities.append(ActivatedAbility(
-                c, 'UU', False, target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().tapped(False).has('Flying', False).result(),
-                                  effect=lambda gs, source, t: t.tap(gs)))
-        if c.props.slug == 'flying-carpet':
-            c.abilities.append(ActivatedAbility(c, '2', True,
-                               target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                               effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Flying'))))
-        if c.props.slug == 'fountain-of-youth':
-            c.abilities.append(ActivatedAbility(c, '2', True, target_filter=lambda _, source: source.orig_owner_id,
-                               effect=lambda gs, source, _: gs.increment_life(source.orig_owner_id, 1, c)))
-        if c.props.slug == 'frozen-shade':
-            c.abilities.append(ActivatedAbility(c, 'B', False, target_filter=lambda gs, source: source,  # Is this the best way to do this?
-                               effect=pump_func(1, 1)))
-        if c.props.slug == 'ghosts-of-the-damned':
-            c.abilities.append(ActivatedAbility(c, '', True,
-                               lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                               effect=pump_func(-1, 0)))
-        if c.props.slug == 'goblin-balloon-brigade':
-            c.abilities.append(ActivatedAbility(c, 'R', False,
-                               target_filter=lambda gs, source: source,
-                               effect=lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Flying'))))
-        if c.props.slug == 'granite-gargoyle':
-            c.abilities.append(ActivatedAbility(c, 'R', False, target_filter=lambda gs, source: source,  # Is this the best way to do this?
-                               effect=pump_func(0, 1)))
-        if c.props.slug == 'grapeshot-catapult':
-            c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().has('Flying').result(),
-                                                effect=deal_damage_func(4)))
-        if c.props.slug == 'greed':
-            c.abilities.append(ActivatedAbility(c, 'B', False, target_filter=lambda _, source: source.orig_owner_id,
-                               effect=lambda gs, source, t: greed_pay_life_draw_card(gs, source, t)))
-        if c.props.slug == 'hammerheim':
-            # {T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn.
-            c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda _, source: source.orig_owner_id,
-                                                effect=lambda gs, _, t: gs.mana_pools[c.orig_owner_id].add_floating('R', 1)))
-            c.abilities.append(ActivatedAbility(c, '', True, target_filter=lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                               effect=lambda gs, source, t: hammerheim_remove_all_walks(gs, source, t)))
-        if c.props.slug == 'holy-armor':
-            c.abilities.append(ActivatedAbility(c, 'W', False, target_filter=None,
-                               effect=lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1))))
-        if c.props.slug == 'hyperion-blacksmith':
-            # {T}: You may tap or untap target artifact an opponent controls.
-            c.abilities.append(ActivatedAbility(c, '', True,
-                               target_filter=lambda gs, source: CardFilter(gs).on_player_board(flip(c.orig_owner_id)).artifacts().result(),
-                               effect=lambda gs, source, t: t.untap(gs) if t.is_tapped else t.tap(gs)))
-        if c.props.slug == 'icy-manipulator':
-            # {1}, {T}: Tap target artifact, creature, or land.
-            c.abilities.append(ActivatedAbility(c, '1', True,
-                               target_filter=lambda gs, source: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).tapped(False).result(),
-                               effect=lambda gs, source, t: t.tap(gs)))
-        if c.props.slug == 'instill-energy':
-            # {0}: Untap enchanted creature. Activate only during your turn and only once each turn.
-            c.abilities.append(ActivatedAbility(c, '', False, target_filter=None,
-                                                effect=lambda gs, source, t: t.untap(gs),
-                                                allowed_p_id_turns=[ActivatedAbility.AllowedPlayerTurn.CASTER],
-                                                max_activations_per_turn=1))
-        if c.props.slug == 'northern-paladin':
-            c.abilities.append(ActivatedAbility(
-                c, 'WW', True, target_filter=lambda gs, source: CardFilter(gs).in_play().black().by_type(['Creature', 'Enchantment']).result(),
-                                  effect=lambda gs, source, t: gs.send_to_graveyard_from_play(t)))
-        if c.props.slug in ('pirate-ship', 'prodigal-sorcerer'):
-            # all creatures & players are targets
-            c.abilities.append(ActivatedAbility(c, '', True,
-                                                target_filter=TARGET_FUNCS['all_creatures_and_players'],
-                                                effect=deal_damage_func(1)))
-        if c.props.slug in ('psionic-entity'):
-            # all creatures & players are targets
-            c.abilities.append(ActivatedAbility(c, '', True,
-                                                target_filter=TARGET_FUNCS['all_creatures_and_players'],
-                                                effect=lambda gs, source, t: psionic_entity_deals_damage(gs, source, t)))
-        if c.props.slug == 'samite-healer':
-            # all creatures & players can be protected
-            c.abilities.append(ActivatedAbility(c, '', True,
-                                                target_filter=TARGET_FUNCS['all_creatures_and_players'],
-                                                effect=prevent_next_damage_func(1)))
-        if c.props.slug == 'wall-of-water':
-            c.abilities.append(ActivatedAbility(c, 'U', False, target_filter=None,
-                               effect=pump_func(1, 0)))
 
 
 if __name__ == '__main__':
