@@ -28,6 +28,7 @@ class PreventNextDamage:
     source_filter: Optional[Callable[[GameCard | None], bool]] = None
     target_filter: Callable[[GameCard | int], bool] | None = None
     on_prevent: Callable[[int], None] | None = None  # callback (ex: reverse-damage must be notified amt prevented)
+    combat_only: bool = False
 
     def __post_init__(self):
         print(self)
@@ -49,6 +50,9 @@ class PreventNextDamage:
                 return 0
 
         if self.target_filter and not self.target_filter(event.target):
+            return 0
+
+        if self.combat_only and not event.is_combat:
             return 0
 
         # uncapped prevention
