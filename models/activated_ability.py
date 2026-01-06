@@ -83,6 +83,8 @@ TARGET_FUNCS = {
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
     'creatures_in_play': lambda gs, source: gs.card_filter.in_play.creatures().result(),
     'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
+    'black_and_red_in_play': lambda gs, source: [gs.card_filter.in_play().black().result() +
+                                                 gs.card_filter.in_play().red().result()],
     'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
@@ -233,6 +235,10 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'grapeshot-catapult':
         [ActAbilitySpec('', True, lambda gs, _: CardFilter(gs).in_play().creatures().has('Flying').result(),
                         deal_damage_func(4))],
+    'greater-realm-of-preservation':
+        [ActAbilitySpec('1W', False, TARGET_FUNCS['black_and_red_in_play'],  # would this include instants/sorceries?
+                        lambda gs, src, t: gs.damage_preventions.append(
+                            PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'greed':
         [ActAbilitySpec('B', False, lambda _, s: s.orig_owner_id, lambda gs, s, t: greed_pay_life_draw_card(gs, s, t))],
     'hammerheim':
