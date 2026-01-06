@@ -11,29 +11,31 @@ from utils import flip
 
 
 def copper_tablet_on_upkeep():
+    """At the beginning of each player's upkeep, this artifact deals 1 damage to that player"""
     class E(Effect):
         event = 'upkeep'
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.decrement_life(gs.player_turn_idx, 1, source)
+            gs.apply_damage(source, 1, gs.player_turn_idx)
     return E()
 
 
 def cursed_land_on_upkeep():
+    """Cursed Land does 1 damage to target land's controller during each upkeep"""
     class E(Effect):
         event = 'upkeep'
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.decrement_life(target.orig_owner_id, 1, source)
-
+            gs.apply_damage(source, 1, target.orig_owner_id)
     return E()
 
 def feedback_on_upkeep():
+    """At the beginning of the upkeep of enchanted enchantment's controller, this Aura deals 1 damage to that player"""
     class E(Effect):
         event = 'upkeep'
         
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.decrement_life(gs.player_turn_idx, 1, source)
+            gs.apply_damage(source, 1, target.orig_owner_id)
     return E()
 
 def ivory_tower_on_upkeep():
@@ -52,11 +54,20 @@ def karma_on_upkeep():
         event = 'upkeep'
         
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            opponent = flip(gs.player_turn_idx)
-            swamp_list = CardFilter(gs).on_player_board(opponent).by_slug('swamp').result()
-            swamp_cnt = len(swamp_list)
+            """At the beginning of each player's upkeep,
+            this enchantment deals damage to that player equal to the number of Swamps they control."""
+            p_id = gs.player_turn_idx
+            swamp_cnt = len(CardFilter(gs).on_player_board(p_id).by_slug('swamp').result())
             if swamp_cnt:
-                gs.decrement_life(opponent, swamp_cnt, source)
+                gs.apply_damage(source, swamp_cnt, source.orig_owner_id)
+    return E()
+
+def juzam_djinn_on_upkeep():
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            gs.apply_damage(source, 1, source.orig_owner_id)
     return E()
 
 def serendib_efreet_on_upkeep():
@@ -64,5 +75,5 @@ def serendib_efreet_on_upkeep():
         event = 'upkeep'
         
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.decrement_life(gs.player_turn_idx, 1, source)
+            gs.apply_damage(source, 1, source.orig_owner_id)
     return E()
