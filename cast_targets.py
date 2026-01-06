@@ -22,7 +22,7 @@ CAST_TARGETS = {
     'divine-offering': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'drain-power': lambda gs: all_player_indices(gs),
     'earthbind': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'energy-tap': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().tapped(False).result(),
+    'energy-tap': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().untapped().result(),
     'eternal-warrior': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'farmstead': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands.result(),
     'feedback': lambda gs: CardFilter(gs).in_play().by_type('Enchantment').result(),
@@ -38,7 +38,9 @@ CAST_TARGETS = {
     'instill-energy': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'jovial-evil': lambda gs: flip(gs.action_on_idx),  # test this
     'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'lightning-bolt': lambda gs: CardFilter(gs).in_play().creatures().result() + all_player_indices(gs),
     'mana-short': lambda gs: all_player_indices(gs),
+    'martyrs-cry': lambda gs: CardFilter(gs).in_play().creatures().white().result(),
     'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
     'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
     'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result()
