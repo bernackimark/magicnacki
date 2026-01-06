@@ -27,6 +27,7 @@ class PreventNextDamage:
     source_card: Optional[GameCard] = None
     source_filter: Optional[Callable[[GameCard | None], bool]] = None
     target_filter: Callable[[GameCard | int], bool] | None = None
+    on_prevent: Callable[[int], None] | None = None  # callback (ex: reverse-damage must be notified amt prevented)
 
     def __post_init__(self):
         print(self)
@@ -61,5 +62,9 @@ class PreventNextDamage:
 
         prevented = min(self.remaining, event.remaining)
         self.remaining -= prevented
+
+        if self.on_prevent:
+            self.on_prevent(prevented)
+
         return prevented
 
