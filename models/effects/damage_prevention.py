@@ -38,6 +38,16 @@ def artifact_ward_damage_prevention():
                 event.prevented += event.remaining
     return E()
 
+def enchanted_being_damage_prevention():
+    """Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
+    class E(Effect):
+        def on_damage(self, gs: GameState, event: DamageEvent):
+            if not hasattr(event.target, 'props') or event.target.props.slug != 'enchanted-being':
+                return
+            if event.is_combat and [a for a in event.source.modifiers.auras if hasattr(a, 'props')]:
+                event.prevented += event.remaining
+    return E()
+
 def marble_priest_damage_prevention():
     """Prevent all combat damage that would be dealt to this creature by Walls"""
     class E(Effect):
