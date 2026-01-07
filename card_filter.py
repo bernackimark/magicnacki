@@ -125,6 +125,10 @@ class CardFilter:
         self._cards = [b for combat in self._gs.combats for b in combat.blockers]
         return self
 
+    def unblocked_attackers(self):
+        self._cards = [com.attacker for com in self._gs.combats if not com.blockers]
+        return self
+
     # --- Has a Keyword Ability ---
     def has(self, kwa: str, bool_: bool = True):
         if bool_:
