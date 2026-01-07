@@ -468,7 +468,6 @@ class GameState:
             for com in self.combats:
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
-            self.combats.clear()
             self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
@@ -507,6 +506,8 @@ class GameState:
             for c in self.card_filter.in_play().result():
                 for aa in c.abilities:
                     aa.activated_cnt_this_turn = 0
+            # clear combats
+            self.combats.clear()
             self.phase = Phase.PASS_THE_TURN
             return
 
