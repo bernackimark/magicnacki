@@ -5,6 +5,7 @@ from models.effects.cast import *
 from models.effects.common import *
 from models.effects.damage_prevention import *
 from models.effects.leave import *
+from models.effects.on_damage import *
 from models.effects.tap import *
 from models.effects.upkeep import *
 from models.effects.untap import *
@@ -49,13 +50,16 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'eternal-flame': [eternal_flame_on_cast()],
         'evil-eye-of-orms-by-gore': [evil_eye_of_orms_by_gore_on_cast(), evil_eye_of_orms_by_gore_on_leave(),
                                      evil_eye_of_orms_by_gore_can_be_blocked()],
+        'eye-for-an-eye': [eye_for_an_eye_on_cast()],
         'farmstead': [farmstead_on_cast()],
         'feedback': [feedback_on_upkeep()],
+        'feint': [feint_on_cast()],
         'fishliver-oil': [fishliver_oil_on_cast()],
         'flashfires': [flashfires_on_cast()],
         'flight': [flight_on_cast()],
         'fog': [darkness_or_fog_or_holy_day_on_cast()],
         'forest': [forest_on_cast(), forest_on_leave(), forest_on_tap()],
+        'gaseous-form': [gaseous_form_on_cast()],
         'giant-growth': [giant_growth_on_cast()],
         'giant-strength': [giant_strength_on_cast()],
         'giant-tortoise': [giant_tortoise_on_cast(), giant_tortoise_on_tap(), giant_tortoise_on_untap()],
@@ -83,6 +87,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'mana-short': [mana_short_on_cast()],
         'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED!! All Walls able to block this creature do so
         'martyrs-cry': [martyrs_cry_on_cast()],
+        'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
         'mountain': [mountain_on_tap()],
         'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
         'pirate-ship': [islandhome_can_attack_effect()],

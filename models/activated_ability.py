@@ -89,6 +89,7 @@ TARGET_FUNCS = {
     'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
+    'unblocked_attackers': lambda gs, source: gs.card_filter.unblocked_attackers().result(),
     'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
 }
@@ -100,6 +101,14 @@ def one_one_creatures_in_play(gs: GameState, _: GameCard):
     return [c for c in gs.card_filter.in_play().creatures().result() if c.power == 1 and c.toughness == 1]
 
 # --- COMMON/COMPLEX EFFECT FUNCS ---
+def add_remove_kwa_temp(add_or_remove: str, kwa: str):
+    if add_or_remove not in {'add', 'remove'}:
+        raise ValueError("add_or_remove parameter must be either 'add' or 'remove'")
+
+    def _effect(gs, src, t: Target):
+        t.modifiers.temps.append(KWATemp(add_or_remove, kwa))
+    return _effect
+
 def prevent_next_damage_func(amt: int = None):
     def _effect(gs, src, _):
         gs.damage_preventions.append(PreventNextDamage(src, amt))
@@ -137,6 +146,10 @@ def elves_of_deep_shadow_add_mana_but_damage(gs: GameState, source: GameCard, _:
     gs.mana_pools[source.orig_owner_id].add_floating('B')
     gs.apply_damage(source, 1, source.orig_owner_id)
 
+def forcefield_reduce_damage_to_one(gs: GameState, s: GameCard, t: Target):
+    gs.damage_preventions.append(PreventNextDamage(s, source_card=t, target_player=s.orig_owner_id, combat_only=True))
+    gs.apply_damage(t, 1, s.orig_owner_id, is_combat=True)
+
 def greed_pay_life_draw_card(gs: GameState, source: GameCard, _: Target):
     gs.decrement_life(source.orig_owner_id, 2, source)
     gs.draw(gs.hands[source.orig_owner_id], gs.decks[source.orig_owner_id].cards, 1)
@@ -150,6 +163,23 @@ def kry_shield_prevent_damage_and_pump(gs: GameState, s: GameCard, t: Target):
     That creature gets +0/+X until end of turn, where X is its mana value"""
     gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
     t.modifiers.temps.append(PTTemp(0, t.props.casting_weight))
+
+def jade_monolith_func(gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+    """target = the GameCard being protected"""
+
+    def redirect_damage(prevented: int):
+        gs.apply_damage(t, prevented, t.orig_owner_id)
+
+    gs.damage_preventions.append(PreventNextDamage(s, None, target_card=t, on_prevent=redirect_damage))
+
+def maze_of_ith_func(gs: GameState, s: GameCard, t: Target):
+    the_combat = [com for com in gs.combats if com.attacker == t]
+    if not the_combat:
+        return
+    gs.damage_preventions.append(PreventNextDamage(s, None, target_card=t, combat_only=True))
+    for b in the_combat[0].blockers:
+        gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
+    t.untap(gs)
 
 def orcish_artillery_damage(gs: GameState, s: GameCard, t: Target):
     """{T}: This creature deals 2 damage to any target and 3 damage to you"""
@@ -182,7 +212,7 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'book-of-rass':
         [ActAbilitySpec('2', False, lambda gs, source: source.orig_owner_id, lambda gs, source, t: book_of_rass_pay_life_draw_card(gs, source, t))],
     'brainwash':
-        [ActAbilitySpec('3', False, None, lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Attack')))],
+        [ActAbilitySpec('3', False, None, add_remove_kwa_temp('add', 'Attack'))],
     'brothers-of-fire':
         [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], lambda gs, source, t: brothers_of_fire_deals_damage(gs, source, t))],
     'carrion-ants':
@@ -218,7 +248,7 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'elves-of-deep-shadow':
         [ActAbilitySpec('', True, None, lambda gs, s, t: elves_of_deep_shadow_add_mana_but_damage(gs, s, t))],
     'emerald-dragonfly':
-        [ActAbilitySpec('GG', False, None, lambda gs, s, t: t.modifiers.temps.append(KWATemp('add', 'First Strike')))],
+        [ActAbilitySpec('GG', False, None, add_remove_kwa_temp('add', 'First Strike'))],
     'exorcist':
         [ActAbilitySpec('1W', True, lambda gs, source: CardFilter(gs).in_play().creatures().black().result(),
                         lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
@@ -231,20 +261,21 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'firebreathing':
         [ActAbilitySpec('R', False, None, pump_func(1, 0))],
     'flood':
-        [ActAbilitySpec('UU', False, lambda gs, source: CardFilter(gs).in_play().creatures().tapped(False).has('Flying',False).result(),
+        [ActAbilitySpec('UU', False, lambda gs, source: CardFilter(gs).in_play().creatures().untapped().has('Flying', False).result(),
                         lambda gs, source, t: t.tap(gs))],
     'flying-carpet':
-        [ActAbilitySpec('2', True, lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                        lambda gs, source, t: t.modifiers.temps.append(KWATemp('add', 'Flying')))],
+        [ActAbilitySpec('2', True, lambda gs, source: CardFilter(gs).in_play().creatures().result(), add_remove_kwa_temp('add', 'Flying'))],
+    'forcefield':
+        # Next time an unblocked creature of your choice would deal combat damage to you this turn, reduce damage to 1
+        [ActAbilitySpec('1', False, TARGET_FUNCS['unblocked_attackers'], forcefield_reduce_damage_to_one)],
     'fountain-of-youth':
         [ActAbilitySpec('2', True, lambda _, s: s.orig_owner_id, lambda gs, s, _: gs.increment_life(s.orig_owner_id, 1, s))],
     'frozen-shade':
         [ActAbilitySpec('B', False, None, pump_func(1, 1))],
     'ghosts-of-the-damned':
         [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().creatures().result(), pump_func(-1, 0))],
-    'goblin-balloon-brigade':
-        [ActAbilitySpec('R', False, lambda gs, source: source,   # Is this the best way to do this?
-                        lambda gs, _, t: t.modifiers.temps.append(KWATemp('add', 'Flying')))],
+    'goblin-balloon-brigade':  # is lambda gs, source: source the best way?
+        [ActAbilitySpec('R', False, lambda gs, source: source, add_remove_kwa_temp('add', 'Flying'))],
     'granite-gargoyle':
         [ActAbilitySpec('R', False, lambda gs, source: source,  pump_func(0, 1))],
     'grapeshot-catapult':
@@ -279,6 +310,8 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
         # {0}: Untap enchanted creature. Activate only during your turn and only once each turn
         [ActAbilitySpec('', False, None, lambda gs, source, t: t.untap(gs),
                         allowed_player_turn=[ActivatedAbility.AllowedPlayerTurn.CASTER], max_activations_per_turn=1)],
+    'jade-monolith':
+        [ActAbilitySpec('1', False, TARGET_FUNCS['all_creatures_and_players'], jade_monolith_func)],
     'jandors-saddlebags':
         [ActAbilitySpec('3', True, lambda gs, source: CardFilter(gs).in_play().creatures().tapped().result(),
                         lambda gs, source, t: t.untap(gs))],
@@ -298,8 +331,10 @@ ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
     'llanowar-elves':
         [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
                         lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('G', 1))],
+    'maze-of-ith':
+        [ActAbilitySpec('', True, lambda gs, s: gs.card_filter.attackers().result(), maze_of_ith_func)],
     'merfolk-assassin':
-        [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().has('Islandwalk').result(),
+        [ActAbilitySpec('', True, lambda gs, source: gs.card_filter.in_play().has('Islandwalk').result(),
                         lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
     'miracle-worker':
         [ActAbilitySpec('', True, lambda gs, s: auras_on_creatures_by_owner(gs, s),

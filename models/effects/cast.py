@@ -327,12 +327,47 @@ def evil_eye_of_orms_by_gore_on_cast():
                     my_creature.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
     return E()
 
+def eye_for_an_eye_on_cast():
+    """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
+    # Handling this in an interesting way to work within current framework:
+    # Prevent all damage via gs.damage_preventions, then apply the damage here via the callback
+
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            """target = the GameCard doing the original damage"""
+            def deal_damage(prevented: int):
+                gs.apply_damage(t, prevented, s.orig_owner_id)
+                gs.apply_damage(s, prevented, t.orig_owner_id)
+
+            gs.damage_preventions.append(
+                PreventNextDamage(s, None, target_player=s.orig_owner_id, source_card=t, on_prevent=deal_damage))
+    return E()
+
 def farmstead_on_cast():
     class E(Effect):
         event = 'cast'
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             target.modifiers.auras.append(source)
+    return E()
+
+def feint_on_cast():
+    """Tap all creatures blocking target attacking creature.
+    Prevent all combat damage that would be dealt this turn by that creature and each creature blocking it."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            """target = the attacker"""
+            the_combat = [com for com in gs.combats if com.attacker == target]
+            if not the_combat:
+                return
+            gs.damage_preventions.append(PreventNextDamage(s, None, target_card=target, combat_only=True))
+            for b in the_combat[0].blockers:
+                gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
+                b.tap(gs)
     return E()
 
 def flight_on_cast():
@@ -372,6 +407,21 @@ def forest_on_cast():
             for c in gs.card_filter.on_player_board(source.orig_owner_id).result():
                 if c.props.slug == 'kird-ape' and PTModifier(c, 1, 2) not in c.modifiers.auras:
                     c.modifiers.auras.append(PTModifier(c, 1, 2))
+    return E()
+
+def gaseous_form_on_cast():
+    """Prevent all combat damage that would be dealt this turn by enchanted creature and each creature blocking it."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            """target = the enchanted attacker"""
+            the_combat = [com for com in gs.combats if com.attacker == target]
+            if not the_combat:
+                return
+            gs.damage_preventions.append(PreventNextDamage(s, None, target_card=target, combat_only=True))
+            for b in the_combat[0].blockers:
+                gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
     return E()
 
 def giant_growth_on_cast():
@@ -575,7 +625,7 @@ def mana_short_on_cast():
     return E()
 
 def martyrs_cry_on_cast():
-    """"Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
+    """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     class E(Effect):
         event = 'cast'
 
@@ -610,7 +660,6 @@ def reverse_damage_on_cast():
 
             gs.damage_preventions.append(
                 PreventNextDamage(s, None, target_player=s.orig_owner_id, source_card=target, on_prevent=gain_life))
-
     return E()
 
 def swords_to_plowshares_on_cast():
