@@ -107,6 +107,7 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'G' in c.props.colors]
         return self
 
+    # --- Tapped/Untapped ---
     def tapped(self, is_tapped: bool = True):
         self._cards = [c for c in self._cards if c.is_tapped == is_tapped]
         return self
@@ -115,6 +116,16 @@ class CardFilter:
         self._cards = [c for c in self._cards if not c.is_tapped]
         return self
 
+    # --- Attackers/Blockers ---
+    def attackers(self):
+        self._cards = [combat.attacker for combat in self._gs.combats]
+        return self
+
+    def blockers(self):
+        self._cards = [b for combat in self._gs.combats for b in combat.blockers]
+        return self
+
+    # --- Has a Keyword Ability ---
     def has(self, kwa: str, bool_: bool = True):
         if bool_:
             self._cards = [c for c in self._cards if kwa in c.keyword_abilities]
