@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum, Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
+from constants import COLOR_LETTERS_W_COLORLESS
 from models.damage import PreventNextDamage
 from phase_fsm import Phase
 from utils import flip
@@ -17,8 +18,8 @@ from models.modifiers import PTTemp, KWATemp
 Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
 @dataclass
-class ActAbilitySpec:
-    """Used to create the activated abilities for entire card universe"""
+class AAS:
+    """Activated Ability Spec; used to create the activated abilities for entire card universe"""
     class AllowedPlayerTurn(Enum):
         CASTER = auto()
         OPPONENT = auto()
@@ -82,14 +83,23 @@ TARGET_FUNCS = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
+    'card_owner': lambda gs, s: s.orig_owner_id,
     'creatures_in_play': lambda gs, source: gs.card_filter.in_play().creatures().result(),
+    'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
+                                                                                          'Enchantment']).result(),
     'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
     'black_and_red_in_play': lambda gs, source: [gs.card_filter.in_play().black().result() +
                                                  gs.card_filter.in_play().red().result()],
+    'black_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().black().result(),
     'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
+    'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
+    'tapped_creatures': lambda gs, source: gs.card_filter.in_play().creatures().tapped().result(),
+    'tapped_lands': lambda gs, s: gs.card_filter.in_play().lands().tapped().result(),
     'unblocked_attackers': lambda gs, source: gs.card_filter.unblocked_attackers().result(),
+    'untapped_artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().untapped().result(),
+    'walls_in_play': lambda gs, s: gs.card_filter.in_play().walls().result(),
     'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
 }
@@ -100,7 +110,15 @@ def auras_on_creatures_by_owner(gs: GameState, source: GameCard):
 def one_one_creatures_in_play(gs: GameState, _: GameCard):
     return [c for c in gs.card_filter.in_play().creatures().result() if c.power == 1 and c.toughness == 1]
 
-# --- COMMON/COMPLEX EFFECT FUNCS ---
+# --- NON-CARD-SPECIFIC COMMON/COMPLEX EFFECT FUNCS ---
+def add_mana_func(color: str, amt: int = 1):
+    if color not in COLOR_LETTERS_W_COLORLESS:
+        raise ValueError(f"Color must be {COLOR_LETTERS_W_COLORLESS}")
+
+    def _effect(gs, s, t: GameCard):
+        gs.mana_pools[s.orig_owner_id].add_floating(color, amt)
+    return _effect
+
 def add_remove_kwa_temp(add_or_remove: str, kwa: str):
     if add_or_remove not in {'add', 'remove'}:
         raise ValueError("add_or_remove parameter must be either 'add' or 'remove'")
@@ -109,14 +127,21 @@ def add_remove_kwa_temp(add_or_remove: str, kwa: str):
         t.modifiers.temps.append(KWATemp(add_or_remove, kwa))
     return _effect
 
-def prevent_next_damage_func(amt: int = None):
-    def _effect(gs, src, _):
-        gs.damage_preventions.append(PreventNextDamage(src, amt))
-    return _effect
-
 def deal_damage_func(amt: int = None):
     def _effect(gs, source, target):
         gs.apply_damage(source, amt, target)
+    return _effect
+
+def destroy_all_non_land_perms(gs: GameState, s: GameCard, t: Target):
+    for c in gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Enchantment']).result():
+        gs.send_to_graveyard_from_play(c)
+
+def destroy_func(gs: GameState, _: GameCard, t: Target):
+    gs.send_to_graveyard_from_play(t)
+
+def prevent_next_damage_func(amt: int = None):
+    def _effect(gs, src, _):
+        gs.damage_preventions.append(PreventNextDamage(src, amt))
     return _effect
 
 def pump_func(p_delta: int, t_delta: int):
@@ -124,41 +149,37 @@ def pump_func(p_delta: int, t_delta: int):
         t.modifiers.temps.append(PTTemp(p_delta, t_delta))
     return _effect
 
-# --- CARD SPECIFIC FUNCS ---
-def book_of_rass_pay_life_draw_card(gs: GameState, c: GameCard, _: Target):
+# --- CARD SPECIFIC COMPLEX FUNCS ---
+def book_of_rass_func(gs: GameState, c: GameCard, _: Target):
     gs.decrement_life(c.orig_owner_id, 2, c)
     gs.draw(gs.hands[c.orig_owner_id], gs.decks[c.orig_owner_id].cards, 1)
 
-def brothers_of_fire_deals_damage(gs: GameState, source: GameCard, t: Target):
+def brothers_of_fire_func(gs: GameState, source: GameCard, t: Target):
     """1 damage to target; 1 damage to caster/owner"""
     gs.apply_damage(source, 1, t)
     gs.apply_damage(source, 1, source.orig_owner_id)
 
-def destroy_all_non_land_perms(gs: GameState, s: GameCard, t: Target):
-    for c in gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Enchantment']).result():
-        gs.send_to_graveyard_from_play(c)
-
-def electric_eel_pump_and_damage(gs: GameState, source: GameCard, _: Target):
+def electric_eel_func(gs: GameState, source: GameCard, _: Target):
     source.modifiers.temps.append(PTTemp(2, 0))
     gs.apply_damage(source, 1, source.orig_owner_id)
 
-def elves_of_deep_shadow_add_mana_but_damage(gs: GameState, source: GameCard, _: Target):
+def elves_of_deep_shadow_func(gs: GameState, source: GameCard, _: Target):
     gs.mana_pools[source.orig_owner_id].add_floating('B')
     gs.apply_damage(source, 1, source.orig_owner_id)
 
-def forcefield_reduce_damage_to_one(gs: GameState, s: GameCard, t: Target):
+def forcefield_func(gs: GameState, s: GameCard, t: Target):
     gs.damage_preventions.append(PreventNextDamage(s, source_card=t, target_player=s.orig_owner_id, combat_only=True))
     gs.apply_damage(t, 1, s.orig_owner_id, is_combat=True)
 
-def greed_pay_life_draw_card(gs: GameState, source: GameCard, _: Target):
+def greed_func(gs: GameState, source: GameCard, _: Target):
     gs.decrement_life(source.orig_owner_id, 2, source)
     gs.draw(gs.hands[source.orig_owner_id], gs.decks[source.orig_owner_id].cards, 1)
 
-def hammerheim_remove_all_walks(gs: GameState, source: GameCard, t: Target):
+def hammerheim_func(gs: GameState, source: GameCard, t: Target):
     for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
         t.modifiers.temps.append(KWATemp('remove', f'{land}walk'))
 
-def kry_shield_prevent_damage_and_pump(gs: GameState, s: GameCard, t: Target):
+def kry_shield_func(gs: GameState, s: GameCard, t: Target):
     """Prevent all damage that would be dealt this turn by target creature you control.
     That creature gets +0/+X until end of turn, where X is its mana value"""
     gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
@@ -181,205 +202,153 @@ def maze_of_ith_func(gs: GameState, s: GameCard, t: Target):
         gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
     t.untap(gs)
 
-def orcish_artillery_damage(gs: GameState, s: GameCard, t: Target):
+def orcish_artillery_func(gs: GameState, s: GameCard, t: Target):
     """{T}: This creature deals 2 damage to any target and 3 damage to you"""
     gs.apply_damage(s, 2, t)
     gs.apply_damage(s, 3, s.orig_owner_id)
 
-def psionic_entity_deals_damage(gs: "GameState", source: "GameCard", t: Target):
+def psionic_entity_func(gs: "GameState", source: "GameCard", t: Target):
     # {T}: This creature deals 2 damage to any target and 3 damage to itself
     gs.apply_damage(source, 2, t)
     gs.apply_damage(source, 3, source)
 
-def rakalite_prevent_damage_and_hand_return(gs: GameState, s: GameCard, _: Target):
+def rakalite_func(gs: GameState, s: GameCard, _: Target):
     prevent_next_damage_func(1)
     gs.return_to_hand(s)
 
 
-ACTIVATED_ABILITY: dict[str, list[ActAbilitySpec]] = {
-    'aladdins-ring':
-        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(4))],
-    'ali-baba':
-        [ActAbilitySpec('R', True, lambda gs, _: CardFilter(gs).in_play().walls().result(), lambda gs, src, t: t.tap(gs))],
-    'amulet-of-kroog':
-        [ActAbilitySpec('2', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
-    'apprentice-wizard':
-        [ActAbilitySpec('U', True, lambda gs, source: source.orig_owner_id, lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('C', 3))],
-    'argivian-blacksmith':
-        [ActAbilitySpec('', True, TARGET_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
-    'blessing':
-        [ActAbilitySpec('W', False, None, pump_func(1, 1))],
-    'book-of-rass':
-        [ActAbilitySpec('2', False, lambda gs, source: source.orig_owner_id, lambda gs, source, t: book_of_rass_pay_life_draw_card(gs, source, t))],
-    'brainwash':
-        [ActAbilitySpec('3', False, None, add_remove_kwa_temp('add', 'Attack'))],
+ACTIVATED_ABILITY: dict[str, list[AAS]] = {
+    'aladdins-ring': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(4))],
+    'ali-baba': [AAS('R', True, TARGET_FUNCS['walls_in_play'], lambda gs, src, t: t.tap(gs))],
+    'amulet-of-kroog': [AAS('2', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
+    'apprentice-wizard': [AAS('U', True, TARGET_FUNCS['card_owner'], add_mana_func('C', 3))],
+    'argivian-blacksmith': [AAS('', True, TARGET_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
+    'blessing': [AAS('W', False, None, pump_func(1, 1))],
+    'book-of-rass': [AAS('2', False, TARGET_FUNCS['card_owner'], lambda gs, s, t: book_of_rass_func(gs, s, t))],
+    'brainwash': [AAS('3', False, None, add_remove_kwa_temp('add', 'Attack'))],  # WARNING: double-check that this card is doing what's supposed to
     'brothers-of-fire':
-        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], lambda gs, source, t: brothers_of_fire_deals_damage(gs, source, t))],
-    'carrion-ants':
-        [ActAbilitySpec('1', False, None, pump_func(1, 1))],
+        [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], lambda gs, s, t: brothers_of_fire_func(gs, s, t))],
+    'carrion-ants': [AAS('1', False, None, pump_func(1, 1))],
     'circle-of-protection-artifacts':
-        [ActAbilitySpec('1', False, TARGET_FUNCS['artifacts_in_play'],  # would this include instants/sorceries?
-                        lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
+        [AAS('1', False, TARGET_FUNCS['artifacts_in_play'],  # would this include instants/sorceries?
+             lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-black':
-        [ActAbilitySpec('1', False, TARGET_FUNCS['black_in_play'],  # would this include instants/sorceries?
-                        lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
+        [AAS('1', False, TARGET_FUNCS['black_in_play'],  # would this include instants/sorceries?
+             lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-blue':
-        [ActAbilitySpec('1', False, TARGET_FUNCS['blue_in_play'],  # would this include instants/sorceries?
-                        lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
+        [AAS('1', False, TARGET_FUNCS['blue_in_play'],  # would this include instants/sorceries?
+             lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-green':
-        [ActAbilitySpec('1', False, TARGET_FUNCS['green_in_play'],  # would this include instants/sorceries?
-                        lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
+        [AAS('1', False, TARGET_FUNCS['green_in_play'],  # would this include instants/sorceries?
+             lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-red':
-        [ActAbilitySpec('1', False, TARGET_FUNCS['red_in_play'],  # would this include instants/sorceries?
-                        lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
+        [AAS('1', False, TARGET_FUNCS['red_in_play'],  # would this include instants/sorceries?
+             lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-white':
-        [ActAbilitySpec('1', False, TARGET_FUNCS['white_in_play'],  # would this include instants/sorceries?
-                        lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
+        [AAS('1', False, TARGET_FUNCS['white_in_play'],  # would this include instants/sorceries?
+             lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'conservator':
-        [ActAbilitySpec('3', True, None, lambda gs, src, _: gs.damage_preventions.append(
+        [AAS('3', True, None, lambda gs, src, _: gs.damage_preventions.append(
                         PreventNextDamage(src, remaining=2, target_player=src.orig_owner_id)))],
-    'dragon-engine':
-        [ActAbilitySpec('2', False, None, pump_func(1, 0))],
-    'dwarven-demolition-team':
-        [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().by_sub_type('Wall').result(),
-                        lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
-    'electric-eel':
-        [ActAbilitySpec('RR', False, None, lambda gs, s, t: electric_eel_pump_and_damage(gs, s, t))],
-    'elves-of-deep-shadow':
-        [ActAbilitySpec('', True, None, lambda gs, s, t: elves_of_deep_shadow_add_mana_but_damage(gs, s, t))],
-    'emerald-dragonfly':
-        [ActAbilitySpec('GG', False, None, add_remove_kwa_temp('add', 'First Strike'))],
-    'exorcist':
-        [ActAbilitySpec('1W', True, lambda gs, source: CardFilter(gs).in_play().creatures().black().result(),
-                        lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
+    'dragon-engine': [AAS('2', False, None, pump_func(1, 0))],
+    'dwarven-demolition-team': [AAS('', True, TARGET_FUNCS['walls_in_play'], destroy_func)],
+    'electric-eel': [AAS('RR', False, None, lambda gs, s, t: electric_eel_func(gs, s, t))],
+    'elves-of-deep-shadow': [AAS('', True, None, lambda gs, s, t: elves_of_deep_shadow_func(gs, s, t))],
+    'emerald-dragonfly': [AAS('GG', False, None, add_remove_kwa_temp('add', 'First Strike'))],
+    'exorcist': [AAS('1W', True, TARGET_FUNCS['black_creatures_in_play'], destroy_func)],
     'farmstead':
-        [ActAbilitySpec('WW', True, lambda gs, _: gs.player_turn_idx, lambda gs, _, t: gs.increment_life(gs.player_turn_idx, 1))],
-    'fire-drake':
-        [ActAbilitySpec('R', False, None, pump_func(1, 0), max_activations_per_turn=1)],
-    'fire-sprites':
-        [ActAbilitySpec('G', True, lambda _, s: s.orig_owner_id, lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('R', 1))],
-    'firebreathing':
-        [ActAbilitySpec('R', False, None, pump_func(1, 0))],
+        [AAS('WW', True, lambda gs, _: gs.player_turn_idx, lambda gs, _, t: gs.increment_life(gs.player_turn_idx, 1))],
+    'fire-drake': [AAS('R', False, None, pump_func(1, 0), max_activations_per_turn=1)],
+    'fire-sprites': [AAS('G', True, lambda _, s: s.orig_owner_id, add_mana_func('R'))],
+    'firebreathing': [AAS('R', False, None, pump_func(1, 0))],
     'flood':
-        [ActAbilitySpec('UU', False, lambda gs, source: CardFilter(gs).in_play().creatures().untapped().has('Flying', False).result(),
-                        lambda gs, source, t: t.tap(gs))],
+        [AAS('UU', False, lambda gs, source: CardFilter(gs).in_play().creatures().untapped().has('Flying', False).result(),
+             lambda gs, source, t: t.tap(gs))],
     'flying-carpet':
-        [ActAbilitySpec('2', True, lambda gs, source: CardFilter(gs).in_play().creatures().result(), add_remove_kwa_temp('add', 'Flying'))],
+        [AAS('2', True, TARGET_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
     'forcefield':
         # Next time an unblocked creature of your choice would deal combat damage to you this turn, reduce damage to 1
-        [ActAbilitySpec('1', False, TARGET_FUNCS['unblocked_attackers'], forcefield_reduce_damage_to_one)],
+        [AAS('1', False, TARGET_FUNCS['unblocked_attackers'], forcefield_func)],
     'fountain-of-youth':
-        [ActAbilitySpec('2', True, lambda _, s: s.orig_owner_id, lambda gs, s, _: gs.increment_life(s.orig_owner_id, 1, s))],
-    'frozen-shade':
-        [ActAbilitySpec('B', False, None, pump_func(1, 1))],
+        [AAS('2', True, lambda _, s: s.orig_owner_id, lambda gs, s, _: gs.increment_life(s.orig_owner_id, 1, s))],
+    'frozen-shade': [AAS('B', False, None, pump_func(1, 1))],
     'ghosts-of-the-damned':
-        [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().creatures().result(), pump_func(-1, 0))],
+        [AAS('', True, TARGET_FUNCS['creatures_in_play'], pump_func(-1, 0))],
     'goblin-balloon-brigade':  # is lambda gs, source: source the best way?
-        [ActAbilitySpec('R', False, lambda gs, source: source, add_remove_kwa_temp('add', 'Flying'))],
-    'granite-gargoyle':
-        [ActAbilitySpec('R', False, lambda gs, source: source,  pump_func(0, 1))],
-    'grapeshot-catapult':
-        [ActAbilitySpec('', True, lambda gs, _: CardFilter(gs).in_play().creatures().has('Flying').result(),
-                        deal_damage_func(4))],
+        [AAS('R', False, lambda gs, source: source, add_remove_kwa_temp('add', 'Flying'))],
+    'granite-gargoyle': [AAS('R', False, lambda gs, source: source, pump_func(0, 1))],
+    'grapeshot-catapult': [AAS('', True, TARGET_FUNCS['fliers_in_play'], deal_damage_func(4))],
     'greater-realm-of-preservation':
-        [ActAbilitySpec('1W', False, TARGET_FUNCS['black_and_red_in_play'],  # would this include instants/sorceries?
-                        lambda gs, src, t: gs.damage_preventions.append(
+        [AAS('1W', False, TARGET_FUNCS['black_and_red_in_play'],  # would this include instants/sorceries?
+             lambda gs, src, t: gs.damage_preventions.append(
                             PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
-    'greed':
-        [ActAbilitySpec('B', False, lambda _, s: s.orig_owner_id, lambda gs, s, t: greed_pay_life_draw_card(gs, s, t))],
+    'greed': [AAS('B', False, TARGET_FUNCS['card_owner'], lambda gs, s, t: greed_func(gs, s, t))],
     'hammerheim':
         # {T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn.
-        [ActAbilitySpec('', True, lambda _, s: s.orig_owner_id, lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('R', 1)),
-         ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().creatures().result(),
-                        lambda gs, source, t: hammerheim_remove_all_walks(gs, source, t))],
-    'holy-armor':
-        [ActAbilitySpec('W', False, None, lambda gs, source, t: t.modifiers.temps.append(PTTemp(0, 1)))],
+        [AAS('', True, lambda _, s: s.orig_owner_id, add_mana_func('R')),
+         AAS('', True, TARGET_FUNCS['creatures_in_play'], lambda gs, s, t: hammerheim_func(gs, s, t))],
+    'holy-armor': [AAS('W', False, None, pump_func(0, 1))],
     'horn-of-deafening':
-        [ActAbilitySpec('2', True, TARGET_FUNCS['creatures_in_play'],
-                        lambda gs, s, t: gs.damage_preventions.append(PreventNextDamage(s, source_card=t,
+        [AAS('2', True, TARGET_FUNCS['creatures_in_play'],
+             lambda gs, s, t: gs.damage_preventions.append(PreventNextDamage(s, source_card=t,
                                                                                         combat_only=True)))],
     'hyperion-blacksmith':
         # {T}: You may tap or untap target artifact an opponent controls
-        [ActAbilitySpec('', True, lambda gs, s: CardFilter(gs).on_player_board(flip(s.orig_owner_id)).artifacts().result(),
-                        lambda gs, source, t: t.untap(gs) if t.is_tapped else t.tap(gs))],
+        [AAS('', True, lambda gs, s: CardFilter(gs).on_player_board(flip(s.orig_owner_id)).artifacts().result(),
+             lambda gs, source, t: t.untap(gs) if t.is_tapped else t.tap(gs))],
     'icy-manipulator':
     # {1}, {T}: Tap target artifact, creature, or land
-        [ActAbilitySpec('1', True, lambda gs, source: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).tapped(False).result(),
-                        lambda gs, source, t: t.tap(gs))],
+        [AAS('1', True, lambda gs, source: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).tapped(False).result(),
+             lambda gs, source, t: t.tap(gs))],
     'instill-energy':
         # {0}: Untap enchanted creature. Activate only during your turn and only once each turn
-        [ActAbilitySpec('', False, None, lambda gs, source, t: t.untap(gs),
-                        allowed_player_turn=[ActivatedAbility.AllowedPlayerTurn.CASTER], max_activations_per_turn=1)],
-    'jade-monolith':
-        [ActAbilitySpec('1', False, TARGET_FUNCS['all_creatures_and_players'], jade_monolith_func)],
-    'jandors-saddlebags':
-        [ActAbilitySpec('3', True, lambda gs, source: CardFilter(gs).in_play().creatures().tapped().result(),
-                        lambda gs, source, t: t.untap(gs))],
+        [AAS('', False, None, lambda gs, source, t: t.untap(gs),
+             allowed_player_turn=[ActivatedAbility.AllowedPlayerTurn.CASTER], max_activations_per_turn=1)],
+    'jade-monolith': [AAS('1', False, TARGET_FUNCS['all_creatures_and_players'], jade_monolith_func)],
+    'jandors-saddlebags': [AAS('3', True, TARGET_FUNCS['tapped_creatures'], lambda gs, source, t: t.untap(gs))],
     'jayemdae-tome':
-        [ActAbilitySpec('4', True, lambda gs, s: s.orig_owner_id,
-                        lambda gs, s, t: gs.draw(gs.hands[s.orig_owner_id], gs.decks[s.orig_owner_id].cards, 1))],
-    'killer-bees':
-        [ActAbilitySpec('G', False, lambda gs, source: source, pump_func(1, 1))],
+        [AAS('4', True, TARGET_FUNCS['card_owner'],
+             lambda gs, s, t: gs.draw(gs.hands[s.orig_owner_id], gs.decks[s.orig_owner_id].cards, 1))],
+    'killer-bees': [AAS('G', False, lambda gs, source: source, pump_func(1, 1))],
     'king-suleiman':
-        [ActAbilitySpec('', True, lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
-                        lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
-    'kry-shield':
-        [ActAbilitySpec('2', True, TARGET_FUNCS['your_creatures_in_play'], kry_shield_prevent_damage_and_pump)],
+        [AAS('', True, lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
+             destroy_func)],
+    'kry-shield': [AAS('2', True, TARGET_FUNCS['your_creatures_in_play'], kry_shield_func)],
     'ley-druid':
-        [ActAbilitySpec('', True, lambda gs, source: CardFilter(gs).in_play().lands().tapped().result(),
-                        lambda gs, source, t: t.untap(gs))],
-    'llanowar-elves':
-        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
-                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('G', 1))],
-    'maze-of-ith':
-        [ActAbilitySpec('', True, lambda gs, s: gs.card_filter.attackers().result(), maze_of_ith_func)],
+        [AAS('', True, TARGET_FUNCS['tapped_lands'], lambda gs, source, t: t.untap(gs))],
+    'llanowar-elves': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('G'))],
+    'maze-of-ith': [AAS('', True, lambda gs, s: gs.card_filter.attackers().result(), maze_of_ith_func)],
     'merfolk-assassin':
-        [ActAbilitySpec('', True, lambda gs, source: gs.card_filter.in_play().has('Islandwalk').result(),
-                        lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
+        [AAS('', True, lambda gs, source: gs.card_filter.in_play().has('Islandwalk').result(), destroy_func)],
     'miracle-worker':
-        [ActAbilitySpec('', True, lambda gs, s: auras_on_creatures_by_owner(gs, s),
-                        lambda gs, s, t: gs.send_to_graveyard_from_play(t))],  # should i send an aura to the graveyard w/o using host.remove_aura()?
-    'mox-emerald':
-        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
-                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('G', 1))],
-    'mox-jet':
-        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
-                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('B', 1))],
-    'mox-pearl':
-        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
-                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('W', 1))],
-    'mox-ruby':
-        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
-                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('R', 1))],
-    'mox-sapphire':
-        [ActAbilitySpec('', True, lambda gs, source: source.orig_owner_id,
-                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('U', 1))],
-    'nevinyrrals-disk':
-        [ActAbilitySpec('1', True, None, lambda gs, s, t: destroy_all_non_land_perms(gs, s, t))],
-    'northern-paladin':
-        [ActAbilitySpec('WW', True, lambda gs, source: CardFilter(gs).in_play().black().by_type(['Creature', 'Enchantment']).result(),
-                        lambda gs, source, t: gs.send_to_graveyard_from_play(t))],
-    'oasis':
-        [ActAbilitySpec('', True, TARGET_FUNCS['creatures_in_play'], prevent_next_damage_func(1))],
-    'orcish-artillery':
-        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], orcish_artillery_damage)],
+        [AAS('', True, lambda gs, s: auras_on_creatures_by_owner(gs, s), destroy_func)],  # should i send an aura to the graveyard w/o using host.remove_aura()?
+    'mox-emerald': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('G'))],
+    'mox-jet': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('B'))],
+    'mox-pearl': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('W'))],
+    'mox-ruby': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('R'))],
+    'mox-sapphire': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('U'))],
+    'nevinyrrals-disk': [AAS('1', True, None, lambda gs, s, t: destroy_all_non_land_perms(gs, s, t))],
+    'northern-paladin': [AAS('WW', True, TARGET_FUNCS['creatures_and_enchantments_in_play'], destroy_func)],
+    'oasis': [AAS('', True, TARGET_FUNCS['creatures_in_play'], prevent_next_damage_func(1))],
+    'orcish-artillery': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], orcish_artillery_func)],
     'pendelhaven':
-        [ActAbilitySpec('', True, lambda gs, s: s.orig_owner_id,
-                        lambda gs, s, t: gs.mana_pools[s.orig_owner_id].add_floating('G', 1)),
-         ActAbilitySpec('', True, one_one_creatures_in_play, pump_func(1, 2))],
-    'pirate-ship':
-        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
-    'prodigal-sorcerer':
-        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
+        [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('G')),
+         AAS('', True, one_one_creatures_in_play, pump_func(1, 2))],
+    'pirate-ship': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
+    'pixie-queen':
+        [AAS('GGG', True, TARGET_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
+    'pradesh-gypsies': [AAS('1G', True, TARGET_FUNCS['creatures_in_play'], pump_func(-2, 0))],
+    'prodigal-sorcerer': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'psionic-entity':
-        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'],
-                        lambda gs, source, t: psionic_entity_deals_damage(gs, source, t))],
-    'rakalite':
-        [ActAbilitySpec('2', False, TARGET_FUNCS['all_creatures_and_players'], rakalite_prevent_damage_and_hand_return)],
-    'samite-healer':
-        [ActAbilitySpec('', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
-    'wall-of-water':
-        [ActAbilitySpec('U', False, None, pump_func(1, 0))]
+        [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], lambda gs, s, t: psionic_entity_func(gs, s, t))],
+    'radjan-spirit':
+        [AAS('', True, TARGET_FUNCS['creatures_in_play'], add_remove_kwa_temp('remove', 'Flying'))],
+    'rakalite': [AAS('2', False, TARGET_FUNCS['all_creatures_and_players'], rakalite_func)],
+    'relic-barrier': [AAS('', True, TARGET_FUNCS['untapped_artifacts_in_play'], lambda gs, s, t: t.tap(gs))],
+    'rod-of-ruin': [AAS('3', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
+    'royal-assassin': [AAS('', True, TARGET_FUNCS['tapped_creatures_in_play'], destroy_func)],
+    'samite-healer': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
+    'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
 }
 
 def add_activated_abilities(cards: list[GameCard]) -> None:
