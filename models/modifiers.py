@@ -98,6 +98,11 @@ class Modifiers:
         return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'remove'} |
                 {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'remove'})
 
+    @property
+    def is_enchanted(self) -> bool:
+        auras = [a for a in self.auras if isinstance(a, GameCard)]
+        return True if auras else False
+
     def is_enchanted_by(self, slug: str) -> bool:
         return slug in {a.props.slug for a in self.auras if hasattr(a, 'props')}
 
