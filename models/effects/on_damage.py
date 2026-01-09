@@ -25,3 +25,15 @@ def martyrs_of_korlis_on_damage():
             # use the first found untapped martys-of-korlis owned by the damaged player
             event.target = martyrs[0]
     return E()
+
+def spirit_link_on_damage():
+    """Enchant creature  Whenever enchanted creature deals damage, you gain that much life"""
+    class E(Effect):
+        event = 'on_damage'
+
+        def on_damage(self, gs: GameState, event: DamageEvent):
+            for a in event.source.modifiers.auras:
+                if a.props.slug != 'spirit-link':
+                    continue
+                gs.increment_life(event.source.orig_owner_id, event.remaining)
+    return E()

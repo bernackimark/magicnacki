@@ -46,6 +46,12 @@ CAST_TARGETS = {
     'mana-short': lambda gs: all_player_indices(gs),
     'martyrs-cry': lambda gs: CardFilter(gs).in_play().creatures().white().result(),
     'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'shatter': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'sinkhole': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'spirit-link': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'stone_rain': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'storm-seeker': lambda gs: all_player_indices(gs),
+    'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
     'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result()
 }

@@ -70,10 +70,44 @@ def juzam_djinn_on_upkeep():
             gs.apply_damage(source, 1, source.orig_owner_id)
     return E()
 
+def power_surge_on_upkeep():
+    """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
+    where X is the number of untapped lands they controlled at the beginning of this turn"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            untapped_lands = gs.card_filter.in_play().untapped().lands().result()
+            gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
+    return E()
+
 def serendib_efreet_on_upkeep():
     class E(Effect):
         event = 'upkeep'
         
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             gs.apply_damage(source, 1, source.orig_owner_id)
+    return E()
+
+def spiritual_sanctuary_on_upkeep():
+    """At the beginning of each player's upkeep, if that player controls a Plains, they gain 1 life"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if 'plains' in gs.card_filter.on_player_board(gs.player_turn_idx).by_slug('plains').result():
+                gs.increment_life(gs.player_turn_idx, 1)
+    return E()
+
+def storm_world_on_upkeep():
+    """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
+    where X is 4 minus the number of cards in their hand"""
+
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            card_cnt = len(gs.hands[gs.player_turn_idx].cards)
+            if card_cnt > 4:
+                gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
     return E()

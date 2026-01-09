@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Optional
 
+from phase_fsm import Phase
 from utils import flip
 from ..damage import PreventNextDamage
 
@@ -646,6 +647,29 @@ def nevinyrrals_disk_on_cast():
             gs.apply_tap_effects(source)
     return E()
 
+def psionic_blast_on_cast():
+    """Psionic Blast deals 4 damage to any target and 2 damage to you"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError("Psionic Blast needs a target")
+            gs.apply_damage(source, 4, target)
+            gs.apply_damage(source, 2, source.orig_owner_id)
+
+def reset_on_cast():
+    """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if gs.phase == Phase.UPKEEP or gs.player_turn_idx == source.orig_owner_id:
+                raise ValueError("Reset must be played on opponent's turn after their upkeep phase")
+            for land in gs.card_filter.on_player_board(source.orig_owner_id).lands().untapped().result():
+                land.untap(gs)
+    return E()
+
 def reverse_damage_on_cast():
     """The next time a source of your choice would deal damage to you this turn, prevent that damage.
     You gain life equal to the damage prevented this way.
@@ -662,6 +686,62 @@ def reverse_damage_on_cast():
                 PreventNextDamage(s, None, target_player=s.orig_owner_id, source_card=target, on_prevent=gain_life))
     return E()
 
+
+def riptide_on_cast():
+    """Tap all blue creatures"""
+
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
+            for c in gs.card_filter.in_play().creatures().untapped().blue().result():
+                c.tap(gs)
+    return E()
+
+def shatter_on_cast():
+    """Destroy target artifact"""
+
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
+            gs.send_to_graveyard_from_play(t)
+    return E()
+
+def sinkhole_and_stone_rain_on_cast():
+    """Destroy target land"""
+
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            if not target:
+                raise ValueError(f"{s.props.name} needs a target")
+            gs.send_to_graveyard_from_play(target)
+    return E()
+
+def storm_seeker_on_cast():
+    """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
+
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
+            opp_idx = flip(source.orig_owner_id)
+            gs.apply_damage(source, len(gs.hands[opp_idx].cards), opp_idx)
+    return E()
+
+def subdue_on_cast():
+    """Prevent all combat damage that would be dealt by target creature this turn.
+    That creature gets +0/+X until end of turn, where X is its mana value."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            gs.damage_preventions.append(PreventNextDamage(s, None, source_card=t, combat_only=True))
+            t.modifiers.temps.append(PTModifier(s, 0, t.props.casting_weight))
+    return E()
+
 def swords_to_plowshares_on_cast():
     class E(Effect):
         event = 'cast'
@@ -670,6 +750,16 @@ def swords_to_plowshares_on_cast():
             if target:
                 gs.send_to_exile(target)  # which is correct?  exile_from_play() or exile()
                 gs.increment_life(target.orig_owner_id, target.power)
+    return E()
+
+def syphon_soul_on_cast():
+    """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
+            gs.apply_damage(source, 2, flip(source.orig_owner_id))
+            gs.increment_life(source.orig_owner_id, 2)
     return E()
 
 def twiddle_on_cast():

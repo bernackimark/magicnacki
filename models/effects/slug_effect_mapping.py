@@ -7,7 +7,7 @@ from models.effects.damage_prevention import *
 from models.effects.leave import *
 from models.effects.on_damage import *
 from models.effects.tap import *
-from models.effects.upkeep import *
+from models.effects.on_upkeep import *
 from models.effects.untap import *
 
 SLUG_EFFECTS: dict[str, list[Effect]] = {
@@ -92,12 +92,24 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
         'pirate-ship': [islandhome_can_attack_effect()],
         # 'plains': [tap_for_mana('W')],
+        'power_surge': [power_surge_on_upkeep()],
+        'psionic_blast': [psionic_blast_on_cast()],
+        'reset': [reset_on_cast()],
         'reverse-damage': [reverse_damage_on_cast()],
+        'riptide': [riptide_on_cast()],
         'sea-serpent': [islandhome_can_attack_effect()],
         'seeker': [seeker_enchanted_creature_can_be_blocked()],
         'serendib-efreet': [serendib_efreet_on_upkeep()],
+        'sinkhole': [sinkhole_and_stone_rain_on_cast()],
         # 'swamp': [tap_for_mana('B')],
+        'spirit-link': [spirit_link_on_damage()],
+        'spiritual-sanctuary': [spiritual_sanctuary_on_upkeep()],
+        'stone-rain': [sinkhole_and_stone_rain_on_cast()],
+        'storm-seeker': [storm_seeker_on_cast()],
+        'storm-world': [storm_world_on_upkeep()],
+        'subdue': [subdue_on_cast()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
+        'syphon_soul': [syphon_soul_on_cast()],
         'twiddle': [twiddle_on_cast()],
         'unsummon': [unsummon_on_cast()],
         'wrath-of-god': [wrath_of_god_on_cast()],
