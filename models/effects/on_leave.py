@@ -10,6 +10,19 @@ from models.modifiers import KWAModifier, PTModifier
 from card_filter import CardFilter
 
 """Effects for when cards leave the playing field (ex Castle, Crusade)"""
+def land_on_leave():
+    """serendib-djinn: When you control no lands, sacrifice this creature"""
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            for p_id in (0, 1):
+                if gs.card_filter.on_player_board(p_id).lands().result():
+                    continue
+                for c in gs.card_filter.on_player_board(p_id).by_slug('serendib-djinns').result():
+                    print(f'Player #{p_id} has no lands, so Serendib Djinn is destroyed')
+                    gs.send_to_graveyard_from_play(c)
+    return E()
 
 def global_on_leave():
     class E(Effect):

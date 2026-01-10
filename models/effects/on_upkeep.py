@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 from ..actions.choices import PayManaOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
     ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, ErosionUpkeepChoice, LordOfThePitUpkeepChoice, \
-    SeasonOfTheWitchUpkeepChoice
+    SeasonOfTheWitchUpkeepChoice, SerendibDjinnUpkeepChoice
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -154,6 +154,7 @@ def lord_of_the_pit_on_upkeep():
                 return
             for action in possible_sacrifice_actions:
                 gs.action_stack.push(action, gs, False)
+    return E()
 
 def phantasmal_forces_on_upkeep():
     class E(Effect):
@@ -182,6 +183,15 @@ def season_of_the_witch_on_upkeep():
         def resolve(self, gs: GameState, source: GameCard, target=None):
             # Pause the game and force a choice
             gs.action_stack.push(SeasonOfTheWitchUpkeepChoice(source.orig_owner_id, gs, source), gs, False)
+    return E()
+
+def serendib_djinn_on_upkeep():
+    """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
     return E()
 
 def serendib_efreet_on_upkeep():

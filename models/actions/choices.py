@@ -177,3 +177,11 @@ class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         return [PayLife(self.source.attached_to.orig_owner_id, self.gs, self.source, 2),
                 Sac(self.gs.player_turn_idx, self.gs, self.source)]
+
+class SerendibDjinnUpkeepChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [Sac(self.gs.player_turn_idx, self.gs, land, w_damage_amt=3 if land.props.slug == 'island' else 0)
+                for land in self.gs.card_filter.on_player_board(self.gs.player_turn_idx).lands().result()]
