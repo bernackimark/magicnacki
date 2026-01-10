@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from enum import Enum, auto
+from enum import Enum, auto, IntEnum
 
-class Phase(Enum):
+class Phase(IntEnum):
     NEW_SESSION = auto()  # roll dice; decide going first
     DICE_ROLL = auto()
     NEW_GAME = auto()  # shuffle; deal; mulligan
