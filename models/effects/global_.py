@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from utils import flip
 from ..damage import DamageEvent
 
 if TYPE_CHECKING:
@@ -82,3 +83,11 @@ def all_combat_damage_prevented():
             if event.is_combat:
                 event.prevented += event.remaining
     return E()
+
+def scarecrow_func():
+    class E(Effect):
+        def on_damage(self, gs: GameState, event: DamageEvent):
+            if event.target == flip(gs.player_turn_idx):
+                if event.source in gs.card_filter.in_play().creatures().has('Flying').result():
+                    event.prevented += event.remaining
+
