@@ -1,11 +1,12 @@
 from models.effects.can_attack import *
 from models.effects.can_block import *
 from models.effects.can_be_blocked import *
-from models.effects.cast import *
+from models.effects.on_cast import *
 from models.effects.common import *
 from models.effects.damage_prevention import *
 from models.effects.leave import *
 from models.effects.on_damage import *
+from models.effects.on_end_step import *
 from models.effects.tap import *
 from models.effects.on_upkeep import *
 from models.effects.untap import *
@@ -22,6 +23,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'armageddon': [send_to_graveyard_all_lands()],
         'artifact-ward': [artifact_ward_can_be_blocked(), artifact_ward_damage_prevention()],
         'bad-moon': [bad_moon_on_cast(), global_on_leave()],
+        'ball-lightning': [destroy_on_end_step()],
         'blood-lust': [blood_lust_on_cast()],
         'bog-rats': [bog_rats_can_be_blocked()],
         'boomerang': [boomerang_on_cast()],
@@ -42,11 +44,13 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'divine-offering': [divine_offering_on_cast()],
         'divine-transformation': [divine_transformation_on_cast()],
         'drain-power': [drain_power_on_cast()],
+        'dragon-whelp': [dragon_whelp_on_end_step()],
         'earthbind': [earthbind_on_cast()],
         'electric-eel': [electric_eel_on_cast()],
         'elven-riders': [elven_riders_can_be_blocked()],
         'enchanted-being': [enchanted_being_damage_prevention()],
         'energy-tap': [energy_tap_on_cast()],
+        'erg-raiders': [erg_raiders_on_end_step()],
         'eternal-flame': [eternal_flame_on_cast()],
         'evil-eye-of-orms-by-gore': [evil_eye_of_orms_by_gore_on_cast(), evil_eye_of_orms_by_gore_on_leave(),
                                      evil_eye_of_orms_by_gore_can_be_blocked()],
@@ -63,6 +67,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'giant-growth': [giant_growth_on_cast()],
         'giant-strength': [giant_strength_on_cast()],
         'giant-tortoise': [giant_tortoise_on_cast(), giant_tortoise_on_tap(), giant_tortoise_on_untap()],
+        'glyph-of-destruction': [glyph_of_destruction_on_cast()],
         'goblin-king': [goblin_king_on_cast(), goblin_king_on_leave()],
         'great-defender': [great_defender_on_cast()],
         'holy-armor': [holy_armor_on_cast()],
@@ -97,7 +102,9 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'reset': [reset_on_cast()],
         'reverse-damage': [reverse_damage_on_cast()],
         'riptide': [riptide_on_cast()],
+        'rocket_launcher': [rocket_launcher_on_cast()],
         'sea-serpent': [islandhome_can_attack_effect()],
+        'season-of-the-witch': [season_of_the_witch_on_end_step()],
         'seeker': [seeker_enchanted_creature_can_be_blocked()],
         'serendib-efreet': [serendib_efreet_on_upkeep()],
         'sinkhole': [sinkhole_and_stone_rain_on_cast()],

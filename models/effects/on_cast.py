@@ -11,7 +11,8 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Effect
-from models.effects.global_ import AngelicVoicesEffect, BadMoonEffect, CastleEffect, CrusadeEffect, all_combat_damage_prevented
+from models.effects.global_ import AngelicVoicesEffect, BadMoonEffect, CastleEffect, CrusadeEffect, \
+    all_combat_damage_prevented, all_damage_prevented_to_target_card
 from models.modifiers import KWAModifier, KWATemp, PTModifier, PTTemp
 from card_filter import CardFilter
 
@@ -449,6 +450,18 @@ def giant_tortoise_on_cast():
             source.modifiers.auras.append(PTModifier(source, 0, 3))
     return E()
 
+def glyph_of_destruction_on_cast():
+    """Target blocking Wall you control gets +10/+0 until end of combat.
+    Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            t.modifiers.temps(PTTemp(10, 0))
+            gs.global_effects.append((s, all_damage_prevented_to_target_card(s), True))
+            gs.end_step_funcs.append(lambda gs, s, t: gs.send_to_graveyard_from_play(s))
+    return E()
+
 def goblin_king_on_cast():
     class E(Effect):
         event = 'cast'
@@ -696,6 +709,15 @@ def riptide_on_cast():
         def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
             for c in gs.card_filter.in_play().creatures().untapped().blue().result():
                 c.tap(gs)
+    return E()
+
+def rocket_launcher_on_cast():
+    """To support '{2}: Activate only if card it's been in play the entire turn...'"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            s.has_summoning_sickness = True
     return E()
 
 def shatter_on_cast():
