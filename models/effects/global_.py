@@ -84,6 +84,13 @@ def all_combat_damage_prevented():
                 event.prevented += event.remaining
     return E()
 
+def all_damage_prevented_to_target_card(c: GameCard):
+    class E(Effect):
+        def on_damage(self, gs: GameState, event: DamageEvent):
+            if event.target == c:
+                event.prevented += event.remaining
+    return E()
+
 def scarecrow_func():
     class E(Effect):
         def on_damage(self, gs: GameState, event: DamageEvent):
