@@ -1,4 +1,5 @@
-KEYWORD_ABILITIES = ['Defender', 'First Strike', 'Flying', 'Forestwalk', 'Haste', 'Islandwalk', 'Menace',
+KEYWORD_ABILITIES = ['Attack', 'Banding', 'Defender', 'First Strike', 'Flying', 'Forestwalk', 'Haste', 'Islandwalk',
+                     'Menace',
                      'Mountainwalk', 'Protection From Black', 'Protection From Blue', 'Protection From Green',
                      'Protection From Red', 'Protection From White', 'Rampage 1', 'Rampage 2', 'Rampage 3', 'Reach',
                      'Swampwalk', 'Foresthome', 'Islandhome', 'Mountainhome', 'Plainswalk', 'Swamphome', 'Trample',
@@ -168,3 +169,13 @@ CREATURE_KW_ABILITIES = {
     "yotian-soldier": ["Vigilance", "Attack"],
     "zephyr-falcon": ["Flying", "Vigilance", "Attack"],
 }
+
+def get_base_kwas(slug: str) -> list[str | None]:
+    return CREATURE_KW_ABILITIES.get(slug, [])
+
+
+if __name__ == '__main__':
+    for the_slug, kwas in CREATURE_KW_ABILITIES.items():
+        for kwa in kwas:
+            if kwa not in KEYWORD_ABILITIES:
+                raise ValueError(f"{the_slug}'s {kwa} not found in KEYWORD_ABILITIES")
