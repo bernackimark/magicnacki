@@ -97,4 +97,4 @@ def scarecrow_func():
             if event.target == flip(gs.player_turn_idx):
                 if event.source in gs.card_filter.in_play().creatures().has('Flying').result():
                     event.prevented += event.remaining
-
+    return E()
