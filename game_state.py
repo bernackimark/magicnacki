@@ -538,7 +538,7 @@ class GameState:
 
 
 # TODO:
-#  leave.py: should there just be a common on_leave so when card leaves, all mods for which it's the source are removed?
+#  on_leave.py: should there just be a common on_leave so when card leaves, all mods for which it's the source are removed?
 
 # TODO:
 #  - When deciding which mana to tap, as a strategy, tap colorless mana where possible

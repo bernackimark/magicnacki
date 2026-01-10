@@ -2,7 +2,7 @@ from typing import Callable
 
 from card import Card
 from cast_targets import CAST_TARGETS
-from models.effects.leave import *
+from models.effects.on_leave import *
 from models.effects.slug_effect_mapping import SLUG_EFFECTS
 from models.effects.untap import *
 from models.activated_ability import ActivatedAbility
