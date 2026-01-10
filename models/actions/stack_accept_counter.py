@@ -34,5 +34,5 @@ class CounterAction(Action):
         return f"In response to {self.gs.action_stack.last_action}: {self.action}"
 
     def play(self) -> None:
-        self.gs.action_stack.add_(self.action, self.gs)
+        self.gs.action_stack.push(self.action, self.gs)
         self.gs.action_on_idx = flip(self.gs.action_on_idx)

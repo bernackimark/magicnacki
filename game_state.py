@@ -8,6 +8,7 @@ from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
+from models.actions.choice import ChoiceAction
 from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking, \
     AssignCombatDamage
 from models.actions.draw_discard import DrawCard, DiscardCard
@@ -387,6 +388,9 @@ class GameState:
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
+            if isinstance(self.action_stack.last_action, ChoiceAction):
+                return self.action_stack.last_action.get_actions()
+
             available_actions.append(AcceptAction(p_id, self))
 
             # Check instants (or other spells allowed to respond)

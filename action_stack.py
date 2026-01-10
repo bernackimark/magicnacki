@@ -33,9 +33,13 @@ class ActionStack:
     def last_action(self) -> Action:
         return self._actions[-1]
 
-    def add_(self, action: Action, gs: GameState) -> None:
+    def push(self, action: Action, gs: GameState, flip_action_on_opponent: bool = True) -> None:
         self._actions.append(action)
-        gs.action_on_idx = flip(gs.action_on_idx)
+        if flip_action_on_opponent:
+            gs.action_on_idx = flip(gs.action_on_idx)
+
+    def pop(self):
+        self._actions.pop()
 
     def clear_(self) -> None:
         self._actions.clear()
