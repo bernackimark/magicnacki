@@ -4,7 +4,7 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from constants import COLOR_LETTERS_W_COLORLESS
-from cost import Cost, ManaCost, TapCost, SacrificeSelfCost
+from cost import Cost, ManaCost, TapCost, SacSelfCost, ExileSelfCost
 from models.damage import PreventNextDamage, DamageEvent
 from models.effects.on_end_step import nettling_imp_on_end_step
 from phase_fsm import Phase
@@ -31,8 +31,8 @@ class AAS:
     cost_tap: bool
     target_filter: Callable[[GameState, GameCard], Target] | None
     effect: Callable[[GameState, GameCard, Target], None]
-    allowed_phases: list[Phase] = field(default_factory=list)
-    allowed_player_turn: list[AllowedPlayerTurn | None] = field(default_factory=list)
+    allowed_phases: list[Phase | None] = field(default_factory=list)
+    allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
     max_activations_per_turn: int = 999
     extra_costs: list[Cost] = field(default_factory=list)
 
@@ -50,9 +50,9 @@ class ActivatedAbility:
     costs: list[Cost] = field(init=False, default_factory=list)
     target_filter: Callable[[GameState, GameCard], Target] | None
     effect: Callable[[GameState, GameCard, Target], None]
-    allowed_phases: list[Phase] = field(default_factory=list)
-    allowed_player_turn: list[AllowedPlayerTurn | None] = field(default_factory=list)
-    allowed_p_id_turns: int | None = None
+    allowed_phases: list[Phase | None] = field(default_factory=list)
+    allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
+    allowed_p_id_turn: int | None = None
     activated_cnt_this_turn: int = 0
     max_activations_per_turn: int = 999
     extra_costs: InitVar[list[Cost | None]] = None
@@ -60,25 +60,29 @@ class ActivatedAbility:
     def __post_init__(self, cost_mana: str, cost_tap: bool, extra_costs: list[Cost]):
         """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
         allowed_p_id_turns need knowledge of the card's owner and is assigned here;
-        if allowed_player_turns is [], then the ability should be permitted on both turns"""
+        if allowed_player_turn is None, then the ability should be permitted on both turns"""
         if cost_mana:
             self.costs.append(ManaCost(cost_mana))
         if cost_tap:
             self.costs.append(TapCost())
         if extra_costs:
             for extra_cost in extra_costs:
+                print("[] Appending extra cost for Coal Golem")
                 self.costs.append(extra_cost)
         if self.allowed_player_turn == self.AllowedPlayerTurn.CASTER:
-            self.allowed_p_id_turns = self.card.orig_owner_id
+            self.allowed_p_id_turn = self.card.orig_owner_id
         if self.allowed_player_turn == self.AllowedPlayerTurn.OPPONENT:
-            self.allowed_p_id_turns = flip(self.card.orig_owner_id)
+            self.allowed_p_id_turn = flip(self.card.orig_owner_id)
 
     def can_activate(self, gs: GameState) -> bool:
         # TODO: convert these If checks to be a Cost:
         if self.allowed_phases and gs.phase not in self.allowed_phases:
             print("C")
             return False
-        if self.allowed_p_id_turns and self.card.orig_owner_id != self.allowed_p_id_turns:
+        if self.allowed_player_turn and gs.player_turn_idx != self.allowed_p_id_turn:
+            print("F")
+            return False
+        if self.allowed_p_id_turn and self.card.orig_owner_id != self.allowed_p_id_turn:
             print("D")
             return False
         if self.activated_cnt_this_turn >= self.max_activations_per_turn:
@@ -121,6 +125,7 @@ TARGET_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                                                                           'Enchantment']).result(),
     'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
+    'lands_in_play': lambda gs, source: gs.card_filter.in_play().lands().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
     'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result(),
@@ -193,6 +198,11 @@ def electric_eel_func(gs: GameState, source: GameCard, _: Target):
 def elves_of_deep_shadow_func(gs: GameState, source: GameCard, _: Target):
     gs.mana_pools[source.orig_owner_id].add_floating('B')
     gs.apply_damage(source, 1, source.orig_owner_id)
+
+def exchange_life_totals(gs: GameState, s: GameCard, _: Target):
+    your_life = gs.life[s.orig_owner_id]
+    opp_life = gs.life[flip(s.orig_owner_id)]
+    gs.life[s.orig_owner_id], gs.life[flip(s.orig_owner_id)] = opp_life, your_life
 
 def forcefield_func(gs: GameState, s: GameCard, t: Target):
     gs.damage_preventions.append(PreventNextDamage(s, source_card=t, target_player=s.orig_owner_id, combat_only=True))
@@ -296,7 +306,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
         [AAS('1', False, TARGET_FUNCS['white_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'coal-golem':
-        [AAS('3', False, None, add_mana_func('R', 3), extra_costs=[SacrificeSelfCost()])],
+        [AAS('3', False, None, add_mana_func('R', 3), extra_costs=[SacSelfCost()])],
     'conservator':
         [AAS('3', True, None, lambda gs, src, _: gs.damage_preventions.append(
                         PreventNextDamage(src, remaining=2, target_player=src.orig_owner_id)))],
@@ -322,10 +332,14 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'fountain-of-youth':
         [AAS('2', True, lambda _, s: s.orig_owner_id, lambda gs, s, _: gs.increment_life(s.orig_owner_id, 1, s))],
     'frozen-shade': [AAS('B', False, None, pump_func(1, 1))],
+    'gaeas-touch': [AAS('', False, lambda gs, s: s.orig_owner_id, add_mana_func('G', 2),
+                        extra_costs=[ExileSelfCost()])],  # gaeas-touch has one more Activated Ability left to code
     'ghosts-of-the-damned':
         [AAS('', True, TARGET_FUNCS['creatures_in_play'], pump_func(-1, 0))],
     'goblin-balloon-brigade':  # is lambda gs, source: source the best way?
         [AAS('R', False, lambda gs, source: source, add_remove_kwa_temp('add', 'Flying'))],
+    'goblin-digging-team': [AAS('', True, TARGET_FUNCS['walls_in_play'], destroy_func,
+                                extra_costs=[SacSelfCost()])],
     'granite-gargoyle': [AAS('R', False, lambda gs, source: source, pump_func(0, 1))],
     'grapeshot-catapult': [AAS('', True, TARGET_FUNCS['fliers_in_play'], deal_damage_func(4))],
     'greater-realm-of-preservation':
@@ -353,7 +367,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'instill-energy':
         # {0}: Untap enchanted creature. Activate only during your turn and only once each turn
         [AAS('', False, None, lambda gs, source, t: t.untap(gs),
-             allowed_player_turn=[ActivatedAbility.AllowedPlayerTurn.CASTER], max_activations_per_turn=1)],
+             allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],
     'jade-monolith': [AAS('1', False, TARGET_FUNCS['all_creatures_and_players'], jade_monolith_func)],
     'jandors-saddlebags': [AAS('3', True, TARGET_FUNCS['tapped_creatures'], lambda gs, source, t: t.untap(gs))],
     'jayemdae-tome':
@@ -372,6 +386,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
         [AAS('', True, lambda gs, source: gs.card_filter.in_play().has('Islandwalk').result(), destroy_func)],
     'miracle-worker':
         [AAS('', True, TARGET_FUNCS['auras_on_owners_creatures'], destroy_func)],  # should i send an aura to the graveyard w/o using host.remove_aura()?
+    'mirror-universe': [AAS('', True, None, exchange_life_totals, allowed_phases=[Phase.UPKEEP],
+                            allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, extra_costs=[SacSelfCost()])],
     'mox-emerald': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('G'))],
     'mox-jet': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('B'))],
     'mox-pearl': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('W'))],
@@ -379,7 +395,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'mox-sapphire': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('U'))],
     'nettling-imp': [AAS('', True, TARGET_FUNCS['opp_creatures_who_could_have_but_didnt_attack'],
                          lambda gs, s, t: gs.end_step_funcs.append(nettling_imp_on_end_step),
-                         allowed_player_turn=[ActivatedAbility.AllowedPlayerTurn.OPPONENT],
+                         allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.OPPONENT,
                          allowed_phases=[phase for phase in Phase if phase < Phase.DECLARE_ATTACKERS])],
     'nevinyrrals-disk': [AAS('1', True, None, lambda gs, s, t: destroy_all_non_land_perms(gs, s, t))],
     'northern-paladin': [AAS('WW', True, TARGET_FUNCS['creatures_and_enchantments_in_play'], destroy_func)],
@@ -411,6 +427,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
                          add_remove_kwa_temp('add', 'Forestwalk')),
                      AAS('GGGG', True, TARGET_FUNCS['creatures_in_play_w_forestwalk'],
                          add_remove_kwa_temp('remove', 'Forestwalk'))],
+    'scavenger-folk': [AAS('G', True, TARGET_FUNCS['artifacts_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
     'shimian-night-stalker': [AAS('B', True, TARGET_FUNCS['attackers'], shimian_nightstalker_func)],
     'shivan-dragon': [AAS('R', False, None, pump_func(1, 0))],
     'sisters-of-the-flame': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('R'))],
@@ -420,6 +437,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'spinal-villain': [AAS('', True, TARGET_FUNCS['blue_creatures_in_play'], destroy_func)],
     'staff-of-zegon': [AAS('3', True, TARGET_FUNCS['creatures_in_play'], pump_func(-2, 0))],
     'stone-giant': [AAS('', True, TARGET_FUNCS['stone_giant'], stone_giant_func)],
+    'strip-mine': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('C')),
+                   AAS('', True, TARGET_FUNCS['lands_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
     'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
 }
 
@@ -430,7 +449,8 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
                 aa = ActivatedAbility(card=c, cost_mana=spec.cost_mana, cost_tap=spec.cost_tap,
                                       target_filter=spec.target_filter, effect=spec.effect,
                                       allowed_phases=spec.allowed_phases, allowed_player_turn=spec.allowed_player_turn,
-                                      max_activations_per_turn=spec.max_activations_per_turn)
+                                      max_activations_per_turn=spec.max_activations_per_turn,
+                                      extra_costs=spec.extra_costs)
                 c.abilities.append(aa)
 
 
