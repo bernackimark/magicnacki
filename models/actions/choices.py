@@ -48,6 +48,18 @@ class PayLife(Action):
         self.gs.apply_damage(self.source, self.amt, self.source.attached_to.orig_owner_id)
         self.gs.action_stack.pop()
 
+class PayManaOrSacUpkeepChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):
+        super().__init__(p_id, gs, source)
+        self.cost = cost
+
+    def get_actions(self) -> list[Action]:
+        actions: list[Action] = []
+        if self.gs.mana_pools[self.p_id].can_pay(self.cost):
+            actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
+        actions.append(Sac(self.p_id, self.gs, self.source))
+        return actions
+
 class Sac(Action):
     def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
         super().__init__(p_id, gs)
@@ -63,20 +75,8 @@ class Sac(Action):
         self.gs.send_to_graveyard_from_play(self.source)
         self.gs.action_stack.pop()  # remove choice
 
-class PayOrSacUpkeepChoice(ChoiceAction):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):
-        super().__init__(p_id, gs, source)
-        self.cost = cost
-
-    def get_actions(self) -> list[Action]:
-        actions: list[Action] = []
-        if self.gs.mana_pools[self.p_id].can_pay(self.cost):
-            actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
-        actions.append(Sac(self.p_id, self.gs, self.source))
-        return actions
 
 # --- CARD-SPECIFIC ---
-
 class CosmicHorrorUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):
         super().__init__(p_id, gs, source)
@@ -109,6 +109,18 @@ class ElderSpawnUpkeepChoice(ChoiceAction):
         actions.append(Sac(self.p_id, self.gs, self.source, 6))
         return actions
 
+class ErosionUpkeepChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        actions: list[Action] = []
+        if self.gs.mana_pools[self.p_id].can_pay('1'):
+            actions.append(PayMana(self.p_id, self.gs, self.source, '1'))
+        actions.append(PayLife(self.p_id, self.gs, self.source, 1))
+        actions.append(Sac(self.p_id, self.gs, self.source.attached_to))
+        return actions
+
 class ForceOfNatureUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str, damage_amt: int):
         super().__init__(p_id, gs, source)
@@ -121,3 +133,21 @@ class ForceOfNatureUpkeepChoice(ChoiceAction):
             actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
         actions.append(DealDamage(self.p_id, self.gs, self.source, self.damage_amt))
         return actions
+
+class LordOfThePitUpkeepChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        your_other_creatures = [c for c in self.gs.card_filter.on_player_board(self.gs.player_turn_idx).creatures().result() if c != self.source]
+        if not your_other_creatures:
+            return []
+        return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
+
+class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [PayLife(self.source.attached_to.orig_owner_id, self.gs, self.source, 2),
+                Sac(self.gs.player_turn_idx, self.gs, self.source)]

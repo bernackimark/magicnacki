@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from ..actions.choices import PayOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
-    ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice
+from ..actions.choices import PayManaOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
+    ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, ErosionUpkeepChoice, LordOfThePitUpkeepChoice, \
+    SeasonOfTheWitchUpkeepChoice
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -18,7 +19,7 @@ def conversion_on_upkeep():
         event = 'upkeep'
 
         def resolve(self, gs: GameState, source: GameCard, target=None):
-            gs.action_stack.push(PayOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'WW'), gs, False)
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'WW'), gs, False)
     return E()
 
 def copper_tablet_on_upkeep():
@@ -66,6 +67,15 @@ def elder_spawn_on_upkeep():
             gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
     return E()
 
+def erosion_on_upkeep():
+    """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
+    return E()
+
 def feedback_on_upkeep():
     """At the beginning of the upkeep of enchanted enchantment's controller, this Aura deals 1 damage to that player"""
     class E(Effect):
@@ -82,6 +92,14 @@ def force_of_nature_on_upkeep():
 
         def resolve(self, gs: GameState, s: GameCard, target=None):
             gs.action_stack.push(ForceOfNatureUpkeepChoice(s.orig_owner_id, gs, s, 'GGGG', 8), gs, False)
+    return E()
+
+def forethought_amulet_on_upkeep():
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, '3'), gs, False)
     return E()
 
 def ivory_tower_on_upkeep():
@@ -113,7 +131,7 @@ def junun_efreet_on_upkeep():
         event = 'upkeep'
 
         def resolve(self, gs: GameState, source: GameCard, target=None):
-            gs.action_stack.push(PayOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'BB'), gs, False)
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'BB'), gs, False)
     return E()
 
 def juzam_djinn_on_upkeep():
@@ -122,6 +140,27 @@ def juzam_djinn_on_upkeep():
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             gs.apply_damage(source, 1, source.orig_owner_id)
+    return E()
+
+def lord_of_the_pit_on_upkeep():
+    """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            possible_sacrifice_actions = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
+            if not possible_sacrifice_actions:
+                gs.apply_damage(source, 7, source.orig_owner_id)
+                return
+            for action in possible_sacrifice_actions:
+                gs.action_stack.push(action, gs, False)
+
+def phantasmal_forces_on_upkeep():
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'U'), gs, False)
     return E()
 
 def power_surge_on_upkeep():
@@ -133,6 +172,16 @@ def power_surge_on_upkeep():
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             untapped_lands = gs.card_filter.in_play().untapped().lands().result()
             gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
+    return E()
+
+def season_of_the_witch_on_upkeep():
+    """At your upkeep, sacrifice this enchantment unless you pay 2 life"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            # Pause the game and force a choice
+            gs.action_stack.push(SeasonOfTheWitchUpkeepChoice(source.orig_owner_id, gs, source), gs, False)
     return E()
 
 def serendib_efreet_on_upkeep():
@@ -173,5 +222,5 @@ def sunken_city_on_upkeep():
 
         def resolve(self, gs: GameState, source: GameCard, target=None):
             # Pause the game and force a choice
-            gs.action_stack.push(PayOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'UU'), gs, False)
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'UU'), gs, False)
     return E()

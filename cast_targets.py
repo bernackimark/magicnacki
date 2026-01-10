@@ -25,6 +25,7 @@ CAST_TARGETS = {
     'drain-power': lambda gs: all_player_indices(gs),
     'earthbind': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'energy-tap': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().untapped().result(),
+    'erosion': lambda gs: CardFilter(gs).in_play().lands().result(),
     'eternal-warrior': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'eye-for-an-eye': lambda gs: CardFilter(gs).in_play().result(),
     'farmstead': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands.result(),
