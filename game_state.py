@@ -117,15 +117,20 @@ class GameState:
     def can_block(self, blocker: GameCard, attacker: GameCard):
         # Base rules first
         if can_block_base_rule().on_query(self, 'can_block', card=blocker, attacker=attacker) is False:
+            print(f"{blocker} can't block {attacker}")
             return False
 
         # Ask global effects, card effects, and card's aura effects
         global_effects = [eff for _, eff, _ in self.global_effects]
-        for effect in blocker.effects + global_effects + [a.effects for a in blocker.modifiers.auras]:
-            result = effect.on_query(self, 'can_block', card=blocker, attacker=attacker)
+        for eff in blocker.effects + global_effects + [a.effects for a in blocker.modifiers.auras]:
+            print(blocker, attacker, eff)
+            result = eff.on_query(self, 'can_block', card=blocker, attacker=attacker)
             if result is False:  # hard veto
                 return False
-
+        for eff in attacker.effects + global_effects + [a.effects for a in attacker.modifiers.auras]:
+            result = eff.on_query(self, 'can_be_blocked', card=attacker, blocker=blocker)
+            if result is False:  # hard veto
+                return False
         return True
 
     def _apply_opponent_life_loss(self, p_id: int, amt: int):
@@ -458,14 +463,16 @@ class GameState:
                 available_actions.append(FinishDeclaringAttackers(p_id, self))
 
         if self.phase == Phase.DECLARE_BLOCKERS:
+            available_actions.append((FinishBlocking(self.action_on_idx, self)))
+
             remaining_blockers = [c for c in self.boards[self.action_on_idx].available_blockers
                                   if c not in [c for com in self.combats for c in com.blockers]]
             for blocker in remaining_blockers:
                 for com in self.combats:
                     if self.can_block(blocker, com.attacker):
+                        print(f"[xxx] TRYING TO FIGURE IF {blocker} CAN BLOCK {com.attacker}")
                         available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
 
-            available_actions.append((FinishBlocking(self.action_on_idx, self)))
             available_actions.extend(available_actions_from_hand())
             available_actions.extend(add_activated_abilities_from_board())
 
