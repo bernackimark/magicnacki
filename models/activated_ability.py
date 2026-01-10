@@ -283,7 +283,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'argivian-blacksmith': [AAS('', True, TARGET_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
     'blessing': [AAS('W', False, None, pump_func(1, 1))],
     'book-of-rass': [AAS('2', False, TARGET_FUNCS['card_owner'], lambda gs, s, t: book_of_rass_func(gs, s, t))],
-    'brainwash': [AAS('3', False, None, add_remove_kwa_temp('add', 'Attack'))],  # WARNING: double-check that this card is doing what's supposed to
+    'brainwash': [AAS('3', False, None, add_remove_kwa_temp('add', 'Attack'))],  # WARNING: validate that target_Filter=None is correct
     'brothers-of-fire':
         [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], lambda gs, s, t: brothers_of_fire_func(gs, s, t))],
     'carrion-ants': [AAS('1', False, None, pump_func(1, 1))],
@@ -443,6 +443,15 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
 }
 
 def add_activated_abilities(cards: list[GameCard]) -> None:
+    # this just ensures I don't spell any slug wrong in ACTIVATED_ABILITY
+    import json
+    with open('gatherer/card_data.json', 'r') as f:
+        data = json.load(f)
+    all_slugs = {slug for set_, cards in data.items() for slug in cards}
+    for slug in ACTIVATED_ABILITY:
+        if slug not in all_slugs:
+            raise ValueError(f"{slug} not found in this card universe")
+
     for c in cards:
         if specs := ACTIVATED_ABILITY.get(c.props.slug):
             for spec in specs:
