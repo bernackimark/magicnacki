@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from base import Effect
+from .base import Effect
 from ..damage import DamageEvent
 
 if TYPE_CHECKING:
