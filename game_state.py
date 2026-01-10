@@ -164,7 +164,7 @@ class GameState:
         # 2. Apply remaining damage
         if event.remaining <= 0:
             return
-        if is_combat and 'Trample' in source.keyword_abilities:
+        if is_combat and 'Trample' in source.keyword_abilities and isinstance(target, GameCard):
             damage_to_card = target.toughness
             target.combat_damage_received += damage_to_card
             damage_to_player = event.remaining - damage_to_card
