@@ -406,7 +406,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
                             lambda gs, s, t: t.modifiers.temps.append(PTTemp(-t.power, t.toughness - 2)))],
     'spinal-villain': [AAS('', True, TARGET_FUNCS['blue_creatures_in_play'], destroy_func)],
     'staff-of-zegon': [AAS('3', True, TARGET_FUNCS['creatures_in_play'], pump_func(-2, 0))],
-    'stone-giant': [AAS('', True, )],
+    'stone-giant': [AAS('', True, TARGET_FUNCS['stone_giant'], stone_giant_func)],
     'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
 }
 
