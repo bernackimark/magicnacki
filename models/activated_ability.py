@@ -3,7 +3,7 @@ from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
-from constants import COLOR_LETTERS_W_COLORLESS
+from constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTERS
 from cost import Cost, ManaCost, TapCost, SacSelfCost, ExileSelfCost
 from models.damage import PreventNextDamage, DamageEvent
 from models.effects.on_end_step import nettling_imp_on_end_step
@@ -35,6 +35,7 @@ class AAS:
     allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
     max_activations_per_turn: int = 999
     extra_costs: list[Cost] = field(default_factory=list)
+    text: str = ''
 
 
 @dataclass
@@ -56,6 +57,7 @@ class ActivatedAbility:
     activated_cnt_this_turn: int = 0
     max_activations_per_turn: int = 999
     extra_costs: InitVar[list[Cost | None]] = None
+    text: str = ''
 
     def __post_init__(self, cost_mana: str, cost_tap: bool, extra_costs: list[Cost]):
         """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
@@ -102,7 +104,8 @@ def opp_creatures_who_could_have_attacked_but_didnt(gs: GameState, source: GameC
             if c not in attackers and not c.has_summoning_sickness and 'Attack' in c.keyword_abilities]
 
 
-TARGET_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
+# --- COMMON TARGET FUNCS ---
+T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
@@ -276,34 +279,38 @@ def stone_giant_func(gs: GameState, s: GameCard, t: Target):
 
 
 ACTIVATED_ABILITY: dict[str, list[AAS]] = {
-    'aladdins-ring': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(4))],
-    'ali-baba': [AAS('R', True, TARGET_FUNCS['walls_in_play'], lambda gs, src, t: t.tap(gs))],
-    'amulet-of-kroog': [AAS('2', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
-    'apprentice-wizard': [AAS('U', True, TARGET_FUNCS['card_owner'], add_mana_func('C', 3))],
-    'argivian-blacksmith': [AAS('', True, TARGET_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
+    'aladdins-ring': [AAS('', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(4))],
+    'ali-baba': [AAS('R', True, T_FUNCS['walls_in_play'], lambda gs, src, t: t.tap(gs))],
+    'amulet-of-kroog': [AAS('2', True, T_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
+    'apprentice-wizard': [AAS('U', True, T_FUNCS['card_owner'], add_mana_func('C', 3))],
+    'argivian-blacksmith': [AAS('', True, T_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
     'blessing': [AAS('W', False, None, pump_func(1, 1))],
-    'book-of-rass': [AAS('2', False, TARGET_FUNCS['card_owner'], lambda gs, s, t: book_of_rass_func(gs, s, t))],
+    'birds-of-paradise': [AAS('', True, T_FUNCS['card_owner'],
+                              add_mana_func(c), text=f'Add 1 {c}') for c in COLOR_LETTERS],
+    'book-of-rass': [AAS('2', False, T_FUNCS['card_owner'], lambda gs, s, t: book_of_rass_func(gs, s, t))],
     'brainwash': [AAS('3', False, None, add_remove_kwa_temp('add', 'Attack'))],  # WARNING: validate that target_Filter=None is correct
     'brothers-of-fire':
-        [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], lambda gs, s, t: brothers_of_fire_func(gs, s, t))],
+        [AAS('', True, T_FUNCS['all_creatures_and_players'], lambda gs, s, t: brothers_of_fire_func(gs, s, t))],
     'carrion-ants': [AAS('1', False, None, pump_func(1, 1))],
+    'celestial-prism': [AAS('2', True, T_FUNCS['card_owner'],
+                            add_mana_func(c), text=f'Add 1 {c}') for c in COLOR_LETTERS],
     'circle-of-protection-artifacts':
-        [AAS('1', False, TARGET_FUNCS['artifacts_in_play'],  # would this include instants/sorceries?
+        [AAS('1', False, T_FUNCS['artifacts_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-black':
-        [AAS('1', False, TARGET_FUNCS['black_in_play'],  # would this include instants/sorceries?
+        [AAS('1', False, T_FUNCS['black_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-blue':
-        [AAS('1', False, TARGET_FUNCS['blue_in_play'],  # would this include instants/sorceries?
+        [AAS('1', False, T_FUNCS['blue_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-green':
-        [AAS('1', False, TARGET_FUNCS['green_in_play'],  # would this include instants/sorceries?
+        [AAS('1', False, T_FUNCS['green_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-red':
-        [AAS('1', False, TARGET_FUNCS['red_in_play'],  # would this include instants/sorceries?
+        [AAS('1', False, T_FUNCS['red_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'circle-of-protection-white':
-        [AAS('1', False, TARGET_FUNCS['white_in_play'],  # would this include instants/sorceries?
+        [AAS('1', False, T_FUNCS['white_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'coal-golem':
         [AAS('3', False, None, add_mana_func('R', 3), extra_costs=[SacSelfCost()])],
@@ -311,11 +318,11 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
         [AAS('3', True, None, lambda gs, src, _: gs.damage_preventions.append(
                         PreventNextDamage(src, remaining=2, target_player=src.orig_owner_id)))],
     'dragon-engine': [AAS('2', False, None, pump_func(1, 0))],
-    'dwarven-demolition-team': [AAS('', True, TARGET_FUNCS['walls_in_play'], destroy_func)],
+    'dwarven-demolition-team': [AAS('', True, T_FUNCS['walls_in_play'], destroy_func)],
     'electric-eel': [AAS('RR', False, None, lambda gs, s, t: electric_eel_func(gs, s, t))],
     'elves-of-deep-shadow': [AAS('', True, None, lambda gs, s, t: elves_of_deep_shadow_func(gs, s, t))],
     'emerald-dragonfly': [AAS('GG', False, None, add_remove_kwa_temp('add', 'First Strike'))],
-    'exorcist': [AAS('1W', True, TARGET_FUNCS['black_creatures_in_play'], destroy_func)],
+    'exorcist': [AAS('1W', True, T_FUNCS['black_creatures_in_play'], destroy_func)],
     'farmstead':
         [AAS('WW', True, lambda gs, _: gs.player_turn_idx, lambda gs, _, t: gs.increment_life(gs.player_turn_idx, 1))],
     'fire-drake': [AAS('R', False, None, pump_func(1, 0), max_activations_per_turn=1)],
@@ -325,35 +332,35 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
         [AAS('UU', False, lambda gs, source: CardFilter(gs).in_play().creatures().untapped().has('Flying', False).result(),
              lambda gs, source, t: t.tap(gs))],
     'flying-carpet':
-        [AAS('2', True, TARGET_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
+        [AAS('2', True, T_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
     'forcefield':
         # Next time an unblocked creature of your choice would deal combat damage to you this turn, reduce damage to 1
-        [AAS('1', False, TARGET_FUNCS['unblocked_attackers'], forcefield_func)],
+        [AAS('1', False, T_FUNCS['unblocked_attackers'], forcefield_func)],
     'fountain-of-youth':
         [AAS('2', True, lambda _, s: s.orig_owner_id, lambda gs, s, _: gs.increment_life(s.orig_owner_id, 1, s))],
     'frozen-shade': [AAS('B', False, None, pump_func(1, 1))],
     'gaeas-touch': [AAS('', False, lambda gs, s: s.orig_owner_id, add_mana_func('G', 2),
                         extra_costs=[ExileSelfCost()])],  # gaeas-touch has one more Activated Ability left to code
     'ghosts-of-the-damned':
-        [AAS('', True, TARGET_FUNCS['creatures_in_play'], pump_func(-1, 0))],
+        [AAS('', True, T_FUNCS['creatures_in_play'], pump_func(-1, 0))],
     'goblin-balloon-brigade':  # is lambda gs, source: source the best way?
         [AAS('R', False, lambda gs, source: source, add_remove_kwa_temp('add', 'Flying'))],
-    'goblin-digging-team': [AAS('', True, TARGET_FUNCS['walls_in_play'], destroy_func,
+    'goblin-digging-team': [AAS('', True, T_FUNCS['walls_in_play'], destroy_func,
                                 extra_costs=[SacSelfCost()])],
     'granite-gargoyle': [AAS('R', False, lambda gs, source: source, pump_func(0, 1))],
-    'grapeshot-catapult': [AAS('', True, TARGET_FUNCS['fliers_in_play'], deal_damage_func(4))],
+    'grapeshot-catapult': [AAS('', True, T_FUNCS['fliers_in_play'], deal_damage_func(4))],
     'greater-realm-of-preservation':
-        [AAS('1W', False, TARGET_FUNCS['black_and_red_in_play'],  # would this include instants/sorceries?
+        [AAS('1W', False, T_FUNCS['black_and_red_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(
                             PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
-    'greed': [AAS('B', False, TARGET_FUNCS['card_owner'], lambda gs, s, t: greed_func(gs, s, t))],
+    'greed': [AAS('B', False, T_FUNCS['card_owner'], lambda gs, s, t: greed_func(gs, s, t))],
     'hammerheim':
         # {T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn.
         [AAS('', True, lambda _, s: s.orig_owner_id, add_mana_func('R')),
-         AAS('', True, TARGET_FUNCS['creatures_in_play'], lambda gs, s, t: hammerheim_func(gs, s, t))],
+         AAS('', True, T_FUNCS['creatures_in_play'], lambda gs, s, t: hammerheim_func(gs, s, t))],
     'holy-armor': [AAS('W', False, None, pump_func(0, 1))],
     'horn-of-deafening':
-        [AAS('2', True, TARGET_FUNCS['creatures_in_play'],
+        [AAS('2', True, T_FUNCS['creatures_in_play'],
              lambda gs, s, t: gs.damage_preventions.append(PreventNextDamage(s, source_card=t,
                                                                                         combat_only=True)))],
     'hyperion-blacksmith':
@@ -368,77 +375,77 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
         # {0}: Untap enchanted creature. Activate only during your turn and only once each turn
         [AAS('', False, None, lambda gs, source, t: t.untap(gs),
              allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],
-    'jade-monolith': [AAS('1', False, TARGET_FUNCS['all_creatures_and_players'], jade_monolith_func)],
-    'jandors-saddlebags': [AAS('3', True, TARGET_FUNCS['tapped_creatures'], lambda gs, source, t: t.untap(gs))],
+    'jade-monolith': [AAS('1', False, T_FUNCS['all_creatures_and_players'], jade_monolith_func)],
+    'jandors-saddlebags': [AAS('3', True, T_FUNCS['tapped_creatures'], lambda gs, source, t: t.untap(gs))],
     'jayemdae-tome':
-        [AAS('4', True, TARGET_FUNCS['card_owner'],
+        [AAS('4', True, T_FUNCS['card_owner'],
              lambda gs, s, t: gs.draw(gs.hands[s.orig_owner_id], gs.decks[s.orig_owner_id].cards, 1))],
     'killer-bees': [AAS('G', False, lambda gs, source: source, pump_func(1, 1))],
     'king-suleiman':
         [AAS('', True, lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
              destroy_func)],
-    'kry-shield': [AAS('2', True, TARGET_FUNCS['your_creatures_in_play'], kry_shield_func)],
+    'kry-shield': [AAS('2', True, T_FUNCS['your_creatures_in_play'], kry_shield_func)],
     'ley-druid':
-        [AAS('', True, TARGET_FUNCS['tapped_lands'], lambda gs, source, t: t.untap(gs))],
-    'llanowar-elves': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('G'))],
+        [AAS('', True, T_FUNCS['tapped_lands'], lambda gs, source, t: t.untap(gs))],
+    'llanowar-elves': [AAS('', True, T_FUNCS['card_owner'], add_mana_func('G'))],
     'maze-of-ith': [AAS('', True, lambda gs, s: gs.card_filter.attackers().result(), maze_of_ith_func)],
     'merfolk-assassin':
         [AAS('', True, lambda gs, source: gs.card_filter.in_play().has('Islandwalk').result(), destroy_func)],
     'miracle-worker':
-        [AAS('', True, TARGET_FUNCS['auras_on_owners_creatures'], destroy_func)],  # should i send an aura to the graveyard w/o using host.remove_aura()?
+        [AAS('', True, T_FUNCS['auras_on_owners_creatures'], destroy_func)],  # should i send an aura to the graveyard w/o using host.remove_aura()?
     'mirror-universe': [AAS('', True, None, exchange_life_totals, allowed_phases=[Phase.UPKEEP],
                             allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, extra_costs=[SacSelfCost()])],
-    'mox-emerald': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('G'))],
-    'mox-jet': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('B'))],
-    'mox-pearl': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('W'))],
-    'mox-ruby': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('R'))],
-    'mox-sapphire': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('U'))],
-    'nettling-imp': [AAS('', True, TARGET_FUNCS['opp_creatures_who_could_have_but_didnt_attack'],
+    'mox-emerald': [AAS('', True, T_FUNCS['card_owner'], add_mana_func('G'))],
+    'mox-jet': [AAS('', True, T_FUNCS['card_owner'], add_mana_func('B'))],
+    'mox-pearl': [AAS('', True, T_FUNCS['card_owner'], add_mana_func('W'))],
+    'mox-ruby': [AAS('', True, T_FUNCS['card_owner'], add_mana_func('R'))],
+    'mox-sapphire': [AAS('', True, T_FUNCS['card_owner'], add_mana_func('U'))],
+    'nettling-imp': [AAS('', True, T_FUNCS['opp_creatures_who_could_have_but_didnt_attack'],
                          lambda gs, s, t: gs.end_step_funcs.append(nettling_imp_on_end_step),
                          allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.OPPONENT,
                          allowed_phases=[phase for phase in Phase if phase < Phase.DECLARE_ATTACKERS])],
     'nevinyrrals-disk': [AAS('1', True, None, lambda gs, s, t: destroy_all_non_land_perms(gs, s, t))],
-    'northern-paladin': [AAS('WW', True, TARGET_FUNCS['creatures_and_enchantments_in_play'], destroy_func)],
-    'oasis': [AAS('', True, TARGET_FUNCS['creatures_in_play'], prevent_next_damage_func(1))],
-    'orcish-artillery': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], orcish_artillery_func)],
+    'northern-paladin': [AAS('WW', True, T_FUNCS['creatures_and_enchantments_in_play'], destroy_func)],
+    'oasis': [AAS('', True, T_FUNCS['creatures_in_play'], prevent_next_damage_func(1))],
+    'orcish-artillery': [AAS('', True, T_FUNCS['all_creatures_and_players'], orcish_artillery_func)],
     'pendelhaven':
         [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('G')),
-         AAS('', True, TARGET_FUNCS['one_one_creatures_in_play'], pump_func(1, 2))],
-    'pirate-ship': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
+         AAS('', True, T_FUNCS['one_one_creatures_in_play'], pump_func(1, 2))],
+    'pirate-ship': [AAS('', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'pixie-queen':
-        [AAS('GGG', True, TARGET_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
-    'pradesh-gypsies': [AAS('1G', True, TARGET_FUNCS['creatures_in_play'], pump_func(-2, 0))],
-    'prodigal-sorcerer': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
+        [AAS('GGG', True, T_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
+    'pradesh-gypsies': [AAS('1G', True, T_FUNCS['creatures_in_play'], pump_func(-2, 0))],
+    'prodigal-sorcerer': [AAS('', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'psionic-entity':
-        [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], lambda gs, s, t: psionic_entity_func(gs, s, t))],
+        [AAS('', True, T_FUNCS['all_creatures_and_players'], lambda gs, s, t: psionic_entity_func(gs, s, t))],
     'radjan-spirit':
-        [AAS('', True, TARGET_FUNCS['creatures_in_play'], add_remove_kwa_temp('remove', 'Flying'))],
-    'rakalite': [AAS('2', False, TARGET_FUNCS['all_creatures_and_players'], rakalite_func)],
-    'relic-barrier': [AAS('', True, TARGET_FUNCS['untapped_artifacts_in_play'], lambda gs, s, t: t.tap(gs))],
-    'rod-of-ruin': [AAS('3', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
+        [AAS('', True, T_FUNCS['creatures_in_play'], add_remove_kwa_temp('remove', 'Flying'))],
+    'rakalite': [AAS('2', False, T_FUNCS['all_creatures_and_players'], rakalite_func)],
+    'relic-barrier': [AAS('', True, T_FUNCS['untapped_artifacts_in_play'], lambda gs, s, t: t.tap(gs))],
+    'rod-of-ruin': [AAS('3', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'rocket-launcher':
-        [AAS('2', False, TARGET_FUNCS['all_creatures_and_players'], lambda gs, s, t: rocket_launcher_func(gs, s, t))],
-    'royal-assassin': [AAS('', True, TARGET_FUNCS['tapped_creatures'], destroy_func)],
-    'samite-healer': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
-    'savaen-elves': [AAS('GG', True, TARGET_FUNCS['auras_on_lands'], destroy_func)],
+        [AAS('2', False, T_FUNCS['all_creatures_and_players'], lambda gs, s, t: rocket_launcher_func(gs, s, t))],
+    'royal-assassin': [AAS('', True, T_FUNCS['tapped_creatures'], destroy_func)],
+    'samite-healer': [AAS('', True, T_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
+    'savaen-elves': [AAS('GG', True, T_FUNCS['auras_on_lands'], destroy_func)],
     'scarecrow': [AAS('6', True, None,
                       lambda gs, s, t: gs.global_effects.append((s, scarecrow_func)))],
-    'scarwood-hag': [AAS('GGGG', True, TARGET_FUNCS['creatures_in_play_wo_forestwalk'],
+    'scarwood-hag': [AAS('GGGG', True, T_FUNCS['creatures_in_play_wo_forestwalk'],
                          add_remove_kwa_temp('add', 'Forestwalk')),
-                     AAS('GGGG', True, TARGET_FUNCS['creatures_in_play_w_forestwalk'],
+                     AAS('GGGG', True, T_FUNCS['creatures_in_play_w_forestwalk'],
                          add_remove_kwa_temp('remove', 'Forestwalk'))],
-    'scavenger-folk': [AAS('G', True, TARGET_FUNCS['artifacts_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
-    'shimian-night-stalker': [AAS('B', True, TARGET_FUNCS['attackers'], shimian_nightstalker_func)],
+    'scavenger-folk': [AAS('G', True, T_FUNCS['artifacts_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
+    'shimian-night-stalker': [AAS('B', True, T_FUNCS['attackers'], shimian_nightstalker_func)],
     'shivan-dragon': [AAS('R', False, None, pump_func(1, 0))],
     'sisters-of-the-flame': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('R'))],
     'sol-ring': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('C', 2))],
-    'sorceress-queen': [AAS('', True, lambda gs, s: [c for c in TARGET_FUNCS['creatures_in_play'] if c != s],
+    'sorceress-queen': [AAS('', True, lambda gs, s: [c for c in T_FUNCS['creatures_in_play'] if c != s],
                             lambda gs, s, t: t.modifiers.temps.append(PTTemp(-t.power, t.toughness - 2)))],
-    'spinal-villain': [AAS('', True, TARGET_FUNCS['blue_creatures_in_play'], destroy_func)],
-    'staff-of-zegon': [AAS('3', True, TARGET_FUNCS['creatures_in_play'], pump_func(-2, 0))],
-    'stone-giant': [AAS('', True, TARGET_FUNCS['stone_giant'], stone_giant_func)],
+    'spinal-villain': [AAS('', True, T_FUNCS['blue_creatures_in_play'], destroy_func)],
+    'staff-of-zegon': [AAS('3', True, T_FUNCS['creatures_in_play'], pump_func(-2, 0))],
+    'stone-giant': [AAS('', True, T_FUNCS['stone_giant'], stone_giant_func)],
     'strip-mine': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('C')),
-                   AAS('', True, TARGET_FUNCS['lands_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
+                   AAS('', True, T_FUNCS['lands_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
     'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
 }
 
@@ -450,7 +457,7 @@ def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
                              target_filter=spec.target_filter, effect=spec.effect,
                              allowed_phases=spec.allowed_phases, allowed_player_turn=spec.allowed_player_turn,
                              max_activations_per_turn=spec.max_activations_per_turn,
-                             extra_costs=spec.extra_costs) for spec in specs]
+                             extra_costs=spec.extra_costs, text=spec.text) for spec in specs]
 
 
 if __name__ == '__main__':
