@@ -443,15 +443,6 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
 }
 
 def add_activated_abilities(cards: list[GameCard]) -> None:
-    # this just ensures I don't spell any slug wrong in ACTIVATED_ABILITY
-    import json
-    with open('gatherer/card_data.json', 'r') as f:
-        data = json.load(f)
-    all_slugs = {slug for set_, cards in data.items() for slug in cards}
-    for slug in ACTIVATED_ABILITY:
-        if slug not in all_slugs:
-            raise ValueError(f"{slug} not found in this card universe")
-
     for c in cards:
         if specs := ACTIVATED_ABILITY.get(c.props.slug):
             for spec in specs:
@@ -464,4 +455,12 @@ def add_activated_abilities(cards: list[GameCard]) -> None:
 
 
 if __name__ == '__main__':
-    ...
+    # this just ensures I don't spell any slug wrong in ACTIVATED_ABILITY
+    import json
+
+    with open('gatherer/card_data.json', 'r') as f:
+        data = json.load(f)
+    all_slugs = {slug for set_, cards in data.items() for slug in cards}
+    for slug in ACTIVATED_ABILITY:
+        if slug not in all_slugs:
+            raise ValueError(f"{slug} not found in this card universe")
