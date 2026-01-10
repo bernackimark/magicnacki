@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from ..actions.choices import SunkenCityUpkeepChoice
+from ..actions.choices import PayOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
+    ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -9,8 +10,16 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 from card_filter import CardFilter
-from utils import flip
 
+
+def conversion_on_upkeep():
+    """At the beginning of your upkeep, sacrifice this enchantment unless you pay {WW}."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.action_stack.push(PayOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'WW'), gs, False)
+    return E()
 
 def copper_tablet_on_upkeep():
     """At the beginning of each player's upkeep, this artifact deals 1 damage to that player"""
@@ -21,6 +30,23 @@ def copper_tablet_on_upkeep():
             gs.apply_damage(source, 1, gs.player_turn_idx)
     return E()
 
+def cosmic_horror_on_upkeep():
+    """At the beginning of your upkeep, sacrifice this enchantment unless you pay {WW}."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.action_stack.push(CosmicHorrorUpkeepChoice(source.orig_owner_id, gs, source, '3BBB'), gs, False)
+    return E()
+
+def curse_artifact_on_upkeep():
+    """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, s: GameCard, target=None):
+            gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
+    return E()
 
 def cursed_land_on_upkeep():
     """Cursed Land does 1 damage to target land's controller during each upkeep"""
@@ -31,6 +57,15 @@ def cursed_land_on_upkeep():
             gs.apply_damage(source, 1, target.orig_owner_id)
     return E()
 
+def elder_spawn_on_upkeep():
+    """At your upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, s: GameCard, target=None):
+            gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
+    return E()
+
 def feedback_on_upkeep():
     """At the beginning of the upkeep of enchanted enchantment's controller, this Aura deals 1 damage to that player"""
     class E(Effect):
@@ -38,6 +73,15 @@ def feedback_on_upkeep():
         
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             gs.apply_damage(source, 1, target.orig_owner_id)
+    return E()
+
+def force_of_nature_on_upkeep():
+    """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, s: GameCard, target=None):
+            gs.action_stack.push(ForceOfNatureUpkeepChoice(s.orig_owner_id, gs, s, 'GGGG', 8), gs, False)
     return E()
 
 def ivory_tower_on_upkeep():
@@ -62,6 +106,14 @@ def karma_on_upkeep():
             swamp_cnt = len(CardFilter(gs).on_player_board(p_id).by_slug('swamp').result())
             if swamp_cnt:
                 gs.apply_damage(source, swamp_cnt, source.orig_owner_id)
+    return E()
+
+def junun_efreet_on_upkeep():
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.action_stack.push(PayOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'BB'), gs, False)
     return E()
 
 def juzam_djinn_on_upkeep():
@@ -115,11 +167,11 @@ def storm_world_on_upkeep():
     return E()
 
 def sunken_city_on_upkeep():
-    """At the beginning of your upkeep, sacrifice this enchantment unless you pay {UU}. """
+    """At the beginning of your upkeep, sacrifice this enchantment unless you pay {UU}."""
     class E(Effect):
         event = 'upkeep'
 
         def resolve(self, gs: GameState, source: GameCard, target=None):
             # Pause the game and force a choice
-            gs.action_stack.push(SunkenCityUpkeepChoice(source.orig_owner_id, gs, source), gs, False)
+            gs.action_stack.push(PayOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'UU'), gs, False)
     return E()

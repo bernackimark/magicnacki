@@ -15,6 +15,7 @@ CAST_TARGETS = {
     'braingeyser': lambda gs: all_player_indices(gs),
     'brainwash': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'burrowing': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'curse-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'cursed-land': lambda gs: CardFilter(gs).in_play().lands.result(),
     'crumble': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'demonic-torment': lambda gs: CardFilter(gs).in_play().creatures().result(),
