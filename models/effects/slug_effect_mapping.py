@@ -92,7 +92,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'lightning-bolt': [lightning_bolt_on_cast()],
         'lord-of-atlantis': [lord_of_atlantis_on_cast(), lord_of_atlantis_on_leave()],
         'mana-short': [mana_short_on_cast()],
-        'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED!! All Walls able to block this creature do so
+        'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED: All Walls able to block this creature do so
         'martyrs-cry': [martyrs_cry_on_cast()],
         'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
         'mountain': [mountain_on_tap()],
