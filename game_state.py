@@ -13,7 +13,6 @@ from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAt
 from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
-from models.activated_ability import add_activated_abilities
 from models.damage import DamageEvent, PreventNextDamage
 from models.effects.can_block import can_block_base_rule
 from models.effects.global_ import GlobalEffect
@@ -33,7 +32,6 @@ class GameState:
         self.player_turn_idx = player_turn_idx
         self.decks = decks
         for d in self.decks:
-            add_activated_abilities(d.cards)
             for c in d.cards:
                 c.game_state = self
         self.decks_all_cards = self.decks.copy()

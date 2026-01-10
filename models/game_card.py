@@ -2,10 +2,11 @@ from typing import Callable
 
 from card import Card
 from cast_targets import CAST_TARGETS
+from kw_ability import get_base_kwas
 from models.effects.on_leave import *
 from models.effects.slug_effect_mapping import SLUG_EFFECTS
 from models.effects.untap import *
-from models.activated_ability import ActivatedAbility
+from models.activated_ability import ActivatedAbility, get_activated_abilities
 from models.modifiers import Modifiers
 
 
@@ -23,23 +24,20 @@ class GameCard:
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost
         self.is_tapped: bool = False
-        self.abilities: list[ActivatedAbility] = []
-
-        self.can_attack: bool = self.props.is_creature and 'Wall' not in self.props.card_sub_types
-        self.can_block: bool = self.props.is_creature
+        self.can_block: bool = self.props.is_creature  # can get rid of this attribute; only one (incorrect) usage
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
         self.has_flying: bool = 'Flying' in self.props.keyword_abilities
         self.attached_to: "GameCard" = None
+        self.modifiers = Modifiers()
 
-        self.combat_damage_dealt: int = 0
+        self.combat_damage_dealt: int = 0  # not sure that these belong here
         self.combat_damage_received: int = 0
 
         self.base_pt = (self.props.power, self.props.toughness)
-        # self.base_kwa: tuple[str, ...] = tuple(self.props.keyword_abilities)
-        self.base_kwa: tuple[str, ...] = self.construct_base_kwas()
-        self.modifiers = Modifiers()
 
-        # lookup effects from centralized effects dictionary
+        # perform look-ups to add: base keyword abilities, activated abilities, and effects
+        self._base_kwa: tuple[str, ...] | tuple[None] = get_base_kwas(self.props.slug)
+        self.abilities: list[ActivatedAbility] = get_activated_abilities(self)
         self.effects: list[Effect] = build_effects_for_slug(self.props.slug)
 
     def __repr__(self) -> str:
@@ -49,10 +47,6 @@ class GameCard:
         if self.modifiers:
             text += f' w {self.modifiers}'
         return text.upper() if not self.is_tapped else text.lower()
-
-    @property
-    def owner_and_id(self) -> str:
-        return f"{self.orig_owner_id}-{self.id}"
 
     @property
     def power(self) -> int:
@@ -80,20 +74,11 @@ class GameCard:
                 toughness += t_offset
         return power, toughness
 
-    def construct_base_kwas(self) -> tuple[str, ...]:
-        """Add 'Attack' to non-wall creatures"""
-        base_kwas = self.props.keyword_abilities
-        if 'Creature' not in self.props.card_types:
-            return tuple(base_kwas)
-        if 'Wall' not in self.props.card_sub_types and 'Attack' not in base_kwas:
-            base_kwas.append('Attack')
-        return tuple(base_kwas)
-
     @property
     def keyword_abilities(self) -> list[str]:
         """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, mod removes = {'Reach', 'First Strike'}
         returns ['Flying', 'Trample']"""
-        kwa = set(self.base_kwa)
+        kwa = set(self._base_kwa)
         adds, removes = self.modifiers.kwa_delta
         return list((kwa | adds) - removes)
 

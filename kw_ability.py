@@ -1,3 +1,5 @@
+from typing import Tuple
+
 KEYWORD_ABILITIES = ['Attack', 'Banding', 'Defender', 'First Strike', 'Flying', 'Forestwalk', 'Haste', 'Islandwalk',
                      'Menace',
                      'Mountainwalk', 'Protection From Black', 'Protection From Blue', 'Protection From Green',
@@ -170,12 +172,15 @@ CREATURE_KW_ABILITIES = {
     "zephyr-falcon": ["Flying", "Vigilance", "Attack"],
 }
 
-def get_base_kwas(slug: str) -> list[str | None]:
-    return CREATURE_KW_ABILITIES.get(slug, [])
+def get_base_kwas(slug: str) -> tuple[None] | tuple[str, ...]:
+    kwas = CREATURE_KW_ABILITIES.get(slug)
+    if not kwas:
+        return tuple()
+    return tuple(kwas)
 
 
 if __name__ == '__main__':
-    for the_slug, kwas in CREATURE_KW_ABILITIES.items():
-        for kwa in kwas:
+    for the_slug, the_kwas in CREATURE_KW_ABILITIES.items():
+        for kwa in the_kwas:
             if kwa not in KEYWORD_ABILITIES:
                 raise ValueError(f"{the_slug}'s {kwa} not found in KEYWORD_ABILITIES")

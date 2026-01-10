@@ -67,7 +67,6 @@ class ActivatedAbility:
             self.costs.append(TapCost())
         if extra_costs:
             for extra_cost in extra_costs:
-                print("[] Appending extra cost for Coal Golem")
                 self.costs.append(extra_cost)
         if self.allowed_player_turn == self.AllowedPlayerTurn.CASTER:
             self.allowed_p_id_turn = self.card.orig_owner_id
@@ -101,6 +100,7 @@ def opp_creatures_who_could_have_attacked_but_didnt(gs: GameState, source: GameC
     attackers = gs.card_filter.attackers().result()
     return [c for c in gs.card_filter.on_player_board(flip(source.orig_owner_id)).creatures().result()
             if c not in attackers and not c.has_summoning_sickness and 'Attack' in c.keyword_abilities]
+
 
 TARGET_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
@@ -442,16 +442,15 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
 }
 
-def add_activated_abilities(cards: list[GameCard]) -> None:
-    for c in cards:
-        if specs := ACTIVATED_ABILITY.get(c.props.slug):
-            for spec in specs:
-                aa = ActivatedAbility(card=c, cost_mana=spec.cost_mana, cost_tap=spec.cost_tap,
-                                      target_filter=spec.target_filter, effect=spec.effect,
-                                      allowed_phases=spec.allowed_phases, allowed_player_turn=spec.allowed_player_turn,
-                                      max_activations_per_turn=spec.max_activations_per_turn,
-                                      extra_costs=spec.extra_costs)
-                c.abilities.append(aa)
+def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
+    specs = ACTIVATED_ABILITY.get(c.props.slug)
+    if not specs:
+        return []
+    return [ActivatedAbility(card=c, cost_mana=spec.cost_mana, cost_tap=spec.cost_tap,
+                             target_filter=spec.target_filter, effect=spec.effect,
+                             allowed_phases=spec.allowed_phases, allowed_player_turn=spec.allowed_player_turn,
+                             max_activations_per_turn=spec.max_activations_per_turn,
+                             extra_costs=spec.extra_costs) for spec in specs]
 
 
 if __name__ == '__main__':
