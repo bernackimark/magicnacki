@@ -75,6 +75,7 @@ class GameState:
 
         self.damage_preventions: list[PreventNextDamage] = []
         self.end_of_turn_effects: list = []
+        self.end_step_funcs: list[Callable] = []
 
     # Event Dispatcher
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
@@ -147,7 +148,10 @@ class GameState:
             hand.sort_cards()
 
     # --- DAMAGE ---
-    def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
+    def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int,
+                     is_combat: bool = False):
+        """Creates DamageEvent, triggers damage preventions, adds .combat_damage_received to card,
+        decrements life to player, handles Trample combat damage"""
         event = DamageEvent(source, amount, target, is_combat)
 
         # 1. Give all effects a chance to prevent/redirect
@@ -155,6 +159,12 @@ class GameState:
 
         # 2. Apply remaining damage
         if event.remaining <= 0:
+            return
+        if is_combat and 'Trample' in source.keyword_abilities:
+            damage_to_card = target.toughness
+            target.combat_damage_received += damage_to_card
+            damage_to_player = event.remaining - damage_to_card
+            self.decrement_life(target.orig_owner_id, damage_to_player, source)
             return
         if isinstance(target, GameCard):
             target.combat_damage_received += event.remaining
@@ -471,12 +481,19 @@ class GameState:
             self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
-            for c in self.boards[self.player_turn_idx].cards:
-                self.trigger('end_step', c)
-                for a in c.modifiers.auras:
-                    if not isinstance(a, GameCard):  # KWAModifiers/PTModifiers are auras but aren't actually GameCards
-                        continue
-                    self.trigger('end_step', a)
+            # for all cards on all boards
+            for b in self.boards:
+                for c in b.cards:
+                    self.trigger('end_step', c)
+                    for a in c.modifiers.auras:
+                        if not isinstance(a, GameCard):  # KWAMods/PTMods are auras but aren't actually GameCards
+                            continue
+                        self.trigger('end_step', a)
+
+            # execute all end step funcs
+            for func in self.end_step_funcs:
+                func()
+
             for c in self.card_filter.in_play().result():
                 c.modifiers.clear_temps()
             self.phase = Phase.DISCARD
