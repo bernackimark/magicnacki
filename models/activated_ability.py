@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from enum import StrEnum, Enum, auto
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from constants import COLOR_LETTERS_W_COLORLESS
-from models.damage import PreventNextDamage
+from models.damage import PreventNextDamage, DamageEvent
 from phase_fsm import Phase
 from utils import flip
 
@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 from card_filter import CardFilter
 from models.modifiers import PTTemp, KWATemp
+from models.effects.global_ import scarecrow_func
 
 Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
@@ -83,17 +84,27 @@ TARGET_FUNCS = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
-    'card_owner': lambda gs, s: s.orig_owner_id,
-    'creatures_in_play': lambda gs, source: gs.card_filter.in_play().creatures().result(),
-    'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
-                                                                                          'Enchantment']).result(),
+    'attackers': lambda gs, s: gs.card_filter.attackers().result(),
+    'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result()
+                                     for a in c.modifiers.auras if isinstance(a, GameCard)],
+    'auras_on_owners_creatures': lambda gs, s: [a for c in gs.card_filter.on_player_board(s).creatures().result()
+                                                for a in c.modifiers.auras if isinstance(a, GameCard)],
     'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
     'black_and_red_in_play': lambda gs, source: [gs.card_filter.in_play().black().result() +
                                                  gs.card_filter.in_play().red().result()],
     'black_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().black().result(),
+    'blue_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().blue().result(),
     'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
+    'card_owner': lambda gs, s: s.orig_owner_id,
+    'creatures_in_play': lambda gs, source: gs.card_filter.in_play().creatures().result(),
+    'creatures_in_play_w_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
+    'creatures_in_play_wo_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk', False).result(),
+    'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
+                                                                                          'Enchantment']).result(),
     'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
+    'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
+                                                if c.power == 1 and c.toughness == 1],
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
     'tapped_creatures': lambda gs, source: gs.card_filter.in_play().creatures().tapped().result(),
     'tapped_lands': lambda gs, s: gs.card_filter.in_play().lands().tapped().result(),
@@ -103,12 +114,6 @@ TARGET_FUNCS = {
     'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
 }
-
-def auras_on_creatures_by_owner(gs: GameState, source: GameCard):
-    return [a for c in gs.card_filter.on_player_board(source).creatures().result() for a in c.modifiers.auras]
-
-def one_one_creatures_in_play(gs: GameState, _: GameCard):
-    return [c for c in gs.card_filter.in_play().creatures().result() if c.power == 1 and c.toughness == 1]
 
 # --- NON-CARD-SPECIFIC COMMON/COMPLEX EFFECT FUNCS ---
 def add_mana_func(color: str, amt: int = 1):
@@ -216,6 +221,16 @@ def rakalite_func(gs: GameState, s: GameCard, _: Target):
     prevent_next_damage_func(1)
     gs.return_to_hand(s)
 
+def shimian_nightstalker_func(gs: GameState, s: GameCard, t: Target):
+    """{B}, {T}: All damage that would be dealt to you this turn by target attacking creature is dealt to this creature instead
+    target = the GameCard doing the damage"""
+
+    def redirect_damage(prevented: int):
+        gs.apply_damage(t, prevented, t.orig_owner_id)
+
+    gs.damage_preventions.append(PreventNextDamage(s, None, target_player=s.orig_owner_id,
+                                                   source_card=t, on_prevent=redirect_damage))
+
 
 ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'aladdins-ring': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(4))],
@@ -321,7 +336,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'merfolk-assassin':
         [AAS('', True, lambda gs, source: gs.card_filter.in_play().has('Islandwalk').result(), destroy_func)],
     'miracle-worker':
-        [AAS('', True, lambda gs, s: auras_on_creatures_by_owner(gs, s), destroy_func)],  # should i send an aura to the graveyard w/o using host.remove_aura()?
+        [AAS('', True, TARGET_FUNCS['auras_on_owners_creatures'], destroy_func)],  # should i send an aura to the graveyard w/o using host.remove_aura()?
     'mox-emerald': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('G'))],
     'mox-jet': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('B'))],
     'mox-pearl': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('W'))],
@@ -333,7 +348,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'orcish-artillery': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], orcish_artillery_func)],
     'pendelhaven':
         [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('G')),
-         AAS('', True, one_one_creatures_in_play, pump_func(1, 2))],
+         AAS('', True, TARGET_FUNCS['one_one_creatures_in_play'], pump_func(1, 2))],
     'pirate-ship': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'pixie-queen':
         [AAS('GGG', True, TARGET_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
@@ -348,6 +363,21 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'rod-of-ruin': [AAS('3', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'royal-assassin': [AAS('', True, TARGET_FUNCS['tapped_creatures_in_play'], destroy_func)],
     'samite-healer': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
+    'savaen-elves': [AAS('GG', True, TARGET_FUNCS['auras_on_lands'], destroy_func)],
+    'scarecrow': [AAS('6', True, None,
+                      lambda gs, s, t: gs.global_effects.append((s, scarecrow_func)))],
+    'scarwood-hag': [AAS('GGGG', True, TARGET_FUNCS['creatures_in_play_wo_forestwalk'],
+                         add_remove_kwa_temp('add', 'Forestwalk')),
+                     AAS('GGGG', True, TARGET_FUNCS['creatures_in_play_w_forestwalk'],
+                         add_remove_kwa_temp('remove', 'Forestwalk'))],
+    'shimian-night-stalker': [AAS('B', True, TARGET_FUNCS['attackers'], shimian_nightstalker_func)],
+    'shivan-dragon': [AAS('R', False, None, pump_func(1, 0))],
+    'sisters-of-the-flame': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('R'))],
+    'sol-ring': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('C', 2))],
+    'sorceress-queen': [AAS('', True, lambda gs, s: [c for c in TARGET_FUNCS['creatures_in_play'] if c != s],
+                            lambda gs, s, t: t.modifiers.temps.append(PTTemp(-t.power, t.toughness - 2)))],
+    'spinal-villain': [AAS('', True, TARGET_FUNCS['blue_creatures_in_play'], destroy_func)],
+    'staff-of-zegon': [AAS('3', True, TARGET_FUNCS['creatures_in_play'], pump_func(-2, 0))],
     'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
 }
 
