@@ -361,7 +361,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'rakalite': [AAS('2', False, TARGET_FUNCS['all_creatures_and_players'], rakalite_func)],
     'relic-barrier': [AAS('', True, TARGET_FUNCS['untapped_artifacts_in_play'], lambda gs, s, t: t.tap(gs))],
     'rod-of-ruin': [AAS('3', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
-    'royal-assassin': [AAS('', True, TARGET_FUNCS['tapped_creatures_in_play'], destroy_func)],
+    'royal-assassin': [AAS('', True, TARGET_FUNCS['tapped_creatures'], destroy_func)],
     'samite-healer': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
     'savaen-elves': [AAS('GG', True, TARGET_FUNCS['auras_on_lands'], destroy_func)],
     'scarecrow': [AAS('6', True, None,
