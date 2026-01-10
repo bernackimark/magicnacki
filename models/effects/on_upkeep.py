@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from ..actions.choices import SunkenCityUpkeepChoice
+
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
@@ -110,4 +112,14 @@ def storm_world_on_upkeep():
             card_cnt = len(gs.hands[gs.player_turn_idx].cards)
             if card_cnt > 4:
                 gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
+    return E()
+
+def sunken_city_on_upkeep():
+    """At the beginning of your upkeep, sacrifice this enchantment unless you pay {UU}. """
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            # Pause the game and force a choice
+            gs.action_stack.push(SunkenCityUpkeepChoice(source.orig_owner_id, gs, source), gs, False)
     return E()

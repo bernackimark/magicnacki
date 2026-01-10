@@ -117,6 +117,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'storm-seeker': [storm_seeker_on_cast()],
         'storm-world': [storm_world_on_upkeep()],
         'subdue': [subdue_on_cast()],
+        'sunken-city': [sunken_city_on_cast(), sunken_city_on_upkeep(), global_on_leave()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
         'syphon_soul': [syphon_soul_on_cast()],
         'twiddle': [twiddle_on_cast()],

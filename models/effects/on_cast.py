@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 from models.effects.global_ import AngelicVoicesEffect, BadMoonEffect, CastleEffect, CrusadeEffect, \
-    all_combat_damage_prevented, all_damage_prevented_to_target_card
+    all_combat_damage_prevented, all_damage_prevented_to_target_card, SunkenCityEffect
 from models.modifiers import KWAModifier, KWATemp, PTModifier, PTTemp
 from card_filter import CardFilter
 
@@ -783,6 +783,18 @@ def subdue_on_cast():
         def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
             gs.damage_preventions.append(PreventNextDamage(s, None, source_card=t, combat_only=True))
             t.modifiers.temps.append(PTModifier(s, 0, t.props.casting_weight))
+    return E()
+
+
+def sunken_city_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, SunkenCityEffect(source.orig_owner_id), False))
+            # for c in CardFilter(gs).in_play().creatures().white().result():
+            #     c.pt_modifiers.append(PTModifier(source, 1, 1))
     return E()
 
 def swords_to_plowshares_on_cast():
