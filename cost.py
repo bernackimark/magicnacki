@@ -33,9 +33,16 @@ class TapCost(Cost):
     def pay(self, gs, source):
         source.tap(gs)
 
-class SacrificeSelfCost(Cost):
+class SacSelfCost(Cost):
     def can_pay(self, gs, source):
         return source in gs.card_filter.in_play().result()
 
     def pay(self, gs, source):
         gs.send_to_graveyard_from_play(source)
+
+class ExileSelfCost(Cost):
+    def can_pay(self, gs, source):
+        return source in gs.card_filter.in_play().result()
+
+    def pay(self, gs, source):
+        gs.send_to_exile_from_play(source)
