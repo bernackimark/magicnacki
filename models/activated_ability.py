@@ -1,9 +1,10 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from constants import COLOR_LETTERS_W_COLORLESS
+from cost import Cost, ManaCost, TapCost, SacrificeSelfCost
 from models.damage import PreventNextDamage, DamageEvent
 from models.effects.on_end_step import nettling_imp_on_end_step
 from phase_fsm import Phase
@@ -33,6 +34,7 @@ class AAS:
     allowed_phases: list[Phase] = field(default_factory=list)
     allowed_player_turn: list[AllowedPlayerTurn | None] = field(default_factory=list)
     max_activations_per_turn: int = 999
+    extra_costs: list[Cost] = field(default_factory=list)
 
 
 @dataclass
@@ -43,8 +45,9 @@ class ActivatedAbility:
         OPPONENT = auto()
 
     card: GameCard
-    cost_mana: str
-    cost_tap: bool
+    cost_mana: InitVar[str]
+    cost_tap: InitVar[bool]
+    costs: list[Cost] = field(init=False, default_factory=list)
     target_filter: Callable[[GameState, GameCard], Target] | None
     effect: Callable[[GameState, GameCard, Target], None]
     allowed_phases: list[Phase] = field(default_factory=list)
@@ -52,22 +55,26 @@ class ActivatedAbility:
     allowed_p_id_turns: int | None = None
     activated_cnt_this_turn: int = 0
     max_activations_per_turn: int = 999
+    extra_costs: InitVar[list[Cost | None]] = None
 
-    def __post_init__(self):
-        """allowed_p_id_turns need knowledge of the card's owner and is assigned here;
+    def __post_init__(self, cost_mana: str, cost_tap: bool, extra_costs: list[Cost]):
+        """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
+        allowed_p_id_turns need knowledge of the card's owner and is assigned here;
         if allowed_player_turns is [], then the ability should be permitted on both turns"""
+        if cost_mana:
+            self.costs.append(ManaCost(cost_mana))
+        if cost_tap:
+            self.costs.append(TapCost())
+        if extra_costs:
+            for extra_cost in extra_costs:
+                self.costs.append(extra_cost)
         if self.allowed_player_turn == self.AllowedPlayerTurn.CASTER:
             self.allowed_p_id_turns = self.card.orig_owner_id
         if self.allowed_player_turn == self.AllowedPlayerTurn.OPPONENT:
             self.allowed_p_id_turns = flip(self.card.orig_owner_id)
 
     def can_activate(self, gs: GameState) -> bool:
-        if self.cost_tap and self.card.is_tapped:
-            print("A")
-            return False
-        if self.cost_mana and not gs.mana_pools[self.card.orig_owner_id].can_pay(self.cost_mana):
-            print("B")
-            return False
+        # TODO: convert these If checks to be a Cost:
         if self.allowed_phases and gs.phase not in self.allowed_phases:
             print("C")
             return False
@@ -77,7 +84,11 @@ class ActivatedAbility:
         if self.activated_cnt_this_turn >= self.max_activations_per_turn:
             print("E")
             return False
-        return True
+        return all(cost.can_pay(gs, self.card) for cost in self.costs)
+
+    def pay_costs(self, gs):
+        for cost in self.costs:
+            cost.pay(gs, self.card)
 
 
 # --- COMMON/COMPLEX TARGET FUNCS
@@ -284,6 +295,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'circle-of-protection-white':
         [AAS('1', False, TARGET_FUNCS['white_in_play'],  # would this include instants/sorceries?
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
+    'coal-golem':
+        [AAS('3', False, None, add_mana_func('R', 3), extra_costs=[SacrificeSelfCost()])],
     'conservator':
         [AAS('3', True, None, lambda gs, src, _: gs.damage_preventions.append(
                         PreventNextDamage(src, remaining=2, target_player=src.orig_owner_id)))],

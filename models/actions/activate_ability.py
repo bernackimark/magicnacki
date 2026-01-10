@@ -23,13 +23,7 @@ class ActivateAbility(Action):
         return f"Activate Ability: {self.ability.card}{target_text}"
 
     def play(self) -> None:
-        # Pay tap cost
-        if self.ability.cost_tap:
-            self.ability.card.tap(self.gs)
-
-        # Pay mana cost
-        if self.ability.cost_mana:
-            self.gs.mana_pools[self.ability.card.orig_owner_id].pay(self.ability.cost_mana)
+        self.ability.pay_costs(self.gs)
 
         # Execute effect
         # TODO: for the sake of testing, perms are being auto-cast, instead of being added to the stack
