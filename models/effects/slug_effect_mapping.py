@@ -4,7 +4,7 @@ from models.effects.can_be_blocked import *
 from models.effects.on_cast import *
 from models.effects.common import *
 from models.effects.damage_prevention import *
-from models.effects.leave import *
+from models.effects.on_leave import *
 from models.effects.on_damage import *
 from models.effects.on_end_step import *
 from models.effects.tap import *
@@ -84,9 +84,11 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'jump': [jump_on_cast()],
         'juzam-djinn': [juzam_djinn_on_upkeep()],
         'karma': [karma_on_upkeep()],
+        'kobold-drill-sergeant': [kobold_drill_sergeant_on_cast(), kobold_drill_sergeant_on_leave()],
         'kobold-overlord': [kobold_overlord_on_cast(), kobold_overlord_and_taskmaster_on_leave()],
         'kobold-taskmaster': [kobold_taskmaster_on_cast(), kobold_overlord_and_taskmaster_on_leave()],
         'lance': [lance_on_cast()],
+        'leviathan': [leviathan_on_cast()],
         'lightning-bolt': [lightning_bolt_on_cast()],
         'lord-of-atlantis': [lord_of_atlantis_on_cast(), lord_of_atlantis_on_leave()],
         'mana-short': [mana_short_on_cast()],

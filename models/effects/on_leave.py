@@ -101,6 +101,18 @@ def island_on_leave():
                 gs.send_to_graveyard_from_play(creature)
     return E()
 
+def kobold_drill_sergeant_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            kobolds = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result()
+            for k in kobolds[:]:
+                for mod in k.modifiers.auras:  # remove both the Trample and +0/+1
+                    if mod.card == source:
+                        k.modifiers.remove_aura(mod)
+    return E()
+
 def kobold_overlord_and_taskmaster_on_leave():
     class E(Effect):
         event = 'leave'

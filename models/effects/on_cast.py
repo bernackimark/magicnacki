@@ -571,6 +571,19 @@ def jump_on_cast():
                 target.modifiers.temps.append(KWATemp('add', 'Flying'))
     return E()
 
+def kobold_drill_sergeant_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """Other Kobold creatures you control get +0/+1 and have trample"""
+            kobolds = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result()
+            for k in kobolds:
+                if source != k:
+                    k.modifiers.auras.append(KWAModifier(source, 'add', 'Trample'))
+                    k.modifiers.auras.append(PTModifier(source, 0, 1))
+    return E()
+
 def kobold_overlord_on_cast():
     """Other Kobold creatures you control have first strike"""
     class E(Effect):
@@ -601,6 +614,14 @@ def lance_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             if target:
                 target.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
+    return E()
+
+def leviathan_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, _: Optional[GameCard] = None):
+            source.tap(gs)
     return E()
 
 def lightning_bolt_on_cast():
