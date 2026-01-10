@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from constants import COLOR_LETTERS_W_COLORLESS
 from models.damage import PreventNextDamage, DamageEvent
+from models.effects.on_end_step import nettling_imp_on_end_step
 from phase_fsm import Phase
 from utils import flip
 
@@ -80,7 +81,13 @@ class ActivatedAbility:
 
 
 # --- COMMON/COMPLEX TARGET FUNCS
-TARGET_FUNCS = {
+def opp_creatures_who_could_have_attacked_but_didnt(gs: GameState, source: GameCard) -> list[GameCard | None]:
+    """Returns creatures who: have 'Attack' in kwa, no summoning sickness, didn't go into combat"""
+    attackers = gs.card_filter.attackers().result()
+    return [c for c in gs.card_filter.on_player_board(flip(source.orig_owner_id)).creatures().result()
+            if c not in attackers and not c.has_summoning_sickness and 'Attack' in c.keyword_abilities]
+
+TARGET_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
@@ -105,7 +112,11 @@ TARGET_FUNCS = {
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
+    'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result(),
+    'opp_creatures_who_could_have_but_didnt_attack': lambda gs, s: opp_creatures_who_could_have_attacked_but_didnt(gs, s),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
+    'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
+                                  if c.toughness < s.power],
     'tapped_creatures': lambda gs, source: gs.card_filter.in_play().creatures().tapped().result(),
     'tapped_lands': lambda gs, s: gs.card_filter.in_play().lands().tapped().result(),
     'unblocked_attackers': lambda gs, source: gs.card_filter.unblocked_attackers().result(),
@@ -221,6 +232,11 @@ def rakalite_func(gs: GameState, s: GameCard, _: Target):
     prevent_next_damage_func(1)
     gs.return_to_hand(s)
 
+def rocket_launcher_func(gs: GameState, s: GameCard, t: Target):
+    """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
+    gs.apply_damage(s, 1, t)
+    gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(s))
+
 def shimian_nightstalker_func(gs: GameState, s: GameCard, t: Target):
     """{B}, {T}: All damage that would be dealt to you this turn by target attacking creature is dealt to this creature instead
     target = the GameCard doing the damage"""
@@ -230,6 +246,12 @@ def shimian_nightstalker_func(gs: GameState, s: GameCard, t: Target):
 
     gs.damage_preventions.append(PreventNextDamage(s, None, target_player=s.orig_owner_id,
                                                    source_card=t, on_prevent=redirect_damage))
+
+def stone_giant_func(gs: GameState, s: GameCard, t: Target):
+    """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
+    Destroy that creature at the beginning of the next end step."""
+    add_remove_kwa_temp('add', 'Flying')
+    gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(t))
 
 
 ACTIVATED_ABILITY: dict[str, list[AAS]] = {
@@ -342,6 +364,10 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'mox-pearl': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('W'))],
     'mox-ruby': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('R'))],
     'mox-sapphire': [AAS('', True, TARGET_FUNCS['card_owner'], add_mana_func('U'))],
+    'nettling-imp': [AAS('', True, TARGET_FUNCS['opp_creatures_who_could_have_but_didnt_attack'],
+                         lambda gs, s, t: gs.end_step_funcs.append(nettling_imp_on_end_step),
+                         allowed_player_turn=[ActivatedAbility.AllowedPlayerTurn.OPPONENT],
+                         allowed_phases=[phase for phase in Phase if phase < Phase.DECLARE_ATTACKERS])],
     'nevinyrrals-disk': [AAS('1', True, None, lambda gs, s, t: destroy_all_non_land_perms(gs, s, t))],
     'northern-paladin': [AAS('WW', True, TARGET_FUNCS['creatures_and_enchantments_in_play'], destroy_func)],
     'oasis': [AAS('', True, TARGET_FUNCS['creatures_in_play'], prevent_next_damage_func(1))],
@@ -361,6 +387,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'rakalite': [AAS('2', False, TARGET_FUNCS['all_creatures_and_players'], rakalite_func)],
     'relic-barrier': [AAS('', True, TARGET_FUNCS['untapped_artifacts_in_play'], lambda gs, s, t: t.tap(gs))],
     'rod-of-ruin': [AAS('3', True, TARGET_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
+    'rocket-launcher':
+        [AAS('2', False, TARGET_FUNCS['all_creatures_and_players'], lambda gs, s, t: rocket_launcher_func(gs, s, t))],
     'royal-assassin': [AAS('', True, TARGET_FUNCS['tapped_creatures'], destroy_func)],
     'samite-healer': [AAS('', True, TARGET_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
     'savaen-elves': [AAS('GG', True, TARGET_FUNCS['auras_on_lands'], destroy_func)],
@@ -378,6 +406,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
                             lambda gs, s, t: t.modifiers.temps.append(PTTemp(-t.power, t.toughness - 2)))],
     'spinal-villain': [AAS('', True, TARGET_FUNCS['blue_creatures_in_play'], destroy_func)],
     'staff-of-zegon': [AAS('3', True, TARGET_FUNCS['creatures_in_play'], pump_func(-2, 0))],
+    'stone-giant': [AAS('', True, )],
     'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
 }
 
