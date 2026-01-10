@@ -37,6 +37,7 @@ class Combat:
 
         # Attacker damage to blockers
         # Currently only assigns damage to the first blocker w no damage splitting across blockers
+        # Trample logic is inside gs.apply_damage() cuz I need access to damage preventions (would prefer it's here)
         if self.attacker not in self.killed_creatures:
             if self._phase_applicable(self.attacker, first_strike):
                 target = self.blockers[0]
