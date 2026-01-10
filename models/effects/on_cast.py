@@ -793,8 +793,6 @@ def sunken_city_on_cast():
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: Review this new approach where global effects don't directly influence GameCards
             gs.global_effects.append((source, SunkenCityEffect(source.orig_owner_id), False))
-            # for c in CardFilter(gs).in_play().creatures().white().result():
-            #     c.pt_modifiers.append(PTModifier(source, 1, 1))
     return E()
 
 def swords_to_plowshares_on_cast():
