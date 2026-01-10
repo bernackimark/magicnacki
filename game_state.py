@@ -471,6 +471,12 @@ class GameState:
             self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
+            for c in self.boards[self.player_turn_idx].cards:
+                self.trigger('end_step', c)
+                for a in c.modifiers.auras:
+                    if not isinstance(a, GameCard):  # KWAModifiers/PTModifiers are auras but aren't actually GameCards
+                        continue
+                    self.trigger('end_step', a)
             for c in self.card_filter.in_play().result():
                 c.modifiers.clear_temps()
             self.phase = Phase.DISCARD
