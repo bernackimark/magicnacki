@@ -73,7 +73,7 @@ CREATURE_KW_ABILITIES = {
     "knights-of-thorn": ["Protection From Red", "Banding"],
     "kobold-overlord": ["First Strike"],
     "land-leeches": ["First Strike"],
-    "leviathan": ["Trample"],
+    "leviathan": ["Trample", "Defender"],  # must sac 2 islands to conditionally allow for attack
     "living-wall": ["Defender"],
     "livonya-silone": ["First Strike"],
     "lord-magnus": ["First Strike"],
