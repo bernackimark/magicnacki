@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 from phase_fsm import Phase
 from utils import flip
+from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana
 from ..damage import PreventNextDamage
 
 if TYPE_CHECKING:
@@ -659,6 +660,18 @@ def mana_short_on_cast():
             print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
     return E()
 
+def mana_vortex_on_cast():
+    """When you cast this spell, sacrifice a land"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+            """target = player_id whose lands should be tapped"""
+            if target is None:
+                raise ValueError(f"{source.props.name} needs a land to sacrifice")
+            gs.send_to_graveyard_from_play(target)
+    return E()
+
 def martyrs_cry_on_cast():
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     class E(Effect):
@@ -720,7 +733,6 @@ def reverse_damage_on_cast():
                 PreventNextDamage(s, None, target_player=s.orig_owner_id, source_card=target, on_prevent=gain_life))
     return E()
 
-
 def riptide_on_cast():
     """Tap all blue creatures"""
 
@@ -741,9 +753,19 @@ def rocket_launcher_on_cast():
             s.has_summoning_sickness = True
     return E()
 
+def sacrifice_on_cast():
+    """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+            if not t:
+                raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
+            gs.action_stack.push(SacCreatureAndAddMana(s.orig_owner_id, gs, s, t, 'B', t.props.casting_weight), gs, False)
+    return E()
+
 def shatter_on_cast():
     """Destroy target artifact"""
-
     class E(Effect):
         event = 'cast'
 
