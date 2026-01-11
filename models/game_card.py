@@ -5,7 +5,7 @@ from cast_targets import CAST_TARGETS
 from kw_ability import get_base_kwas
 from models.effects.on_leave import *
 from models.effects.slug_effect_mapping import SLUG_EFFECTS
-from models.effects.untap import *
+from models.effects.on_untap_card import *
 from models.activated_ability import ActivatedAbility, get_activated_abilities
 from models.modifiers import Modifiers
 
