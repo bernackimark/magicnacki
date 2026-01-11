@@ -9,7 +9,7 @@ from models.effects.on_damage import *
 from models.effects.on_end_step import *
 from models.effects.tap import *
 from models.effects.on_upkeep import *
-from models.effects.untap import *
+from models.effects.on_untap_card import *
 
 SLUG_EFFECTS: dict[str, list[Effect]] = {
         'acid-rain': [acid_rain_on_cast()],

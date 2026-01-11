@@ -2,12 +2,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
 from constants import COLOR_LETTERS_W_COLORLESS
+from models.actions.tap_untap import UntapCard
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.actions.base import Action
+from models.actions.base import Action, DoNothing
 from models.actions.choice import ChoiceAction
 
 # --- GENERIC ACTIONS ---
@@ -78,6 +79,20 @@ class Sac(Action):
         self.gs.send_to_graveyard_from_play(self.source)
         self.gs.action_stack.pop()  # remove choice
 
+class SacCreatureAndAddMana(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, creature: GameCard, color: str, amt: int = 0):
+        super().__init__(p_id, gs)
+        self.creature = creature
+        self.color = color
+        self.amt = amt
+
+    def play(self):
+        # Sacrifice then later apply effect that depends on the creature sacrificed
+        self.gs.send_to_graveyard_from_play(self.creature)
+        self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
+        self.gs.action_stack.pop()
+
+
 # --- GENERIC CHOICE ACTIONS ---
 class AddManaOfColorChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard,
@@ -101,6 +116,21 @@ class PayManaOrSacUpkeepChoice(ChoiceAction):
         actions.append(Sac(self.p_id, self.gs, self.source))
         return actions
 
+class SacYourCreatureChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        p_id = self.gs.player_turn_idx
+        return [Sac(self.p_id, self.gs, c) for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
+
+class UntapOrDont(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [UntapCard(self.source.orig_owner_id, self.gs, self.source),
+                DoNothing(self.source.orig_owner_id, self.gs)]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):
@@ -169,6 +199,16 @@ class LordOfThePitUpkeepChoice(ChoiceAction):
         if not your_other_creatures:
             return []
         return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
+
+class SacrificeCastChoice(ChoiceAction):
+    """This is used by the card named 'Sacrifice'; is not a generic class"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        p_id = self.gs.player_turn_idx
+        return [SacCreatureAndAddMana(self.p_id, self.gs, self.source, c, 'B', c.props.casting_weight)
+                for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
 
 class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):

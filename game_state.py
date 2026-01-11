@@ -298,7 +298,12 @@ class GameState:
                     c.has_summoning_sickness = False
             if not c.is_tapped:
                 continue
-            c.untap(self)
+            self.trigger('on_untap_phase', c)
+            for a in c.modifiers.auras:
+                if not isinstance(a, GameCard):
+                    continue
+                self.trigger('on_untap_phase', a)
+            c.untap(self)  # TODO: isn't this just going to untap the card regardless?
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
