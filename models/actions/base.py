@@ -17,3 +17,9 @@ class Action(ABC):
     @abc.abstractmethod
     def play(self) -> None:
         ...
+
+
+@dataclass
+class DoNothing(Action):
+    def play(self) -> None:
+        pass
