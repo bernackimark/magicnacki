@@ -27,17 +27,19 @@ class Engine:
             self.gs.game_history.append((self.gs.turn_number, action))
 
 
-# build decks
-universe = CardUniverse(['1E', '2U', '3E', 'DK', 'LE', 'AN', 'AQ'])
-# my_cards = (('plains', 24), ('tundra-wolves', 4), ('savannah-lions', 4),
-#              ('disenchant', 4), ('samite-healer', 4))
-my_cards = (('plains', 24), ('argothian-pixies', 4), ('savannah-lions', 4),
-             ('holy-day', 4), ('samite-healer', 4))
-his_cards = (('island', 32), ('merfolk-of-the-pearl-trident', 4), ('lord-of-atlantis', 4), ('dragon-engine', 4),
-            ('electric-eel', 4))
+# build decks from json file
+import json
+with open('cards_for_game_testing.json', 'r') as f:
+    data = json.load(f)
+
+universe = CardUniverse(data['universe'])
+deck_0 = data['deck_0']
+deck_1 = data['deck_1']
+if data['starting_deck'] == 1:
+    deck_0, deck_1 = deck_1, deck_0
 
 decks = []
-for i, cards in enumerate((my_cards, his_cards)):
+for i, cards in enumerate((deck_0, deck_1)):
     deck_builder = DeckBuilder(universe, i)
     for card_slug, qty in cards:
         for _ in range(qty):
