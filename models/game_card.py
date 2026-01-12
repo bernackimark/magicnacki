@@ -34,6 +34,7 @@ class GameCard:
         self.combat_damage_received: int = 0
 
         self.base_pt = (self.props.power, self.props.toughness)
+        self.variable_x: int | None = None  # for variable casting costs
 
         # perform look-ups to add: base keyword abilities, activated abilities, and effects
         self._base_kwa: tuple[str, ...] | tuple[None] = get_base_kwas(self.props.slug)

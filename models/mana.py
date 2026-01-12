@@ -16,6 +16,9 @@ def parse_casting_cost(casting_cost: str) -> dict[str, int]:
     if not casting_cost:
         return result
 
+    if 'X' in casting_cost:
+        result['X'] = 0
+
     # convert numbers to colorless & letters to colors
     for num in re.findall(r'\d+', casting_cost):
         result['C'] += int(num)
@@ -129,6 +132,17 @@ class ManaPool:
         so those would have to be tapped/activated first to add floating mana"""
         return {color: self._untapped_basic_land_mana[color] + self._floating_mana[color]
                 for color in self._untapped_basic_land_mana}
+
+    def get_max_x(self, casting_cost: str) -> int:
+        """Return the maximum X value the player can pay for a card with X in its casting cost."""
+        if 'X' not in casting_cost:
+            raise ValueError(f"X is not in the casting cost")
+        cost = parse_casting_cost(casting_cost)  # {'X': 0, 'U': 2, ...}
+        cost['X'] = 0  # since 'X' is in the cast cost, it's being treated as {'X': 1 ...}
+        non_x_casting_weight = sum(cost.values())
+        available_mana_amt = sum(self.available_mana.values())
+        max_x = available_mana_amt - non_x_casting_weight
+        return max(max_x, 0)
 
     def _tap_lands_for_color(self, color: str, amount: int):
         lands = self.gs.card_filter.on_player_board(self.owner_id).by_slug(COLOR_LETTER_SLUG[color]).untapped().result()

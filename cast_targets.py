@@ -38,6 +38,7 @@ CAST_TARGETS = {
     'giant-growth': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'giant-strength': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'great-defender': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'howl-from-beyond': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'ice-storm': lambda gs: CardFilter(gs).in_play().lands().result(),
     'immolation': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'indestructible-aura': lambda gs: CardFilter(gs).in_play().creatures().result(),

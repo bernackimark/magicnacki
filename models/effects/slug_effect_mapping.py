@@ -80,6 +80,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'holy-armor': [holy_armor_on_cast()],
         'holy-day': [darkness_or_fog_or_holy_day_on_cast()],
         'holy-strength': [holy_strength_on_cast()],
+        'howl-from-beyond': [howl_from_beyond_on_cast()],
         'ice-storm': [ice_storm_on_cast()],
         'immolation': [immolation_on_cast()],
         'indestructible-aura': [indestructible_aura_on_cast()],

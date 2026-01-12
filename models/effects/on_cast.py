@@ -506,6 +506,18 @@ def holy_strength_on_cast():
                 target.modifiers.auras.append(PTModifier(source, 1, 2))
     return E()
 
+def howl_from_beyond_on_cast():
+    """Target creature gets +X/+0 until end of turn"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+            if target is not None:
+                x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+                target.modifiers.temps.append(PTTemp(x, 0))
+    return E()
+
+
 def ice_storm_on_cast():
     class E(Effect):
         event = 'cast'

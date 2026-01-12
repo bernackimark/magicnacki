@@ -389,11 +389,23 @@ class GameState:
                         continue
                     # cards that do not require a target
                     if target_cards is None:
-                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None))
+                        if 'X' in c.casting_cost:
+                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
+                            for x in range(max_x + 1):
+                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
+                                                                                      x_values_for_variable_cast=x))
+                        else:
+                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None))
                         continue
                     # for all possible targets, add as an available action
                     for t in target_cards:
-                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t))
+                        if 'X' in c.casting_cost:
+                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
+                            for x in range(max_x + 1):
+                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t,
+                                                                                      x_values_for_variable_cast=x))
+                        else:
+                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t))
             return avail_actions_from_hand
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
