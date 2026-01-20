@@ -51,6 +51,8 @@ class CastToTargetAddToStack(Action):
             target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
         elif isinstance(self.target, GameCard):
             target_text = ', targeting ' + self.target.props.name
+        elif isinstance(self.target, int):
+            target_text = f', targeting Player #{self.target}'
         if self.x_values_for_variable_cast is not None:
             variable_cast_text = f", X={self.x_values_for_variable_cast}"
         return f"Cast {self.card.props.name}{target_text}{variable_cast_text}"
