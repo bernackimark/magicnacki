@@ -406,7 +406,7 @@ class GameState:
                                                                                       x_values_for_variable_cast=x))
                         else:
                             avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t))
-            return avail_actions_from_hand
+            return list({repr(x): x for x in avail_actions_from_hand}.values())  # only return unique (by repr) actions
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
