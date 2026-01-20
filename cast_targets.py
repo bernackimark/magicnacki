@@ -56,7 +56,9 @@ CAST_TARGETS = {
     'spirit-link': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'stone_rain': lambda gs: CardFilter(gs).in_play().lands().result(),
     'storm-seeker': lambda gs: all_player_indices(gs),
+    'stream-of-life': lambda gs: all_player_indices(gs),
     'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
-    'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result()
+    'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'winter-blast': lambda gs: CardFilter(gs).in_play().creatures().untapped().result(),
 }

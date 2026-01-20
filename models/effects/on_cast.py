@@ -111,13 +111,22 @@ def boomerang_on_cast():
                 gs.return_to_hand(target)
     return E()
 
+def braingeyser_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: int = None):
+            if target is not None:
+                x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+                gs.draw(gs.hands[target], gs.decks[target].cards, x)
+    return E()
+
 def brainwash_on_cast():
     class E(Effect):
         event = 'cast'
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             target.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
-
     return E()
 
 def burrowing_on_cast():
@@ -271,7 +280,19 @@ def earthbind_on_cast():
                 target.modifiers.auras.append(KWAModifier(source, 'remove', 'Flying'))
             if 'Flying' in target.keyword_abilities:
                 gs.decrement_life(target.orig_owner_id, 2, source)
+    return E()
 
+def earthquake_on_cast():
+    """Earthquake deals X damage to each creature without flying and each player"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+            for c in gs.card_filter.in_play().has('Flying', False).creatures().result():
+                gs.apply_damage(source, x, c)
+            for p_id in (0, 1):
+                gs.apply_damage(source, x, p_id)
     return E()
 
 def electric_eel_on_cast():
@@ -806,6 +827,15 @@ def storm_seeker_on_cast():
         def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
             opp_idx = flip(source.orig_owner_id)
             gs.apply_damage(source, len(gs.hands[opp_idx].cards), opp_idx)
+    return E()
+
+def stream_of_life_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: int = None):
+            x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+            gs.increment_life(target, x)
     return E()
 
 def subdue_on_cast():
