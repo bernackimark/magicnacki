@@ -65,6 +65,11 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'Wall' in c.props.card_sub_types]
         return self
 
+    def non_wall_creatures(self):
+        self._cards = [c for c in self._cards if 'Creature' in c.props.card_types
+                       and 'Wall' not in c.props.card_sub_types]
+        return self
+
     def by_type(self, type_: str | list):
         if isinstance(type_, list):
             self._cards = [c for c in self._cards for t in type_ if t in c.props.card_types]
