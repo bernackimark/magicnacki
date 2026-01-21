@@ -1,9 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from utils import flip
 from ..actions.choices import PayManaOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
     ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, ErosionUpkeepChoice, LordOfThePitUpkeepChoice, \
-    SeasonOfTheWitchUpkeepChoice, SerendibDjinnUpkeepChoice
+    SeasonOfTheWitchUpkeepChoice, SerendibDjinnUpkeepChoice, AddKWA, SacALandChoice, ShapeshifterChoice
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -65,6 +66,17 @@ def elder_spawn_on_upkeep():
 
         def resolve(self, gs: GameState, s: GameCard, target=None):
             gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
+    return E()
+
+def erhnam_djinn_on_upkeep():
+    """At upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            opp_id = flip(source.orig_owner_id)
+            for c in gs.card_filter.on_player_board(opp_id).non_wall_creatures().result():
+                gs.action_stack.push(AddKWA(opp_id, gs, source, c, 'Forestwalk'))
     return E()
 
 def erosion_on_upkeep():
@@ -156,6 +168,19 @@ def lord_of_the_pit_on_upkeep():
                 gs.action_stack.push(action, gs, False)
     return E()
 
+def mana_vortex_on_upkeep():
+    """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if len(CardFilter(gs).lands().in_play().result()) == 0:
+                gs.send_to_graveyard_from_play(source)
+                return
+            for land in CardFilter(gs).on_player_board(gs.player_turn_idx).lands().result():
+                SacALandChoice(gs.player_turn_idx, gs, land)
+    return E()
+
 def phantasmal_forces_on_upkeep():
     class E(Effect):
         event = 'upkeep'
@@ -200,6 +225,15 @@ def serendib_efreet_on_upkeep():
         
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             gs.apply_damage(source, 1, source.orig_owner_id)
+    return E()
+
+def shapeshifter_on_upkeep():
+    """At your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            gs.action_stack.push(ShapeshifterChoice(source.orig_owner_id, gs, source), gs, False)
     return E()
 
 def spiritual_sanctuary_on_upkeep():

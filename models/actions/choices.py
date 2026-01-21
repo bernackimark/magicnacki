@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Iterable
 
 from constants import COLOR_LETTERS_W_COLORLESS
 from models.actions.tap_untap import UntapCard
+from models.modifiers import KWATemp, KWAModifier, PTModifier
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -12,6 +13,20 @@ from models.actions.base import Action, DoNothing
 from models.actions.choice import ChoiceAction
 
 # --- GENERIC ACTIONS ---
+class AddKWA(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard, ability: str, until_eot: bool = True):
+        super().__init__(p_id, gs)
+        self.source = s
+        self.target = target
+        self.ability = ability
+        self.until_eot = until_eot
+
+    def play(self):
+        if self.until_eot:
+            self.target.modifiers.temps.append(KWATemp('add', self.ability))
+        else:
+            self.target.modifiers.auras.append(KWAModifier(self.source, 'add', self.ability))
+
 class AddMana(Action):
     def __init__(self, p_id, gs, source: GameCard, color: str, amt: int = 1):
         super().__init__(p_id, gs)
@@ -92,6 +107,23 @@ class SacCreatureAndAddMana(Action):
         self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
         self.gs.action_stack.pop()
 
+class VariablePTMod(Action):
+    def __init__(self, p_id, gs, source: GameCard, target: GameCard, power: int = None, toughness: int = None):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.target = target
+        self.power = power
+        self.toughness = toughness
+
+    def __repr__(self):
+        return f"Set {self.target.props.name}'s power to {self.power} & toughness to {self.toughness}"
+
+    def play(self):
+        new_power = self.power - self.target.power
+        new_toughness = self.toughness - self.target.toughness
+        self.target.modifiers.auras.append(PTModifier(self.target, new_power, new_toughness))
+        self.gs.action_stack.pop()
+
 
 # --- GENERIC CHOICE ACTIONS ---
 class AddManaOfColorChoice(ChoiceAction):
@@ -115,6 +147,14 @@ class PayManaOrSacUpkeepChoice(ChoiceAction):
             actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
         actions.append(Sac(self.p_id, self.gs, self.source))
         return actions
+
+class SacALandChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        p_id = self.gs.player_turn_idx
+        return [Sac(self.p_id, self.gs, c) for c in self.gs.card_filter.on_player_board(p_id).lands.result()]
 
 class SacYourCreatureChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
@@ -150,7 +190,7 @@ class CurseArtifactUpkeepChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        # warning: Curse Artifact is usually played on opp cards and that's a mismatch on "orig_owner_id"
+        # warning: Curse Artifact is usually played on opp cards and that's a mismatch on "orig_owner_id" !!!
         return [PayLife(self.source.attached_to.orig_owner_id, self.gs, self.source, 2),
                 Sac(self.source.attached_to.orig_owner_id, self.gs, self.source.attached_to)]
 
@@ -201,7 +241,7 @@ class LordOfThePitUpkeepChoice(ChoiceAction):
         return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
 
 class SacrificeCastChoice(ChoiceAction):
-    """This is used by the card named 'Sacrifice'; is not a generic class"""
+    """This is used by the card named 'Sacrifice'; is not a generic class about the concept of sacrifice"""
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
@@ -225,3 +265,10 @@ class SerendibDjinnUpkeepChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         return [Sac(self.gs.player_turn_idx, self.gs, land, w_damage_amt=3 if land.props.slug == 'island' else 0)
                 for land in self.gs.card_filter.on_player_board(self.gs.player_turn_idx).lands().result()]
+
+class ShapeshifterChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [VariablePTMod(self.p_id, self.gs, self.source, self.source, i, 7-i) for i in range(8)]

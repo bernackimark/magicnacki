@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 from phase_fsm import Phase
 from utils import flip
-from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana
+from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana, ShapeshifterChoice
 from ..damage import PreventNextDamage
 
 if TYPE_CHECKING:
@@ -795,6 +795,15 @@ def sacrifice_on_cast():
             if not t:
                 raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
             gs.action_stack.push(SacCreatureAndAddMana(s.orig_owner_id, gs, s, t, 'B', t.props.casting_weight), gs, False)
+    return E()
+
+def shapeshifter_on_cast():
+    """As this creature enters, choose a number (n) between 0 and 7. Power = n, Toughness = 7-n ..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+            gs.action_stack.push(ShapeshifterChoice(source.orig_owner_id, gs, source), gs, False)
     return E()
 
 def shatter_on_cast():

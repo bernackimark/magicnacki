@@ -57,6 +57,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'enchanted-being': [enchanted_being_damage_prevention()],
         'energy-tap': [energy_tap_on_cast()],
         'erg-raiders': [erg_raiders_on_end_step()],
+        'erhnam-djinn': [erhnam_djinn_on_upkeep()],
         'erosion': [erosion_on_upkeep()],
         'eternal-flame': [eternal_flame_on_cast()],
         'evil-eye-of-orms-by-gore': [evil_eye_of_orms_by_gore_on_cast(), evil_eye_of_orms_by_gore_on_leave(),
@@ -104,6 +105,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'lord-of-atlantis': [lord_of_atlantis_on_cast(), lord_of_atlantis_on_leave()],
         'lord-of-the-pit': [lord_of_the_pit_on_upkeep()],
         'mana-short': [mana_short_on_cast()],
+        'mana-vortex': [mana_vortex_on_cast(), mana_vortex_on_upkeep()],
         'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED: All Walls able to block this creature do so
         'martyrs-cry': [martyrs_cry_on_cast()],
         'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
@@ -123,6 +125,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'seeker': [seeker_enchanted_creature_can_be_blocked()],
         'serendib-djinn': [serendib_djinn_on_upkeep()],
         'serendib-efreet': [serendib_efreet_on_upkeep()],
+        'shapeshifter': [shapeshifter_on_cast(), shapeshifter_on_upkeep()],
         'sinkhole': [sinkhole_and_stone_rain_on_cast()],
         'swamp': [land_on_leave()],
         'spirit-link': [spirit_link_on_damage()],
