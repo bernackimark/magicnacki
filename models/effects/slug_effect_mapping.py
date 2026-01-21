@@ -13,6 +13,7 @@ from models.effects.on_untap_card import *
 
 SLUG_EFFECTS: dict[str, list[Effect]] = {
         'acid-rain': [acid_rain_on_cast()],
+        'active-volcano': [active_volcano_on_cast()],
         'akron-legionnaire': [akron_legionnaire_on_cast(), akron_legionnaire_on_leave()],
         'ancestral-recall': [ancestral_recall_on_cast()],
         'angelic-voices': [angelic_voices_on_cast(), global_on_leave()],
@@ -67,6 +68,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'feedback': [feedback_on_upkeep()],
         'feint': [feint_on_cast()],
         'fishliver-oil': [fishliver_oil_on_cast()],
+        'flash-flood': [flash_flood_on_cast()],
         'flashfires': [flashfires_on_cast()],
         'flight': [flight_on_cast()],
         'fog': [darkness_or_fog_or_holy_day_on_cast()],

@@ -7,6 +7,8 @@ def all_player_indices(gs):
 
 
 CAST_TARGETS = {
+    'active-volcano': lambda gs: CardFilter(gs).in_play().blue().permanents().result() +
+                                 CardFilter(gs).in_play().by_slug('island').result(),
     'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
     'ancestral-recall': lambda gs: all_player_indices(gs),
     'artifact-ward': lambda gs: CardFilter(gs).in_play().creatures().result(),
@@ -33,6 +35,8 @@ CAST_TARGETS = {
     'feint': lambda gs: CardFilter(gs).attackers().result(),
     'firebreathing': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'fishliver-oil': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'flash-flood': lambda gs: CardFilter(gs).in_play().red().permanents().result() +
+                                 CardFilter(gs).in_play().by_slug('mountain').result(),
     'flashfires': lambda gs: CardFilter(gs).in_play().by_slug('plains').result(),
     'gaseous-form': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'giant-growth': lambda gs: CardFilter(gs).in_play().creatures().result(),

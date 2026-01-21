@@ -28,6 +28,16 @@ def acid_rain_on_cast():
                 gs.send_to_graveyard_from_play(forest)
     return E()
 
+def active_volcano_on_cast():
+    """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+            gs.return_to_hand_from_board(t) if t.props.slug == 'island' else gs.send_to_graveyard_from_play(t)
+
+    return E()
+
 def akron_legionnaire_on_cast():
     class E(Effect):
         event = 'cast'
@@ -392,6 +402,15 @@ def feint_on_cast():
             for b in the_combat[0].blockers:
                 gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
                 b.tap(gs)
+    return E()
+
+def flash_flood_on_cast():
+    """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+            gs.return_to_hand_from_board(t) if t.props.slug == 'mountain' else gs.send_to_graveyard_from_play(t)
     return E()
 
 def flight_on_cast():
