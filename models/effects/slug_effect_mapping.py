@@ -138,7 +138,11 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'sunken-city': [sunken_city_on_cast(), sunken_city_on_upkeep(), global_on_leave()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
         'syphon_soul': [syphon_soul_on_cast()],
+        'tivadars-crusade': [tivadars_crusade_on_cast()],
+        'tranquility': [tranquility_on_cast()],
+        'tsunami': [tsunami_on_cast()],
         'twiddle': [twiddle_on_cast()],
+        'typhoon': [typhoon_on_cast()],
         'unsummon': [unsummon_on_cast()],
         'wrath-of-god': [wrath_of_god_on_cast()],
 

@@ -888,6 +888,36 @@ def syphon_soul_on_cast():
             gs.increment_life(source.orig_owner_id, 2)
     return E()
 
+def tivadars_crusade_on_cast():
+    """Destroy all Goblins"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            for c in gs.card_filter.in_play().by_sub_type('Goblin').result():
+                gs.send_to_graveyard_from_play(c)
+    return E()
+
+def tranquility_on_cast():
+    """Destroy all Enchantments"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            for c in gs.card_filter.in_play().by_type('Enchantment').result():
+                gs.send_to_graveyard_from_play(c)
+    return E()
+
+def tsunami_on_cast():
+    """Destroy all islands"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            for c in gs.card_filter.in_play().by_slug('island').result():
+                gs.send_to_graveyard_from_play(c)
+    return E()
+
 def twiddle_on_cast():
     class E(Effect):
         event = 'cast'
@@ -896,6 +926,18 @@ def twiddle_on_cast():
             if target:
                 # toggle tapped state
                 target.untap(gs) if target.is_tapped else target.tap(gs)
+    return E()
+
+def typhoon_on_cast():
+    """Typhoon deals damage to opponent = the number of Islands that player controls"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+            opp = flip(gs.player_turn_idx)
+            opp_island_cnt = len(gs.card_filter.on_player_board(opp).by_slug('island').result())
+            if opp_island_cnt:
+                gs.apply_damage(s, opp_island_cnt, opp)
     return E()
 
 def unsummon_on_cast():
