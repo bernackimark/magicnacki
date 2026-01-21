@@ -1,7 +1,11 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from ..game_card import GameCard
 
 from models.actions.base import Action
-from models.game_card import GameCard
 from phase_fsm import Phase
 
 
