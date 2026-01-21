@@ -23,7 +23,7 @@ class UntapCard(Action):
     card: GameCard
 
     def __repr__(self) -> str:
-        return f"Tap {self.card.__repr__()}"
+        return f"Untap {self.card.__repr__()}"
 
     def play(self) -> None:
         self.card.untap(self.gs)
