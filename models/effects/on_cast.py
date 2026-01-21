@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional
 from phase_fsm import Phase
 from utils import flip
 from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana, ShapeshifterChoice
+from ..actions.draw_discard import DiscardCard
 from ..damage import PreventNextDamage
 
 if TYPE_CHECKING:
@@ -74,7 +75,6 @@ def animate_wall_on_cast():
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             target.modifiers.auras.append(KWAModifier(source, 'remove', 'Defender'))
-
     return E()
 
 
@@ -940,6 +940,15 @@ def typhoon_on_cast():
                 gs.apply_damage(s, opp_island_cnt, opp)
     return E()
 
+def unholy_strength_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                target.modifiers.auras.append(PTModifier(source, 2, 1))
+    return E()
+
 def unsummon_on_cast():
     class E(Effect):
         event = 'cast'
@@ -949,6 +958,36 @@ def unsummon_on_cast():
                 board = gs.boards[target.orig_owner_id]
                 board.remove_from_board(target)
                 gs.return_to_hand(target)
+    return E()
+
+def wheel_of_fortune_on_cast():
+    """Each player discards their hand, then draws seven cards"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            for i in (0, 1):
+                [DiscardCard(i, gs, card).play() for card in gs.hands[i].cards]
+                gs.draw(gs.hands[i], gs.decks[i].cards, 7)
+    return E()
+
+def weakness_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                target.modifiers.auras.append(PTModifier(source, -2, -1))
+    return E()
+
+def web_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                target.modifiers.auras.append(PTModifier(source, 0, 2))
+                target.modifiers.auras.append(KWAModifier(source, 'add', 'Reach'))
     return E()
 
 def wrath_of_god_on_cast():

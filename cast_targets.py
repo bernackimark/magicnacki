@@ -59,6 +59,9 @@ CAST_TARGETS = {
     'stream-of-life': lambda gs: all_player_indices(gs),
     'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
+    'unholy-strength': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'weakness': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'web': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'winter-blast': lambda gs: CardFilter(gs).in_play().creatures().untapped().result(),
 }

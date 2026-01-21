@@ -143,7 +143,10 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'tsunami': [tsunami_on_cast()],
         'twiddle': [twiddle_on_cast()],
         'typhoon': [typhoon_on_cast()],
+        'unholy-strength': [unholy_strength_on_cast()],
         'unsummon': [unsummon_on_cast()],
+        'weakness': [weakness_on_cast()],
+        'web': [web_on_cast()],
         'wrath-of-god': [wrath_of_god_on_cast()],
 
         '_default_leave': [default_clear_on_leave()],
