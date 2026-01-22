@@ -7,6 +7,7 @@ from models.effects.damage_prevention import *
 from models.effects.on_leave import *
 from models.effects.on_damage import *
 from models.effects.on_end_step import *
+from models.effects.on_untap_phase import untap_option_on_untap_phase
 from models.effects.tap import *
 from models.effects.on_upkeep import *
 from models.effects.on_untap_card import *
@@ -65,7 +66,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
                                      evil_eye_of_orms_by_gore_can_be_blocked()],
         'eye-for-an-eye': [eye_for_an_eye_on_cast()],
         'farmstead': [farmstead_on_cast()],
-        'feedback': [feedback_on_upkeep()],
+        'feedback': [feedback_and_warp_artifact_on_upkeep()],
         'feint': [feint_on_cast()],
         'fishliver-oil': [fishliver_oil_on_cast()],
         'flash-flood': [flash_flood_on_cast()],
@@ -113,6 +114,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
         'mountain': [mountain_on_tap(), land_on_leave()],
         'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
+        'old-man-of-the-sea': [untap_option_on_untap_phase()],
         'phantasmal-forces': [phantasmal_forces_on_upkeep()],
         'pirate-ship': [islandhome_can_attack_effect()],
         'plains': [land_on_leave()],
@@ -147,6 +149,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'typhoon': [typhoon_on_cast()],
         'unholy-strength': [unholy_strength_on_cast()],
         'unsummon': [unsummon_on_cast()],
+        'warp-artifact': [feedback_and_warp_artifact_on_upkeep()],
         'weakness': [weakness_on_cast()],
         'web': [web_on_cast()],
         'wrath-of-god': [wrath_of_god_on_cast()],

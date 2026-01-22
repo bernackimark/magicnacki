@@ -88,8 +88,8 @@ def erosion_on_upkeep():
             gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
     return E()
 
-def feedback_on_upkeep():
-    """At the beginning of the upkeep of enchanted enchantment's controller, this Aura deals 1 damage to that player"""
+def feedback_and_warp_artifact_on_upkeep():
+    """At upkeep of enchanted card's controller, this Aura deals 1 damage to that player"""
     class E(Effect):
         event = 'upkeep'
         
