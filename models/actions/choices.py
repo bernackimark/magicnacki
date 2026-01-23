@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Callable, Optional
 
 from constants import COLOR_LETTERS_W_COLORLESS
 from models.actions.tap_untap import UntapCard
@@ -107,6 +107,31 @@ class SacCreatureAndAddMana(Action):
         self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
         self.gs.action_stack.pop()
 
+class UntapCard(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.source = s
+
+    def __repr__(self):
+        return f'Untap {self.source}'
+
+    def play(self):
+        # self.gs.apply_untap_effects(self.source)  # not clear why this wasn't working
+        self.source.untap(self.gs)
+        self.gs.action_stack.pop()
+
+
+class LeaveTapped(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.source = s
+
+    def __repr__(self):
+        return f'Leave {self.source} tapped'
+
+    def play(self):
+        self.gs.action_stack.pop()
+
 class VariablePTMod(Action):
     def __init__(self, p_id, gs, source: GameCard, target: GameCard, power: int = None, toughness: int = None):
         super().__init__(p_id, gs)
@@ -164,13 +189,12 @@ class SacYourCreatureChoice(ChoiceAction):
         p_id = self.gs.player_turn_idx
         return [Sac(self.p_id, self.gs, c) for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
 
-class UntapOrDont(ChoiceAction):
+class UntapChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [UntapCard(self.source.orig_owner_id, self.gs, self.source),
-                DoNothing(self.source.orig_owner_id, self.gs)]
+        return [LeaveTapped(self.p_id, self.gs, self.source), UntapCard(self.p_id, self.gs, self.source)]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):

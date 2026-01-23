@@ -9,6 +9,7 @@ from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
 from models.actions.choice import ChoiceAction
+from models.actions.choices import UntapCard, LeaveTapped
 from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking, \
     AssignCombatDamage
 from models.actions.draw_discard import DrawCard, DiscardCard
@@ -290,7 +291,7 @@ class GameState:
     def apply_untap_effects(self, c: GameCard):
         self.trigger('untap', c)
 
-    def untap(self):
+    def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness"""
         for c in self.boards[self.player_turn_idx].cards:
             for turn_num, act in self.game_history:
@@ -298,12 +299,19 @@ class GameState:
                     c.has_summoning_sickness = False
             if not c.is_tapped:
                 continue
-            self.trigger('on_untap_phase', c)
-            for a in c.modifiers.auras:
-                if not isinstance(a, GameCard):
-                    continue
-                self.trigger('on_untap_phase', a)
-            c.untap(self)  # TODO: isn't this just going to untap the card regardless?
+
+            for turn_number, action in self.game_history:
+                if (turn_number == self.turn_number and
+                        (isinstance(action, UntapCard) or isinstance(action, LeaveTapped)) and action.source == c):
+                    print("You've already made an untap decision on this card this turn")
+                    break
+            else:
+                print(f'Checking on_untap_phase for {c}')
+                self.trigger('on_untap_phase', c)
+                for a in c.modifiers.auras:
+                    if not isinstance(a, GameCard):
+                        continue
+                    self.trigger('on_untap_phase', a)
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
@@ -444,7 +452,10 @@ class GameState:
             return
 
         if self.phase == Phase.UNTAP:
-            self.untap()
+            self.handle_untap_phase()
+            if len(self.action_stack):
+                if isinstance(self.action_stack.last_action, ChoiceAction):
+                    return self.action_stack.last_action.get_actions()
             self.phase = Phase.UPKEEP
             return
 
