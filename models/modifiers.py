@@ -67,7 +67,9 @@ class Modifiers:
     temps: list[PTTemp | KWATemp] = field(default_factory=list)
 
     def __repr__(self):
-        return ', '.join([a.__repr__() for a in self.auras] + [t.__repr__() for t in self.temps])
+        pt_mod_cards = (ptm.card for ptm in self.auras if isinstance(ptm, PTModifier))
+        return ', '.join([a.__repr__() for a in self.auras if a not in pt_mod_cards] +
+                         [t.__repr__() for t in self.temps])
 
     def __bool__(self) -> bool:
         """True if anything contained in self.auras or self.temps"""
