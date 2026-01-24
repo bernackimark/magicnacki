@@ -595,3 +595,7 @@ class GameState:
 #        for a in c.auras:
 #  - Should auras & mods just be played to the board of the card owner?
 #    There's already a tie back to its host via .attached_to
+
+# TODO:
+#  Create a module that queries for game events.
+#  - instead of gs.cards_that_died_this_turn, there should be a GameHistoryFilter (like CardFilter)
