@@ -462,10 +462,6 @@ class GameState:
         if self.phase == Phase.UPKEEP:
             for c in self.boards[self.player_turn_idx].cards:
                 self.trigger('upkeep', c)
-                for a in c.modifiers.auras:
-                    if not isinstance(a, GameCard):  # KWAModifiers/PTModifiers are auras but aren't actually GameCards
-                        continue
-                    self.trigger('upkeep', a)
             self.phase = Phase.DRAW
             return
 

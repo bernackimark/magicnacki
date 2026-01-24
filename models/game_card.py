@@ -3,6 +3,7 @@ from typing import Callable
 from card import Card
 from cast_targets import CAST_TARGETS
 from kw_ability import get_base_kwas
+from models.counter_tokens import Counters
 from models.effects.on_leave import *
 from models.effects.slug_effect_mapping import SLUG_EFFECTS
 from models.effects.on_untap_card import *
@@ -29,6 +30,7 @@ class GameCard:
         self.has_flying: bool = 'Flying' in self.props.keyword_abilities
         self.attached_to: "GameCard" = None
         self.modifiers = Modifiers()
+        self.counters = Counters()
 
         self.combat_damage_dealt: int = 0  # not sure that these belong here
         self.combat_damage_received: int = 0
@@ -47,6 +49,8 @@ class GameCard:
             text += f' ({self.power}/{self.toughness})'
         if self.modifiers:
             text += f' w {self.modifiers}'
+        if self.counters:
+            text += f' w {self.counters}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
@@ -60,8 +64,8 @@ class GameCard:
     @property
     def _pt(self) -> tuple[int, int]:
         global_power_adj, global_toughness_adj = self._get_global_pt_adj()
-        power = self.base_pt[0] + global_power_adj + self.modifiers.power_delta
-        toughness = self.base_pt[1] + global_toughness_adj + self.modifiers.toughness_delta
+        power = self.base_pt[0] + global_power_adj + self.modifiers.power_delta + self.counters.power_delta
+        toughness = self.base_pt[1] + global_toughness_adj + self.modifiers.toughness_delta + self.counters.toughness_delta
         return power, toughness
 
     def _get_global_pt_adj(self) -> tuple[int, int]:
