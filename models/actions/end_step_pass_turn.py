@@ -23,6 +23,7 @@ class PassTheTurn(Action):
         return "Pass the Turn"
 
     def play(self) -> None:
+        self.gs.cards_that_died_this_turn.clear()
         self.gs.player_turn_idx = flip(self.gs.player_turn_idx)
         self.gs.action_on_idx = self.gs.player_turn_idx
         self.gs.turn = Turn(self.gs.player_turn_idx, flip(self.gs.player_turn_idx))

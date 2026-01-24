@@ -76,6 +76,7 @@ class GameState:
         self.damage_preventions: list[PreventNextDamage] = []
         self.end_of_turn_effects: list = []
         self.end_step_funcs: list[Callable] = []
+        self.cards_that_died_this_turn: list[GameCard] = []
 
     # Event Dispatcher
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
@@ -181,10 +182,10 @@ class GameState:
         1. Card-specific continuous effects; 2. Global continuous effects; 3. Temporary 'next damage' shields"""
         for card in self.card_filter.in_play().result():
             for eff in card.effects:
-                eff.on_damage(self, event)
+                eff.on_damage(self, event, card)
 
-        for _, eff, _ in self.global_effects:
-            eff.on_damage(self, event)
+        for card, eff, _ in self.global_effects:
+            eff.on_damage(self, event, card)
 
         for p in list(self.damage_preventions):
             if event.remaining <= 0:
@@ -249,6 +250,7 @@ class GameState:
         if c in board.cards:
             board.remove_from_board(c)
         c.clear_all_mods()  # clear all attached_to relationships
+        self.cards_that_died_this_turn.append(c)
 
     def return_to_hand(self, c: GameCard):
         hand = self.hands[c.orig_owner_id]
