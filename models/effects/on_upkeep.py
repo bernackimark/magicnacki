@@ -5,6 +5,7 @@ from utils import flip
 from ..actions.choices import PayManaOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
     ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, ErosionUpkeepChoice, LordOfThePitUpkeepChoice, \
     SeasonOfTheWitchUpkeepChoice, SerendibDjinnUpkeepChoice, AddKWA, SacALandChoice, ShapeshifterChoice
+from ..counter_tokens import MINUS_ONE
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -267,4 +268,15 @@ def sunken_city_on_upkeep():
         def resolve(self, gs: GameState, source: GameCard, target=None):
             # Pause the game and force a choice
             gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, 'UU'), gs, False)
+    return E()
+
+def unstable_mutation_on_upkeep():
+    """At upkeep of enchanted creature's controller, put a -1/-1 counter on that creature"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if gs.player_turn_idx != source.attached_to.orig_owner_id:
+                return
+            source.attached_to.counters.add_counter(MINUS_ONE)
     return E()

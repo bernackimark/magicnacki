@@ -153,6 +153,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'twiddle': [twiddle_on_cast()],
         'typhoon': [typhoon_on_cast()],
         'unholy-strength': [unholy_strength_on_cast()],
+        'unstable-mutation': [unstable_mutation_on_cast(), unstable_mutation_on_upkeep()],
         'unsummon': [unsummon_on_cast()],
         'warp-artifact': [feedback_and_warp_artifact_on_upkeep()],
         'weakness': [weakness_on_cast()],

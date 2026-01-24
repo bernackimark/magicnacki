@@ -968,6 +968,15 @@ def unholy_strength_on_cast():
                 target.modifiers.auras.append(PTModifier(source, 2, 1))
     return E()
 
+def unstable_mutation_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            if target:
+                target.modifiers.auras.append(PTModifier(source, 3, 3))
+    return E()
+
 def unsummon_on_cast():
     class E(Effect):
         event = 'cast'

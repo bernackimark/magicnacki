@@ -64,6 +64,7 @@ CAST_TARGETS = {
     'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
     'unholy-strength': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'unstable-mutation': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'unsummon': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'warp-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'weakness': lambda gs: CardFilter(gs).in_play().creatures().result(),
