@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTERS
 from cost import Cost, ManaCost, TapCost, SacSelfCost, ExileSelfCost
+from models.counter_tokens import CHARGE
 from models.damage import PreventNextDamage, DamageEvent
 from models.effects.on_end_step import nettling_imp_on_end_step
 from phase_fsm import Phase
@@ -278,6 +279,8 @@ def stone_giant_func(gs: GameState, s: GameCard, t: Target):
     gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(t))
 
 
+MANA_BATTERY_ADD_CHARGE_AAS = AAS('2', True, lambda _, s: s, lambda gs, s, t: s.counters.add_counter(CHARGE))
+
 ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'aladdins-ring': [AAS('', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(4))],
     'ali-baba': [AAS('R', True, T_FUNCS['walls_in_play'], lambda gs, src, t: t.tap(gs))],
@@ -287,6 +290,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'blessing': [AAS('W', False, None, pump_func(1, 1))],
     'birds-of-paradise': [AAS('', True, T_FUNCS['card_owner'],
                               add_mana_func(c), text=f'Add 1 {c}') for c in COLOR_LETTERS],
+    'black-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
+    'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
     'book-of-rass': [AAS('2', False, T_FUNCS['card_owner'], lambda gs, s, t: book_of_rass_func(gs, s, t))],
     'brainwash': [AAS('3', False, None, add_remove_kwa_temp('add', 'Attack'))],  # WARNING: validate that target_Filter=None is correct
     'brothers-of-fire':
@@ -354,6 +359,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
              lambda gs, src, t: gs.damage_preventions.append(
                             PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'greed': [AAS('B', False, T_FUNCS['card_owner'], lambda gs, s, t: greed_func(gs, s, t))],
+    'green-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
     'hammerheim':
         # {T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn.
         [AAS('', True, lambda _, s: s.orig_owner_id, add_mana_func('R')),
@@ -421,6 +427,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'radjan-spirit':
         [AAS('', True, T_FUNCS['creatures_in_play'], add_remove_kwa_temp('remove', 'Flying'))],
     'rakalite': [AAS('2', False, T_FUNCS['all_creatures_and_players'], rakalite_func)],
+    'red-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
     'relic-barrier': [AAS('', True, T_FUNCS['untapped_artifacts_in_play'], lambda gs, s, t: t.tap(gs))],
     'rod-of-ruin': [AAS('3', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'rocket-launcher':
@@ -446,7 +453,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'stone-giant': [AAS('', True, T_FUNCS['stone_giant'], stone_giant_func)],
     'strip-mine': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('C')),
                    AAS('', True, T_FUNCS['lands_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
-    'wall-of-water': [AAS('U', False, None, pump_func(1, 0))]
+    'wall-of-water': [AAS('U', False, None, pump_func(1, 0))],
+    'white-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
 }
 
 def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
