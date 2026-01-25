@@ -146,6 +146,16 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
 }
 
+# --- NON-CARD-SPECIFIC PRE-CONSTRUCTED ACTIVATED ABILITY SPEC ---
+def untap_at_owners_upkeep(cost_mana: str):
+    return AAS(cost_mana, False, None, lambda gs, s, _: s.untap(gs), allowed_phases=[Phase.UPKEEP],
+               allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, text='Untap')
+
+def untap_host_at_owners_upkeep(cost_mana: str):
+    # WARNING: allowed_player_turn = OPPONENT assumes Paralyze has been played on an opp creature !!!
+    return AAS(cost_mana, False, None, lambda gs, s, _: s.attached_to.untap(gs), allowed_phases=[Phase.UPKEEP],
+               allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.OPPONENT, text='Untap')
+
 # --- NON-CARD-SPECIFIC COMMON/COMPLEX EFFECT FUNCS ---
 def add_mana_func(color: str, amt: int = 1):
     if color not in COLOR_LETTERS_W_COLORLESS:
@@ -299,8 +309,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
     'book-of-rass': [AAS('2', False, T_FUNCS['card_owner'], lambda gs, s, t: book_of_rass_func(gs, s, t))],
     'brainwash': [AAS('3', False, None, add_remove_kwa_temp('add', 'Attack'))],  # WARNING: validate that target_Filter=None is correct
-    'brass-man': [AAS('1', False, None, lambda gs, s, _: gs.apply_untap_effects(s), allowed_phases=[Phase.UPKEEP],
-                      allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, text='Untap')],
+    'brass-man': [untap_at_owners_upkeep('1')],
     'brothers-of-fire':
         [AAS('', True, T_FUNCS['all_creatures_and_players'], lambda gs, s, t: brothers_of_fire_func(gs, s, t))],
     'carrion-ants': [AAS('1', False, None, pump_func(1, 1))],
@@ -326,6 +335,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
              lambda gs, src, t: gs.damage_preventions.append(PreventNextDamage(src, source_card=t, target_player=src.orig_owner_id)))],
     'coal-golem':
         [AAS('3', False, None, add_mana_func('R', 3), extra_costs=[SacSelfCost()])],
+    'colossus-of-sardia': [untap_at_owners_upkeep('9')],
     'conservator':
         [AAS('3', True, None, lambda gs, src, _: gs.damage_preventions.append(
                         PreventNextDamage(src, remaining=2, target_player=src.orig_owner_id)))],
@@ -388,6 +398,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
         # {0}: Untap enchanted creature. Activate only during your turn and only once each turn
         [AAS('', False, None, lambda gs, source, t: t.untap(gs),
              allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],
+    'island-fish-jasconius': [untap_at_owners_upkeep('UUU')],
     'jade-monolith': [AAS('1', False, T_FUNCS['all_creatures_and_players'], jade_monolith_func)],
     'jandors-saddlebags': [AAS('3', True, T_FUNCS['tapped_creatures'], lambda gs, source, t: t.untap(gs))],
     'jayemdae-tome':
@@ -401,6 +412,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'ley-druid':
         [AAS('', True, T_FUNCS['tapped_lands'], lambda gs, source, t: t.untap(gs))],
     'llanowar-elves': [AAS('', True, T_FUNCS['card_owner'], add_mana_func('G'))],
+    'mana-vault': [untap_at_owners_upkeep('4'), AAS('', True, T_FUNCS['card_owner'], add_mana_func('C', 3))],
     'maze-of-ith': [AAS('', True, lambda gs, s: gs.card_filter.attackers().result(), maze_of_ith_func)],
     'merfolk-assassin':
         [AAS('', True, lambda gs, source: gs.card_filter.in_play().has('Islandwalk').result(), destroy_func)],
@@ -421,6 +433,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'northern-paladin': [AAS('WW', True, T_FUNCS['creatures_and_enchantments_in_play'], destroy_func)],
     'oasis': [AAS('', True, T_FUNCS['creatures_in_play'], prevent_next_damage_func(1))],
     'orcish-artillery': [AAS('', True, T_FUNCS['all_creatures_and_players'], orcish_artillery_func)],
+    'paralyze': [untap_host_at_owners_upkeep('4')],
     'pendelhaven':
         [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('G')),
          AAS('', True, T_FUNCS['one_one_creatures_in_play'], pump_func(1, 2))],
