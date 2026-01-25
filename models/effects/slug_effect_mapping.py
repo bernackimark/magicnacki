@@ -117,6 +117,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'mana-short': [mana_short_on_cast()],
         'mana-vortex': [mana_vortex_on_cast(), mana_vortex_on_upkeep()],
         'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED: All Walls able to block this creature do so
+        'marsh-viper': [add_two_poison_counters_on_damage()],
         'martyrs-cry': [martyrs_cry_on_cast()],
         'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
         'mountain': [mountain_on_tap(), land_on_leave()],
@@ -125,6 +126,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'phantasmal-forces': [phantasmal_forces_on_upkeep()],
         'phyrexian-gremlins': [untap_option_on_untap_phase()],
         'pirate-ship': [islandhome_can_attack_effect()],
+        'pit-scorpion': [add_poison_counter_on_damage()],
         'plains': [land_on_leave()],
         'power_surge': [power_surge_on_upkeep()],
         'preacher': [untap_option_on_untap_phase()],
