@@ -5,7 +5,8 @@ from utils import flip
 from ..actions.choices import PayManaOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
     ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, ErosionUpkeepChoice, LordOfThePitUpkeepChoice, \
     SeasonOfTheWitchUpkeepChoice, SerendibDjinnUpkeepChoice, AddKWA, SacALandChoice, ShapeshifterChoice
-from ..counter_tokens import MINUS_ONE
+from ..counter_tokens import MINUS_ONE, PUPA, PLUS_ONE, HUNGER
+from ..modifiers import KWAModifier
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -14,6 +15,25 @@ if TYPE_CHECKING:
 from models.effects.base import Effect
 from card_filter import CardFilter
 
+
+def cocoon_on_upkeep():
+    """At your upkeep, remove a pupa counter from this Aura.
+    If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            p_id = gs.player_turn_idx
+            host = source.attached_to
+            if p_id != source.orig_owner_id:
+                return
+            if not host.counters.get_count(PUPA):
+                gs.send_to_graveyard_from_play(source)
+                host.counters.add_counter(PLUS_ONE)
+                host.modifiers.auras.append(KWAModifier(source, 'add', 'Flying'))
+                return
+            host.counters.remove_counter(PUPA)
+    return E()
 
 def conversion_on_upkeep():
     """At the beginning of your upkeep, sacrifice this enchantment unless you pay {WW}."""
@@ -87,6 +107,19 @@ def erosion_on_upkeep():
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
+    return E()
+
+def fasting_on_upkeep():
+    """At your upkeep, put a hunger counter on this enchantment. Destroy Fasting if 5+ hunger counters on it ..."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if gs.player_turn_idx != source.orig_owner_id:
+                return
+            source.counters.add_counter(HUNGER)
+            if source.counters.get_count(HUNGER) > 4:
+                gs.send_to_graveyard_from_play(source)
     return E()
 
 def feedback_and_warp_artifact_on_upkeep():

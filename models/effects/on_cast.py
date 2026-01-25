@@ -6,6 +6,7 @@ from phase_fsm import Phase
 from utils import flip
 from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana, ShapeshifterChoice
 from ..actions.draw_discard import DiscardCard
+from ..counter_tokens import PLUS_ONE_ZERO, PUPA
 from ..damage import PreventNextDamage
 
 if TYPE_CHECKING:
@@ -170,6 +171,33 @@ def cleanse_on_cast():
                 gs.send_to_graveyard_from_play(c)
     return E()
 
+def clockwork_avian_on_cast():
+    """This creature enters with four +1/+0 counters on it ..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            source.counters.add_counter(PLUS_ONE_ZERO, 4)
+    return E()
+
+def clockwork_beast_on_cast():
+    """This creature enters with seven +1/+0 counters on it ..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            source.counters.add_counter(PLUS_ONE_ZERO, 7)
+    return E()
+
+def cocoon_on_cast():
+    """When this Aura enters, tap enchanted creature and put three pupa counters on this Aura ..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            target.tap(gs)
+            source.counters.add_counter(PUPA, 3)
+    return E()
 
 def crumble_on_cast():
     class E(Effect):

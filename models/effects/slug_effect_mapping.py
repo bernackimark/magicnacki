@@ -35,6 +35,9 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'burrowing': [burrowing_on_cast()],
         'castle': [castle_on_cast(), global_on_leave()],
         'cleanse': [cleanse_on_cast()],
+        'clockwork-avian': [clockwork_avian_on_cast()],
+        'clockwork-beast': [clockwork_beast_on_cast()],
+        'cocoon': [cocoon_on_cast(), cocoon_on_upkeep()],
         'conversion': [conversion_on_upkeep()],  # still need to code the identity change aspect
         'copper-tablet': [copper_tablet_on_upkeep()],
         'cosmic-horror': [cosmic_horror_on_upkeep()],
@@ -67,6 +70,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
                                      evil_eye_of_orms_by_gore_can_be_blocked()],
         'eye-for-an-eye': [eye_for_an_eye_on_cast()],
         'farmstead': [farmstead_on_cast()],
+        'fasting': [fasting_on_upkeep()],
         'feedback': [feedback_and_warp_artifact_on_upkeep()],
         'feint': [feint_on_cast()],
         'fishliver-oil': [fishliver_oil_on_cast()],
@@ -77,6 +81,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'force-of-nature': [force_of_nature_on_upkeep()],
         'forest': [forest_on_cast(), forest_on_tap(), forest_on_leave(), land_on_leave()],
         'forethought-amulet': [forethought_amulet_on_upkeep()],  # effect need to be coded still
+        'fungusaur': [fungusaur_on_damage()],
         'gaseous-form': [gaseous_form_on_cast()],
         'giant-growth': [giant_growth_on_cast()],
         'giant-strength': [giant_strength_on_cast()],
@@ -106,6 +111,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'lance': [lance_on_cast()],
         'leviathan': [leviathan_on_cast()],  # lots of other things to code
         'lightning-bolt': [lightning_bolt_on_cast()],
+        'living-artifact': [living_artifact_on_damage()],
         'lord-of-atlantis': [lord_of_atlantis_on_cast(), lord_of_atlantis_on_leave()],
         'lord-of-the-pit': [lord_of_the_pit_on_upkeep()],
         'mana-short': [mana_short_on_cast()],

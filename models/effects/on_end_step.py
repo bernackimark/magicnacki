@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from ..counter_tokens import CARRION
+
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
@@ -56,6 +58,17 @@ def nettling_imp_on_end_step():
             """target = GameCard that needed to attack"""
             if target not in gs.card_filter.attackers().result():
                 gs.send_to_graveyard_from_play(target)
+    return E()
+
+def osai_vultures_on_end_step():
+    """At each end step, if a creature died this turn put a carrion counter on this creature"""
+
+    class E(Effect):
+        event = 'end_step'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            if gs.cards_that_died_this_turn:
+                s.counters.add_counter(CARRION)
     return E()
 
 def pestilence_on_end_step():

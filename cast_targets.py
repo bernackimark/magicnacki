@@ -17,6 +17,7 @@ CAST_TARGETS = {
     'braingeyser': lambda gs: all_player_indices(gs),
     'brainwash': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'burrowing': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'cocoon': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
     'curse-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'cursed-land': lambda gs: CardFilter(gs).in_play().lands.result(),
     'crumble': lambda gs: CardFilter(gs).in_play().artifacts().result(),
@@ -50,6 +51,7 @@ CAST_TARGETS = {
     'jovial-evil': lambda gs: flip(gs.action_on_idx),  # test this
     'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'lightning-bolt': lambda gs: CardFilter(gs).in_play().creatures().result() + all_player_indices(gs),
+    'living-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'mana-short': lambda gs: all_player_indices(gs),
     'mana-vortex': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands().result(),
     'martyrs-cry': lambda gs: CardFilter(gs).in_play().creatures().white().result(),
