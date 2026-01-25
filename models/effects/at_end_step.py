@@ -118,6 +118,8 @@ def voodoo_doll_at_end_step():
         event = 'end_step'
 
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if gs.player_turn_idx != source.orig_owner_id:
+                return
             if source.is_tapped:
                 return
             if pin_cnt := source.counters.get_count(PIN) > 0:
