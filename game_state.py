@@ -278,6 +278,23 @@ class GameState:
         board.remove_from_board(c)
         self.return_to_hand(c)
 
+    def remove_from_any_graveyard(self, c: GameCard) -> GameCard:
+        for g in self.graveyards:
+            for card in g:
+                if card == c:
+                    g.remove(c)
+                    return c
+
+    def remove_from_your_graveyard(self, c: GameCard, p_idx: int) -> GameCard:
+        for card in self.graveyards[p_idx]:
+            if card == c:
+                self.graveyards[p_idx].remove(c)
+                return c
+
+    def add_to_hand(self, c: GameCard, player_idx: int) -> None:
+        self.hands[player_idx].cards.append(c)
+
+
     # Life Operations; using Registry Pattern
     def increment_life(self, p_id: int, amt: int):
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
