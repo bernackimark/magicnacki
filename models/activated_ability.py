@@ -47,8 +47,8 @@ class ActivatedAbility:
         OPPONENT = auto()
 
     card: GameCard
-    cost_mana: InitVar[str]
-    cost_tap: InitVar[bool]
+    cost_mana: str
+    cost_tap: bool
     costs: list[Cost] = field(init=False, default_factory=list)
     target_filter: Callable[[GameState, GameCard], Target] | None
     effect: Callable[[GameState, GameCard, Target], None]
@@ -60,13 +60,13 @@ class ActivatedAbility:
     extra_costs: InitVar[list[Cost | None]] = None
     text: str = ''
 
-    def __post_init__(self, cost_mana: str, cost_tap: bool, extra_costs: list[Cost]):
+    def __post_init__(self, extra_costs: list[Cost]):
         """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
         allowed_p_id_turns need knowledge of the card's owner and is assigned here;
         if allowed_player_turn is None, then the ability should be permitted on both turns"""
-        if cost_mana:
-            self.costs.append(ManaCost(cost_mana))
-        if cost_tap:
+        if self.cost_mana:
+            self.costs.append(ManaCost(self.cost_mana))
+        if self.cost_tap:
             self.costs.append(TapCost())
         if extra_costs:
             for extra_cost in extra_costs:
@@ -299,6 +299,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
     'book-of-rass': [AAS('2', False, T_FUNCS['card_owner'], lambda gs, s, t: book_of_rass_func(gs, s, t))],
     'brainwash': [AAS('3', False, None, add_remove_kwa_temp('add', 'Attack'))],  # WARNING: validate that target_Filter=None is correct
+    'brass-man': [AAS('1', False, None, lambda gs, s, _: gs.apply_untap_effects(s), allowed_phases=[Phase.UPKEEP],
+                      allowed_player_turn=ActivatedAbility.AllowedPlayerTurn.CASTER, text='Untap')],
     'brothers-of-fire':
         [AAS('', True, T_FUNCS['all_creatures_and_players'], lambda gs, s, t: brothers_of_fire_func(gs, s, t))],
     'carrion-ants': [AAS('1', False, None, pump_func(1, 1))],
