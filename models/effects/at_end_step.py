@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from ..counter_tokens import CARRION, CORPSE
+from ..counter_tokens import CARRION, CORPSE, PIN
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -110,4 +110,17 @@ def season_of_the_witch_on_end_step():
                 if creature.has_summoning_sickness or 'Attack' not in creature.keyword_abilities:
                     continue
                 gs.send_to_graveyard_from_play(creature)
+    return E()
+
+def voodoo_doll_at_end_step():
+    """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
+    class E(Effect):
+        event = 'end_step'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if source.is_tapped:
+                return
+            if pin_cnt := source.counters.get_count(PIN) > 0:
+                gs.apply_damage(source, pin_cnt, source.orig_owner_id)
+            gs.send_to_graveyard_from_play(source)
     return E()
