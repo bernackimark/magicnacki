@@ -6,7 +6,7 @@ from phase_fsm import Phase
 from utils import flip
 from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana, ShapeshifterChoice
 from ..actions.draw_discard import DiscardCard
-from ..counter_tokens import PLUS_ONE_ZERO, PUPA, PLUS_ONE
+from ..counter_tokens import PLUS_ONE_ZERO, PUPA, PLUS_ONE, SLEEP
 from ..damage import PreventNextDamage
 
 if TYPE_CHECKING:
@@ -945,6 +945,15 @@ def syphon_soul_on_cast():
             gs.increment_life(source.orig_owner_id, 2)
     return E()
 
+def tetravus_and_triskelion_on_cast():
+    """This creature enters with three +1/+1 counters on it ..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            source.counters.add_counter(PLUS_ONE, 3)
+    return E()
+
 def tivadars_crusade_on_cast():
     """Destroy all Goblins"""
     class E(Effect):
@@ -1024,6 +1033,19 @@ def unsummon_on_cast():
                 board = gs.boards[target.orig_owner_id]
                 board.remove_from_board(target)
                 gs.return_to_hand(target)
+    return E()
+
+def venarian_gold_on_cast():
+    """When this Aura enters, tap enchanted creature and put X sleep counters on it ..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if not target:
+                raise RuntimeError(f"{source.props.name} needs a casting target")
+            gs.apply_tap_effects(target)
+            if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
+                source.counters.add_counter(SLEEP, x)
     return E()
 
 def wheel_of_fortune_on_cast():

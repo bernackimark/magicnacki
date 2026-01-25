@@ -5,7 +5,7 @@ from utils import flip
 from ..actions.choices import PayManaOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
     ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, ErosionUpkeepChoice, LordOfThePitUpkeepChoice, \
     SeasonOfTheWitchUpkeepChoice, SerendibDjinnUpkeepChoice, AddKWA, SacALandChoice, ShapeshifterChoice
-from ..counter_tokens import MINUS_ONE, PUPA, PLUS_ONE, HUNGER, PLUS_ZERO_ONE
+from ..counter_tokens import MINUS_ONE, PUPA, PLUS_ONE, HUNGER, PLUS_ZERO_ONE, SLEEP, PIN
 from ..modifiers import KWAModifier
 
 if TYPE_CHECKING:
@@ -323,4 +323,26 @@ def unstable_mutation_on_upkeep():
             if gs.player_turn_idx != source.attached_to.orig_owner_id:
                 return
             source.attached_to.counters.add_counter(MINUS_ONE)
+    return E()
+
+def venarian_gold_on_upkeep():
+    """... At upkeep of enchanted creature's controller, remove a sleep counter from that creature"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if gs.player_turn_idx != source.attached_to.orig_owner_id:
+                return
+            source.attached_to.counters.remove_counter(SLEEP)
+    return E()
+
+def voodoo_doll_on_upkeep():
+    """At your upkeep, put a pin counter on this artifact"""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if gs.player_turn_idx != source.orig_owner_id:
+                return
+            source.counters.add_counter(PIN)
     return E()

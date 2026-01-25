@@ -1,4 +1,5 @@
 from models.effects.at_combat_end import *
+from models.effects.at_untap_phase import *
 from models.effects.can_attack import *
 from models.effects.can_block import *
 from models.effects.can_be_blocked import *
@@ -7,9 +8,9 @@ from models.effects.common import *
 from models.effects.damage_prevention import *
 from models.effects.on_leave import *
 from models.effects.on_damage import *
-from models.effects.on_end_step import *
+from models.effects.at_end_step import *
 from models.effects.on_tap import *
-from models.effects.on_untap_phase import untap_option_on_untap_phase
+from models.effects.at_untap_phase import untap_option_at_untap_phase
 from models.effects.tap import *
 from models.effects.on_upkeep import *
 from models.effects.on_untap_card import *
@@ -26,7 +27,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'argothian-treefolk': [argothian_treefolk_damage_prevention()],
         'armageddon': [send_to_graveyard_all_lands()],
         'artifact-ward': [artifact_ward_can_be_blocked(), artifact_ward_damage_prevention()],
-        'ashnods-battle-gear': [untap_option_on_untap_phase()],
+        'ashnods-battle-gear': [untap_option_at_untap_phase()],
         'bad-moon': [bad_moon_on_cast(), global_on_leave()],
         'ball-lightning': [destroy_on_end_step()],
         'blood-lust': [blood_lust_on_cast()],
@@ -39,7 +40,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'cleanse': [cleanse_on_cast()],
         'clockwork-avian': [clockwork_avian_on_cast(), clockwork_avian_and_beast_at_combat_end()],
         'clockwork-beast': [clockwork_beast_on_cast(), clockwork_avian_and_beast_at_combat_end()],
-        'cocoon': [cocoon_on_cast(), cocoon_on_upkeep()],
+        'cocoon': [cocoon_on_cast(), cocoon_on_upkeep(), cocoon_at_untap_phase()],
         'conversion': [conversion_on_upkeep()],  # still need to code the identity change aspect
         'copper-tablet': [copper_tablet_on_upkeep()],
         'cosmic-horror': [cosmic_horror_on_upkeep()],
@@ -124,14 +125,14 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
         'mountain': [mountain_on_tap(), land_on_leave()],
         'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
-        'old-man-of-the-sea': [untap_option_on_untap_phase()],
+        'old-man-of-the-sea': [untap_option_at_untap_phase()],
         'phantasmal-forces': [phantasmal_forces_on_upkeep()],
-        'phyrexian-gremlins': [untap_option_on_untap_phase()],
+        'phyrexian-gremlins': [untap_option_at_untap_phase()],
         'pirate-ship': [islandhome_can_attack_effect()],
         'pit-scorpion': [add_poison_counter_on_damage()],
         'plains': [land_on_leave()],
         'power_surge': [power_surge_on_upkeep()],
-        'preacher': [untap_option_on_untap_phase()],
+        'preacher': [untap_option_at_untap_phase()],
         'primordial-ooze': [primordial_ooze_on_upkeep()],
         'psionic_blast': [psionic_blast_on_cast()],
         'reset': [reset_on_cast()],
@@ -159,16 +160,20 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'sunken-city': [sunken_city_on_cast(), sunken_city_on_upkeep(), global_on_leave()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
         'syphon-soul': [syphon_soul_on_cast()],
-        'tawnoss-coffin': [untap_option_on_untap_phase()],
-        'tawnoss-weaponry': [untap_option_on_untap_phase()],
+        'tawnoss-coffin': [untap_option_at_untap_phase()],
+        'tawnoss-weaponry': [untap_option_at_untap_phase()],
+        'tetravus': [tetravus_and_triskelion_on_cast()],
         'tivadars-crusade': [tivadars_crusade_on_cast()],
         'tranquility': [tranquility_on_cast()],
+        'triskelion': [tetravus_and_triskelion_on_cast()],
         'tsunami': [tsunami_on_cast()],
         'twiddle': [twiddle_on_cast()],
         'typhoon': [typhoon_on_cast()],
         'unholy-strength': [unholy_strength_on_cast()],
         'unstable-mutation': [unstable_mutation_on_cast(), unstable_mutation_on_upkeep()],
         'unsummon': [unsummon_on_cast()],
+        'venarian-gold': [venarian_gold_on_cast(), venarian_gold_at_untap_phase(), venarian_gold_on_upkeep()],
+        'voodoo-doll': [voodoo_doll_on_upkeep(), voodoo_doll_at_end_step()],
         'warp-artifact': [feedback_and_warp_artifact_on_upkeep()],
         'weakness': [weakness_on_cast()],
         'web': [web_on_cast()],
