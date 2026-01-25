@@ -60,6 +60,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'dragon-whelp': [dragon_whelp_on_end_step()],
         'earthbind': [earthbind_on_cast()],
         'earthquake': [earthquake_on_cast()],
+        'el-hajjâj': [el_hajjaj_on_damage()],
         'elder-spawn': [elder_spawn_on_upkeep(), elder_spawn_can_be_blocked()],
         'electric-eel': [electric_eel_on_cast()],
         'elven-riders': [elven_riders_can_be_blocked()],

@@ -41,6 +41,16 @@ def add_two_poison_counters_on_damage():
 
     return E()
 
+def el_hajjaj_on_damage():
+    """Whenever this creature deals damage, you gain that much life"""
+    class E(Effect):
+        event = 'on_damage'
+
+        def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):
+            if event.source == this_card and event.remaining > 0:
+                gs.increment_life(this_card.orig_owner_id, event.remaining)
+    return E()
+
 def fungusaur_on_damage():
     """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
     class E(Effect):
