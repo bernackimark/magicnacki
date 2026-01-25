@@ -1,4 +1,5 @@
 from models.effects.at_combat_end import *
+from models.effects.at_discard_phase import *
 from models.effects.at_untap_phase import *
 from models.effects.can_attack import *
 from models.effects.can_block import *
@@ -49,6 +50,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'crusade': [crusade_on_cast(), global_on_leave()],
         'curse-artifact': [curse_artifact_on_upkeep()],
         'cursed-land-on-upkeep': [cursed_land_on_upkeep()],
+        'cursed-rack': [cursed_rack_at_discard_phase()],
         'dark-ritual': [dark_ritual_on_cast()],
         'darkness': [darkness_or_fog_or_holy_day_on_cast()],
         'demonic-torment': [demonic_torment_on_cast()],
