@@ -618,3 +618,6 @@ class GameState:
 # TODO:
 #  Create a module that queries for game events.
 #  - instead of gs.cards_that_died_this_turn, there should be a GameHistoryFilter (like CardFilter)
+
+# TODO:
+#  can_cast() must take into account multi-mana-color producers (dual lands, etc)
