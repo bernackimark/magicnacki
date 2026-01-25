@@ -53,6 +53,21 @@ class DealDamage(Action):
         self.gs.apply_damage(self.source, self.damage_amt, self.source.orig_owner_id)
         self.gs.action_stack.pop()  # remove choice
 
+class Exile(Action):
+    def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.w_damage_amt = w_damage_amt
+
+    def __repr__(self):
+        return f'Exile {self.source.props.name}'
+
+    def play(self):
+        if self.w_damage_amt:
+            self.gs.apply_damage(self.source, self.w_damage_amt, self.source.orig_owner_id)
+        self.gs.send_to_exile_from_play(self.source)
+        self.gs.action_stack.pop()  # remove choice
+
 class PayMana(Action):
     def __init__(self, p_id, gs, source: GameCard, cost: str):
         super().__init__(p_id, gs)
