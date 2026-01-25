@@ -33,3 +33,12 @@ class DiscardCard(Action):
         self.gs.send_to_graveyard(self.card)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
+
+@dataclass
+class MoveToDrawPhase(Action):
+
+    def __repr__(self) -> str:
+        return "Move to Draw Phase"
+
+    def play(self) -> None:
+        self.gs.phase = Phase.DRAW
