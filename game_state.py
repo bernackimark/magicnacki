@@ -526,6 +526,9 @@ class GameState:
             for com in self.combats:
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
+            for b in self.boards:
+                for c in b.cards:
+                    self.trigger('combat_end', c)
             self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
