@@ -20,6 +20,28 @@ from models.modifiers import KWAModifier, KWATemp, PTModifier, PTTemp
 from card_filter import CardFilter
 
 
+# --- GENERIC ON CAST ---
+def graveyard_to_board_on_cast():
+    """Return target from your graveyard to your board"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+            card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
+            gs.boards[source.orig_owner_id].play_to_board(card)
+    return E()
+
+def graveyard_to_hand_on_cast():
+    """Return target from your graveyard to your hand"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+            card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
+            gs.add_to_hand(card, source.orig_owner_id)
+    return E()
+
+# --- CARD-SPECIFIC ON CAST ---
 def acid_rain_on_cast():
     class E(Effect):
         event = 'cast'
