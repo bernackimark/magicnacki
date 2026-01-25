@@ -965,6 +965,15 @@ def tetravus_and_triskelion_on_cast():
             source.counters.add_counter(PLUS_ONE, 3)
     return E()
 
+def time_vault_on_cast():
+    """This artifact enters tapped..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            source.tap(gs)
+    return E()
+
 def tivadars_crusade_on_cast():
     """Destroy all Goblins"""
     class E(Effect):

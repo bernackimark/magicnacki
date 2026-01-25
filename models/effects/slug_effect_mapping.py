@@ -172,6 +172,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'tawnoss-coffin': [untap_option_at_untap_phase()],
         'tawnoss-weaponry': [untap_option_at_untap_phase()],
         'tetravus': [tetravus_and_triskelion_on_cast()],
+        'time-vault': [stays_tapped_at_untap_phase()],
         'tivadars-crusade': [tivadars_crusade_on_cast()],
         'tranquility': [tranquility_on_cast()],
         'triskelion': [tetravus_and_triskelion_on_cast()],
