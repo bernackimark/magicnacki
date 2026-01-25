@@ -175,6 +175,9 @@ def destroy_all_non_land_perms(gs: GameState, s: GameCard, t: Target):
 def destroy_func(gs: GameState, _: GameCard, t: Target):
     gs.send_to_graveyard_from_play(t)
 
+def dual_land_activated_ability_specs(colors: str) -> list[AAS]:
+    return [AAS('', True, T_FUNCS['card_owner'], add_mana_func(color), text=f'Add {{{color}}}') for color in colors]
+
 def prevent_next_damage_func(amt: int = None):
     def _effect(gs, src, _):
         gs.damage_preventions.append(PreventNextDamage(src, amt))
@@ -287,6 +290,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'amulet-of-kroog': [AAS('2', True, T_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
     'apprentice-wizard': [AAS('U', True, T_FUNCS['card_owner'], add_mana_func('C', 3))],
     'argivian-blacksmith': [AAS('', True, T_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
+    'badlands': dual_land_activated_ability_specs('BR'),
+    'bayou': dual_land_activated_ability_specs('BG'),
     'blessing': [AAS('W', False, None, pump_func(1, 1))],
     'birds-of-paradise': [AAS('', True, T_FUNCS['card_owner'],
                               add_mana_func(c), text=f'Add 1 {c}') for c in COLOR_LETTERS],
@@ -420,6 +425,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'pirate-ship': [AAS('', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'pixie-queen':
         [AAS('GGG', True, T_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
+    'plateau': dual_land_activated_ability_specs('RW'),
     'pradesh-gypsies': [AAS('1G', True, T_FUNCS['creatures_in_play'], pump_func(-2, 0))],
     'prodigal-sorcerer': [AAS('', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(1))],
     'psionic-entity':
@@ -434,6 +440,8 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
         [AAS('2', False, T_FUNCS['all_creatures_and_players'], lambda gs, s, t: rocket_launcher_func(gs, s, t))],
     'royal-assassin': [AAS('', True, T_FUNCS['tapped_creatures'], destroy_func)],
     'samite-healer': [AAS('', True, T_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
+    'savannah': dual_land_activated_ability_specs('GW'),
+
     'savaen-elves': [AAS('GG', True, T_FUNCS['auras_on_lands'], destroy_func)],
     'scarecrow': [AAS('6', True, None,
                       lambda gs, s, t: gs.global_effects.append((s, scarecrow_func)))],
@@ -442,6 +450,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
                      AAS('GGGG', True, T_FUNCS['creatures_in_play_w_forestwalk'],
                          add_remove_kwa_temp('remove', 'Forestwalk'))],
     'scavenger-folk': [AAS('G', True, T_FUNCS['artifacts_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
+    'scrubland': dual_land_activated_ability_specs('BW'),
     'shimian-night-stalker': [AAS('B', True, T_FUNCS['attackers'], shimian_nightstalker_func)],
     'shivan-dragon': [AAS('R', False, None, pump_func(1, 0))],
     'sisters-of-the-flame': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('R'))],
@@ -453,6 +462,11 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'stone-giant': [AAS('', True, T_FUNCS['stone_giant'], stone_giant_func)],
     'strip-mine': [AAS('', True, lambda gs, s: s.orig_owner_id, add_mana_func('C')),
                    AAS('', True, T_FUNCS['lands_in_play'], destroy_func, extra_costs=[SacSelfCost()])],
+    'taiga': dual_land_activated_ability_specs('RG'),
+    'tropical-island': dual_land_activated_ability_specs('GU'),
+    'tundra': dual_land_activated_ability_specs('WU'),
+    'underground-sea': dual_land_activated_ability_specs('BU'),
+    'volcanic-island': dual_land_activated_ability_specs('RU'),
     'wall-of-water': [AAS('U', False, None, pump_func(1, 0))],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE_AAS],  # add discharge logic
 }
