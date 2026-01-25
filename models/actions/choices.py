@@ -139,10 +139,10 @@ class UntapCard(Action):
 class LeaveTapped(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
         super().__init__(p_id, gs)
-        self.source = s
+        self.card = s
 
     def __repr__(self):
-        return f'Leave {self.source} tapped'
+        return f'Leave {self.card} tapped'
 
     def play(self):
         self.gs.action_stack.pop()
