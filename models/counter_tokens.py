@@ -13,10 +13,24 @@ class CounterType:
         return f'{self.name}'
 
 
-PLUS_ONE = CounterType("+1/+1", 1, 1)
-MINUS_ONE = CounterType("-1/-1", -1, -1)
-CHARGE = CounterType("charge")
-LORE = CounterType("lore")
+PLUS_ONE = CounterType('+1/+1', 1, 1)
+PLUS_ONE_ZERO = CounterType('+1/+0', 1, 0)
+MINUS_ONE = CounterType('-1/-1', -1, -1)
+CARRION = CounterType('carrion')
+CHARGE = CounterType('charge')
+CORPSE = CounterType('corpse')
+HATCHLING = CounterType('hatchling')
+HUNGER = CounterType('hunger')
+MATRIX = CounterType('matrix')
+MIRE = CounterType('mire')
+LORE = CounterType('lore')
+PIN = CounterType('pin')
+POISON = CounterType('poison')
+PUPA = CounterType('pupa')
+SLEEP = CounterType('sleep')
+STOARGE = CounterType('storage')
+VITALITY = CounterType('vitality')
+WIND = CounterType('wind')
 
 
 @dataclass
