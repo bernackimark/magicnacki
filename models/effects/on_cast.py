@@ -774,6 +774,17 @@ def nevinyrrals_disk_on_cast():
             gs.apply_tap_effects(source)
     return E()
 
+def paralyze_on_cast():
+    """When this Aura enters, tap enchanted creature..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if not target:
+                raise RuntimeError(f"{source.props.name} needs a target")
+            target.tap(gs)
+    return E()
+
 def psionic_blast_on_cast():
     """Psionic Blast deals 4 damage to any target and 2 damage to you"""
     class E(Effect):

@@ -134,7 +134,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'mountain': [mountain_on_tap(), land_on_leave()],
         'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
         'old-man-of-the-sea': [untap_option_at_untap_phase()],
-        'paralyze': [host_stays_tapped_at_untap_phase()],
+        'paralyze': [paralyze_on_cast(), host_stays_tapped_at_untap_phase()],
         'phantasmal-forces': [phantasmal_forces_on_upkeep()],
         'phyrexian-gremlins': [untap_option_at_untap_phase()],
         'pirate-ship': [islandhome_can_attack_effect()],
