@@ -13,13 +13,13 @@ class AcceptAction(Action):
     def play(self) -> None:
         last_action: CastToTargetAddToStack = self.gs.action_stack.last_action
         card = last_action.card
-        target = last_action.target
+        target = last_action.target if hasattr(last_action, 'target') else None
         if card.props.is_aura:
             card.attached_to = target
             target.modifiers.auras.append(card)
             self.gs.boards[target.orig_owner_id].play_to_board(card)
 
-        self.gs.trigger('cast', card, target)
+        self.gs.trigger('cast', card, target)  # WARNING: AcceptAction isn't just for 'cast' triggers !!!
         print(f"Successfully cast {card.props.name}")
 
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
