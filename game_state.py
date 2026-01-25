@@ -551,6 +551,9 @@ class GameState:
             return
 
         if self.phase == Phase.DISCARD:
+            for b in self.boards:
+                for c in b.cards:
+                    self.trigger('discard_step', c)
             if len(hand.cards) > 7:
                 for c in hand.cards:
                     available_actions.append(DiscardCard(self.player_turn_idx, self, c))
