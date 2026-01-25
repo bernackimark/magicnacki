@@ -12,7 +12,7 @@ from models.actions.choice import ChoiceAction
 from models.actions.choices import UntapCard, LeaveTapped
 from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking, \
     AssignCombatDamage
-from models.actions.draw_discard import DrawCard, DiscardCard
+from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import DamageEvent, PreventNextDamage
@@ -477,6 +477,8 @@ class GameState:
         if self.phase == Phase.UPKEEP:
             for c in self.boards[self.player_turn_idx].cards:
                 self.trigger('upkeep', c)
+                if activated_abilities := self.get_available_activated_abilities(c):
+                    return [MoveToDrawPhase(c.orig_owner_id, self)] + activated_abilities
             self.phase = Phase.DRAW
             return
 
