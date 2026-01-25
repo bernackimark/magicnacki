@@ -38,6 +38,7 @@ class GameState:
                 c.game_state = self
         self.decks_all_cards = self.decks.copy()
         self.life = [20, 20]
+        self._poison_counters = [0, 0]
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
         self.boards: list[Board] = [Board(i) for i in range(self.player_cnt)]
@@ -140,6 +141,16 @@ class GameState:
         opp = flip(p_id)
         self.life[opp] -= amt
 
+    @property
+    def poison_counters(self) -> list[int]:
+        return self._poison_counters
+
+    def add_poison_counter(self, p_idx: int, cnt: int = 1):
+        self._poison_counters[p_idx] += cnt
+        if self._poison_counters[p_idx] >= 10:
+            print(f"Player #{p_idx} has lost")
+            self.is_game_over = True
+
     # Pile Helpers & card movement
     @property
     def all_cards(self) -> list[GameCard]:
@@ -182,10 +193,12 @@ class GameState:
         1. Card-specific continuous effects; 2. Global continuous effects; 3. Temporary 'next damage' shields"""
         for card in self.card_filter.in_play().result():
             for eff in card.effects:
-                eff.on_damage(self, event, card)
+                if eff.event != 'on_damage':
+                    break
+                eff.resolve(self, event, card)
 
         for card, eff, _ in self.global_effects:
-            eff.on_damage(self, event, card)
+            eff.resolve(self, event, card)
 
         for p in list(self.damage_preventions):
             if event.remaining <= 0:
