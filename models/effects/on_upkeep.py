@@ -5,7 +5,7 @@ from utils import flip
 from ..actions.choices import PayManaOrSacUpkeepChoice, ForceOfNatureUpkeepChoice, CosmicHorrorUpkeepChoice, \
     ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, ErosionUpkeepChoice, LordOfThePitUpkeepChoice, \
     SeasonOfTheWitchUpkeepChoice, SerendibDjinnUpkeepChoice, AddKWA, SacALandChoice, ShapeshifterChoice
-from ..counter_tokens import MINUS_ONE, PUPA, PLUS_ONE, HUNGER
+from ..counter_tokens import MINUS_ONE, PUPA, PLUS_ONE, HUNGER, PLUS_ZERO_ONE
 from ..modifiers import KWAModifier
 
 if TYPE_CHECKING:
@@ -232,6 +232,17 @@ def power_surge_on_upkeep():
         def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
             untapped_lands = gs.card_filter.in_play().untapped().lands().result()
             gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
+    return E()
+
+def primordial_ooze_on_upkeep():
+    """... At your upkeep, put a +1/+1 counter on this creature ..."""
+    class E(Effect):
+        event = 'upkeep'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if gs.player_turn_idx != source.attached_to.orig_owner_id:
+                return
+            source.attached_to.counters.add_counter(PLUS_ZERO_ONE)
     return E()
 
 def season_of_the_witch_on_upkeep():

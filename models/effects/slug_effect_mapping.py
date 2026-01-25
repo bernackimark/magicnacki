@@ -1,3 +1,4 @@
+from models.effects.at_combat_end import *
 from models.effects.can_attack import *
 from models.effects.can_block import *
 from models.effects.can_be_blocked import *
@@ -7,6 +8,7 @@ from models.effects.damage_prevention import *
 from models.effects.on_leave import *
 from models.effects.on_damage import *
 from models.effects.on_end_step import *
+from models.effects.on_tap import *
 from models.effects.on_untap_phase import untap_option_on_untap_phase
 from models.effects.tap import *
 from models.effects.on_upkeep import *
@@ -35,8 +37,8 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'burrowing': [burrowing_on_cast()],
         'castle': [castle_on_cast(), global_on_leave()],
         'cleanse': [cleanse_on_cast()],
-        'clockwork-avian': [clockwork_avian_on_cast()],
-        'clockwork-beast': [clockwork_beast_on_cast()],
+        'clockwork-avian': [clockwork_avian_on_cast(), clockwork_avian_and_beast_at_combat_end()],
+        'clockwork-beast': [clockwork_beast_on_cast(), clockwork_avian_and_beast_at_combat_end()],
         'cocoon': [cocoon_on_cast(), cocoon_on_upkeep()],
         'conversion': [conversion_on_upkeep()],  # still need to code the identity change aspect
         'copper-tablet': [copper_tablet_on_upkeep()],
@@ -130,11 +132,14 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'plains': [land_on_leave()],
         'power_surge': [power_surge_on_upkeep()],
         'preacher': [untap_option_on_untap_phase()],
+        'primordial-ooze': [primordial_ooze_on_upkeep()],
         'psionic_blast': [psionic_blast_on_cast()],
         'reset': [reset_on_cast()],
         'reverse-damage': [reverse_damage_on_cast()],
         'riptide': [riptide_on_cast()],
-        'rocket_launcher': [rocket_launcher_on_cast()],
+        'rock-hydra': [rock_hydra_on_cast()],
+        'rocket-launcher': [rocket_launcher_on_cast()],
+        'scavenging-ghoul': [scavenging_ghoul_on_end_step()],
         'sea-serpent': [islandhome_can_attack_effect()],
         'season-of-the-witch': [season_of_the_witch_on_upkeep(), season_of_the_witch_on_end_step()],
         'seeker': [seeker_enchanted_creature_can_be_blocked()],
@@ -144,6 +149,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'sinkhole': [sinkhole_and_stone_rain_on_cast()],
         'swamp': [land_on_leave()],
         'spirit-link': [spirit_link_on_damage()],
+        'spirit-shackle': [spirit_shackle_on_tap()],
         'spiritual-sanctuary': [spiritual_sanctuary_on_upkeep()],
         'stone-rain': [sinkhole_and_stone_rain_on_cast()],
         'storm-seeker': [storm_seeker_on_cast()],
@@ -152,7 +158,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'subdue': [subdue_on_cast()],
         'sunken-city': [sunken_city_on_cast(), sunken_city_on_upkeep(), global_on_leave()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
-        'syphon_soul': [syphon_soul_on_cast()],
+        'syphon-soul': [syphon_soul_on_cast()],
         'tawnoss-coffin': [untap_option_on_untap_phase()],
         'tawnoss-weaponry': [untap_option_on_untap_phase()],
         'tivadars-crusade': [tivadars_crusade_on_cast()],

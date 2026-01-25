@@ -6,7 +6,7 @@ from phase_fsm import Phase
 from utils import flip
 from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana, ShapeshifterChoice
 from ..actions.draw_discard import DiscardCard
-from ..counter_tokens import PLUS_ONE_ZERO, PUPA
+from ..counter_tokens import PLUS_ONE_ZERO, PUPA, PLUS_ONE
 from ..damage import PreventNextDamage
 
 if TYPE_CHECKING:
@@ -822,6 +822,16 @@ def riptide_on_cast():
         def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
             for c in gs.card_filter.in_play().creatures().untapped().blue().result():
                 c.tap(gs)
+    return E()
+
+def rock_hydra_on_cast():
+    """This creature enters with X +1/+1 counters on it ..."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
+                source.counters.add_counter(PLUS_ONE, x)
     return E()
 
 def rocket_launcher_on_cast():

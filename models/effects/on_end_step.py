@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from ..counter_tokens import CARRION
+from ..counter_tokens import CARRION, CORPSE
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -79,6 +79,17 @@ def pestilence_on_end_step():
         def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
             if not gs.card_filter.creatures().in_play().result():
                 gs.send_to_graveyard_from_play(s)
+    return E()
+
+def scavenging_ghoul_on_end_step():
+    """At each end step, put a corpse counter on this creature for each creature that died this turn ..."""
+
+    class E(Effect):
+        event = 'end_step'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            if death_cnt := len(gs.cards_that_died_this_turn) > 0:
+                s.counters.add_counter(CORPSE, death_cnt)
     return E()
 
 def season_of_the_witch_on_end_step():
