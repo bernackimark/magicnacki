@@ -7,7 +7,7 @@ from constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTERS
 from cost import Cost, ManaCost, TapCost, SacSelfCost, ExileSelfCost
 from models.counter_tokens import CHARGE
 from models.damage import PreventNextDamage, DamageEvent
-from models.effects.on_end_step import nettling_imp_on_end_step
+from models.effects.at_end_step import nettling_imp_on_end_step
 from phase_fsm import Phase
 from utils import flip
 
