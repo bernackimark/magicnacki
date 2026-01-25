@@ -23,7 +23,7 @@ class ActivateAbility(Action):
             target_text = f', targeting Player #{self.target}'
         else:
             target_text = ''
-        return f"Activate Ability: {self.ability.card}{target_text}"
+        return f"{self.ability.card}. {{{self.ability.cost_mana}}}, {{{self.ability.cost_tap}}}: {self.ability.text}{target_text}"
 
     def play(self) -> None:
         self.ability.pay_costs(self.gs)
