@@ -354,11 +354,11 @@ class GameState:
             if c.has_summoning_sickness:
                 continue
 
-            if ability.target_filter is None:  # janky solution; auras have target_filter = None
+            if ability.eff_spec.target_filter is None:  # janky solution; auras have target_filter = None
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
                 continue
 
-            targets = ability.target_filter(self, c)
+            targets = ability.eff_spec.target_filter(self, c)
             # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
             print(f"{c=}, {ability=}, {targets=}")
 
@@ -392,6 +392,54 @@ class GameState:
             else:
                 raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card=} {targets=}")
         return actions
+
+    # def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
+    #     actions: list[ActivateAbility] = []
+    #
+    #     for ability in c.abilities:
+    #         if not ability.can_activate(self):
+    #             continue
+    #         if c.has_summoning_sickness:
+    #             continue
+    #
+    #         if ability.target_filter is None:  # janky solution; auras have target_filter = None
+    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
+    #             continue
+    #
+    #         targets = ability.target_filter(self, c)
+    #         # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
+    #         print(f"{c=}, {ability=}, {targets=}")
+    #
+    #         # No target needed → create a single action
+    #         if targets is None:
+    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, None))
+    #             continue
+    #
+    #         # I need at least one target, but I don't have any
+    #         elif isinstance(targets, list) and targets == []:
+    #             continue
+    #
+    #         # Targeting multiple player indices
+    #         elif targets == (0, 1) or targets == (1, 0):
+    #             for t in targets:
+    #                 actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+    #
+    #         # Targeting a single player index
+    #         elif targets == 0 or targets == 1:
+    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
+    #
+    #         # Targeting a single GameCard
+    #         elif isinstance(targets, GameCard):
+    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
+    #
+    #         # I need a target and got a valid list of GameCards
+    #         elif isinstance(targets, list) and isinstance(targets[0], GameCard):
+    #             for t in targets:
+    #                 actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+    #
+    #         else:
+    #             raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card=} {targets=}")
+    #     return actions
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         """Determine all legal actions available to player_id in the current phase ...
