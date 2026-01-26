@@ -1,14 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+if TYPE_CHECKING:
+    from game_state import GameState
+    from ..game_card import GameCard
+
 from .base import Effect
 from .damage import all_combat_damage_prevented
 from ..damage import DamageEvent
-from ..game_card import GameCard
-
-if TYPE_CHECKING:
-    from game_state import GameState
-
 from card_filter import CardFilter
 
 class GlobalEffect:

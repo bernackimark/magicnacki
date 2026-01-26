@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from game_state import GameState
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
+
 from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
-from models.game_card import GameCard
 from utils import flip
 
 

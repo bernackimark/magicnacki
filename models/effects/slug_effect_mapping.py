@@ -31,8 +31,6 @@ from models.effects.keywords import goblin_king_on_leave, erhnam_djinn_on_upkeep
 from models.effects.life import spirit_link_on_damage, add_poison_counter_on_damage, add_two_poison_counters_on_damage, \
         el_hajjaj_on_damage, ivory_tower_on_upkeep, spiritual_sanctuary_on_upkeep, stream_of_life_on_cast
 from models.effects.mana import dark_ritual_on_cast, drain_power_on_cast, energy_tap_on_cast
-from models.effects.on_leave import *
-
 from models.effects.piles import graveyard_to_board, graveyard_to_hand, boomerang_on_cast, unsummon_on_cast
 from models.effects.pumps import dragon_whelp_on_end_step, giant_tortoise_on_untap, forest_on_leave, \
         kobold_drill_sergeant_on_leave, kobold_overlord_and_taskmaster_on_leave, lord_of_atlantis_on_leave, \

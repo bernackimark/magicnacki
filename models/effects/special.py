@@ -1,14 +1,15 @@
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
 
-from typing import Optional
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
 
-from game_state import GameState
 from models.actions.choices import SerendibDjinnUpkeepChoice, ShapeshifterChoice, SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.effects.damage import all_damage_prevented_to_target_card
-from models.game_card import GameCard
 from models.modifiers import KWAModifier, PTModifier, PTTemp
 from utils import flip
 

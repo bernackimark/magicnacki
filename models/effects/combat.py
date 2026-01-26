@@ -1,12 +1,18 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from .damage import all_combat_damage_prevented
+from ..damage import DamageEvent
+
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
 
 from typing import Optional
 
 from card_filter import CardFilter
 from constants import BASIC_LANDS
-from game_state import GameState
 from models.effects.base import Effect
-from models.game_card import GameCard
 from utils import flip
 
 

@@ -1,12 +1,16 @@
-from typing import Callable
+from __future__ import annotations
+from typing import Callable, TYPE_CHECKING
+
+
+if TYPE_CHECKING:
+    from game_state import GameState
 
 from card import Card
 from cast_targets import CAST_TARGETS
 from kw_ability import get_base_kwas
 from models.counter_tokens import Counters
-from models.effects.on_leave import *
+from models.effects.base import Effect
 from models.effects.slug_effect_mapping import SLUG_EFFECTS
-from models.effects.on_untap_card import *
 from models.activated_ability import ActivatedAbility, get_activated_abilities
 from models.modifiers import Modifiers
 
@@ -116,12 +120,12 @@ class GameCard:
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
 
-    def get_cast_targets(self, gs: "GameState") -> list["GameCard"]:
+    def get_cast_targets(self, gs: GameState) -> list["GameCard"]:
         """First search registry; if aura isn't found in registry, assume it targets in-play creatures"""
         if ctf := CAST_TARGETS.get(self.props.slug):
             return ctf(gs)
         if self.props.is_aura:
-            return CardFilter(gs).in_play().creatures().result()
+            return gs.card_filter.in_play().creatures().result()
 
     def on_upkeep(self, gs):
         gs.trigger('upkeep', self)

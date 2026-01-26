@@ -1,6 +1,9 @@
 from __future__ import annotations
-
 from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
 
 from models.effects.base import Effect
 from card_filter import CardFilter
@@ -8,10 +11,6 @@ from phase_fsm import Phase
 from utils import flip
 from ..actions.choices import LeaveTapped, UntapChoice
 from ..counter_tokens import PUPA, SLEEP
-
-if TYPE_CHECKING:
-    from ..game_card import GameCard
-    from game_state import GameState
 
 
 def forest_on_tap():

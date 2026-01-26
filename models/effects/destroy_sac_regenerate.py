@@ -1,15 +1,16 @@
 from __future__ import annotations
+from typing import Optional, TYPE_CHECKING
 
-from typing import Optional
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
 
 from card_filter import CardFilter
-from game_state import GameState
 from models.actions.choices import PayManaOrSacUpkeepChoice, CosmicHorrorUpkeepChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, SacALandChoice, SeasonOfTheWitchUpkeepChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
-from models.game_card import GameCard
 
 
 class EaterOfTheDeadAA(Effect):

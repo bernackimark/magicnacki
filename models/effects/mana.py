@@ -1,15 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from constants import COLOR_LETTERS_W_COLORLESS
-from utils import flip
-from .base import Effect
-from ..counter_tokens import PLUS_ONE, VITALITY, POISON
-from ..damage import DamageEvent
-
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
+
+from constants import COLOR_LETTERS_W_COLORLESS
+from utils import flip
+from .base import Effect
 
 class AddMana(Effect):
     def __init__(self, color: str, cnt: int = 1):

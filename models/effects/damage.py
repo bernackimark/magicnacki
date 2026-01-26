@@ -1,14 +1,15 @@
 from __future__ import annotations
-
 import math
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
 
 from card_filter import CardFilter
-from game_state import GameState
 from models.actions.choices import ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, LordOfThePitUpkeepChoice
 from models.damage import DamageEvent, PreventNextDamage
 from models.effects.base import Effect
-from models.game_card import GameCard
 from utils import flip
 
 

@@ -1,13 +1,16 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from game_state import GameState
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
+
+
 from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, CARRION, CORPSE, PLUS_ZERO_ONE, MINUS_ZERO_TWO, PLUS_ONE, \
     VITALITY, HUNGER, MINUS_ONE, SLEEP, PIN, PUPA
 from models.damage import DamageEvent
 from models.effects.base import Effect
-from models.game_card import GameCard
 
 
 class CityOfShadowsAA1(Effect):
