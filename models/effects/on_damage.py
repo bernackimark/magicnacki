@@ -10,6 +10,15 @@ if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
 
+
+class DealDamage(Effect):
+    def __init__(self, amount):
+        self.amount = amount
+
+    def resolve(self, gs, source: GameCard, target: GameCard = None):
+        gs.apply_damage(source, self.amount, target)
+
+
 def add_poison_counter_on_damage():
     """Whenever this creature deals damage to a player, that player gets a poison counter"""
 
