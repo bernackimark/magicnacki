@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+from typing import Union
+
 BASIC_LANDS = ('forest', 'island', 'mountain', 'plains', 'swamp')
 COLOR_LETTERS = ('G', 'U', 'R', 'W', 'B')
 COLOR_LETTERS_W_COLORLESS = ('G', 'U', 'R', 'W', 'B', 'C')  # 'C' must be last in the sequence for mana handling
@@ -12,3 +16,4 @@ OLD_SCHOOL_RESTRICTED_SLUGS = ('ancestral-recall', 'black-lotus', 'braingeyser',
                                'time-walk', 'timetwister', 'wheel-of-fortune')
 OLD_SCHOOL_BANNED_SLUGS = ('bronze-tablet', 'contract-from-below', 'darkpact', 'demonic-attorney',
                            'divine-intervention', 'jeweled-bird', 'rebirth', 'shahrazad', 'tempest-efreet')
+Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
