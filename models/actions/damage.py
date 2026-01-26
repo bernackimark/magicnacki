@@ -1,33 +1,34 @@
-from dataclasses import dataclass
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card import GameCard
 
 from models.actions.base import Action
-from models.game_card import GameCard
-from models.modifiers import PTTemp
+
+class DealDamage(Action):
+    def __init__(self, p_id, gs, source: GameCard, damage_amt: int):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.damage_amt = damage_amt
+
+    def __repr__(self):
+        return f'{self.source.props.name} deals {self.damage_amt} damage to you'
+
+    def play(self):
+        self.gs.apply_damage(self.source, self.damage_amt, self.source.orig_owner_id)
+        self.gs.action_stack.pop()  # remove choice
 
 
-@dataclass
-class DamageCreature(Action):
-    card: GameCard
-    target: GameCard
-    amt: int
+class PayLife(Action):
+    def __init__(self, p_id, gs, source: GameCard, amt: int):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.amt = amt
 
-    def __repr__(self) -> str:
-        return f"{self.card.props.name} deals {self.amt} to {self.target}"
+    def __repr__(self):
+        return f'Pay {self.amt} life for {self.source.props.name}'
 
-    def play(self) -> None:
-        self.target.modifiers.temps.append(PTTemp(0, -self.amt))
-        if self.target.toughness <= 0:
-            self.gs.send_to_graveyard_from_play(self.target)
-
-
-@dataclass
-class DamagePlayer(Action):
-    card: GameCard
-    target_player: int
-    amt: int
-
-    def __repr__(self) -> str:
-        return f"{self.card.props.name} deals {self.amt} to player #{self.target_player}"
-
-    def play(self) -> None:
-        self.gs.decrement_life(self.target_player, self.amt, self.card)
+    def play(self):
+        self.gs.apply_damage(self.source, self.amt, self.source.attached_to.orig_owner_id)
+        self.gs.action_stack.pop()

@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 
 from card_filter import CardFilter
-from models.actions.choices import AddKWA
+from models.actions.kwa import AddKWA
 from models.effects.base import Effect
 from models.modifiers import KWAModifier
 from utils import flip

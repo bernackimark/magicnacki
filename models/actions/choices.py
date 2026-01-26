@@ -1,168 +1,20 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable, Callable, Optional
+from typing import TYPE_CHECKING, Iterable
 
 from constants import COLOR_LETTERS_W_COLORLESS
-from models.actions.tap_untap import UntapCard
-from models.modifiers import KWATemp, KWAModifier, PTModifier
+from models.actions.damage import DealDamage, PayLife
+from models.actions.destroy_sac_regen import Sac
+from models.actions.mana import AddMana, PayMana
+from models.actions.pump import VariablePTMod
+from models.actions.special import SacCreatureAndAddMana
+from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.actions.base import Action, DoNothing
+from models.actions.base import Action
 from models.actions.choice import ChoiceAction
-
-# --- GENERIC ACTIONS ---
-class AddKWA(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard, ability: str, until_eot: bool = True):
-        super().__init__(p_id, gs)
-        self.source = s
-        self.target = target
-        self.ability = ability
-        self.until_eot = until_eot
-
-    def play(self):
-        if self.until_eot:
-            self.target.modifiers.temps.append(KWATemp('add', self.ability))
-        else:
-            self.target.modifiers.auras.append(KWAModifier(self.source, 'add', self.ability))
-
-class AddMana(Action):
-    def __init__(self, p_id, gs, source: GameCard, color: str, amt: int = 1):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.color = color
-        self.amt = amt
-
-    def __repr__(self):
-        return f'Add {self.amt} {self.color} to your mana pool'
-
-    def play(self):
-        self.gs.mana_pools[self.player_idx].add_floating(self.color, self.amt)
-
-class DealDamage(Action):
-    def __init__(self, p_id, gs, source: GameCard, damage_amt: int):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.damage_amt = damage_amt
-
-    def __repr__(self):
-        return f'{self.source.props.name} deals {self.damage_amt} damage to you'
-
-    def play(self):
-        self.gs.apply_damage(self.source, self.damage_amt, self.source.orig_owner_id)
-        self.gs.action_stack.pop()  # remove choice
-
-class Exile(Action):
-    def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.w_damage_amt = w_damage_amt
-
-    def __repr__(self):
-        return f'Exile {self.source.props.name}'
-
-    def play(self):
-        if self.w_damage_amt:
-            self.gs.apply_damage(self.source, self.w_damage_amt, self.source.orig_owner_id)
-        self.gs.send_to_exile_from_play(self.source)
-        self.gs.action_stack.pop()  # remove choice
-
-class PayMana(Action):
-    def __init__(self, p_id, gs, source: GameCard, cost: str):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.cost = cost
-
-    def __repr__(self):
-        return f'Pay {self.cost} for {self.source.props.name}'
-
-    def play(self):
-        self.gs.mana_pools[self.player_idx].pay(self.cost)
-        self.gs.action_stack.pop()
-
-class PayLife(Action):
-    def __init__(self, p_id, gs, source: GameCard, amt: int):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.amt = amt
-
-    def __repr__(self):
-        return f'Pay {self.amt} life for {self.source.props.name}'
-
-    def play(self):
-        self.gs.apply_damage(self.source, self.amt, self.source.attached_to.orig_owner_id)
-        self.gs.action_stack.pop()
-
-class Sac(Action):
-    def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.w_damage_amt = w_damage_amt
-
-    def __repr__(self):
-        return f'Sacrifice {self.source.props.name}'
-
-    def play(self):
-        if self.w_damage_amt:
-            self.gs.apply_damage(self.source, self.w_damage_amt, self.source.orig_owner_id)
-        self.gs.send_to_graveyard_from_play(self.source)
-        self.gs.action_stack.pop()  # remove choice
-
-class SacCreatureAndAddMana(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard, creature: GameCard, color: str, amt: int = 0):
-        super().__init__(p_id, gs)
-        self.creature = creature
-        self.color = color
-        self.amt = amt
-
-    def play(self):
-        # Sacrifice then later apply effect that depends on the creature sacrificed
-        self.gs.send_to_graveyard_from_play(self.creature)
-        self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
-        self.gs.action_stack.pop()
-
-class UntapCard(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.source = s
-
-    def __repr__(self):
-        return f'Untap {self.source}'
-
-    def play(self):
-        # self.gs.apply_untap_effects(self.source)  # not clear why this wasn't working
-        self.source.untap(self.gs)
-        self.gs.action_stack.pop()
-
-
-class LeaveTapped(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.card = s
-
-    def __repr__(self):
-        return f'Leave {self.card} tapped'
-
-    def play(self):
-        self.gs.action_stack.pop()
-
-class VariablePTMod(Action):
-    def __init__(self, p_id, gs, source: GameCard, target: GameCard, power: int = None, toughness: int = None):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.target = target
-        self.power = power
-        self.toughness = toughness
-
-    def __repr__(self):
-        return f"Set {self.target.props.name}'s power to {self.power} & toughness to {self.toughness}"
-
-    def play(self):
-        new_power = self.power - self.target.power
-        new_toughness = self.toughness - self.target.toughness
-        self.target.modifiers.auras.append(PTModifier(self.target, new_power, new_toughness))
-        self.gs.action_stack.pop()
 
 
 # --- GENERIC CHOICE ACTIONS ---
@@ -209,7 +61,7 @@ class UntapChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [LeaveTapped(self.p_id, self.gs, self.source), UntapCard(self.p_id, self.gs, self.source)]
+        return [LeaveTapped(self.p_id, self.gs, self.source), UntapCardStackPop(self.p_id, self.gs, self.source)]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):
@@ -310,4 +162,4 @@ class ShapeshifterChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [VariablePTMod(self.p_id, self.gs, self.source, self.source, i, 7-i) for i in range(8)]
+        return [VariablePTMod(self.p_id, self.gs, self.source, self.source, i, 7 - i) for i in range(8)]

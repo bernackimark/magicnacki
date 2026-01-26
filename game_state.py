@@ -9,7 +9,7 @@ from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
 from models.actions.choice import ChoiceAction
-from models.actions.choices import UntapCard, LeaveTapped
+from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
 from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking, \
     AssignCombatDamage
 from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
@@ -334,7 +334,7 @@ class GameState:
 
             for turn_number, action in self.game_history:
                 if (turn_number == self.turn_number and
-                        (isinstance(action, UntapCard) or isinstance(action, LeaveTapped)) and action.source == c):
+                        (isinstance(action, UntapCardStackPop) or isinstance(action, LeaveTapped)) and action.source == c):
                     print("You've already made an untap decision on this card this turn")
                     break
             else:
