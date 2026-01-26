@@ -18,6 +18,10 @@ class CardFilter:
         self._cards = self._gs.all_cards
 
     # --- in what pile, card is located ---
+    def in_player_hand(self, p_id: int):
+        self._cards = self._gs.hands[p_id].cards
+        return self
+
     def in_play(self):
         self._cards = [c for b in self._gs.boards for c in b.cards]
         return self
