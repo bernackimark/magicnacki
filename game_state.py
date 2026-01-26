@@ -649,7 +649,7 @@ class GameState:
             # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
             for c in self.card_filter.in_play().result():
                 for aa in c.abilities:
-                    aa.activated_cnt_this_turn = 0
+                    aa.eff_spec.activated_cnt_this_turn = 0
             # clear combats
             self.combats.clear()
             self.phase = Phase.PASS_THE_TURN
