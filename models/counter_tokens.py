@@ -30,7 +30,7 @@ PIN = CounterType('pin')
 POISON = CounterType('poison')
 PUPA = CounterType('pupa')
 SLEEP = CounterType('sleep')
-STOARGE = CounterType('storage')
+STORAGE = CounterType('storage')
 VITALITY = CounterType('vitality')
 WIND = CounterType('wind')
 

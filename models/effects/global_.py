@@ -1,14 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from utils import flip
+from .base import Effect
+from .damage import all_combat_damage_prevented
 from ..damage import DamageEvent
+from ..game_card import GameCard
 
 if TYPE_CHECKING:
-    from ..game_card import GameCard
     from game_state import GameState
 
-from .base import Effect
 from card_filter import CardFilter
 
 class GlobalEffect:
@@ -87,24 +87,83 @@ class SunkenCityEffect(GlobalEffect):
     def pt_offset(self, card=None, power=None, toughness=None):
         return 1, 1
 
-def all_combat_damage_prevented():
+
+def global_on_leave():
     class E(Effect):
-        def on_damage(self, gs: GameState, event: DamageEvent):
-            if event.is_combat:
-                event.prevented += event.remaining
+        event = 'leave'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            for e in gs.global_effects:
+                if source == e[0]:
+                    gs.global_effects.remove(e)
+                    break
     return E()
 
-def all_damage_prevented_to_target_card(c: GameCard):
+
+def angelic_voices_on_cast():
     class E(Effect):
-        def on_damage(self, gs: GameState, event: DamageEvent):
-            if event.target == c:
-                event.prevented += event.remaining
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, AngelicVoicesEffect(source.orig_owner_id), False))
+            # add +0/+2 mod for in-turn player's creatures that are untapped
+            # for c in CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result():
+            #     c.pt_modifiers.append(PTModifier(source, 0, 2))
+
     return E()
 
-def scarecrow_func():
+
+def bad_moon_on_cast():
     class E(Effect):
-        def on_damage(self, gs: GameState, event: DamageEvent):
-            if event.target == flip(gs.player_turn_idx):
-                if event.source in gs.card_filter.in_play().creatures().has('Flying').result():
-                    event.prevented += event.remaining
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, BadMoonEffect(source.orig_owner_id), False))
+
+    return E()
+
+
+def castle_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, CastleEffect(source.orig_owner_id), False))
+            # add +0/+2 mod for in-turn player's creatures that are untapped
+            # for c in CardFilter(gs).creatures().on_player_board(gs.player_turn_idx).tapped(False).result():
+            #     c.pt_modifiers.append(PTModifier(source, 0, 2))
+    return E()
+
+
+def crusade_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, CrusadeEffect(source.orig_owner_id), False))
+            # for c in CardFilter(gs).in_play().creatures().white().result():
+            #     c.pt_modifiers.append(PTModifier(source, 1, 1))
+    return E()
+
+
+def darkness_or_fog_or_holy_day_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target=None):
+            gs.global_effects.append((source, all_combat_damage_prevented(), True))
+    return E()
+
+
+def sunken_city_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # TODO: Review this new approach where global effects don't directly influence GameCards
+            gs.global_effects.append((source, SunkenCityEffect(source.orig_owner_id), False))
     return E()

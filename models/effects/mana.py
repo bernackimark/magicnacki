@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from constants import COLOR_LETTERS_W_COLORLESS
 from utils import flip
@@ -22,3 +22,42 @@ class AddMana(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.mana_pools[source.orig_owner_id].add_floating(self.color, self.cnt)
 
+
+def dark_ritual_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
+            gs.mana_pools[source.orig_owner_id].add_floating('B', 3)
+    return E()
+
+
+def drain_power_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
+            """target = player_id whose available mana will be targeted & given to the other player"""
+            if target is None:
+                return
+            land_giver_mana = gs.mana_pools[target].available_mana.copy()
+            land_taker_id = flip(target)
+            for color, amt in land_giver_mana.items():
+                gs.mana_pools[land_taker_id].add_floating(color, amt)
+            print(f"{source} steals all of Player #{target}'s unused mana.")
+    return E()
+
+
+def energy_tap_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            """target = GameCard to be tapped"""
+            if target is None:
+                return
+            target.tap(gs)
+            mana_value = source.props.casting_weight
+            gs.mana_pools[source.orig_owner_id].add_floating('C', mana_value)
+            print(f"{source} taps to add {mana_value} colorless to your mana pool.")
+    return E()

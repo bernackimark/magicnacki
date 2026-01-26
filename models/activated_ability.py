@@ -1,13 +1,18 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from functools import partial
 from typing import TYPE_CHECKING, Callable, Union, Literal
 
 from constants import COLOR_LETTERS, Target
-from cost import Cost, ManaCost, TapCost
+from cost import Cost, ManaCost, TapCost, SacSelfCost
+from models.damage import PreventNextDamage
 from models.effects.base import Effect
-from models.effects.pile_transfer import GraveyardToHand, HandToBoard
-from models.effects.on_damage import DealDamage
+from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, XZeroOneCountersByManaValue
+from models.effects.destroy_sac_regenerate import EaterOfTheDeadAA
+from models.effects.tap_untap import TapCardEffect
+from models.effects.piles import GraveyardToHand, HandToBoard, GraveRobbersAA, GraveyardToExileInItsEntirety
+from models.effects.damage import DealDamage
 from phase_fsm import Phase
 from utils import flip
 
@@ -30,7 +35,7 @@ class EffSpec:
     cost: str
     effect: Effect
     target_filter: Union[Callable, None] = None
-    condition: Union[Callable, None] = None
+    conditions: list[Callable[[], bool], None] = field(default_factory=list)
     extra_costs: list[Cost | None] = None
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
@@ -81,6 +86,11 @@ class ActivatedAbility:
         if self.eff_spec.activated_cnt_this_turn >= self.eff_spec.max_activations_per_turn:
             print("E")
             return False
+        if self.eff_spec.conditions:
+            for cond in self.eff_spec.conditions:
+                if not cond(self.source):
+                    print('G')
+                    return False
         return all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs)
 
     def pay_costs(self, gs):
@@ -99,9 +109,11 @@ def opp_creatures_who_could_have_attacked_but_didnt(gs: GameState, source: GameC
 # --- COMMON TARGET FUNCS ---
 T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
+    'all_players': lambda gs, s: [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
-    'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts.result(),
+    'artifacts_in_graveyards': lambda gs, s: gs.card_filter.in_graveyards().artifacts().result(),
+    'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts().result(),
     'attackers': lambda gs, s: gs.card_filter.attackers().result(),
     'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result()
                                      for a in c.modifiers.auras if isinstance(a, GameCard)],
@@ -114,9 +126,11 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'blue_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().blue().result(),
     'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
     'card_owner': lambda gs, s: s.orig_owner_id,
+    'creatures_in_all_graveyards': lambda gs, s: gs.card_filter.in_graveyards().creatures().result(),
     'creatures_in_play': lambda gs, source: gs.card_filter.in_play().creatures().result(),
     'creatures_in_play_w_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
     'creatures_in_play_wo_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk', False).result(),
+    'creatures_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).creatures().result(),
     'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
                                                                                           'Enchantment']).result(),
     'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
@@ -286,15 +300,44 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
 #     gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(t))
 
 
+def is_tapped(s: GameCard) -> bool:
+    return s.is_tapped
+
+
+Activated = partial(EffSpec, 'activated')
+
 
 INVOCATIONS: dict[str, list[EffSpec]] = {
-    "aladdins-ring": [EffSpec('activated', 'T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
-    'argivian-archaeologist': [EffSpec('activated', 'WWT', GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'])],
-    'birds-of-paradise': [EffSpec('activated', 'T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
-    'gaeas-touch': [EffSpec('activated', '', HandToBoard(), T_FUNCS['forests_in_your_hand'],
-                            allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
-    'goblin-wizard': [EffSpec('activated', 'T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
-    'skull-of-orm': [EffSpec('activated', '5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
+    'aladdins-ring':
+        [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
+    'ali-baba':
+        [Activated('RT', TapCardEffect(), T_FUNCS['walls_in_play'])],
+    'apprentice-wizard':
+        [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
+    'argivian-archaeologist':
+        [Activated('WWT', GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'])],
+    'birds-of-paradise':
+        [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
+    'city-of-shadows':
+        [Activated('T', CityOfShadowsAA1()),  # TODO: needs a way to find a creature to exile in extra_costs
+         Activated('T', CityOfShadowsAA2())],
+    'eater-of-the-dead':
+        [Activated('', EaterOfTheDeadAA(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
+    'gaeas-touch':
+        [Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'],
+                 allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
+    'goblin-wizard':
+        [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
+    'grave-robbers':
+        [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
+    'living-armor':
+        [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
+    'necropolis':
+        [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'skull-of-orm':
+        [Activated('5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
+    'tormods-crypt':
+        [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
 }
 
 
@@ -302,10 +345,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
 # MANA_BATTERY_ADD_CHARGE_AAS = AAS('2', True, lambda _, s: s, lambda gs, s, t: s.counters.add_counter(CHARGE))
 #
 # ACTIVATED_ABILITY: dict[str, list[AAS]] = {
-#     # 'aladdins-ring': [AAS('', True, T_FUNCS['all_creatures_and_players'], deal_damage_func(4))],
-#     'ali-baba': [AAS('R', True, T_FUNCS['walls_in_play'], lambda gs, src, t: t.tap(gs))],
 #     'amulet-of-kroog': [AAS('2', True, T_FUNCS['all_creatures_and_players'], prevent_next_damage_func(1))],
-#     'apprentice-wizard': [AAS('U', True, T_FUNCS['card_owner'], add_mana_func('C', 3))],
 #     'argivian-blacksmith': [AAS('', True, T_FUNCS['artifact_creatures_in_play'], prevent_next_damage_func(2))],
 #     'badlands': dual_land_activated_ability_specs('BR'),
 #     'bayou': dual_land_activated_ability_specs('BG'),

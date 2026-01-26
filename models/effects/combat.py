@@ -1,11 +1,32 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ..game_card import GameCard
-    from game_state import GameState
+from typing import Optional
 
+from card_filter import CardFilter
+from constants import BASIC_LANDS
+from game_state import GameState
 from models.effects.base import Effect
+from models.game_card import GameCard
+from utils import flip
+
+
+def islandhome_can_attack_effect():
+    class E(Effect):
+        event = 'query'   # this aligns with your new "query" dispatch
+
+        def on_query(self, gs: GameState, event: str, **kwargs):
+            """event = query name, like 'can_attack', kwargs = includes 'card' when checking if a card can attack"""
+            if event != 'can_attack' and not kwargs.get('card'):
+                return None
+
+            card = kwargs.get("card")
+            if not card or 'Islandhome' not in card.props.keyword_abilities:
+                return None
+
+            opp_islands = (gs.card_filter.on_player_board(flip(card.orig_owner_id)).by_slug('island').result())
+            return True if opp_islands else False
+    return E()
+
 
 def amrou_kithkin_can_be_blocked():
     class E(Effect):
@@ -19,6 +40,7 @@ def amrou_kithkin_can_be_blocked():
             if blocker.power > 3:
                 return False
     return E()
+
 
 def artifact_ward_can_be_blocked():
     """This creature can't be blocked by artifact creatures"""
@@ -34,6 +56,7 @@ def artifact_ward_can_be_blocked():
                 return False
     return E()
 
+
 def argothian_pixies_can_be_blocked():
     """This creature can't be blocked by artifact creatures"""
     class E(Effect):
@@ -48,6 +71,7 @@ def argothian_pixies_can_be_blocked():
                 return False
     return E()
 
+
 def bog_rats_can_be_blocked():
     class E(Effect):
         event = "query"
@@ -60,6 +84,7 @@ def bog_rats_can_be_blocked():
             if 'Wall' in blocker.props.card_sub_types:
                 return False
     return E()
+
 
 def elder_spawn_can_be_blocked():
     """This creature can't be blocked by red creatures"""
@@ -75,6 +100,7 @@ def elder_spawn_can_be_blocked():
                 return False
     return E()
 
+
 def elven_riders_can_be_blocked():
     class E(Effect):
         event = "query"
@@ -87,6 +113,7 @@ def elven_riders_can_be_blocked():
             if 'Wall' not in blocker.props.card_sub_types or 'Flying' not in blocker.keyword_abilities:
                 return False
     return E()
+
 
 def evil_eye_of_orms_by_gore_can_be_blocked():
     class E(Effect):
@@ -101,6 +128,7 @@ def evil_eye_of_orms_by_gore_can_be_blocked():
                 return False
     return E()
 
+
 def seeker_enchanted_creature_can_be_blocked():
     class E(Effect):
         event = "query"
@@ -112,4 +140,61 @@ def seeker_enchanted_creature_can_be_blocked():
                 return None
             if 'Artifact' not in blocker.props.card_types or 'U' not in blocker.props.colors:
                 return False
+    return E()
+
+
+def can_block_base_rule():
+    class E(Effect):
+        event = "query"
+
+        def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+            """Query: card = blocker, mandatory kwarg: attacker"""
+            if event != "can_block":
+                return None
+            attacker: GameCard = kwargs.get("attacker")
+            if not attacker or not card:
+                return None
+
+            # Global land walk rule
+            defender_idx = card.orig_owner_id
+            for walk, basic_land in zip([land.capitalize() + 'walk' for land in BASIC_LANDS], BASIC_LANDS):
+                if walk in attacker.keyword_abilities and gs.card_filter.on_player_board(defender_idx).by_slug(basic_land).result():
+                    return False
+
+            # Global Flying/Reach rule
+            if ('Flying' in attacker.keyword_abilities and
+                    not any(kwa for kwa in card.keyword_abilities if kwa in ('Flying', 'Reach'))):
+                return False
+
+            return None  # no opinion if can_block ... might need this in case there are other rules added in elsewhere?
+    return E()
+
+
+def akron_legionnaire_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            # Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack
+            my_creatures: list[GameCard] = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
+            for my_creature in my_creatures:
+                for aura in my_creature.modifiers.auras:
+                    if aura.props.slug == 'akron-legionnaire':
+                        my_creature.modifiers.auras.remove(aura)
+                        break
+    return E()
+
+
+def evil_eye_of_orms_by_gore_on_leave():
+    class E(Effect):
+        event = 'leave'
+
+        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+            """Non-Eye creatures you control can't attack."""
+            my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
+            for my_creature in my_creatures:
+                for aura in my_creature.modifiers.auras:
+                    if aura.props.slug == 'evil-eye-of-orms-by-gore':
+                        my_creature.modifiers.auras.remove(aura)
+                        break
     return E()

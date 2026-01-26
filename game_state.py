@@ -16,7 +16,7 @@ from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import DamageEvent, PreventNextDamage
-from models.effects.can_block import can_block_base_rule
+from models.effects.combat import can_block_base_rule
 from models.effects.global_ import GlobalEffect
 from models.game_card import GameCard
 from models.board import Board
