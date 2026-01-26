@@ -9,6 +9,7 @@ def all_player_indices(gs):
 CAST_TARGETS = {
     'active-volcano': lambda gs: CardFilter(gs).in_play().blue().permanents().result() +
                                  CardFilter(gs).in_play().by_slug('island').result(),
+    'animate-dead': lambda gs: CardFilter(gs).in_player_graveyard(gs.player_turn_idx).creatures().result(),
     'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
     'ancestral-recall': lambda gs: all_player_indices(gs),
     'artifact-ward': lambda gs: CardFilter(gs).in_play().creatures().result(),

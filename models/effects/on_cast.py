@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 
 from phase_fsm import Phase
 from utils import flip
-from ..actions.choices import SacYourCreatureChoice, Sac, SacCreatureAndAddMana, ShapeshifterChoice
+from ..actions.choices import SacCreatureAndAddMana, ShapeshifterChoice
 from ..actions.draw_discard import DiscardCard
 from ..counter_tokens import PLUS_ONE_ZERO, PUPA, PLUS_ONE, SLEEP
 from ..damage import PreventNextDamage
@@ -21,7 +21,7 @@ from card_filter import CardFilter
 
 
 # --- GENERIC ON CAST ---
-def graveyard_to_board_on_cast():
+def graveyard_to_board():
     """Return target from your graveyard to your board"""
     class E(Effect):
         event = 'cast'
@@ -31,7 +31,7 @@ def graveyard_to_board_on_cast():
             gs.boards[source.orig_owner_id].play_to_board(card)
     return E()
 
-def graveyard_to_hand_on_cast():
+def graveyard_to_hand():
     """Return target from your graveyard to your hand"""
     class E(Effect):
         event = 'cast'
@@ -101,6 +101,19 @@ def angelic_voices_on_cast():
             #     c.pt_modifiers.append(PTModifier(source, 0, 2))
 
     return E()
+
+def animate_dead_on_cast():
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs, source: GameCard, target: GameCard = None):
+            if not target:
+                raise RuntimeError(f'{source.props.name} needs a target')
+            card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
+            gs.boards[source.orig_owner_id].play_to_board(card)
+            target.modifiers.auras.append(PTModifier(source, -1, 0))
+    return E()
+
 
 def animate_wall_on_cast():
     class E(Effect):

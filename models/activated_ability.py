@@ -1,15 +1,12 @@
 from __future__ import annotations
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Callable, Optional, Union, Literal
+from typing import TYPE_CHECKING, Callable, Union, Literal
 
-from constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTERS
-from cost import Cost, ManaCost, TapCost, SacSelfCost, ExileSelfCost
-from models.counter_tokens import CHARGE
-from models.damage import PreventNextDamage, DamageEvent
-from models.effects.at_end_step import nettling_imp_on_end_step
+from constants import COLOR_LETTERS, Target
+from cost import Cost, ManaCost, TapCost
 from models.effects.base import Effect
-from models.effects.on_cast import GraveyardToHand
+from models.effects.pile_transfer import GraveyardToHand, HandToBoard
 from models.effects.on_damage import DealDamage
 from phase_fsm import Phase
 from utils import flip
@@ -18,88 +15,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
     from game_state import GameState
 
-from card_filter import CardFilter
-from models.modifiers import PTTemp, KWATemp
-from models.effects.global_ import scarecrow_func
-
 from models.effects.mana import AddMana
-
-Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
-
-@dataclass
-class AAS:
-    """Activated Ability Spec; used to create the activated abilities for entire card universe"""
-    class AllowedPlayerTurn(Enum):
-        CASTER = auto()
-        OPPONENT = auto()
-
-    cost_mana: str
-    cost_tap: bool
-    target_filter: Callable[[GameState, GameCard], Target] | None
-    effect: Callable[[GameState, GameCard, Target], None]
-    allowed_phases: list[Phase | None] = field(default_factory=list)
-    allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
-    max_activations_per_turn: int = 999
-    extra_costs: list[Cost] = field(default_factory=list)
-    text: str = ''
-
-
-# @dataclass
-# class ActivatedAbility:
-#     """A Target can be: GameCard, list[GameCard], int for one player, tuple[int, int] for two players, None"""
-#     class AllowedPlayerTurn(Enum):
-#         CASTER = auto()
-#         OPPONENT = auto()
-#
-#     card: GameCard
-#     cost_mana: str
-#     cost_tap: bool
-#     costs: list[Cost] = field(init=False, default_factory=list)
-#     target_filter: Callable[[GameState, GameCard], Target] | None
-#     effect: Callable[[GameState, GameCard, Target], None]
-#     allowed_phases: list[Phase | None] = field(default_factory=list)
-#     allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
-#     allowed_p_id_turn: int | None = None
-#     activated_cnt_this_turn: int = 0
-#     max_activations_per_turn: int = 999
-#     extra_costs: InitVar[list[Cost | None]] = None
-#     text: str = ''
-#
-#     def __post_init__(self, extra_costs: list[Cost]):
-#         """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
-#         allowed_p_id_turns need knowledge of the card's owner and is assigned here;
-#         if allowed_player_turn is None, then the ability should be permitted on both turns"""
-#         if self.cost_mana:
-#             self.costs.append(ManaCost(self.cost_mana))
-#         if self.cost_tap:
-#             self.costs.append(TapCost())
-#         if extra_costs:
-#             for extra_cost in extra_costs:
-#                 self.costs.append(extra_cost)
-#         if self.allowed_player_turn == self.AllowedPlayerTurn.CASTER:
-#             self.allowed_p_id_turn = self.card.orig_owner_id
-#         if self.allowed_player_turn == self.AllowedPlayerTurn.OPPONENT:
-#             self.allowed_p_id_turn = flip(self.card.orig_owner_id)
-#
-#     def can_activate(self, gs: GameState) -> bool:
-#         # TODO: convert these If checks to be a Cost:
-#         if self.allowed_phases and gs.phase not in self.allowed_phases:
-#             print("C")
-#             return False
-#         if self.allowed_player_turn and gs.player_turn_idx != self.allowed_p_id_turn:
-#             print("F")
-#             return False
-#         if self.allowed_p_id_turn and self.card.orig_owner_id != self.allowed_p_id_turn:
-#             print("D")
-#             return False
-#         if self.activated_cnt_this_turn >= self.max_activations_per_turn:
-#             print("E")
-#             return False
-#         return all(cost.can_pay(gs, self.card) for cost in self.costs)
-#
-#     def pay_costs(self, gs):
-#         for cost in self.costs:
-#             cost.pay(gs, self.card)
 
 
 @dataclass
@@ -203,7 +119,10 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'creatures_in_play_wo_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk', False).result(),
     'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
                                                                                           'Enchantment']).result(),
+    'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
     'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
+    'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_slug('forest').result(),
+    'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_sub_type('Goblin').permanents().result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
     'lands_in_play': lambda gs, source: gs.card_filter.in_play().lands().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
@@ -372,6 +291,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     "aladdins-ring": [EffSpec('activated', 'T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'argivian-archaeologist': [EffSpec('activated', 'WWT', GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'])],
     'birds-of-paradise': [EffSpec('activated', 'T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
+    'gaeas-touch': [EffSpec('activated', '', HandToBoard(), T_FUNCS['forests_in_your_hand'],
+                            allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
+    'goblin-wizard': [EffSpec('activated', 'T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
+    'skull-of-orm': [EffSpec('activated', '5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
 }
 
 
@@ -572,9 +495,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
 
 def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
     eff_invocations = INVOCATIONS.get(c.props.slug)
-    if not eff_invocations:
-        return []
-    return [ActivatedAbility(inv, c) for inv in eff_invocations]
+    return [ActivatedAbility(inv, c) for inv in eff_invocations] if eff_invocations else []
     # return [ActivatedAbility(card=c, cost_mana=spec.cost_mana, cost_tap=spec.cost_tap,
     #                          target_filter=spec.target_filter, effect=spec.effect,
     #                          allowed_phases=spec.allowed_phases, allowed_player_turn=spec.allowed_player_turn,
