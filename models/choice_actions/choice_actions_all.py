@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.actions.base import Action
-from models.actions.choice import ChoiceAction
+from models.choice_actions.base import ChoiceAction
 
 
 # --- GENERIC CHOICE ACTIONS ---

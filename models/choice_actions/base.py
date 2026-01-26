@@ -1,14 +1,15 @@
 from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from constants import Target
+    from game_state import GameState
     from models.actions.base import Action
     from models.game_card import GameCard
-    from game_state import GameState
 
-Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
 @dataclass
 class ChoiceAction(ABC):

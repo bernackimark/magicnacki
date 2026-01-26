@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.actions.choices import SerendibDjinnUpkeepChoice, ShapeshifterChoice
+from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice
 from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP
 from models.damage import PreventNextDamage

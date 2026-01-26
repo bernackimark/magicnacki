@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from card_filter import CardFilter
-from models.actions.choices import ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, LordOfThePitUpkeepChoice
+from models.choice_actions.choice_actions_all import ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, LordOfThePitUpkeepChoice
 from models.damage import DamageEvent, PreventNextDamage
 from models.effects.base import Effect
 from utils import flip

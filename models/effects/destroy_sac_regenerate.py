@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from card_filter import CardFilter
-from models.actions.choices import PayManaOrSacUpkeepChoice, CosmicHorrorUpkeepChoice, ErosionUpkeepChoice, \
+from models.choice_actions.choice_actions_all import PayManaOrSacUpkeepChoice, CosmicHorrorUpkeepChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, SacALandChoice, SeasonOfTheWitchUpkeepChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect

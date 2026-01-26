@@ -9,7 +9,7 @@ from models.effects.base import Effect
 from card_filter import CardFilter
 from phase_fsm import Phase
 from utils import flip
-from ..actions.choices import UntapChoice
+from models.choice_actions.choice_actions_all import UntapChoice
 from ..actions.tap_untap import LeaveTapped
 from ..counter_tokens import PUPA, SLEEP
 

@@ -8,7 +8,7 @@ from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
-from models.actions.choice import ChoiceAction
+from models.choice_actions.base import ChoiceAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
 from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking, \
     AssignCombatDamage
