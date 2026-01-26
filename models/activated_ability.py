@@ -276,9 +276,8 @@ def rocket_launcher_func(gs: GameState, s: GameCard, t: Target):
     gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(s))
 
 def shimian_nightstalker_func(gs: GameState, s: GameCard, t: Target):
-    """{B}, {T}: All damage that would be dealt to you this turn by target attacking creature is dealt to this creature instead
-    target = the GameCard doing the damage"""
-
+    """{B}, {T}: All damage that would be dealt to you this turn by target attacking creature is dealt
+    to this creature instead.  target = the GameCard doing the damage"""
     def redirect_damage(prevented: int):
         gs.apply_damage(t, prevented, t.orig_owner_id)
 
