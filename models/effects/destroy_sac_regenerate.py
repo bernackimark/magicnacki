@@ -12,6 +12,11 @@ from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
 
+# --- new Class format --
+class AcidRain(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        for forest in CardFilter(gs).in_play().by_slug('forest').result():
+            gs.send_to_graveyard_from_play(forest)
 
 class EaterOfTheDeadAA(Effect):
     """Exile target creature card from a graveyard and untap this creature"""
@@ -21,6 +26,9 @@ class EaterOfTheDeadAA(Effect):
         GraveyardToExile().resolve(gs, source, target)
         source.untap(gs)
 
+
+
+# --- old function format ---
 
 def destroy_on_end_step():
     """At the beginning of this turn's end step, destroy this card"""

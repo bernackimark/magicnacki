@@ -3,6 +3,7 @@ from dataclasses import dataclass, field, InitVar
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Callable, Optional, Union
 
+import models.effects.slug_effect_mapping
 from constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTERS
 from cost import Cost, ManaCost, TapCost, SacSelfCost, ExileSelfCost
 from models.counter_tokens import CHARGE
@@ -388,7 +389,7 @@ ACTIVATED_ABILITY: dict[str, list[AAS]] = {
     'hyperion-blacksmith':
         # {T}: You may tap or untap target artifact an opponent controls
         [AAS('', True, lambda gs, s: CardFilter(gs).on_player_board(flip(s.orig_owner_id)).artifacts().result(),
-             lambda gs, source, t: t.untap(gs) if t.is_tapped else t.tap(gs))],
+             lambda gs, source, t: t.untap(gs) if models.effects.slug_effect_mapping.is_tapped else t.tap(gs))],
     'icy-manipulator':
     # {1}, {T}: Tap target artifact, creature, or land
         [AAS('1', True, lambda gs, source: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).tapped(False).result(),

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
+from models.events.events_all import CastResolvedEvent
 from utils import flip
 
 
@@ -25,6 +26,8 @@ class AcceptAction(Action):
 
         # --- NEW EVENT EMISSION SYSTEM ---
         last_action.play()
+
+        self.gs.emit(CastResolvedEvent(card=card, owner_id=self.player_idx, target=target))
 
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
         self.gs.action_stack.clear_()

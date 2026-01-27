@@ -1,5 +1,17 @@
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card import GameCard
+
 from models.events.base import Event
 
+@dataclass(frozen=True)
+class CastResolvedEvent(Event):
+    card: GameCard
+    owner_id: int
+    target: GameCard | None = None
+
+@dataclass(frozen=True)
 class EndStepEvent(Event):
-    def __init__(self, active_player: int):
-        self.active_player = active_player
+    active_player: int
