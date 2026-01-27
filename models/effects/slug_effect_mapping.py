@@ -43,9 +43,10 @@ from models.effects.destroy_sac_regenerate import voodoo_doll_at_end_step, \
 from models.effects.draw_discard import Braingeyser, CursedRackEffect, DrawCards, WheelOfFortune
 from models.effects.global_ import global_on_leave, angelic_voices_on_cast, bad_moon_on_cast, castle_on_cast, \
         crusade_on_cast, darkness_or_fog_or_holy_day_on_cast, sunken_city_on_cast
-from models.effects.keywords import goblin_king_on_leave, erhnam_djinn_on_upkeep, akron_legionnaire_on_cast, \
-        animate_wall_on_cast, brainwash_on_cast, burrowing_on_cast, demonic_torment_on_cast, \
-        evil_eye_of_orms_by_gore_on_cast, flight_on_cast, fishliver_oil_on_cast, kobold_overlord_on_cast, lance_on_cast
+from models.effects.keywords import goblin_king_on_leave, akron_legionnaire_on_cast, \
+    animate_wall_on_cast, brainwash_on_cast, burrowing_on_cast, demonic_torment_on_cast, \
+    evil_eye_of_orms_by_gore_on_cast, flight_on_cast, fishliver_oil_on_cast, kobold_overlord_on_cast, lance_on_cast, \
+    ErhnamDjinn
 from models.effects.life import spirit_link_on_damage, add_poison_counter_on_damage, add_two_poison_counters_on_damage, \
         el_hajjaj_on_damage, ivory_tower_on_upkeep, spiritual_sanctuary_on_upkeep, stream_of_life_on_cast
 from models.effects.mana import dark_ritual_on_cast, drain_power_on_cast, energy_tap_on_cast, AddMana
@@ -112,6 +113,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                                 if c.power == 1 and c.toughness == 1],
     'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result(),
     'opp_creatures_who_could_have_but_didnt_attack': lambda gs, s: opp_creatures_who_could_have_attacked_but_didnt(gs, s),
+    'opp_non_wall_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).non_wall_creatures().result(),
     'permanents_in_play': lambda gs: CardFilter(gs).in_play().permanents().result(),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
     'self': lambda gs, s: s,
@@ -329,7 +331,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'enchanted-being': [enchanted_being_damage_prevention()],
         'energy-tap': [energy_tap_on_cast()],
         'erg-raiders': [erg_raiders_on_end_step()],
-        'erhnam-djinn': [erhnam_djinn_on_upkeep()],
         'erosion': [erosion_on_upkeep()],
         'eternal-flame': [eternal_flame_on_cast()],
         'evil-eye-of-orms-by-gore': [evil_eye_of_orms_by_gore_on_cast(), evil_eye_of_orms_by_gore_on_leave(),
@@ -439,6 +440,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
 Activated = partial(EffSpec, 'activated')
 Triggered = partial(EffSpec, 'triggered', '')
 
+# TODO: NEXT: Continue converting from old system to new system
 
 INVOCATIONS: dict[str, list[EffSpec]] = {
     'acid-rain':
@@ -480,6 +482,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(BoardToGraveyard(), T_FUNCS['artifacts_and_enchantments_in_play'], CastResolvedEvent)],
     'eater-of-the-dead':
         [Activated('', EaterOfTheDeadAA(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
+    'erhnam-djinn':
+        [Triggered(ErhnamDjinn(), T_FUNCS['opp_non_wall_creatures_in_play'], UpkeepEvent)],
     'fasting':
         [Activated(Fasting(), T_FUNCS['self'], UpkeepEvent)],
     'gaeas-touch':

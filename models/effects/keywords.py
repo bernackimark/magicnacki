@@ -26,16 +26,14 @@ def goblin_king_on_leave():
     return E()
 
 
-def erhnam_djinn_on_upkeep():
-    """At upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            opp_id = flip(source.orig_owner_id)
-            for c in gs.card_filter.on_player_board(opp_id).non_wall_creatures().result():
-                gs.action_stack.push(AddKWA(opp_id, gs, source, c, 'Forestwalk'))
-    return E()
+class ErhnamDjinn(Effect):
+    """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.player_turn_idx != source.orig_owner_id:
+            return
+        opp_id = flip(source.orig_owner_id)
+        for c in gs.card_filter.on_player_board(opp_id).non_wall_creatures().result():
+            gs.action_stack.push(AddKWA(opp_id, gs, source, c, 'Forestwalk'))
 
 
 def akron_legionnaire_on_cast():
