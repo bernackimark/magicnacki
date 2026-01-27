@@ -7,6 +7,23 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 
+class BoardToHand(Effect):
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        if target:
+            board = gs.boards[target.orig_owner_id]
+            board.remove_from_board(target)
+            gs.return_to_hand(target)
+
+class GraveyardToBoard(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
+        gs.boards[source.orig_owner_id].play_to_board(card)
+
+class GraveyardToHand(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
+        gs.add_to_hand(card, source.orig_owner_id)
+
 class GraveyardToExile(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         card = gs.remove_from_any_graveyard(target)
@@ -22,11 +39,6 @@ class GraveyardToExileInItsEntirety(Effect):
         for card in gy:
             gs.send_to_exile(card)
 
-class GraveyardToHand(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
-        gs.add_to_hand(card, source.orig_owner_id)
-
 class HandToBoard(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
@@ -39,49 +51,3 @@ class GraveRobbersAA(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         GraveyardToExile().resolve(gs, source, target)
         gs.increment_life(source.orig_owner_id, 2)
-
-
-def graveyard_to_board():
-    """Return target from your graveyard to your board"""
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-            card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
-            gs.boards[source.orig_owner_id].play_to_board(card)
-    return E()
-
-
-def graveyard_to_hand():
-    """Return target from your graveyard to your hand"""
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-            card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
-            gs.add_to_hand(card, source.orig_owner_id)
-    return E()
-
-
-def boomerang_on_cast():
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-            if target:
-                board = gs.boards[target.orig_owner_id]
-                board.remove_from_board(target)
-                gs.return_to_hand(target)
-    return E()
-
-
-def unsummon_on_cast():
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-            if target:
-                board = gs.boards[target.orig_owner_id]
-                board.remove_from_board(target)
-                gs.return_to_hand(target)
-    return E()

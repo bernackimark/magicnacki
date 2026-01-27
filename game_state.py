@@ -102,10 +102,9 @@ class GameState:
             ]
 
     def emit(self, event: Event):
-        """Call all effects listening to this event.
-        Pass (gs, source_card, target=None) to resolve exactly as your old system expects."""
+        """Call all effects listening to a certain type of event (ex: EndStepEvent)"""
         for eff, source_card in self._event_listeners[type(event)]:
-            eff.resolve(self, source_card, None)  # target=None, as most global effects like cursed-rack don't need one
+            eff.resolve(self, source_card, getattr(event, 'target', None))
 
     # Event Dispatcher
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):

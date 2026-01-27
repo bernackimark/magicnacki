@@ -48,8 +48,8 @@ from models.effects.keywords import goblin_king_on_leave, erhnam_djinn_on_upkeep
 from models.effects.life import spirit_link_on_damage, add_poison_counter_on_damage, add_two_poison_counters_on_damage, \
         el_hajjaj_on_damage, ivory_tower_on_upkeep, spiritual_sanctuary_on_upkeep, stream_of_life_on_cast
 from models.effects.mana import dark_ritual_on_cast, drain_power_on_cast, energy_tap_on_cast, AddMana
-from models.effects.piles import graveyard_to_board, graveyard_to_hand, boomerang_on_cast, unsummon_on_cast, \
-        GraveyardToHand, HandToBoard, GraveRobbersAA, GraveyardToExileInItsEntirety
+from models.effects.piles import BoardToHand, \
+    GraveyardToHand, HandToBoard, GraveRobbersAA, GraveyardToExileInItsEntirety, GraveyardToBoard
 from models.effects.pumps import dragon_whelp_on_end_step, giant_tortoise_on_untap, forest_on_leave, \
         kobold_drill_sergeant_on_leave, kobold_overlord_and_taskmaster_on_leave, lord_of_atlantis_on_leave, \
         blood_lust_on_cast, divine_transformation_on_cast, giant_growth_on_cast, giant_strength_on_cast, \
@@ -67,13 +67,226 @@ from models.effects.tap_untap import host_stays_tapped_at_untap_phase, stays_tap
         untap_option_at_untap_phase, cocoon_at_untap_phase, venarian_gold_at_untap_phase, leviathan_on_cast, \
         mana_short_on_cast, nevinyrrals_disk_on_cast, paralyze_on_cast, reset_on_cast, riptide_on_cast, twiddle_on_cast, \
         TapCardEffect
-from models.events.events_all import EndStepEvent
+from models.events.events_all import EndStepEvent, CastResolvedEvent
 from phase_fsm import Phase
 from utils import flip
 
 
+T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
+    # --- COMMON TARGET FUNCS ---
+    'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
+    'all_players': lambda gs, s: [0, 1],
+    'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
+    'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
+    'artifacts_in_graveyards': lambda gs, s: gs.card_filter.in_graveyards().artifacts().result(),
+    'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts().result(),
+    'attackers': lambda gs, s: gs.card_filter.attackers().result(),
+    'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result()
+                                     for a in c.modifiers.auras if isinstance(a, GameCard)],
+    'auras_on_owners_creatures': lambda gs, s: [a for c in gs.card_filter.on_player_board(s).creatures().result()
+                                                for a in c.modifiers.auras if isinstance(a, GameCard)],
+    'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
+    'black_and_red_in_play': lambda gs, source: [gs.card_filter.in_play().black().result() +
+                                                 gs.card_filter.in_play().red().result()],
+    'black_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().black().result(),
+    'blue_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().blue().result(),
+    'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
+    'card_owner': lambda gs, s: s.orig_owner_id,
+    'cards_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).result(),
+    'creatures_in_all_graveyards': lambda gs, s: gs.card_filter.in_graveyards().creatures().result(),
+    'creatures_in_play': lambda gs, source: gs.card_filter.in_play().creatures().result(),
+    'creatures_in_play_w_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
+    'creatures_in_play_wo_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk', False).result(),
+    'creatures_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).creatures().result(),
+    'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
+                                                                                          'Enchantment']).result(),
+    'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
+    'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
+    'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_slug('forest').result(),
+    'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_sub_type('Goblin').permanents().result(),
+    'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
+    'lands_in_play': lambda gs, source: gs.card_filter.in_play().lands().result(),
+    'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
+                                                if c.power == 1 and c.toughness == 1],
+    'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result(),
+    'opp_creatures_who_could_have_but_didnt_attack': lambda gs, s: opp_creatures_who_could_have_attacked_but_didnt(gs, s),
+    'permanents_in_play': lambda gs: CardFilter(gs).in_play().permanents().result(),
+    'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
+    'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
+                                  if c.toughness < s.power],
+    'tapped_creatures': lambda gs, source: gs.card_filter.in_play().creatures().tapped().result(),
+    'tapped_lands': lambda gs, s: gs.card_filter.in_play().lands().tapped().result(),
+    'unblocked_attackers': lambda gs, source: gs.card_filter.unblocked_attackers().result(),
+    'untapped_artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().untapped().result(),
+    'walls_in_play': lambda gs, s: gs.card_filter.in_play().walls().result(),
+    'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
+    'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
+}
+
+
+@dataclass
+class EffSpec:
+    """Effect Specification"""
+
+    class AllowedPlayerTurn(Enum):
+        CASTER = auto()
+        OPPONENT = auto()
+
+    activation_type: Literal["cast", "upkeep", "activated", "untap", "static"]
+    cost: str
+    effect: Effect
+    target_filter: Union[Callable, None] = None
+    trigger_event: str = ''
+    conditions: list[Callable[[], bool], None] = field(default_factory=list)
+    extra_costs: list[Cost | None] = None
+    allowed_phases: list[Phase | None] = field(default_factory=list)
+    allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
+    allowed_p_id_turn: int | None = None
+    activated_cnt_this_turn: int = 0
+    max_activations_per_turn: int = 999
+    text: str = ''
+
+    @property
+    def costs(self) -> list[Cost | None]:
+        the_costs = []
+        if not self.cost:
+            pass
+        elif 'T' in self.cost:
+            the_costs.append(TapCost())
+            the_costs.append(ManaCost(self.cost[:-1]))
+        else:
+            the_costs.append(ManaCost(self.cost))
+        if self.extra_costs:
+            for extra_cost in self.extra_costs:
+                the_costs.append(extra_cost)
+        return the_costs
+
+
+@dataclass
+class ActivatedAbility:
+    source: GameCard
+    eff_spec: EffSpec
+
+    def __post_init__(self):
+        """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
+        allowed_p_id_turns need knowledge of the card's owner and is assigned here;
+        if allowed_player_turn is None, then the ability should be permitted on both turns"""
+        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.CASTER:
+            self.eff_spec.allowed_p_id_turn = self.source.orig_owner_id
+        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
+            self.eff_spec.allowed_p_id_turn = flip(self.source.orig_owner_id)
+
+    def can_activate(self, gs: GameState) -> bool:
+        if self.eff_spec.allowed_phases and gs.phase not in self.eff_spec.allowed_phases:
+            print("C")
+            return False
+        if self.eff_spec.allowed_player_turn and gs.player_turn_idx != self.eff_spec.allowed_p_id_turn:
+            print("F")
+            return False
+        if self.eff_spec.allowed_p_id_turn and self.source.orig_owner_id != self.eff_spec.allowed_p_id_turn:
+            print("D")
+            return False
+        if self.eff_spec.activated_cnt_this_turn >= self.eff_spec.max_activations_per_turn:
+            print("E")
+            return False
+        if self.eff_spec.conditions:
+            for cond in self.eff_spec.conditions:
+                if not cond(self.source):
+                    print('G')
+                    return False
+        return all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs)
+
+    def pay_costs(self, gs):
+        for cost in self.eff_spec.costs:
+            cost.pay(gs, self.source)
+
+
+def opp_creatures_who_could_have_attacked_but_didnt(gs: GameState, source: GameCard) -> list[GameCard | None]:
+    """Returns creatures who: have 'Attack' in kwa, no summoning sickness, didn't go into combat"""
+    attackers = gs.card_filter.attackers().result()
+    return [c for c in gs.card_filter.on_player_board(flip(source.orig_owner_id)).creatures().result()
+            if c not in attackers and not c.has_summoning_sickness and 'Attack' in c.keyword_abilities]
+
+
+def is_tapped(s: GameCard) -> bool:
+    return s.is_tapped
+
+def all_player_indices(gs):
+    return list(range(gs.player_cnt))
+
+
+CAST_TARGETS = {
+    'active-volcano': lambda gs: CardFilter(gs).in_play().blue().permanents().result() +
+                                 CardFilter(gs).in_play().by_slug('island').result(),
+    'animate-dead': lambda gs: CardFilter(gs).in_player_graveyard(gs.player_turn_idx).creatures().result(),
+    'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
+    'ancestral-recall': lambda gs: all_player_indices(gs),
+    'artifact-ward': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'blood-lust': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'braingeyser': lambda gs: all_player_indices(gs),
+    'brainwash': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'burrowing': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'cocoon': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
+    'curse-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'cursed-land': lambda gs: CardFilter(gs).in_play().lands.result(),
+    'crumble': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'demonic-torment': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'desert-twister': lambda gs: CardFilter(gs).in_play().permanents().result(),
+    'disenchant': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Enchantment']).result(),
+    'divine-offering': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'drain-power': lambda gs: all_player_indices(gs),
+    'earthbind': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'energy-tap': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().untapped().result(),
+    'erosion': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'eternal-warrior': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'eye-for-an-eye': lambda gs: CardFilter(gs).in_play().result(),
+    'farmstead': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands.result(),
+    'feedback': lambda gs: CardFilter(gs).in_play().by_type('Enchantment').result(),
+    'feint': lambda gs: CardFilter(gs).attackers().result(),
+    'firebreathing': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'fishliver-oil': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'flash-flood': lambda gs: CardFilter(gs).in_play().red().permanents().result() +
+                                 CardFilter(gs).in_play().by_slug('mountain').result(),
+    'flashfires': lambda gs: CardFilter(gs).in_play().by_slug('plains').result(),
+    'gaseous-form': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'giant-growth': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'giant-strength': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'great-defender': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'howl-from-beyond': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'ice-storm': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'immolation': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'indestructible-aura': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'instill-energy': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'jovial-evil': lambda gs: flip(gs.action_on_idx),  # test this
+    'jump': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'lightning-bolt': lambda gs: CardFilter(gs).in_play().creatures().result() + all_player_indices(gs),
+    'living-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'mana-short': lambda gs: all_player_indices(gs),
+    'mana-vortex': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands().result(),
+    'martyrs-cry': lambda gs: CardFilter(gs).in_play().creatures().white().result(),
+    'paralyze': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'sacrifice': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
+    'shatter': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'sinkhole': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'spirit-link': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'spirit-shackle': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'stone_rain': lambda gs: CardFilter(gs).in_play().lands().result(),
+    'storm-seeker': lambda gs: all_player_indices(gs),
+    'stream-of-life': lambda gs: all_player_indices(gs),
+    'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
+    'unholy-strength': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'unstable-mutation': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'venarian-gold': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'warp-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'weakness': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'web': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'winter-blast': lambda gs: CardFilter(gs).in_play().creatures().untapped().result(),
+}
+
 SLUG_EFFECTS: dict[str, list[Effect]] = {
-        'acid-rain': [acid_rain_on_cast()],
+        # 'acid-rain': [acid_rain_on_cast()],
         'active-volcano': [active_volcano_on_cast()],
         'akron-legionnaire': [akron_legionnaire_on_cast(), akron_legionnaire_on_leave()],
         'ancestral-recall': [ancestral_recall_on_cast()],
@@ -91,7 +304,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'basalt-monolith': [stays_tapped_at_untap_phase()],
         'blood-lust': [blood_lust_on_cast()],
         'bog-rats': [bog_rats_can_be_blocked()],
-        'boomerang': [boomerang_on_cast()],
         'braingeyser': [braingeyser_on_cast()],
         'brainwash': [brainwash_on_cast()],
         'brass-man': [stays_tapped_at_untap_phase()],
@@ -201,11 +413,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'preacher': [untap_option_at_untap_phase()],
         'primordial-ooze': [primordial_ooze_on_upkeep()],
         'psionic_blast': [psionic_blast_on_cast()],
-        'raise-dead': [graveyard_to_hand()],
-        'reconstruction': [graveyard_to_hand()],
-        'regrowth': [graveyard_to_hand()],
         'reset': [reset_on_cast()],
-        'resurrection': [graveyard_to_board()],
         'reverse-damage': [reverse_damage_on_cast()],
         'riptide': [riptide_on_cast()],
         'rock-hydra': [rock_hydra_on_cast()],
@@ -242,153 +450,13 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'typhoon': [typhoon_on_cast()],
         'unholy-strength': [unholy_strength_on_cast()],
         'unstable-mutation': [unstable_mutation_on_cast(), unstable_mutation_on_upkeep()],
-        'unsummon': [unsummon_on_cast()],
         'venarian-gold': [venarian_gold_on_cast(), venarian_gold_at_untap_phase(), venarian_gold_on_upkeep()],
         'voodoo-doll': [voodoo_doll_on_upkeep(), voodoo_doll_at_end_step()],
         'warp-artifact': [feedback_and_warp_artifact_on_upkeep()],
         'weakness': [weakness_on_cast()],
         'web': [web_on_cast()],
         'wrath-of-god': [wrath_of_god_on_cast()],
-
     }
-
-T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
-    # --- COMMON TARGET FUNCS ---
-    'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
-    'all_players': lambda gs, s: [0, 1],
-    'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
-    'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
-    'artifacts_in_graveyards': lambda gs, s: gs.card_filter.in_graveyards().artifacts().result(),
-    'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts().result(),
-    'attackers': lambda gs, s: gs.card_filter.attackers().result(),
-    'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result()
-                                     for a in c.modifiers.auras if isinstance(a, GameCard)],
-    'auras_on_owners_creatures': lambda gs, s: [a for c in gs.card_filter.on_player_board(s).creatures().result()
-                                                for a in c.modifiers.auras if isinstance(a, GameCard)],
-    'black_in_play': lambda gs, source: gs.card_filter.in_play().black().result(),
-    'black_and_red_in_play': lambda gs, source: [gs.card_filter.in_play().black().result() +
-                                                 gs.card_filter.in_play().red().result()],
-    'black_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().black().result(),
-    'blue_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().blue().result(),
-    'blue_in_play': lambda gs, source: gs.card_filter.in_play().blue().result(),
-    'card_owner': lambda gs, s: s.orig_owner_id,
-    'creatures_in_all_graveyards': lambda gs, s: gs.card_filter.in_graveyards().creatures().result(),
-    'creatures_in_play': lambda gs, source: gs.card_filter.in_play().creatures().result(),
-    'creatures_in_play_w_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
-    'creatures_in_play_wo_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk', False).result(),
-    'creatures_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).creatures().result(),
-    'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
-                                                                                          'Enchantment']).result(),
-    'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
-    'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
-    'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_slug('forest').result(),
-    'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_sub_type('Goblin').permanents().result(),
-    'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
-    'lands_in_play': lambda gs, source: gs.card_filter.in_play().lands().result(),
-    'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
-                                                if c.power == 1 and c.toughness == 1],
-    'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result(),
-    'opp_creatures_who_could_have_but_didnt_attack': lambda gs, s: opp_creatures_who_could_have_attacked_but_didnt(gs, s),
-    'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
-    'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
-                                  if c.toughness < s.power],
-    'tapped_creatures': lambda gs, source: gs.card_filter.in_play().creatures().tapped().result(),
-    'tapped_lands': lambda gs, s: gs.card_filter.in_play().lands().tapped().result(),
-    'unblocked_attackers': lambda gs, source: gs.card_filter.unblocked_attackers().result(),
-    'untapped_artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().untapped().result(),
-    'walls_in_play': lambda gs, s: gs.card_filter.in_play().walls().result(),
-    'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
-    'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
-}
-
-
-@dataclass
-class EffSpec:
-    """Effect Specification"""
-
-    class AllowedPlayerTurn(Enum):
-        CASTER = auto()
-        OPPONENT = auto()
-
-    activation_type: Literal["cast", "upkeep", "activated", "untap", "static"]
-    cost: str
-    effect: Effect
-    target_filter: Union[Callable, None] = None
-    trigger_event: str = ''
-    conditions: list[Callable[[], bool], None] = field(default_factory=list)
-    extra_costs: list[Cost | None] = None
-    allowed_phases: list[Phase | None] = field(default_factory=list)
-    allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
-    allowed_p_id_turn: int | None = None
-    activated_cnt_this_turn: int = 0
-    max_activations_per_turn: int = 999
-    text: str = ''
-
-    @property
-    def costs(self) -> list[Cost | None]:
-        the_costs = []
-        if not self.cost:
-            pass
-        elif 'T' in self.cost:
-            the_costs.append(TapCost())
-            the_costs.append(ManaCost(self.cost[:-1]))
-        else:
-            the_costs.append(ManaCost(self.cost))
-        if self.extra_costs:
-            for extra_cost in self.extra_costs:
-                the_costs.append(extra_cost)
-        return the_costs
-
-
-@dataclass
-class ActivatedAbility:
-    source: GameCard
-    eff_spec: EffSpec
-
-    def __post_init__(self):
-        """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
-        allowed_p_id_turns need knowledge of the card's owner and is assigned here;
-        if allowed_player_turn is None, then the ability should be permitted on both turns"""
-        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.CASTER:
-            self.eff_spec.allowed_p_id_turn = self.source.orig_owner_id
-        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
-            self.eff_spec.allowed_p_id_turn = flip(self.source.orig_owner_id)
-
-    def can_activate(self, gs: GameState) -> bool:
-        if self.eff_spec.allowed_phases and gs.phase not in self.eff_spec.allowed_phases:
-            print("C")
-            return False
-        if self.eff_spec.allowed_player_turn and gs.player_turn_idx != self.eff_spec.allowed_p_id_turn:
-            print("F")
-            return False
-        if self.eff_spec.allowed_p_id_turn and self.source.orig_owner_id != self.eff_spec.allowed_p_id_turn:
-            print("D")
-            return False
-        if self.eff_spec.activated_cnt_this_turn >= self.eff_spec.max_activations_per_turn:
-            print("E")
-            return False
-        if self.eff_spec.conditions:
-            for cond in self.eff_spec.conditions:
-                if not cond(self.source):
-                    print('G')
-                    return False
-        return all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs)
-
-    def pay_costs(self, gs):
-        for cost in self.eff_spec.costs:
-            cost.pay(gs, self.source)
-
-
-def opp_creatures_who_could_have_attacked_but_didnt(gs: GameState, source: GameCard) -> list[GameCard | None]:
-    """Returns creatures who: have 'Attack' in kwa, no summoning sickness, didn't go into combat"""
-    attackers = gs.card_filter.attackers().result()
-    return [c for c in gs.card_filter.on_player_board(flip(source.orig_owner_id)).creatures().result()
-            if c not in attackers and not c.has_summoning_sickness and 'Attack' in c.keyword_abilities]
-
-
-def is_tapped(s: GameCard) -> bool:
-    return s.is_tapped
-
 
 Activated = partial(EffSpec, 'activated')
 Triggered = partial(EffSpec, 'triggered', '')
@@ -407,6 +475,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Activated('WWT', GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'])],
     'birds-of-paradise':
         [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
+    'boomerang':
+        [Triggered(BoardToHand(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
     'city-of-shadows':
         [Activated('T', CityOfShadowsAA1()),  # TODO: needs a way to find a creature to exile in extra_costs
          Activated('T', CityOfShadowsAA2())],
@@ -425,11 +495,23 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
     'necropolis':
         [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'raise-dead':
+        [Triggered(GraveyardToHand(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
+    'reconstruction':
+        [Triggered(GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
+    'regrowth':
+        [Triggered(GraveyardToHand(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
+    'resurrection':
+        [Triggered(GraveyardToBoard(), T_FUNCS['creatures_in_your_graveyard', CastResolvedEvent])],
     'skull-of-orm':
         [Activated('5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
     'tormods-crypt':
         [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
+    'unsummon':
+        [Triggered(BoardToHand(), T_FUNCS['creatures_in_play'], CastResolvedEvent)]
 }
+
+
 
 
 def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
