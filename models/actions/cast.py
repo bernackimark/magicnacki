@@ -35,6 +35,11 @@ class CastToBoard(Action):
         self.gs.trigger('cast', self.card)
         print(f"Successfully cast {self.card.props.name}")
 
+        # --- new event emission approach
+        for eff in self.card.effects:
+            self.gs.register_effect(eff, self.card)
+            print(f"XXX I REGISTERED EFFECT {eff} FOR {self.card}")
+
 
 @dataclass
 class CastToTargetAddToStack(Action):
@@ -68,6 +73,11 @@ class CastToTargetAddToStack(Action):
         hand.cards.remove(self.card)
         self.gs.action_stack.push(self, self.gs)
 
+        # --- new event emission approach
+        for eff in self.card.effects:
+            self.gs.register_effect(eff, self.card)
+            print(f"XXX I REGISTERED AN EFFECT FOR {self.card}")
+
 
 @dataclass
 class CastCounter(Action):
@@ -82,3 +92,7 @@ class CastCounter(Action):
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
         self.gs.action_stack.push(self, self.gs)
+
+        # --- new event emission approach
+        for eff in self.card.effects:
+            self.gs.register_effect(eff, self.card)

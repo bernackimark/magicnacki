@@ -19,8 +19,12 @@ class AcceptAction(Action):
             target.modifiers.auras.append(card)
             self.gs.boards[target.orig_owner_id].play_to_board(card)
 
+        # --- OLD CENTRAL DISPATCH SYSTEM
         self.gs.trigger('cast', card, target)  # WARNING: AcceptAction isn't just for 'cast' triggers !!!
-        print(f"Successfully cast {card.props.name}")
+        # print(f"Successfully cast {card.props.name}")
+
+        # --- NEW EVENT EMISSION SYSTEM ---
+        last_action.play()
 
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
         self.gs.action_stack.clear_()

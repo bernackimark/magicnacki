@@ -30,6 +30,7 @@ class DiscardCard(Action):
         return f"Discard {self.card} to graveyard"
 
     def play(self) -> None:
+        print(f"Discarding {self.card} from player {self.player_idx}'s hand")
         self.gs.send_to_graveyard(self.card)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)

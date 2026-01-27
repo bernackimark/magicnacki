@@ -1,10 +1,10 @@
 import random
+from collections import defaultdict
 from typing import Callable, Optional
 
 from action_stack import ActionStack
 from build_deck import Deck
 from card_filter import CardFilter
-from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
@@ -16,8 +16,11 @@ from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import DamageEvent, PreventNextDamage
+from models.effects.base import Effect
 from models.effects.combat import can_block_base_rule
 from models.effects.global_ import GlobalEffect
+from models.events.base import Event
+from models.events.events_all import EndStepEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -78,6 +81,31 @@ class GameState:
         self.end_of_turn_effects: list = []
         self.end_step_funcs: list[Callable] = []
         self.cards_that_died_this_turn: list[GameCard] = []
+
+        # --- event registry for new system ---
+        # key = Event subclass, value = list of (effect, source_card) tuples
+        self._event_listeners: dict[type, list[tuple[Effect, GameCard]]] = defaultdict(list)
+
+    # --- NEW SYSTEM ---
+    def register_effect(self, effect: Effect, source_card: GameCard):
+        """Store the effect + source card tuple for later event emission."""
+        if effect.listens_to:
+            self._event_listeners[effect.listens_to].append((effect, source_card))
+
+    def unregister_effects(self, card: GameCard):
+        """Remove any event listeners tied to this card."""
+        for event_type, effect_list in self._event_listeners.items():
+            # Keep only effects whose source_card is not the leaving card
+            self._event_listeners[event_type] = [
+                (eff, source_card) for eff, source_card in effect_list
+                if source_card != card
+            ]
+
+    def emit(self, event: Event):
+        """Call all effects listening to this event.
+        Pass (gs, source_card, target=None) to resolve exactly as your old system expects."""
+        for eff, source_card in self._event_listeners[type(event)]:
+            eff.resolve(self, source_card, None)  # target=None, as most global effects like cursed-rack don't need one
 
     # Event Dispatcher
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
@@ -225,6 +253,10 @@ class GameState:
             self.trigger('leave', a) if isinstance(a, GameCard) else self.trigger('leave', a.card)
             board.remove_from_board(a)
             print(f"{a} has been removed from the board")
+
+        # --- NEW EVENT EMISSION SYSTEM ---
+        # Remove all registered Event-based effects
+        self.unregister_effects(c)
 
     def send_to_graveyard_from_play(self, c: GameCard):
         """Send card to graveyard; send all card's auras to graveyard"""
@@ -393,54 +425,6 @@ class GameState:
                 raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card=} {targets=}")
         return actions
 
-    # def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
-    #     actions: list[ActivateAbility] = []
-    #
-    #     for ability in c.abilities:
-    #         if not ability.can_activate(self):
-    #             continue
-    #         if c.has_summoning_sickness:
-    #             continue
-    #
-    #         if ability.target_filter is None:  # janky solution; auras have target_filter = None
-    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
-    #             continue
-    #
-    #         targets = ability.target_filter(self, c)
-    #         # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
-    #         print(f"{c=}, {ability=}, {targets=}")
-    #
-    #         # No target needed → create a single action
-    #         if targets is None:
-    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, None))
-    #             continue
-    #
-    #         # I need at least one target, but I don't have any
-    #         elif isinstance(targets, list) and targets == []:
-    #             continue
-    #
-    #         # Targeting multiple player indices
-    #         elif targets == (0, 1) or targets == (1, 0):
-    #             for t in targets:
-    #                 actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
-    #
-    #         # Targeting a single player index
-    #         elif targets == 0 or targets == 1:
-    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
-    #
-    #         # Targeting a single GameCard
-    #         elif isinstance(targets, GameCard):
-    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
-    #
-    #         # I need a target and got a valid list of GameCards
-    #         elif isinstance(targets, list) and isinstance(targets[0], GameCard):
-    #             for t in targets:
-    #                 actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
-    #
-    #         else:
-    #             raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card=} {targets=}")
-    #     return actions
-
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         """Determine all legal actions available to player_id in the current phase ...
          (casting, activating abilities, combat, phase-specific actions, etc.)"""
@@ -599,6 +583,9 @@ class GameState:
             self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
+            # new event emission system
+            self.emit(EndStepEvent(active_player=self.player_turn_idx))
+
             # for all cards on all boards
             for b in self.boards:
                 for c in b.cards:

@@ -10,6 +10,21 @@ from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
 from utils import flip
 
+# This follows the new emission system, as opposed to when Effects also knew about their own events
+from models.events.events_all import EndStepEvent
+
+class CursedRackEffect(Effect):
+    """Opponent's maximum hand size is four [at their discard phase]"""
+    listens_to = EndStepEvent
+
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        opp_id = flip(source.orig_owner_id)
+        if gs.player_turn_idx != opp_id:
+            return
+
+        hand = gs.hands[opp_id]
+        for i in range(len(hand.cards) - 4):
+            gs.action_stack.push(DiscardCard(opp_id, gs, hand.cards[0]), gs, False)
 
 def cursed_rack_at_discard_phase():
     """Opponent's maximum hand size is four [at their discard phase]"""

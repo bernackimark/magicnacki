@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from ..damage import DamageEvent
+from ..events.base import Event
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -18,7 +19,8 @@ class Effect:
       - 'leave'  : when the card leaves the battlefield (sent to graveyard/exile)
     And implement resolve(gs, source, target)
     """
-    event: str = 'generic'
+    event: str = 'generic'  # old system
+    listens_to: type[Event] | None = None  # new system
 
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         raise NotImplementedError()

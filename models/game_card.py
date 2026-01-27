@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
+from models.effects.draw_discard import CursedRackEffect
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -46,6 +47,10 @@ class GameCard:
         self._base_kwa: tuple[str, ...] | tuple[None] = get_base_kwas(self.props.slug)
         self.abilities: list[ActivatedAbility] = get_activated_abilities(self)
         self.effects: list[Effect] = build_effects_for_slug(self.props.slug)
+
+        # gingerly testing out the new event emission system
+        if self.props.slug == 'cursed-rack':
+            self.effects = [CursedRackEffect()]
 
     def __repr__(self) -> str:
         text = self.props.name
