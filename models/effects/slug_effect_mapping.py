@@ -30,16 +30,15 @@ from models.effects.damage import erg_raiders_on_end_step, argothian_pixies_dama
         eternal_flame_on_cast, eye_for_an_eye_on_cast, indestructible_aura_on_cast, inferno_on_cast, \
         jovial_evil_on_cast, lightning_bolt_on_cast, typhoon_on_cast, gaseous_form_on_cast, psionic_blast_on_cast, \
         storm_seeker_on_cast, DealDamage
-from models.effects.destroy_sac_regenerate import destroy_on_end_step, voodoo_doll_at_end_step, \
+from models.effects.destroy_sac_regenerate import voodoo_doll_at_end_step, \
     season_of_the_witch_on_end_step, send_to_graveyard_all_lands, land_on_leave, island_on_leave, \
     conversion_on_upkeep, cosmic_horror_on_upkeep, erosion_on_upkeep, force_of_nature_on_upkeep, \
     forethought_amulet_on_upkeep, junun_efreet_on_upkeep, mana_vortex_on_upkeep, phantasmal_forces_on_upkeep, \
-    season_of_the_witch_on_upkeep, sunken_city_on_upkeep, acid_rain_on_cast, cleanse_on_cast, \
-    desert_twister_on_cast, disenchant_on_cast, wrath_of_god_on_cast, tivadars_crusade_on_cast, tranquility_on_cast, \
-    tsunami_on_cast, sinkhole_and_stone_rain_on_cast, ice_storm_on_cast, mana_vortex_on_cast, flashfires_on_cast, \
-    EaterOfTheDeadAA, AcidRain
-from models.effects.draw_discard import cursed_rack_at_discard_phase, ancestral_recall_on_cast, braingeyser_on_cast, \
-        CursedRackEffect
+    season_of_the_witch_on_upkeep, sunken_city_on_upkeep, cleanse_on_cast, \
+    tivadars_crusade_on_cast, tranquility_on_cast, \
+    tsunami_on_cast, flashfires_on_cast, \
+    EaterOfTheDeadAA, AcidRain, ExileAllCreatures, BoardToGraveyard, DestroySelf
+from models.effects.draw_discard import ancestral_recall_on_cast, braingeyser_on_cast, CursedRackEffect
 from models.effects.global_ import global_on_leave, angelic_voices_on_cast, bad_moon_on_cast, castle_on_cast, \
         crusade_on_cast, darkness_or_fog_or_holy_day_on_cast, sunken_city_on_cast
 from models.effects.keywords import goblin_king_on_leave, erhnam_djinn_on_upkeep, akron_legionnaire_on_cast, \
@@ -77,6 +76,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'all_creatures_and_players': lambda gs, source: gs.card_filter.in_play().creatures().result() + [0, 1],
     'all_players': lambda gs, s: [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
+    'artifacts_and_enchantments_in_play': lambda gs: gs.card_filter.in_play().by_type(['Artifact', 'Enchantment']).result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
     'artifacts_in_graveyards': lambda gs, s: gs.card_filter.in_graveyards().artifacts().result(),
     'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts().result(),
@@ -112,6 +112,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'opp_creatures_who_could_have_but_didnt_attack': lambda gs, s: opp_creatures_who_could_have_attacked_but_didnt(gs, s),
     'permanents_in_play': lambda gs: CardFilter(gs).in_play().permanents().result(),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
+    'self': lambda gs, s: s,
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
                                   if c.toughness < s.power],
     'tapped_creatures': lambda gs, source: gs.card_filter.in_play().creatures().tapped().result(),
@@ -121,6 +122,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'walls_in_play': lambda gs, s: gs.card_filter.in_play().walls().result(),
     'white_in_play': lambda gs, source: gs.card_filter.in_play().white().result(),
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
+    'your_lands_in_play': lambda gs: gs.card_filter.on_player_board(gs.player_turn_idx).lands().result(),
 }
 
 
@@ -231,8 +233,6 @@ CAST_TARGETS = {
     'cursed-land': lambda gs: CardFilter(gs).in_play().lands.result(),
     'crumble': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'demonic-torment': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'desert-twister': lambda gs: CardFilter(gs).in_play().permanents().result(),
-    'disenchant': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Enchantment']).result(),
     'divine-offering': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'drain-power': lambda gs: all_player_indices(gs),
     'earthbind': lambda gs: CardFilter(gs).in_play().creatures().result(),
@@ -253,7 +253,6 @@ CAST_TARGETS = {
     'giant-strength': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'great-defender': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'howl-from-beyond': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'ice-storm': lambda gs: CardFilter(gs).in_play().lands().result(),
     'immolation': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'indestructible-aura': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'instill-energy': lambda gs: CardFilter(gs).in_play().creatures().result(),
@@ -262,16 +261,13 @@ CAST_TARGETS = {
     'lightning-bolt': lambda gs: CardFilter(gs).in_play().creatures().result() + all_player_indices(gs),
     'living-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
     'mana-short': lambda gs: all_player_indices(gs),
-    'mana-vortex': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands().result(),
     'martyrs-cry': lambda gs: CardFilter(gs).in_play().creatures().white().result(),
     'paralyze': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
     'sacrifice': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
     'shatter': lambda gs: CardFilter(gs).in_play().artifacts().result(),
-    'sinkhole': lambda gs: CardFilter(gs).in_play().lands().result(),
     'spirit-link': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'spirit-shackle': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'stone_rain': lambda gs: CardFilter(gs).in_play().lands().result(),
     'storm-seeker': lambda gs: all_player_indices(gs),
     'stream-of-life': lambda gs: all_player_indices(gs),
     'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
@@ -286,7 +282,6 @@ CAST_TARGETS = {
 }
 
 SLUG_EFFECTS: dict[str, list[Effect]] = {
-        # 'acid-rain': [acid_rain_on_cast()],
         'active-volcano': [active_volcano_on_cast()],
         'akron-legionnaire': [akron_legionnaire_on_cast(), akron_legionnaire_on_leave()],
         'ancestral-recall': [ancestral_recall_on_cast()],
@@ -300,7 +295,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'artifact-ward': [artifact_ward_can_be_blocked(), artifact_ward_damage_prevention()],
         'ashnods-battle-gear': [untap_option_at_untap_phase()],
         'bad-moon': [bad_moon_on_cast(), global_on_leave()],
-        'ball-lightning': [destroy_on_end_step()],
         'basalt-monolith': [stays_tapped_at_untap_phase()],
         'blood-lust': [blood_lust_on_cast()],
         'bog-rats': [bog_rats_can_be_blocked()],
@@ -326,8 +320,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'dark-ritual': [dark_ritual_on_cast()],
         'darkness': [darkness_or_fog_or_holy_day_on_cast()],
         'demonic-torment': [demonic_torment_on_cast()],
-        'desert-twister': [desert_twister_on_cast()],
-        'disenchant': [disenchant_on_cast()],
         'divine-offering': [divine_offering_on_cast()],
         'divine-transformation': [divine_transformation_on_cast()],
         'drain-power': [drain_power_on_cast()],
@@ -371,7 +363,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'holy-day': [darkness_or_fog_or_holy_day_on_cast()],
         'holy-strength': [holy_strength_on_cast()],
         'howl-from-beyond': [howl_from_beyond_on_cast()],
-        'ice-storm': [ice_storm_on_cast()],
         'immolation': [immolation_on_cast()],
         'indestructible-aura': [indestructible_aura_on_cast()],
         'inferno': [inferno_on_cast()],
@@ -395,7 +386,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'lord-of-the-pit': [lord_of_the_pit_on_upkeep()],
         'mana-short': [mana_short_on_cast()],
         'mana-vault': [stays_tapped_at_untap_phase()],
-        'mana-vortex': [mana_vortex_on_cast(), mana_vortex_on_upkeep()],
+        'mana-vortex': [mana_vortex_on_upkeep()],
         'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED: All Walls able to block this creature do so
         'marsh-viper': [add_two_poison_counters_on_damage()],
         'martyrs-cry': [martyrs_cry_on_cast()],
@@ -425,12 +416,10 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'serendib-djinn': [serendib_djinn_on_upkeep()],
         'serendib-efreet': [serendib_efreet_on_upkeep()],
         'shapeshifter': [shapeshifter_on_cast(), shapeshifter_on_upkeep()],
-        'sinkhole': [sinkhole_and_stone_rain_on_cast()],
         'swamp': [land_on_leave()],
         'spirit-link': [spirit_link_on_damage()],
         'spirit-shackle': [spirit_shackle_on_tap()],
         'spiritual-sanctuary': [spiritual_sanctuary_on_upkeep()],
-        'stone-rain': [sinkhole_and_stone_rain_on_cast()],
         'storm-seeker': [storm_seeker_on_cast()],
         'storm-world': [storm_world_on_upkeep()],
         'stream-of-life': [stream_of_life_on_cast()],
@@ -455,7 +444,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'warp-artifact': [feedback_and_warp_artifact_on_upkeep()],
         'weakness': [weakness_on_cast()],
         'web': [web_on_cast()],
-        'wrath-of-god': [wrath_of_god_on_cast()],
     }
 
 Activated = partial(EffSpec, 'activated')
@@ -473,6 +461,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'argivian-archaeologist':
         [Activated('WWT', GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'])],
+    'ball_lightning':
+        [Triggered(BoardToGraveyard(), T_FUNCS['self'], trigger_event=EndStepEvent)],
     'birds-of-paradise':
         [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'boomerang':
@@ -482,6 +472,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Activated('T', CityOfShadowsAA2())],
     'cursed-rack':
         [Triggered(CursedRackEffect(), trigger_event=EndStepEvent)],
+    'desert-twister':
+        [Triggered(BoardToGraveyard(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
+    'disenchant':
+        [Triggered(BoardToGraveyard(), T_FUNCS['artifacts_and_enchantments_in_play'], CastResolvedEvent)],
     'eater-of-the-dead':
         [Activated('', EaterOfTheDeadAA(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
     'gaeas-touch':
@@ -491,8 +485,12 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
     'grave-robbers':
         [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
+    'ice-storm':
+        [Triggered(BoardToGraveyard(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'living-armor':
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
+    'mana-vortex':
+        [Triggered(BoardToGraveyard(), T_FUNCS['your_lands_in_play'], CastResolvedEvent)],
     'necropolis':
         [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'raise-dead':
@@ -503,12 +501,18 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(GraveyardToHand(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'resurrection':
         [Triggered(GraveyardToBoard(), T_FUNCS['creatures_in_your_graveyard', CastResolvedEvent])],
+    'sinkhole':
+        [Triggered(BoardToGraveyard(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'skull-of-orm':
         [Activated('5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
+    'stone-rain':
+        [Triggered(BoardToGraveyard(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'tormods-crypt':
         [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
     'unsummon':
-        [Triggered(BoardToHand(), T_FUNCS['creatures_in_play'], CastResolvedEvent)]
+        [Triggered(BoardToHand(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'wrath-of-god':
+        [Triggered(ExileAllCreatures(), trigger_event=CastResolvedEvent)]
 }
 
 

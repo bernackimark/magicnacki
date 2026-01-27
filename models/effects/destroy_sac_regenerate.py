@@ -18,6 +18,10 @@ class AcidRain(Effect):
         for forest in CardFilter(gs).in_play().by_slug('forest').result():
             gs.send_to_graveyard_from_play(forest)
 
+class BoardToGraveyard(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.send_to_graveyard_from_play(target)
+
 class EaterOfTheDeadAA(Effect):
     """Exile target creature card from a graveyard and untap this creature"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -26,18 +30,14 @@ class EaterOfTheDeadAA(Effect):
         GraveyardToExile().resolve(gs, source, target)
         source.untap(gs)
 
+class ExileAllCreatures(Effect):
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        for c in CardFilter(gs).in_play().creatures().result():
+            gs.send_to_exile(c)
 
 
 # --- old function format ---
 
-def destroy_on_end_step():
-    """At the beginning of this turn's end step, destroy this card"""
-    class E(Effect):
-        event = 'end_step'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.send_to_graveyard_from_play(source)
-    return E()
 
 
 def voodoo_doll_at_end_step():
@@ -265,41 +265,6 @@ def cleanse_on_cast():
     return E()
 
 
-def desert_twister_on_cast():
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-            if not target:
-                raise ValueError("Desert Twister needs a target")
-            if target:
-                gs.send_to_graveyard_from_play(target)
-    return E()
-
-
-def disenchant_on_cast():
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-            if not target:
-                raise ValueError("Disenchant needs a target")
-            if target:
-                print(f"Disenchant's target is {target}")
-                gs.send_to_graveyard_from_play(target)
-    return E()
-
-
-def wrath_of_god_on_cast():
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-            for c in CardFilter(gs).in_play().creatures().result():
-                gs.send_to_exile(c)
-    return E()
-
-
 def tivadars_crusade_on_cast():
     """Destroy all Goblins"""
     class E(Effect):
@@ -330,52 +295,6 @@ def tsunami_on_cast():
         def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
             for c in gs.card_filter.in_play().by_slug('island').result():
                 gs.send_to_graveyard_from_play(c)
-    return E()
-
-
-def shatter_on_cast():
-    """Destroy target artifact"""
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
-            gs.send_to_graveyard_from_play(t)
-    return E()
-
-
-def sinkhole_and_stone_rain_on_cast():
-    """Destroy target land"""
-
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-            if not target:
-                raise ValueError(f"{s.props.name} needs a target")
-            gs.send_to_graveyard_from_play(target)
-    return E()
-
-
-def ice_storm_on_cast():
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            """Destroy one land"""
-            gs.send_to_graveyard_from_play(target)
-    return E()
-
-
-def mana_vortex_on_cast():
-    """When you cast this spell, sacrifice a land"""
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-            """target = player_id whose lands should be tapped"""
-            if target is None:
-                raise ValueError(f"{source.props.name} needs a land to sacrifice")
-            gs.send_to_graveyard_from_play(target)
     return E()
 
 
