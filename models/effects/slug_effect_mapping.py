@@ -4,6 +4,8 @@ from enum import Enum, auto
 from functools import partial
 from typing import Callable, Literal, Union, TYPE_CHECKING
 
+from models.counter_tokens import CARRION, CORPSE, PLUS_ONE, MINUS_ONE, PIN, PLUS_ONE_ZERO
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -16,11 +18,11 @@ from models.effects.combat import islandhome_can_attack_effect, amrou_kithkin_ca
         artifact_ward_can_be_blocked, argothian_pixies_can_be_blocked, bog_rats_can_be_blocked, \
         elder_spawn_can_be_blocked, elven_riders_can_be_blocked, evil_eye_of_orms_by_gore_can_be_blocked, \
         seeker_enchanted_creature_can_be_blocked, akron_legionnaire_on_leave, evil_eye_of_orms_by_gore_on_leave
-from models.effects.counters import remove_plus_one_zero, scavenging_ghoul_on_end_step, spirit_shackle_on_tap, \
-        fungusaur_on_damage, living_artifact_on_damage, fasting_on_upkeep, primordial_ooze_on_upkeep, \
-        unstable_mutation_on_upkeep, venarian_gold_on_upkeep, voodoo_doll_on_upkeep, clockwork_avian_on_cast, \
-        clockwork_beast_on_cast, cocoon_on_cast, tetravus_and_triskelion_on_cast, rock_hydra_on_cast, CityOfShadowsAA1, \
-        CityOfShadowsAA2, XZeroOneCountersByManaValue
+from models.effects.counters import (spirit_shackle_on_tap, fungusaur_on_damage, living_artifact_on_damage,
+                                     CityOfShadowsAA1, CityOfShadowsAA2, XZeroOneCountersByManaValue,
+                                     RemovePlusOneZeroFromCombatant, AddCountersIfAnyCreatureDied,
+                                     AddCounterPerCreatureDeath, Fasting, AddCountersYourTurnOnly,
+                                     AddCountersOnHostTurn, RemoveCountersOnHostTurn, CocoonCast, RockHydraCast)
 from models.effects.damage import erg_raiders_on_end_step, argothian_pixies_damage_prevention, \
         argothian_treefolk_damage_prevention, artifact_ward_damage_prevention, enchanted_being_damage_prevention, \
         marble_priest_damage_prevention, creature_bond_on_leave, martyrs_of_korlis_on_damage, copper_tablet_on_upkeep, \
@@ -37,8 +39,8 @@ from models.effects.destroy_sac_regenerate import voodoo_doll_at_end_step, \
     season_of_the_witch_on_upkeep, sunken_city_on_upkeep, cleanse_on_cast, \
     tivadars_crusade_on_cast, tranquility_on_cast, \
     tsunami_on_cast, flashfires_on_cast, \
-    EaterOfTheDeadAA, AcidRain, ExileAllCreatures, BoardToGraveyard, DestroySelf
-from models.effects.draw_discard import ancestral_recall_on_cast, braingeyser_on_cast, CursedRackEffect
+    EaterOfTheDeadAA, AcidRain, ExileAllCreatures, BoardToGraveyard
+from models.effects.draw_discard import Braingeyser, CursedRackEffect, DrawCards, WheelOfFortune
 from models.effects.global_ import global_on_leave, angelic_voices_on_cast, bad_moon_on_cast, castle_on_cast, \
         crusade_on_cast, darkness_or_fog_or_holy_day_on_cast, sunken_city_on_cast
 from models.effects.keywords import goblin_king_on_leave, erhnam_djinn_on_upkeep, akron_legionnaire_on_cast, \
@@ -66,7 +68,7 @@ from models.effects.tap_untap import host_stays_tapped_at_untap_phase, stays_tap
         untap_option_at_untap_phase, cocoon_at_untap_phase, venarian_gold_at_untap_phase, leviathan_on_cast, \
         mana_short_on_cast, nevinyrrals_disk_on_cast, paralyze_on_cast, reset_on_cast, riptide_on_cast, twiddle_on_cast, \
         TapCardEffect
-from models.events.events_all import EndStepEvent, CastResolvedEvent
+from models.events.events_all import EndStepEvent, CastResolvedEvent, CombatEndEvent, UpkeepEvent
 from phase_fsm import Phase
 from utils import flip
 
@@ -222,10 +224,8 @@ CAST_TARGETS = {
                                  CardFilter(gs).in_play().by_slug('island').result(),
     'animate-dead': lambda gs: CardFilter(gs).in_player_graveyard(gs.player_turn_idx).creatures().result(),
     'animate-wall': lambda gs: CardFilter(gs).in_play().walls().result(),
-    'ancestral-recall': lambda gs: all_player_indices(gs),
     'artifact-ward': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'blood-lust': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'braingeyser': lambda gs: all_player_indices(gs),
     'brainwash': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'burrowing': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'cocoon': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
@@ -284,7 +284,6 @@ CAST_TARGETS = {
 SLUG_EFFECTS: dict[str, list[Effect]] = {
         'active-volcano': [active_volcano_on_cast()],
         'akron-legionnaire': [akron_legionnaire_on_cast(), akron_legionnaire_on_leave()],
-        'ancestral-recall': [ancestral_recall_on_cast()],
         'angelic-voices': [angelic_voices_on_cast(), global_on_leave()],
         'animate-dead': [animate_dead_on_cast()],
         'animate-wall': [animate_wall_on_cast()],
@@ -298,15 +297,12 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'basalt-monolith': [stays_tapped_at_untap_phase()],
         'blood-lust': [blood_lust_on_cast()],
         'bog-rats': [bog_rats_can_be_blocked()],
-        'braingeyser': [braingeyser_on_cast()],
         'brainwash': [brainwash_on_cast()],
         'brass-man': [stays_tapped_at_untap_phase()],
         'burrowing': [burrowing_on_cast()],
         'castle': [castle_on_cast(), global_on_leave()],
         'cleanse': [cleanse_on_cast()],
-        'clockwork-avian': [clockwork_avian_on_cast(), remove_plus_one_zero()],
-        'clockwork-beast': [clockwork_beast_on_cast(), remove_plus_one_zero()],
-        'cocoon': [cocoon_on_cast(), cocoon_on_upkeep(), cocoon_at_untap_phase()],
+        'cocoon': [cocoon_on_upkeep(), cocoon_at_untap_phase()],
         'colossus-of-sardia': [stays_tapped_at_untap_phase()],
         'conversion': [conversion_on_upkeep()],  # still need to code the identity change aspect
         'copper-tablet': [copper_tablet_on_upkeep()],
@@ -340,7 +336,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
                                      evil_eye_of_orms_by_gore_can_be_blocked()],
         'eye-for-an-eye': [eye_for_an_eye_on_cast()],
         'farmstead': [farmstead_on_cast()],
-        'fasting': [fasting_on_upkeep()],
         'feedback': [feedback_and_warp_artifact_on_upkeep()],
         'feint': [feint_on_cast()],
         'fishliver-oil': [fishliver_oil_on_cast()],
@@ -402,14 +397,11 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'plains': [land_on_leave()],
         'power_surge': [power_surge_on_upkeep()],
         'preacher': [untap_option_at_untap_phase()],
-        'primordial-ooze': [primordial_ooze_on_upkeep()],
         'psionic_blast': [psionic_blast_on_cast()],
         'reset': [reset_on_cast()],
         'reverse-damage': [reverse_damage_on_cast()],
         'riptide': [riptide_on_cast()],
-        'rock-hydra': [rock_hydra_on_cast()],
         'rocket-launcher': [rocket_launcher_on_cast()],
-        'scavenging-ghoul': [scavenging_ghoul_on_end_step()],
         'sea-serpent': [islandhome_can_attack_effect()],
         'season-of-the-witch': [season_of_the_witch_on_upkeep(), season_of_the_witch_on_end_step()],
         'seeker': [seeker_enchanted_creature_can_be_blocked()],
@@ -429,18 +421,16 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'syphon-soul': [syphon_soul_on_cast()],
         'tawnoss-coffin': [untap_option_at_untap_phase()],
         'tawnoss-weaponry': [untap_option_at_untap_phase()],
-        'tetravus': [tetravus_and_triskelion_on_cast()],
         'time-vault': [stays_tapped_at_untap_phase()],
         'tivadars-crusade': [tivadars_crusade_on_cast()],
         'tranquility': [tranquility_on_cast()],
-        'triskelion': [tetravus_and_triskelion_on_cast()],
         'tsunami': [tsunami_on_cast()],
         'twiddle': [twiddle_on_cast()],
         'typhoon': [typhoon_on_cast()],
         'unholy-strength': [unholy_strength_on_cast()],
-        'unstable-mutation': [unstable_mutation_on_cast(), unstable_mutation_on_upkeep()],
-        'venarian-gold': [venarian_gold_on_cast(), venarian_gold_at_untap_phase(), venarian_gold_on_upkeep()],
-        'voodoo-doll': [voodoo_doll_on_upkeep(), voodoo_doll_at_end_step()],
+        'unstable-mutation': [unstable_mutation_on_cast()],
+        'venarian-gold': [venarian_gold_on_cast(), venarian_gold_at_untap_phase()],
+        'voodoo-doll': [voodoo_doll_at_end_step()],
         'warp-artifact': [feedback_and_warp_artifact_on_upkeep()],
         'weakness': [weakness_on_cast()],
         'web': [web_on_cast()],
@@ -457,19 +447,31 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'ali-baba':
         [Activated('RT', TapCardEffect(), T_FUNCS['walls_in_play'])],
+    'ancestral-recall':
+        [Triggered(DrawCards(3), T_FUNCS['all_players'], CastResolvedEvent)],
     'apprentice-wizard':
         [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'argivian-archaeologist':
         [Activated('WWT', GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'])],
     'ball_lightning':
-        [Triggered(BoardToGraveyard(), T_FUNCS['self'], trigger_event=EndStepEvent)],
+        [Triggered(BoardToGraveyard(), T_FUNCS['self'], EndStepEvent)],
     'birds-of-paradise':
         [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'boomerang':
         [Triggered(BoardToHand(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
+    'braingeyser':
+        [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
     'city-of-shadows':
         [Activated('T', CityOfShadowsAA1()),  # TODO: needs a way to find a creature to exile in extra_costs
          Activated('T', CityOfShadowsAA2())],
+    'clockwork-avian':
+        [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
+         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 4), T_FUNCS['self'], CastResolvedEvent)],
+    'clockwork-beast':
+        [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
+         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 7), T_FUNCS['self'], CastResolvedEvent)],
+    'cocoon':
+        [Triggered(CocoonCast(), T_FUNCS['self'], CastResolvedEvent)],
     'cursed-rack':
         [Triggered(CursedRackEffect(), trigger_event=EndStepEvent)],
     'desert-twister':
@@ -478,6 +480,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(BoardToGraveyard(), T_FUNCS['artifacts_and_enchantments_in_play'], CastResolvedEvent)],
     'eater-of-the-dead':
         [Activated('', EaterOfTheDeadAA(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
+    'fasting':
+        [Activated(Fasting(), T_FUNCS['self'], UpkeepEvent)],
     'gaeas-touch':
         [Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'],
                    allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
@@ -493,6 +497,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(BoardToGraveyard(), T_FUNCS['your_lands_in_play'], CastResolvedEvent)],
     'necropolis':
         [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'osai-vultures':
+        [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent)],
+    'primordial-ooze':
+        [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'raise-dead':
         [Triggered(GraveyardToHand(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'reconstruction':
@@ -501,16 +509,32 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(GraveyardToHand(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'resurrection':
         [Triggered(GraveyardToBoard(), T_FUNCS['creatures_in_your_graveyard', CastResolvedEvent])],
+    'rock-hydra':
+        [Triggered(RockHydraCast(), T_FUNCS['self'], CastResolvedEvent)],
+    'scavenging-ghoul':
+        [Triggered(AddCounterPerCreatureDeath(CORPSE), T_FUNCS['self'], EndStepEvent)],
     'sinkhole':
         [Triggered(BoardToGraveyard(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'skull-of-orm':
         [Activated('5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
     'stone-rain':
         [Triggered(BoardToGraveyard(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
+    'tetravus':
+        [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
     'tormods-crypt':
         [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
+    'triskelion':
+        [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
+    'unstable-mutation':
+        [Triggered(AddCountersOnHostTurn(MINUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'unsummon':
         [Triggered(BoardToHand(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'venarian-gold':
+        [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['self'], UpkeepEvent)],
+    'voodoo-doll':
+        [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent)],
+    'wheel-of-fortune':
+        [Triggered(WheelOfFortune(), trigger_event=CastResolvedEvent)],
     'wrath-of-god':
         [Triggered(ExileAllCreatures(), trigger_event=CastResolvedEvent)]
 }

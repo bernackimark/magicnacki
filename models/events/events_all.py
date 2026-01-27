@@ -13,5 +13,13 @@ class CastResolvedEvent(Event):
     target: GameCard | None = None
 
 @dataclass(frozen=True)
+class CombatEndEvent(Event):
+    ...
+
+@dataclass(frozen=True)
 class EndStepEvent(Event):
+    active_player: int
+
+@dataclass(frozen=True)
+class UpkeepEvent(Event):
     active_player: int
