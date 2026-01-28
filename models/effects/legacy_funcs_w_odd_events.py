@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from constants import BASIC_LANDS
 from game_state import GameState
+from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.game_card import GameCard
 from utils import flip
@@ -188,4 +191,21 @@ def can_block_base_rule():
                 return False
 
             return None  # no opinion if can_block ... might need this in case there are other rules added in elsewhere?
+    return E()
+
+
+def gaseous_form_on_cast():
+    # TODO: THIS IS ALL DAMAGE ALWAYS.  DO I HANDLE THIS SOMEWHERE IN DAMAGE PREVENTION?
+    """Prevent all combat damage that would be dealt this turn by enchanted creature and each creature blocking it."""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+            """target = the enchanted attacker"""
+            the_combat = [com for com in gs.combats if com.attacker == target]
+            if not the_combat:
+                return
+            gs.damage_preventions.append(PreventNextDamage(s, None, target_card=target, combat_only=True))
+            for b in the_combat[0].blockers:
+                gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
     return E()
