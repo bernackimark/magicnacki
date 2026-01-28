@@ -334,7 +334,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
 Activated = partial(EffSpec, 'activated')
 Triggered = partial(EffSpec, 'triggered', '')
 
-# TODO: NEXT: Continue converting from old system to new system
+# TODO: NEXT: Continue converting from old system to new system, consider event = 'tap' next.  add it
 
 INVOCATIONS: dict[str, list[EffSpec]] = {
     'acid-rain':
@@ -528,7 +528,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'regrowth':
         [Triggered(GraveyardToHand(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'resurrection':
-        [Triggered(GraveyardToBoard(), T_FUNCS['creatures_in_your_graveyard', CastResolvedEvent])],
+        [Triggered(GraveyardToBoard(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'riptide':
         [Triggered(Riptide(), None, CastResolvedEvent)],
     'rock-hydra':

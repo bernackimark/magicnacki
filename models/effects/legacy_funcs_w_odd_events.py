@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card import GameCard
+    from game_state import GameState
 
 from constants import BASIC_LANDS
-from game_state import GameState
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
-from models.game_card import GameCard
+from models.modifiers import PTModifier
 from phase_fsm import Phase
 from utils import flip
 

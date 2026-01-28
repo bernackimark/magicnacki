@@ -23,9 +23,16 @@ class EndStepEvent(Event):
     active_player: int
 
 @dataclass(frozen=True)
+class TapCardEvent(Event):
+    card: GameCard
+
+@dataclass(frozen=True)
 class UpkeepEvent(Event):
     active_player: int
 
+@dataclass(frozen=True)
+class UntapCardEvent(Event):
+    card: GameCard
 
 @dataclass
 class DamageEvent(Event):
