@@ -52,9 +52,9 @@ from models.effects.special import cocoon_on_upkeep, serendib_djinn_on_upkeep, s
         rocket_launcher_on_cast, shapeshifter_on_cast, subdue_on_cast, syphon_soul_on_cast, web_on_cast, \
         venarian_gold_on_cast, swords_to_plowshares_on_cast, farmstead_on_cast
 from models.effects.tap_untap import *
-from models.effects.tap_untap import host_stays_tapped_at_untap_phase, stays_tapped_at_untap_phase, \
-        untap_option_at_untap_phase, cocoon_at_untap_phase, venarian_gold_at_untap_phase, TapCardEffect
-from models.events.events_all import EndStepEvent, CastResolvedEvent, CombatEndEvent, TapCardEvent, UpkeepEvent
+from models.effects.tap_untap import cocoon_at_untap_phase, venarian_gold_at_untap_phase, TapCardEffect, OptionalUntap
+from models.events.events_all import EndStepEvent, CastResolvedEvent, CombatEndEvent, TapCardEvent, UpkeepEvent, \
+    UntapPhaseEvent, UntapCardEvent
 from phase_fsm import Phase
 from utils import flip
 
@@ -255,14 +255,10 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'argothian-pixies': [argothian_pixies_can_be_blocked(), argothian_pixies_damage_prevention()],
         'argothian-treefolk': [argothian_treefolk_damage_prevention()],
         'artifact-ward': [artifact_ward_can_be_blocked(), artifact_ward_damage_prevention()],
-        'ashnods-battle-gear': [untap_option_at_untap_phase()],
         'bad-moon': [bad_moon_on_cast(), global_on_leave()],
-        'basalt-monolith': [stays_tapped_at_untap_phase()],
         'bog-rats': [bog_rats_can_be_blocked()],
-        'brass-man': [stays_tapped_at_untap_phase()],
         'castle': [castle_on_cast(), global_on_leave()],
         'cocoon': [cocoon_on_upkeep(), cocoon_at_untap_phase()],
-        'colossus-of-sardia': [stays_tapped_at_untap_phase()],
         'creature-bond': [creature_bond_on_leave()],
         'crumble': [crumble_on_cast()],
         'crusade': [crusade_on_cast(), global_on_leave()],
@@ -284,30 +280,22 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'forest': [forest_on_cast(), forest_on_tap(), land_on_leave()],
         'fungusaur': [fungusaur_on_damage()],
         'gaseous-form': [gaseous_form_on_cast()],
-        'giant-tortoise': [giant_tortoise_on_untap()],
         'glyph-of-destruction': [glyph_of_destruction_on_cast()],
         'goblin-king': [goblin_king_on_cast()],
         'holy-day': [darkness_or_fog_or_holy_day_on_cast()],
         'island': [island_on_leave(), land_on_leave()],
-        'island-fish-jasconius': [stays_tapped_at_untap_phase()],
         'ivory-tower': [ivory_tower_on_upkeep()],
-        'kobold-drill-sergeant': [kobold_drill_sergeant_on_cast(),],
-        'leviathan': [stays_tapped_at_untap_phase()],  # lots of other things to code
+        'kobold-drill-sergeant': [kobold_drill_sergeant_on_cast()],
         'living-artifact': [living_artifact_on_damage()],
         'lord-of-atlantis': [lord_of_atlantis_on_cast()],
-        'mana-vault': [stays_tapped_at_untap_phase()],
         'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED: All Walls able to block this creature do so
         'marsh-viper': [add_two_poison_counters_on_damage()],
         'martyrs-cry': [martyrs_cry_on_cast()],
         'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
         'mountain': [mountain_on_tap(), land_on_leave()],
-        'old-man-of-the-sea': [untap_option_at_untap_phase()],
-        'paralyze': [host_stays_tapped_at_untap_phase()],
-        'phyrexian-gremlins': [untap_option_at_untap_phase()],
         'pirate-ship': [islandhome_can_attack_effect()],
         'pit-scorpion': [add_poison_counter_on_damage()],
         'plains': [land_on_leave()],
-        'preacher': [untap_option_at_untap_phase()],
         'reset': [reset_on_cast()],
         'reverse-damage': [reverse_damage_on_cast()],
         'rocket-launcher': [rocket_launcher_on_cast()],
@@ -324,9 +312,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'sunken-city': [sunken_city_on_cast(), global_on_leave()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
         'syphon-soul': [syphon_soul_on_cast()],
-        'tawnoss-coffin': [untap_option_at_untap_phase()],
-        'tawnoss-weaponry': [untap_option_at_untap_phase()],
-        'time-vault': [stays_tapped_at_untap_phase()],
         'venarian-gold': [venarian_gold_on_cast(), venarian_gold_at_untap_phase()],
         'web': [web_on_cast()],
     }
@@ -334,7 +319,9 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
 Activated = partial(EffSpec, 'activated')
 Triggered = partial(EffSpec, 'triggered', '')
 
-# TODO: NEXT: Continue converting from old system to new system, consider event = 'tap' next.  add it
+
+# TODO: NEXT: Continue converting from old system to new system
+
 
 INVOCATIONS: dict[str, list[EffSpec]] = {
     'acid-rain':
@@ -356,8 +343,12 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'armageddon':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Land').result()),
                    None, CastResolvedEvent)],
+    'ashnods-battle-gear':
+        [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'ball_lightning':
         [Triggered(BoardToGraveyard(), T_FUNCS['self'], EndStepEvent)],
+    'basalt-monolith':
+        [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'birds-of-paradise':
         [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'blood-lust':
@@ -368,6 +359,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
     'brainwash':
         [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'brass-man':
+        [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'burrowing':
         [Triggered(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'city-of-shadows':
@@ -384,6 +377,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 7), T_FUNCS['self'], CastResolvedEvent)],
     'cocoon':
         [Triggered(CocoonCast(), T_FUNCS['self'], CastResolvedEvent)],
+    'colossus-of-sardia':
+        [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'conversion':
         [Triggered(PayManaOrSac('WW'), None, UpkeepEvent)],
     'copper-tablet':
@@ -452,7 +447,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(PumpEffect(2, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'giant-tortoise':
         [Triggered(PumpEffect(0, 3), None, CastResolvedEvent),
-         Triggered(GiantTortoiseTap(), None, TapCardEvent)],
+         Triggered(GiantTortoiseTap(), None, TapCardEvent),
+         Triggered(PumpEffect(0, 3), None, UntapCardEvent)],
     'goblin-wizard':
         [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
     'grave-robbers':
@@ -475,6 +471,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(DealDamageToAllCreaturesAndPlayers(6), None, CastResolvedEvent)],
     'instill-energy':
         [Triggered(KWAModEffect('add', 'Haste'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'island-fish-jasconius':
+        [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'jovial-evil':
         [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
     'jump':
@@ -492,7 +490,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'leviathan':
-        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent)],
+        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
+         Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'lightning-bolt':
         [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'living-armor':
@@ -501,6 +500,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
     'mana-short':
         [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
+    'mana-vault':
+        [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'mana-vortex':
         [Triggered(BoardToGraveyard(), T_FUNCS['your_lands_in_play'], CastResolvedEvent),
          Triggered(ManaVortexUpkeep(), None, UpkeepEvent)],
@@ -508,16 +509,23 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'nevinyrrals-disk':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent)],
+    'old-man-of-the-sea':
+        [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'osai-vultures':
         [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent)],
     'paralyze':
-        [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent)],  # TODO: should there be an AttachToHost(Effect) ???
+        [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
+         Triggered(HostStaysTapped(), T_FUNCS['host'], UntapPhaseEvent)],  # TODO: should there be an AttachToHost(Effect) ???
     'pestilence':
         [Triggered(PestilenceEndStep(), None, EndStepEvent)],
     'phantasmal-forces':
         [Triggered(PayManaOrSac('U'), None, UpkeepEvent)],
+    'phyrexian-gremlins':
+        [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'power-surge':
         [Triggered(PowerSurge(), None, UpkeepEvent)],
+    'preacher':
+        [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'primordial-ooze':
         [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'psionic-blast':
@@ -553,10 +561,15 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(StormWorld(), None, UpkeepEvent)],
     'sunken-city':
         [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],
+    'tawnoss-coffin':
+        [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'tawnoss-weaponry':
+        [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'tetravus':
         [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
     'time-vault':
-        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent)],
+        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
+         Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'tivadars-crusade':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result()),
                    None, CastResolvedEvent)],

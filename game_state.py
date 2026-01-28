@@ -20,7 +20,8 @@ from models.effects.base import Effect
 from models.effects.legacy_funcs_w_odd_events import can_block_base_rule
 from models.effects.global_ import GlobalEffect
 from models.events.base import Event
-from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent
+from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
+    UntapPhaseEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -390,6 +391,10 @@ class GameState:
                     print("You've already made an untap decision on this card this turn")
                     break
             else:
+                # new system
+                self.emit(UntapPhaseEvent(active_player=self.player_turn_idx))
+
+                # old system
                 print(f'Checking on_untap_phase for {c}')
                 self.trigger('on_untap_phase', c)
                 for a in c.modifiers.auras:

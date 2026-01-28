@@ -17,36 +17,26 @@ class TapCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.tap(gs)
 
+class HostStaysTapped(Effect):
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        if not source.attached_to:
+            raise RuntimeError(f"{source.props.name} needs a host at untap phase")
+        if gs.player_turn_idx != source.attached_to.orig_owner_id:
+            return
+        gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)
 
-def host_stays_tapped_at_untap_phase():
-    """This card doesn't untap during its controller's next untap step"""
-    class E(Effect):
-        event = 'on_untap_phase'
-
-        def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-            if not source.attached_to:
-                raise RuntimeError(f"{source.props.name} needs a host at untap phase")
-            gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)
-    return E()
-
-
-def stays_tapped_at_untap_phase():
-    """This card doesn't untap during its controller's next untap step"""
-    class E(Effect):
-        event = 'on_untap_phase'
-
-        def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-            gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source), gs, False)
-    return E()
+class StaysTapped(Effect):
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source), gs, False)
 
 
 def untap_option_at_untap_phase():
     class E(Effect):
         event = 'on_untap_phase'
 
-        def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-            gs.action_stack.push(UntapChoice(gs.player_turn_idx, gs, source), gs, False)
-    return E()
+class OptionalUntap(Effect):
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        gs.action_stack.push(UntapChoice(gs.player_turn_idx, gs, source), gs, False)
 
 
 def cocoon_at_untap_phase():
@@ -71,7 +61,6 @@ def venarian_gold_at_untap_phase():
     return E()
 
 # --- CARD-SPECIFIC ---
-
 class GiantTortoiseTap(Effect):
     def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
         if source.props.slug == "giant-tortoise":
