@@ -20,7 +20,7 @@ from models.effects.base import Effect
 from models.effects.legacy_funcs_w_odd_events import can_block_base_rule
 from models.effects.global_ import GlobalEffect
 from models.events.base import Event
-from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent
+from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -348,11 +348,32 @@ class GameState:
             print(f"Both players have lost")
             self.is_game_over = True
 
-    def apply_tap_effects(self, c: GameCard):
+    def tap_card(self, c: GameCard):
+        # new system
+        if c.is_tapped:
+            return
+        self.emit(TapCardEvent(card=c))
+        # is this all supposed to happen here, in the TapCardEvent(Event), in a dedicated TapCardEffect(Effect)?
+        c.is_tapped = True
+        for a in c.modifiers.auras:
+            a.is_tapped = True
+
+        # old system
         self.trigger('tap', c)
 
-    def apply_untap_effects(self, c: GameCard):
-        self.trigger('untap', c)
+    def untap_card(self, c: GameCard):
+        # new system
+        if not c.is_tapped:
+            return
+        self.emit(TapCardEvent(card=c))
+        # is this all supposed to happen here, in the UntapCardEvent(Event), in a dedicated UntapCardEffect(Effect)?
+        c.is_tapped = False
+        for a in c.modifiers.auras:
+            a.is_tapped = False
+        self.emit(UntapCardEvent(card=c))
+
+        # old system
+        # self.trigger('untap', c)  I don't think this was ever used
 
     def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness"""

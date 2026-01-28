@@ -106,30 +106,18 @@ class GameCard:
         self.modifiers.clear_all()
 
     def tap(self, gs: "GameState") -> None:
-        if self.is_tapped:
-            return
-        self.is_tapped = True
-        for a in self.modifiers.auras:
-            a.is_tapped = True
-        gs.trigger('tap', self)
+        gs.tap_card(self)
 
     def untap(self, gs: "GameState") -> None:
-        if not self.is_tapped:
-            return
-        self.is_tapped = False
-        for a in self.modifiers.auras:
-            a.is_tapped = False
-        gs.trigger('untap', self)
+        gs.untap_card(self)
 
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
 
     def get_cast_targets(self, gs: GameState) -> list["GameCard"]:
+        # TODO: i don't think this belongs here and should be handled differentl in the new system
         """First search registry; if aura isn't found in registry, assume it targets in-play creatures"""
         if ctf := CAST_TARGETS.get(self.props.slug):
             return ctf(gs)
         if self.props.is_aura:
             return gs.card_filter.in_play().creatures().result()
-
-    def on_upkeep(self, gs):
-        gs.trigger('upkeep', self)
