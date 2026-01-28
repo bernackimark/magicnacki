@@ -25,6 +25,7 @@ class PTModifier:
 
 @dataclass
 class PTTemp:
+    source: GameCard
     power_delta: int
     toughness_delta: int
     expires_end_of_turn: bool = True
@@ -48,6 +49,7 @@ class KWAModifier:
 
 @dataclass
 class KWATemp:
+    source: GameCard
     add_or_remove: str
     kwa: str
     expires_end_of_turn: bool = True
