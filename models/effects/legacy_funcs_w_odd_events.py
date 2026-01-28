@@ -7,6 +7,7 @@ from game_state import GameState
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.game_card import GameCard
+from phase_fsm import Phase
 from utils import flip
 
 
@@ -208,4 +209,18 @@ def gaseous_form_on_cast():
             gs.damage_preventions.append(PreventNextDamage(s, None, target_card=target, combat_only=True))
             for b in the_combat[0].blockers:
                 gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
+    return E()
+
+
+def reset_on_cast():
+    """Cast timing restriction"""
+    """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
+    class E(Effect):
+        event = 'cast'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            if gs.phase == Phase.UPKEEP or gs.player_turn_idx == source.orig_owner_id:
+                raise ValueError("Reset must be played on opponent's turn after their upkeep phase")
+            for land in gs.card_filter.on_player_board(source.orig_owner_id).lands().untapped().result():
+                land.untap(gs)
     return E()

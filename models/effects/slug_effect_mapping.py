@@ -8,7 +8,8 @@ from models.counter_tokens import CARRION, CORPSE, PLUS_ONE, MINUS_ONE, PIN, PLU
 from models.effects.legacy_funcs_w_odd_events import giant_tortoise_on_untap, islandhome_can_attack_effect, \
     amrou_kithkin_can_be_blocked, artifact_ward_can_be_blocked, argothian_pixies_can_be_blocked, \
     bog_rats_can_be_blocked, elder_spawn_can_be_blocked, elven_riders_can_be_blocked, \
-    evil_eye_of_orms_by_gore_can_be_blocked, seeker_enchanted_creature_can_be_blocked, gaseous_form_on_cast
+    evil_eye_of_orms_by_gore_can_be_blocked, seeker_enchanted_creature_can_be_blocked, gaseous_form_on_cast, \
+    reset_on_cast
 
 if TYPE_CHECKING:
     from models.events.base import Event
@@ -22,13 +23,10 @@ from models.effects.counters import (spirit_shackle_on_tap, CityOfShadowsAA1, Ci
                                      RemovePlusOneZeroFromCombatant, AddCountersIfAnyCreatureDied,
                                      AddCounterPerCreatureDeath, Fasting, AddCountersYourTurnOnly,
                                      AddCountersOnHostTurn, RemoveCountersOnHostTurn, CocoonCast, RockHydraCast)
-from models.effects.damage import erg_raiders_on_end_step, argothian_pixies_damage_prevention, \
+from models.effects.damage import argothian_pixies_damage_prevention, \
     argothian_treefolk_damage_prevention, artifact_ward_damage_prevention, enchanted_being_damage_prevention, \
-    marble_priest_damage_prevention, creature_bond_on_leave, martyrs_of_korlis_on_damage, earthquake_on_cast, \
-    electric_eel_on_cast, \
-    eternal_flame_on_cast, eye_for_an_eye_on_cast, indestructible_aura_on_cast, inferno_on_cast, \
-    jovial_evil_on_cast, lightning_bolt_on_cast, typhoon_on_cast, psionic_blast_on_cast, \
-    storm_seeker_on_cast, DealDamage, living_artifact_on_damage, fungusaur_on_damage, DealDamageOnTargetTurn, \
+    marble_priest_damage_prevention, creature_bond_on_leave, martyrs_of_korlis_on_damage, DealDamage, \
+    living_artifact_on_damage, fungusaur_on_damage, DealDamageOnTargetTurn, \
     ElderSpawnUpkeep, CurseArtifactUpkeep, Karma, DealDamageOnSourceTurn, LordOfThePitUpkeep, PowerSurge, StormWorld, \
     Earthquake, EternalFlame, EyeForAnEye, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, \
     JovialEvil, Typhoon, PsionicBlast, StormSeeker, ErgRaiders
@@ -55,9 +53,7 @@ from models.effects.special import cocoon_on_upkeep, serendib_djinn_on_upkeep, s
         venarian_gold_on_cast, swords_to_plowshares_on_cast, farmstead_on_cast
 from models.effects.tap_untap import *
 from models.effects.tap_untap import host_stays_tapped_at_untap_phase, stays_tapped_at_untap_phase, \
-        untap_option_at_untap_phase, cocoon_at_untap_phase, venarian_gold_at_untap_phase, leviathan_on_cast, \
-        mana_short_on_cast, nevinyrrals_disk_on_cast, paralyze_on_cast, reset_on_cast, riptide_on_cast, twiddle_on_cast, \
-        TapCardEffect
+        untap_option_at_untap_phase, cocoon_at_untap_phase, venarian_gold_at_untap_phase, TapCardEffect
 from models.events.events_all import EndStepEvent, CastResolvedEvent, CombatEndEvent, UpkeepEvent
 from phase_fsm import Phase
 from utils import flip
@@ -69,6 +65,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'all_players': lambda gs, s: [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_and_enchantments_in_play': lambda gs: gs.card_filter.in_play().by_type(['Artifact', 'Enchantment']).result(),
+    'artifacts_creatures_lands_in_play': lambda gs, s: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
     'artifacts_in_graveyards': lambda gs, s: gs.card_filter.in_graveyards().artifacts().result(),
     'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts().result(),
@@ -100,6 +97,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_slug('forest').result(),
     'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_sub_type('Goblin').permanents().result(),
     'green_in_play': lambda gs, source: gs.card_filter.in_play().green().result(),
+    'host': lambda gs, s: s.attached_to,
     'in_turn_player': lambda gs, _: gs.player_turn_idx,
     'lands_in_play': lambda gs, source: gs.card_filter.in_play().lands().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
@@ -235,9 +233,7 @@ CAST_TARGETS = {
     'gaseous-form': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'instill-energy': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'living-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
-    'mana-short': lambda gs: all_player_indices(gs),
     'martyrs-cry': lambda gs: CardFilter(gs).in_play().creatures().white().result(),
-    'paralyze': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
     'sacrifice': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
     'shatter': lambda gs: CardFilter(gs).in_play().artifacts().result(),
@@ -245,7 +241,6 @@ CAST_TARGETS = {
     'spirit-shackle': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'stream-of-life': lambda gs: all_player_indices(gs),
     'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'twiddle': lambda gs: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
     'venarian-gold': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'weakness': lambda gs: CardFilter(gs).in_play().creatures().result(),
     'web': lambda gs: CardFilter(gs).in_play().creatures().result(),
@@ -278,11 +273,9 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'earthbind': [earthbind_on_cast()],
         'el-hajjâj': [el_hajjaj_on_damage()],
         'elder-spawn': [elder_spawn_can_be_blocked()],
-        'electric-eel': [electric_eel_on_cast()],
         'elven-riders': [elven_riders_can_be_blocked()],
         'enchanted-being': [enchanted_being_damage_prevention()],
         'energy-tap': [energy_tap_on_cast()],
-        'erg-raiders': [erg_raiders_on_end_step()],
         'evil-eye-of-orms-by-gore': [evil_eye_of_orms_by_gore_can_be_blocked()],
         'farmstead': [farmstead_on_cast()],
         'feint': [feint_on_cast()],
@@ -299,28 +292,24 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'island-fish-jasconius': [stays_tapped_at_untap_phase()],
         'ivory-tower': [ivory_tower_on_upkeep()],
         'kobold-drill-sergeant': [kobold_drill_sergeant_on_cast(),],
-        'leviathan': [leviathan_on_cast(), stays_tapped_at_untap_phase()],  # lots of other things to code
+        'leviathan': [stays_tapped_at_untap_phase()],  # lots of other things to code
         'living-artifact': [living_artifact_on_damage()],
         'lord-of-atlantis': [lord_of_atlantis_on_cast()],
-        'mana-short': [mana_short_on_cast()],
         'mana-vault': [stays_tapped_at_untap_phase()],
         'marble-priest': [marble_priest_damage_prevention()],  # NOT CODED: All Walls able to block this creature do so
         'marsh-viper': [add_two_poison_counters_on_damage()],
         'martyrs-cry': [martyrs_cry_on_cast()],
         'martyrs-on-korlis': [martyrs_of_korlis_on_damage()],
         'mountain': [mountain_on_tap(), land_on_leave()],
-        'nevinyrrals-disk': [nevinyrrals_disk_on_cast()],
         'old-man-of-the-sea': [untap_option_at_untap_phase()],
-        'paralyze': [paralyze_on_cast(), host_stays_tapped_at_untap_phase()],
+        'paralyze': [host_stays_tapped_at_untap_phase()],
         'phyrexian-gremlins': [untap_option_at_untap_phase()],
         'pirate-ship': [islandhome_can_attack_effect()],
         'pit-scorpion': [add_poison_counter_on_damage()],
         'plains': [land_on_leave()],
         'preacher': [untap_option_at_untap_phase()],
-        'psionic_blast': [psionic_blast_on_cast()],
         'reset': [reset_on_cast()],
         'reverse-damage': [reverse_damage_on_cast()],
-        'riptide': [riptide_on_cast()],
         'rocket-launcher': [rocket_launcher_on_cast()],
         'sea-serpent': [islandhome_can_attack_effect()],
         'seeker': [seeker_enchanted_creature_can_be_blocked()],
@@ -338,7 +327,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'tawnoss-coffin': [untap_option_at_untap_phase()],
         'tawnoss-weaponry': [untap_option_at_untap_phase()],
         'time-vault': [stays_tapped_at_untap_phase()],
-        'twiddle': [twiddle_on_cast()],
         'venarian-gold': [venarian_gold_on_cast(), venarian_gold_at_untap_phase()],
         'web': [web_on_cast()],
     }
@@ -502,19 +490,27 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(KoboldTaskmaster(), None, CastResolvedEvent)],
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'leviathan':
+        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent)],
     'lightning-bolt':
         [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'living-armor':
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
     'lord-of-the-pit':
         [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
+    'mana-short':
+        [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
     'mana-vortex':
         [Triggered(BoardToGraveyard(), T_FUNCS['your_lands_in_play'], CastResolvedEvent),
          Triggered(ManaVortexUpkeep(), None, UpkeepEvent)],
     'necropolis':
         [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'nevinyrrals-disk':
+        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent)],
     'osai-vultures':
         [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent)],
+    'paralyze':
+        [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent)],  # TODO: should there be an AttachToHost(Effect) ???
     'pestilence':
         [Triggered(PestilenceEndStep(), None, EndStepEvent)],
     'phantasmal-forces':
@@ -533,6 +529,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(GraveyardToHand(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'resurrection':
         [Triggered(GraveyardToBoard(), T_FUNCS['creatures_in_your_graveyard', CastResolvedEvent])],
+    'riptide':
+        [Triggered(Riptide(), None, CastResolvedEvent)],
     'rock-hydra':
         [Triggered(RockHydraCast(), T_FUNCS['self'], CastResolvedEvent)],
     'scavenging-ghoul':
@@ -556,6 +554,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],
     'tetravus':
         [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
+    'time-vault':
+        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent)],
     'tivadars-crusade':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result()),
                    None, CastResolvedEvent)],
@@ -569,6 +569,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tsunami':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_slug('island').result()),
                    None, CastResolvedEvent)],
+    'twiddle':
+        [Triggered(Twiddle(), T_FUNCS['artifacts_creatures_lands_in_play'], CastResolvedEvent)],
     'typhoon':
         [Triggered(Typhoon(), T_FUNCS['opponent'], CastResolvedEvent)],
     'unholy-strength':
