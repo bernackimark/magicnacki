@@ -7,53 +7,15 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 from card_filter import CardFilter
-from utils import flip
 from models.choice_actions.choice_actions_all import UntapChoice
 from ..actions.tap_untap import LeaveTapped
 from ..counter_tokens import PUPA, SLEEP
 
 
+# --- GENERICS ---
 class TapCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.tap(gs)
-
-def forest_on_tap():
-    """lifetap: Enchantment UU [] Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
-    class E(Effect):
-        event = 'tap'
-
-        def resolve(self, gs, s: "GameCard", target: Optional["GameCard"] = None):
-            for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifetap').result():
-                gs.increment_life(flip(s.orig_owner_id), 1)
-    return E()
-
-def giant_tortoise_on_tap():
-    class E(Effect):
-        event = 'tap'
-        
-        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            if source.props.slug == "giant-tortoise":
-                source.modifiers.remove_aura(source)
-    return E()
-
-def mountain_on_tap():
-    """"lifeblood": Enchantment 2WW [] Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
-    class E(Effect):
-        event = 'tap'
-
-        def resolve(self, gs: "GameState", s: "GameCard", target: Optional["GameCard"] = None):
-            for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifeblood').result():
-                gs.increment_life(flip(s.orig_owner_id), 1)
-    return E()
-
-def psychic_venom_on_tap():
-    class E(Effect):
-        event = 'tap'
-        
-        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
-            if any(a.props.slug == "psychic-venom" for a in source.modifiers.auras):
-                gs.decrement_life(source.orig_owner_id, 2, source)
-    return E()
 
 
 def host_stays_tapped_at_untap_phase():
@@ -107,6 +69,13 @@ def venarian_gold_at_untap_phase():
             if source.attached_to.counters.get_count(SLEEP):
                 gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)
     return E()
+
+# --- CARD-SPECIFIC ---
+
+class GiantTortoiseTap(Effect):
+    def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+        if source.props.slug == "giant-tortoise":
+            source.modifiers.remove_aura(source)
 
 class ManaShort(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):

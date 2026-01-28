@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
+from models.counter_tokens import MINUS_ZERO_TWO
+
 if TYPE_CHECKING:
     from models.game_card import GameCard
     from game_state import GameState
@@ -226,4 +228,48 @@ def reset_on_cast():
                 raise ValueError("Reset must be played on opponent's turn after their upkeep phase")
             for land in gs.card_filter.on_player_board(source.orig_owner_id).lands().untapped().result():
                 land.untap(gs)
+    return E()
+
+
+def psychic_venom_on_tap():
+    class E(Effect):
+        event = 'tap'
+        # TODO: is this the right way to handle this for a host?
+        def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+            if any(a.props.slug == "psychic-venom" for a in source.modifiers.auras):
+                gs.decrement_life(source.orig_owner_id, 2, source)
+    return E()
+
+
+def spirit_shackle_on_tap():
+    """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it. [the counters persist]"""
+    class E(Effect):
+        event = 'tap'
+
+        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+            source.attached_to.counters.add_counter(MINUS_ZERO_TWO)
+    return E()
+
+
+def forest_on_tap():
+    # TODO: this is more of a global; need to figure out the system for handling global-esque events
+    """lifetap: Enchantment UU [] Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
+    class E(Effect):
+        event = 'tap'
+
+        def resolve(self, gs, s: "GameCard", target: Optional["GameCard"] = None):
+            for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifetap').result():
+                gs.increment_life(flip(s.orig_owner_id), 1)
+    return E()
+
+
+def mountain_on_tap():
+    # TODO: global-esque
+    """"lifeblood": Enchantment 2WW [] Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
+    class E(Effect):
+        event = 'tap'
+
+        def resolve(self, gs: "GameState", s: "GameCard", target: Optional["GameCard"] = None):
+            for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifeblood').result():
+                gs.increment_life(flip(s.orig_owner_id), 1)
     return E()

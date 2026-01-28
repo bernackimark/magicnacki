@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 
-from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE, MINUS_ZERO_TWO, PLUS_ONE, \
+from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE, PLUS_ONE, \
     HUNGER, PUPA, CounterType
 from models.effects.base import Effect
 
@@ -64,7 +64,6 @@ class AddCounterPerCreatureDeath(Effect):
         if death_cnt := len(gs.cards_that_died_this_turn) > 0:
             s.counters.add_counter(self.counter_type, death_cnt)
 
-
 class XZeroOneCountersByManaValue(Effect):
     """Put X +0/+1 counters on target creature, where X is that creature's mana value"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -72,17 +71,7 @@ class XZeroOneCountersByManaValue(Effect):
             raise RuntimeError(f'{source.props.name} needs a target')
         target.counters.add_counter(PLUS_ZERO_ONE, target.props.casting_weight)
 
-
-def spirit_shackle_on_tap():
-    """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it. [the counters persist]"""
-    class E(Effect):
-        event = 'tap'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            source.attached_to.counters.add_counter(MINUS_ZERO_TWO)
-    return E()
-
-
+# --- CARD-SPECIFIC ---
 class CityOfShadowsAA1(Effect):
     """{T}, Exile a creature you control: Put a storage counter on this land"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

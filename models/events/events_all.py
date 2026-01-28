@@ -34,6 +34,10 @@ class UpkeepEvent(Event):
 class UntapCardEvent(Event):
     card: GameCard
 
+@dataclass(frozen=True)
+class UntapPhaseEvent(Event):
+    active_player: int
+
 @dataclass
 class DamageEvent(Event):
     """..."""

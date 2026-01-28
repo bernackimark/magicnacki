@@ -9,7 +9,7 @@ from models.effects.legacy_funcs_w_odd_events import giant_tortoise_on_untap, is
     amrou_kithkin_can_be_blocked, artifact_ward_can_be_blocked, argothian_pixies_can_be_blocked, \
     bog_rats_can_be_blocked, elder_spawn_can_be_blocked, elven_riders_can_be_blocked, \
     evil_eye_of_orms_by_gore_can_be_blocked, seeker_enchanted_creature_can_be_blocked, gaseous_form_on_cast, \
-    reset_on_cast
+    reset_on_cast, spirit_shackle_on_tap, forest_on_tap, mountain_on_tap
 
 if TYPE_CHECKING:
     from models.events.base import Event
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 from constants import Target, COLOR_LETTERS
 from cost import Cost, TapCost, ManaCost, SacSelfCost
 
-from models.effects.counters import (spirit_shackle_on_tap, CityOfShadowsAA1, CityOfShadowsAA2, XZeroOneCountersByManaValue,
+from models.effects.counters import (CityOfShadowsAA1, CityOfShadowsAA2, XZeroOneCountersByManaValue,
                                      RemovePlusOneZeroFromCombatant, AddCountersIfAnyCreatureDied,
                                      AddCounterPerCreatureDeath, Fasting, AddCountersYourTurnOnly,
                                      AddCountersOnHostTurn, RemoveCountersOnHostTurn, CocoonCast, RockHydraCast)
@@ -54,7 +54,7 @@ from models.effects.special import cocoon_on_upkeep, serendib_djinn_on_upkeep, s
 from models.effects.tap_untap import *
 from models.effects.tap_untap import host_stays_tapped_at_untap_phase, stays_tapped_at_untap_phase, \
         untap_option_at_untap_phase, cocoon_at_untap_phase, venarian_gold_at_untap_phase, TapCardEffect
-from models.events.events_all import EndStepEvent, CastResolvedEvent, CombatEndEvent, UpkeepEvent
+from models.events.events_all import EndStepEvent, CastResolvedEvent, CombatEndEvent, TapCardEvent, UpkeepEvent
 from phase_fsm import Phase
 from utils import flip
 
@@ -284,7 +284,7 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'forest': [forest_on_cast(), forest_on_tap(), land_on_leave()],
         'fungusaur': [fungusaur_on_damage()],
         'gaseous-form': [gaseous_form_on_cast()],
-        'giant-tortoise': [giant_tortoise_on_tap(), giant_tortoise_on_untap()],
+        'giant-tortoise': [giant_tortoise_on_untap()],
         'glyph-of-destruction': [glyph_of_destruction_on_cast()],
         'goblin-king': [goblin_king_on_cast()],
         'holy-day': [darkness_or_fog_or_holy_day_on_cast()],
@@ -451,7 +451,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'giant-strength':
         [Triggered(PumpEffect(2, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'giant-tortoise':
-        [Triggered(PumpEffect(0, 3), None, CastResolvedEvent)],
+        [Triggered(PumpEffect(0, 3), None, CastResolvedEvent),
+         Triggered(GiantTortoiseTap(), None, TapCardEvent)],
     'goblin-wizard':
         [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
     'grave-robbers':
