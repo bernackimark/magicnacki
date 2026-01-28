@@ -314,7 +314,7 @@ def venarian_gold_on_cast():
         def resolve(self, gs: GameState, source: GameCard, target=None):
             if not target:
                 raise RuntimeError(f"{source.props.name} needs a casting target")
-            gs.apply_tap_effects(target)
+            gs.tap_card(target)
             if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
                 source.counters.add_counter(SLEEP, x)
     return E()
