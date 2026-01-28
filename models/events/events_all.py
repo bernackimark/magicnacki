@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -14,7 +16,7 @@ class CastResolvedEvent(Event):
 
 @dataclass(frozen=True)
 class CombatEndEvent(Event):
-    ...
+    active_player: int
 
 @dataclass(frozen=True)
 class EndStepEvent(Event):
@@ -23,3 +25,9 @@ class EndStepEvent(Event):
 @dataclass(frozen=True)
 class UpkeepEvent(Event):
     active_player: int
+
+
+@dataclass
+class DamageEvent(Event):
+    """..."""
+    # TODO: i'm pretty sure that damage.py's DamageEvent is what can be placed here

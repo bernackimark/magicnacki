@@ -2,9 +2,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, TYPE_CHECKING, Optional
 
+from models.game_card import GameCard
+
 if TYPE_CHECKING:
     from game_card import GameCard
-    from game_state import GameState
 
 @dataclass
 class DamageEvent:
@@ -66,4 +67,3 @@ class PreventNextDamage:
             self.on_prevent(prevented)
 
         return prevented
-

@@ -15,12 +15,12 @@ from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAt
 from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
-from models.damage import DamageEvent, PreventNextDamage
+from models.damage import PreventNextDamage, DamageEvent
 from models.effects.base import Effect
-from models.effects.combat import can_block_base_rule
+from models.effects.legacy_funcs_w_odd_events import can_block_base_rule
 from models.effects.global_ import GlobalEffect
 from models.events.base import Event
-from models.events.events_all import EndStepEvent
+from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -88,7 +88,7 @@ class GameState:
 
     # --- NEW SYSTEM ---
     def register_effect(self, effect: Effect, source_card: GameCard):
-        """Store the effect + source card tuple for later event emission."""
+        """Store the effect_spec + source card tuple for later event emission."""
         if effect.listens_to:
             self._event_listeners[effect.listens_to].append((effect, source_card))
 
@@ -523,6 +523,7 @@ class GameState:
             return
 
         if self.phase == Phase.UPKEEP:
+            self.emit(UpkeepEvent(active_player=self.player_turn_idx))
             for c in self.boards[self.player_turn_idx].cards:
                 self.trigger('upkeep', c)
                 if activated_abilities := self.get_available_activated_abilities(c):
@@ -576,6 +577,7 @@ class GameState:
             for com in self.combats:
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
+            self.emit(CombatEndEvent(active_player=self.player_turn_idx))
             for b in self.boards:
                 for c in b.cards:
                     self.trigger('combat_end', c)

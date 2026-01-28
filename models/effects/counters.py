@@ -7,23 +7,30 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 
-from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, CARRION, CORPSE, PLUS_ZERO_ONE, MINUS_ZERO_TWO, PLUS_ONE, \
-    VITALITY, HUNGER, MINUS_ONE, SLEEP, PIN, PUPA, CounterType
-from models.damage import DamageEvent
+from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE, MINUS_ZERO_TWO, PLUS_ONE, \
+    HUNGER, PUPA, CounterType
 from models.effects.base import Effect
 
+# --- GENERICS ---
+class AddCountersOnHostTurn(Effect):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
 
-class CityOfShadowsAA1(Effect):
-    """{T}, Exile a creature you control: Put a storage counter on this land"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        source.counters.add_counter(STORAGE)
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        if gs.player_turn_idx != source.attached_to.orig_owner_id:
+            return
+        source.attached_to.counters.add_counter(self.counter_type, self.cnt)
 
+class RemoveCountersOnHostTurn(Effect):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
 
-class CityOfShadowsAA2(Effect):
-    """{T}: Add {C} for each storage counter on this land"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        cnt = len(source.counters.get_count(STORAGE))
-        gs.mana_pools[source.orig_owner_id].add_floating('C', cnt)
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        if gs.player_turn_idx != source.attached_to.orig_owner_id:
+            return
+        source.attached_to.counters.remove_counter(self.counter_type, self.cnt)
 
 class RemovePlusOneZeroFromCombatant(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -76,26 +83,21 @@ def spirit_shackle_on_tap():
     return E()
 
 
-def fungusaur_on_damage():
-    """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
-    class E(Effect):
-        event = 'on_damage'
+class CityOfShadowsAA1(Effect):
+    """{T}, Exile a creature you control: Put a storage counter on this land"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        source.counters.add_counter(STORAGE)
 
-        def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):
-            if event.target == this_card:
-                this_card.counters.add_counter(PLUS_ONE)
-    return E()
+class CityOfShadowsAA2(Effect):
+    """{T}: Add {C} for each storage counter on this land"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        cnt = len(source.counters.get_count(STORAGE))
+        gs.mana_pools[source.orig_owner_id].add_floating('C', cnt)
 
-
-def living_artifact_on_damage():
-    """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ... """
-    class E(Effect):
-        event = 'on_damage'
-
-        def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):
-            if event.target == this_card.orig_owner_id:
-                this_card.counters.add_counter(VITALITY)
-    return E()
+class CocoonCast(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        target.tap(gs)
+        source.counters.add_counter(PUPA, 3)
 
 class Fasting(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
@@ -104,31 +106,6 @@ class Fasting(Effect):
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
             gs.send_to_graveyard_from_play(source)
-
-class AddCountersOnHostTurn(Effect):
-    def __init__(self, counter_type: CounterType, cnt: int = 1):
-        self.counter_type = counter_type
-        self.cnt = cnt
-
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.attached_to.orig_owner_id:
-            return
-        source.attached_to.counters.add_counter(self.counter_type, self.cnt)
-
-class RemoveCountersOnHostTurn(Effect):
-    def __init__(self, counter_type: CounterType, cnt: int = 1):
-        self.counter_type = counter_type
-        self.cnt = cnt
-
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.attached_to.orig_owner_id:
-            return
-        source.attached_to.counters.remove_counter(self.counter_type, self.cnt)
-
-class CocoonCast(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        target.tap(gs)
-        source.counters.add_counter(PUPA, 3)
 
 class RockHydraCast(Effect):
     """This creature enters with X +1/+1 counters on it ..."""

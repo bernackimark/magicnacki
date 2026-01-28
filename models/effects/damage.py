@@ -2,13 +2,15 @@ from __future__ import annotations
 import math
 from typing import Optional, TYPE_CHECKING
 
+from models.counter_tokens import VITALITY, PLUS_ONE
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
 from card_filter import CardFilter
 from models.choice_actions.choice_actions_all import ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, LordOfThePitUpkeepChoice
-from models.damage import DamageEvent, PreventNextDamage
+from models.damage import PreventNextDamage, DamageEvent
 from models.effects.base import Effect
 from utils import flip
 
@@ -119,6 +121,8 @@ def all_combat_damage_prevented():
 def creature_bond_on_leave():
     class E(Effect):
         event = 'leave'
+        # need this instance that uses the leave event, because it DOES something on leave, not just the removal of a
+        # continuous effect
 
         def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
             # TODO: i think this is wrong; i think it's only if creature goes to graveyard
@@ -154,128 +158,79 @@ class DealDamage(Effect):
     def resolve(self, gs, source: GameCard, target: GameCard = None):
         gs.apply_damage(source, self.amount, target)
 
+class DealDamageOnSourceTurn(Effect):
+    def __init__(self, amount):
+        self.amount = amount
 
-def copper_tablet_on_upkeep():
-    """At the beginning of each player's upkeep, this artifact deals 1 damage to that player"""
-    class E(Effect):
-        event = 'upkeep'
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.player_turn_idx != source.orig_owner_id:
+            return
+        gs.apply_damage(source, 1, target.orig_owner_id)
 
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.apply_damage(source, 1, gs.player_turn_idx)
-    return E()
+class DealDamageOnTargetTurn(Effect):
+    def __init__(self, amount):
+        self.amount = amount
 
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.player_turn_idx != target.orig_owner_id:
+            return
+        gs.apply_damage(source, 1, target.orig_owner_id)
 
-def cursed_land_on_upkeep():
-    """Cursed Land does 1 damage to target land's controller during each upkeep"""
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.apply_damage(source, 1, target.orig_owner_id)
-    return E()
-
-
-def elder_spawn_on_upkeep():
+class ElderSpawnUpkeep(Effect):
     """At your upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, s: GameCard, target=None):
-            gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
-    return E()
+    def resolve(self, gs: GameState, s: GameCard, target=None):
+        if gs.player_turn_idx != s.orig_owner_id:
+            return
+        gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
 
 
-def curse_artifact_on_upkeep():
+class CurseArtifactUpkeep(Effect):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, s: GameCard, target=None):
-            gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
-    return E()
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        if gs.player_turn_idx != target.orig_owner_id:
+            return
+        gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
 
 
-def feedback_and_warp_artifact_on_upkeep():
-    """At upkeep of enchanted card's controller, this Aura deals 1 damage to that player"""
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.apply_damage(source, 1, target.orig_owner_id)
-    return E()
-
-
-def karma_on_upkeep():
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            """At the beginning of each player's upkeep,
-            this enchantment deals damage to that player equal to the number of Swamps they control."""
-            p_id = gs.player_turn_idx
-            swamp_cnt = len(CardFilter(gs).on_player_board(p_id).by_slug('swamp').result())
-            if swamp_cnt:
-                gs.apply_damage(source, swamp_cnt, source.orig_owner_id)
-    return E()
+class Karma(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        """At the beginning of each player's upkeep,
+        this enchantment deals damage to that player equal to the number of Swamps they control."""
+        p_id = gs.player_turn_idx
+        swamp_cnt = len(CardFilter(gs).on_player_board(p_id).by_slug('swamp').result())
+        if swamp_cnt:
+            gs.apply_damage(source, swamp_cnt, source.orig_owner_id)
 
 
-def juzam_djinn_on_upkeep():
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.apply_damage(source, 1, source.orig_owner_id)
-    return E()
-
-
-def lord_of_the_pit_on_upkeep():
+class LordOfThePitUpkeep(Effect):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            possible_sacrifice_actions = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
-            if not possible_sacrifice_actions:
-                gs.apply_damage(source, 7, source.orig_owner_id)
-                return
-            for action in possible_sacrifice_actions:
-                gs.action_stack.push(action, gs, False)
-    return E()
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        possible_sacrifice_actions = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
+        if not possible_sacrifice_actions:
+            gs.apply_damage(source, 7, source.orig_owner_id)
+            return
+        for action in possible_sacrifice_actions:
+            gs.action_stack.push(action, gs, False)
 
 
-def power_surge_on_upkeep():
+class PowerSurge(Effect):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
-    where X is the number of untapped lands they controlled at the beginning of this turn"""
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            untapped_lands = gs.card_filter.in_play().untapped().lands().result()
-            gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
-    return E()
+        where X is the number of untapped lands they controlled at the beginning of this turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        untapped_lands = gs.card_filter.in_play().untapped().lands().result()
+        gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
 
 
-def serendib_efreet_on_upkeep():
-    class E(Effect):
-        event = 'upkeep'
-
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            gs.apply_damage(source, 1, source.orig_owner_id)
-    return E()
-
-
-def storm_world_on_upkeep():
+class StormWorld(Effect):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
-    where X is 4 minus the number of cards in their hand"""
+        where X is 4 minus the number of cards in their hand"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        card_cnt = len(gs.hands[gs.player_turn_idx].cards)
+        if card_cnt > 4:
+            gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
 
-    class E(Effect):
-        event = 'upkeep'
 
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            card_cnt = len(gs.hands[gs.player_turn_idx].cards)
-            if card_cnt > 4:
-                gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
-    return E()
+# TODO: ------- I STOPPED MIGRATING EFFECTS TO NEW FORMAT AT THIS LINE HERE -------
 
 
 def earthquake_on_cast():
@@ -425,4 +380,26 @@ def storm_seeker_on_cast():
         def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
             opp_idx = flip(source.orig_owner_id)
             gs.apply_damage(source, len(gs.hands[opp_idx].cards), opp_idx)
+    return E()
+
+
+def living_artifact_on_damage():
+    """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ... """
+    class E(Effect):
+        event = 'on_damage'
+
+        def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):
+            if event.target == this_card.orig_owner_id:
+                this_card.counters.add_counter(VITALITY)
+    return E()
+
+
+def fungusaur_on_damage():
+    """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
+    class E(Effect):
+        event = 'on_damage'
+
+        def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):
+            if event.target == this_card:
+                this_card.counters.add_counter(PLUS_ONE)
     return E()
