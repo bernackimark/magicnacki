@@ -64,34 +64,22 @@ def el_hajjaj_on_damage():
     return E()
 
 
-def ivory_tower_on_upkeep():
-    class E(Effect):
-        event = 'upkeep'
+class IvoryTower(Effect):
+    """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        p_id = source.orig_owner_id
+        if p_id != gs.player_turn_idx:
+            return
+        if (hand_size := len(gs.hands[p_id].cards)) > 4:
+            gs.increment_life(p_id, hand_size - 4)
 
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            # At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4
-            p_id = source.orig_owner_id
-            if (hand_size := len(gs.hands[p_id].cards)) > 4:
-                gs.increment_life(p_id, hand_size - 4)
-    return E()
-
-
-def spiritual_sanctuary_on_upkeep():
+class SpiritualSanctuary(Effect):
     """At the beginning of each player's upkeep, if that player controls a Plains, they gain 1 life"""
-    class E(Effect):
-        event = 'upkeep'
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if 'plains' in gs.card_filter.on_player_board(gs.player_turn_idx).by_slug('plains').result():
+            gs.increment_life(gs.player_turn_idx, 1)
 
-        def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-            if 'plains' in gs.card_filter.on_player_board(gs.player_turn_idx).by_slug('plains').result():
-                gs.increment_life(gs.player_turn_idx, 1)
-    return E()
-
-
-def stream_of_life_on_cast():
-    class E(Effect):
-        event = 'cast'
-
-        def resolve(self, gs: GameState, source: GameCard, target: int = None):
-            x = getattr(source, 'variable_x', 0)  # read X chosen when casting
-            gs.increment_life(target, x)
-    return E()
+class StreamOfLife(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+        gs.increment_life(target, x)
