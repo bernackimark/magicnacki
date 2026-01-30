@@ -29,40 +29,20 @@ class StaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source), gs, False)
 
-
-def untap_option_at_untap_phase():
-    class E(Effect):
-        event = 'on_untap_phase'
-
 class OptionalUntap(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         gs.action_stack.push(UntapChoice(gs.player_turn_idx, gs, source), gs, False)
 
 
-def cocoon_at_untap_phase():
-    """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
-    class E(Effect):
-        event = 'on_untap_phase'
-
-        def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-            if source.attached_to.counters.get_count(PUPA):
-                gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)
-    return E()
-
-
-def venarian_gold_at_untap_phase():
-    """Enchanted creature doesn't untap during its controller's untap step if it has a sleep counter on it."""
-    class E(Effect):
-        event = 'on_untap_phase'
-
-        def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-            if source.attached_to.counters.get_count(SLEEP):
-                gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)
-    return E()
-
 # --- CARD-SPECIFIC ---
+class CocoonHostStaysTapped(Effect):
+    """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        if source.attached_to.counters.get_count(PUPA):
+            gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)
+
 class GiantTortoiseTap(Effect):
-    def resolve(self, gs, source: "GameCard", target: Optional["GameCard"] = None):
+    def resolve(self, gs, source: GameCard, _: GameCard = None):
         if source.props.slug == "giant-tortoise":
             source.modifiers.remove_aura(source)
 
@@ -87,3 +67,9 @@ class Twiddle(Effect):
         if target:
             # toggle tapped state
             target.untap(gs) if target.is_tapped else target.tap(gs)
+
+class VenarianGoldHostStaysTapped(Effect):
+    """Enchanted creature doesn't untap during its controller's untap step if it has a sleep counter on it."""
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        if source.attached_to.counters.get_count(SLEEP):
+            gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)

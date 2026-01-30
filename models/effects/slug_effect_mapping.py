@@ -4,7 +4,7 @@ from enum import Enum, auto
 from functools import partial
 from typing import Callable, Literal, Union, TYPE_CHECKING
 
-from models.counter_tokens import CARRION, CORPSE, PLUS_ONE, MINUS_ONE, PIN, PLUS_ONE_ZERO
+from models.counter_tokens import CARRION, CORPSE, PLUS_ONE, MINUS_ONE, PIN, PLUS_ONE_ZERO, SLEEP
 from models.effects.legacy_funcs_w_odd_events import giant_tortoise_on_untap, islandhome_can_attack_effect, \
     amrou_kithkin_can_be_blocked, artifact_ward_can_be_blocked, argothian_pixies_can_be_blocked, \
     bog_rats_can_be_blocked, elder_spawn_can_be_blocked, elven_riders_can_be_blocked, \
@@ -12,6 +12,7 @@ from models.effects.legacy_funcs_w_odd_events import giant_tortoise_on_untap, is
     reset_on_cast, spirit_shackle_on_tap, forest_on_tap, mountain_on_tap
 
 if TYPE_CHECKING:
+    from models.effects.base import Effect
     from models.events.base import Event
     from game_state import GameState
     from models.game_card import GameCard
@@ -45,14 +46,14 @@ from models.effects.piles import BoardToHand, \
     GraveyardToHand, HandToBoard, GraveRobbersAA, GraveyardToExileInItsEntirety, GraveyardToBoard
 from models.effects.pumps import DragonWhelpEndStep, BloodLust, PumpEffect, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster
-from models.effects.special import cocoon_on_upkeep, serendib_djinn_on_upkeep, shapeshifter_on_upkeep, \
+from models.effects.special import serendib_djinn_on_upkeep, shapeshifter_on_upkeep, \
         active_volcano_on_cast, animate_dead_on_cast, crumble_on_cast, divine_offering_on_cast, earthbind_on_cast, \
         feint_on_cast, flash_flood_on_cast, forest_on_cast, goblin_king_on_cast, glyph_of_destruction_on_cast, \
         kobold_drill_sergeant_on_cast, lord_of_atlantis_on_cast, martyrs_cry_on_cast, reverse_damage_on_cast, \
         rocket_launcher_on_cast, shapeshifter_on_cast, subdue_on_cast, syphon_soul_on_cast, web_on_cast, \
-        venarian_gold_on_cast, swords_to_plowshares_on_cast, farmstead_on_cast
-from models.effects.tap_untap import *
-from models.effects.tap_untap import cocoon_at_untap_phase, venarian_gold_at_untap_phase, TapCardEffect, OptionalUntap
+        swords_to_plowshares_on_cast, farmstead_on_cast
+from models.effects.tap_untap import TapCardEffect, OptionalUntap, GiantTortoiseTap, StaysTapped, ManaShort, \
+    HostStaysTapped, Riptide, Twiddle, VenarianGoldHostStaysTapped, CocoonHostStaysTapped
 from models.events.events_all import EndStepEvent, CastResolvedEvent, CombatEndEvent, TapCardEvent, UpkeepEvent, \
     UntapPhaseEvent, UntapCardEvent
 from phase_fsm import Phase
@@ -65,7 +66,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'all_players': lambda gs, s: [0, 1],
     'artifact_creatures_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_and_enchantments_in_play': lambda gs: gs.card_filter.in_play().by_type(['Artifact', 'Enchantment']).result(),
-    'artifacts_creatures_lands_in_play': lambda gs, s: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
+    'artifacts_creatures_lands_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).result(),
     'artifacts_in_play': lambda gs, source: gs.card_filter.in_play().artifacts().result(),
     'artifacts_in_graveyards': lambda gs, s: gs.card_filter.in_graveyards().artifacts().result(),
     'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts().result(),
@@ -106,7 +107,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'opp_creatures_who_could_have_but_didnt_attack': lambda gs, s: opp_creatures_who_could_have_attacked_but_didnt(gs, s),
     'opp_non_wall_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).non_wall_creatures().result(),
     'opponent': lambda gs, s: flip(s.orig_owner_id),
-    'permanents_in_play': lambda gs: CardFilter(gs).in_play().permanents().result(),
+    'permanents_in_play': lambda gs: gs.card_filter.in_play().permanents().result(),
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
     'self': lambda gs, s: s,
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
@@ -214,37 +215,35 @@ def all_player_indices(gs):
 
 
 CAST_TARGETS = {
-    'active-volcano': lambda gs: CardFilter(gs).in_play().blue().permanents().result() +
-                                 CardFilter(gs).in_play().by_slug('island').result(),
-    'animate-dead': lambda gs: CardFilter(gs).in_player_graveyard(gs.player_turn_idx).creatures().result(),
-    'artifact-ward': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'cocoon': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
-    'crumble': lambda gs: CardFilter(gs).in_play().artifacts().result(),
-    'divine-offering': lambda gs: CardFilter(gs).in_play().artifacts().result(),
+    'active-volcano': lambda gs: gs.card_filter.in_play().blue().permanents().result() +
+                                 gs.card_filter.in_play().by_slug('island').result(),
+    'animate-dead': lambda gs: gs.card_filter.in_player_graveyard(gs.player_turn_idx).creatures().result(),
+    'artifact-ward': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'crumble': lambda gs: gs.card_filter.in_play().artifacts().result(),
+    'divine-offering': lambda gs: gs.card_filter.in_play().artifacts().result(),
     'drain-power': lambda gs: all_player_indices(gs),
-    'earthbind': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'energy-tap': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().untapped().result(),
-    'erosion': lambda gs: CardFilter(gs).in_play().lands().result(),
-    'farmstead': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).lands.result(),
-    'feint': lambda gs: CardFilter(gs).attackers().result(),
-    'firebreathing': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'flash-flood': lambda gs: CardFilter(gs).in_play().red().permanents().result() +
-                                 CardFilter(gs).in_play().by_slug('mountain').result(),
-    'gaseous-form': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'instill-energy': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'living-artifact': lambda gs: CardFilter(gs).in_play().artifacts().result(),
-    'martyrs-cry': lambda gs: CardFilter(gs).in_play().creatures().white().result(),
-    'psychic-venom': lambda gs: CardFilter(gs).in_play().lands().result(),
-    'sacrifice': lambda gs: CardFilter(gs).on_player_board(gs.player_turn_idx).creatures().result(),
-    'shatter': lambda gs: CardFilter(gs).in_play().artifacts().result(),
-    'spirit-link': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'spirit-shackle': lambda gs: CardFilter(gs).in_play().creatures().result(),
+    'earthbind': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'energy-tap': lambda gs: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),
+    'erosion': lambda gs: gs.card_filter.in_play().lands().result(),
+    'farmstead': lambda gs: gs.card_filter.on_player_board(gs.player_turn_idx).lands.result(),
+    'feint': lambda gs: gs.card_filter.attackers().result(),
+    'firebreathing': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'flash-flood': lambda gs: gs.card_filter.in_play().red().permanents().result() +
+                                 gs.card_filter.in_play().by_slug('mountain').result(),
+    'gaseous-form': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'instill-energy': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'living-artifact': lambda gs: gs.card_filter.in_play().artifacts().result(),
+    'martyrs-cry': lambda gs: gs.card_filter.in_play().creatures().white().result(),
+    'psychic-venom': lambda gs: gs.card_filter.in_play().lands().result(),
+    'sacrifice': lambda gs: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().result(),
+    'shatter': lambda gs: gs.card_filter.in_play().artifacts().result(),
+    'spirit-link': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'spirit-shackle': lambda gs: gs.card_filter.in_play().creatures().result(),
     'stream-of-life': lambda gs: all_player_indices(gs),
-    'subdue': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'venarian-gold': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'weakness': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'web': lambda gs: CardFilter(gs).in_play().creatures().result(),
-    'winter-blast': lambda gs: CardFilter(gs).in_play().creatures().untapped().result(),
+    'subdue': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'weakness': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'web': lambda gs: gs.card_filter.in_play().creatures().result(),
+    'winter-blast': lambda gs: gs.card_filter.in_play().creatures().untapped().result(),
 }
 
 SLUG_EFFECTS: dict[str, list[Effect]] = {
@@ -258,7 +257,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'bad-moon': [bad_moon_on_cast(), global_on_leave()],
         'bog-rats': [bog_rats_can_be_blocked()],
         'castle': [castle_on_cast(), global_on_leave()],
-        'cocoon': [cocoon_on_upkeep(), cocoon_at_untap_phase()],
         'creature-bond': [creature_bond_on_leave()],
         'crumble': [crumble_on_cast()],
         'crusade': [crusade_on_cast(), global_on_leave()],
@@ -312,7 +310,6 @@ SLUG_EFFECTS: dict[str, list[Effect]] = {
         'sunken-city': [sunken_city_on_cast(), global_on_leave()],
         'swords-to-plowshares': [swords_to_plowshares_on_cast()],
         'syphon-soul': [syphon_soul_on_cast()],
-        'venarian-gold': [venarian_gold_on_cast(), venarian_gold_at_untap_phase()],
         'web': [web_on_cast()],
     }
 
@@ -376,7 +373,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
          Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 7), T_FUNCS['self'], CastResolvedEvent)],
     'cocoon':
-        [Triggered(CocoonCast(), T_FUNCS['self'], CastResolvedEvent)],
+        [Triggered(CocoonCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent),
+         Triggered(CocoonHostStaysTapped(), None, UntapPhaseEvent)],
     'colossus-of-sardia':
         [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
     'conversion':
@@ -595,7 +593,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'unsummon':
         [Triggered(BoardToHand(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'venarian-gold':
-        [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['self'], UpkeepEvent)],
+        [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['your_creatures_in_play'], UpkeepEvent),
+         Triggered(VenarianGoldHostStaysTapped(), None, UntapPhaseEvent)],
     'voodoo-doll':
         [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent),
          Triggered(VoodooDollEndStep(), None, EndStepEvent)],
@@ -819,7 +818,7 @@ def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
 #     'fire-sprites': [AAS('G', True, lambda _, s: s.orig_owner_id, add_mana_func('R'))],
 #     'firebreathing': [AAS('R', False, None, pump_func(1, 0))],
 #     'flood':
-#         [AAS('UU', False, lambda gs, source: CardFilter(gs).in_play().creatures().untapped().has('Flying', False).result(),
+#         [AAS('UU', False, lambda gs, source: gs.card_filter.in_play().creatures().untapped().has('Flying', False).result(),
 #              lambda gs, source, t: t.tap(gs))],
 #     'flying-carpet':
 #         [AAS('2', True, T_FUNCS['creatures_in_play'], add_remove_kwa_temp('add', 'Flying'))],
@@ -856,11 +855,11 @@ def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
 #                                                                                         combat_only=True)))],
 #     'hyperion-blacksmith':
 #         # {T}: You may tap or untap target artifact an opponent controls
-#         [AAS('', True, lambda gs, s: CardFilter(gs).on_player_board(flip(s.orig_owner_id)).artifacts().result(),
+#         [AAS('', True, lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).artifacts().result(),
 #              lambda gs, source, t: t.untap(gs) if t.is_tapped else t.tap(gs))],
 #     'icy-manipulator':
 #     # {1}, {T}: Tap target artifact, creature, or land
-#         [AAS('1', True, lambda gs, source: CardFilter(gs).in_play().by_type(['Artifact', 'Creature', 'Land']).tapped(False).result(),
+#         [AAS('1', True, lambda gs, source: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).tapped(False).result(),
 #              lambda gs, source, t: t.tap(gs))],
 #     'instill-energy':
 #         # {0}: Untap enchanted creature. Activate only during your turn and only once each turn
