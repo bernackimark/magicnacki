@@ -223,7 +223,6 @@ CAST_TARGETS = {
     'artifact-ward': lambda gs: gs.card_filter.in_play().creatures().result(),
     'drain-power': lambda gs: all_player_indices(gs),
     'erosion': lambda gs: gs.card_filter.in_play().lands().result(),
-    'farmstead': lambda gs: gs.card_filter.on_player_board(gs.player_turn_idx).lands.result(),
     'firebreathing': lambda gs: gs.card_filter.in_play().creatures().result(),
     'gaseous-form': lambda gs: gs.card_filter.in_play().creatures().result(),
     'instill-energy': lambda gs: gs.card_filter.in_play().creatures().result(),
