@@ -12,7 +12,7 @@ from kw_ability import get_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import Effect
 from models.effects.slug_effect_mapping import SLUG_EFFECTS, ActivatedAbility, get_activated_abilities
-from models.modifiers import Modifiers
+from models.modifiers import Modifiers, PTModifier, PTTemp
 
 
 def build_effects_for_slug(slug: str) -> list[Effect]:
@@ -78,13 +78,17 @@ class GameCard:
 
     def _get_global_pt_adj(self) -> tuple[int, int]:
         power, toughness = 0, 0
-        for card, global_effect, _ in self.game_state.global_effects:
-            if not hasattr(global_effect, 'pt_offset'):
-                continue
-            if global_effect.applies_to(self, self.game_state):
-                p_offset, t_offset = global_effect.pt_offset()
-                power += p_offset
-                toughness += t_offset
+
+        effects = []
+        # static effects on other permanents (ex: crusade lives here)
+        for c in self.game_state.card_filter.in_play().result():
+            effects.extend(c.effects)
+
+        for eff in effects:
+            mod: PTModifier | PTTemp = eff.on_query(self.game_state, 'pt_mod', card=self)
+            if mod:
+                power += mod.power_delta
+                toughness += mod.toughness_delta
         return power, toughness
 
     @property
