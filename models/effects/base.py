@@ -9,16 +9,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 class Effect:
-    """
-    Base class for all card effects.
-    Subclasses must set `event` to one of:
-      - 'cast'   : when a card is successfully cast (resolve time)
-      - 'upkeep' : at upkeep (permanent's upkeep)
-      - 'tap'    : when a card becomes tapped
-      - 'untap'  : when a card becomes untapped
-      - 'leave'  : when the card leaves the battlefield (sent to graveyard/exile)
-    And implement resolve(gs, source, target)
-    """
+    """Base class for all card effects."""
     event: str = 'generic'  # old system
     listens_to: type[Event] | None = None  # new system
 

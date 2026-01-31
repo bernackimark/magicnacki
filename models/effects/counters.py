@@ -12,6 +12,14 @@ from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE, PLUS_ON
 from models.effects.base import Effect
 
 # --- GENERICS ---
+class AddCounter(Effect):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
+
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        source.attached_to.counters.add_counter(self.counter_type, self.cnt)
+
 class AddCountersOnHostTurn(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):
         self.counter_type = counter_type

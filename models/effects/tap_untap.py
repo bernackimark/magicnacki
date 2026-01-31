@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+from phase_fsm import Phase
+from utils import flip
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -73,3 +76,26 @@ class VenarianGoldHostStaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         if source.attached_to.counters.get_count(SLEEP):
             gs.action_stack.push(LeaveTapped(source.orig_owner_id, gs, source.attached_to), gs, False)
+
+
+class Reset(Effect):
+    """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.phase == Phase.UPKEEP or gs.player_turn_idx == source.orig_owner_id:
+            raise ValueError("Reset must be played on opponent's turn after their upkeep phase")
+        for land in gs.card_filter.on_player_board(source.orig_owner_id).lands().untapped().result():
+            land.untap(gs)
+
+
+class ForestTap(Effect):
+    """lifetap: Enchantment UU [] Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
+    def resolve(self, gs, s: "GameCard", target: Optional["GameCard"] = None):
+        for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifetap').result():
+            gs.increment_life(flip(s.orig_owner_id), 1)
+
+
+class MountainTap(Effect):
+    """"lifeblood": Enchantment 2WW [] Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
+    def resolve(self, gs: "GameState", s: "GameCard", target: Optional["GameCard"] = None):
+        for _ in gs.card_filter.on_player_board(flip(s.orig_owner_id)).by_slug('lifeblood').result():
+            gs.increment_life(flip(s.orig_owner_id), 1)

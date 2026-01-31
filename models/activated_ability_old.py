@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 from card_filter import CardFilter
 from models.modifiers import PTTemp, KWATemp
-from models.effects.damage import scarecrow_func
+from models.effects.damage_preventions import scarecrow_func
 
 Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
