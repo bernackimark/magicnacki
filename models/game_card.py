@@ -10,9 +10,8 @@ from card import Card
 from cast_targets import CAST_TARGETS
 from kw_ability import get_base_kwas
 from models.counter_tokens import Counters
-from models.effects.base import Effect
+from models.effects.base import Effect, ActivatedAbility
 from models.effects.slug_effect_mapping import SLUG_EFFECTS, get_activated_abilities
-from models.effects.specifications import ActivatedAbility
 from models.modifiers import Modifiers, PTModifier, PTTemp
 
 

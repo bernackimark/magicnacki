@@ -4,10 +4,9 @@ from typing import Callable, TYPE_CHECKING
 from models.effects.damage_preventions import ArgothianPixiesPrevention, ArgothianTreefolkPrevention, \
     ArtifactWardPrevention, EnchantedBeingPrevention, MarblePriestPrevention, ScarecrowPrevention
 from models.effects.damage_replacements import MartyrsOfKorlisDamageReplacement
-from models.effects.specifications import EffSpec, ActivatedAbility, Activated, Static, Triggered
 
 if TYPE_CHECKING:
-    from models.effects.base import Effect
+    from models.effects.base import Effect, EffSpec, ActivatedAbility, Activated, Static, Triggered
     from game_state import GameState
     from models.game_card import GameCard
 

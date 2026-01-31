@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from models.actions.base import Action
-from models.effects.specifications import ActivatedAbility
+from models.effects.base import ActivatedAbility
 from models.game_card import GameCard
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from models.effects.base import Effect
+from models.effects.base import Effect, Static
 from utils import flip
 
 if TYPE_CHECKING:
@@ -9,7 +9,6 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.damage import DamageEvent
-from models.effects.specifications import Static
 
 
 class DamagePreventionEffect:

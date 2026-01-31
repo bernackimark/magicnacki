@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.damage_replacements import MartyrsOfKorlisReplacement
-from models.effects.specifications import Static
+from models.effects.base import Static
 
 
 class MartyrsOfKorlisDamageReplacement:
