@@ -9,7 +9,7 @@ from models.damage_replacements import MartyrsOfKorlisReplacement
 from models.effects.specifications import Static
 
 
-class MartyrsOfKorlis(Static):
+class MartyrsOfKorlisDamageReplacement:
     def apply(self, gs: GameState, source: GameCard):
         gs.damage_replacements.append(MartyrsOfKorlisReplacement(source))
 

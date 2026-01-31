@@ -6,11 +6,11 @@ from typing import Literal, Union, Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from game_state import GameState
+    from models.game_card import GameCard
 
 from cost import Cost, TapCost, ManaCost
 from models.effects.base import Effect
 from models.events.base import Event
-from models.game_card import GameCard
 from phase_fsm import Phase
 from utils import flip
 

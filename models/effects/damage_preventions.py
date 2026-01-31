@@ -12,7 +12,7 @@ from models.damage import DamageEvent
 from models.effects.specifications import Static
 
 
-class DamagePreventionEffect(Static):
+class DamagePreventionEffect:
     listens_to = DamageEvent
 
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
