@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from constants import Target
+
 if TYPE_CHECKING:
     from models.game_card import GameCard
 
@@ -17,6 +19,13 @@ class CastResolvedEvent(Event):
 @dataclass(frozen=True)
 class CombatEndEvent(Event):
     active_player: int
+
+@dataclass(frozen=True)
+class DamageResolvedEvent(Event):
+    source: GameCard
+    amt: int
+    target: Target
+    is_combat: bool
 
 @dataclass(frozen=True)
 class EndStepEvent(Event):
@@ -38,7 +47,5 @@ class UntapCardEvent(Event):
 class UntapPhaseEvent(Event):
     active_player: int
 
-@dataclass
-class DamageEvent(Event):
-    """..."""
-    # TODO: i'm pretty sure that damage.py's DamageEvent is what can be placed here
+# Note: Damage is special since it is not fire-and-forget; it must be stateful to apply a chain of modifications
+# It can be found in the dedicated damage module

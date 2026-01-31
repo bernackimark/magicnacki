@@ -4,6 +4,7 @@ from typing import Callable, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from game_card import GameCard
+    from game_state import GameState
 
 @dataclass
 class DamageEvent:
@@ -16,6 +17,15 @@ class DamageEvent:
     @property
     def remaining(self) -> int:
         return max(0, self.amt - self.prevented)
+
+
+class DamageReplacement:
+    def applies(self, gs: GameState, event: DamageEvent) -> bool:
+        return False
+
+    def replace(self, gs: GameState, event: DamageEvent) -> None:
+        pass
+
 
 @dataclass
 class PreventNextDamage:

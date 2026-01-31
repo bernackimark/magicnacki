@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 
 from action_stack import ActionStack
 from build_deck import Deck
@@ -15,13 +15,12 @@ from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAt
 from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
-from models.damage import PreventNextDamage, DamageEvent
+from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.effects.base import Effect
-from models.effects.legacy_funcs_w_odd_events import can_block_base_rule
-from models.effects.global_ import GlobalEffect
+from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent
+    UntapPhaseEvent, DamageResolvedEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -65,7 +64,8 @@ class GameState:
             self.draw(hand, deck.cards, 7)
             hand.sort_cards()
 
-        self.global_effects: list[tuple[GameCard, GlobalEffect, bool]] = []  # bool is for expires_at_end_of_turn
+        self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
+        self._until_eot: list[Any] = []
 
         # registries for side effects that are not captured in card effects
         # life-loss registry uses (cond, effect) tuples similar to your TAP_REGISTRY style
@@ -78,6 +78,7 @@ class GameState:
         # default leave handlers: ensure cleanup always occurs even if no slug specific handler
         self.leave_default_handlers: list[Callable] = [lambda gs, c, tgt: c.clear_all_mods()]
 
+        self.damage_replacements: list[DamageReplacement] = []
         self.damage_preventions: list[PreventNextDamage] = []
         self.end_of_turn_effects: list = []
         self.end_step_funcs: list[Callable] = []
@@ -99,13 +100,15 @@ class GameState:
             # Keep only effects whose source_card is not the leaving card
             self._event_listeners[event_type] = [
                 (eff, source_card) for eff, source_card in effect_list
-                if source_card != card
-            ]
+                if source_card != card]
 
     def emit(self, event: Event):
         """Call all effects listening to a certain type of event (ex: EndStepEvent)"""
         for eff, source_card in self._event_listeners[type(event)]:
             eff.resolve(self, source_card, getattr(event, 'target', None))
+
+    def register_until_end_of_turn(self, obj):
+        self._until_eot.append(obj)
 
     # Event Dispatcher
     def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
@@ -123,45 +126,40 @@ class GameState:
             if r is False:
                 return False
 
-        # Check global effects
-        for card, eff in self.global_effects:
-            pass  # TODO: update this
-
         return True
 
     def can_attack(self, card: GameCard) -> bool:
-        """Base rules, card effects (such as MAPPING['sea-serpent']: lambda c: IslandhomeEffect(), global effects."""
-        # Base rules first
-        if (not card.props.is_creature or card.has_summoning_sickness or card.is_tapped
-                or 'Defender' in card.keyword_abilities or card in [combat.attacker for combat in self.combats]):
+        """Check base rules. Check card effects & global statics. If any rule returns 'False', the card cannot attack"""
+        if card in {com.attacker for com in self.combats}:
             return False
 
-        # Ask global effects and card effects
-        global_effects = [eff for _, eff, _ in self.global_effects]
-        for effect in card.effects + global_effects:
-            result = effect.on_query(self, "can_attack", card=card)
-            if result is False:  # hard veto
-                return False
+        effects = self.query_effects  # base rules
+        effects.extend(card.effects)  # card effects
+        for c in self.card_filter.in_play().result():  # global statics (ex: moat)
+            effects.extend(c.effects)
+
+        for eff in effects:
+            result = eff.on_query(self, 'can_attack', card=card)
+            if result is False:
+                return False  # hard veto
 
         return True
 
     def can_block(self, blocker: GameCard, attacker: GameCard):
-        # Base rules first
-        if can_block_base_rule().on_query(self, 'can_block', card=blocker, attacker=attacker) is False:
-            print(f"{blocker} can't block {attacker}")
+        if blocker in {blocker for com in self.combats for blocker in com.blockers}:
             return False
 
-        # Ask global effects, card effects, and card's aura effects
-        global_effects = [eff for _, eff, _ in self.global_effects]
-        for eff in blocker.effects + global_effects + [a.effects for a in blocker.modifiers.auras]:
-            print(blocker, attacker, eff)
+        effects = self.query_effects  # base rules
+        effects.extend(attacker.effects)  # card effects
+        effects.extend(blocker.effects)
+        for c in self.card_filter.in_play().result():  # global statics (ex: moat)
+            effects.extend(c.effects)
+
+        for eff in effects:
             result = eff.on_query(self, 'can_block', card=blocker, attacker=attacker)
-            if result is False:  # hard veto
-                return False
-        for eff in attacker.effects + global_effects + [a.effects for a in attacker.modifiers.auras]:
-            result = eff.on_query(self, 'can_be_blocked', card=attacker, blocker=blocker)
-            if result is False:  # hard veto
-                return False
+            if result is False:
+                return False  # hard veto
+
         return True
 
     def _apply_opponent_life_loss(self, p_id: int, amt: int):
@@ -193,8 +191,7 @@ class GameState:
             hand.sort_cards()
 
     # --- DAMAGE ---
-    def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int,
-                     is_combat: bool = False):
+    def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
         """Creates DamageEvent, triggers damage preventions, adds .combat_damage_received to card,
         decrements life to player, handles Trample combat damage"""
         event = DamageEvent(source, amount, target, is_combat)
@@ -205,58 +202,58 @@ class GameState:
         # 2. Apply remaining damage
         if event.remaining <= 0:
             return
-        if is_combat and 'Trample' in source.keyword_abilities and isinstance(target, GameCard):
-            damage_to_card = target.toughness
+
+        resolved_events: list[DamageResolvedEvent] = []
+
+        # 3. Apply damage
+        if is_combat and source and 'Trample' in source.keyword_abilities and isinstance(target, GameCard):
+            damage_to_card = min(target.toughness, event.remaining)
             target.combat_damage_received += damage_to_card
+            resolved_events.append(DamageResolvedEvent(source, damage_to_card, target, True))
+
             damage_to_player = event.remaining - damage_to_card
-            self.decrement_life(target.orig_owner_id, damage_to_player, source)
-            return
-        if isinstance(target, GameCard):
-            target.combat_damage_received += event.remaining
+            if damage_to_player > 0:
+                self.decrement_life(target.orig_owner_id, damage_to_player, source)
+                resolved_events.append(DamageResolvedEvent(source, damage_to_player, target.orig_owner_id, True))
         else:
-            self.decrement_life(target, event.remaining, source)
+            if isinstance(target, GameCard):
+                target.combat_damage_received += event.remaining
+            else:
+                self.decrement_life(target, event.remaining, source)
+
+            resolved_events.append(DamageResolvedEvent(source, event.remaining, target, is_combat))
+
+        # 4. Emit resolved events
+        for e in resolved_events:
+            self.emit(e)
 
     def trigger_damage_prevention(self, event: DamageEvent):
-        """Give all prevention / replacement effects a chance to modify the damage event in this order:
-        1. Card-specific continuous effects; 2. Global continuous effects; 3. Temporary 'next damage' shields"""
-        for card in self.card_filter.in_play().result():
-            for eff in card.effects:
-                if eff.event != 'on_damage':
-                    break
-                eff.resolve(self, event, card)
+        # Replacement effects (statics + globals)
+        for r in list(self.damage_replacements):
+            if r.applies(self, event):
+                r.replace(self, event)
 
-        for card, eff, _ in self.global_effects:
-            eff.resolve(self, event, card)
-
+        # One-shot prevention shields (ex: fog, COPs)
         for p in list(self.damage_preventions):
             if event.remaining <= 0:
                 break
-
             prevented = p.apply(event)
-
-            if prevented > 0:
-                event.prevented += prevented
-                target_text = p.target_card.props.name if p.target_card else f'Player #{p.target_player}'
-                print(f"{p.preventer_card.props.name} prevents {prevented} damage to {target_text}")
-
-            if p.remaining is not None and p.remaining <= 0:
+            event.prevented += prevented
+            if p.remaining == 0:
                 self.damage_preventions.remove(p)
 
     # --- CARD MOVEMENT ---
     def remove_from_board(self, c: GameCard) -> None:
         """Trigger leave event for card (ex Crusade, Castle); remove card from board; remove all auras from board"""
-        self.trigger('leave', c)
+        self.unregister_effects(c)
         board = self.boards[c.orig_owner_id]
         board.remove_from_board(c)
         print(f"{c} has been removed from the board")
         for a in c.modifiers.auras:
-            self.trigger('leave', a) if isinstance(a, GameCard) else self.trigger('leave', a.card)
-            board.remove_from_board(a)
-            print(f"{a} has been removed from the board")
-
-        # --- NEW EVENT EMISSION SYSTEM ---
-        # Remove all registered Event-based effects
-        self.unregister_effects(c)
+            if isinstance(a, GameCard):
+                self.unregister_effects(c)
+                board.remove_from_board(a)
+                print(f"{a} has been removed from the board")
 
     def send_to_graveyard_from_play(self, c: GameCard):
         """Send card to graveyard; send all card's auras to graveyard"""
@@ -649,10 +646,14 @@ class GameState:
             self.phase = Phase.END_TURN_EFFECTS
 
         if self.phase == Phase.END_TURN_EFFECTS:
+            # new approach
+            for obj in self._until_eot:
+                if obj in self.damage_preventions:
+                    self.damage_preventions.remove(obj)
+            self._until_eot.clear()
+
             # Expire all temporary damage prevention
             self.damage_preventions.clear()
-            # Remove all temp global effects
-            self.global_effects = [e for e in self.global_effects if not e[2]]
             # Clear temp modifiers
             for d in self.decks_all_cards:
                 for c in d.cards:

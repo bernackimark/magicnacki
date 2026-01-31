@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+from models.effects.damage_preventions import DamagePreventionEffect, PreventAllDamage
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -10,9 +12,7 @@ from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
-from models.effects.damage import all_damage_prevented_to_target_card
 from models.modifiers import KWAModifier, PTModifier, PTTemp
-from utils import flip
 
 class ActiveVolcano(Effect):
     """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
@@ -101,7 +101,7 @@ class GlyphOfDestruction(Effect):
     Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.temps(PTTemp(s, 10, 0))
-        gs.global_effects.append((s, all_damage_prevented_to_target_card(s), True))
+        gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         gs.end_step_funcs.append(lambda gs, s, t: gs.send_to_graveyard_from_play(s))
 
 class KoboldDrillSergeant(Effect):
