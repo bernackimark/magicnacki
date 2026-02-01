@@ -32,6 +32,11 @@ class EndStepEvent(Event):
     active_player: int
 
 @dataclass(frozen=True)
+class StateBasedEvent(Event):
+    """Emitted whenever a relevant board state change happens (play to board, remove from board, control changes)"""
+    pass
+
+@dataclass(frozen=True)
 class TapCardEvent(Event):
     card: GameCard
 
