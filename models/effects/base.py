@@ -11,6 +11,7 @@ from utils import flip
 
 from ..damage import DamageEvent
 from ..events.base import Event
+from ..events.events_all import StateBasedEvent
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -22,18 +23,24 @@ class Effect:
     listens_to: type[Event] | None = None  # new system
 
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        """Perform an explicit game action (ex: deal 3 damage)"""
         raise NotImplementedError()
 
     def on_damage(self, gs: GameState, event: DamageEvent):
         return
 
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent):
+        """React to something that just happened (ex: sacrifice if no lands)"""
+        raise NotImplementedError()
+
     def on_query(self, gs, event: str, card: GameCard, **kwargs):
+        """Answer a rules question (ex: can this attack?)"""
         return None  # default: no opinion
 
 
 @dataclass
 class EffSpec:
-    """Effect Specification"""
+    """Effect Specification; mapping slugs to Effects uses EffSpec"""
 
     class AllowedPlayerTurn(Enum):
         CASTER = auto()
