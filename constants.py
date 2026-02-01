@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Union
 
+ALL_PLAYER_INDICES = (0, 1)
 BASIC_LANDS = ('forest', 'island', 'mountain', 'plains', 'swamp')
 COLOR_LETTERS = ('G', 'U', 'R', 'W', 'B')
 COLOR_LETTERS_W_COLORLESS = ('G', 'U', 'R', 'W', 'B', 'C')  # 'C' must be last in the sequence for mana handling
