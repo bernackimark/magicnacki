@@ -40,3 +40,9 @@ class EnergyTap(Effect):
         mana_value = source.props.casting_weight
         gs.mana_pools[source.orig_owner_id].add_floating('C', mana_value)
         print(f"{source} taps to add {mana_value} colorless to your mana pool.")
+
+class ExchangeLifeTotals(Effect):
+    def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):
+        your_life = gs.life[s.orig_owner_id]
+        opp_life = gs.life[flip(s.orig_owner_id)]
+        gs.life[s.orig_owner_id], gs.life[flip(s.orig_owner_id)] = opp_life, your_life

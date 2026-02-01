@@ -20,6 +20,10 @@ class TapCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.tap(gs)
 
+class UntapCardEffect(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        target.untap(gs)
+
 class HostStaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         if not source.attached_to:
@@ -43,6 +47,13 @@ class UntapForManaEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         gs.action_stack.push(UntapWithManaChoice(source.orig_owner_id, gs, source, self.mana_cost))
 
+class UntapHostForManaEffect(Effect):
+    def __init__(self, mana_cost: str):
+        self.mana_cost = mana_cost
+
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        gs.action_stack.push(UntapWithManaChoice(source.attached_to.orig_owner_id, gs, source, self.mana_cost))
+
 
 # --- CARD-SPECIFIC ---
 class CocoonHostStaysTapped(Effect):
@@ -65,6 +76,7 @@ class ManaShort(Effect):
         for land in player_lands:
             land.tap(gs)
         print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
+
 
 class Riptide(Effect):
     """Tap all blue creatures"""

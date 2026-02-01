@@ -12,7 +12,8 @@ from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
-from models.modifiers import KWAModifier, PTModifier, PTTemp
+from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
+
 
 class ActiveVolcano(Effect):
     """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
@@ -111,6 +112,11 @@ class GoblinKing(Effect):
                 t.modifiers.auras.append(KWAModifier(source, 'add', 'Mountainwalk'))
                 t.modifiers.auras.append(PTModifier(source, 1, 1))
 
+class Greed(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.apply_damage(source, 2, source.orig_owner_id)
+        gs.draw(gs.hands[source.orig_owner_id], gs.decks[source.orig_owner_id].cards, 1)
+
 class GlyphOfDestruction(Effect):
     """Target blocking Wall you control gets +10/+0 until end of combat.
     Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
@@ -127,6 +133,13 @@ class KoboldDrillSergeant(Effect):
             if source != k:
                 k.modifiers.auras.append(KWAModifier(source, 'add', 'Trample'))
                 k.modifiers.auras.append(PTModifier(source, 0, 1))
+
+class KryShield(Effect):
+    """Prevent all damage that would be dealt this turn by target creature you control.
+    That creature gets +0/+X until end of turn, where X is its mana value"""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
+        t.modifiers.temps.append(PTTemp(s, 0, t.props.casting_weight))
 
 class LordOfAtlantis(Effect):
     """All of your other Merfolk gain +1/+1 and Islandwalk"""
@@ -145,6 +158,25 @@ class MartyrsCry(Effect):
             gs.send_to_exile_from_play(white_creature)  # which is correct?  exile_from_play() or exile()
             gs.draw(gs.hands[owner_id], gs.decks[owner_id].cards, 1)
 
+class MazeOfIth(Effect):
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        the_combat = next((com for com in gs.combats if com.attacker == t), None)
+        if not the_combat:
+            return
+        gs.damage_preventions.append(PreventNextDamage(s, None, target_card=t, combat_only=True))
+        for b in the_combat.blockers:
+            gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
+        t.untap(gs)
+
+class Rakalite(Effect):
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        if not target:
+            raise RuntimeError(f'{s.props.name} needs a target')
+        prevention = PreventNextDamage(s, None, source_card=target)
+        gs.damage_preventions.append(prevention)
+        gs.return_to_hand_from_board(s)
+
 class ReverseDamage(Effect):
     """The next time a source of your choice would deal damage to you this turn, prevent that damage.
     You gain life equal to the damage prevented this way.
@@ -161,6 +193,12 @@ class RocketLauncherCast(Effect):
     """To support 'Activate only if you've controlled continuously since the beginning of your most recent turn."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         s.has_summoning_sickness = True
+
+class RocketLauncherAA(Effect):
+    """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        gs.apply_damage(s, 1, t)
+        gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(s))
 
 class SacrificeOnCast(Effect):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
@@ -183,6 +221,13 @@ class Shapeshifter(Effect):
         if gs.player_turn_idx != source.orig_owner_id:
             return
         gs.action_stack.push(ShapeshifterChoice(source.orig_owner_id, gs, source), gs, False)
+
+class StoneGiant(Effect):
+    """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
+    Destroy that creature at the beginning of the next end step."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        t.modifiers.temps.append(KWATemp(s, 'add', 'Flying'))
+        gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(t))
 
 class Subdue(Effect):
     """Prevent all combat damage that would be dealt by target creature this turn.

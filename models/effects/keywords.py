@@ -13,6 +13,12 @@ from models.modifiers import KWAModifier, KWATemp
 from utils import flip
 
 # --- GENERIC ---
+class AllWalksRemoved(Effect):
+    """Target creature loses all landwalk abilities until end of turn"""
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
+            target.modifiers.temps.append(KWATemp(source, 'remove', f'{land}walk'))
+
 class KWAModEffect(Effect):
     def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):
         self.add_or_remove = add_or_remove

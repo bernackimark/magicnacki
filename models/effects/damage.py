@@ -50,6 +50,17 @@ class DealDamageToAllCreaturesAndPlayers(Effect):
         [gs.apply_damage(source, self.amt, p_id, is_combat=False) for p_id in (0, 1)]
         [gs.apply_damage(source, self.amt, creature) for creature in gs.card_filter.in_play().creatures().result()]
 
+class DealDamageToTargetAndSelf(Effect):
+    def __init__(self, amt_to_target: int, amt_to_source_card: int):
+        self.amt_to_target = amt_to_target
+        self.amt_to_source_card = amt_to_source_card
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise RuntimeError(f"{source.props.name} needs a target")
+        gs.apply_damage(source, self.amt_to_target, target)
+        gs.apply_damage(source, self.amt_to_source_card, source)
+
 class DealDamageToTargetAndYou(Effect):
     def __init__(self, amt_to_target: int, amt_to_you: int):
         self.amt_to_target = amt_to_target
@@ -168,12 +179,6 @@ class PowerSurge(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         untapped_lands = gs.card_filter.in_play().untapped().lands().result()
         gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
-
-class PsionicEntityAA(Effect):
-    """{T}: This creature deals 2 damage to any target and 3 damage to itself"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.apply_damage(source, 2, target)
-        gs.apply_damage(source, 3, source)
 
 class StormSeeker(Effect):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
