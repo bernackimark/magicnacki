@@ -20,12 +20,13 @@ from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent, DamageResolvedEvent
+    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
 from models.hand import Hand
 from models.mana import ManaPool
+from models.state_based_rules import StateBasedRule, IslandhomeSBR
 from models.turn import Turn
 from phase_fsm import Phase
 from utils import flip
@@ -66,6 +67,7 @@ class GameState:
 
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
         self._until_eot: list[Any] = []
+        self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
 
         # registries for side effects that are not captured in card effects
         # life-loss registry uses (cond, effect) tuples similar to your TAP_REGISTRY style
@@ -125,8 +127,17 @@ class GameState:
             r = eff.on_query(self, event, card, **kwargs)
             if r is False:
                 return False
-
         return True
+
+    def check_state_based_actions(self):
+        """state-based actions must repeat until stable"""
+        while True:
+            changed = False
+            for rule in self.state_based_rules:
+                if rule.apply(self):
+                    changed = True
+            if not changed:
+                break
 
     def can_attack(self, card: GameCard) -> bool:
         """Check base rules. Check card effects & global statics. If any rule returns 'False', the card cannot attack"""
@@ -246,6 +257,7 @@ class GameState:
     def remove_from_board(self, c: GameCard) -> None:
         """Trigger leave event for card (ex Crusade, Castle); remove card from board; remove all auras from board"""
         self.unregister_effects(c)
+        self.emit(StateBasedEvent())
         board = self.boards[c.orig_owner_id]
         board.remove_from_board(c)
         print(f"{c} has been removed from the board")
@@ -287,6 +299,7 @@ class GameState:
     def _send_to_graveyard_or_exile(self, c: GameCard):
         """Remove card from board if not done yet;
         clear all attached_to relationships & clear .auras(), .pt_modifiers(), etc"""
+        self.emit(StateBasedEvent())
         # if board removal slipped through the cracks, do that here
         board = self.boards[c.orig_owner_id]
         if c in board.cards:
@@ -450,6 +463,9 @@ class GameState:
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         """Determine all legal actions available to player_id in the current phase ...
          (casting, activating abilities, combat, phase-specific actions, etc.)"""
+
+        self.check_state_based_actions()
+
         available_actions: list[Action] = []
         hand = self.hands[p_id]
         board = self.boards[p_id]
