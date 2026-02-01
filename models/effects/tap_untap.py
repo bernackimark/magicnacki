@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 from card_filter import CardFilter
-from models.choice_actions.choice_actions_all import UntapChoice
+from models.choice_actions.choice_actions_all import UntapChoice, UntapWithManaChoice
 from ..actions.tap_untap import LeaveTapped
 from ..counter_tokens import PUPA, SLEEP
 
@@ -35,6 +35,13 @@ class StaysTapped(Effect):
 class OptionalUntap(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         gs.action_stack.push(UntapChoice(gs.player_turn_idx, gs, source), gs, False)
+
+class UntapForManaEffect(Effect):
+    def __init__(self, mana_cost: str):
+        self.mana_cost = mana_cost
+
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        gs.action_stack.push(UntapWithManaChoice(source.orig_owner_id, gs, source, self.mana_cost))
 
 
 # --- CARD-SPECIFIC ---

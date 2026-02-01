@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 from models.damage import DamageEvent
 
-
+# --- GENERICS ---
 class DamagePreventionEffect:
     listens_to = DamageEvent
 
@@ -26,6 +26,7 @@ class PreventAllDamage(DamagePreventionEffect):
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
         return event.target is card
 
+# -- CARD-SPECIFIC ---
 class ArgothianPixiesPrevention(DamagePreventionEffect):
     """Prevent all damage that would be dealt to this creature by artifact creatures"""
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None):

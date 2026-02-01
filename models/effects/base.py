@@ -26,11 +26,8 @@ class Effect:
         """Perform an explicit game action (ex: deal 3 damage)"""
         raise NotImplementedError()
 
-    def on_damage(self, gs: GameState, event: DamageEvent):
-        return
-
     def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent):
-        """React to something that just happened (ex: sacrifice if no lands)"""
+        """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""
         raise NotImplementedError()
 
     def on_query(self, gs, event: str, card: GameCard, **kwargs):

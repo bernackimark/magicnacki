@@ -336,7 +336,6 @@ class GameState:
     def add_to_hand(self, c: GameCard, player_idx: int) -> None:
         self.hands[player_idx].cards.append(c)
 
-
     # Life Operations; using Registry Pattern
     def increment_life(self, p_id: int, amt: int):
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")

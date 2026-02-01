@@ -27,6 +27,11 @@ class AnimateDead(Effect):
         gs.boards[source.orig_owner_id].play_to_board(card)
         target.modifiers.auras.append(PTModifier(source, -1, 0))
 
+class BookOfRass(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        gs.apply_damage(source, 2, source.orig_owner_id)
+        gs.draw(gs.hands[source.orig_owner_id], gs.decks[source.orig_owner_id].cards, 1)
+
 class CocoonUpkeep(Effect):
     """At your upkeep, remove a pupa counter from this Aura.
         If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
@@ -62,6 +67,16 @@ class Earthbind(Effect):
             target.modifiers.auras.append(KWAModifier(source, 'remove', 'Flying'))
         if 'Flying' in target.keyword_abilities:
             gs.apply_damage(source, 2, target.orig_owner_id)
+
+class ElectricEel(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.temps.append(PTTemp(source, 2, 0))
+        gs.apply_damage(source, 1, source.orig_owner_id)
+
+class ElvesOfTheDeepShadow(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.mana_pools[source.orig_owner_id].add_floating('B')
+        gs.apply_damage(source, 1, source.orig_owner_id)
 
 class Feint(Effect):
     """Tap all creatures blocking target attacking creature.

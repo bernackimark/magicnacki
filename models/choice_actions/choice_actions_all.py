@@ -7,7 +7,7 @@ from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana
-from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
+from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -62,6 +62,15 @@ class UntapChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [LeaveTapped(self.p_id, self.gs, self.source), UntapCardStackPop(self.p_id, self.gs, self.source)]
+
+class UntapWithManaChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, mana_cost: str):
+        super().__init__(p_id, gs, source)
+        self.mana_cost = mana_cost
+
+    def get_actions(self) -> list[Action]:
+        return [LeaveTapped(self.p_id, self.gs, self.source),
+                UntapWithManaAction(self.p_id, self.gs, self.source, self.mana_cost)]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):
