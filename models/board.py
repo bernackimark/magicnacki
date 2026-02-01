@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 import re
 
+from models.events.events_all import StateBasedEvent
 from models.game_card import GameCard
 from constants import COLOR_LETTERS, BASIC_LANDS
 
@@ -21,6 +22,7 @@ class Board:
     def play_to_board(self, c: GameCard):
         self._cards.append(c)
         self._cards.sort(key=lambda card: (card.props.is_land, card.props.is_creature))
+        self.emit(StateBasedEvent())
 
     def remove_from_board(self, c: GameCard):
         self._cards.remove(c)
