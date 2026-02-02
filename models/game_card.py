@@ -85,16 +85,20 @@ class GameCard:
     def _get_global_pt_adj(self) -> tuple[int, int]:
         power, toughness = 0, 0
 
-        effects = []
+        effect_specs = []
         # static effects on other permanents (ex: crusade lives here)
         for c in self.game_state.card_filter.in_play().result():
-            effects.extend(c.static_abilities)
-            effects.extend(c.triggered_abilities)
+            for a in c.static_abilities:
+                effect_specs.append((c, a))
+            for a in c.triggered_abilities:
+                effect_specs.append((c, a))
+            # effect_specs.extend((c, c.static_abilities))
+            # effect_specs.extend((c, c.triggered_abilities))
 
-        for eff in effects:
-            if not hasattr(eff, 'on_query'):
+        for source, eff_spec in effect_specs:
+            if not hasattr(eff_spec.effect, 'on_query'):
                 continue
-            mod: PTModifier | PTTemp = eff.on_query(self.game_state, 'pt_mod', card=self)
+            mod: PTModifier | PTTemp = eff_spec.effect.on_query(self.game_state, 'pt_mod', card=self, source=source)
             if mod:
                 power += mod.power_delta
                 toughness += mod.toughness_delta
