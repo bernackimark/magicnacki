@@ -22,7 +22,6 @@ class Board:
     def play_to_board(self, c: GameCard):
         self._cards.append(c)
         self._cards.sort(key=lambda card: (card.props.is_land, card.props.is_creature))
-        self.emit(StateBasedEvent())
 
     def remove_from_board(self, c: GameCard):
         self._cards.remove(c)
