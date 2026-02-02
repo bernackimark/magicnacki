@@ -93,7 +93,7 @@ class GameState:
 
     # --- NEW SYSTEM ---
     def register_effect(self, effect: Effect, source_card: GameCard):
-        """Store the effect_spec + source card tuple for later event emission."""
+        """Store the effect + source card tuple for later event emission."""
         if effect.listens_to:
             self._event_listeners[effect.listens_to].append((effect, source_card))
 
@@ -108,9 +108,8 @@ class GameState:
     def emit(self, event: Event):
         """Call all effects listening to a certain type of event (ex: EndStepEvent); only Effects w 'on_event' listen"""
         for eff, source_card in self._event_listeners[type(event)]:
-            if not hasattr(eff, 'on_event'):
-                continue
-            eff.on_event(self, source_card, event)
+            if hasattr(eff, 'on_event'):
+                eff.on_event(self, source_card, event)
 
     def register_until_end_of_turn(self, obj):
         self._until_eot.append(obj)
@@ -120,9 +119,9 @@ class GameState:
         If none return False, action is allowed."""
         # Check local effects on the card
         for eff in card.triggered_abilities:
-            if not hasattr(eff, 'on_query'):
+            if not hasattr(eff.effect, 'on_query'):
                 continue
-            r = eff.on_query(self, event, card, **kwargs)
+            r = eff.effect.on_query(self, event, card, **kwargs)
             if r is False:
                 return False
         return True

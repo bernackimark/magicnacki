@@ -36,7 +36,7 @@ from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, Grea
     KoboldTaskmaster
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
-    KirdApePT, Seeker, SunkenCity
+    KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, LordOfAtlantis, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -308,6 +308,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'martyrs-of-korlis': [Static(MartyrsOfKorlisDamageReplacement())],  # note: no way this works
     'maze-of-ith': [Activated('T', MazeOfIth(), T_FUNCS['attackers'])],
     'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
+    'mightstone': [Static(Mightstone())],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
@@ -325,6 +326,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'old-man-of-the-sea': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'onulet': [Triggered(Onulet(), None, DiesEvent)],
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
+    'orcish-oriflamme': [Static(OrcishOriflamme())],
     'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent)],
     'paralyze': [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
                  Triggered(HostStaysTapped(), T_FUNCS['host'], UntapPhaseEvent),
@@ -368,7 +370,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'sacrifice': [Triggered(SacrificeOnCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent)],
     'samite-healer': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['cards_in_play'])],
-    'sandals-of-abdallah': [Activated('2'), SandalsOfAbdallahIslandWalk(), T_FUNCS['creatures_in_play']],
+    'sandals-of-abdallah': [Activated('2', SandalsOfAbdallahIslandWalk(), T_FUNCS['creatures_in_play'])],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],
     'savannah': dual_land_activated_ability_specs('GW'),
     'scarecrow': [Activated('6T', ScarecrowPrevention())],

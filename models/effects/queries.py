@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.modifiers import PTModifier
+from models.modifiers import PTModifier, PTTemp
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -24,13 +24,16 @@ class AmrouKithkin(Effect):
 
 class AngelicVoices(Effect):
     """Creatures you control get +1/+1 as long as you control no nonartifact, nonwhite creatures."""
+    event = 'query'
+
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
         for my_creature in gs.card_filter.creatures().on_player_board(card.orig_owner_id).result():
             if 'W' not in my_creature.props.colors or 'C' not in my_creature.props.colors:
                 return False
-        return PTModifier(card, 1, 1)
+        return PTModifier(source, 1, 1)
 
 class ArtifactWardCanBeBlocked(Effect):
     """This creature can't be blocked by artifact creatures"""
@@ -56,12 +59,15 @@ class ArgothianPixiesCanBeBlocked(Effect):
             return False
 
 class BadMoon(Effect):
+    event = 'query'
+
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
         if card not in gs.card_filter.in_play().black().creatures().result():
             return None
-        return PTModifier(card, 1, 1)
+        return PTModifier(source, 1, 1)
 
 class BogRats(Effect):
     event = 'query'
@@ -75,20 +81,26 @@ class BogRats(Effect):
             return False
 
 class Castle(Effect):
+    event = 'query'
+
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
         if card not in gs.card_filter.creatures().on_player_board(card.orig_owner_id).tapped(False).white().result():
             return None
-        return PTModifier(card, 0, 2)
+        return PTModifier(source, 0, 2)
 
 class Crusade(Effect):
+    event = 'query'
+
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
         if card not in gs.card_filter.in_play().white().creatures().result():
             return None
-        return PTModifier(card, 1, 1)
+        return PTModifier(source, 1, 1)
 
 class ElderSpawnCanBeBlocked(Effect):
     event = 'query'
@@ -103,6 +115,7 @@ class ElderSpawnCanBeBlocked(Effect):
 
 class ElvenRidersCanBeBlocked(Effect):
     event = 'query'
+
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = 'elven-riders', mandatory kwargs: blocker"""
         blocker: GameCard = kwargs.get("blocker")
@@ -132,8 +145,35 @@ class KirdApePT(Effect):
         if gs.card_filter.on_player_board(card.orig_owner_id).by_slug('forest').result():
             return PTModifier(card, 1, 2)
 
+class Mightstone(Effect):
+    """Attacking creatures get +1/+0"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if card not in gs.card_filter.attackers().result():
+            return None
+        return PTTemp(source, 1, 0)
+
+class OrcishOriflamme(Effect):
+    """Attacking creatures you control get +1/+0"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if card not in gs.card_filter.on_player_board(source.orig_owner_id).attackers().result():
+            return None
+        return PTTemp(source, 1, 0)
+
 class Seeker(Effect):
     """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
+    event = 'query'
+
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card should be "seeker's" host, mandatory kwarg: blocker"""
         blocker: GameCard = kwargs.get("blocker")
@@ -143,9 +183,12 @@ class Seeker(Effect):
             return False
 
 class SunkenCity(Effect):
+    event = 'query'
+
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
-        return PTModifier(card, 1, 1)
+        return PTModifier(source, 1, 1)
