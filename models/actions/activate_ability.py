@@ -11,9 +11,7 @@ class ActivateAbility(Action):
     target: GameCard | list[GameCard] | tuple[int] | int | None = None
 
     def __repr__(self) -> str:
-        if self.ability.eff_spec.text:
-            target_text = f' {self.ability.eff_spec.text}'
-        elif isinstance(self.target, list) and self.target and isinstance(self.target[0], GameCard):
+        if isinstance(self.target, list) and self.target and isinstance(self.target[0], GameCard):
             target_text = f", targeting {', '.join([_ for _ in self.target])}"
         elif isinstance(self.target, GameCard):
             target_text = ', targeting ' + self.target.props.name
@@ -23,7 +21,7 @@ class ActivateAbility(Action):
             target_text = f', targeting Player #{self.target}'
         else:
             target_text = ''
-        return f"{self.ability.source}. {{{self.ability.eff_spec.cost}}}: {self.ability.eff_spec.text}{target_text}"
+        return f"{self.ability.source}: {{{self.ability.eff_spec.cost}}}: {self.ability.eff_spec.text}{target_text}"
 
     def play(self) -> None:
         self.ability.pay_costs(self.gs)
