@@ -1,23 +1,30 @@
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
-from models.effects.draw_discard import CursedRackEffect
-
 if TYPE_CHECKING:
     from game_state import GameState
 
 from card import Card
-from cast_targets import CAST_TARGETS
 from kw_ability import get_base_kwas
 from models.counter_tokens import Counters
-from models.effects.base import Effect, ActivatedAbility
-from models.effects.slug_effect_mapping import SLUG_EFFECTS, get_activated_abilities
+from models.effects.base import ActivatedAbility, Activated, EffSpec, Static, Triggered
+from models.effects.slug_effect_mapping import INVOCATIONS
 from models.modifiers import Modifiers, PTModifier, PTTemp
 
 
-def build_effects_for_slug(slug: str) -> list[Effect]:
-    """Instantiate and return effect instances for known slugs. This centralizes where slugs map to behaviors."""
-    return SLUG_EFFECTS.get(slug, [])
+def attach_invocations(card: GameCard):
+    """From INVOCATIONS, populate card.activated_abilities, card.static_abilities, and card.triggered_abilities"""
+    eff_specs = INVOCATIONS.get(card.props.slug, [])
+
+    for eff_spec in eff_specs:
+        if eff_spec.activation_type == 'activated':
+            card.activated_abilities.append(ActivatedAbility(card, eff_spec))
+        elif eff_spec.activation_type == 'triggered':
+            card.triggered_abilities.append(eff_spec)
+        elif eff_spec.activation_type == 'static':
+            card.static_abilities.append(eff_spec)
+        else:
+            raise ValueError(f'{eff_spec.activation_type} is not a known activation type')
 
 
 class GameCard:
@@ -42,14 +49,13 @@ class GameCard:
         self.base_pt = (self.props.power, self.props.toughness)
         self.variable_x: int | None = None  # for variable casting costs
 
-        # perform look-ups to add: base keyword abilities, activated abilities, and effects
+        # perform look-up to add base keyword abilities, activated abilities, and effects
         self._base_kwa: tuple[str, ...] | tuple[None] = get_base_kwas(self.props.slug)
-        self.abilities: list[ActivatedAbility] = get_activated_abilities(self)
-        self.effects: list[Effect] = build_effects_for_slug(self.props.slug)
+        self.activated_abilities: list[ActivatedAbility] = []
+        self.static_abilities: list[EffSpec] = []
+        self.triggered_abilities: list[EffSpec] = []
 
-        # gingerly testing out the new event emission system
-        if self.props.slug == 'cursed-rack':
-            self.effects = [CursedRackEffect()]
+        attach_invocations(self)
 
     def __repr__(self) -> str:
         text = self.props.name
@@ -82,7 +88,8 @@ class GameCard:
         effects = []
         # static effects on other permanents (ex: crusade lives here)
         for c in self.game_state.card_filter.in_play().result():
-            effects.extend(c.effects)
+            effects.extend(c.static_abilities)
+            effects.extend(c.triggered_abilities)
 
         for eff in effects:
             mod: PTModifier | PTTemp = eff.on_query(self.game_state, 'pt_mod', card=self)
@@ -117,11 +124,3 @@ class GameCard:
 
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
-
-    def get_cast_targets(self, gs: GameState) -> list["GameCard"]:
-        # TODO: i don't think this belongs here and should be handled differentl in the new system
-        """First search registry; if aura isn't found in registry, assume it targets in-play creatures"""
-        if ctf := CAST_TARGETS.get(self.props.slug):
-            return ctf(gs)
-        if self.props.is_aura:
-            return gs.card_filter.in_play().creatures().result()
