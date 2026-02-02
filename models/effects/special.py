@@ -2,13 +2,15 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import DamagePreventionEffect, PreventAllDamage
+from models.events.events_all import DiesEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice
-from models.actions.special import SacCreatureAndAddMana
+from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
+    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice
+from models.actions.special import SacCreatureAndAddMana, PayManaToDrawCards
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
@@ -229,6 +231,16 @@ class StoneGiant(Effect):
         t.modifiers.temps.append(KWATemp(s, 'add', 'Flying'))
         gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(t))
 
+class SoulNet(Effect):
+    """Whenever a creature dies, {1}: Gain 1 life"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent):
+            return
+
+        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.orig_owner_id, gs, source), gs, False)
+
 class Subdue(Effect):
     """Prevent all combat damage that would be dealt by target creature this turn.
     That creature gets +0/+X until end of turn, where X is its mana value."""
@@ -247,6 +259,26 @@ class SyphonSoul(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, target)
         gs.increment_life(source.orig_owner_id, 2)
+
+class TabletOfEpityr(Effect):
+    """Whenever an artifact you control dies, {1}: Gain 1 life"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
+                or event.card.orig_owner_id != source.orig_owner_id:
+            return
+        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.orig_owner_id, gs, source), gs, False)
+
+class UrzasMiter(Effect):
+    """ Whenever an artifact you control dies, if it wasn't sacrificed [not handling this part], {3}: draw a card"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
+                or event.card.orig_owner_id != source.orig_owner_id:
+            return
+        gs.action_stack.push(PayManaToDrawCardsChoice(source.orig_owner_id, gs, source), gs, False)
 
 class VenarianGoldCast(Effect):
     """When this Aura enters, tap enchanted creature and put X sleep counters on it ..."""

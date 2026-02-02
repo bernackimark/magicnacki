@@ -41,7 +41,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, LordOfAtlantis, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
-    Web
+    Web, TabletOfEpityr, SoulNet, UrzasMiter
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped
@@ -392,6 +392,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'skull-of-orm': [Activated('5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
     'sol-ring': [Activated('T', AddMana('C', 2), T_FUNCS['card_owner'])],
+    'soul-net': [Triggered(SoulNet(), None, DiesEvent)],
     'spinal-villain': [Activated('T', Destroy(), T_FUNCS['blue_creatures_in_play'])],
     'spirit-link': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
                     Triggered(SpiritLink(), None, DamageResolvedEvent)],
@@ -410,6 +411,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'sunken-city': [Static(SunkenCity()), Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],
     'sword-to-plowshares': [Triggered(SwordsToPlowshares(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'syphon-soul': [Triggered(SyphonSoul(), T_FUNCS['opponent'], CastResolvedEvent)],
+    'tablet-of-epityr': [Triggered(TabletOfEpityr(), None, DiesEvent)],
     'taiga': dual_land_activated_ability_specs('RG'),
     'tawnoss-coffin': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
@@ -439,6 +441,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(PumpEffect(3, 3), T_FUNCS['creatures_in_play'], CastResolvedEvent),
          Triggered(AddCountersOnHostTurn(MINUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'unsummon': [Triggered(BoardToHand(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'urzas-miter': [Triggered(UrzasMiter(), None, DiesEvent)],
     'venarian-gold':
         [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['your_creatures_in_play'], UpkeepEvent),
          Triggered(VenarianGoldHostStaysTapped(), None, UntapPhaseEvent)],

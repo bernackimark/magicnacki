@@ -7,6 +7,27 @@ if TYPE_CHECKING:
 
 from models.actions.base import Action
 
+class PayManaForLife(Action):
+    def __init__(self, p_id: int, gs: GameState, mana_cost: str, gain_life_amt: int):
+        super().__init__(p_id, gs)
+        self.mana_cost = mana_cost
+        self.gain_life_amt = gain_life_amt
+
+    def play(self):
+        self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
+        self.gs.increment_life(self.player_idx, self.gain_life_amt)
+        self.gs.action_stack.pop()
+
+class PayManaToDrawCards(Action):
+    def __init__(self, p_id: int, gs: GameState, mana_cost: str, card_cnt: int):
+        super().__init__(p_id, gs)
+        self.mana_cost = mana_cost
+        self.card_cnt = card_cnt
+
+    def play(self):
+        self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
+        self.gs.draw(self.gs.hands[self.player_idx], self.gs.decks[self.player_idx].cards, self.card_cnt)
+        self.gs.action_stack.pop()
 
 class SacCreatureAndAddMana(Action):
     def __init__(self, p_id: int, gs: GameState, _: GameCard, creature: GameCard, color: str, amt: int = 0):

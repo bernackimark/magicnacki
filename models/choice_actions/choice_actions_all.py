@@ -6,14 +6,14 @@ from models.actions.damage import DealDamage, PayLife
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
-from models.actions.special import SacCreatureAndAddMana
+from models.actions.special import SacCreatureAndAddMana, PayManaForLife
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.actions.base import Action
+from models.actions.base import Action, DoNothing
 from models.choice_actions.base import ChoiceAction
 
 
@@ -39,6 +39,20 @@ class PayManaOrSacUpkeepChoice(ChoiceAction):
             actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
         actions.append(Sac(self.p_id, self.gs, self.source))
         return actions
+
+class PayManaToDrawCardsChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [PayManaToDrawCardsChoice(self.p_id, self.gs, self.source), DoNothing(self.p_id, self.gs)]
+
+class PayOneColorlessForOneLifeChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [PayManaForLife(self.p_id, self.gs, '1', 1), DoNothing(self.p_id, self.gs)]
 
 class SacALandChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
