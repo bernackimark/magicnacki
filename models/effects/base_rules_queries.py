@@ -45,10 +45,11 @@ class CanAttackBaseRule(Effect):
 
         card: GameCard = kwargs.get('card')
 
-        if not card.props.is_creature or card.has_summoning_sickness or card.is_tapped or 'Attack' not in card.activated_abilities:
+        if not card.props.is_creature or card.has_summoning_sickness or card.is_tapped \
+            or 'Attack' not in card.keyword_abilities:
             return False
 
-        if 'Islandhome' in card.activated_abilities:
+        if 'Islandhome' in card.keyword_abilities:
             if not gs.card_filter.on_player_board(flip(card.orig_owner_id)).by_slug('island').result():
                 return False
 

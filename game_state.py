@@ -2,6 +2,7 @@ import random
 from collections import defaultdict
 from typing import Callable, Optional, Any
 
+import models.card_attributes.card_effect_specs
 from action_stack import ActionStack
 from build_deck import Deck
 from card_filter import CardFilter
@@ -143,12 +144,12 @@ class GameState:
         effects.extend(card.triggered_abilities)  # card effects
         for c in self.card_filter.in_play().result():  # global statics (ex: moat)
             effects.extend(c.triggered_abilities)
-
         for eff in effects:
+            if not hasattr(eff, 'on_query'):
+                continue
             result = eff.on_query(self, 'can_attack', card=card)
             if result is False:
                 return False  # hard veto
-
         return True
 
     def can_block(self, blocker: GameCard, attacker: GameCard):
@@ -162,6 +163,8 @@ class GameState:
             effects.extend(c.triggered_abilities)
 
         for eff in effects:
+            if not hasattr(eff, 'on_query'):
+                continue
             result = eff.on_query(self, 'can_block', card=blocker, attacker=attacker)
             if result is False:
                 return False  # hard veto
@@ -361,7 +364,7 @@ class GameState:
         # is this all supposed to happen here, in the TapCardEvent(Event), in a dedicated TapCardEffect(Effect)?
         c.is_tapped = True
         for a in c.modifiers.auras:
-            a.is_tapped = True
+            models.card_attributes.card_effect_specs.is_tapped = True
 
     def untap_card(self, c: GameCard):
         # new system
@@ -371,7 +374,7 @@ class GameState:
         # is this all supposed to happen here, in the UntapCardEvent(Event), in a dedicated UntapCardEffect(Effect)?
         c.is_tapped = False
         for a in c.modifiers.auras:
-            a.is_tapped = False
+            models.card_attributes.card_effect_specs.is_tapped = False
         self.emit(UntapCardEvent(card=c))
 
     def handle_untap_phase(self):

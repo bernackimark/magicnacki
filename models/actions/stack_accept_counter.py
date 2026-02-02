@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
 from models.effects.base import ActivatedAbility
-from models.effects.slug_effect_mapping import INVOCATIONS
+from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.events.events_all import CastResolvedEvent
 from utils import flip
 

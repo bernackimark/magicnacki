@@ -5,10 +5,10 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from card import Card
-from kw_ability import get_base_kwas
+from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
-from models.effects.base import ActivatedAbility, Activated, EffSpec, Static, Triggered
-from models.effects.slug_effect_mapping import INVOCATIONS
+from models.effects.base import ActivatedAbility, EffSpec
+from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.modifiers import Modifiers, PTModifier, PTTemp
 
 
@@ -50,7 +50,7 @@ class GameCard:
         self.variable_x: int | None = None  # for variable casting costs
 
         # perform look-up to add base keyword abilities, activated abilities, and effects
-        self._base_kwa: tuple[str, ...] | tuple[None] = get_base_kwas(self.props.slug)
+        self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug) if self.props.is_creature else ()
         self.activated_abilities: list[ActivatedAbility] = []
         self.static_abilities: list[EffSpec] = []
         self.triggered_abilities: list[EffSpec] = []

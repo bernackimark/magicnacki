@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.base import Action
-from models.effects.slug_effect_mapping import INVOCATIONS
+from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.effects.base import ActivatedAbility
 from models.events.events_all import StateBasedEvent
 from models.game_card import GameCard

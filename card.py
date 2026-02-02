@@ -3,7 +3,7 @@ from functools import cached_property
 import re
 from typing import Iterator
 
-from kw_ability import CREATURE_KW_ABILITIES
+from models.card_attributes.kwa_abilities import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
 from constants import COLOR_LETTERS, BASIC_LANDS
 from utils import str_to_int
