@@ -36,7 +36,8 @@ from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, Grea
     KoboldTaskmaster
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
-    KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme
+    KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
+    RabidWombat
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, LordOfAtlantis, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -141,6 +142,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(CocoonUpkeep(), None, UpkeepEvent)],
     'colossus-of-sardia': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
                            untap_for_mana_at_owner_upkeep('9')],
+    'concordant-crossroads': [Static(ConcordantCrossroads())],
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent)],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
@@ -236,12 +238,14 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'granite-gargoyle': [Activated('R', PumpEffect(0, 1, True), T_FUNCS['self'])],
     'grapeshot-catapult': [Activated('T', DealDamage(4), T_FUNCS['fliers_in_play'])],
     'grave-robbers': [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
+    'gravity-sphere': [Static(GravitySphere())],
     'great-defender': [Triggered(GreatDefender(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(),
                                                 T_FUNCS['black_and_red_in_play'])],
     'greed': [Activated('B', Greed(), T_FUNCS['card_owner'])],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures_in_play'])],
+    'hidden-path': [Static(HiddenPath())],
     'holy-armor': [Triggered(PumpEffect(0, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent),
                    Activated('W', PumpEffect(0, 1, True), T_FUNCS['host'])],
     'holy-day': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
@@ -312,6 +316,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
+    'moat': [Static(Moat())],
     'mountain': [Triggered(MountainTap(), None, TapCardEvent)],
     'mox-emerald': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'mox-jet': [Activated('T', AddMana('B'), T_FUNCS['card_owner'])],
@@ -352,6 +357,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'psychic-venom':
         [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
          Triggered(DealDamage(2), T_FUNCS['host_owner']), TapCardEvent],
+    'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures_in_play'])],
     'raise-dead': [Triggered(GraveyardToHand(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],

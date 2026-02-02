@@ -9,7 +9,7 @@ from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec
 from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.modifiers import Modifiers, PTModifier, PTTemp
+from models.modifiers import Modifiers, PTModifier, PTTemp, KWAModifier, KWATemp
 
 
 def attach_invocations(card: GameCard):
@@ -84,21 +84,7 @@ class GameCard:
 
     def _get_global_pt_adj(self) -> tuple[int, int]:
         power, toughness = 0, 0
-
-        effect_specs = []
-        # static effects on other permanents (ex: crusade lives here)
-        for c in self.game_state.card_filter.in_play().result():
-            for a in c.static_abilities:
-                effect_specs.append((c, a))
-            for a in c.triggered_abilities:
-                effect_specs.append((c, a))
-            # effect_specs.extend((c, c.static_abilities))
-            # effect_specs.extend((c, c.triggered_abilities))
-
-        for source, eff_spec in effect_specs:
-            if not hasattr(eff_spec.effect, 'on_query'):
-                continue
-            mod: PTModifier | PTTemp = eff_spec.effect.on_query(self.game_state, 'pt_mod', card=self, source=source)
+        for mod in self._get_global_query('pt_mod'):
             if mod:
                 power += mod.power_delta
                 toughness += mod.toughness_delta
@@ -106,11 +92,36 @@ class GameCard:
 
     @property
     def keyword_abilities(self) -> list[str]:
-        """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, mod removes = {'Reach', 'First Strike'}
+        """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, global removes = {'Reach', 'First Strike'}
         returns ['Flying', 'Trample']"""
         kwa = set(self._base_kwa)
         adds, removes = self.modifiers.kwa_delta
-        return list((kwa | adds) - removes)
+        global_adds, global_removes = set(), set()
+        for mod in self._get_global_query('kwa_mod'):
+            if mod:
+                if mod.add_or_remove == 'add':
+                    global_adds.add(mod.kwa)
+                else:
+                    global_removes.add(mod.kwa)
+        return list((kwa | adds | global_adds) - (removes | global_removes))
+
+    def _get_global_query(self, global_type: str) -> list[PTModifier | PTTemp | KWAModifier | KWATemp]:
+        effect_specs = []
+        # static effects on other permanents (ex: crusade lives in static abilities)
+        for c in self.game_state.card_filter.in_play().result():
+            for a in c.static_abilities:
+                effect_specs.append((c, a))
+            for a in c.triggered_abilities:
+                effect_specs.append((c, a))
+
+        modifiers = []
+        for source, eff_spec in effect_specs:
+            if not hasattr(eff_spec.effect, 'on_query'):
+                continue
+            mod: PTModifier | PTTemp | KWAModifier | KWATemp = eff_spec.effect.on_query(self.game_state, global_type,
+                                                                                        card=self, source=source)
+            modifiers.append(mod)
+        return modifiers
 
     def clear_all_mods(self) -> None:
         """attached_to = None for all auras and host; all modifiers are emptied"""

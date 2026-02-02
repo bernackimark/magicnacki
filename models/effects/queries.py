@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.modifiers import PTModifier, PTTemp
+from models.modifiers import PTModifier, PTTemp, KWAModifier
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -91,6 +91,18 @@ class Castle(Effect):
             return None
         return PTModifier(source, 0, 2)
 
+class ConcordantCrossroads(Effect):
+    """All creatures have haste"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'kwa_mod':
+            return None
+        if card not in gs.card_filter.in_play().creatures().result():
+            return None
+        return KWAModifier(source, 'add', 'Haste')
+
 class Crusade(Effect):
     event = 'query'
 
@@ -135,6 +147,30 @@ class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
         if 'Wall' not in blocker.props.card_sub_types:
             return False
 
+class GravitySphere(Effect):
+    """All creatures lose flying"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'kwa_mod':
+            return None
+        if card not in gs.card_filter.in_play().creatures().result():
+            return None
+        return KWAModifier(source, 'remove', 'Flying')
+
+class HiddenPath(Effect):
+    """Green creatures have forestwalk"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'kwa_mod':
+            return None
+        if card not in gs.card_filter.in_play().green().creatures().result():
+            return None
+        return KWAModifier(source, 'add', 'Forestwalk')
+
 class KirdApePT(Effect):
     event = 'query'
 
@@ -157,6 +193,18 @@ class Mightstone(Effect):
             return None
         return PTTemp(source, 1, 0)
 
+class Moat(Effect):
+    """Creatures without flying can't attack"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'kwa_mod':
+            return None
+        if card not in gs.card_filter.in_play().has('Flying', False).creatures().result():
+            return None
+        return KWAModifier(source, 'remove', 'Attack')
+
 class OrcishOriflamme(Effect):
     """Attacking creatures you control get +1/+0"""
     event = 'query'
@@ -169,6 +217,22 @@ class OrcishOriflamme(Effect):
         if card not in gs.card_filter.on_player_board(source.orig_owner_id).attackers().result():
             return None
         return PTTemp(source, 1, 0)
+
+class RabidWombat(Effect):
+    """This creature gets +2/+2 for each Aura attached to it"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if card is not source:
+            return None
+        aura_cnt = len([a for a in source.modifiers.auras if isinstance(a, GameCard)])
+        if not aura_cnt:
+            return None
+        return PTTemp(source, 2 * aura_cnt, 2 * aura_cnt)
 
 class Seeker(Effect):
     """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
