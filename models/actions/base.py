@@ -12,7 +12,7 @@ from dataclasses import dataclass
 @dataclass
 class Action(ABC):
     player_idx: int
-    gs: "GameState"
+    gs: GameState
 
     @abc.abstractmethod
     def play(self) -> None:

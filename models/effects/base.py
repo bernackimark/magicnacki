@@ -19,7 +19,6 @@ if TYPE_CHECKING:
 
 class Effect:
     """Base class for all card effects."""
-    event: str = 'generic'  # old system
     listens_to: type[Event] | None = None  # new system
 
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
@@ -72,14 +71,19 @@ class EffSpec:
                 the_costs.append(extra_cost)
         return the_costs
 
+    def get_targets(self) -> list[GameCard] | list[None] | None:
+        """Return a list of GameCard (legitimate targets), an empty list (no legitimate target),
+        or None (the Spec doesn't require a target)"""
+        return self.target_filter() if self.target_filter else None
+
 
 @dataclass
 class StaticEffSpec(EffSpec):
     def install(self, gs: GameState, source: GameCard):
-        source.effects.append(self.effect)
+        source.triggered_abilities.append(self.effect)
 
     def uninstall(self, gs: GameState, source: GameCard):
-        source.effects.remove(self.effect)
+        source.triggered_abilities.remove(self.effect)
 
 
 @dataclass
@@ -119,6 +123,25 @@ class ActivatedAbility:
     def pay_costs(self, gs):
         for cost in self.eff_spec.costs:
             cost.pay(gs, self.source)
+
+@dataclass
+class TriggeredAbility:
+    source: GameCard
+    eff_spec: EffSpec
+
+    def __post_init__(self):
+        """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
+        allowed_p_id_turns need knowledge of the card's owner and is assigned here;
+        if allowed_player_turn is None, then the ability should be permitted on both turns"""
+        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.CASTER:
+            self.eff_spec.allowed_p_id_turn = self.source.orig_owner_id
+        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
+            self.eff_spec.allowed_p_id_turn = flip(self.source.orig_owner_id)
+
+@dataclass
+class StaticAbility:
+    source: GameCard
+    eff_spec: EffSpec
 
 
 """

@@ -21,6 +21,3 @@ class ChoiceAction(ABC):
     @abstractmethod
     def get_actions(self) -> list[Action]:
         ...
-
-    def play(self):
-        raise RuntimeError("ChoiceAction cannot be played directly")

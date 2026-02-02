@@ -2,20 +2,19 @@ from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.effects.base import EffSpec, ActivatedAbility, Activated, Static, Triggered
     from game_state import GameState
     from models.game_card import GameCard
 
 from constants import Target, COLOR_LETTERS, ALL_PLAYER_INDICES
 from cost import SacSelfCost, ExileSelfCost
 
+from models.effects.base import EffSpec, Activated, Static, Triggered
 from models.effects.damage_preventions import ArgothianPixiesPrevention, ArgothianTreefolkPrevention, \
     ArtifactWardPrevention, EnchantedBeingPrevention, MarblePriestPrevention, ScarecrowPrevention, \
     PreventNextDamageToSourceOwner, Forcefield, PreventNextDamageEffect
 from models.effects.damage_replacements import MartyrsOfKorlisDamageReplacement, JadeMonolith
 from phase_fsm import Phase
-from models.counter_tokens import CARRION, CORPSE, PLUS_ONE, MINUS_ONE, PIN, PLUS_ONE_ZERO, SLEEP, MINUS_ZERO_TWO, \
-    CHARGE
+from models.counter_tokens import CARRION, CORPSE, PLUS_ONE, MINUS_ONE, PIN, PLUS_ONE_ZERO, SLEEP, MINUS_ZERO_TWO
 from models.effects.queries import KirdApePT, Crusade, AmrouKithkin, ArgothianPixiesCanBeBlocked, \
     ArtifactWardCanBeBlocked, BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     Seeker, AngelicVoices, BadMoon, SunkenCity, Castle
@@ -151,7 +150,7 @@ def untap_host_for_mana_at_opp_upkeep(untap_cost: str) -> EffSpec:
                      allowed_player_turn=EffSpec.AllowedPlayerTurn.OPPONENT, text='Untap')
 
 
-ADD_CHARGE_COUNTER = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])  # to use for all 5 mana batteries
+# ADD_CHARGE_COUNTER = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])  # to use for all 5 mana batteries
 
 def is_tapped(s: GameCard) -> bool:
     return s.is_tapped
@@ -299,8 +298,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
     'frozen-shade': [Activated('B', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'fungusaur': [Triggered(FungusaurOnDamage(), None, DamageResolvedEvent)],
-    'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()]),
-                    Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'],
+    'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()], text='Exile for {GG}'),
+                    Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
                     allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
     'gaseous-form': [Triggered(GaseousForm(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'ghosts-of-the-damned': [Activated('T', PumpEffect(-1, 0, True), T_FUNCS['creatures_in_play'])],
@@ -532,9 +531,3 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wheel-of-fortune': [Triggered(WheelOfFortune(), trigger_event=CastResolvedEvent)],
     'wrath-of-god': [Triggered(ExileAllCreatures(), trigger_event=CastResolvedEvent)]
 }
-
-def get_activated_abilities(c: GameCard) -> list[ActivatedAbility | None]:
-    eff_invocations = INVOCATIONS.get(c.props.slug)
-    if not eff_invocations:
-        return []
-    return [ActivatedAbility(c, inv) for inv in eff_invocations if inv.activation_type == 'activated']

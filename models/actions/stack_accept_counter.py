@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
+from models.effects.base import ActivatedAbility
+from models.effects.slug_effect_mapping import INVOCATIONS
 from models.events.events_all import CastResolvedEvent
 from utils import flip
 
@@ -20,15 +22,38 @@ class AcceptAction(Action):
             target.modifiers.auras.append(card)
             self.gs.boards[target.orig_owner_id].play_to_board(card)
 
-        # --- OLD CENTRAL DISPATCH SYSTEM
-        self.gs.trigger('cast', card, target)  # WARNING: AcceptAction isn't just for 'cast' triggers !!!
-        # print(f"Successfully cast {card.props.name}")
+        # --- new system: resolve the card's own effect(s) ---
+        for eff_spec in INVOCATIONS.get(card.props.slug, []):
+            if eff_spec.activation_type in ('activated', 'triggered'):
+                # resolve immediately if it's a 'cast' effect
+                if eff_spec.trigger_event is CastResolvedEvent:
+                    eff_spec.effect.resolve(self.gs, card, target)
 
-        # --- NEW EVENT EMISSION SYSTEM ---
-        last_action.play()
-
+        # --- Emit event so other effects can respond ---
+        print(f"Successfully cast {card.props.name}")
         self.gs.emit(CastResolvedEvent(card=card, owner_id=card.orig_owner_id, target=target))
 
+        # --- register triggered effects ---
+        if card.props.slug in INVOCATIONS:
+            for eff_spec in INVOCATIONS[card.props.slug]:
+                # Only register triggered effects
+                if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
+                    self.gs.register_effect(eff_spec.effect, card)
+                    print(f"Registered triggered effect for {card.props.name} on {eff_spec.trigger_event}")
+
+        # --- register activated abilities ---
+        for eff_spec in INVOCATIONS.get(card.props.slug, []):
+            if eff_spec.activation_type == 'activated':
+                ability = ActivatedAbility(card, eff_spec)
+                card.activated_abilities.append(ability)
+
+        # --- if permanent, add card to board, else graveyard ---
+        if card.props.is_permanent and not card.props.is_aura:
+            self.gs.boards[card.orig_owner_id].play_to_board(card)
+        if not card.props.is_permanent:
+            self.gs.send_to_graveyard(card)
+
+        # --- reset action stack and current actor ---
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
         self.gs.action_stack.clear_()
 

@@ -92,6 +92,8 @@ class GameCard:
             effects.extend(c.triggered_abilities)
 
         for eff in effects:
+            if not hasattr(eff, 'on_query'):
+                continue
             mod: PTModifier | PTTemp = eff.on_query(self.game_state, 'pt_mod', card=self)
             if mod:
                 power += mod.power_delta

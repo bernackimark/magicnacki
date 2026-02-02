@@ -34,6 +34,7 @@ class CastToBoard(Action):
         #     color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
         #     self.gs.mana_pools[self.player_idx].add(color)
 
+        # --- AUTO-ACCEPTING CAST TO BOARD FOR SPEED OF TESTING
         print(f"Successfully cast {self.card.props.name}")
 
         # --- new event/phase-aware registration

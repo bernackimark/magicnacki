@@ -16,11 +16,11 @@ from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
-from models.effects.base import Effect
+from models.effects.base import Effect, Triggered
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent
+    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -112,18 +112,13 @@ class GameState:
     def register_until_end_of_turn(self, obj):
         self._until_eot.append(obj)
 
-    # Event Dispatcher
-    def trigger(self, event: str, card: GameCard, target: Optional[GameCard] = None):
-        """Dispatch an event (string) to the card's effects; event in {'cast','upkeep','tap','untap','leave'}"""
-        for e in card.effects:
-            if e.event == event:
-                e.resolve(self, card, target)
-
     def on_query(self, event: str, card: GameCard, **kwargs):
         """Ask all effects whether this event is permitted. If any effect returns False, the action is denied.
         If none return False, action is allowed."""
         # Check local effects on the card
-        for eff in card.effects:
+        for eff in card.triggered_abilities:
+            if not hasattr(eff, 'on_query'):
+                continue
             r = eff.on_query(self, event, card, **kwargs)
             if r is False:
                 return False
@@ -145,9 +140,9 @@ class GameState:
             return False
 
         effects = self.query_effects  # base rules
-        effects.extend(card.effects)  # card effects
+        effects.extend(card.triggered_abilities)  # card effects
         for c in self.card_filter.in_play().result():  # global statics (ex: moat)
-            effects.extend(c.effects)
+            effects.extend(c.triggered_abilities)
 
         for eff in effects:
             result = eff.on_query(self, 'can_attack', card=card)
@@ -161,10 +156,10 @@ class GameState:
             return False
 
         effects = self.query_effects  # base rules
-        effects.extend(attacker.effects)  # card effects
-        effects.extend(blocker.effects)
+        effects.extend(attacker.triggered_abilities)  # card effects
+        effects.extend(blocker.triggered_abilities)
         for c in self.card_filter.in_play().result():  # global statics (ex: moat)
-            effects.extend(c.effects)
+            effects.extend(c.triggered_abilities)
 
         for eff in effects:
             result = eff.on_query(self, 'can_block', card=blocker, attacker=attacker)
@@ -368,9 +363,6 @@ class GameState:
         for a in c.modifiers.auras:
             a.is_tapped = True
 
-        # old system
-        self.trigger('tap', c)
-
     def untap_card(self, c: GameCard):
         # new system
         if not c.is_tapped:
@@ -381,9 +373,6 @@ class GameState:
         for a in c.modifiers.auras:
             a.is_tapped = False
         self.emit(UntapCardEvent(card=c))
-
-        # old system
-        # self.trigger('untap', c)  I don't think this was ever used
 
     def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness"""
@@ -402,19 +391,12 @@ class GameState:
             else:
                 # new system
                 self.emit(UntapPhaseEvent(active_player=self.player_turn_idx))
-
-                # old system
-                print(f'Checking on_untap_phase for {c}')
-                self.trigger('on_untap_phase', c)
-                for a in c.modifiers.auras:
-                    if not isinstance(a, GameCard):
-                        continue
-                    self.trigger('on_untap_phase', a)
+                self.untap_card(c)
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
 
-        for ability in c.abilities:
+        for ability in c.activated_abilities:
             if not ability.can_activate(self):
                 continue
             if c.has_summoning_sickness:
@@ -489,32 +471,43 @@ class GameState:
                     continue
                 elif self.player_turn_idx != p_id and 'Instant' not in c.props.card_types:
                     continue
-                elif c.props.is_permanent and not c.props.is_aura:
+                if c.props.is_permanent and not c.props.is_aura:
                     avail_actions_from_hand.append(CastToBoard(p_id, self, c))
-                else:
-                    target_cards: list[GameCard] = c.get_cast_targets(self)
-                    # cards that need targets but can't find any, skip ... ex. creature-bond needs a creature
-                    if isinstance(target_cards, list) and not target_cards:  # target_cards = []
-                        continue
-                    # cards that do not require a target
-                    if target_cards is None:
-                        if 'X' in c.casting_cost:
-                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
-                            for x in range(max_x + 1):
-                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
-                                                                                      x_values_for_variable_cast=x))
-                        else:
-                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None))
-                        continue
-                    # for all possible targets, add as an available action
-                    for t in target_cards:
-                        if 'X' in c.casting_cost:
-                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
-                            for x in range(max_x + 1):
-                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t,
-                                                                                      x_values_for_variable_cast=x))
-                        else:
-                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t))
+                    continue
+
+                # --- Get targets ---
+                cast_eff_specs = [eff_spec for eff_spec in c.triggered_abilities
+                                  if eff_spec.activation_type == 'triggered'
+                                  and eff_spec.trigger_event is CastResolvedEvent]
+
+                # if there are no specs or if the target_filter is None, a target is not required & can be played
+                if not cast_eff_specs or cast_eff_specs[0].target_filter is None:
+                    if 'X' in c.casting_cost:
+                        max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
+                        for x in range(max_x + 1):
+                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
+                                                                                  x_values_for_variable_cast=x))
+                    else:
+                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None))
+                    continue
+
+                # Normally there is only one "cast" effect per card; this may become problematic later
+                print(f"{cast_eff_specs=}")
+                targets: list[GameCard | None] = cast_eff_specs[0].target_filter(self, c)
+
+                # if targets = [], the card needs targets but can't find any, so the card is unplayable
+                if isinstance(targets, list) and not targets:
+                    continue
+
+                # targets is a list of GameCard; append an available action for each Target
+                for t in targets:
+                    if 'X' in c.casting_cost:
+                        max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
+                        for x in range(max_x + 1):
+                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t,
+                                                                                  x_values_for_variable_cast=x))
+                    else:
+                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t))
             return list({repr(x): x for x in avail_actions_from_hand}.values())  # only return unique (by repr) actions
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
@@ -529,19 +522,14 @@ class GameState:
             playable_cards: list[GameCard] = [c for c in allowed_cards if self.mana_pools[p_id].can_pay(c.casting_cost)]
 
             for c in playable_cards:
-                # Handle counterspells separately
+                # Handle counterspells separately; not thought through yet
                 if c.props.slug in ('counterspell',):
                     target: Action = self.action_stack.last_action
                     available_actions.append(CastCounter(p_id, self, c, target))
                     continue
 
                 # Handle other spells
-                target_cards = c.get_cast_targets(self)
-                if not target_cards:
-                    available_actions.append(CastToTargetAddToStack(p_id, self, c, None))
-                    continue
-                for t in target_cards:
-                    available_actions.append(CastToTargetAddToStack(p_id, self, c, t))
+                available_actions.extend(available_actions_from_hand())
 
                 # Activated abilities can also respond
                 available_actions.extend(add_activated_abilities_from_board())
@@ -563,7 +551,6 @@ class GameState:
         if self.phase == Phase.UPKEEP:
             self.emit(UpkeepEvent(active_player=self.player_turn_idx))
             for c in self.boards[self.player_turn_idx].cards:
-                self.trigger('upkeep', c)
                 if activated_abilities := self.get_available_activated_abilities(c):
                     return [MoveToDrawPhase(c.orig_owner_id, self)] + activated_abilities
             self.phase = Phase.DRAW
@@ -616,23 +603,11 @@ class GameState:
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
             self.emit(CombatEndEvent(active_player=self.player_turn_idx))
-            for b in self.boards:
-                for c in b.cards:
-                    self.trigger('combat_end', c)
             self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
             # new event emission system
             self.emit(EndStepEvent(active_player=self.player_turn_idx))
-
-            # for all cards on all boards
-            for b in self.boards:
-                for c in b.cards:
-                    self.trigger('end_step', c)
-                    for a in c.modifiers.auras:
-                        if not isinstance(a, GameCard):  # KWAMods/PTMods are auras but aren't actually GameCards
-                            continue
-                        self.trigger('end_step', a)
 
             # execute all end step funcs
             for func in self.end_step_funcs:
@@ -644,9 +619,6 @@ class GameState:
             return
 
         if self.phase == Phase.DISCARD:
-            for b in self.boards:
-                for c in b.cards:
-                    self.trigger('discard_step', c)
             if len(hand.cards) > 7:
                 for c in hand.cards:
                     available_actions.append(DiscardCard(self.player_turn_idx, self, c))
@@ -678,7 +650,7 @@ class GameState:
                 pool.clear_floating()
             # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
             for c in self.card_filter.in_play().result():
-                for aa in c.abilities:
+                for aa in c.activated_abilities:
                     aa.eff_spec.activated_cnt_this_turn = 0
             # clear combats
             self.combats.clear()
