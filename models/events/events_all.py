@@ -28,6 +28,11 @@ class DamageResolvedEvent(Event):
     is_combat: bool
 
 @dataclass(frozen=True)
+class DiesEvent(Event):
+    """MTG specifically considers 'dies' as moving from board to graveyard only"""
+    card: GameCard
+
+@dataclass(frozen=True)
 class EndStepEvent(Event):
     active_player: int
 

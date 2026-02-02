@@ -21,7 +21,7 @@ from models.effects.base import Effect, Triggered
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent
+    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -276,6 +276,7 @@ class GameState:
             self.graveyards[c.orig_owner_id].append(a)
             print(f"{a} has been sent to graveyard from play")
         self._send_to_graveyard_or_exile(c)
+        self.emit(DiesEvent(c))
 
     def send_to_graveyard(self, c: GameCard):
         self.graveyards[c.orig_owner_id].append(c)

@@ -3,7 +3,7 @@ import math
 from typing import Optional, TYPE_CHECKING
 
 from models.counter_tokens import VITALITY, PLUS_ONE
-from models.events.events_all import DamageResolvedEvent
+from models.events.events_all import DamageResolvedEvent, DiesEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -84,6 +84,15 @@ class PreventNextDamageToCardEffect(Effect):
         gs.damage_preventions.append(PreventNextDamage(source, target_card=target))
 
 # --- CARD-SPECIFIC ---
+class CreatureBond(Effect):
+    """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or event.card != source.attached_to:
+            return
+        gs.apply_damage(source, source.attached_to.toughness, source.attached_to.orig_owner_id)
+
 class CurseArtifactUpkeep(Effect):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
@@ -172,6 +181,16 @@ class LordOfThePitUpkeep(Effect):
             return
         for action in possible_sacrifice_actions:
             gs.action_stack.push(action, gs, False)
+
+class PersonalIncarnation(Effect):
+    """... When this creature dies, its owner loses half their life, rounding up the loss amount"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or event.card != source:
+            return
+        reduce_life_by = math.ceil(gs.life[source.orig_owner_id] / 2)
+        gs.apply_damage(source, reduce_life_by, source.orig_owner_id)
 
 class PowerSurge(Effect):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,

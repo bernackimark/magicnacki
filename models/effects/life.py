@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
-from models.events.events_all import DamageResolvedEvent
+from models.events.events_all import DamageResolvedEvent, DiesEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -52,6 +52,15 @@ class IvoryTower(Effect):
             return
         if (hand_size := len(gs.hands[p_id].cards)) > 4:
             gs.increment_life(p_id, hand_size - 4)
+
+class Onulet(Effect):
+    """When this creature dies, you gain 2 life"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or event.card != source:
+            return
+        gs.increment_life(source.orig_owner_id, 2)
 
 class SpiritLink(Effect):
     """Enchant creature  Whenever enchanted creature deals damage, you gain that much life"""

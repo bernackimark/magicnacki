@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from ..events.events_all import DiesEvent
+
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
@@ -46,3 +48,12 @@ class ExchangeLifeTotals(Effect):
         your_life = gs.life[s.orig_owner_id]
         opp_life = gs.life[flip(s.orig_owner_id)]
         gs.life[s.orig_owner_id], gs.life[flip(s.orig_owner_id)] = opp_life, your_life
+
+class SuChi(Effect):
+    """When this creature dies, add {CCCC}"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or event.card != source:
+            return
+        gs.mana_pools[source.orig_owner_id].add_floating('C', 4)

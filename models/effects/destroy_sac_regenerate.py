@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
-from models.events.events_all import StateBasedEvent
+from models.events.events_all import StateBasedEvent, DiesEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -45,6 +45,16 @@ class PayManaOrSac(Effect):
         gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, self.mana_cost), gs, False)
 
 # --- CARD-SPECIFIC ---
+class CyclopeanMummy(Effect):
+    """When this creature dies, exile it"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or event.card != source:
+            return
+        card = gs.remove_from_your_graveyard(source, source.orig_owner_id)
+        gs.send_to_exile(card)
+
 class EaterOfTheDeadAA(Effect):
     """Exile target creature card from a graveyard and untap this creature"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -76,6 +86,18 @@ class PestilenceEndStep(Effect):
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         if not gs.card_filter.creatures().in_play().result():
             gs.send_to_graveyard_from_play(s)
+
+class SandalsOfAbdallahIfCreatureDies(Effect):
+    """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact.."""
+
+    def __init__(self, target_creature: GameCard):
+        self.target_creature = target_creature
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or event.card != self.target_creature:
+            return
+        gs.send_to_graveyard_from_play(source)
+
 
 class SeasonOfTheWitchEndStep(Effect):
     """At YOUR end step, destroy all untapped creatures that didn't attack this turn, except those who 'couldn't'.

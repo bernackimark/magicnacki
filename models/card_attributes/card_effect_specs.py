@@ -16,20 +16,20 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
     DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
-    StormSeeker, StormWorld, Typhoon
+    StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond
 from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention
 from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDamageReplacement
 from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
-    SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures
+    SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
-    AllWalksRemoved, KoboldOverlordCast
+    AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
-    StreamOfLife
-from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals
+    StreamOfLife, Onulet
+from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi
 from models.effects.piles import GraveyardToHand, BoardToHand, HandToBoard, GraveRobbersAA, GraveyardToBoard, \
     GraveyardToExileInItsEntirety
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
@@ -46,7 +46,7 @@ from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect,
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped
 from models.events.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent
+    DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent
 from phase_fsm import Phase
 
 
@@ -145,11 +145,13 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent)],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
     'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],
+    'creature-bond': [Triggered(CreatureBond(), None, DiesEvent)],
     'crumble': [Triggered(Crumble()), T_FUNCS['artifacts_in_play'], CastResolvedEvent],
     'crusade': [Static(Crusade())],
     'curse-artifact': [Triggered(CurseArtifactUpkeep(), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
     'cursed-land': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['lands_in_play'], UpkeepEvent)],
     'cursed-rack': [Triggered(CursedRackEffect(), None, EndStepEvent)],
+    'cyclopean-mummy': [Triggered(CyclopeanMummy(), None, DiesEvent)],
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
     'darkness': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'demonic-torment':
@@ -271,6 +273,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'junun-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
     'juzam-djinn': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
     'karma': [Triggered(Karma(), None, UpkeepEvent)],
+    'khabál-ghoul': [AddCounterPerCreatureDeath(PLUS_ONE), None, EndStepEvent],
     'killer-bees': [Activated('G', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
     'kird-ape': [Static(KirdApePT())],
@@ -320,6 +323,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['creatures_and_enchantments_in_play'])],
     'oasis': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['creatures_in_play'])],
     'old-man-of-the-sea': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'onulet': [Triggered(Onulet(), None, DiesEvent)],
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
     'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent)],
     'paralyze': [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
@@ -327,6 +331,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                  untap_host_for_mana_at_opp_upkeep('4')],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['card_owner']),
                     Activated('T', PumpEffect(1, 2, True), T_FUNCS['one_one_creatures_in_play'])],
+    'personal-incarnation': [Triggered(PersonalIncarnation(), None, DiesEvent)],
     'pestilence': [Triggered(PestilenceEndStep(), None, EndStepEvent)],
     'phantasmal-forces': [Triggered(PayManaOrSac('U'), None, UpkeepEvent)],
     'phyrexian-gremlins': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
@@ -363,6 +368,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'sacrifice': [Triggered(SacrificeOnCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent)],
     'samite-healer': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['cards_in_play'])],
+    'sandals-of-abdallah': [Activated('2'), SandalsOfAbdallahIslandWalk(), T_FUNCS['creatures_in_play']],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],
     'savannah': dual_land_activated_ability_specs('GW'),
     'scarecrow': [Activated('6T', ScarecrowPrevention())],
@@ -400,6 +406,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'strip-mine': [Activated('T', AddMana('C'), T_FUNCS['card_owner']),
                    Activated('T', Destroy(), T_FUNCS['lands_in_play'], extra_costs=[SacSelfCost()])],
     'subdue': [Triggered(Subdue(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'su-chi': [Triggered(SuChi(), None, DiesEvent)],
     'sunken-city': [Static(SunkenCity()), Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],
     'sword-to-plowshares': [Triggered(SwordsToPlowshares(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'syphon-soul': [Triggered(SyphonSoul(), T_FUNCS['opponent'], CastResolvedEvent)],

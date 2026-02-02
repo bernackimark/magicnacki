@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Literal
 
+from models.effects.destroy_sac_regenerate import SandalsOfAbdallahIfCreatureDies
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -68,3 +70,13 @@ class KoboldOverlordCast(Effect):
         for t in targets:
             if source != t:
                 t.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
+
+class SandalsOfAbdallahIslandWalk(Effect):
+    """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        target.modifiers.temps.append(KWATemp(source, 'add', 'Islandwalk'))
+
+        temp_effect = SandalsOfAbdallahIfCreatureDies(target_creature=target)
+        gs.register_until_end_of_turn(temp_effect)
