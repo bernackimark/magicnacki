@@ -4,6 +4,7 @@ from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.base import Action
 from models.effects.slug_effect_mapping import INVOCATIONS
 from models.effects.base import ActivatedAbility
+from models.events.events_all import StateBasedEvent
 from models.game_card import GameCard
 
 
@@ -33,9 +34,6 @@ class CastToBoard(Action):
         #     color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
         #     self.gs.mana_pools[self.player_idx].add(color)
 
-        # --- old dispatch triggers for cast
-        self.gs.trigger('cast', self.card)
-
         print(f"Successfully cast {self.card.props.name}")
 
         # --- new event/phase-aware registration
@@ -50,10 +48,10 @@ class CastToBoard(Action):
         for eff_spec in INVOCATIONS.get(self.card.props.slug, []):
             if eff_spec.activation_type == 'activated':
                 ability = ActivatedAbility(self.card, eff_spec)
-                self.card.abilities.append(ability)
+                self.card.activated_abilities.append(ability)
 
         # --- new event emission approach: now the effect itself is phase-agnostic
-        # it will be called automatically when the event is emitted
+        self.gs.emit(StateBasedEvent())
 
 
 @dataclass
@@ -87,23 +85,7 @@ class CastToTargetAddToStack(Action):
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
         self.gs.action_stack.push(self, self.gs)
-
-        # --- new event/phase-aware registration
-        if self.card.props.slug in INVOCATIONS:
-            for eff_spec in INVOCATIONS[self.card.props.slug]:
-                # Only register triggered effects
-                if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
-                    self.gs.register_effect(eff_spec.effect, self.card)
-                    print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event}")
-
-        # --- if card has activated abilities, add them to the board
-        for eff_spec in INVOCATIONS.get(self.card.props.slug, []):
-            if eff_spec.activation_type == 'activated':
-                ability = ActivatedAbility(self.card, eff_spec)
-                self.card.abilities.append(ability)
-
-        # --- new event emission approach: now the effect itself is phase-agnostic
-        # it will be called automatically when the event is emitted
+        self.gs.emit(StateBasedEvent())
 
 
 @dataclass
@@ -121,5 +103,5 @@ class CastCounter(Action):
         self.gs.action_stack.push(self, self.gs)
 
         # --- new event emission approach
-        for eff in self.card.effects:
+        for eff in self.card.triggered_abilities:
             self.gs.register_effect(eff, self.card)
