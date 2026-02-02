@@ -31,14 +31,12 @@ class BloodLust(Effect):
             raise RuntimeError(f'{source.props.name} needs a target')
         new_toughness = max(1, target.toughness - 4)
         toughness_mod = new_toughness - target.toughness
-        target.modifiers.auras.append(PTModifier(source, 4, toughness_mod))
+        target.modifiers.auras.append(PTTemp(source, 4, toughness_mod))
 
 class DragonWhelpEndStep(Effect):
-    """If this [pump] ability has been activated four or more times this turn,
-        sacrifice this creature at the beginning of the next end step.
-        Note: this isn't technically correct code.  Because PTTemp doesn't store the source card, I'm counting all +1/+0s"""
+    """If this [pump] ability has been activated 4+ times this turn, sac at end step."""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        cnt = len([temp for temp in s.modifiers.temps if temp.power_delta == 1 and temp.toughness_delta == 0])
+        cnt = len([temp for temp in s.modifiers.temps if temp.source is s])
         if cnt >= 4:
             gs.send_to_graveyard_from_play(s)
 

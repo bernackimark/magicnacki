@@ -67,7 +67,7 @@ class GameState:
             hand.sort_cards()
 
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
-        self._until_eot: list[Any] = []
+        self.effects_until_eot: list[Any] = []
         self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
 
         # registries for side effects that are not captured in card effects
@@ -111,8 +111,10 @@ class GameState:
             if hasattr(eff, 'on_event'):
                 eff.on_event(self, source_card, event)
 
-    def register_until_end_of_turn(self, obj):
-        self._until_eot.append(obj)
+    def register_one_shot_until_eot(self, obj):
+        """When GameCards look if they are effected by something,they check the cards in play; however,
+        some card effects (such as instants that are cast and go to the graveyard) last throughout the turn"""
+        self.effects_until_eot.append(obj)
 
     def on_query(self, event: str, card: GameCard, **kwargs):
         """Ask all effects whether this event is permitted. If any effect returns False, the action is denied.
@@ -639,10 +641,10 @@ class GameState:
 
         if self.phase == Phase.END_TURN_EFFECTS:
             # new approach
-            for obj in self._until_eot:
+            for obj in self.effects_until_eot:
                 if obj in self.damage_preventions:
                     self.damage_preventions.remove(obj)
-            self._until_eot.clear()
+            self.effects_until_eot.clear()
 
             # Expire all temporary damage prevention
             self.damage_preventions.clear()

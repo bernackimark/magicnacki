@@ -79,11 +79,7 @@ class EffSpec:
 
 @dataclass
 class StaticEffSpec(EffSpec):
-    def install(self, gs: GameState, source: GameCard):
-        source.triggered_abilities.append(self.effect)
-
-    def uninstall(self, gs: GameState, source: GameCard):
-        source.triggered_abilities.remove(self.effect)
+    ...
 
 
 @dataclass
@@ -138,11 +134,6 @@ class TriggeredAbility:
         if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
             self.eff_spec.allowed_p_id_turn = flip(self.source.orig_owner_id)
 
-@dataclass
-class StaticAbility:
-    source: GameCard
-    eff_spec: EffSpec
-
 
 """
 Triggered is when something happens & fires once
@@ -151,5 +142,5 @@ Static is always on & answers questions without causing actions
 """
 
 Activated = partial(EffSpec, 'activated')
-Static = partial(StaticEffSpec, 'static', '')
+Static = partial(EffSpec, 'static', '')
 Triggered = partial(EffSpec, 'triggered', '')
