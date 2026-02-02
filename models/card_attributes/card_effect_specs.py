@@ -168,7 +168,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
     'eater-of-the-dead':
         [Activated('', EaterOfTheDeadAA(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
-    'el-hajjaj': [Triggered(ElHajjaj(), T_FUNCS['self'], DamageResolvedEvent)],
+    'el-hajjâj': [Triggered(ElHajjaj(), T_FUNCS['self'], DamageResolvedEvent)],
     'elder-spawn': [Triggered(ElderSpawnUpkeep(), None, UpkeepEvent), Static(ElderSpawnCanBeBlocked())],
     'electric-eel': [Triggered(DealDamage(1), T_FUNCS['self'], CastResolvedEvent), Activated('RR', ElectricEel())],
     'elven-riders': [Static(ElvenRidersCanBeBlocked())],

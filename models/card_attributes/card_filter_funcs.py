@@ -1,10 +1,11 @@
 from __future__ import annotations
+from typing import Callable, TYPE_CHECKING
 
-from typing import Callable
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
 
 from constants import Target, ALL_PLAYER_INDICES
-from game_state import GameState
-from models.game_card import GameCard
 from utils import flip
 
 T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
