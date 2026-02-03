@@ -60,7 +60,10 @@ class GameCard:
     def __repr__(self) -> str:
         text = self.props.name
         if self.props.is_creature:
-            text += f' ({self.power}/{self.toughness})'
+            text += f' ({self.power}/{self.toughness}) '
+        if self.keyword_abilities:
+            kwas = self.keyword_abilities.copy()
+            text += ' '.join(kwas)
         if self.modifiers:
             text += f' w {self.modifiers}'
         if self.counters:
@@ -94,6 +97,9 @@ class GameCard:
     def keyword_abilities(self) -> list[str]:
         """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, global removes = {'Reach', 'First Strike'}
         returns ['Flying', 'Trample']"""
+        return self._get_keyword_abilities()
+
+    def _get_keyword_abilities(self) -> list[str]:
         kwa = set(self._base_kwa)
         adds, removes = self.modifiers.kwa_delta
         global_adds, global_removes = set(), set()
@@ -113,7 +119,7 @@ class GameCard:
                 effects_and_cards.append((a.effect, c))
             for a in c.triggered_abilities:
                 effects_and_cards.append((a.effect, c))
-        for eff, card in self.game_state.until_eot_effects:
+        for eff, card in self.game_state.until_eot_effects_and_cards:
             effects_and_cards.append((eff, card))
 
         modifiers = []

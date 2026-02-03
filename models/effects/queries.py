@@ -181,6 +181,29 @@ class KirdApePT(Effect):
         if gs.card_filter.on_player_board(card.orig_owner_id).by_slug('forest').result():
             return PTModifier(card, 1, 2)
 
+class LordOfAtlantisPT(Effect):
+    """All other Merfolk gain +1/+1 and Islandwalk"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
+            return PTModifier(source, 1, 1)
+            # card.modifiers.auras.append(KWAModifier(source, 'add', 'Islandwalk'))
+
+class LordOfAtlantisWalk(Effect):
+    """All other Merfolk gain +1/+1 and Islandwalk"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source = kwargs.get('source')
+        if event != 'kwa_mod':
+            return None
+        if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
+            return KWAModifier(source, 'add', 'Islandwalk')
+
 class Mightstone(Effect):
     """Attacking creatures get +1/+0"""
     event = 'query'

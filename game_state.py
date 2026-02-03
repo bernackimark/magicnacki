@@ -67,16 +67,8 @@ class GameState:
             hand.sort_cards()
 
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
-        self.until_eot_effects: list[tuple[Effect, GameCard]] = []
+        self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
-
-        # registries for side effects that are not captured in card effects
-        # life-loss registry uses (cond, effect) tuples similar to your TAP_REGISTRY style
-        self.life_loss_registry: list[tuple[Callable, Callable]] = [
-            # backfire: if the source has an aura with slug 'backfire', deal the same life loss to opponent
-            (lambda gs, p_id, amt, source: any(a.props.slug == "backfire" for a in source.modifiers.auras),
-             lambda gs, p_id, amt, source: gs._apply_opponent_life_loss(p_id, amt))
-        ]
 
         # default leave handlers: ensure cleanup always occurs even if no slug specific handler
         self.leave_default_handlers: list[Callable] = [lambda gs, c, tgt: c.clear_all_mods()]
@@ -113,7 +105,7 @@ class GameState:
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something,they check the cards in play; however,
         some card effects (such as instants that are cast and go to the graveyard) last throughout the turn"""
-        self.until_eot_effects.append(eff_and_card)
+        self.until_eot_effects_and_cards.append(eff_and_card)
 
     def on_query(self, event: str, card: GameCard, **kwargs):
         """Ask all effects whether this event is permitted. If any effect returns False, the action is denied.
@@ -154,24 +146,32 @@ class GameState:
                 return False  # hard veto
         return True
 
+    # TODO: can_block works correctly; can_attack probably doesn't function as expected; there is significant overlap w can_attack
+    #  pull out the common logic if possible
+
     def can_block(self, blocker: GameCard, attacker: GameCard):
         if blocker in {blocker for com in self.combats for blocker in com.blockers}:
             return False
 
-        effects = self.query_effects  # base rules
-        effects.extend(attacker.triggered_abilities)  # card effects
-        effects.extend(blocker.triggered_abilities)
-        for c in self.card_filter.in_play().result():  # global statics (ex: moat)
-            effects.extend(c.triggered_abilities)
+        base_effects = self.query_effects
+        all_card_effects = [ability.effect for c in self.card_filter.in_play().result()
+                            for ability in c.triggered_abilities + c.static_abilities]
+        until_eot_effects = [eff for eff, _ in self.until_eot_effects_and_cards]
 
-        for eff in effects:
+        explicit_allows, explicit_forbids = [], []
+        for eff in base_effects + all_card_effects + until_eot_effects:
             if not hasattr(eff, 'on_query'):
                 continue
             result = eff.on_query(self, 'can_block', card=blocker, attacker=attacker)
-            if result is False:
-                return False  # hard veto
-
-        return True
+            if result is True:
+                explicit_allows.append(eff)
+            elif result is False:
+                explicit_forbids.append(eff)
+        if explicit_allows:  # something is explicitly allowing a block (ex: Undertow) and takes precedence
+            return True
+        if explicit_forbids:  # an effect has hard-vetoed
+            return False
+        return True  # the default position is to permit the block
 
     def _apply_opponent_life_loss(self, p_id: int, amt: int):
         """Helper for self.life_loss_registry"""
@@ -346,11 +346,6 @@ class GameState:
         """Reduce player life; lookup life loss condition in self.life_loss_registry; check for end game condition"""
         self.life[p_id] -= amt
         print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
-
-        # run life-loss registry conditions (pattern: (cond, effect))
-        for cond, effect in self.life_loss_registry:
-            if cond(self, p_id, amt, source):
-                effect(self, p_id, amt, source)
 
         if self.life[p_id] <= 0 < self.life[flip(p_id)]:
             print(f"Player #{p_id} has lost")
@@ -591,7 +586,6 @@ class GameState:
             for blocker in remaining_blockers:
                 for com in self.combats:
                     if self.can_block(blocker, com.attacker):
-                        print(f"[xxx] TRYING TO FIGURE IF {blocker} CAN BLOCK {com.attacker}")
                         available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
 
             available_actions.extend(available_actions_from_hand())
@@ -640,10 +634,10 @@ class GameState:
 
         if self.phase == Phase.END_TURN_EFFECTS:
             # new approach
-            for eff, card in self.until_eot_effects:
+            for eff, card in self.until_eot_effects_and_cards:
                 if eff in self.damage_preventions:
-                    self.until_eot_effects = [item for item in self.until_eot_effects if item != eff]
-            self.until_eot_effects.clear()
+                    self.until_eot_effects_and_cards = [item for item in self.until_eot_effects_and_cards if item != eff]
+            self.until_eot_effects_and_cards.clear()
 
             # Expire all temporary damage prevention
             self.damage_preventions.clear()

@@ -143,15 +143,6 @@ class KryShield(Effect):
         gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
         t.modifiers.temps.append(PTTemp(s, 0, t.props.casting_weight))
 
-class LordOfAtlantis(Effect):
-    """All of your other Merfolk gain +1/+1 and Islandwalk"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Merfolk').result()
-        for t in targets:
-            if source != t:
-                t.modifiers.auras.append(KWAModifier(source, 'add', 'Islandwalk'))
-                t.modifiers.auras.append(PTModifier(source, 1, 1))
-
 class MartyrsCry(Effect):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
