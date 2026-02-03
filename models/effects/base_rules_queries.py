@@ -21,6 +21,12 @@ class CanBlockBaseRule(Effect):
         if not attacker or not card:
             return None
 
+        if card.is_tapped:
+            return False
+
+        if card in {blocker for com in gs.combats for blocker in com.blockers}:
+            return False
+
         # Global land walk rule
         defender_idx = card.orig_owner_id
         for walk, basic_land in zip([land.capitalize() + 'walk' for land in BASIC_LANDS], BASIC_LANDS):
