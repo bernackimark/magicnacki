@@ -5,6 +5,7 @@ from models.actions.cast import CastToTargetAddToStack
 from models.effects.base import ActivatedAbility
 from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.events.events_all import CastResolvedEvent
+from models.zone import Zone
 from utils import flip
 
 
@@ -48,10 +49,10 @@ class AcceptAction(Action):
                 card.activated_abilities.append(ability)
 
         # --- if permanent, add card to board, else graveyard ---
-        if card.props.is_permanent and not card.props.is_aura:
-            self.gs.boards[card.orig_owner_id].play_to_board(card)
-        if not card.props.is_permanent:
-            self.gs.send_to_graveyard(card)
+        if card.props.is_permanent:
+            self.gs.move_card(card, Zone.BATTLEFIELD, cause='cast')
+        else:
+            self.gs.move_card(card, Zone.GRAVEYARD, cause='cast')
 
         # --- reset action stack and current actor ---
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor

@@ -38,11 +38,12 @@ class GameState:
     def __init__(self, player_cnt: int, player_turn_idx: int, decks: list[Deck]):
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
-        self.decks = decks
-        for d in self.decks:
+        self._decks = decks  # the decks should not be mutated from inside GameState
+        self.libraries = decks.copy()
+        for d in self.libraries:
             for c in d.cards:
                 c.game_state = self
-        self.decks_all_cards = self.decks.copy()
+        self.decks_all_cards = decks.copy()
         self.life = [20, 20]
         self._poison_counters = [0, 0]
         self.action_on_idx: int = self.player_turn_idx
@@ -60,13 +61,6 @@ class GameState:
         self.card_filter = CardFilter(self)
         self.is_game_over: bool = False
 
-        for i in range(self.player_cnt):
-            deck = self.decks[i]
-            random.shuffle(deck.cards)
-            hand = self.hands[i]
-            self.draw(hand, deck.cards, 7)
-            hand.sort_cards()
-
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
@@ -83,7 +77,17 @@ class GameState:
         # key = Event subclass, value = list of (effect, source_card) tuples
         self._event_listeners: dict[type, list[tuple[Effect, GameCard]]] = defaultdict(list)
 
-    # --- NEW SYSTEM ---
+        for i in range(self.player_cnt):
+            random.shuffle(self.libraries[i].cards)
+            self.draw(i, 7)
+
+    # --- EVENT LISTENER SYSTEM ---
+    def emit(self, event: Event):
+        """Call all effects listening to a certain type of event (ex: EndStepEvent); only Effects w 'on_event' listen"""
+        for eff, source_card in self._event_listeners[type(event)]:
+            if hasattr(eff, 'on_event'):
+                eff.on_event(self, source_card, event)
+
     def register_effect(self, effect: Effect, source_card: GameCard):
         """Store the effect + source card tuple for later event emission."""
         if effect.listens_to:
@@ -96,12 +100,6 @@ class GameState:
             self._event_listeners[event_type] = [
                 (eff, source_card) for eff, source_card in effect_list
                 if source_card != card]
-
-    def emit(self, event: Event):
-        """Call all effects listening to a certain type of event (ex: EndStepEvent); only Effects w 'on_event' listen"""
-        for eff, source_card in self._event_listeners[type(event)]:
-            if hasattr(eff, 'on_event'):
-                eff.on_event(self, source_card, event)
 
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something,they check the cards in play; however,
@@ -119,6 +117,7 @@ class GameState:
             if not changed:
                 break
 
+    # --- QUERY SYSTEM ---
     def can_attack(self, card: GameCard) -> bool:
         return self._query_effects_by_event('can_attack', card)
 
@@ -154,11 +153,7 @@ class GameState:
             return False
         return True  # the default position is to permit the block
 
-    def _apply_opponent_life_loss(self, p_id: int, amt: int):
-        """Helper for self.life_loss_registry"""
-        opp = flip(p_id)
-        self.life[opp] -= amt
-
+    # TODO: move these somewhere; create as Base Rule Query?
     @property
     def poison_counters(self) -> list[int]:
         return self._poison_counters
@@ -172,15 +167,9 @@ class GameState:
     # Pile Helpers & card movement
     @property
     def all_cards(self) -> list[GameCard]:
-        return ([c for b in self.decks for c in b.cards] + [c for h in self.hands for c in h.cards] +
+        return ([c for b in self.libraries for c in b.cards] + [c for h in self.hands for c in h.cards] +
                 [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
                 [c for b in self.boards for c in b.cards])
-
-    @staticmethod
-    def draw(hand: Hand, source_pile: list[GameCard], card_cnt: int):
-        for i in range(card_cnt):
-            hand.cards.append(source_pile.pop(0))
-            hand.sort_cards()
 
     # --- DAMAGE ---
     def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
@@ -237,27 +226,18 @@ class GameState:
     # --- CARD MOVEMENT ---
     # potentially new consolidated approach
     def move_card(self, card: GameCard, to_zone: Zone, *, cause: str | None = None, emit_zone_event: bool = True):
-        from_zone = card.zone
-
-        if from_zone == to_zone:
+        if card.zone == to_zone:
             return
 
-        # Detach & cleanup if leaving battlefield
-        if from_zone == Zone.BATTLEFIELD:
+        # Unregister effects, remove all mods if leaving battlefield
+        if card.zone == Zone.BATTLEFIELD:
             self._leave_battlefield(card)
 
-        # Remove from current zone
-        self._remove_from_zone(card, from_zone)
-
-        # Add to destination zone
+        self._remove_from_zone(card, card.zone)
         self._add_to_zone(card, to_zone)
-
-        # Update card state
         self._set_zone(card, to_zone)
-
-        # Emit zone change
         if emit_zone_event:
-            self.emit(ZoneChangeEvent(card, from_zone, to_zone, cause))
+            self.emit(ZoneChangeEvent(card, card.zone, to_zone, cause))
 
         # Post-move hooks
         # self._after_zone_change(card, from_zone, to_zone)
@@ -274,16 +254,23 @@ class GameState:
     def discard(self, card: GameCard):
         self.move_card(card, Zone.GRAVEYARD, cause="discard")
 
+    def draw(self, p_id: int, cnt: int = 1):
+        for _ in range(cnt):
+            self.move_card(self.libraries[p_id].cards[0], Zone.HAND, cause='draw')
+
     def _add_to_zone(self, card: GameCard, zone: Zone):
         match zone:
             case Zone.BATTLEFIELD:
                 self.boards[card.owner_id].play_to_board(card)
             case Zone.HAND:
-                self.hands[card.owner_id].cards.append(card)
+                self.hands[card.orig_owner_id].cards.append(card)
+                self.hands[card.orig_owner_id].sort_cards()
             case Zone.GRAVEYARD:
-                self.graveyards[card.owner_id].append(card)
+                self.graveyards[card.orig_owner_id].append(card)
             case Zone.EXILE:
-                self.exiles[card.owner_id].append(card)
+                self.exiles[card.orig_owner_id].append(card)
+            case Zone.LIBRARY:
+                self.libraries[card.orig_owner_id].cards.append(card)  # should this place the card at 0th position?
 
     def _remove_from_zone(self, card: GameCard, zone: Zone):
         match zone:
@@ -291,10 +278,13 @@ class GameState:
                 self.boards[card.owner_id].remove_from_board(card)
             case Zone.HAND:
                 self.hands[card.owner_id].cards.remove(card)
+                self.hands[card.orig_owner_id].sort_cards()
             case Zone.GRAVEYARD:
                 self.graveyards[card.owner_id].remove(card)
             case Zone.EXILE:
                 self.exiles[card.owner_id].remove(card)
+            case Zone.LIBRARY:
+                self.libraries[card.owner_id].cards.remove(card)
 
     @staticmethod
     def _set_zone(card: GameCard, zone: Zone):
@@ -302,8 +292,11 @@ class GameState:
 
     def _leave_battlefield(self, card: GameCard):
         self.unregister_effects(card)
-        [self.move_card(aura, Zone.GRAVEYARD, cause="aura_detach") for aura in list(card.modifiers.auras)]
+        for aura in list(card.modifiers.auras):
+            if isinstance(aura, GameCard):
+                self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
         card.clear_all_mods()
+        self.cards_that_died_this_turn.append(card)
         self.emit(StateBasedEvent())
 
     # THIS IS A RELATED CONCEPT THAT DOESN'T BELONG HERE.  JUST STORING HERE TEMPORARILY
@@ -694,6 +687,9 @@ class GameState:
                 self.phase = Phase.CREATURES_HEAL
 
         if self.phase == Phase.CREATURES_HEAL:
+            # THIS NEEDS A RE-WRITE:
+            # 1) i don't want to use decks_all_cards
+            # 2) doesn't feel the right way to expire expiring damage
             for deck in self.decks_all_cards:
                 for c in deck.cards:
                     c.combat_damage_dealt = 0

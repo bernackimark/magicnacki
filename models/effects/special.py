@@ -33,7 +33,7 @@ class AnimateDead(Effect):
 class BookOfRass(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.apply_damage(source, 2, source.orig_owner_id)
-        gs.draw(gs.hands[source.orig_owner_id], gs.decks[source.orig_owner_id].cards, 1)
+        gs.draw(source.owner_id)
 
 class CocoonUpkeep(Effect):
     """At your upkeep, remove a pupa counter from this Aura.
@@ -117,7 +117,7 @@ class GoblinKing(Effect):
 class Greed(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, source.orig_owner_id)
-        gs.draw(gs.hands[source.orig_owner_id], gs.decks[source.orig_owner_id].cards, 1)
+        gs.draw(source.owner_id)
 
 class GlyphOfDestruction(Effect):
     """Target blocking Wall you control gets +10/+0 until end of combat.
@@ -147,9 +147,8 @@ class MartyrsCry(Effect):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for white_creature in gs.card_filter.in_play().white().creatures().result():
-            owner_id = white_creature.orig_owner_id
             gs.send_to_exile_from_play(white_creature)  # which is correct?  exile_from_play() or exile()
-            gs.draw(gs.hands[owner_id], gs.decks[owner_id].cards, 1)
+            gs.draw(white_creature.owner_id)
 
 class MazeOfIth(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):

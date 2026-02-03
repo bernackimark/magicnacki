@@ -21,7 +21,7 @@ class DrawCards(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
         if target is None:
             return
-        gs.draw(gs.hands[target], gs.decks[target].cards, self.card_cnt)
+        gs.draw(target, self.card_cnt)
         print(f"{source.props.name} has player #{target} draw {self.card_cnt} card(s).")
 
 
@@ -30,7 +30,7 @@ class Braingeyser(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is not None:
             x = getattr(source, 'variable_x', 0)  # read X chosen when casting
-            gs.draw(gs.hands[target], gs.decks[target].cards, x)
+            gs.draw(target, x)
 
 class CursedRackEffect(Effect):
     """Opponent's maximum hand size is four [at their discard phase]"""
@@ -50,4 +50,4 @@ class WheelOfFortune(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for i in (0, 1):
             [DiscardCard(i, gs, card).play() for card in gs.hands[i].cards]
-            gs.draw(gs.hands[i], gs.decks[i].cards, 7)
+            gs.draw(i, 7)

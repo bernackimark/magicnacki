@@ -6,6 +6,7 @@ from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.effects.base import ActivatedAbility
 from models.events.events_all import StateBasedEvent, CastResolvedEvent
 from models.game_card import GameCard
+from models.zone import Zone
 
 
 @dataclass
@@ -24,18 +25,12 @@ class CastToBoard(Action):
             self.card.variable_x = self.x_values_for_variable_cast
         else:
             self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
-        board = self.gs.boards[self.player_idx]
-        hand = self.gs.hands[self.player_idx]
-        hand.cards.remove(self.card)
-        board.play_to_board(self.card)
         if self.card.props.is_land:
             self.gs.turn.has_played_land = True
-        # if self.card.props.is_basic_land:
-        #     color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
-        #     self.gs.mana_pools[self.player_idx].add(color)
 
         # --- AUTO-ACCEPTING CAST TO BOARD FOR SPEED OF TESTING ---
         print(f"Successfully cast {self.card.props.name}")
+        self.gs.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
 
         # --- new event/phase-aware registration
         if self.card.props.slug in INVOCATIONS:
@@ -90,8 +85,6 @@ class CastToTargetAddToStack(Action):
             self.card.variable_x = self.x_values_for_variable_cast
         else:
             self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
-        hand = self.gs.hands[self.player_idx]
-        hand.cards.remove(self.card)
         self.gs.action_stack.push(self, self.gs)
         self.gs.emit(StateBasedEvent())
 
@@ -111,5 +104,5 @@ class CastCounter(Action):
         self.gs.action_stack.push(self, self.gs)
 
         # --- new event emission approach
-        for eff in self.card.triggered_abilities:
-            self.gs.register_effect(eff, self.card)
+        for eff_spec in self.card.triggered_abilities:
+            self.gs.register_effect(eff_spec.effect, self.card)

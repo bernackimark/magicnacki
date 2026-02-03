@@ -15,10 +15,7 @@ class DrawCard(Action):
         return 'Draw a Card'
 
     def play(self) -> None:
-        hand = self.gs.hands[self.player_idx]
-        deck = self.gs.decks[self.player_idx]
-        hand.cards.append(deck.cards.pop())
-        hand.sort_cards()
+        self.gs.draw(self.player_idx)
         self.gs.phase = Phase.CAST
 
 

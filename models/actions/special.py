@@ -26,7 +26,7 @@ class PayManaToDrawCards(Action):
 
     def play(self):
         self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
-        self.gs.draw(self.gs.hands[self.player_idx], self.gs.decks[self.player_idx].cards, self.card_cnt)
+        self.gs.draw(self.player_idx, self.card_cnt)
         self.gs.action_stack.pop()
 
 class SacCreatureAndAddMana(Action):
