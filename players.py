@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from contextlib import suppress
 from dataclasses import dataclass
 
+from common.file_utils import read_json_file
 from game_state import GameState, Action
 from models.actions.base import Action
 
@@ -31,12 +32,16 @@ class ConsolePlayer(Player):
                     sel_action = int(sel_action)
                     break
                 else:
-                    card_info = next((c for d in gs.decks_all_cards for c in d.cards if c.props.slug == sel_action), None)
-                    if not card_info:
-                        print('Card not found')
-                        continue
-                    props = card_info.props
-                    print(props.name, props.casting_cost, props.card_types, props.card_sub_types,
-                          props.keyword_abilities, props.oracle_rules_text,
-                          f"({props.power}/{props.toughness})")
+                    print_quick_card_info(sel_action)
             return available_actions[sel_action]
+
+
+def print_quick_card_info(requested_slug: str):
+    data = read_json_file('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/gatherer/card_data.json')
+    for set_, set_data in data.items():
+        for slug, card_data in set_data.items():
+            if slug == requested_slug:
+                for k, v in card_data.items():
+                    print(f'{k}: {v}')
+                return
+    print(f'slug {requested_slug} not found in database')
