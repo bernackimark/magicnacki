@@ -108,7 +108,8 @@ class GameState:
         self.until_eot_effects_and_cards.append(eff_and_card)
 
     def check_state_based_actions(self):
-        """state-based actions must repeat until stable"""
+        """state_based_rules are invariant; they must repeat until stable; there is no player choice, no stack, etc;
+        (ex: creatures w 0 toughness or unattached auras must die, etc)"""
         while True:
             changed = False
             for rule in self.state_based_rules:
@@ -234,7 +235,7 @@ class GameState:
 
     # --- CARD MOVEMENT ---
     def remove_from_board(self, c: GameCard) -> None:
-        """Trigger leave event for card (ex Crusade, Castle); remove card from board; remove all auras from board"""
+        """Remove card and all its auras from board; unregister effects; emit StateBasedEvent"""
         self.unregister_effects(c)
         self.emit(StateBasedEvent())
         board = self.boards[c.orig_owner_id]
@@ -247,7 +248,7 @@ class GameState:
                 print(f"{a} has been removed from the board")
 
     def send_to_graveyard_from_play(self, c: GameCard):
-        """Send card to graveyard; send all card's auras to graveyard"""
+        """Send card and all its auras to graveyard; call _send_to_graveyard_or_exile; emit DiesEvent"""
         self.remove_from_board(c)
         self.graveyards[c.orig_owner_id].append(c)
         print(f"{c} has been sent to graveyard from play")
@@ -258,16 +259,19 @@ class GameState:
         self.emit(DiesEvent(c))
 
     def send_to_graveyard(self, c: GameCard):
+        """Used for when a card enters the graveyard from somewhere other than the board (ex: discard)"""
         self.graveyards[c.orig_owner_id].append(c)
         print(f'{c} has been sent to the graveyard')
         self._send_to_graveyard_or_exile(c)
 
     def send_to_exile(self, c: GameCard):
+        """Used for when a card enters the graveyard from somewhere other than the board (ex: graveyard to exile)"""
         self.exiles[c.orig_owner_id].append(c)
         print(f'{c} has been exiled')
         self._send_to_graveyard_or_exile(c)
 
     def send_to_exile_from_play(self, c: GameCard):
+        """Send card and all its auras to exile [note: not sure that's the rule]; call _send_to_graveyard_or_exile"""
         self.remove_from_board(c)
         self.exiles[c.orig_owner_id].append(c)
         print(f'{c} has been exiled')
@@ -277,8 +281,8 @@ class GameState:
         self._send_to_graveyard_or_exile(c)
 
     def _send_to_graveyard_or_exile(self, c: GameCard):
-        """Remove card from board if not done yet;
-        clear all attached_to relationships & clear .auras(), .pt_modifiers(), etc"""
+        """Remove card from board if not done yet; clear .attached_to & .modifiers(), etc.;
+        append card to cards that died this turn [not the right approach]; emit StateBasedEvent"""
         self.emit(StateBasedEvent())
         # if board removal slipped through the cracks, do that here
         board = self.boards[c.orig_owner_id]
@@ -288,6 +292,7 @@ class GameState:
         self.cards_that_died_this_turn.append(c)
 
     def return_to_hand(self, c: GameCard):
+        """Add card to hard; could come from any other pile"""
         hand = self.hands[c.orig_owner_id]
         hand.cards.append(c)
         for a in c.modifiers.auras:
@@ -296,11 +301,13 @@ class GameState:
         hand.sort_cards()
 
     def return_to_hand_from_board(self, c: GameCard):
+        """Remove card from board; add card to hand"""
         board = self.boards[c.orig_owner_id]
         board.remove_from_board(c)
         self.return_to_hand(c)
 
     def remove_from_any_graveyard(self, c: GameCard) -> GameCard:
+        """Find card in any graveyard; if found, remove from that pile and return the card"""
         for g in self.graveyards:
             for card in g:
                 if card == c:
@@ -308,6 +315,7 @@ class GameState:
                     return c
 
     def remove_from_your_graveyard(self, c: GameCard, p_idx: int) -> GameCard:
+        """Find card in a specific player's graveyard; if found, remove from that pile & return the card"""
         for card in self.graveyards[p_idx]:
             if card == c:
                 self.graveyards[p_idx].remove(c)
