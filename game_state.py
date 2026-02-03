@@ -107,18 +107,6 @@ class GameState:
         some card effects (such as instants that are cast and go to the graveyard) last throughout the turn"""
         self.until_eot_effects_and_cards.append(eff_and_card)
 
-    def on_query(self, event: str, card: GameCard, **kwargs):
-        """Ask all effects whether this event is permitted. If any effect returns False, the action is denied.
-        If none return False, action is allowed."""
-        # Check local effects on the card
-        for eff in card.triggered_abilities:
-            if not hasattr(eff.effect, 'on_query'):
-                continue
-            r = eff.effect.on_query(self, event, card, **kwargs)
-            if r is False:
-                return False
-        return True
-
     def check_state_based_actions(self):
         """state-based actions must repeat until stable"""
         while True:
@@ -130,46 +118,37 @@ class GameState:
                 break
 
     def can_attack(self, card: GameCard) -> bool:
-        """Check base rules. Check card effects & global statics. If any rule returns 'False', the card cannot attack"""
-        if card in {com.attacker for com in self.combats}:
-            return False
+        return self._query_effects_by_event('can_attack', card)
 
-        effects = self.query_effects  # base rules
-        effects.extend(card.triggered_abilities)  # card effects
-        for c in self.card_filter.in_play().result():  # global statics (ex: moat)
-            effects.extend(c.triggered_abilities)
+    def can_block(self, blocker: GameCard, attacker: GameCard):
+        return self._query_effects_by_event('can_block', blocker, attacker=attacker)
+
+    def can_untap(self, card: GameCard) -> bool:
+        return self._query_effects_by_event('can_untap', card)
+
+    def _query_effects_by_event(self, event_str: str, card: GameCard, **kwargs) -> bool:
+        """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
+        can be True (which is either hard permission or the lack of a hard-veto) or False (a hard veto);
+        hard permission takes precedence over hard veto"""
+        effects = (self.query_effects +
+                   [a.effect for c in self.card_filter.in_play().result()
+                    for a in c.static_abilities + c.triggered_abilities] +
+                   [eff for eff, _ in self.until_eot_effects_and_cards])
+
+        explicit_allows, explicit_forbids = [], []
         for eff in effects:
             if not hasattr(eff, 'on_query'):
                 continue
-            result = eff.on_query(self, 'can_attack', card=card)
-            if result is False:
-                return False  # hard veto
-        return True
 
-    # TODO: can_block works correctly; can_attack probably doesn't function as expected; there is significant overlap w can_attack
-    #  pull out the common logic if possible
+            result = eff.on_query(self, event_str, card=card, **kwargs)
 
-    def can_block(self, blocker: GameCard, attacker: GameCard):
-        if blocker in {blocker for com in self.combats for blocker in com.blockers}:
-            return False
-
-        base_effects = self.query_effects
-        all_card_effects = [ability.effect for c in self.card_filter.in_play().result()
-                            for ability in c.triggered_abilities + c.static_abilities]
-        until_eot_effects = [eff for eff, _ in self.until_eot_effects_and_cards]
-
-        explicit_allows, explicit_forbids = [], []
-        for eff in base_effects + all_card_effects + until_eot_effects:
-            if not hasattr(eff, 'on_query'):
-                continue
-            result = eff.on_query(self, 'can_block', card=blocker, attacker=attacker)
             if result is True:
                 explicit_allows.append(eff)
             elif result is False:
                 explicit_forbids.append(eff)
-        if explicit_allows:  # something is explicitly allowing a block (ex: Undertow) and takes precedence
+        if explicit_allows:  # something is explicitly allowing (ex: undertow & islandwalkers can be blocked)
             return True
-        if explicit_forbids:  # an effect has hard-vetoed
+        if explicit_forbids:  # an effect has hard-vetoed (ex: meekstone preventing some untaps)
             return False
         return True  # the default position is to permit the block
 
@@ -376,7 +355,8 @@ class GameState:
         self.emit(UntapCardEvent(card=c))
 
     def handle_untap_phase(self):
-        """Untap all cards on in-turn player's board; remove summoning sickness"""
+        """Untap all cards on in-turn player's board; remove summoning sickness;
+        if a card has an optional untap, check if player has already decided to leave a card tapped"""
         for c in self.boards[self.player_turn_idx].cards:
             for turn_num, act in self.game_history:
                 if isinstance(act, CastToBoard) and act.card.id == c.id and self.turn_number - turn_num == 2:
@@ -390,9 +370,9 @@ class GameState:
                     print("You've already made an untap decision on this card this turn")
                     break
             else:
-                # new system
-                self.emit(UntapPhaseEvent(active_player=self.player_turn_idx))
-                self.untap_card(c)
+                if self.can_untap(c):
+                    self.emit(UntapPhaseEvent(active_player=self.player_turn_idx))
+                    self.untap_card(c)
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility] = []
