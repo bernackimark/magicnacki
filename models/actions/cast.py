@@ -4,7 +4,7 @@ from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.base import Action
 from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.effects.base import ActivatedAbility
-from models.events.events_all import StateBasedEvent
+from models.events.events_all import StateBasedEvent, CastResolvedEvent
 from models.game_card import GameCard
 
 
@@ -34,14 +34,21 @@ class CastToBoard(Action):
         #     color = BASIC_LAND_MANA_PRODUCED[self.card.props.slug]
         #     self.gs.mana_pools[self.player_idx].add(color)
 
-        # --- AUTO-ACCEPTING CAST TO BOARD FOR SPEED OF TESTING
+        # --- AUTO-ACCEPTING CAST TO BOARD FOR SPEED OF TESTING ---
         print(f"Successfully cast {self.card.props.name}")
 
         # --- new event/phase-aware registration
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
-                # Only register triggered effects
-                if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
+                # I need this because I'm allowing card to go straight to the board w/o hitting the stack
+                if eff_spec.activation_type != 'triggered':
+                    continue
+                if eff_spec.trigger_event == CastResolvedEvent:
+                    targets = eff_spec.target_filter() if eff_spec.target_filter else None
+                    eff_spec.effect.resolve(self.gs, self.card, targets)
+                    print(f"Activated the ability on cast for {self.card.props.name}")
+                else:
+                    # Only register the triggered effects
                     self.gs.register_effect(eff_spec.effect, self.card)
                     print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event}")
 
