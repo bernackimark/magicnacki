@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.effects.combat import WalkRuleRemoved
+
 if TYPE_CHECKING:
     from models.game_card import GameCard
 
@@ -37,10 +39,10 @@ from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, Grea
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
-    RabidWombat
+    RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
-    KoboldDrillSergeant, KryShield, LordOfAtlantis, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
+    KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
@@ -149,6 +151,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent)],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
     'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],
+    'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
     'creature-bond': [Triggered(CreatureBond(), None, DiesEvent)],
     'crumble': [Triggered(Crumble()), T_FUNCS['artifacts_in_play'], CastResolvedEvent],
     'crusade': [Static(Crusade())],
@@ -158,6 +161,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'cyclopean-mummy': [Triggered(CyclopeanMummy(), None, DiesEvent)],
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
     'darkness': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
+    'deadfall': [Static(WalkRuleRemoved('Forestwalk'))],
     'demonic-torment':
         [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'desert-twister': [Triggered(Destroy(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
@@ -242,6 +246,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'grave-robbers': [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
     'gravity-sphere': [Static(GravitySphere())],
     'great-defender': [Triggered(GreatDefender(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'great-wall': [Static(WalkRuleRemoved('Plainswalk'))],
     'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(),
                                                 T_FUNCS['black_and_red_in_play'])],
     'greed': [Activated('B', Greed(), T_FUNCS['card_owner'])],
@@ -302,7 +307,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
          Triggered(LivingArtifactOnDamage(), None, DamageResolvedEvent)],
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
-    'lord-of-atlantis': [Activated(LordOfAtlantis(), None, CastResolvedEvent)],
+    'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
     'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
@@ -364,6 +369,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'psychic-venom':
         [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
          Triggered(DealDamage(2), T_FUNCS['host_owner']), TapCardEvent],
+    'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures_in_play'])],
     'raise-dead': [Triggered(GraveyardToHand(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
@@ -451,6 +457,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tundra': dual_land_activated_ability_specs('WU'),
     'twiddle': [Triggered(Twiddle(), T_FUNCS['artifacts_creatures_lands_in_play'], CastResolvedEvent)],
     'typhoon': [Triggered(Typhoon(), T_FUNCS['opponent'], CastResolvedEvent)],
+    'undertow': [Static(WalkRuleRemoved('Islandwalk'))],
     'underground-sea': dual_land_activated_ability_specs('BU'),
     'unholy-strength': [Triggered(PumpEffect(2, 1), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'unstable-mutation':
