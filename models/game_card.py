@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 from card import Card
 from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
-from models.effects.base import ActivatedAbility, EffSpec
+from models.effects.base import ActivatedAbility, EffSpec, Effect
 from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.modifiers import Modifiers, PTModifier, PTTemp, KWAModifier, KWATemp
 
@@ -106,20 +106,22 @@ class GameCard:
         return list((kwa | adds | global_adds) - (removes | global_removes))
 
     def _get_global_query(self, global_type: str) -> list[PTModifier | PTTemp | KWAModifier | KWATemp]:
-        effect_specs = []
+        effects_and_cards: list[tuple[Effect, GameCard]] = []
         # static effects on other permanents (ex: crusade lives in static abilities)
         for c in self.game_state.card_filter.in_play().result():
             for a in c.static_abilities:
-                effect_specs.append((c, a))
+                effects_and_cards.append((a.effect, c))
             for a in c.triggered_abilities:
-                effect_specs.append((c, a))
+                effects_and_cards.append((a.effect, c))
+        for eff, card in self.game_state.until_eot_effects:
+            effects_and_cards.append((eff, card))
 
         modifiers = []
-        for source, eff_spec in effect_specs:
-            if not hasattr(eff_spec.effect, 'on_query'):
+        for effect, source in effects_and_cards:
+            if not hasattr(effect, 'on_query'):
                 continue
-            mod: PTModifier | PTTemp | KWAModifier | KWATemp = eff_spec.effect.on_query(self.game_state, global_type,
-                                                                                        card=self, source=source)
+            mod: PTModifier | PTTemp | KWAModifier | KWATemp = effect.on_query(self.game_state, global_type,
+                                                                               card=self, source=source)
             modifiers.append(mod)
         return modifiers
 

@@ -67,7 +67,7 @@ class GameState:
             hand.sort_cards()
 
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
-        self.effects_until_eot: list[Any] = []
+        self.until_eot_effects: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
 
         # registries for side effects that are not captured in card effects
@@ -83,7 +83,6 @@ class GameState:
 
         self.damage_replacements: list[DamageReplacement] = []
         self.damage_preventions: list[PreventNextDamage] = []
-        self.end_of_turn_effects: list = []
         self.end_step_funcs: list[Callable] = []
         self.cards_that_died_this_turn: list[GameCard] = []
 
@@ -111,10 +110,10 @@ class GameState:
             if hasattr(eff, 'on_event'):
                 eff.on_event(self, source_card, event)
 
-    def register_one_shot_until_eot(self, obj):
+    def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something,they check the cards in play; however,
         some card effects (such as instants that are cast and go to the graveyard) last throughout the turn"""
-        self.effects_until_eot.append(obj)
+        self.until_eot_effects.append(eff_and_card)
 
     def on_query(self, event: str, card: GameCard, **kwargs):
         """Ask all effects whether this event is permitted. If any effect returns False, the action is denied.
@@ -641,10 +640,10 @@ class GameState:
 
         if self.phase == Phase.END_TURN_EFFECTS:
             # new approach
-            for obj in self.effects_until_eot:
-                if obj in self.damage_preventions:
-                    self.damage_preventions.remove(obj)
-            self.effects_until_eot.clear()
+            for eff, card in self.until_eot_effects:
+                if eff in self.damage_preventions:
+                    self.until_eot_effects = [item for item in self.until_eot_effects if item != eff]
+            self.until_eot_effects.clear()
 
             # Expire all temporary damage prevention
             self.damage_preventions.clear()

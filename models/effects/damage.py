@@ -76,7 +76,7 @@ class PreventAllCombatDamageThisTurn(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         prevention = PreventNextDamage(source, combat_only=True)
         gs.damage_preventions.append(prevention)
-        gs.register_one_shot_until_eot(prevention)
+        gs.register_effect_until_eot(prevention, source)
 
 class PreventNextDamageToCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
