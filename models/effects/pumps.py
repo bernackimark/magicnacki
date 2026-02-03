@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
+    MoraleEOT, PietyEOT, ShieldWallEOT
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -24,6 +27,11 @@ class PumpEffect(Effect):
             target.modifiers.temps.append(PTTemp(source, self.power_adj, self.toughness_adj))
 
 # --- CARD-SPECIFIC ---
+class ArmyOfAllah(Effect):
+    """Attacking creatures get +2/0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((ArmyOfAllahEOT(), source))
+
 class BloodLust(Effect):
     """Target creature gains +4/-4 until end of turn. If this reduces creature's toughness < 1, toughness = 1."""
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
@@ -32,6 +40,11 @@ class BloodLust(Effect):
         new_toughness = max(1, target.toughness - 4)
         toughness_mod = new_toughness - target.toughness
         target.modifiers.auras.append(PTTemp(source, 4, toughness_mod))
+
+class BoneFlute(Effect):
+    """All creatures get -1/-0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((BoneFluteEOT(), source))
 
 class DragonWhelpEndStep(Effect):
     """If this [pump] ability has been activated 4+ times this turn, sac at end step."""
@@ -45,6 +58,16 @@ class GreatDefender(Effect):
         """Target creature gets +0/+X until end of turn, where X is its mana value."""
         if target:
             target.modifiers.auras.append(PTTemp(source, 0, target.props.casting_weight))
+
+class HellSwarm(Effect):
+    """All creatures get -1/-0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((HellSwarmEOT(), source))
+
+class HolyLight(Effect):
+    """Nonwhite creatures get -1/-1 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((HolyLightEOT(), source))
 
 class HowlFromBeyond(Effect):
     """Target creature gets +X/+0 until end of turn"""
@@ -60,3 +83,22 @@ class KoboldTaskmaster(Effect):
             if source != t:
                 t.modifiers.auras.append(PTModifier(source, 1, 0))
 
+class MarshGas(Effect):
+    """All creatures get -2/-0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((MarshGasEOT(), source))
+
+class Morale(Effect):
+    """Attacking creatures get +1/+1 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((MoraleEOT(), source))
+
+class Piety(Effect):
+    """Blocking creatures get 0/+3 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((PietyEOT(), source))
+
+class ShieldWall(Effect):
+    """Creatures you control get +0/+2 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((ShieldWallEOT(), source))

@@ -33,7 +33,7 @@ from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTota
 from models.effects.piles import GraveyardToHand, BoardToHand, HandToBoard, GraveRobbersAA, GraveyardToBoard, \
     GraveyardToExileInItsEntirety
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
-    KoboldTaskmaster
+    KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
@@ -93,6 +93,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'armageddon':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Land').result()),
                    None, CastResolvedEvent)],
+    'army-of-allah': [Triggered(ArmyOfAllah(), None, CastResolvedEvent)],
     'artifact-ward': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
                       Static(ArtifactWardCanBeBlocked(), Static(ArtifactWardPrevention()))],
     'ashnods-battle-gear': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
@@ -105,6 +106,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'blessing': [Activated('W', PumpEffect(1, 1, True), T_FUNCS['host'])],
     'blood-lust': [Triggered(BloodLust(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'bog-rats': [Static(BogRats())],
+    'bone-flute': [Activated('2T', BoneFlute())],
     'book-of-rass': [Activated('2', BookOfRass())],
     'boomerang': [Triggered(BoardToHand(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
     'braingeyser': [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
@@ -245,10 +247,12 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'greed': [Activated('B', Greed(), T_FUNCS['card_owner'])],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures_in_play'])],
+    'hell-swarm': [Triggered(HellSwarm(), None, CastResolvedEvent)],
     'hidden-path': [Static(HiddenPath())],
     'holy-armor': [Triggered(PumpEffect(0, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent),
                    Activated('W', PumpEffect(0, 1, True), T_FUNCS['host'])],
     'holy-day': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
+    'holy-light': [Triggered(HolyLight(), None, CastResolvedEvent)],
     'holy-strength': [Triggered(PumpEffect(1, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True),
                                     T_FUNCS['creatures_in_play'])],
@@ -307,6 +311,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(Destroy(), T_FUNCS['your_lands_in_play'], CastResolvedEvent),
          Triggered(ManaVortexUpkeep(), None, UpkeepEvent)],
     'marble-priest': [Static(MarblePriestPrevention())],  # there is some part of Marble Priest that's not yet coded !!!
+    'marsh-gas': [Triggered(MarshGas(), None, CastResolvedEvent)],
     'marsh-viper': [Triggered(AddPoisonCounter(2), None, DamageResolvedEvent)],
     'martyrs-cry': [Triggered(MartyrsCry(), None, CastResolvedEvent)],
     'martyrs-of-korlis': [Static(MartyrsOfKorlisDamageReplacement())],  # note: no way this works
@@ -317,6 +322,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
     'moat': [Static(Moat())],
+    'morale': [Triggered(Morale(), None, CastResolvedEvent)],
     'mountain': [Triggered(MountainTap(), None, TapCardEvent)],
     'mox-emerald': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'mox-jet': [Activated('T', AddMana('B'), T_FUNCS['card_owner'])],
@@ -342,6 +348,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'pestilence': [Triggered(PestilenceEndStep(), None, EndStepEvent)],
     'phantasmal-forces': [Triggered(PayManaOrSac('U'), None, UpkeepEvent)],
     'phyrexian-gremlins': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'piety': [Triggered(Piety(), None, CastResolvedEvent)],
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter(), None, DamageResolvedEvent)],
     'pixie-queen': [Activated('GGGT', KWAModEffect('add', 'Flying'), T_FUNCS['creatures_in_play'])],
@@ -395,6 +402,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'serendib-efreet': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
     'shapeshifter': [Triggered(Shapeshifter(), None, CastResolvedEvent), Triggered(Shapeshifter(), None, UpkeepEvent)],
     'shatter': [Triggered(Destroy(), T_FUNCS['artifacts_in_play'], CastResolvedEvent)],
+    'shield-wall': [Triggered(ShieldWall(), None, CastResolvedEvent)],
     'shivan-dragon': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'sinkhole': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
