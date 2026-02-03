@@ -39,7 +39,7 @@ from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, Grea
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
-    RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk
+    RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -238,8 +238,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(PumpEffect(0, 3), None, UntapCardEvent)],
     'glyph-of-destruction': [Triggered(GlyphOfDestruction(), T_FUNCS['your_walls_in_play'], CastResolvedEvent)],
     'goblin-balloon-brigade': [Activated('R', KWAModEffect('add', 'Flying', True), T_FUNCS['self'])],
+    'goblin-caves': [Static(GoblinCaves())],
     'goblin-digging-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'], extra_costs=[SacSelfCost()])],
     'goblin-king': [Triggered(GoblinKing(), None, CastResolvedEvent)],
+    'goblin-shrine': [Static(GoblinShrinePump())],  # still need to code when it leaves battlefield
     'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
     'granite-gargoyle': [Activated('R', PumpEffect(0, 1, True), T_FUNCS['self'])],
     'grapeshot-catapult': [Activated('T', DealDamage(4), T_FUNCS['fliers_in_play'])],
@@ -321,6 +323,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'martyrs-cry': [Triggered(MartyrsCry(), None, CastResolvedEvent)],
     'martyrs-of-korlis': [Static(MartyrsOfKorlisDamageReplacement())],  # note: no way this works
     'maze-of-ith': [Activated('T', MazeOfIth(), T_FUNCS['attackers'])],
+    'meekstone': [Static(Meekstone())],
     'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
     'mightstone': [Static(Mightstone())],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
@@ -475,6 +478,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wall-of-water': [Activated('U', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'warp-artifact': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
     'weakness': [Triggered(PumpEffect(-2, -1), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'weakstone': [Static(Weakstone())],
     'web': [Triggered(Web(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'wheel-of-fortune': [Triggered(WheelOfFortune(), trigger_event=CastResolvedEvent)],
     'wrath-of-god': [Triggered(ExileAllCreatures(), trigger_event=CastResolvedEvent)]

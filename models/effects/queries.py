@@ -147,6 +147,32 @@ class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
         if 'Wall' not in blocker.props.card_sub_types:
             return False
 
+class GoblinCaves(Effect):
+    """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
+    # WARNING: I don't yet have a way to validate that something is a basic land, since it lives in read-only props
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if source.attached_to.props.is_basic_land and source.attached_to.props.slug == 'mountain':
+            if card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
+                return PTModifier(source, 0, 2)
+
+class GoblinShrinePump(Effect):
+    """As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0 ..."""
+    # WARNING: I don't yet have a way to validate that something is a basic land, since it lives in read-only props
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if source.attached_to.props.is_basic_land and source.attached_to.props.slug == 'mountain':
+            if card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
+                return PTModifier(source, 1, 0)
+
 class GravitySphere(Effect):
     """All creatures lose flying"""
     event = 'query'
@@ -203,6 +229,18 @@ class LordOfAtlantisWalk(Effect):
             return None
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
             return KWAModifier(source, 'add', 'Islandwalk')
+
+class Meekstone(Effect):
+    """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'can_untap':
+            return None
+        if card.props.is_creature and card.power >= 3:
+            return False
+        return None
+
 
 class Mightstone(Effect):
     """Attacking creatures get +1/+0"""
@@ -279,3 +317,15 @@ class SunkenCity(Effect):
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
         return PTModifier(source, 1, 1)
+
+class Weakstone(Effect):
+    """Attacking creatures get -1/-0"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if card not in gs.card_filter.in_play().attackers().result():
+            return None
+        return PTTemp(source, -1, 0)
