@@ -21,7 +21,7 @@ from models.effects.base import Effect, Triggered
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent
+    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent
 from models.game_card import GameCard
 from models.board import Board
 from models.combat import Combat
@@ -29,6 +29,7 @@ from models.hand import Hand
 from models.mana import ManaPool
 from models.state_based_rules import StateBasedRule, IslandhomeSBR
 from models.turn import Turn
+from models.zone import Zone
 from phase_fsm import Phase
 from utils import flip
 
@@ -234,6 +235,83 @@ class GameState:
                 self.damage_preventions.remove(p)
 
     # --- CARD MOVEMENT ---
+    # potentially new consolidated approach
+    def move_card(self, card: GameCard, to_zone: Zone, *, cause: str | None = None, emit_zone_event: bool = True):
+        from_zone = card.zone
+
+        if from_zone == to_zone:
+            return
+
+        # Detach & cleanup if leaving battlefield
+        if from_zone == Zone.BATTLEFIELD:
+            self._leave_battlefield(card)
+
+        # Remove from current zone
+        self._remove_from_zone(card, from_zone)
+
+        # Add to destination zone
+        self._add_to_zone(card, to_zone)
+
+        # Update card state
+        self._set_zone(card, to_zone)
+
+        # Emit zone change
+        if emit_zone_event:
+            self.emit(ZoneChangeEvent(card, from_zone, to_zone, cause))
+
+        # Post-move hooks
+        # self._after_zone_change(card, from_zone, to_zone)
+
+    def destroy(self, card: GameCard):
+        self.move_card(card, Zone.GRAVEYARD, cause="destroy")
+
+    def exile(self, card: GameCard):
+        self.move_card(card, Zone.EXILE, cause="exile")
+
+    def bounce(self, card: GameCard):
+        self.move_card(card, Zone.HAND, cause="bounce")
+
+    def discard(self, card: GameCard):
+        self.move_card(card, Zone.GRAVEYARD, cause="discard")
+
+    def _add_to_zone(self, card: GameCard, zone: Zone):
+        match zone:
+            case Zone.BATTLEFIELD:
+                self.boards[card.owner_id].play_to_board(card)
+            case Zone.HAND:
+                self.hands[card.owner_id].cards.append(card)
+            case Zone.GRAVEYARD:
+                self.graveyards[card.owner_id].append(card)
+            case Zone.EXILE:
+                self.exiles[card.owner_id].append(card)
+
+    def _remove_from_zone(self, card: GameCard, zone: Zone):
+        match zone:
+            case Zone.BATTLEFIELD:
+                self.boards[card.owner_id].remove_from_board(card)
+            case Zone.HAND:
+                self.hands[card.owner_id].cards.remove(card)
+            case Zone.GRAVEYARD:
+                self.graveyards[card.owner_id].remove(card)
+            case Zone.EXILE:
+                self.exiles[card.owner_id].remove(card)
+
+    @staticmethod
+    def _set_zone(card: GameCard, zone: Zone):
+        card.zone = zone
+
+    def _leave_battlefield(self, card: GameCard):
+        self.unregister_effects(card)
+        [self.move_card(aura, Zone.GRAVEYARD, cause="aura_detach") for aura in list(card.modifiers.auras)]
+        card.clear_all_mods()
+        self.emit(StateBasedEvent())
+
+    # THIS IS A RELATED CONCEPT THAT DOESN'T BELONG HERE.  JUST STORING HERE TEMPORARILY
+    # class DiesTrigger(TriggeredAbility):
+    #     def matches(self, event):
+    #         return isinstance(event, ZoneChangeEvent) and event.from_zone == Zone.BATTLEFIELD and event.to_zone == Zone.GRAVEYARD
+
+    # --- THIS SECTION IS THE LEGACY CODE
     def remove_from_board(self, c: GameCard) -> None:
         """Remove card and all its auras from board; unregister effects; emit StateBasedEvent"""
         self.unregister_effects(c)
@@ -323,6 +401,8 @@ class GameState:
 
     def add_to_hand(self, c: GameCard, player_idx: int) -> None:
         self.hands[player_idx].cards.append(c)
+
+    # --- END LEGACY CODE ---
 
     # Life Operations; using Registry Pattern
     def increment_life(self, p_id: int, amt: int):

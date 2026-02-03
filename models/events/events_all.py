@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from constants import Target
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -56,6 +57,13 @@ class UntapCardEvent(Event):
 @dataclass(frozen=True)
 class UntapPhaseEvent(Event):
     active_player: int
+
+@dataclass(frozen=True)
+class ZoneChangeEvent(Event):
+    card: GameCard
+    from_zone: Zone
+    to_zone: Zone
+    cause: str | None = None
 
 # Note: Damage is special since it is not fire-and-forget; it must be stateful to apply a chain of modifications
 # It can be found in the dedicated damage module

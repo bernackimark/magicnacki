@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
+from models.zone import Zone
+
 if TYPE_CHECKING:
     from game_state import GameState
 
@@ -31,7 +33,8 @@ class GameCard:
     def __init__(self, props: Card, id_: int, orig_owner_id: int, cast_target_func: Callable = None):
         self.props: Card = props
         self.id: int = id_
-        self.orig_owner_id: int = orig_owner_id
+        self._orig_owner_id: int = orig_owner_id
+        self.owner_id: int = orig_owner_id
         self.game_state: "GameState" = None
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost
@@ -42,6 +45,8 @@ class GameCard:
         self.attached_to: "GameCard" = None
         self.modifiers = Modifiers()
         self.counters = Counters()
+
+        self.zone = Zone.LIBRARY
 
         self.combat_damage_dealt: int = 0  # not sure that these belong here
         self.combat_damage_received: int = 0
@@ -69,6 +74,10 @@ class GameCard:
         if self.counters:
             text += f' w {self.counters}'
         return text.upper() if not self.is_tapped else text.lower()
+
+    @property
+    def orig_owner_id(self) -> int:
+        return self._orig_owner_id
 
     @property
     def power(self) -> int:
