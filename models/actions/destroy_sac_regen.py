@@ -19,7 +19,7 @@ class Exile(Action):
     def play(self):
         if self.w_damage_amt:
             self.gs.apply_damage(self.source, self.w_damage_amt, self.source.orig_owner_id)
-        self.gs.send_to_exile_from_play(self.source)
+        self.gs.exile(self.source)
         self.gs.action_stack.pop()  # remove choice
 
 
@@ -35,5 +35,5 @@ class Sac(Action):
     def play(self):
         if self.w_damage_amt:
             self.gs.apply_damage(self.source, self.w_damage_amt, self.source.orig_owner_id)
-        self.gs.send_to_graveyard_from_play(self.source)
+        self.gs.destroy(self.source)
         self.gs.action_stack.pop()  # remove choice

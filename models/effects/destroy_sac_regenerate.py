@@ -18,11 +18,11 @@ from models.effects.piles import GraveyardToExile
 class AcidRain(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         for forest in CardFilter(gs).in_play().by_slug('forest').result():
-            gs.send_to_graveyard_from_play(forest)
+            gs.destroy(forest)
 
 class Destroy(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.send_to_graveyard_from_play(target)
+        gs.destroy(target)
 
 class DestroyAll(Effect):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
@@ -30,12 +30,12 @@ class DestroyAll(Effect):
 
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         for c in self.card_filter_func(gs, s):
-            gs.send_to_graveyard_from_play(c)
+            gs.destroy(c)
 
 class ExileAllCreatures(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         for c in CardFilter(gs).in_play().creatures().result():
-            gs.send_to_exile(c)
+            gs.exile(c)
 
 class PayManaOrSac(Effect):
     def __init__(self, mana_cost: str):
@@ -52,8 +52,7 @@ class CyclopeanMummy(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        card = gs.remove_from_your_graveyard(source, source.orig_owner_id)
-        gs.send_to_exile(card)
+        gs.exile(source)
 
 class EaterOfTheDeadAA(Effect):
     """Exile target creature card from a graveyard and untap this creature"""
@@ -76,7 +75,7 @@ class ManaVortexUpkeep(Effect):
     """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if len(CardFilter(gs).lands().in_play().result()) == 0:
-            gs.send_to_graveyard_from_play(source)
+            gs.destroy(source)
             return
         for land in CardFilter(gs).on_player_board(gs.player_turn_idx).lands().result():
             SacALandChoice(gs.player_turn_idx, gs, land)
@@ -85,7 +84,7 @@ class PestilenceEndStep(Effect):
     """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         if not gs.card_filter.creatures().in_play().result():
-            gs.send_to_graveyard_from_play(s)
+            gs.destroy(s)
 
 class SandalsOfAbdallahIfCreatureDies(Effect):
     """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact.."""
@@ -96,7 +95,7 @@ class SandalsOfAbdallahIfCreatureDies(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != self.target_creature:
             return
-        gs.send_to_graveyard_from_play(source)
+        gs.destroy(source)
 
 
 class SeasonOfTheWitchEndStep(Effect):
@@ -112,7 +111,7 @@ class SeasonOfTheWitchEndStep(Effect):
                 continue
             if creature.has_summoning_sickness or 'Attack' not in creature.keyword_abilities:
                 continue
-            gs.send_to_graveyard_from_play(creature)
+            gs.destroy(creature)
 
 class SeasonOfTheWitchUpkeep(Effect):
     """At your upkeep, sacrifice this enchantment unless you pay 2 life"""
@@ -126,7 +125,7 @@ class SerendibDjinnNoLands(Effect):
         your_lands = gs.card_filter.on_player_board(source.orig_owner_id).lands().result()
         if not your_lands:
             print(f'Player #{source.orig_owner_id} has no lands, so Serendib Djinn is destroyed')
-            gs.send_to_graveyard_from_play(source)
+            gs.destroy(source)
 
 class VoodooDollEndStep(Effect):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
@@ -137,4 +136,4 @@ class VoodooDollEndStep(Effect):
             return
         if pin_cnt := source.counters.get_count(PIN) > 0:
             gs.apply_damage(source, pin_cnt, source.orig_owner_id)
-        gs.send_to_graveyard_from_play(source)
+        gs.destroy(source)

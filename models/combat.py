@@ -73,4 +73,4 @@ class Combat:
 
         # Send killed creatures to graveyard
         for c in self.killed_creatures:
-            self.gs.send_to_graveyard_from_play(c)
+            self.gs.destroy(c)

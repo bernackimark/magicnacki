@@ -38,11 +38,11 @@ class SacSelfCost(Cost):
         return source in gs.card_filter.in_play().result()
 
     def pay(self, gs, source):
-        gs.send_to_graveyard_from_play(source)
+        gs.destroy(source)
 
 class ExileSelfCost(Cost):
     def can_pay(self, gs, source):
         return source in gs.card_filter.in_play().result()
 
     def pay(self, gs, source):
-        gs.send_to_exile_from_play(source)
+        gs.exile(source)

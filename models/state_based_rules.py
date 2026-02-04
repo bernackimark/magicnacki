@@ -18,7 +18,7 @@ class IslandhomeSBR(StateBasedRule):
 
         for creature in gs.card_filter.in_play().has('Islandhome').result():
             if not gs.card_filter.on_player_board(creature.orig_owner_id).by_slug('island').result():
-                gs.send_to_graveyard_from_play(creature)
+                gs.destroy(creature)
                 changed = True
 
         return changed

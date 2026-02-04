@@ -32,7 +32,7 @@ from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDj
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi
-from models.effects.piles import GraveyardToHand, BoardToHand, HandToBoard, GraveRobbersAA, GraveyardToBoard, \
+from models.effects.piles import Bounce, Bounce, HandToBoard, GraveRobbersAA, Reanimate, \
     GraveyardToExileInItsEntirety
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall
@@ -88,7 +88,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'animate-wall':
         [Triggered(KWAModEffect('remove', 'Defender'), T_FUNCS['walls_in_play'], CastResolvedEvent)],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
-    'argivian-archaeologist': [Activated('WWT', GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'])],
+    'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageEffect(2), T_FUNCS['artifact_creatures_in_play'])],
     'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked(), Static(ArgothianPixiesPrevention()))],
     'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
@@ -110,7 +110,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'bog-rats': [Static(BogRats())],
     'bone-flute': [Activated('2T', BoneFlute())],
     'book-of-rass': [Activated('2', BookOfRass())],
-    'boomerang': [Triggered(BoardToHand(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
+    'boomerang': [Triggered(Bounce(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
     'braingeyser': [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
     'brainwash':
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
@@ -375,14 +375,14 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures_in_play'])],
-    'raise-dead': [Triggered(GraveyardToHand(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
+    'raise-dead': [Triggered(Bounce(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
-    'reconstruction': [Triggered(GraveyardToHand(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
-    'regrowth': [Triggered(GraveyardToHand(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
+    'reconstruction': [Triggered(Bounce(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
+    'regrowth': [Triggered(Bounce(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'relic-barrier': [Activated('T', TapCardEffect(), T_FUNCS['untapped_artifacts_in_play'])],
     'reset':
         [Triggered(Reset(), None, CastResolvedEvent, conditions=[])],  # TODO: Cast this spell only during an opponent's turn after their upkeep step
-    'resurrection': [Triggered(GraveyardToBoard(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
+    'resurrection': [Triggered(Reanimate(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'reverse-damage': [Triggered(ReverseDamage(), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'riptide': [Triggered(Riptide(), None, CastResolvedEvent)],
     'rock-hydra': [Triggered(RockHydraCast(), T_FUNCS['self'], CastResolvedEvent)],
@@ -415,7 +415,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'shivan-dragon': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'sinkhole': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
-    'skull-of-orm': [Activated('5T', GraveyardToHand(), T_FUNCS['enchants_in_your_graveyard'])],
+    'skull-of-orm': [Activated('5T', Bounce(), T_FUNCS['enchants_in_your_graveyard'])],
     'sol-ring': [Activated('T', AddMana('C', 2), T_FUNCS['card_owner'])],
     'soul-net': [Triggered(SoulNet(), None, DiesEvent)],
     'spinal-villain': [Activated('T', Destroy(), T_FUNCS['blue_creatures_in_play'])],
@@ -466,7 +466,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'unstable-mutation':
         [Triggered(PumpEffect(3, 3), T_FUNCS['creatures_in_play'], CastResolvedEvent),
          Triggered(AddCountersOnHostTurn(MINUS_ONE), T_FUNCS['self'], UpkeepEvent)],
-    'unsummon': [Triggered(BoardToHand(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'unsummon': [Triggered(Bounce(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'urzas-miter': [Triggered(UrzasMiter(), None, DiesEvent)],
     'venarian-gold':
         [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['your_creatures_in_play'], UpkeepEvent),

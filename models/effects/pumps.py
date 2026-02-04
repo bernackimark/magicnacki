@@ -51,7 +51,7 @@ class DragonWhelpEndStep(Effect):
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         cnt = len([temp for temp in s.modifiers.temps if temp.source is s])
         if cnt >= 4:
-            gs.send_to_graveyard_from_play(s)
+            gs.destroy(s)
 
 class GreatDefender(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):

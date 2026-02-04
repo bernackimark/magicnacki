@@ -7,27 +7,23 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 
-class BoardToHand(Effect):
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-        if target:
-            board = gs.boards[target.orig_owner_id]
-            board.remove_from_board(target)
-            gs.return_to_hand(target)
+class Bounce(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        gs.bounce(target)
 
-class GraveyardToBoard(Effect):
+class Reanimate(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
-        gs.boards[source.orig_owner_id].play_to_board(card)
-
-class GraveyardToHand(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
-        gs.add_to_hand(card, source.orig_owner_id)
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        gs.reanimate(target)
 
 class GraveyardToExile(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        card = gs.remove_from_any_graveyard(target)
-        gs.send_to_exile(card)
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        gs.exile(target)
 
 class GraveyardToExileInItsEntirety(Effect):
     """Moves all cards from target player's graveyard to that same player's exile"""
@@ -37,7 +33,7 @@ class GraveyardToExileInItsEntirety(Effect):
         gy = gs.graveyards[source.orig_owner_id][:]
         gs.graveyards[source.orig_owner_id].clear()
         for card in gy:
-            gs.send_to_exile(card)
+            gs.exile(card)
 
 class HandToBoard(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

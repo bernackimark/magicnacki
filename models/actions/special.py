@@ -38,6 +38,6 @@ class SacCreatureAndAddMana(Action):
 
     def play(self):
         # Sacrifice then later apply effect that depends on the creature sacrificed
-        self.gs.send_to_graveyard_from_play(self.creature)
+        self.gs.destroy(self.creature)
         self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
         self.gs.action_stack.pop()

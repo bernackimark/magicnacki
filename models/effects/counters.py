@@ -102,7 +102,7 @@ class Fasting(Effect):
             return
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
-            gs.send_to_graveyard_from_play(source)
+            gs.destroy(source)
 
 class RockHydraCast(Effect):
     """This creature enters with X +1/+1 counters on it ..."""

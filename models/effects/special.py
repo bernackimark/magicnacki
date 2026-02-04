@@ -20,14 +20,13 @@ from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
 class ActiveVolcano(Effect):
     """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        gs.return_to_hand_from_board(t) if t.props.slug == 'island' else gs.send_to_graveyard_from_play(t)
+        gs.bounce(t) if t.props.slug == 'island' else gs.destroy(t)
 
 class AnimateDead(Effect):
-    def resolve(self, gs, source: GameCard, target: GameCard = None):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        card = gs.remove_from_your_graveyard(target, source.orig_owner_id)
-        gs.boards[source.orig_owner_id].play_to_board(card)
+        gs.reanimate(target)
         target.modifiers.auras.append(PTModifier(source, -1, 0))
 
 class BookOfRass(Effect):
@@ -44,7 +43,7 @@ class CocoonUpkeep(Effect):
         if p_id != source.orig_owner_id:
             return
         if not host.counters.get_count(PUPA):
-            gs.send_to_graveyard_from_play(source)
+            gs.destroy(source)
             host.counters.add_counter(PLUS_ONE)
             host.modifiers.auras.append(KWAModifier(source, 'add', 'Flying'))
             return
@@ -53,7 +52,7 @@ class CocoonUpkeep(Effect):
 class Crumble(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            gs.send_to_graveyard_from_play(target)
+            gs.destroy(target)
             gs.increment_life(target.orig_owner_id, target.props.casting_weight)
 
 class DivineOffering(Effect):
@@ -62,7 +61,7 @@ class DivineOffering(Effect):
             raise ValueError("Divine Offering needs a target")
         if target:
             gs.increment_life(source.orig_owner_id, target.power)
-            gs.send_to_graveyard_from_play(target)
+            gs.destroy(target)
 
 class Earthbind(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -97,7 +96,7 @@ class Feint(Effect):
 class FlashFlood(Effect):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        gs.return_to_hand_from_board(t) if t.props.slug == 'mountain' else gs.send_to_graveyard_from_play(t)
+        gs.bounce(t) if t.props.slug == 'mountain' else gs.destroy(t)
 
 class ForestCast(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -125,7 +124,7 @@ class GlyphOfDestruction(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.temps(PTTemp(s, 10, 0))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
-        gs.end_step_funcs.append(lambda gs, s, t: gs.send_to_graveyard_from_play(s))
+        gs.end_step_funcs.append(lambda gs, s, t: gs.destroy(s))
 
 class KoboldDrillSergeant(Effect):
     """Other Kobold creatures you control get +0/+1 and have trample"""
@@ -147,7 +146,7 @@ class MartyrsCry(Effect):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for white_creature in gs.card_filter.in_play().white().creatures().result():
-            gs.send_to_exile_from_play(white_creature)  # which is correct?  exile_from_play() or exile()
+            gs.exile(white_creature)  # which is correct?  exile_from_play() or exile()
             gs.draw(white_creature.owner_id)
 
 class MazeOfIth(Effect):
@@ -167,7 +166,7 @@ class Rakalite(Effect):
             raise RuntimeError(f'{s.props.name} needs a target')
         prevention = PreventNextDamage(s, None, source_card=target)
         gs.damage_preventions.append(prevention)
-        gs.return_to_hand_from_board(s)
+        gs.bounce(s)
 
 class ReverseDamage(Effect):
     """The next time a source of your choice would deal damage to you this turn, prevent that damage.
@@ -190,7 +189,7 @@ class RocketLauncherAA(Effect):
     """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
-        gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(s))
+        gs.end_step_funcs.append(lambda gs, s: gs.destroy(s))
 
 class SacrificeOnCast(Effect):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
@@ -219,7 +218,7 @@ class StoneGiant(Effect):
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.temps.append(KWATemp(s, 'add', 'Flying'))
-        gs.end_step_funcs.append(lambda gs, s: gs.send_to_graveyard_from_play(t))
+        gs.end_step_funcs.append(lambda gs, s: gs.destroy(t))
 
 class SoulNet(Effect):
     """Whenever a creature dies, {1}: Gain 1 life"""
@@ -241,7 +240,7 @@ class Subdue(Effect):
 class SwordsToPlowshares(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            gs.send_to_exile_from_play(target)  # which is correct?  exile_from_play() or exile()
+            gs.exile(target)  # which is correct?  exile_from_play() or exile()
             gs.increment_life(target.orig_owner_id, target.power)
 
 class SyphonSoul(Effect):
