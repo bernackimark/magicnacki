@@ -23,11 +23,11 @@ class CardFilter:
         return self
 
     def in_play(self):
-        self._cards = [c for b in self._gs.boards for c in b.cards]
+        self._cards = [c for b in self._gs.boards for c in b]
         return self
 
     def on_player_board(self, p_id: int):
-        self._cards = [c for c in self._gs.boards[p_id].cards]
+        self._cards = [c for c in self._gs.boards[p_id]]
         return self
 
     def in_graveyards(self):
