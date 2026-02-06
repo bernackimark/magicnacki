@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.choice_actions.base import ChoiceAction
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.actions.base import Action
@@ -12,7 +14,7 @@ from utils import flip
 
 @dataclass
 class ActionStack:
-    _actions: list[Action] = field(default_factory=list)
+    _actions: list[Action | ChoiceAction] = field(default_factory=list)
 
     def __len__(self) -> int:
         return len(self._actions)
@@ -30,7 +32,7 @@ class ActionStack:
         return flip(self.last_actor_idx)
 
     @property
-    def last_action(self) -> Action:
+    def last_action(self) -> Action | ChoiceAction:
         return self._actions[-1]
 
     def push(self, action: Action, gs: GameState, flip_action_on_opponent: bool = True) -> None:
