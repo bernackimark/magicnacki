@@ -37,10 +37,7 @@ class GraveyardToExileInItsEntirety(Effect):
 
 class HandToBoard(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        gs.hands[source.orig_owner_id].cards.remove(target)
-        gs.boards[source.orig_owner_id].play_to_board(target)
+        gs.cast(source)
 
 class GraveRobbersAA(Effect):
     """{B}, {T}: Exile target artifact card from a graveyard. You gain 2 life."""

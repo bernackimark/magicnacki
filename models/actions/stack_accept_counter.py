@@ -21,7 +21,6 @@ class AcceptAction(Action):
         if card.props.is_aura:
             card.attached_to = target
             target.modifiers.auras.append(card)
-            self.gs.boards[target.orig_owner_id].play_to_board(card)
 
         # --- new system: resolve the card's own effect(s) ---
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
