@@ -1,8 +1,7 @@
 import random
 from collections import defaultdict
-from typing import Callable, Optional, Any
+from typing import Callable
 
-import models.card_attributes.card_effect_specs
 from action_stack import ActionStack
 from build_deck import Deck
 from card_filter import CardFilter
@@ -11,19 +10,18 @@ from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
 from models.choice_actions.base import ChoiceAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
-from models.actions.combat import CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker, FinishBlocking, \
-    AssignCombatDamage
+from models.actions.combat import (CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker,
+                                   FinishBlocking, AssignCombatDamage)
 from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
-from models.effects.base import Effect, Triggered
+from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
     UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent
 from models.game_card import GameCard
-from models.board import Board
 from models.combat import Combat
 from models.hand import Hand
 from models.mana import ManaPool
@@ -48,7 +46,7 @@ class GameState:
         self._poison_counters = [0, 0]
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
-        self.boards: list[Board] = [Board(i) for i in range(self.player_cnt)]
+        self.boards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
@@ -64,9 +62,6 @@ class GameState:
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
-
-        # default leave handlers: ensure cleanup always occurs even if no slug specific handler
-        self.leave_default_handlers: list[Callable] = [lambda gs, c, tgt: c.clear_all_mods()]
 
         self.damage_replacements: list[DamageReplacement] = []
         self.damage_preventions: list[PreventNextDamage] = []
@@ -107,8 +102,8 @@ class GameState:
         self.until_eot_effects_and_cards.append(eff_and_card)
 
     def check_state_based_actions(self):
-        """state_based_rules are invariant; they must repeat until stable; there is no player choice, no stack, etc;
-        (ex: creatures w 0 toughness or unattached auras must die, etc)"""
+        """state_based_rules are invariant; they must repeat until stable; there is no player choice, no stack, etc.;
+        (ex: creatures w 0 toughness or unattached auras must die, etc.)"""
         while True:
             changed = False
             for rule in self.state_based_rules:
@@ -166,7 +161,7 @@ class GameState:
     def all_cards(self) -> list[GameCard]:
         return ([c for b in self.libraries for c in b.cards] + [c for h in self.hands for c in h.cards] +
                 [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
-                [c for b in self.boards for c in b.cards])
+                [c for b in self.boards for c in b])
 
     # --- DAMAGE ---
     def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
@@ -259,6 +254,7 @@ class GameState:
 
     def reanimate(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='reanimate')
+        print(f'{card} is reanimated')
 
     def cast(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='cast')
@@ -273,7 +269,7 @@ class GameState:
     def _add_to_zone(self, card: GameCard, zone: Zone):
         match zone:
             case Zone.BATTLEFIELD:
-                self.boards[card.owner_id].play_to_board(card)
+                self.boards[card.owner_id].append(card)
             case Zone.HAND:
                 self.hands[card.orig_owner_id].cards.append(card)
                 self.hands[card.orig_owner_id].sort_cards()
@@ -287,7 +283,7 @@ class GameState:
     def _remove_from_zone(self, card: GameCard, zone: Zone):
         match zone:
             case Zone.BATTLEFIELD:
-                self.boards[card.owner_id].remove_from_board(card)
+                self.boards[card.owner_id].remove(card)
             case Zone.HAND:
                 self.hands[card.owner_id].cards.remove(card)
                 self.hands[card.orig_owner_id].sort_cards()
@@ -313,7 +309,8 @@ class GameState:
     # THIS IS A RELATED CONCEPT THAT DOESN'T BELONG HERE.  JUST STORING HERE TEMPORARILY
     # class DiesTrigger(TriggeredAbility):
     #     def matches(self, event):
-    #         return isinstance(event, ZoneChangeEvent) and event.from_zone == Zone.BATTLEFIELD and event.to_zone == Zone.GRAVEYARD
+    #         return isinstance(event, ZoneChangeEvent) and event.from_zone == Zone.BATTLEFIELD
+    #           and event.to_zone == Zone.GRAVEYARD
 
     # Life Operations; using Registry Pattern
     def increment_life(self, p_id: int, amt: int):
@@ -337,26 +334,24 @@ class GameState:
         if c.is_tapped:
             return
         self.emit(TapCardEvent(card=c))
-        # is this all supposed to happen here, in the TapCardEvent(Event), in a dedicated TapCardEffect(Effect)?
         c.is_tapped = True
         for a in c.modifiers.auras:
-            models.card_attributes.card_effect_specs.is_tapped = True
+            a.is_tapped = True
 
     def untap_card(self, c: GameCard):
         # new system
         if not c.is_tapped:
             return
-        self.emit(TapCardEvent(card=c))
+        self.emit(UntapCardEvent(card=c))
         # is this all supposed to happen here, in the UntapCardEvent(Event), in a dedicated UntapCardEffect(Effect)?
         c.is_tapped = False
         for a in c.modifiers.auras:
-            models.card_attributes.card_effect_specs.is_tapped = False
-        self.emit(UntapCardEvent(card=c))
+            a.is_tapped = False
 
     def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness;
         if a card has an optional untap, check if player has already decided to leave a card tapped"""
-        for c in self.boards[self.player_turn_idx].cards:
+        for c in self.boards[self.player_turn_idx]:
             for turn_num, act in self.game_history:
                 if isinstance(act, CastToBoard) and act.card.id == c.id and self.turn_number - turn_num == 2:
                     c.has_summoning_sickness = False
@@ -365,7 +360,8 @@ class GameState:
 
             for turn_number, action in self.game_history:
                 if (turn_number == self.turn_number and
-                        (isinstance(action, UntapCardStackPop) or isinstance(action, LeaveTapped)) and action.source == c):
+                        (isinstance(action, UntapCardStackPop) or
+                         isinstance(action, LeaveTapped)) and action.card == c):
                     print("You've already made an untap decision on this card this turn")
                     break
             else:
@@ -390,35 +386,22 @@ class GameState:
             # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
             print(f"{c=}, {ability=}, {targets=}")
 
-            # No target needed → create a single action
-            if targets is None:
-                actions.append(ActivateAbility(self.action_on_idx, self, ability, None))
+            # I need at least one target, but I don't have any.  Skip.
+            if isinstance(targets, (list, tuple)) and not len(targets):
                 continue
 
-            # I need at least one target, but I don't have any
-            elif isinstance(targets, list) and targets == []:
+            # There is either exactly one or no target.  Create one action.
+            elif targets is None or isinstance(targets, int) or isinstance(targets, GameCard):
+                actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
                 continue
 
-            # Targeting multiple player indices
-            elif targets == (0, 1) or targets == (1, 0):
-                for t in targets:
-                    actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
-
-            # Targeting a single player index
-            elif targets == 0 or targets == 1:
-                actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
-
-            # Targeting a single GameCard
-            elif isinstance(targets, GameCard):
-                actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
-
-            # I need a target and got a valid list of GameCards
-            elif isinstance(targets, list) and isinstance(targets[0], GameCard):
+            # There are multiple targets.  Create an action for each target.
+            elif isinstance(targets, (list, tuple)):
                 for t in targets:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
 
             else:
-                raise ValueError(f"Broke assigning target to this Activated Ability: {ability.card=} {targets=}")
+                raise ValueError(f"Broke assigning target to this Activated Ability: {ability.source} {targets=}")
         return actions
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
@@ -434,7 +417,7 @@ class GameState:
         # Helper: add all activated abilities for all phases
         def add_activated_abilities_from_board() -> list[ActivateAbility] | list[None]:
             actions: list[ActivateAbility] = []
-            for card in board.cards:
+            for card in board:
                 actions.extend(self.get_available_activated_abilities(card))
                 for aura in card.modifiers.auras:
                     if not isinstance(aura, GameCard):  # some auras can be KWAModifier/PTModifiers (this is confusing)
@@ -530,7 +513,7 @@ class GameState:
 
         if self.phase == Phase.UPKEEP:
             self.emit(UpkeepEvent(active_player=self.player_turn_idx))
-            for c in self.boards[self.player_turn_idx].cards:
+            for c in self.boards[self.player_turn_idx]:
                 if activated_abilities := self.get_available_activated_abilities(c):
                     return [MoveToDrawPhase(c.orig_owner_id, self)] + activated_abilities
             self.phase = Phase.DRAW
@@ -545,11 +528,11 @@ class GameState:
             available_actions.extend(add_activated_abilities_from_board())
 
             # declare combat
-            if any(self.can_attack(card) for card in board.cards):
+            if any(self.can_attack(card) for card in board):
                 available_actions.append(BeginCombat(p_id, self))
 
         if self.phase == Phase.DECLARE_ATTACKERS:
-            for c in board.cards:
+            for c in board:
                 if self.can_attack(c):
                     available_actions.append(CreatureAttack(p_id, self, c))
 
@@ -560,9 +543,7 @@ class GameState:
         if self.phase == Phase.DECLARE_BLOCKERS:
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
-            remaining_blockers = [c for c in self.boards[self.action_on_idx].available_blockers
-                                  if c not in [c for com in self.combats for c in com.blockers]]
-            for blocker in remaining_blockers:
+            for blocker in self.card_filter.on_player_board(self.action_on_idx).creatures().result():
                 for com in self.combats:
                     if self.can_block(blocker, com.attacker):
                         available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
@@ -606,7 +587,7 @@ class GameState:
 
         if self.phase == Phase.CREATURES_HEAL:
             # THIS NEEDS A RE-WRITE:
-            # 1) i don't want to use decks_all_cards
+            # 1) I don't want to use decks_all_cards
             # 2) doesn't feel the right way to expire expiring damage
             for deck in self.decks_all_cards:
                 for c in deck.cards:
@@ -618,7 +599,7 @@ class GameState:
             # new approach
             for eff, card in self.until_eot_effects_and_cards:
                 if eff in self.damage_preventions:
-                    self.until_eot_effects_and_cards = [item for item in self.until_eot_effects_and_cards if item != eff]
+                    self.until_eot_effects_and_cards = [i for i in self.until_eot_effects_and_cards if i != eff]
             self.until_eot_effects_and_cards.clear()
 
             # Expire all temporary damage prevention
@@ -643,32 +624,12 @@ class GameState:
 
 
 # TODO:
-#  on_leave.py: should there just be a common on_leave so when card leaves, all mods for which it's the source are removed?
-
-# TODO:
 #  - When deciding which mana to tap, as a strategy, tap colorless mana where possible
-
-# TODO:
-#  Unify get_cast_targets() & ActivatedAbility.target_filter:
-#  - when casting, i use CAST_TARGETS look-up which maps to a lambda function
-#  - when activating, i use a lambda function in the creation of the ActivatedAbility
 
 # TODO:
 #  Build a CardUniverseFilter (modeled after CardFilter)
 #  - helpful when I'm trying to figure out what are good cards to test
 #  - would be helpful to the User when Building a Deck
-
-# TODO:
-#  Aura storage location
-#  - Right now:
-#     for c in board.cards:
-#        for a in c.auras:
-#  - Should auras & mods just be played to the board of the card owner?
-#    There's already a tie back to its host via .attached_to
-
-# TODO:
-#  Create a module that queries for game events.
-#  - instead of gs.cards_that_died_this_turn, there should be a GameHistoryFilter (like CardFilter)
 
 # TODO:
 #  can_cast() must take into account multi-mana-color producers (dual lands, etc)
