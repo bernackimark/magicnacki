@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from build_deck import DeckBuilder
+from deck_builder.build_deck import DeckBuilder
 import pygame as pg
 from renderer_pygame.config import COLOR_DICT
 from renderer_pygame.scenes.scene_abc import Scene

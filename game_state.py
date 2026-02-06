@@ -3,7 +3,7 @@ from collections import defaultdict
 from typing import Callable
 
 from action_stack import ActionStack
-from build_deck import Deck
+from deck_builder.build_deck import Deck
 from card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action

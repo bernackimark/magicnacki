@@ -1,9 +1,16 @@
 from dataclasses import dataclass, field
-from typing import Iterable
+from typing import Iterable, Protocol
 
 from card import Card, CardUniverse
 from constants import BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS
 from models.game_card import GameCard
+
+
+class AddCardRuleFunc(Protocol):
+    def __call__(self, slug: str, cnt: int, cards: list[GameCard]) -> bool:
+        ...
+
+
 
 
 @dataclass
