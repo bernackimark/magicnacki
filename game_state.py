@@ -17,7 +17,7 @@ from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.effects.base import Effect
-from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule
+from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule, CanCastBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
     UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent
@@ -59,7 +59,7 @@ class GameState:
         self.card_filter = CardFilter(self)
         self.is_game_over: bool = False
 
-        self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule()]
+        self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule(), CanCastBaseRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
 
@@ -121,6 +121,9 @@ class GameState:
 
     def can_untap(self, card: GameCard) -> bool:
         return self._query_effects_by_event('can_untap', card)
+
+    def can_cast(self, card: GameCard, p_id: int) -> bool:
+        return self._query_effects_by_event('can_cast', card, p_id=p_id)
 
     def _query_effects_by_event(self, event_str: str, card: GameCard, **kwargs) -> bool:
         """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
@@ -378,7 +381,7 @@ class GameState:
             if c.has_summoning_sickness:
                 continue
 
-            if ability.eff_spec.target_filter is None:  # janky solution; auras have target_filter = None
+            if ability.eff_spec.target_filter is None and c.attached_to:  # janky solution
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
                 continue
 
@@ -428,12 +431,9 @@ class GameState:
         def available_actions_from_hand() -> list[Action] | list[None]:
             avail_actions_from_hand: list[Action] = []
             for c in hand.cards:
-                if not self.mana_pools[p_id].can_pay(c.casting_cost):
+                if self.can_cast(c, p_id) is False:
                     continue
-                elif c.props.is_land and self.turn.has_played_land:
-                    continue
-                elif self.player_turn_idx != p_id and 'Instant' not in c.props.card_types:
-                    continue
+
                 if c.props.is_permanent and not c.props.is_aura:
                     avail_actions_from_hand.append(CastToBoard(p_id, self, c))
                     continue
@@ -532,13 +532,12 @@ class GameState:
                 available_actions.append(BeginCombat(p_id, self))
 
         if self.phase == Phase.DECLARE_ATTACKERS:
+            if self.combats:
+                available_actions.append(FinishDeclaringAttackers(p_id, self))
+
             for c in board:
                 if self.can_attack(c):
                     available_actions.append(CreatureAttack(p_id, self, c))
-
-            # finish declaring attackers; move to declare blockers
-            if self.combats:
-                available_actions.append(FinishDeclaringAttackers(p_id, self))
 
         if self.phase == Phase.DECLARE_BLOCKERS:
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
@@ -566,7 +565,6 @@ class GameState:
             self.phase = Phase.END_STEP
 
         if self.phase == Phase.END_STEP:
-            # new event emission system
             self.emit(EndStepEvent(active_player=self.player_turn_idx))
 
             # execute all end step funcs

@@ -48,7 +48,6 @@ class CanAttackBaseRule(Effect):
         """kwargs = includes 'card' when checking if a card can attack"""
         if event != 'can_attack' or not kwargs.get('card'):
             return None
-
         card: GameCard = kwargs.get('card')
 
         if (not card.props.is_creature or (card.has_summoning_sickness and 'Haste' not in card.keyword_abilities)
@@ -60,3 +59,24 @@ class CanAttackBaseRule(Effect):
                 return False
 
         return None  # no opinion on whether the card can attack
+
+class CanCastBaseRule(Effect):
+    event = 'can_cast'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        """kwargs include 'card' & 'p_id'"""
+        if event != 'can_cast' or not kwargs.get('card'):
+            return None
+        card: GameCard = kwargs.get('card')
+        if not kwargs.get('p_id'):
+            raise ValueError(f"I can't determine if {card.props.name} can be cast, as no player ID was supplied")
+        p_id: int = kwargs.get('p_id')
+
+        if not gs.mana_pools[p_id].can_pay(card.casting_cost):
+            return False
+        if card.props.is_land and gs.turn.has_played_land:
+            return False
+        if gs.player_turn_idx != p_id and 'Instant' not in card.props.card_types:
+            return False
+
+        return None  # no opinion on whether the cast can be cast
