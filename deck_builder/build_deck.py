@@ -1,16 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Iterable, Protocol
+from typing import Iterable
 
 from card import Card, CardUniverse
-from constants import BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS
+from constants import (BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS, X_POINTS,
+                       GENTLEMENS_RULES_BANNED_SLUGS)
 from models.game_card import GameCard
-
-
-class AddCardRuleFunc(Protocol):
-    def __call__(self, slug: str, cnt: int, cards: list[GameCard]) -> bool:
-        ...
-
-
 
 
 @dataclass
@@ -28,6 +22,7 @@ class DeckBuilder:
     play_set_cnt: int = 4
     banned_slugs: Iterable[str] = OLD_SCHOOL_BANNED_SLUGS
     restricted_slugs: Iterable[str] = OLD_SCHOOL_RESTRICTED_SLUGS
+    max_x_points: int | None = None
 
     @property
     def _next_card_id(self) -> int:
@@ -50,6 +45,9 @@ class DeckBuilder:
             raise ValueError(f"{c.name} is on the Restricted List and you already have one in your deck")
         if c.slug not in BASIC_LANDS and self.get_slug_cnt(c.slug) >= self.play_set_cnt:
             raise ValueError(f"You can only have the max play set ({self.play_set_cnt}) for {c.name}")
+        if self.max_x_points and sum([X_POINTS.get(c.props.slug, 0) for c in self.cards],
+                                     X_POINTS.get(c.slug, 0)) > self.max_x_points:
+            raise ValueError(f"You have exceeded the allowed X-points")
         game_card = GameCard(self.card_universe[c.slug], self._next_card_id, self.player_idx)
         self.cards.append(game_card)
 
