@@ -95,3 +95,8 @@ class ScarecrowPrevention(DamagePreventionEffect):
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
         return (event.target == flip(gs.player_turn_idx) and
                 event.source in gs.card_filter.in_play().creatures().has('Flying').result())
+
+class UncleIstvanPrevention(DamagePreventionEffect):
+    """Prevent all damage that would be dealt to this creature by creatures"""
+    def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
+        return event.target is card and 'Creature' in event.source.props.card_types

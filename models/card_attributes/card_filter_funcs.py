@@ -71,6 +71,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'opponent': lambda gs, s: flip(s.orig_owner_id),
     'other_creatures_in_play': lambda gs, s: [c for c in T_FUNCS['creatures_in_play'] if c != s],
     'permanents_in_play': lambda gs: gs.card_filter.in_play().permanents().result(),
+    'perms_you_own_and_control': lambda gs, s: [p for p in gs.card_filter.in_play().permanents().result()
+                                                if id(p) in {id(y) for y in gs.card_filter.on_player_board(s.owner_id).result()} &
+                                                {id(z) for z in gs.card_filter.on_player_board(s.orig_owner_id).result()}],
     'red_in_play': lambda gs, source: gs.card_filter.in_play().red().result(),
     'self': lambda gs, s: s,
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()

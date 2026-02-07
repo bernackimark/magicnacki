@@ -26,6 +26,16 @@ class ManaCost(Cost):
     def pay(self, gs, source):
         gs.mana_pools[source.orig_owner_id].pay(self.cost)
 
+class PayLifeCost(Cost):
+    def __init__(self, amt: int = 1):
+        self.amt = amt
+
+    def can_pay(self, gs, source):
+        return True
+
+    def pay(self, gs, source):
+        gs.apply_damage(source, self.amt, source.owner_id)
+
 class TapCost(Cost):
     def can_pay(self, gs, source):
         return not source.is_tapped

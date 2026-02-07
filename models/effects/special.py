@@ -282,3 +282,15 @@ class Web(Effect):
         if target:
             target.modifiers.auras.append(PTModifier(source, 0, 2))
             target.modifiers.auras.append(KWAModifier(source, 'add', 'Reach'))
+
+class WormwoodTreefolkForestwalk(Effect):
+    """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        target.modifiers.temps.append(KWATemp(source, 'add', 'Forestwalk'))
+        gs.apply_damage(source, 2, source.orig_owner_id)
+
+class WormwoodTreefolkSwampwalk(Effect):
+    """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        target.modifiers.temps.append(KWATemp(source, 'add', 'Swampwalk'))
+        gs.apply_damage(source, 2, source.orig_owner_id)

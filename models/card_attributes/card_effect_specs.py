@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from constants import COLOR_LETTERS
-from cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost
+from cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN
 from models.effects.base import EffSpec, Activated, Triggered, Static
@@ -21,7 +21,7 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack
 from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
-    Forcefield, MarblePriestPrevention, ScarecrowPrevention
+    Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention
 from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDamageReplacement
 from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
@@ -40,12 +40,14 @@ from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, Grea
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
-    RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT
+    RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
+    AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
+    WallOfTombstonesPT
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
-    Web, TabletOfEpityr, SoulNet, UrzasMiter
+    Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped
@@ -85,6 +87,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'amulet-of-kroog': [Activated('2T', PreventNextDamageEffect(1), T_FUNCS['all_creatures_and_players'])],
     'ancestral-recall': [Triggered(DrawCards(3), T_FUNCS['all_players'], CastResolvedEvent)],
     'angelic-voices': [Static(AngelicVoices())],
+    'angry-mob': [Static(AngryMobPT())],
     'animate-dead': [Triggered(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'animate-wall':
         [Triggered(KWAModEffect('remove', 'Defender'), T_FUNCS['walls_in_play'], CastResolvedEvent)],
@@ -100,6 +103,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'artifact-ward': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
                       Static(ArtifactWardCanBeBlocked(), Static(ArtifactWardPrevention()))],
     'ashnods-battle-gear': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'aspect-of-wolf': [Static(AspectOfWolfPT())],
     'backfire': [Triggered(Backfire(), None, DamageResolvedEvent)],
     'bad-moon': [Static(BadMoon())],
     'badlands': dual_land_activated_ability_specs('BR'),
@@ -230,6 +234,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
     'frozen-shade': [Activated('B', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'fungusaur': [Triggered(FungusaurOnDamage(), None, DamageResolvedEvent)],
+    'gaeas-avenger': [Static(GaeasAvengerPT())],
+    'gaeas-liege': [Static(GaeasLiegePT())],
     'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()], text='Exile for {GG}'),
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
                               allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
@@ -295,6 +301,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'junun-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
     'juzam-djinn': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
     'karma': [Triggered(Karma(), None, UpkeepEvent)],
+    'keldon-warlord': [Static(KeldonWarlordPT())],
     'khabál-ghoul': [AddCounterPerCreatureDeath(PLUS_ONE), None, EndStepEvent],
     'killer-bees': [Activated('G', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
@@ -352,8 +359,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
                          Activated('1T', True, DestroyAll(T_FUNCS['artifacts_creatures_enchantments_in_play']))],
+    'nightmare': [Static(NightmarePT())],
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['creatures_and_enchantments_in_play'])],
     'oasis': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['creatures_in_play'])],
+    'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
     'old-man-of-the-sea': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'onulet': [Triggered(Onulet(), None, DiesEvent)],
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
@@ -364,6 +373,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                  untap_host_for_mana_at_opp_upkeep('4')],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['card_owner']),
                     Activated('T', PumpEffect(1, 2, True), T_FUNCS['one_one_creatures_in_play'])],
+    'people-of-the-woods': [Static(PeopleOfTheWoodsPT())],
     'personal-incarnation': [Triggered(PersonalIncarnation(), None, DiesEvent)],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)),
                    Triggered(PestilenceEndStep(), None, EndStepEvent)],
@@ -437,6 +447,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'spirit-shackle': [Triggered(AddCounter(MINUS_ZERO_TWO), T_FUNCS['host'], TapCardEvent)],
     'spiritual-sanctuary': [Triggered(SpiritualSanctuary(), None, UpkeepEvent)],
     'staff-of-zegon': [Activated('3T', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
+    'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
+                        for c in COLOR_LETTERS],
     'stone-giant': [Activated('T', StoneGiant(), T_FUNCS['stone_giant'])],
     'stone-rain': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'storm-seeker': [Triggered(StormSeeker(), T_FUNCS['all_players'], CastResolvedEvent)],
@@ -474,6 +486,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tundra': dual_land_activated_ability_specs('WU'),
     'twiddle': [Triggered(Twiddle(), T_FUNCS['artifacts_creatures_lands_in_play'], CastResolvedEvent)],
     'typhoon': [Triggered(Typhoon(), T_FUNCS['opponent'], CastResolvedEvent)],
+    'uncle-istvan': [Static(UncleIstvanPrevention())],
     'undertow': [Static(WalkRuleRemoved('Islandwalk'))],
     'underground-sea': dual_land_activated_ability_specs('BU'),
     'unholy-strength': [Triggered(PumpEffect(2, 1), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
@@ -485,6 +498,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'urzas-miter': [Triggered(UrzasMiter(), None, DiesEvent)],
     'urzas-power-plant': [Activated('T', UrzasTrio())],
     'urzas-tower': [Activated('T', UrzasTrio())],
+    'vampire-bats': [Activated('B', PumpEffect(1, 0, True), T_FUNCS['self'], max_activations_per_turn=2)],
     'venarian-gold':
         [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['your_creatures_in_play'], UpkeepEvent),
          Triggered(VenarianGoldHostStaysTapped(), None, UntapPhaseEvent)],
@@ -493,13 +507,18 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent),
          Triggered(VoodooDollEndStep(), None, EndStepEvent)],
     'wall-of-opposition': [Activated('1', PumpEffect(1, 0, True), T_FUNCS['self'])],
+    'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-water': [Activated('U', PumpEffect(1, 0, True), T_FUNCS['self'])],
+    'wanderlust': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
+                   Triggered(DealDamageOnTargetTurn(1), T_FUNCS['host_owner'], UpkeepEvent)],
     'warp-artifact': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
     'water-wurm': [Static(WaterWurmPT())],
     'weakness': [Triggered(PumpEffect(-2, -1), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'weakstone': [Static(Weakstone())],
     'web': [Triggered(Web(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'wheel-of-fortune': [Triggered(WheelOfFortune(), trigger_event=CastResolvedEvent)],
+    'wormwood-treefolk': [Activated('GG', WormwoodTreefolkForestwalk()),
+                          Activated('BB', WormwoodTreefolkSwampwalk())],
     'wrath-of-god': [Triggered(ExileAllCreatures(), trigger_event=CastResolvedEvent)],
     'wyuli-wolf': [Activated('T', PumpEffect(1, 1, True), T_FUNCS['creatures_in_play'])],
 }

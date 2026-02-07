@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import math
 from typing import TYPE_CHECKING
 
 from models.modifiers import PTModifier, PTTemp, KWAModifier
@@ -36,6 +38,21 @@ class AngelicVoices(Effect):
                 return False
         return PTModifier(source, 1, 1)
 
+class AngryMobPT(Effect):
+    """During your turn, Angry Mob's power & toughness are each = 2 plus the number of Swamps your opponents control.
+    During turns other than yours, Angry Mob's power and toughness are each 2."""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        if gs.player_turn_idx != source.owner_id:
+            return PTTemp(source, 2, 2)
+        opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).by_slug('swamp').result())
+        return PTTemp(source, 2 + opp_swamp_cnt, 2 + opp_swamp_cnt)
+
 class ArtifactWardCanBeBlocked(Effect):
     """This creature can't be blocked by artifact creatures"""
     event = 'query'
@@ -58,6 +75,21 @@ class ArgothianPixiesCanBeBlocked(Effect):
             return None
         if 'Artifact' in blocker.props.card_types:
             return False
+
+class AspectOfWolfPT(Effect):
+    """Enchant creature Enchanted creature gets +X/+Y, where X is half the number of Forests you control, rounded down,
+    and Y is half the number of Forests you control, rounded up."""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source.attached_to:
+            return None
+        your_forest_cnt = len(gs.card_filter.on_player_board(source.orig_owner_id).by_slug('forest').result())
+        p_adj = math.floor(your_forest_cnt / 2)
+        t_adj = math.ceil(your_forest_cnt / 2)
+        return PTModifier(source, p_adj, t_adj)
 
 class BadMoon(Effect):
     event = 'query'
@@ -148,6 +180,35 @@ class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
         if 'Wall' not in blocker.props.card_sub_types:
             return False
 
+class GaeasAvengerPT(Effect):
+    """Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        opp_artifact_cnt = len(gs.card_filter.on_player_board(flip(source.orig_owner_id)).artifacts().result())
+        return PTModifier(source, opp_artifact_cnt + 1, opp_artifact_cnt + 1)
+
+class GaeasLiegePT(Effect):
+    """As long as Gaea's Liege isn't attacking, its power & toughness are each = the number of Forests you control.
+    If Gaea's Liege is attacking, its power & toughness are each = the # of Forests defending player controls."""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        is_attacking = card in gs.card_filter.attackers().result()
+        if is_attacking:
+            cnt = len(gs.card_filter.on_player_board(flip(card.owner_id)).by_slug('forest').result())
+        else:
+            cnt = len(gs.card_filter.on_player_board(card.owner_id).by_slug('forest').result())
+        return PTModifier(source, cnt, cnt)
+
 class GoblinCaves(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
     # WARNING: I don't yet have a way to validate that something is a basic land, since it lives in read-only props
@@ -197,6 +258,18 @@ class HiddenPath(Effect):
         if card not in gs.card_filter.in_play().green().creatures().result():
             return None
         return KWAModifier(source, 'add', 'Forestwalk')
+
+class KeldonWarlordPT(Effect):
+    """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        your_non_wall_creature_cnt = len(gs.card_filter.on_player_board(card.owner_id).non_wall_creatures().result())
+        return PTModifier(source, your_non_wall_creature_cnt, your_non_wall_creature_cnt)
 
 class KirdApePT(Effect):
     event = 'query'
@@ -255,6 +328,18 @@ class Mightstone(Effect):
             return None
         return PTTemp(source, 1, 0)
 
+class NightmarePT(Effect):
+    """Nightmare's power and toughness are each equal to the number of Swamps you control"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        your_swamp_cnt = len(gs.card_filter.on_player_board(card.owner_id).by_slug('swamp').result())
+        return PTModifier(source, your_swamp_cnt, your_swamp_cnt)
+
 class Moat(Effect):
     """Creatures without flying can't attack"""
     event = 'query'
@@ -279,6 +364,30 @@ class OrcishOriflamme(Effect):
         if card not in gs.card_filter.on_player_board(source.orig_owner_id).attackers().result():
             return None
         return PTTemp(source, 1, 0)
+
+class PeopleOfTheWoodsPT(Effect):
+    """People of the Woods's toughness is equal to the number of Forests you control"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        your_forest_cnt = len(gs.card_filter.on_player_board(card.owner_id).by_slug('forest').result())
+        return PTModifier(source, 0, your_forest_cnt)
+
+class PlagueRatsPT(Effect):
+    """Plague Rats' power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        cnt = len(gs.card_filter.in_play().by_slug('plague-rats').result())
+        return PTModifier(source, cnt, cnt)
 
 class RabidWombat(Effect):
     """This creature gets +2/+2 for each Aura attached to it"""
@@ -318,6 +427,18 @@ class SunkenCity(Effect):
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
         return PTModifier(source, 1, 1)
+
+class WallOfTombstonesPT(Effect):
+    """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source or gs.player_turn_idx != source.owner_id:
+            return None
+        cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
+        return PTModifier(source, 0, 1 + cnt)
 
 class WaterWurmPT(Effect):
     """This creature gets +0/+1 as long as an opponent controls an Island"""
