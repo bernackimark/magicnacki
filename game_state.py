@@ -20,7 +20,7 @@ from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule, CanCastBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent
+    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent, DrawCardEvent
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -267,6 +267,7 @@ class GameState:
     def draw(self, p_id: int, cnt: int = 1):
         for _ in range(cnt):
             self.move_card(self.libraries[p_id].cards[0], Zone.HAND, cause='draw')
+            self.emit(DrawCardEvent(p_id))
             print(f'Player #{p_id} draws')
 
     def _add_to_zone(self, card: GameCard, zone: Zone):
