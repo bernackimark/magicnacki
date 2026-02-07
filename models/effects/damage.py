@@ -3,7 +3,8 @@ import math
 from typing import Optional, TYPE_CHECKING
 
 from models.counter_tokens import VITALITY, PLUS_ONE
-from models.events.events_all import DamageResolvedEvent, DiesEvent
+from models.events.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -76,7 +77,7 @@ class PreventAllCombatDamageThisTurn(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         prevention = PreventNextDamage(source, combat_only=True)
         gs.damage_preventions.append(prevention)
-        gs.register_effect_until_eot(prevention, source)
+        gs.register_effect_until_eot(prevention)
 
 class PreventNextDamageToCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -84,6 +85,15 @@ class PreventNextDamageToCardEffect(Effect):
         gs.damage_preventions.append(PreventNextDamage(source, target_card=target))
 
 # --- CARD-SPECIFIC ---
+class AnkhOfMishra(Effect):
+    """Whenever a land enters, this artifact deals 2 damage to that land's controller"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if event.to_zone != Zone.BATTLEFIELD or not event.card.props.is_land:
+            return
+        gs.apply_damage(source, 2, event.card.orig_owner_id)
+
 class Backfire(Effect):
     """Whenever host deals damage to you, this Aura deals that much damage to that creature's controller"""
     listens_to = DamageResolvedEvent

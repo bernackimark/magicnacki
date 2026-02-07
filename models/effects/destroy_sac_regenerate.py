@@ -50,12 +50,6 @@ class PayManaOrSac(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, self.mana_cost), gs, False)
 
-class SacTwoIslands(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        your_islands = gs.card_filter.on_player_board(source.orig_owner_id).by_slug('island').result()
-        for island in your_islands[:2]:
-            gs.destroy(island)
-
 # --- CARD-SPECIFIC ---
 class CyclopeanMummy(Effect):
     """When this creature dies, exile it"""

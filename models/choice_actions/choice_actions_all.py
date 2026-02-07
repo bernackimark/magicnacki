@@ -6,9 +6,8 @@ from models.actions.damage import DealDamage, PayLife
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
-from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife
+from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
-from models.effects.destroy_sac_regenerate import SacTwoIslands
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -160,7 +159,7 @@ class LeviathanUpkeepChoice(ChoiceAction):
         your_island_cnt = len([i for i in self.gs.card_filter.on_player_board(self.p_id).by_slug('island').result()])
         if your_island_cnt < 2:
             return []
-        return [LeaveTapped(self.p_id, self.gs, self.source), SacTwoIslands()]
+        return [LeaveTapped(self.p_id, self.gs, self.source), SacTwoIslands(self.p_id, self.gs, self.source)]
 
 class LordOfThePitUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):

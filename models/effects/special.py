@@ -9,9 +9,9 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
-    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice
+    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice
 from models.actions.special import SacCreatureAndAddMana, PayManaToDrawCards
-from models.counter_tokens import PUPA, PLUS_ONE, SLEEP
+from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
@@ -79,6 +79,16 @@ class ElvesOfTheDeepShadow(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.mana_pools[source.orig_owner_id].add_floating('B')
         gs.apply_damage(source, 1, source.orig_owner_id)
+
+class Fasting(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        if gs.player_turn_idx != source.orig_owner_id:
+            return
+        source.counters.add_counter(HUNGER)
+        if source.counters.get_count(HUNGER) > 4:
+            gs.destroy(source)
+        gs.action_stack.push(FastingChoice(source.owner_id, gs, source), gs, False)
+
 
 class Feint(Effect):
     """Tap all creatures blocking target attacking creature.

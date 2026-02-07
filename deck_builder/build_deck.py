@@ -6,7 +6,6 @@ from constants import (BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICT
                        GENTLEMENS_RULES_BANNED_SLUGS, OLD_SCHOOL_SETS)
 from models.game_card import GameCard
 
-
 @dataclass
 class DeckBuilderRuleSet:
     card_universe: CardUniverse
