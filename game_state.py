@@ -261,8 +261,6 @@ class GameState:
 
     def cast(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='cast')
-        # TODO: update legacy callers of hand.remove()/board.play_to_board()
-        #  remove Board.py altogether
 
     def draw(self, p_id: int, cnt: int = 1):
         for _ in range(cnt):
