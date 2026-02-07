@@ -144,6 +144,17 @@ class ForceOfNatureUpkeepChoice(ChoiceAction):
         actions.append(DealDamage(self.p_id, self.gs, self.source, self.damage_amt))
         return actions
 
+class LeviathanUpkeepChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        your_island_cnt = len([i for i in self.gs.card_filter.on_player_board(self.p_id).by_slug('island').result()])
+        if your_island_cnt < 2:
+            return []
+        return [LeaveTapped(self.p_id, self.gs, self.source),
+                SacTwoIslands]
+
 class LordOfThePitUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)

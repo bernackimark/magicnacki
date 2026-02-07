@@ -84,6 +84,14 @@ class PreventNextDamageToCardEffect(Effect):
         gs.damage_preventions.append(PreventNextDamage(source, target_card=target))
 
 # --- CARD-SPECIFIC ---
+class Backfire(Effect):
+    """Whenever host deals damage to you, this Aura deals that much damage to that creature's controller"""
+    listens_to = DamageResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
+        if event.source is source.attached_to and event.target == source.orig_owner_id:
+            gs.apply_damage(source, event.amt, source.attached_to.orig_owner_id)
+
 class CreatureBond(Effect):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""
     listens_to = DiesEvent
@@ -212,6 +220,16 @@ class StormWorld(Effect):
         card_cnt = len(gs.hands[gs.player_turn_idx].cards)
         if card_cnt > 4:
             gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
+
+class TheRack(Effect):
+    """At opponent's upkeep, this artifact deals X damage to that player, X = len(hand) - 3 [X can't be negative]"""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        opp_id = flip(s.orig_owner_id)
+        if gs.player_turn_idx != opp_id:
+            return
+        opp_hand_len = len(gs.hands[opp_id].cards)
+        if opp_hand_len > 3:
+            gs.apply_damage(s, opp_hand_len - 3, opp_id)
 
 class Typhoon(Effect):
     """Typhoon deals damage to opponent = the number of Islands that player controls"""

@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.modifiers import PTModifier, PTTemp, KWAModifier
+from utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -317,6 +318,17 @@ class SunkenCity(Effect):
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
         return PTModifier(source, 1, 1)
+
+class WaterWurmPT(Effect):
+    """This creature gets +0/+1 as long as an opponent controls an Island"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'pt_mod' or card.props.slug != 'water-wurm':
+            return None
+
+        if gs.card_filter.on_player_board(flip(card.orig_owner_id)).by_slug('island').result():
+            return PTModifier(card, 0, 1)
 
 class Weakstone(Effect):
     """Attacking creatures get -1/-0"""

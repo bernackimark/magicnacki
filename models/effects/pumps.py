@@ -9,7 +9,8 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from models.modifiers import PTModifier, PTTemp
+from models.modifiers import PTModifier, PTTemp, KWATemp
+
 
 # --- GENERIC ---
 class PumpEffect(Effect):
@@ -31,6 +32,16 @@ class ArmyOfAllah(Effect):
     """Attacking creatures get +2/0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.register_effect_until_eot((ArmyOfAllahEOT(), source))
+
+class BerserkPump(Effect):
+    """Cast this spell only before the combat damage step.
+    Target creature gains trample and gets +X/+0 until end of turn, where X is its power.
+    At the beginning of the next end step, destroy that creature if it attacked this turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        target.modifiers.temps.append(PTTemp(source, int(target.power) * 2, 0))
+        target.modifiers.temps.append(KWATemp(source, 'add', 'Trample'))
 
 class BloodLust(Effect):
     """Target creature gains +4/-4 until end of turn. If this reduces creature's toughness < 1, toughness = 1."""

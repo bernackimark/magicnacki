@@ -57,3 +57,19 @@ class SuChi(Effect):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
         gs.mana_pools[source.orig_owner_id].add_floating('C', 4)
+
+class UrzasTrio(Effect):
+    """{T}: Add {C}.
+    urzas-mine: If you control an Urza's Power-Plant and an Urza's Tower, add {CC} instead.
+    urzas-power-plant: If you control an Urza's Mine and an Urza's Tower, add {CC} instead.
+    urzas-tower: If you control an Urza's Mine and an Urza's Power-Plant, add {CCC} instead"""
+    def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):
+        mines = gs.card_filter.on_player_board(s.orig_owner_id).by_slug('urzas-mine').result()
+        power_plants = gs.card_filter.on_player_board(s.orig_owner_id).by_slug('urzas-power-plant').result()
+        towers = gs.card_filter.on_player_board(s.orig_owner_id).by_slug('urzas-tower').result()
+        if not (mines and power_plants and towers):
+            gs.mana_pools[s.orig_owner_id].add_floating('C')
+        elif s.props.slug == 'urzas-tower':
+            gs.mana_pools[s.orig_owner_id].add_floating('CCC')
+        else:
+            gs.mana_pools[s.orig_owner_id].add_floating('CC')

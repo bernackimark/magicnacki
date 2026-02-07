@@ -32,6 +32,12 @@ class DestroyAll(Effect):
         for c in self.card_filter_func(gs, s):
             gs.destroy(c)
 
+class DestroyIfItAttacked(Effect):
+    """Destroy creature if it attacked this turn."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        for t in gs.card_filter.attackers().result():
+            gs.destroy(t)
+
 class ExileAllCreatures(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         for c in CardFilter(gs).in_play().creatures().result():
