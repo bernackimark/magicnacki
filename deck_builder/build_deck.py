@@ -9,7 +9,7 @@ from models.game_card import GameCard
 
 @dataclass
 class DeckBuilderRuleSet:
-    card_universe: CardUniverse = CardUniverse(OLD_SCHOOL_SETS)
+    card_universe: CardUniverse
     min_deck_size: int = 40
     max_deck_size: int = 99
     play_set_cnt: int = 4
@@ -18,9 +18,11 @@ class DeckBuilderRuleSet:
     max_x_points: int | None = None
 
 
-OLD_SCHOOL_DB_RULE_SET = DeckBuilderRuleSet()  # all defaults
-GENTLEMENS_DB_RULE_SET = DeckBuilderRuleSet(banned_slugs=OLD_SCHOOL_BANNED_SLUGS + GENTLEMENS_RULES_BANNED_SLUGS)
-SINGLETON_DB_RULE_SET = DeckBuilderRuleSet(play_set_cnt=1)
+OS_CARD_UNIV = CardUniverse(OLD_SCHOOL_SETS)
+OLD_SCHOOL_DB_RULE_SET = DeckBuilderRuleSet(OS_CARD_UNIV)  # all defaults
+GENTLEMENS_DB_RULE_SET = DeckBuilderRuleSet(OS_CARD_UNIV,
+                                            banned_slugs=OLD_SCHOOL_BANNED_SLUGS + GENTLEMENS_RULES_BANNED_SLUGS)
+SINGLETON_DB_RULE_SET = DeckBuilderRuleSet(OS_CARD_UNIV, play_set_cnt=1)
 
 
 @dataclass

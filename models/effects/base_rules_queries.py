@@ -68,7 +68,7 @@ class CanCastBaseRule(Effect):
         if event != 'can_cast' or not kwargs.get('card'):
             return None
         card: GameCard = kwargs.get('card')
-        if not kwargs.get('p_id'):
+        if kwargs.get('p_id') is None:
             raise ValueError(f"I can't determine if {card.props.name} can be cast, as no player ID was supplied")
         p_id: int = kwargs.get('p_id')
 
