@@ -6,8 +6,9 @@ from models.actions.damage import DealDamage, PayLife
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
-from models.actions.special import SacCreatureAndAddMana, PayManaForLife
+from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
+from models.effects.destroy_sac_regenerate import SacTwoIslands
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -131,6 +132,13 @@ class ErosionUpkeepChoice(ChoiceAction):
         actions.append(Sac(self.p_id, self.gs, self.source.attached_to))
         return actions
 
+class FastingChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [SkipDrawPhaseGainLife(self.p_id, self.gs, 2), Sac(self.p_id, self.gs, self.source)]
+
 class ForceOfNatureUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str, damage_amt: int):
         super().__init__(p_id, gs, source)
@@ -152,15 +160,15 @@ class LeviathanUpkeepChoice(ChoiceAction):
         your_island_cnt = len([i for i in self.gs.card_filter.on_player_board(self.p_id).by_slug('island').result()])
         if your_island_cnt < 2:
             return []
-        return [LeaveTapped(self.p_id, self.gs, self.source),
-                SacTwoIslands]
+        return [LeaveTapped(self.p_id, self.gs, self.source), SacTwoIslands()]
 
 class LordOfThePitUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        your_other_creatures = [c for c in self.gs.card_filter.on_player_board(self.gs.player_turn_idx).creatures().result() if c != self.source]
+        your_other_creatures = [c for c in self.gs.card_filter.on_player_board(self.p_id).creatures().result()
+                                if c != self.source]
         if not your_other_creatures:
             return []
         return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]

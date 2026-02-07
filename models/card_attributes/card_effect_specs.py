@@ -52,7 +52,7 @@ from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect,
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped
 from models.events.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent
+    DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent
 from phase_fsm import Phase
 
 
@@ -211,7 +211,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'farmstead': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
                   Activated('WW', GainLife(), T_FUNCS['host_owner'], allowed_phases=[Phase.UPKEEP],
                             allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
-    'fasting': [Activated(Fasting(), T_FUNCS['self'], UpkeepEvent)],
+    'fasting': [Triggered(Fasting(), T_FUNCS['self'], UpkeepEvent),
+                Triggered(Destroy(), T_FUNCS['self'], DrawCardEvent)],
     'feedback': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['enchants_in_play'], UpkeepEvent)],
     'fire-drake': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],

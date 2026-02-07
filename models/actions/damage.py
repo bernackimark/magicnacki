@@ -19,6 +19,19 @@ class DealDamage(Action):
         self.gs.apply_damage(self.source, self.damage_amt, self.source.orig_owner_id)
         self.gs.action_stack.pop()  # remove choice
 
+class GainLife(Action):
+    def __init__(self, p_id, gs, source: GameCard, amt: int, target_p_id: int):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.amt = amt
+        self.target_p_id = target_p_id
+
+    def __repr__(self):
+        return f'Player #{self.target_p_id} gains {self.amt} life from {self.source.props.name}'
+
+    def play(self):
+        self.gs.increment_life(self.target_p_id, self.amt)
+        self.gs.action_stack.pop()
 
 class PayLife(Action):
     def __init__(self, p_id, gs, source: GameCard, amt: int):

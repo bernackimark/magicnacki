@@ -38,3 +38,12 @@ class MoveToDrawPhase(Action):
 
     def play(self) -> None:
         self.gs.phase = Phase.DRAW
+
+@dataclass
+class SkipDrawPhase(Action):
+
+    def __repr__(self) -> str:
+        return "Skip Draw Phase"
+
+    def play(self) -> None:
+        self.gs.phase = Phase.CAST

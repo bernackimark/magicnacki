@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
+from models.choice_actions.choice_actions_all import FastingChoice
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -103,6 +105,7 @@ class Fasting(Effect):
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
             gs.destroy(source)
+        gs.action_stack.push(FastingChoice(source.owner_id, gs, source), gs, False)
 
 class RockHydraCast(Effect):
     """This creature enters with X +1/+1 counters on it ..."""
