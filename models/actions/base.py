@@ -22,4 +22,4 @@ class Action(ABC):
 @dataclass
 class DoNothing(Action):
     def play(self) -> None:
-        pass
+        self.gs.action_stack.pop()

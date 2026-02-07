@@ -53,6 +53,7 @@ class SacTwoIslands(Action):
         your_islands = self.gs.card_filter.on_player_board(self.s.orig_owner_id).by_slug('island').result()
         for island in your_islands[:2]:
             self.gs.destroy(island)
+        self.gs.action_stack.pop()
 
 class SkipDrawPhaseGainLife(Action):
     def __init__(self, p_id: int, gs: GameState, amt: int):

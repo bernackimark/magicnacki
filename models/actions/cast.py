@@ -36,16 +36,14 @@ class CastToBoard(Action):
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack
+                self.gs.register_effect(eff_spec.effect, self.card)
+                print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event}")
                 if eff_spec.activation_type != 'triggered':
                     continue
                 if eff_spec.trigger_event == CastResolvedEvent:
                     targets = eff_spec.target_filter() if eff_spec.target_filter else None
                     eff_spec.effect.resolve(self.gs, self.card, targets)
                     print(f"Activated the ability on cast for {self.card.props.name}")
-                else:
-                    # Only register the triggered effects
-                    self.gs.register_effect(eff_spec.effect, self.card)
-                    print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event}")
 
         # --- if card has activated abilities, add them to the board
         for eff_spec in INVOCATIONS.get(self.card.props.slug, []):
@@ -53,8 +51,8 @@ class CastToBoard(Action):
                 ability = ActivatedAbility(self.card, eff_spec)
                 self.card.activated_abilities.append(ability)
 
-        # --- new event emission approach: now the effect itself is phase-agnostic
         self.gs.emit(StateBasedEvent())
+        self.gs.emit(CastResolvedEvent(self.card, self.card.orig_owner_id, None))
 
 
 @dataclass

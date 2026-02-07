@@ -13,7 +13,7 @@ from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINU
 from models.effects.base import EffSpec, Activated, Triggered, Static
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
-    RockHydraCast, AddCounterPerCreatureDeath, AddCounter, AddCountersOnHostTurn, RemoveCountersOnHostTurn
+    RockHydraCast, AddCounterPerCreatureDeath, AddCounter, AddCountersOnHostTurn, RemoveCountersOnHostTurn, CitanulDruid
 from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifactUpkeep, DealDamageOnTargetTurn, \
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
@@ -31,7 +31,7 @@ from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
-    StreamOfLife, Onulet
+    StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
 from models.effects.piles import Bounce, Bounce, HandToBoard, GraveRobbersAA, Reanimate, \
     GraveyardToExileInItsEntirety
@@ -141,6 +141,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'circle-of-protection-green': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['green_in_play'])],
     'circle-of-protection-red': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['red_in_play'])],
     'circle-of-protection-white': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['white_in_play'])],
+    'citanul-druid': [Triggered(CitanulDruid(), None, ZoneChangeEvent)],
     'city-of-shadows':
         [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],  # TODO: needs a way to find a creature to exile in extra_costs
     'cleanse':
@@ -167,6 +168,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'creature-bond': [Triggered(CreatureBond(), None, DiesEvent)],
     'crumble': [Triggered(Crumble()), T_FUNCS['artifacts_in_play'], CastResolvedEvent],
     'crusade': [Static(Crusade())],
+    'crystal-rod': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('U'))],
     'curse-artifact': [Triggered(CurseArtifactUpkeep(), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
     'cursed-land': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['lands_in_play'], UpkeepEvent)],
     'cursed-rack': [Triggered(CursedRackEffect(), None, EndStepEvent)],

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
+from models.events.events_all import ZoneChangeEvent
+from models.zone import Zone
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -80,6 +83,15 @@ class XZeroOneCountersByManaValue(Effect):
         target.counters.add_counter(PLUS_ZERO_ONE, target.props.casting_weight)
 
 # --- CARD-SPECIFIC ---
+class CitanulDruid(Effect):
+    """Whenever an opponent casts an artifact spell, put a +1/+1 counter on this creature"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if event.to_zone != Zone.BATTLEFIELD or 'Artifact' not in event.card.props.card_types:
+            return
+        source.counters.add_counter(PLUS_ONE)
+
 class CityOfShadowsAA1(Effect):
     """{T}, Exile a creature you control: Put a storage counter on this land"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

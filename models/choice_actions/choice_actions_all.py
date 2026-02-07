@@ -52,6 +52,8 @@ class PayOneColorlessForOneLifeChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
+        if not self.gs.mana_pools[self.p_id].can_pay('1'):
+            return []
         return [PayManaForLife(self.p_id, self.gs, '1', 1), DoNothing(self.p_id, self.gs)]
 
 class SacALandChoice(ChoiceAction):

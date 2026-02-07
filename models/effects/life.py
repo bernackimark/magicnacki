@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
-from models.events.events_all import DamageResolvedEvent, DiesEvent
+from models.choice_actions.choice_actions_all import PayOneColorlessForOneLifeChoice
+from models.events.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, CastResolvedEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -25,6 +26,20 @@ class AddPoisonCounter(Effect):
             print(f"{event.source.props.name} adds {self.cnt} poison counter(s) to Player #{opp}. "
                   f"Poison Totals: {gs.poison_counters}")
             gs.add_poison_counter(opp, self.cnt)
+
+class OnColorSpellPayOneColorlessForOneLifeChoice(Effect):
+    """Whenever a player casts a [certain color] spell, you may {1}: Gain 1 life"""
+    listens_to = CastResolvedEvent
+
+    def __init__(self, color: str):
+        self.color = color
+
+    def on_event(self, gs: GameState, s: GameCard, event: CastResolvedEvent):
+        if self.color not in event.card.props.colors:
+            return
+        if not gs.mana_pools[s.owner_id].can_pay('1'):
+            return
+        gs.action_stack.push(PayOneColorlessForOneLifeChoice(s.owner_id, gs, s), gs, False)
 
 class GainLife(Effect):
     def __init__(self, amt: int = 1):
