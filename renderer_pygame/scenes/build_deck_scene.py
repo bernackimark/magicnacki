@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from deck_builder.build_deck import DeckBuilder
+from deck_builder.build_deck import DeckBuilder, OLD_SCHOOL_DB_RULE_SET
 import pygame as pg
 from renderer_pygame.config import COLOR_DICT
 from renderer_pygame.scenes.scene_abc import Scene
@@ -29,7 +29,7 @@ class BuildDeckScene(Scene):
         self.FILTERS_Y = 10
         self.IMG_SIZE = (200, 285)
 
-        self.deck_builder = DeckBuilder(self.game.card_univ, 0)
+        self.deck_builder = DeckBuilder(OLD_SCHOOL_DB_RULE_SET, 0)
 
         # For all cards in the universe, load CardImages to a list
         self.images = []

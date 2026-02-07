@@ -30,9 +30,8 @@ def attach_invocations(card: GameCard):
 
 
 class GameCard:
-    def __init__(self, props: Card, id_: int, orig_owner_id: int, cast_target_func: Callable = None):
+    def __init__(self, props: Card, orig_owner_id: int):
         self.props: Card = props
-        self.id: int = id_
         self._orig_owner_id: int = orig_owner_id
         self.owner_id: int = orig_owner_id
         self.game_state: "GameState" = None

@@ -356,7 +356,7 @@ class GameState:
         if a card has an optional untap, check if player has already decided to leave a card tapped"""
         for c in self.boards[self.player_turn_idx]:
             for turn_num, act in self.game_history:
-                if isinstance(act, CastToBoard) and act.card.id == c.id and self.turn_number - turn_num == 2:
+                if isinstance(act, CastToBoard) and act.card is c and self.turn_number - turn_num == 2:
                     c.has_summoning_sickness = False
             if not c.is_tapped:
                 continue

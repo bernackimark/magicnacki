@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder
+from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
 from game_state import GameState
 from players import Player, ConsolePlayer
 from renderers import Renderer, ConsoleRenderer
@@ -40,7 +40,7 @@ if data['starting_deck'] == 1:
 
 decks = []
 for i, cards in enumerate((deck_0, deck_1)):
-    deck_builder = DeckBuilder(universe, i)
+    deck_builder = DeckBuilder(OLD_SCHOOL_DB_RULE_SET, i)
     for card_slug, qty in cards:
         for _ in range(qty):
             deck_builder.add_card_by_slug(card_slug)
