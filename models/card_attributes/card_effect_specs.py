@@ -1,8 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.combat import WalkRuleRemoved
-
 if TYPE_CHECKING:
     from models.game_card import GameCard
 
@@ -11,6 +9,7 @@ from cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN
 from models.effects.base import EffSpec, Activated, Triggered, Static
+from models.effects.combat import WalkRuleRemoved
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
     RockHydraCast, AddCounterPerCreatureDeath, AddCounter, AddCountersOnHostTurn, RemoveCountersOnHostTurn, CitanulDruid
@@ -18,7 +17,8 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
     DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
-    StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra
+    StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
+    DingusEgg, GoblinShrineOnLeave
 from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention
@@ -26,15 +26,14 @@ from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDama
 from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
-    DestroyIfItAttacked
+    DestroyIfItAttacked, PsychicAllergyUpkeep
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
-from models.effects.piles import Bounce, Bounce, HandToBoard, GraveRobbersAA, Reanimate, \
-    GraveyardToExileInItsEntirety
+from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
@@ -42,12 +41,13 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
-    WallOfTombstonesPT
+    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
-    Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting
+    Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
+    FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped
@@ -116,6 +116,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                           CastResolvedEvent, allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE]),
                 Triggered(DestroyIfItAttacked(), T_FUNCS['creatures_in_play'], EndStepEvent)],  # warning: i don't think this target func is correct; it needs to know the target previously selected
     'birds-of-paradise': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
+    'black-vise': [Triggered(BlackVise(), T_FUNCS['opponent'], UpkeepEvent)],
     'blessing': [Activated('W', PumpEffect(1, 1, True), T_FUNCS['host'])],
     'blight': Triggered(Destroy(), T_FUNCS['host'], TapCardEvent),
     'blood-lust': [Triggered(BloodLust(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
@@ -179,6 +180,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'demonic-torment':
         [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'desert-twister': [Triggered(Destroy(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
+    'dingus-egg': [Triggered(DingusEgg(), None, ZoneChangeEvent)],
     'disenchant':
         [Triggered(Destroy(), T_FUNCS['artifacts_and_enchantments_in_play'], CastResolvedEvent)],
     'divine-offering': [Triggered(DivineOffering(), T_FUNCS['artifacts_in_play'], CastResolvedEvent)],
@@ -216,7 +218,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                             allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
     'fasting': [Triggered(Fasting(), T_FUNCS['self'], UpkeepEvent),
                 Triggered(Destroy(), T_FUNCS['self'], DrawCardEvent)],
+    'fear': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent), Static(Fear())],
     'feedback': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['enchants_in_play'], UpkeepEvent)],
+    'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
     'fire-drake': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],
     'firebreathing': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
@@ -258,8 +262,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'goblin-caves': [Static(GoblinCaves())],
     'goblin-digging-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'], extra_costs=[SacSelfCost()])],
     'goblin-king': [Triggered(GoblinKing(), None, CastResolvedEvent)],
-    'goblin-shrine': [Static(GoblinShrinePump())],  # still need to code when it leaves battlefield
+    'goblin-shrine': [Static(GoblinShrinePump()), Triggered(GoblinShrineOnLeave(), None, ZoneChangeEvent)],
     'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],
+    'goblins-of-the-flarg': [Static(GoblinsOfTheFlarg())],
     'granite-gargoyle': [Activated('R', PumpEffect(0, 1, True), T_FUNCS['self'])],
     'grapeshot-catapult': [Activated('T', DealDamage(4), T_FUNCS['fliers_in_play'])],
     'grave-robbers': [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
@@ -281,6 +286,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True),
                                     T_FUNCS['creatures_in_play'])],
     'howl-from-beyond': [Triggered(HowlFromBeyond(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'hurkyls-recall': [Triggered(HurkylsRecall(), T_FUNCS['all_players'], CastResolvedEvent)],
     'hyperion-blacksmith': [Activated('T', TapCardEffect(), T_FUNCS['opp_untapped_artifacts']),
                             Activated('T', UntapCardEffect(), T_FUNCS['opp_tapped_artifacts'])],
     'icy-manipulator': [Activated('1T', TapCardEffect(), T_FUNCS['untapped_artifacts_creatures_lands'])],
@@ -293,7 +299,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(KWAModEffect('add', 'Haste'), T_FUNCS['creatures_in_play'], CastResolvedEvent),
          Activated('', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'],
                    max_activations_per_turn=1)],
+    'invisibility': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent), Static(Invisibility())],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
+    'ironclaw-orcs': [Static(IronclawOrcs())],
     'island-fish-jasconius': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
                               untap_for_mana_at_owner_upkeep('UUU')],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
@@ -398,6 +406,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'psionic-blast': [Triggered(DealDamageToTargetAndYou(4, 2),
                                 T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'psionic-entity': [Activated('T', DealDamageToTargetAndSelf(2, 3), T_FUNCS['all_creatures_and_players'])],
+    'psychic-allergy': [Triggered(PsychicAllergyUpkeep(), T_FUNCS['self'], UpkeepEvent)],
     'psychic-venom':
         [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
          Triggered(DealDamage(2), T_FUNCS['host_owner']), TapCardEvent],
@@ -477,6 +486,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'time-vault':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
          Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
+    'timetwister': [Triggered(Timetwister(), None, CastResolvedEvent)],
     'tivadars-crusade':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result()),
                    None, CastResolvedEvent)],
@@ -524,10 +534,13 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'weakness': [Triggered(PumpEffect(-2, -1), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'weakstone': [Static(Weakstone())],
     'web': [Triggered(Web(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
-    'wheel-of-fortune': [Triggered(WheelOfFortune(), trigger_event=CastResolvedEvent)],
+    'wheel-of-fortune': [Triggered(WheelOfFortune(), None, CastResolvedEvent)],
+    'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
+    'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
+                     Activated('1WWT', Bounce(), T_FUNCS['opp_creatures_in_play'])],
     'wooden-sphere': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('G'))],
     'wormwood-treefolk': [Activated('GG', WormwoodTreefolkForestwalk()),
                           Activated('BB', WormwoodTreefolkSwampwalk())],
-    'wrath-of-god': [Triggered(ExileAllCreatures(), trigger_event=CastResolvedEvent)],
+    'wrath-of-god': [Triggered(ExileAllCreatures(), None, CastResolvedEvent)],
     'wyuli-wolf': [Activated('T', PumpEffect(1, 1, True), T_FUNCS['creatures_in_play'])],
 }

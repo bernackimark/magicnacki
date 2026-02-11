@@ -180,6 +180,20 @@ class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
         if 'Wall' not in blocker.props.card_sub_types:
             return False
 
+class Fear(Effect):
+    """Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """Query: can_be_blocked, card = 'fear', mandatory kwargs: blocker"""
+        blocker: GameCard = kwargs.get("blocker")
+        if event != 'can_be_blocked' or card.attached_to.props.slug != 'fear' or not blocker:
+            return None
+        artifact_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).artifacts().creatures().result()
+        black_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).black().creatures().result()
+        if blocker not in artifact_creatures + black_creatures:
+            return False
+
 class GaeasAvengerPT(Effect):
     """Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control"""
     event = 'query'
@@ -235,6 +249,18 @@ class GoblinShrinePump(Effect):
             if card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
                 return PTModifier(source, 1, 0)
 
+class GoblinsOfTheFlarg(Effect):
+    """When you control a Dwarf, sacrifice this creature"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if source.props.slug != 'goblins-of-the-flarg':
+            return None
+
+        if gs.card_filter.on_player_board(card.owner_id).by_sub_type('Dwarf').result():
+            gs.destroy(source)
+
 class GravitySphere(Effect):
     """All creatures lose flying"""
     event = 'query'
@@ -258,6 +284,30 @@ class HiddenPath(Effect):
         if card not in gs.card_filter.in_play().green().creatures().result():
             return None
         return KWAModifier(source, 'add', 'Forestwalk')
+
+class Invisibility(Effect):
+    """Enchanted creature can't be blocked except by Walls"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """Query: can_block, card = 'amrou-kithkin', mandatory kwargs: blocker"""
+        blocker: GameCard = kwargs.get("blocker")
+        if event != 'can_be_blocked' or card.attached_to.props.slug != 'invisibility' or not blocker:
+            return None
+        if 'Wall' not in blocker.props.card_sub_types:
+            return False
+
+class IronclawOrcs(Effect):
+    """This creature can't block creatures with power 2 or greater"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """Query: can_block, card = 'ironclaw-orcs', mandatory kwargs: blocker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or card.props.slug != 'ironclaw-orcs' or not attacker:
+            return None
+        if attacker.power >= 2:
+            return False
 
 class KeldonWarlordPT(Effect):
     """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control"""

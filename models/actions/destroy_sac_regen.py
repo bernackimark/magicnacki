@@ -6,6 +6,18 @@ if TYPE_CHECKING:
 
 from models.actions.base import Action
 
+class Destroy(Action):
+    def __init__(self, p_id, gs, source: GameCard, target: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.target = target
+
+    def __repr__(self):
+        return f'Destroy {self.source.props.name}'
+
+    def play(self):
+        self.gs.destroy(self.target)
+        self.gs.action_stack.pop()  # remove choice
 
 class Exile(Action):
     def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
@@ -22,6 +34,17 @@ class Exile(Action):
         self.gs.exile(self.source)
         self.gs.action_stack.pop()  # remove choice
 
+class Reanimate(Action):
+    def __init__(self, p_id, gs, source: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+
+    def __repr__(self):
+        return f'Reanimate {self.source.props.name}'
+
+    def play(self):
+        self.gs.reanimate(self.source)
+        self.gs.action_stack.pop()  # remove choice
 
 class Sac(Action):
     def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):

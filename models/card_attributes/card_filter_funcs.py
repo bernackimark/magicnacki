@@ -43,6 +43,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
                                                                                           'Enchantment']).result(),
     'creatures_and_players': lambda gs, s: gs.card_filter.in_play().creatures().result() + ALL_PLAYER_INDICES,
+    'creatures_power_two_or_less': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
+                                                  if c.power <= 2],
     'djinns_and_efreets': lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
     'enchants_in_play': lambda gs, s: gs.card_filter.in_play.enchantments().result(),
     'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
@@ -60,7 +62,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'lands_in_play': lambda gs, source: gs.card_filter.in_play().lands().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
-    'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result(),
+    'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result(),
     'opp_creatures_who_could_have_but_didnt_attack':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result()
                        if c not in gs.card_filter.attackers().result()
@@ -68,7 +70,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'opp_non_wall_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).non_wall_creatures().result(),
     'opp_tapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).tapped().artifacts().result(),
     'opp_untapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).untapped().artifacts().result(),
-    'opponent': lambda gs, s: flip(s.orig_owner_id),
+    'opponent': lambda gs, s: flip(s.owner_id),
     'other_creatures_in_play': lambda gs, s: [c for c in T_FUNCS['creatures_in_play'] if c != s],
     'permanents_in_play': lambda gs: gs.card_filter.in_play().permanents().result(),
     'perms_you_own_and_control': lambda gs, s: [p for p in gs.card_filter.in_play().permanents().result()

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import DamagePreventionEffect, PreventAllDamage
@@ -58,7 +59,7 @@ class Crumble(Effect):
 class DivineOffering(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if not target:
-            raise ValueError("Divine Offering needs a target")
+            raise ValueError(f"{source.props.name} needs a target")
         if target:
             gs.increment_life(source.orig_owner_id, target.power)
             gs.destroy(target)
@@ -103,6 +104,14 @@ class Feint(Effect):
             gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
             b.tap(gs)
 
+class FeldonsCane(Effect):
+    """{T}, Exile this artifact: Shuffle your graveyard into your library."""
+    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        graveyard_cards = gs.graveyards[s.owner_id][:]
+        gs.graveyards.clear()
+        gs.libraries[s.owner_id].cards.extend(graveyard_cards)
+        random.shuffle(gs.libraries[s.owner_id].cards)
+
 class FlashFlood(Effect):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
@@ -135,6 +144,14 @@ class GlyphOfDestruction(Effect):
         t.modifiers.temps(PTTemp(s, 10, 0))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         gs.end_step_funcs.append(lambda gs, s, t: gs.destroy(s))
+
+class HurkylsRecall(Effect):
+    """Return all artifacts target player owns to their hand"""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f"{source.props.name} needs a target player")
+        for artifact in gs.card_filter.on_player_board(target).artifacts().result():
+            gs.bounce(artifact)
 
 class KoboldDrillSergeant(Effect):
     """Other Kobold creatures you control get +0/+1 and have trample"""
@@ -269,6 +286,23 @@ class TabletOfEpityr(Effect):
             return
         gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.orig_owner_id, gs, source), gs, False)
 
+class Timetwister(Effect):
+    """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
+    (Timetwister to its owner's graveyard.)"""
+    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        time_twister = next(c for c in gs.graveyards[s.owner_id] if c is s)
+        for p_id in range(2):
+            hand_cards = gs.hands[p_id][:]
+            gs.hands[p_id].cards.clear()
+            graveyard_cards = gs.graveyards[p_id][:]
+            gs.graveyards.clear()
+            gs.libraries[p_id].cards.extend(hand_cards)
+            gs.libraries[p_id].cards.extend(graveyard_cards)
+            random.shuffle(gs.libraries[p_id].cards)
+            gs.draw(p_id, 7)
+            if p_id == s.owner_id:
+                gs.graveyards[p_id].append(time_twister)
+
 class UrzasMiter(Effect):
     """ Whenever an artifact you control dies, if it wasn't sacrificed [not handling this part], {3}: draw a card"""
     listens_to = DiesEvent
@@ -292,6 +326,18 @@ class Web(Effect):
         if target:
             target.modifiers.auras.append(PTModifier(source, 0, 2))
             target.modifiers.auras.append(KWAModifier(source, 'add', 'Reach'))
+
+class WindsOfChange(Effect):
+    """Each player shuffles the cards from their hand into their library, then draws that many cards"""
+    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        for p_id in range(2):
+            if not gs.hands[p_id].cards:
+                continue
+            hand_cards = gs.hands[p_id][:]
+            gs.hands[p_id].cards.clear()
+            gs.libraries[p_id].cards.extend(hand_cards)
+            random.shuffle(gs.libraries[p_id].cards)
+            gs.draw(p_id, len(hand_cards))
 
 class WormwoodTreefolkForestwalk(Effect):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""

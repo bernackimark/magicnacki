@@ -3,11 +3,12 @@ from typing import TYPE_CHECKING, Iterable
 
 from constants import COLOR_LETTERS_W_COLORLESS
 from models.actions.damage import DealDamage, PayLife
-from models.actions.destroy_sac_regen import Sac
+from models.actions.destroy_sac_regen import Sac, Destroy
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
+
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -173,6 +174,14 @@ class LordOfThePitUpkeepChoice(ChoiceAction):
         if not your_other_creatures:
             return []
         return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
+
+class PsychicAllergyUpkeepChoice(ChoiceAction):
+    """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [SacTwoIslands(self.p_id, self.gs, self.source), Sac(self.p_id, self.gs, self.source)]
 
 class SacrificeCastChoice(ChoiceAction):
     """This is used by the card named 'Sacrifice'; is not a generic class about the concept of sacrifice"""

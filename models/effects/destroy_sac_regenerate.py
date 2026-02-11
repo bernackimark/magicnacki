@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 from card_filter import CardFilter
 from models.choice_actions.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
-    ForceOfNatureUpkeepChoice, SacALandChoice, SeasonOfTheWitchUpkeepChoice
+    ForceOfNatureUpkeepChoice, SacALandChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
@@ -91,6 +91,19 @@ class PestilenceEndStep(Effect):
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         if not gs.card_filter.creatures().in_play().result():
             gs.destroy(s)
+
+class PsychicAllergyUpkeep(Effect):
+    """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.player_turn_idx != source.owner_id:
+            return
+        your_island_cnt = len([i for i in gs.card_filter.on_player_board(source.owner_id).by_slug('island').result()])
+        if your_island_cnt < 2:
+            gs.destroy(source)
+            return
+        possible_actions = PsychicAllergyUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
+        for action in possible_actions:
+            gs.action_stack.push(action, gs, False)
 
 class SandalsOfAbdallahIfCreatureDies(Effect):
     """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact.."""

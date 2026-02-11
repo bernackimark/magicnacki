@@ -102,6 +102,16 @@ class Backfire(Effect):
         if event.source is source.attached_to and event.target == source.orig_owner_id:
             gs.apply_damage(source, event.amt, source.attached_to.orig_owner_id)
 
+class BlackVise(Effect):
+    """As opponent's upkeep, this artifact deals X damage to that player, X is = cards in their hand minus 4"""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        opp_id = flip(s.owner_id)
+        if gs.player_turn_idx != opp_id:
+            return
+        opp_hand_len = len(gs.hands[opp_id].cards)
+        if opp_hand_len > 4:
+            gs.apply_damage(s, opp_hand_len - 4, opp_id)
+
 class CreatureBond(Effect):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""
     listens_to = DiesEvent
@@ -117,6 +127,15 @@ class CurseArtifactUpkeep(Effect):
         if gs.player_turn_idx != target.orig_owner_id:
             return
         gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
+
+class DingusEgg(Effect):
+    """Whenever a land is put into a graveyard from battlefield, deal 2 damage to that land's controller."""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if event.to_zone != Zone.GRAVEYARD or event.from_zone != Zone.BATTLEFIELD or not event.card.props.is_land:
+            return
+        gs.apply_damage(source, 2, event.card.owner_id)
 
 class Earthquake(Effect):
     """Earthquake deals X damage to each creature without flying and each player"""
@@ -173,6 +192,16 @@ class GaseousForm(Effect):
         gs.damage_preventions.append(PreventNextDamage(s, None, target_card=target, combat_only=True))
         for b in the_combat[0].blockers:
             gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
+
+class GoblinShrineOnLeave(Effect):
+    """... When this Aura leaves the battlefield, it deals 1 damage to each Goblin creature"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if event.from_zone != Zone.BATTLEFIELD or event.card.props.slug != 'goblin-shrine':
+            return
+        for goblin in gs.card_filter.in_play().by_sub_type('Goblin').creatures().result():
+            gs.apply_damage(event.card, 1, goblin)
 
 class JovialEvil(Effect):
     """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
@@ -232,14 +261,14 @@ class StormWorld(Effect):
             gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
 
 class TheRack(Effect):
-    """At opponent's upkeep, this artifact deals X damage to that player, X = len(hand) - 3 [X can't be negative]"""
+    """At opponent's upkeep, this artifact deals X damage to that player, X = 3 - len(hand) [X can't be negative]"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        opp_id = flip(s.orig_owner_id)
+        opp_id = flip(s.owner_id)
         if gs.player_turn_idx != opp_id:
             return
         opp_hand_len = len(gs.hands[opp_id].cards)
-        if opp_hand_len > 3:
-            gs.apply_damage(s, opp_hand_len - 3, opp_id)
+        if opp_hand_len < 3:
+            gs.apply_damage(s, 3 - opp_hand_len, opp_id)
 
 class Typhoon(Effect):
     """Typhoon deals damage to opponent = the number of Islands that player controls"""
