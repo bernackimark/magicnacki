@@ -56,6 +56,10 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'Creature' in c.props.card_types]
         return self
 
+    def enchantments(self):
+        self._cards = [c for c in self._cards if 'Enchantment' in c.props.card_types]
+        return self
+
     def lands(self):
         self._cards = [c for c in self._cards if 'Land' in c.props.card_types]
         return self
