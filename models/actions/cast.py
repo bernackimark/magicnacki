@@ -20,11 +20,11 @@ class CastToBoard(Action):
 
     def play(self) -> None:
         if self.x_values_for_variable_cast is not None:
-            cast_cost = self.card.props.casting_cost[:].replace('X', str(self.x_values_for_variable_cast))
+            cast_cost = self.card.casting_cost[:].replace('X', str(self.x_values_for_variable_cast))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
             self.card.variable_x = self.x_values_for_variable_cast
         else:
-            self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
+            self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
         if self.card.props.is_land:
             self.gs.turn.has_played_land = True
 
@@ -78,11 +78,11 @@ class CastToTargetAddToStack(Action):
 
     def play(self) -> None:
         if self.x_values_for_variable_cast is not None:
-            cast_cost = self.card.props.casting_cost[:].replace('X', str(self.x_values_for_variable_cast))
+            cast_cost = self.card.casting_cost[:].replace('X', str(self.x_values_for_variable_cast))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
             self.card.variable_x = self.x_values_for_variable_cast
         else:
-            self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
+            self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
         self.gs.action_stack.push(self, self.gs)
         self.gs.emit(StateBasedEvent())
 
@@ -96,7 +96,7 @@ class CastCounter(Action):
         return f"Cast {self.card.props.name} to counter {self.target}"
 
     def play(self) -> None:
-        self.gs.mana_pools[self.player_idx].pay(self.card.props.casting_cost)
+        self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
         hand = self.gs.hands[self.player_idx]
         hand.cards.remove(self.card)
         self.gs.action_stack.push(self, self.gs)
