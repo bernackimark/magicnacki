@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
 from models.effects.base import ActivatedAbility
@@ -15,9 +16,16 @@ class AcceptAction(Action):
         return f"Accept {self.gs.action_stack.last_action}"
 
     def play(self) -> None:
-        last_action: CastToTargetAddToStack = self.gs.action_stack.last_action
-        card = last_action.card
+        last_action: CastToTargetAddToStack | ActivateAbility = self.gs.action_stack.last_action
         target = last_action.target if hasattr(last_action, 'target') else None
+
+        if isinstance(last_action, ActivateAbility):
+            last_action.ability.eff_spec.effect.resolve(self.gs, last_action.ability.source, target)
+            self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
+            self.gs.action_stack.clear_()
+            return
+
+        card = last_action.card
         if card.props.is_aura:
             card.attached_to = target
             target.modifiers.auras.append(card)
