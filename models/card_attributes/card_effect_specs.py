@@ -158,10 +158,14 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(DestroyAll(T_FUNCS['black_creatures_in_play']), None, CastResolvedEvent)],
     'clockwork-avian':
         [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
-         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 4), T_FUNCS['self'], CastResolvedEvent)],
+         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 4), T_FUNCS['self'], CastResolvedEvent),
+         Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
+                   max_variable_x_func=lambda gs, s: 4 - s.counters.get_count(PLUS_ONE_ZERO))],
     'clockwork-beast':
         [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
-         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 7), T_FUNCS['self'], CastResolvedEvent)],
+         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 7), T_FUNCS['self'], CastResolvedEvent),
+         Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
+                   max_variable_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO))],
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
     'cocoon':
         [Triggered(CocoonCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent),
@@ -522,8 +526,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Enchantment').result()),
                    None, CastResolvedEvent)],
     'triskelion': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent),
-                   Activated('X', DealDamage(1), T_FUNCS['all_creatures_and_players'],
-                             extra_costs=[],  # needs to know how many counters it has, in order to pay it
+                   Activated('X', DealDamage(), T_FUNCS['all_creatures_and_players'],
                              max_variable_x_func=lambda gs, s: min(s.counters.get_count(PLUS_ONE),
                                                                    gs.mana_pools[s.owner_id].get_max_x('X')))],
     'tropical-island': dual_land_activated_ability_specs('GU'),

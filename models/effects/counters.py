@@ -53,10 +53,11 @@ class AddCountersYourTurnOnly(Effect):
         self.counter_type = counter_type
         self.cnt = cnt
 
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None, x_value: int = None):
         if gs.player_turn_idx != s.orig_owner_id:
             return
-        s.counters.add_counter(self.counter_type, self.cnt)
+        cnt = self.cnt if x_value is None else x_value
+        s.counters.add_counter(self.counter_type, cnt)
 
 class AddCountersIfAnyCreatureDied(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):

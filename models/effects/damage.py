@@ -19,11 +19,12 @@ from utils import flip
 
 # --- GENERICS ---
 class DealDamage(Effect):
-    def __init__(self, amount):
-        self.amount = amount
+    def __init__(self, amt: int = None):  # None is permitted due to the possibility of variable X
+        self.amt = amt
 
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard | int = None):
-        gs.apply_damage(source, self.amount, target)
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard | int = None, variable_amt: int = None):
+        amt = self.amt if not variable_amt else variable_amt
+        gs.apply_damage(source, amt, target)
 
 class DealDamageOnSourceTurn(Effect):
     def __init__(self, amount):
