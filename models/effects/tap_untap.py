@@ -3,6 +3,8 @@ from typing import Optional, TYPE_CHECKING
 
 from phase_fsm import Phase
 from utils import flip
+from ..events.events_all import ZoneChangeEvent
+from ..zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -66,6 +68,20 @@ class GiantTortoiseTap(Effect):
     def resolve(self, gs, source: GameCard, _: GameCard = None):
         if source.props.slug == "giant-tortoise":
             source.modifiers.remove_aura(source)
+
+class Kismet(Effect):
+    """Artifacts, creatures, and lands your opponents control enter tapped"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: ZoneChangeEvent):
+        if event.card.owner_id != flip(s.owner_id) or event.to_zone != Zone.BATTLEFIELD:
+            return
+        artifacts = gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result()
+        creatures = gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result()
+        lands = gs.card_filter.on_player_board(flip(s.owner_id)).lands().result()
+        if event.card not in artifacts + creatures + lands:
+            return
+        gs.tap_card(event.card)
 
 class ManaShort(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):

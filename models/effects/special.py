@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
-    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice
+    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice
 from models.actions.special import SacCreatureAndAddMana, PayManaToDrawCards
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER
 from models.damage import PreventNextDamage
@@ -269,6 +269,14 @@ class SwordsToPlowshares(Effect):
         if target:
             gs.exile(target)  # which is correct?  exile_from_play() or exile()
             gs.increment_life(target.orig_owner_id, target.power)
+
+class SylvanLibrary(Effect):
+    """At your draw step, you may draw two additional cards.
+    If you do, choose two cards in your hand drawn this turn.
+    For each of those cards, pay 4 life or put the card on top of your library."""
+    # TODO: Once player opts to draw, control needs to be returned back to player to then make subsequent choices.
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.action_stack.push(DrawCardsOrDontChoice(gs.player_turn_idx, gs, source, 2))
 
 class SyphonSoul(Effect):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""

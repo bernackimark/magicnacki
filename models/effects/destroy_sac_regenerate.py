@@ -1,7 +1,9 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
-from models.events.events_all import StateBasedEvent, DiesEvent
+from models.events.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent
+from models.zone import Zone
+from utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -68,6 +70,12 @@ class EaterOfTheDeadAA(Effect):
         GraveyardToExile().resolve(gs, source, target)
         source.untap(gs)
 
+class EnergyFlux(Effect):
+    """All artifacts have 'At your upkeep, sacrifice this artifact unless you pay {2}'"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        for your_artifact in gs.card_filter.on_player_board(gs.player_turn_idx).artifacts().result():
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_artifact, '2'))
+
 class ErosionUpkeep(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
@@ -77,6 +85,20 @@ class ForceOfNatureUpkeep(Effect):
     def resolve(self, gs: GameState, s: GameCard, target=None):
         gs.action_stack.push(ForceOfNatureUpkeepChoice(s.orig_owner_id, gs, s, 'GGGG', 8), gs, False)
 
+class LandEquilibrium(Effect):
+    """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,
+    that player instead puts that land onto the battlefield then sacrifices a land of their choice"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if source.owner_id == event.card.owner_id or event.card not in gs.card_filter.land().result():
+            return
+        your_land_cnt = len(gs.card_filter.on_player_board(source.owner_id).lands().result())
+        opp_lands = gs.card_filter.on_player_board(event.card.owner_id).lands().result()
+        if len(opp_lands) < your_land_cnt:
+            return
+        gs.action_stack.push(SacALandChoice(event.card.owner_id, gs, source))
+
 class ManaVortexUpkeep(Effect):
     """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -85,6 +107,15 @@ class ManaVortexUpkeep(Effect):
             return
         for land in CardFilter(gs).on_player_board(gs.player_turn_idx).lands().result():
             SacALandChoice(gs.player_turn_idx, gs, land)
+
+class Millstone(Effect):
+    """{2}, {T}: Target player mills two cards"""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a player to target')
+        for _ in range(2):
+            top_card = gs.libraries[target].cards[0]  # Warning: if no cards, this pukes
+            gs.move_card(top_card, Zone.GRAVEYARD, cause='mill')
 
 class PestilenceEndStep(Effect):
     """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""
@@ -145,6 +176,12 @@ class SerendibDjinnNoLands(Effect):
         if not your_lands:
             print(f'Player #{source.orig_owner_id} has no lands, so Serendib Djinn is destroyed')
             gs.destroy(source)
+
+class TheTabernacleAtPendrellVale(Effect):
+    """All creatures have 'At your upkeep, destroy this creature unless you pay {1}.'"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        for your_creature in gs.card_filter.on_player_board(gs.player_turn_idx).creatures().result():
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_creature, '1'))
 
 class VoodooDollEndStep(Effect):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""

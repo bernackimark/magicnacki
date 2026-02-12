@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Iterable
 from constants import COLOR_LETTERS_W_COLORLESS
 from models.actions.damage import DealDamage, PayLife
 from models.actions.destroy_sac_regen import Sac, Destroy
+from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands
@@ -28,6 +29,16 @@ class AddManaOfColorChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [AddMana(self.p_id, self.gs, self.source, color, self.amt) for color in self.possible_colors]
+
+class DrawCardsOrDontChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, cnt: int = 1):
+        super().__init__(p_id, gs, source)
+        self.cnt = cnt
+
+    def get_actions(self) -> list[Action]:
+        actions: list[Action] = [DrawCard(self.p_id, self.gs) for _ in range(self.cnt)]
+        actions.append(DoNothing(self.p_id, self.gs))
+        return actions
 
 class PayManaOrSacUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):

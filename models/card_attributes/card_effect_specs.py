@@ -18,7 +18,7 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
     DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
-    DingusEgg, GoblinShrineOnLeave
+    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped
 from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention
@@ -26,8 +26,8 @@ from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDama
 from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
-    DestroyIfItAttacked, PsychicAllergyUpkeep
-from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune
+    DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale
+from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
@@ -50,9 +50,10 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
-    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped
+    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
 from models.events.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent
+    DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
+    DrawStepEvent
 from phase_fsm import Phase
 
 
@@ -205,6 +206,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
     'enchanted-being': [Static(EnchantedBeingPrevention())],
+    'energy-flux': [Triggered(EnergyFlux(), None, UpkeepEvent)],
     'energy-tap': [Triggered(EnergyTap(), T_FUNCS['your_untapped_creatures'], CastResolvedEvent)],
     'erg-raiders': [Triggered(ErgRaiders(), None, EndStepEvent)],
     'erhnam-djinn': [Triggered(ErhnamDjinn(), T_FUNCS['opp_non_wall_creatures_in_play'], UpkeepEvent)],
@@ -326,12 +328,14 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'killer-bees': [Activated('G', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
     'kird-ape': [Static(KirdApePT())],
+    'kismet': [Static(Kismet())],
     'kobold-drill-sergeant': [Triggered(KoboldDrillSergeant(), None, CastResolvedEvent)],
     'kobold-overlord': [Triggered(KoboldOverlordCast(), None, CastResolvedEvent)],
     'kobold-taskmaster': [Triggered(KoboldTaskmaster(), None, CastResolvedEvent)],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures_in_play'])],
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'land-equilibrium': [Static(LandEquilibrium())],
     'leviathan':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
          Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
@@ -352,7 +356,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
     'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
-                   Activated('T', AddMana('C', 3), T_FUNCS['card_owner'])],
+                   Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
+                   Triggered(ManaVaultDamageIfTapped(), None, DrawStepEvent)],
     'mana-vortex':
         [Triggered(Destroy(), T_FUNCS['your_lands_in_play'], CastResolvedEvent),
          Triggered(ManaVortexUpkeep(), None, UpkeepEvent)],
@@ -365,6 +370,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'meekstone': [Static(Meekstone())],
     'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
     'mightstone': [Static(Mightstone())],
+    'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
@@ -490,6 +496,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'tetravus': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
+    'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale(), None, UpkeepEvent)],
     'throne-of-bone': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('B'))],
     'time-vault':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
@@ -528,6 +535,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'venarian-gold':
         [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['your_creatures_in_play'], UpkeepEvent),
          Triggered(VenarianGoldHostStaysTapped(), None, UntapPhaseEvent)],
+    'verduran-enchantress': [Static(VerduranEnchantress())],
     'volcanic-island': dual_land_activated_ability_specs('RU'),
     'voodoo-doll':
         [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent),

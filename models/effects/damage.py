@@ -229,6 +229,14 @@ class LordOfThePitUpkeep(Effect):
         for action in possible_sacrifice_actions:
             gs.action_stack.push(action, gs, False)
 
+class ManaVaultDamageIfTapped(Effect):
+    """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
+    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        if gs.player_turn_idx != s.owner_id:
+            return
+        if s.is_tapped:
+            gs.apply_damage(s, 1, s.owner_id)
+
 class PersonalIncarnation(Effect):
     """... When this creature dies, its owner loses half their life, rounding up the loss amount"""
     listens_to = DiesEvent
