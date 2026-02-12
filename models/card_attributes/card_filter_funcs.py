@@ -24,7 +24,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'attackers': lambda gs, s: gs.card_filter.attackers().result(),
     'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result()
                                      for a in c.modifiers.auras if isinstance(a, GameCard)],
-    'auras_on_owners_creatures': lambda gs, s: [a for c in gs.card_filter.on_player_board(s).creatures().result()
+    'auras_on_owners_creatures': lambda gs, s: [a for c in gs.card_filter.on_player_board(s.owner_id).creatures().result()
                                                 for a in c.modifiers.auras if isinstance(a, GameCard)],
     'black_in_play': lambda gs, s: gs.card_filter.in_play().black().result(),
     'black_and_red_in_play': lambda gs, s: [gs.card_filter.in_play().black().result() +
