@@ -18,7 +18,7 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
     DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
-    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped
+    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee
 from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention
@@ -112,6 +112,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'bad-moon': [Static(BadMoon())],
     'badlands': dual_land_activated_ability_specs('BR'),
     'ball_lightning': [Triggered(Destroy(), T_FUNCS['self'], EndStepEvent)],
+    'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'],
+                          max_variable_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
     'basalt-monolith': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_activated_ability_specs('BG'),
@@ -421,7 +423,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'pradesh-gypsies': [Activated('1GT', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'preacher': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],
-    'prodigal-sorcerer': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
+    'prodigal-sorcerer': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'], text="Deal 1 Damage}")],
     'psionic-blast': [Triggered(DealDamageToTargetAndYou(4, 2),
                                 T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'psionic-entity': [Activated('T', DealDamageToTargetAndSelf(2, 3), T_FUNCS['all_creatures_and_players'])],
@@ -519,7 +521,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tranquility':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Enchantment').result()),
                    None, CastResolvedEvent)],
-    'triskelion': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
+    'triskelion': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent),
+                   Activated('X', DealDamage(1), T_FUNCS['all_creatures_and_players'],
+                             extra_costs=[],  # needs to know how many counters it has, in order to pay it
+                             max_variable_x_func=lambda gs, s: min(s.counters.get_count(PLUS_ONE),
+                                                                   gs.mana_pools[s.owner_id].get_max_x('X')))],
     'tropical-island': dual_land_activated_ability_specs('GU'),
     'tsunami':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_slug('island').result()),

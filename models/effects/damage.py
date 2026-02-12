@@ -22,7 +22,7 @@ class DealDamage(Effect):
     def __init__(self, amount):
         self.amount = amount
 
-    def resolve(self, gs, source: GameCard, target: GameCard = None):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard | int = None):
         gs.apply_damage(source, self.amount, target)
 
 class DealDamageOnSourceTurn(Effect):
@@ -101,6 +101,17 @@ class Backfire(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
         if event.source is source.attached_to and event.target == source.orig_owner_id:
             gs.apply_damage(source, event.amt, source.attached_to.orig_owner_id)
+
+class Banshee(Effect):
+    """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        if not t:
+            raise ValueError(f'{s.props.name} needs a target')
+        damage_to_target = s.variable_x // 2
+        damage_to_you = s.variable_x - damage_to_target
+        gs.apply_damage(s, damage_to_target, t)
+        gs.apply_damage(s, damage_to_you, s.owner_id)
+        s.variable_x = None
 
 class BlackVise(Effect):
     """As opponent's upkeep, this artifact deals X damage to that player, X is = cards in their hand minus 4"""
