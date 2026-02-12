@@ -33,6 +33,10 @@ class DrawCardEvent(Event):
     player_id: int
 
 @dataclass(frozen=True)
+class DrawStepEvent(Event):
+    active_player: int
+
+@dataclass(frozen=True)
 class DiesEvent(Event):
     """MTG specifically considers 'dies' as moving from board to graveyard only"""
     card: GameCard
