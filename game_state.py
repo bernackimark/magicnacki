@@ -185,7 +185,7 @@ class GameState:
         # 3. Apply damage
         if is_combat and source and 'Trample' in source.keyword_abilities and isinstance(target, GameCard):
             damage_to_card = min(target.toughness, event.remaining)
-            target.combat_damage_received += damage_to_card
+            target.damage_received_this_turn += damage_to_card
             resolved_events.append(DamageResolvedEvent(source, damage_to_card, target, True))
 
             damage_to_player = event.remaining - damage_to_card
@@ -194,7 +194,9 @@ class GameState:
                 resolved_events.append(DamageResolvedEvent(source, damage_to_player, target.orig_owner_id, True))
         else:
             if isinstance(target, GameCard):
-                target.combat_damage_received += event.remaining
+                target.damage_received_this_turn += event.remaining
+                if target.damage_received_this_turn >= target.toughness:  # this doesn't feel correct here
+                    self.destroy(target)
             else:
                 self.decrement_life(target, event.remaining, source)
 
@@ -203,6 +205,7 @@ class GameState:
         # 4. Emit resolved events
         for e in resolved_events:
             self.emit(e)
+            # TODO: i don't think anything is listening for these events
 
     def trigger_damage_prevention(self, event: DamageEvent):
         # Replacement effects (statics + globals)
@@ -397,18 +400,18 @@ class GameState:
             if isinstance(targets, (list, tuple)) and not len(targets):
                 continue
 
-            # There is either exactly one or no target.  Create one action.
-            elif targets is None or isinstance(targets, int) or isinstance(targets, GameCard):
-                actions.append(ActivateAbility(self.action_on_idx, self, ability, targets))
-                continue
+            # convert targets into something iterable
+            targets = [targets] if not isinstance(targets, (list, tuple)) else targets
 
-            # There are multiple targets.  Create an action for each target.
-            elif isinstance(targets, (list, tuple)):
-                for t in targets:
+            for t in targets:
+                if 'X' in ability.eff_spec.cost:
+                    min_x = ability.eff_spec.min_x
+                    max_x = ability.eff_spec.max_variable_x_func(self, c)
+                    for x in range(min_x, max_x + 1):
+                        actions.append(ActivateAbility(self.action_on_idx, self, ability, t, x))
+                else:
                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
 
-            else:
-                raise ValueError(f"Broke assigning target to this Activated Ability: {ability.source} {targets=}")
         return actions
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
@@ -466,7 +469,7 @@ class GameState:
                 if isinstance(targets, list) and not targets:
                     continue
 
-                # targets is a list of GameCard; append an available action for each Target
+                # targets is a list of GameCard; append available action for each Target & each target-variable_X combo
                 for t in targets:
                     if 'X' in c.casting_cost:
                         max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
@@ -594,8 +597,8 @@ class GameState:
             # 2) doesn't feel the right way to expire expiring damage
             for deck in self.decks_all_cards:
                 for c in deck.cards:
-                    c.combat_damage_dealt = 0
-                    c.combat_damage_received = 0
+                    c.damage_dealt_this_turn = 0
+                    c.damage_received_this_turn = 0
             self.phase = Phase.END_TURN_EFFECTS
 
         if self.phase == Phase.END_TURN_EFFECTS:
