@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from utils import flip
-from ..events.events_all import ZoneChangeEvent
+from ..events.base import Event
+from ..events.events_all import ZoneChangeEvent, UpkeepEvent
 from ..zone import Zone
 
 if TYPE_CHECKING:
@@ -53,7 +54,7 @@ class HandToBoard(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.cast(source)
 
-class ControlMagicLeaves(Effect):
+class StealCardLeaves(Effect):
     """You control enchanted creature; must return if Control Magic leaves board"""
     listens_to = ZoneChangeEvent
 
@@ -65,6 +66,19 @@ class ControlMagicLeaves(Effect):
         Steal().resolve(gs, source, host)
         print('I think I returned control to', flip(host.owner_id))
 
+class GhazbanOgre(Effect):
+    """At your upkeep, if a player has more life than each other player,
+    the player with the most life gains control of this creature (assuming "your" = the current controller)"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: Event):
+        if gs.player_turn_idx != source.owner_id:
+            return
+        if len(set(gs.life)) == 1:
+            return
+        most_life_player_idx = max(range(len(gs.life)), key=lambda i: gs.life[i])
+        if most_life_player_idx != source.owner_id:
+            Steal().resolve(gs, source, source)
 
 class GraveRobbersAA(Effect):
     """{B}, {T}: Exile target artifact card from a graveyard. You gain 2 life."""

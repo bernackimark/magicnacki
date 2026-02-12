@@ -34,7 +34,7 @@ from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    ControlMagicLeaves
+    StealCardLeaves, GhazbanOgre
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
@@ -170,7 +170,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
     'control-magic': [Triggered(Steal(), T_FUNCS['opp_creatures_in_play'], CastResolvedEvent),
-                      Triggered(ControlMagicLeaves(), None, ZoneChangeEvent)],
+                      Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent)],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
     'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],
@@ -258,6 +258,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
                               allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
     'gaseous-form': [Triggered(GaseousForm(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'ghazbán-ogre': [Triggered(GhazbanOgre(), None, UpkeepEvent)],
     'ghosts-of-the-damned': [Activated('T', PumpEffect(-1, 0, True), T_FUNCS['creatures_in_play'])],
     'giant-growth':
         [Triggered(PumpEffect(3, 3, True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
@@ -393,7 +394,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['creatures_and_enchantments_in_play'])],
     'oasis': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['creatures_in_play'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
-    'old-man-of-the-sea': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'old-man-of-the-sea': [Activated('T', Steal(), T_FUNCS['opp_creatures_power_not_greater_than_source']),
+                           Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                           Triggered(StealCardLeaves(), None, UntapCardEvent)],  # WARNING: doubt this works;
     'onulet': [Triggered(Onulet(), None, DiesEvent)],
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
     'orcish-oriflamme': [Static(OrcishOriflamme())],
@@ -482,6 +485,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'staff-of-zegon': [Activated('3T', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
                         for c in COLOR_LETTERS],
+    'steal-artifact': [Triggered(Steal(), T_FUNCS['opp_artifacts_in_play'], CastResolvedEvent),
+                       Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
     'stone-giant': [Activated('T', StoneGiant(), T_FUNCS['stone_giant'])],
     'stone-rain': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'storm-seeker': [Triggered(StormSeeker(), T_FUNCS['all_players'], CastResolvedEvent)],
