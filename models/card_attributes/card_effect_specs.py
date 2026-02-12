@@ -33,7 +33,8 @@ from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDj
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
-from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety
+from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
+    ControlMagicLeaves
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
@@ -82,6 +83,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'acid-rain': [Triggered(AcidRain(), None, CastResolvedEvent)],
     'active-volcano': [Triggered(ActiveVolcano(), T_FUNCS['active_volcano_targets'], CastResolvedEvent)],
     'akron-legionnaire': [Triggered(AkronLegionnaireCast(), None, CastResolvedEvent)],
+    'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play'])],
     'aladdins-ring': [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'ali-baba': [Activated('RT', TapCardEffect(), T_FUNCS['walls_in_play'])],
     'amrou-kithkin': [Static(AmrouKithkin())],
@@ -167,6 +169,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                            untap_for_mana_at_owner_upkeep('9')],
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
+    'control-magic': [Triggered(Steal(), T_FUNCS['opp_creatures_in_play'], CastResolvedEvent),
+                      Triggered(ControlMagicLeaves(), None, ZoneChangeEvent)],
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent)],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
     'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],

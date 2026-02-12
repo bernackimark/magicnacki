@@ -1,6 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
+from utils import flip
+from ..events.events_all import ZoneChangeEvent
+from ..zone import Zone
+
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
@@ -18,6 +22,16 @@ class Reanimate(Effect):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         gs.reanimate(target)
+
+class Steal(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        print(target, target.owner_id)
+        print(gs.boards[target.owner_id])
+        gs.boards[target.owner_id].remove(target)
+        gs.boards[flip(target.owner_id)].append(target)
+        target.owner_id = flip(target.owner_id)
 
 class GraveyardToExile(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -38,6 +52,19 @@ class GraveyardToExileInItsEntirety(Effect):
 class HandToBoard(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.cast(source)
+
+class ControlMagicLeaves(Effect):
+    """You control enchanted creature; must return if Control Magic leaves board"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        print(source, event, f'The host {event.card.attached_to} belongs to player #{event.card.attached_to.owner_id if event.card.attached_to else "no host"}')
+        if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
+            return
+        host = event.card.attached_to
+        Steal().resolve(gs, source, host)
+        print('I think I returned control to', flip(host.owner_id))
+
 
 class GraveRobbersAA(Effect):
     """{B}, {T}: Exile target artifact card from a graveyard. You gain 2 life."""
