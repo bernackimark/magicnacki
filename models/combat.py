@@ -62,12 +62,12 @@ class Combat:
     def _end_combat(self):
         """Moves all creatures with lethal damage to the graveyard"""
         # Attacker
-        if self.attacker.toughness - self.attacker.combat_damage_received <= 0:
+        if self.attacker.toughness - self.attacker.damage_received_this_turn <= 0:
             self.killed_creatures.append(self.attacker)
 
         # Blockers
         for b in self.blockers:
-            if b.toughness - b.combat_damage_received <= 0:
+            if b.toughness - b.damage_received_this_turn <= 0:
                 if b not in self.killed_creatures:
                     self.killed_creatures.append(b)
 
