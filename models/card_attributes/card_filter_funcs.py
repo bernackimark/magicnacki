@@ -62,6 +62,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'lands_in_play': lambda gs, source: gs.card_filter.in_play().lands().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
+    'opp_artifacts_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),
     'opp_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result(),
     'opp_creatures_who_could_have_but_didnt_attack':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result()
