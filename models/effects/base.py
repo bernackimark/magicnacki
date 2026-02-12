@@ -55,6 +55,8 @@ class EffSpec:
     activated_cnt_this_turn: int = 0
     max_activations_per_turn: int = 999
     text: str = ''
+    max_variable_x_func: Union[Callable[..., int], None] = None
+    min_x: int = 1
 
     @property
     def costs(self) -> list[Cost | None]:
@@ -115,10 +117,6 @@ class ActivatedAbility:
                     print('G')
                     return False
         return all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs)
-
-    def pay_costs(self, gs):
-        for cost in self.eff_spec.costs:
-            cost.pay(gs, self.source)
 
 @dataclass
 class TriggeredAbility:
