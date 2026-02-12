@@ -20,7 +20,8 @@ from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule, CanCastBaseRule
 from models.events.base import Event
 from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent, DrawCardEvent
+    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent, DrawCardEvent, \
+    DrawStepEvent
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -519,6 +520,7 @@ class GameState:
             return
 
         if self.phase == Phase.DRAW:
+            self.emit(DrawStepEvent(active_player=self.player_turn_idx))
             return [DrawCard(p_id, self)]
 
         if self.phase == Phase.CAST:
