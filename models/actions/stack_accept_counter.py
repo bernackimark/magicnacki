@@ -20,7 +20,10 @@ class AcceptAction(Action):
         target = last_action.target if hasattr(last_action, 'target') else None
 
         if isinstance(last_action, ActivateAbility):
-            last_action.ability.eff_spec.effect.resolve(self.gs, last_action.ability.source, target)
+            if last_action.x_value is not None:
+                last_action.ability.eff_spec.effect.resolve(self.gs, last_action.ability.source, target, last_action.x_value)
+            else:
+                last_action.ability.eff_spec.effect.resolve(self.gs, last_action.ability.source, target)
             self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
             self.gs.action_stack.clear_()
             return
