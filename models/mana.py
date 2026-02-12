@@ -23,6 +23,8 @@ def parse_casting_cost(casting_cost: str) -> dict[str, int]:
     for num in re.findall(r'\d+', casting_cost):
         result['C'] += int(num)
     for letter in re.findall(r'[A-Za-z]', casting_cost):
+        if letter == 'T':
+            continue
         result[letter] += 1
     return result
 
