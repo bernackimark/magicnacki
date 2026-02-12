@@ -47,8 +47,8 @@ class GameCard:
 
         self.zone = Zone.LIBRARY
 
-        self.combat_damage_dealt: int = 0  # not sure that these belong here
-        self.combat_damage_received: int = 0
+        self.damage_dealt_this_turn: int = 0  # not sure that these belong here
+        self.damage_received_this_turn: int = 0
 
         self.base_pt = (self.props.power, self.props.toughness)
         self.variable_x: int | None = None  # for variable casting costs
