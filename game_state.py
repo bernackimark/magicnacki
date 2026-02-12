@@ -220,7 +220,6 @@ class GameState:
                 self.damage_preventions.remove(p)
 
     # --- CARD MOVEMENT ---
-    # potentially new consolidated approach
     def move_card(self, card: GameCard, to_zone: Zone, *, cause: str | None = None, emit_zone_event: bool = True):
         if card.zone == to_zone:
             return
