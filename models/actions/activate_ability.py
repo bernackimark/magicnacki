@@ -10,7 +10,7 @@ from models.game_card import GameCard
 class ActivateAbility(Action):
     ability: ActivatedAbility
     target: GameCard | list[GameCard] | tuple[int] | int | None = None
-    x_value_for_variable_activation: int | None = None
+    x_value: int | None = None
 
     def __repr__(self) -> str:
         target_text = ''
@@ -22,16 +22,16 @@ class ActivateAbility(Action):
             target_text = ', targeting Player #' + '& '.join([_ for _ in self.target])
         elif isinstance(self.target, int):
             target_text = f', targeting Player #{self.target}'
-        if self.x_value_for_variable_activation is not None:
-            target_text += f", X={self.x_value_for_variable_activation}"
-        return (f"{self.ability.source}: {{{self.x_value_for_variable_activation or ''}{self.ability.eff_spec.cost}}}: "
+        if self.x_value is not None:
+            target_text += f", X={self.x_value}"
+        return (f"{self.ability.source}: {{{self.x_value or ''}{self.ability.eff_spec.cost}}}: "
                 f"{self.ability.eff_spec.text}{target_text}")
 
     def play(self) -> None:
-        if self.x_value_for_variable_activation is not None:
-            x_cost = self.ability.eff_spec.cost[:].replace('X', str(self.x_value_for_variable_activation))
+        if self.x_value is not None:
+            x_cost = self.ability.eff_spec.cost[:].replace('X', str(self.x_value))
             self.gs.mana_pools[self.player_idx].pay(x_cost)
-            self.ability.source.variable_x = self.x_value_for_variable_activation
+            self.ability.source.variable_x = self.x_value
         else:
             self.gs.mana_pools[self.player_idx].pay(self.ability.eff_spec.cost)
         if 'T' in self.ability.eff_spec.cost:
