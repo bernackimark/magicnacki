@@ -226,7 +226,7 @@ class GameState:
 
         # Unregister effects, remove all mods if leaving battlefield
         if card.zone == Zone.BATTLEFIELD:
-            self._leave_battlefield(card)
+            self._leave_battlefield(card, to_zone)
 
         self._remove_from_zone(card, card.zone)
         self._add_to_zone(card, to_zone)
@@ -277,6 +277,7 @@ class GameState:
                 self.hands[card.orig_owner_id].sort_cards()
             case Zone.GRAVEYARD:
                 self.graveyards[card.orig_owner_id].append(card)
+                print(f'added {card} to graveyard here')
             case Zone.EXILE:
                 self.exiles[card.orig_owner_id].append(card)
             case Zone.LIBRARY:
@@ -300,11 +301,15 @@ class GameState:
     def _set_zone(card: GameCard, zone: Zone):
         card.zone = zone
 
-    def _leave_battlefield(self, card: GameCard):
+    def _leave_battlefield(self, card: GameCard, to_zone: Zone):
+        """Emit ZoneChangeEvent before unregistering its effects"""
+        self.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'))
         self.unregister_effects(card)
         for aura in list(card.modifiers.auras):
             if isinstance(aura, GameCard):
+                self.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'))
                 self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
+                self.unregister_effects(aura)
         card.clear_all_mods()
         self.emit(StateBasedEvent())
 
