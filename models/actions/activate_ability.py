@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from models.actions.base import Action
 from models.effects.base import ActivatedAbility
+from models.events.events_all import StateBasedEvent
 from models.game_card import GameCard
 
 
@@ -9,8 +10,10 @@ from models.game_card import GameCard
 class ActivateAbility(Action):
     ability: ActivatedAbility
     target: GameCard | list[GameCard] | tuple[int] | int | None = None
+    x_value_for_variable_activation: int | None = None
 
     def __repr__(self) -> str:
+        target_text = ''
         if isinstance(self.target, list) and self.target and isinstance(self.target[0], GameCard):
             target_text = f", targeting {', '.join([_ for _ in self.target])}"
         elif isinstance(self.target, GameCard):
@@ -19,14 +22,20 @@ class ActivateAbility(Action):
             target_text = ', targeting Player #' + '& '.join([_ for _ in self.target])
         elif isinstance(self.target, int):
             target_text = f', targeting Player #{self.target}'
-        else:
-            target_text = ''
-        return f"{self.ability.source}: {{{self.ability.eff_spec.cost}}}: {self.ability.eff_spec.text}{target_text}"
+        if self.x_value_for_variable_activation is not None:
+            target_text += f", X={self.x_value_for_variable_activation}"
+        return (f"{self.ability.source}: {{{self.x_value_for_variable_activation or ''}{self.ability.eff_spec.cost}}}: "
+                f"{self.ability.eff_spec.text}{target_text}")
 
     def play(self) -> None:
-        self.ability.pay_costs(self.gs)
+        if self.x_value_for_variable_activation is not None:
+            x_cost = self.ability.eff_spec.cost[:].replace('X', str(self.x_value_for_variable_activation))
+            self.gs.mana_pools[self.player_idx].pay(x_cost)
+            self.ability.source.variable_x = self.x_value_for_variable_activation
+        else:
+            self.gs.mana_pools[self.player_idx].pay(self.ability.eff_spec.cost)
+        if 'T' in self.ability.eff_spec.cost:
+            self.gs.tap_card(self.ability.source)
+        self.gs.action_stack.push(self, self.gs)
+        self.gs.emit(StateBasedEvent())
 
-        # Execute effect
-        # TODO: for the sake of testing, perms are being auto-cast, instead of being added to the stack
-        self.ability.eff_spec.effect.resolve(self.gs, self.ability.source, self.target)
-        # self.ability(self.gs, self.ability.card, self.target)
