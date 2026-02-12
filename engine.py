@@ -47,6 +47,16 @@ for i, cards in enumerate((deck_0, deck_1)):
     deck: Deck = deck_builder.complete_deck()
     decks.append(deck)
 
+# for speed of testing, reduce all cards' casting costs
+for d in decks:
+    for c in d.cards:
+        if not c.casting_cost:
+            continue
+        if c.casting_cost[-1] not in ('B', 'U', 'G', 'R', 'W'):
+            c.casting_cost = '1'
+        else:
+            c.casting_cost = c.casting_cost[-1]
+
 # create players
 players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]
 
