@@ -41,7 +41,7 @@ class CastToBoard(Action):
                 if eff_spec.activation_type != 'triggered':
                     continue
                 if eff_spec.trigger_event == CastResolvedEvent:
-                    targets = eff_spec.target_filter() if eff_spec.target_filter else None
+                    targets = eff_spec.target_filter(self.gs, self.card) if eff_spec.target_filter else None
                     eff_spec.effect.resolve(self.gs, self.card, targets)
                     print(f"Activated the ability on cast for {self.card.props.name}")
 
