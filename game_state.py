@@ -385,6 +385,9 @@ class GameState:
         for ability in c.activated_abilities:
             if not ability.can_activate(self):
                 continue
+            for extra_cost in ability.eff_spec.extra_costs:
+                if not extra_cost.can_pay(self, c):
+                    continue  # does this just break out of this loop, or does it exit entire ability loop (desired)?
             if c.has_summoning_sickness:
                 continue
 
