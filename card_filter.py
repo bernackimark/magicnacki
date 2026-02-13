@@ -77,6 +77,10 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'Creature' in c.card_types and 'Wall' not in c.card_sub_types]
         return self
 
+    def non_artifact_creatures(self):
+        self._cards = [c for c in self._cards if 'Creature' in c.card_types and 'Artifact' not in c.card_types]
+        return self
+
     def by_type(self, type_: str | list):
         if isinstance(type_, list):
             self._cards = [c for c in self._cards for t in type_ if t in c.card_types]
