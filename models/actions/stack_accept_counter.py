@@ -37,7 +37,7 @@ class AcceptAction(Action):
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
             if eff_spec.activation_type in ('activated', 'triggered'):
                 # resolve immediately if it's a 'cast' effect
-                if eff_spec.trigger_event is CastResolvedEvent:
+                if eff_spec.trigger_event is CastResolvedEvent and eff_spec.effect:
                     eff_spec.effect.resolve(self.gs, card, target)
 
         # --- Emit event so other effects can respond ---

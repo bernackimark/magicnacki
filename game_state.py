@@ -86,7 +86,7 @@ class GameState:
 
     def register_effect(self, effect: Effect, source_card: GameCard):
         """Store the effect + source card tuple for later event emission."""
-        if effect.listens_to:
+        if effect and effect.listens_to:
             self._event_listeners[effect.listens_to].append((effect, source_card))
 
     def unregister_effects(self, card: GameCard):
