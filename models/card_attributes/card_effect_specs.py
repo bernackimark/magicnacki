@@ -1,5 +1,9 @@
 from __future__ import annotations
+
+from itertools import combinations
 from typing import TYPE_CHECKING
+
+from models.effects.identity import SetColor, TurnIntoCreature, NoLongerACreature
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -50,7 +54,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
-    FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall
+    FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
@@ -88,6 +92,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play'])],
     'aladdins-ring': [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'ali-baba': [Activated('RT', TapCardEffect(), T_FUNCS['walls_in_play'])],
+    'alchors-tomb': [Activated('2T', SetColor(c), T_FUNCS['your_permanents_in_play'], text=f'Set color to {{{c}}}')
+                     for c in COLOR_LETTERS],
     'amrou-kithkin': [Static(AmrouKithkin())],
     'amulet-of-kroog': [Activated('2T', PreventNextDamageEffect(1), T_FUNCS['all_creatures_and_players'])],
     'ancestral-recall': [Triggered(DrawCards(3), T_FUNCS['all_players'], CastResolvedEvent)],
@@ -109,6 +115,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'artifact-ward': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
                       Static(ArtifactWardCanBeBlocked(), Static(ArtifactWardPrevention()))],
     'ashnods-battle-gear': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'ashnods-transmogrant':
+        [Activated('T', AshnodsTransmogrant(), T_FUNCS['non_artifact_creatures_in_play'], extra_costs=[SacSelfCost()])],
     'aspect-of-wolf': [Static(AspectOfWolfPT())],
     'backfire': [Triggered(Backfire(), None, DamageResolvedEvent)],
     'bad-moon': [Static(BadMoon())],
@@ -153,6 +161,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'carrion-ants': [Activated('1', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'castle': [Static(Castle())],
     'celestial-prism': [Activated('2T', AddMana(c), T_FUNCS['card_owner'], text=f'Add 1 {c}') for c in COLOR_LETTERS],
+    'chaoslace': [Triggered(SetColor('R'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts_in_play'])],
     'circle-of-protection-black': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['black_in_play'])],
     'circle-of-protection-blue': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['blue_in_play'])],
@@ -200,6 +209,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
     'darkness': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'deadfall': [Static(WalkRuleRemoved('Forestwalk'))],
+    'deathlace': [Triggered(SetColor('B'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'demonic-torment':
         [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'desert-twister': [Triggered(Destroy(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
@@ -212,6 +222,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'dragon-engine': [Activated('2', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'dragon-whelp': [Triggered(DragonWhelpEndStep(), None, EndStepEvent)],
     'drain-power': [Triggered(DrainPower(), T_FUNCS['opponent'], CastResolvedEvent)],
+    'dream-coat': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent)] +
+                  [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1, text=f'{{{combo}}}')
+                   for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],
+                  # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'])],
     'earthbind': [Triggered(Earthbind(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
@@ -337,6 +351,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-tower': [Triggered(IvoryTower(), None, UpkeepEvent)],
     'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],
+    'jade-statue': [Activated('2', TurnIntoCreature(3, 6, 'Golem'), T_FUNCS['self'],
+                              allowed_phases=[Phase.CAST]),
+                    Triggered(NoLongerACreature(), T_FUNCS['self'], CombatEndEvent)],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
@@ -368,6 +385,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    allowed_phases=Phase.DECLARE_ATTACKERS, allowed_player_turn=T_FUNCS['card_owner'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
     'lightning-bolt': [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
+    'lifelace': [Triggered(SetColor('G'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'living-armor':
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
     'living-artifact':
@@ -446,6 +464,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'psychic-venom':
         [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
          Triggered(DealDamage(2), T_FUNCS['host_owner']), TapCardEvent],
+    'purelace': [Triggered(SetColor('W'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures_in_play'])],
@@ -526,6 +545,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tetravus': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale(), None, UpkeepEvent)],
+    'thoughtlace': [Triggered(SetColor('U'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'throne-of-bone': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('B'))],
     'time-vault':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),

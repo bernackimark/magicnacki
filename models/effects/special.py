@@ -17,6 +17,14 @@ from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
 
+class AshnodsTransmogrant(Effect):
+    """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.
+    That creature becomes an artifact in addition to its other types."""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        if not t:
+            raise RuntimeError(f'{s.props.name} needs a target')
+        t.counters.add_counter(PLUS_ONE)
+        t.card_types.append('Artifact')
 
 class ActiveVolcano(Effect):
     """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""

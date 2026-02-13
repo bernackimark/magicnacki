@@ -60,6 +60,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'in_turn_player': lambda gs, _: gs.player_turn_idx,
     'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),
     'lands_in_play': lambda gs, s: gs.card_filter.in_play().lands().result(),
+    'non_artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
     'opp_artifacts_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),
@@ -95,6 +96,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'white_in_play': lambda gs, s: gs.card_filter.in_play().white().result(),
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
     'your_lands_in_play': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).lands().result(),
+    'your_permanents_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).permanents().result(),
     'your_untapped_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),
     'your_walls_in_play': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).in_play().walls().result(),
 }
