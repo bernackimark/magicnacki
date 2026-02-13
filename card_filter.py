@@ -45,7 +45,7 @@ class CardFilter:
 
     # --- by type/sub-type ---
     def artifacts(self):
-        self._cards = [c for c in self._cards if 'Artifact' in c.props.card_types]
+        self._cards = [c for c in self._cards if 'Artifact' in c.card_types]
         return self
 
     def basic_lands(self):
@@ -53,71 +53,70 @@ class CardFilter:
         return self
 
     def creatures(self):
-        self._cards = [c for c in self._cards if 'Creature' in c.props.card_types]
+        self._cards = [c for c in self._cards if 'Creature' in c.card_types]
         return self
 
     def enchantments(self):
-        self._cards = [c for c in self._cards if 'Enchantment' in c.props.card_types]
+        self._cards = [c for c in self._cards if 'Enchantment' in c.card_types]
         return self
 
     def lands(self):
-        self._cards = [c for c in self._cards if 'Land' in c.props.card_types]
+        self._cards = [c for c in self._cards if 'Land' in c.card_types]
         return self
 
     def permanents(self):
         permanent_types = {'Artifact', 'Enchantment', 'Creature', 'Land'}
-        self._cards = [c for c in self._cards if any(t in c.props.card_types for t in permanent_types)]
+        self._cards = [c for c in self._cards if any(t in c.card_types for t in permanent_types)]
         return self
 
     def walls(self):
-        self._cards = [c for c in self._cards if 'Wall' in c.props.card_sub_types]
+        self._cards = [c for c in self._cards if 'Wall' in c.card_sub_types]
         return self
 
     def non_wall_creatures(self):
-        self._cards = [c for c in self._cards if 'Creature' in c.props.card_types
-                       and 'Wall' not in c.props.card_sub_types]
+        self._cards = [c for c in self._cards if 'Creature' in c.card_types and 'Wall' not in c.card_sub_types]
         return self
 
     def by_type(self, type_: str | list):
         if isinstance(type_, list):
-            self._cards = [c for c in self._cards for t in type_ if t in c.props.card_types]
+            self._cards = [c for c in self._cards for t in type_ if t in c.card_types]
         else:
-            self._cards = [c for c in self._cards if type_ in c.props.card_types]
+            self._cards = [c for c in self._cards if type_ in c.card_types]
         return self
 
     def by_sub_type(self, type_: str | list):
         if isinstance(type_, list):
-            self._cards = [c for c in self._cards for t in type_ if t in c.props.card_sub_types]
+            self._cards = [c for c in self._cards for t in type_ if t in c.card_sub_types]
         else:
-            self._cards = [c for c in self._cards if type_ in c.props.card_sub_types]
+            self._cards = [c for c in self._cards if type_ in c.card_sub_types]
         return self
 
     # --- by color ---
     def by_color(self, color: str | list):
         if isinstance(color, list):
-            self._cards = [c for c in self._cards for col in color if col in c.props.colors]
+            self._cards = [c for c in self._cards for col in color if col in c.colors]
         else:
-            self._cards = [c for c in self._cards if color in c.props.colors]
+            self._cards = [c for c in self._cards if color in c.colors]
         return self
 
     def white(self):
-        self._cards = [c for c in self._cards if 'W' in c.props.colors]
+        self._cards = [c for c in self._cards if 'W' in c.colors]
         return self
 
     def black(self):
-        self._cards = [c for c in self._cards if 'B' in c.props.colors]
+        self._cards = [c for c in self._cards if 'B' in c.colors]
         return self
 
     def blue(self):
-        self._cards = [c for c in self._cards if 'U' in c.props.colors]
+        self._cards = [c for c in self._cards if 'U' in c.colors]
         return self
 
     def red(self):
-        self._cards = [c for c in self._cards if 'R' in c.props.colors]
+        self._cards = [c for c in self._cards if 'R' in c.colors]
         return self
 
     def green(self):
-        self._cards = [c for c in self._cards if 'G' in c.props.colors]
+        self._cards = [c for c in self._cards if 'G' in c.colors]
         return self
 
     # --- Tapped/Untapped ---

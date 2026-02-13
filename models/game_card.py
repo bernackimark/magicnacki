@@ -33,12 +33,15 @@ def attach_invocations(card: GameCard):
 
 class GameCard:
     def __init__(self, props: Card, orig_owner_id: int):
-        self.props: Card = copy.deepcopy(props)
+        self.props: Card = props
         self._orig_owner_id: int = orig_owner_id
         self.owner_id: int = orig_owner_id
         self.game_state: "GameState" = None
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
-        self.casting_cost: str = self.props.casting_cost
+        self.casting_cost: str = self.props.casting_cost[:]
+        self.card_types: list[str] = self.props.card_types.copy()
+        self.card_sub_types: list[str] = self.props.card_sub_types.copy()
+        self.colors: str = self.props.colors[:]
         self.is_tapped: bool = False
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
         self.attached_to: "GameCard" = None
