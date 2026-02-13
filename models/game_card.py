@@ -66,7 +66,7 @@ class GameCard:
 
     def __repr__(self) -> str:
         text = self.props.name
-        if self.props.is_creature:
+        if self.is_creature:
             text += f' ({self.power}/{self.toughness}) '
         if self.keyword_abilities:
             kwas = self.keyword_abilities.copy()
@@ -160,3 +160,7 @@ class GameCard:
 
     def set_image(self, set_code: str):
         self.img_url = self.props.images.get(set_code) or self.img_url
+
+    @property
+    def is_creature(self) -> bool:
+        return 'Creature' in self.card_types
