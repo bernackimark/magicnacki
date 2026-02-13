@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import copy
 from typing import Callable, TYPE_CHECKING
 
 from models.zone import Zone
@@ -31,16 +33,14 @@ def attach_invocations(card: GameCard):
 
 class GameCard:
     def __init__(self, props: Card, orig_owner_id: int):
-        self.props: Card = props
+        self.props: Card = copy.deepcopy(props)
         self._orig_owner_id: int = orig_owner_id
         self.owner_id: int = orig_owner_id
         self.game_state: "GameState" = None
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost
         self.is_tapped: bool = False
-        self.can_block: bool = self.props.is_creature  # can get rid of this attribute; only one (incorrect) usage
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
-        self.has_flying: bool = 'Flying' in self.props.keyword_abilities
         self.attached_to: "GameCard" = None
         self.modifiers = Modifiers()
         self.counters = Counters()
