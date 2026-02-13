@@ -11,11 +11,19 @@ if TYPE_CHECKING:
 
 
 from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE, PLUS_ONE, \
-    HUNGER, PUPA, CounterType
+    HUNGER, PUPA, CounterType, CHARGE
 from models.effects.base import Effect
 
 # --- GENERICS ---
 class AddCounter(Effect):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
+
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        source.counters.add_counter(self.counter_type, self.cnt)
+
+class AddCounterToHost(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):
         self.counter_type = counter_type
         self.cnt = cnt
@@ -32,6 +40,15 @@ class AddCountersOnHostTurn(Effect):
         if gs.player_turn_idx != source.attached_to.orig_owner_id:
             return
         source.attached_to.counters.add_counter(self.counter_type, self.cnt)
+
+class ManaBatteriesAddMana(Effect):
+    def __init__(self, color: str):
+        self.color = color
+
+    def resolve(self, gs: GameState, source: GameCard, target=None, x_value=None):
+        print('XXX', x_value)
+        source.counters.remove_counter(CHARGE, x_value)
+        gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x_value)
 
 class RemoveCountersOnHostTurn(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):

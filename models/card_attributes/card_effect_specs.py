@@ -5,14 +5,16 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from constants import COLOR_LETTERS
-from cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost
+from cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
-from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN
+from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN, \
+    CHARGE
 from models.effects.base import EffSpec, Activated, Triggered, Static
 from models.effects.combat import WalkRuleRemoved
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
-    RockHydraCast, AddCounterPerCreatureDeath, AddCounter, AddCountersOnHostTurn, RemoveCountersOnHostTurn, CitanulDruid
+    RockHydraCast, AddCounterPerCreatureDeath, AddCounterToHost, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
+    CitanulDruid, ManaBatteriesAddMana, AddCounter
 from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifactUpkeep, DealDamageOnTargetTurn, \
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
@@ -76,7 +78,7 @@ def is_tapped(s: GameCard) -> bool:
     return s.is_tapped
 
 
-# ADD_CHARGE_COUNTER = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])  # to use for all 5 mana batteries
+MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
 
 
 INVOCATIONS: dict[str, list[EffSpec]] = {
@@ -121,12 +123,18 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                           CastResolvedEvent, allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE]),
                 Triggered(DestroyIfItAttacked(), T_FUNCS['creatures_in_play'], EndStepEvent)],  # warning: i don't think this target func is correct; it needs to know the target previously selected
     'birds-of-paradise': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
+    'black-mana-battery': [MANA_BATTERY_ADD_CHARGE,
+                           Activated('T', ManaBatteriesAddMana('B'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'black-vise': [Triggered(BlackVise(), T_FUNCS['opponent'], UpkeepEvent)],
     'black-ward': [Triggered(KWAModEffect('add', 'Protection From Black'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'blessing': [Activated('W', PumpEffect(1, 1, True), T_FUNCS['host'])],
     'blight': Triggered(Destroy(), T_FUNCS['host'], TapCardEvent),
     'blood-lust': [Triggered(BloodLust(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE,
+                           Activated('T', ManaBatteriesAddMana('U'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'blue-ward': [Triggered(KWAModEffect('add', 'Protection From Blue'),
                             T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'bog-rats': [Static(BogRats())],
@@ -291,6 +299,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(),
                                                 T_FUNCS['black_and_red_in_play'])],
     'greed': [Activated('B', Greed(), T_FUNCS['card_owner'])],
+    'green-mana-battery': [MANA_BATTERY_ADD_CHARGE,
+                           Activated('T', ManaBatteriesAddMana('G'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'green-ward': [Triggered(KWAModEffect('add', 'Protection From Green'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
@@ -441,6 +452,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'raise-dead': [Triggered(Bounce(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
     'reconstruction': [Triggered(Bounce(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
+    'red-mana-battery': [MANA_BATTERY_ADD_CHARGE,
+                           Activated('T', ManaBatteriesAddMana('R'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'red-ward': [Triggered(KWAModEffect('add', 'Protection From Red'),
                            T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'regrowth': [Triggered(Bounce(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
@@ -486,7 +500,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'spinal-villain': [Activated('T', Destroy(), T_FUNCS['blue_creatures_in_play'])],
     'spirit-link': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
                     Triggered(SpiritLink(), None, DamageResolvedEvent)],
-    'spirit-shackle': [Triggered(AddCounter(MINUS_ZERO_TWO), T_FUNCS['host'], TapCardEvent)],
+    'spirit-shackle': [Triggered(AddCounterToHost(MINUS_ZERO_TWO), T_FUNCS['host'], TapCardEvent)],
     'spiritual-sanctuary': [Triggered(SpiritualSanctuary(), None, UpkeepEvent)],
     'staff-of-zegon': [Activated('3T', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
@@ -526,9 +540,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Enchantment').result()),
                    None, CastResolvedEvent)],
     'triskelion': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent),
-                   Activated('X', DealDamage(), T_FUNCS['all_creatures_and_players'],
-                             max_variable_x_func=lambda gs, s: min(s.counters.get_count(PLUS_ONE),
-                                                                   gs.mana_pools[s.owner_id].get_max_x('X')))],
+                   Activated('', DealDamage(1), T_FUNCS['all_creatures_and_players'],
+                             extra_costs=[RemoveCounterCost(PLUS_ONE)])],
     'tropical-island': dual_land_activated_ability_specs('GU'),
     'tsunami':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_slug('island').result()),
@@ -557,7 +570,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'volcanic-island': dual_land_activated_ability_specs('RU'),
     'voodoo-doll':
         [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent),
-         Triggered(VoodooDollEndStep(), None, EndStepEvent)],
+         Triggered(VoodooDollEndStep(), None, EndStepEvent),
+         Activated('XXT', DealDamage(), T_FUNCS['all_creatures_and_players'],
+                   min_x=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2,
+                   max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2)],
     'wall-of-opposition': [Activated('1', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-water': [Activated('U', PumpEffect(1, 0, True), T_FUNCS['self'])],
@@ -569,6 +585,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'weakstone': [Static(Weakstone())],
     'web': [Triggered(Web(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'wheel-of-fortune': [Triggered(WheelOfFortune(), None, CastResolvedEvent)],
+    'white-mana-battery': [MANA_BATTERY_ADD_CHARGE,
+                           Activated('T', ManaBatteriesAddMana('W'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+                           # TODO: the x_value isn't making it to .resolve(); might be true of all specs w max_var_x_fun
     'white-ward': [Triggered(KWAModEffect('add', 'Protection From White'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
