@@ -38,7 +38,7 @@ class GameCard:
         self.owner_id: int = orig_owner_id
         self.game_state: "GameState" = None
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
-        self.casting_cost: str = self.props.casting_cost[:]
+        self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self.card_types: list[str] = self.props.card_types.copy()
         self.card_sub_types: list[str] = self.props.card_sub_types.copy()
         self.colors: str = self.props.colors[:]
