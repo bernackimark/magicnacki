@@ -385,9 +385,10 @@ class GameState:
         for ability in c.activated_abilities:
             if not ability.can_activate(self):
                 continue
-            for extra_cost in ability.eff_spec.extra_costs:
-                if not extra_cost.can_pay(self, c):
-                    continue  # does this just break out of this loop, or does it exit entire ability loop (desired)?
+            if ability.eff_spec.extra_costs:
+                for extra_cost in ability.eff_spec.extra_costs:
+                    if not extra_cost.can_pay(self, c):
+                        continue  # this just break out of this loop, or does it exit entire ability loop (desired)?
             if c.has_summoning_sickness:
                 continue
 
@@ -395,7 +396,7 @@ class GameState:
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
                 continue
 
-            targets = ability.eff_spec.target_filter(self, c)
+            targets = ability.eff_spec.target_filter(self, c) if ability.eff_spec.target_filter else None
             # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
             print(f"{c=}, {ability=}, {targets=}")
 

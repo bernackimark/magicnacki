@@ -34,8 +34,9 @@ class ActivateAbility(Action):
             self.ability.source.variable_x = self.x_value
         else:
             self.gs.mana_pools[self.player_idx].pay(self.ability.eff_spec.cost)
-            for extra_cost in self.ability.eff_spec.extra_costs:
-                extra_cost.pay(self.gs, self.ability.source)
+            if self.ability.eff_spec.extra_costs:
+                for extra_cost in self.ability.eff_spec.extra_costs:
+                    extra_cost.pay(self.gs, self.ability.source)
         if 'T' in self.ability.eff_spec.cost:
             self.gs.tap_card(self.ability.source)
         self.gs.action_stack.push(self, self.gs)
