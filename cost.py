@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from models.game_card import GameCard
     from game_state import GameState
+    from models.counter_tokens import CounterType
 
 class Cost(ABC):
     @abstractmethod
@@ -65,3 +66,13 @@ class ExileSelfCost(Cost):
 
     def pay(self, gs, source):
         gs.exile(source)
+
+class RemoveCounterCost(Cost):
+    def __init__(self, counter_type: CounterType):
+        self.counter_type = counter_type
+
+    def can_pay(self, gs: GameState, source: GameCard) -> bool:
+        return source.counters.get_count(self.counter_type) > 0
+
+    def pay(self, gs: GameState, source: GameCard):
+        source.counters.remove_counter(self.counter_type)
