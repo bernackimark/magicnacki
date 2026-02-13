@@ -61,6 +61,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),
     'lands_in_play': lambda gs, s: gs.card_filter.in_play().lands().result(),
     'non_artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
+    'non_creature_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts.result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
     'opp_artifacts_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),
