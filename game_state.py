@@ -23,7 +23,7 @@ from models.events.base import Event
 from models.events.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                       UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                       DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
-                                      UnblockedAttackerEvent)
+                                      UnblockedAttackerEvent, BlockEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -96,6 +96,12 @@ class GameState:
         for event_type, effect_list in self._event_listeners.items():
             # Keep only effects whose source_card is not the leaving card
             self._event_listeners[event_type] = [(eff, source) for eff, source in effect_list if source != card]
+
+    def unregister_specific_effect(self, effect: Effect):
+        """Used when an effect is neither unregistered when the source leaves the battlefield nor at EOT
+        (ex: Abomination destroying a creature that blocked it at the end of combat)"""
+        for event_type, effect_list in self._event_listeners.items():
+            self._event_listeners[event_type] = [(eff, source) for eff, source in effect_list if eff != effect]
 
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something,they check the cards in play; however,
@@ -605,6 +611,8 @@ class GameState:
                 if not com.blockers:
                     event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                     self.emit(event)
+                for blocker in com.blockers:
+                    self.emit(BlockEvent(com.attacker, blocker))
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
             self.emit(CombatEndEvent(active_player=self.player_turn_idx))
