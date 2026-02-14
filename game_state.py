@@ -603,7 +603,7 @@ class GameState:
             self.phase = Phase.COMBAT_DAMAGE
             for com in self.combats:
                 if not com.blockers:
-                    event = UnblockedAttackerEvent(com.attacker, flip(self.player_turn_idx))
+                    event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                     self.emit(event)
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
