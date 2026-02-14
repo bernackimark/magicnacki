@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Callable
 
 from action_stack import ActionStack
+from card import Card
 from deck_builder.build_deck import Deck
 from card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility
@@ -274,15 +275,18 @@ class GameState:
             case Zone.BATTLEFIELD:
                 self.boards[card.owner_id].append(card)
             case Zone.HAND:
-                self.hands[card.orig_owner_id].cards.append(card)
-                self.hands[card.orig_owner_id].sort_cards()
+                if not card.is_token:
+                    self.hands[card.orig_owner_id].cards.append(card)
+                    self.hands[card.orig_owner_id].sort_cards()
             case Zone.GRAVEYARD:
-                self.graveyards[card.orig_owner_id].append(card)
-                print(f'added {card} to graveyard here')
+                if not card.is_token:
+                    self.graveyards[card.orig_owner_id].append(card)
             case Zone.EXILE:
-                self.exiles[card.orig_owner_id].append(card)
+                if not card.is_token:
+                    self.exiles[card.orig_owner_id].append(card)
             case Zone.LIBRARY:
-                self.libraries[card.orig_owner_id].cards.append(card)  # should this place the card at 0th position?
+                if not card.is_token:
+                    self.libraries[card.orig_owner_id].cards.insert(0, card)
 
     def _remove_from_zone(self, card: GameCard, zone: Zone):
         match zone:
@@ -319,6 +323,18 @@ class GameState:
     #     def matches(self, event):
     #         return isinstance(event, ZoneChangeEvent) and event.from_zone == Zone.BATTLEFIELD
     #           and event.to_zone == Zone.GRAVEYARD
+    def create_token_creature(self, owner_id: int, name: str, power: int, toughness: int, kwa: list[str],
+                              other_types: list[str], sub_types: list[str], colors: str):
+        card = Card(slug=name.replace(' ', '-').lower(),
+                    name=name, casting_cost='', card_types=['Creature'] + other_types,
+                    card_sub_types=sub_types,
+                    card_super_types=[], rarity='', rules_text='', oracle_rules_text='',
+                    power=power, toughness=toughness, set_codes=[], data_url='', images={'1E': ''}, rulings=[],
+                    keyword_abilities=kwa)
+        game_card = GameCard(card, owner_id, is_token=True, colors=colors)
+        game_card.zone = Zone.BATTLEFIELD
+        game_card.game_state = self
+        self.boards[owner_id].append(game_card)
 
     # Life Operations; using Registry Pattern
     def increment_life(self, p_id: int, amt: int):
