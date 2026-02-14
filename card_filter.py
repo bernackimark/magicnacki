@@ -127,6 +127,27 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'G' in c.colors]
         return self
 
+    # -- land type ---
+    def swamps(self):
+        self._cards = [c for c in self._cards if 'Swamp' in c.card_sub_types]
+        return self
+
+    def islands(self):
+        self._cards = [c for c in self._cards if 'Island' in c.card_sub_types]
+        return self
+
+    def forests(self):
+        self._cards = [c for c in self._cards if 'Forest' in c.card_sub_types]
+        return self
+
+    def mountains(self):
+        self._cards = [c for c in self._cards if 'Mountain' in c.card_sub_types]
+        return self
+
+    def plains(self):
+        self._cards = [c for c in self._cards if 'Plains' in c.card_sub_types]
+        return self
+
     # --- Tapped/Untapped ---
     def tapped(self, is_tapped: bool = True):
         self._cards = [c for c in self._cards if c.is_tapped == is_tapped]
