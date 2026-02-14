@@ -29,7 +29,7 @@ class Card:
     toughness: str | int | None
     set_codes: list[str]
     data_url: str
-    images: dict[str]
+    images: dict[str: str]
     rulings: list[Ruling]
     keyword_abilities: list[str] = field(default=list)
 
