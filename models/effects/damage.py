@@ -176,7 +176,7 @@ class ErgRaiders(Effect):
 class EternalFlame(Effect):
     """deal X damage = number of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        x = len(CardFilter(gs).on_player_board(gs.player_turn_idx).by_slug('mountain').result())
+        x = len(CardFilter(gs).on_player_board(gs.player_turn_idx).mountains().result())
         gs.apply_damage(source, x, flip(gs.player_turn_idx))
         gs.apply_damage(source, math.ceil(x/2), gs.player_turn_idx)
 
@@ -227,7 +227,7 @@ class Karma(Effect):
         """At the beginning of each player's upkeep,
         this enchantment deals damage to that player equal to the number of Swamps they control."""
         p_id = gs.player_turn_idx
-        swamp_cnt = len(CardFilter(gs).on_player_board(p_id).by_slug('swamp').result())
+        swamp_cnt = len(CardFilter(gs).on_player_board(p_id).swamps().result())
         if swamp_cnt:
             gs.apply_damage(source, swamp_cnt, source.orig_owner_id)
 
@@ -294,7 +294,7 @@ class Typhoon(Effect):
     """Typhoon deals damage to opponent = the number of Islands that player controls"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         opp = flip(gs.player_turn_idx)
-        opp_island_cnt = len(gs.card_filter.on_player_board(opp).by_slug('island').result())
+        opp_island_cnt = len(gs.card_filter.on_player_board(opp).islands().result())
         if opp_island_cnt:
             gs.apply_damage(s, opp_island_cnt, opp)
 

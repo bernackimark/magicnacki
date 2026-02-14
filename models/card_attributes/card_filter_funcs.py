@@ -11,7 +11,7 @@ from utils import flip
 T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     # --- COMMON TARGET FUNCS ---
     'active_volcano_targets': lambda gs, s: gs.card_filter.in_play().blue().permanents().result() +
-                                 gs.card_filter.in_play().by_slug('island').result(),
+                                 gs.card_filter.in_play().islands().result(),
     'all_creatures_and_players': lambda gs, s: gs.card_filter.in_play().creatures().result() + [0, 1],
     'all_players': lambda gs, s: [0, 1],
     'artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().artifacts().creatures().result(),
@@ -49,9 +49,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'enchants_in_play': lambda gs, s: gs.card_filter.in_play.enchantments().result(),
     'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
     'flash_flood': lambda gs, s: gs.card_filter.in_play().red().permanents().result() +
-                                 gs.card_filter.in_play().by_slug('mountain').result(),
+                                 gs.card_filter.in_play().mountains().result(),
     'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
-    'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_slug('forest').result(),
+    'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).forests().result(),
     'forestwalkers': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
     'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.orig_owner_id).by_sub_type('Goblin').permanents().result(),
     'green_in_play': lambda gs, s: gs.card_filter.in_play().green().result(),
@@ -61,7 +61,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),
     'lands_in_play': lambda gs, s: gs.card_filter.in_play().lands().result(),
     'non_artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
-    'non_creature_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts.result(),
+    'non_creature_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
     'opp_artifacts_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),

@@ -19,7 +19,7 @@ from models.effects.piles import GraveyardToExile
 # --- GENERICS --
 class AcidRain(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        for forest in CardFilter(gs).in_play().by_slug('forest').result():
+        for forest in CardFilter(gs).in_play().forests().result():
             gs.destroy(forest)
 
 class Destroy(Effect):
@@ -128,7 +128,7 @@ class PsychicAllergyUpkeep(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if gs.player_turn_idx != source.owner_id:
             return
-        your_island_cnt = len([i for i in gs.card_filter.on_player_board(source.owner_id).by_slug('island').result()])
+        your_island_cnt = len([i for i in gs.card_filter.on_player_board(source.owner_id).islands().result()])
         if your_island_cnt < 2:
             gs.destroy(source)
             return

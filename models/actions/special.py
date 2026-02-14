@@ -50,7 +50,7 @@ class SacTwoIslands(Action):
         self.s = s
 
     def play(self):
-        your_islands = self.gs.card_filter.on_player_board(self.s.orig_owner_id).by_slug('island').result()
+        your_islands = self.gs.card_filter.on_player_board(self.s.orig_owner_id).islands().result()
         for island in your_islands[:2]:
             self.gs.destroy(island)
         self.gs.action_stack.pop()

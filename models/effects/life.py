@@ -88,7 +88,7 @@ class SpiritLink(Effect):
 class SpiritualSanctuary(Effect):
     """At the beginning of each player's upkeep, if that player controls a Plains, they gain 1 life"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if 'plains' in gs.card_filter.on_player_board(gs.player_turn_idx).by_slug('plains').result():
+        if 'plains' in gs.card_filter.on_player_board(gs.player_turn_idx).plains().result():
             gs.increment_life(gs.player_turn_idx, 1)
 
 class StreamOfLife(Effect):

@@ -55,7 +55,7 @@ class CanAttackBaseRule(Effect):
             return False
 
         if 'Islandhome' in card.keyword_abilities:
-            if not gs.card_filter.on_player_board(flip(card.orig_owner_id)).by_slug('island').result():
+            if not gs.card_filter.on_player_board(flip(card.orig_owner_id)).islands().result():
                 return False
 
         return None  # no opinion on whether the card can attack

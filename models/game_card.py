@@ -13,7 +13,7 @@ from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec, Effect
 from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.modifiers import Modifiers, PTModifier, PTTemp, KWAModifier, KWATemp
+from models.modifiers import Modifiers, PTModifier, PTTemp, KWAModifier, KWATemp, TypeModifier, TypeTemp
 
 
 def attach_invocations(card: GameCard):
@@ -39,7 +39,7 @@ class GameCard:
         self.game_state: "GameState" = None
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
-        self.card_types: list[str] = self.props.card_types.copy()
+        self._card_types: list[str] = self.props.card_types.copy()
         self.card_sub_types: list[str] = self.props.card_sub_types.copy()
         self.colors: str = self.props.colors[:]
         self.is_tapped: bool = False
@@ -92,8 +92,9 @@ class GameCard:
     @property
     def _pt(self) -> tuple[int, int]:
         global_power_adj, global_toughness_adj = self._get_global_pt_adj()
-        power = self.base_pt[0] + global_power_adj + self.modifiers.power_delta + self.counters.power_delta
-        toughness = self.base_pt[1] + global_toughness_adj + self.modifiers.toughness_delta + self.counters.toughness_delta
+        base_power, base_t = self.base_pt[0] or 0, self.base_pt[1] or 0
+        power = base_power + global_power_adj + self.modifiers.power_delta + self.counters.power_delta
+        toughness = base_t + global_toughness_adj + self.modifiers.toughness_delta + self.counters.toughness_delta
         return power, toughness
 
     def _get_global_pt_adj(self) -> tuple[int, int]:
@@ -103,6 +104,27 @@ class GameCard:
                 power += mod.power_delta
                 toughness += mod.toughness_delta
         return power, toughness
+
+    @property
+    def card_types(self) -> list[str]:
+        return self._get_types()
+
+    def _get_types(self) -> list[str]:
+        types = set(self._card_types)
+        adds, removes = self.modifiers.type_delta
+        global_adds, global_removes = set(), set()
+        for mod in self._get_global_query('type_mod'):
+            if mod:
+                if mod.add_or_remove == 'add':
+                    global_adds.add(mod.card_type)
+                    if mod.card_type == 'Creature' and 'Creature' not in self._card_types:
+                        if mod.expires_end_of_turn:
+                            self.modifiers.temps.append(KWATemp(mod.source, 'add', 'Attack'))
+                        else:
+                            self.modifiers.auras.append(KWAModifier(mod.source, 'add', 'Attack'))
+                else:
+                    global_removes.add(mod.card_type)
+        return list((types | adds | global_adds) - (removes | global_removes))
 
     @property
     def keyword_abilities(self) -> list[str]:
@@ -122,7 +144,7 @@ class GameCard:
                     global_removes.add(mod.kwa)
         return list((kwa | adds | global_adds) - (removes | global_removes))
 
-    def _get_global_query(self, global_type: str) -> list[PTModifier | PTTemp | KWAModifier | KWATemp]:
+    def _get_global_query(self, global_type: str) -> list[PTModifier | PTTemp | KWAModifier | KWATemp | TypeModifier | TypeTemp]:
         effects_and_cards: list[tuple[Effect, GameCard]] = []
         # static effects on other permanents (ex: crusade lives in static abilities)
         for c in self.game_state.card_filter.in_play().result():

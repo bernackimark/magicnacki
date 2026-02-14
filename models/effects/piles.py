@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from utils import flip
+from .identity import NoLongerACreature
 from ..events.base import Event
 from ..events.events_all import ZoneChangeEvent, UpkeepEvent
 from ..zone import Zone
@@ -11,6 +12,16 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Effect
+
+class AnimatorCardLeaves(Effect):
+    """The host was turned from a non-creature into a creature; must return it to a non-creature state on leave"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
+            return
+        host = event.card.attached_to
+        NoLongerACreature().resolve(gs, source, host)
 
 class Bounce(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from game_card import GameCard
@@ -61,12 +61,25 @@ class KWATemp:
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa} until end of turn"
 
+@dataclass
+class TypeModifier:
+    source: GameCard
+    add_or_remove: Literal['add', 'remove']
+    card_type: str
+    expires_end_of_turn: bool = False
+
+@dataclass
+class TypeTemp:
+    source: GameCard
+    add_or_remove: Literal['add', 'remove']
+    card_type: str
+    expires_end_of_turn: bool = True
 
 @dataclass
 class Modifiers:
     """Contains general auras (ex Creature Bond), PTModifiers (ex Holy Strength), and KWA Modifiers (ex Flight)"""
-    auras: list[GameCard | PTModifier | KWAModifier] = field(default_factory=list)
-    temps: list[PTTemp | KWATemp] = field(default_factory=list)
+    auras: list[GameCard | PTModifier | KWAModifier | TypeModifier] = field(default_factory=list)
+    temps: list[PTTemp | KWATemp | TypeTemp] = field(default_factory=list)
 
     def __repr__(self):
         pt_mod_cards = (ptm.card for ptm in self.auras if isinstance(ptm, PTModifier))
@@ -93,12 +106,26 @@ class Modifiers:
         return self._kwa_adds - self._kwa_subtracts, self._kwa_subtracts - self._kwa_adds
 
     @property
+    def type_delta(self) -> tuple[set[str], set[str]]:
+        return self._type_adds - self._type_subtracts, self._type_subtracts - self._type_adds
+
+    @property
     def _kwa_adds(self) -> set[str]:
         return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'add'} |
                 {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'add'})
 
     @property
     def _kwa_subtracts(self) -> set[str]:
+        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'remove'} |
+                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'remove'})
+
+    @property
+    def _type_adds(self) -> set[str]:
+        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'add'} |
+                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'add'})
+
+    @property
+    def _type_subtracts(self) -> set[str]:
         return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'remove'} |
                 {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'remove'})
 

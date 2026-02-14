@@ -128,7 +128,7 @@ class ElderSpawnUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         actions: list[Action] = []
-        for island in self.gs.card_filter.on_player_board(self.p_id).by_slug('island').result():
+        for island in self.gs.card_filter.on_player_board(self.p_id).islands().result():
             actions.append(Sac(self.p_id, self.gs, island))
         actions.append(Sac(self.p_id, self.gs, self.source, 6))
         return actions
@@ -170,7 +170,7 @@ class LeviathanUpkeepChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        your_island_cnt = len([i for i in self.gs.card_filter.on_player_board(self.p_id).by_slug('island').result()])
+        your_island_cnt = len([i for i in self.gs.card_filter.on_player_board(self.p_id).islands().result()])
         if your_island_cnt < 2:
             return []
         return [LeaveTapped(self.p_id, self.gs, self.source), SacTwoIslands(self.p_id, self.gs, self.source)]
