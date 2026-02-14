@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from models.events.events_all import ZoneChangeEvent
+from models.events.events_all import ZoneChangeEvent, EndStepEvent
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -22,6 +22,22 @@ class AddCounter(Effect):
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
         source.counters.add_counter(self.counter_type, self.cnt)
+
+class AddCounterAtEndStep(Effect):
+    """Add counter to target if it is still on the battlefield"""
+    listens_to = EndStepEvent
+
+    def __init__(self, source: GameCard, target: GameCard, counter_type: CounterType, cnt: int = 1):
+        self.source = source
+        self.target = target
+        self.counter_type = counter_type
+        self.cnt = cnt
+
+    def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
+        if self.target.zone != Zone.BATTLEFIELD:
+            return
+        self.target.counters.add_counter(self.counter_type, self.cnt)
+        gs.unregister_specific_effect(self)
 
 class AddCounterToHost(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):

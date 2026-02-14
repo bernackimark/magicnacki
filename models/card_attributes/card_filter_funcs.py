@@ -47,6 +47,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'creatures_power_two_or_less': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                   if c.power <= 2],
     'djinns_and_efreets': lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
+    'enchanted_cards': lambda gs, s: gs.card_filter.is_enchanted().result(),
     'enchants_in_play': lambda gs, s: gs.card_filter.in_play.enchantments().result(),
     'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
     'flash_flood': lambda gs, s: gs.card_filter.in_play().red().permanents().result() +
@@ -90,6 +91,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'tapped_creatures': lambda gs, s: gs.card_filter.in_play().creatures().tapped().result(),
     'tapped_lands': lambda gs, s: gs.card_filter.in_play().lands().tapped().result(),
     'unblocked_attackers': lambda gs, s: gs.card_filter.unblocked_attackers().result(),
+    'unenchanted_perms_in_play': lambda gs, s: gs.card_filter.is_enchanted(False).permanents().in_play().result(),
     'untapped_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().artifacts().untapped().result(),
     'untapped_artifacts_creatures_lands': lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).untapped().result(),
     'untapped_creatures_without_flying': lambda gs, s: gs.card_filter.in_play().creatures().untapped().has('Flying', False).result(),

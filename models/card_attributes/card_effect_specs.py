@@ -3,7 +3,8 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, PhantasmalTerrain
+from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
+    PhantasmalTerrain, AislingLeprechaun
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -14,7 +15,8 @@ from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN, \
     CHARGE
 from models.effects.base import EffSpec, Activated, Triggered, Static
-from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn
+from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
+    CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
     RockHydraCast, AddCounterPerCreatureDeath, AddCounterToHost, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
@@ -40,7 +42,7 @@ from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    StealCardLeaves, GhazbanOgre
+    StealCardLeaves, GhazbanOgre, TimeElementalBounce
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
     Transmutation, MurkDwellers
@@ -63,7 +65,7 @@ from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect,
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
 from models.events.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
-    DrawStepEvent, UnblockedAttackerEvent
+    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent
 from phase_fsm import Phase
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
@@ -88,8 +90,10 @@ MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
 
 
 INVOCATIONS: dict[str, list[EffSpec]] = {
+    'abomination': [Triggered(Abomination(), None, BlockEvent)],
     'acid-rain': [Triggered(AcidRain(), None, CastResolvedEvent)],
     'active-volcano': [Triggered(ActiveVolcano(), T_FUNCS['active_volcano_targets'], CastResolvedEvent)],
+    'aisling-leprechaun': [Triggered(AislingLeprechaun(), None, BlockEvent)],
     'akron-legionnaire': [Triggered(AkronLegionnaireCast(), None, CastResolvedEvent)],
     'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play'])],
     'aladdins-ring': [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
@@ -165,6 +169,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'carrion-ants': [Activated('1', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'castle': [Static(Castle())],
+    'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self'], AttackEvent),
+                    Activated('1RRT', KWAModEffect('add', 'Mountainwalk', True), T_FUNCS['creatures_in_play'])],
     'celestial-prism': [Activated('2T', AddMana(c), T_FUNCS['card_owner'], text=f'Add 1 {c}') for c in COLOR_LETTERS],
     'chaoslace': [Triggered(SetColor('R'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts_in_play'])],
@@ -189,6 +195,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
                    max_variable_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO))],
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
+    'cockatrice': [Triggered(CockatriceAndThicketBasilisk(), None, BlockEvent)],
     'cocoon':
         [Triggered(CocoonCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent),
          Triggered(CocoonHostStaysTapped(), None, UntapPhaseEvent),
@@ -298,6 +305,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ghosts-of-the-damned': [Activated('T', PumpEffect(-1, 0, True), T_FUNCS['creatures_in_play'])],
     'giant-growth':
         [Triggered(PumpEffect(3, 3, True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'giant-shark': [Triggered(GiantShark(), None, BlockEvent)],
     'giant-strength':
         [Triggered(PumpEffect(2, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'giant-tortoise':
@@ -573,8 +581,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'the-hive': [Activated('5T', CreateTokenCreature('Wasp', 1, 1, ['Flying', 'Attack'], ['Artifact'], [], 'C'))],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale(), None, UpkeepEvent)],
+    'thicket-basilisk': [Triggered(CockatriceAndThicketBasilisk(), None, BlockEvent)],
     'thoughtlace': [Triggered(SetColor('U'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'throne-of-bone': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('B'))],
+    'time-elemental': [Triggered(TimeElementalAttackedOrBlocked(), None, CombatEndEvent),
+                       Activated('2UUT', TimeElementalBounce(), T_FUNCS['unenchanted_perms_in_play'])],
     'time-vault':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
          Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],
@@ -617,6 +628,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'venarian-gold':
         [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['your_creatures_in_play'], UpkeepEvent),
          Triggered(VenarianGoldHostStaysTapped(), None, UntapPhaseEvent)],
+    'venom': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent), Triggered(Venom(), None, BlockEvent)],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'volcanic-island': dual_land_activated_ability_specs('RU'),
     'voodoo-doll':

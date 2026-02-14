@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Literal
 
+from models.events.events_all import BlockEvent
 from models.modifiers import KWAModifier, KWATemp, TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
 
 if TYPE_CHECKING:
@@ -72,6 +73,21 @@ class SetColor(Effect):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         target.colors = self.color
+
+# --- CARD-SPECIFIC ---
+class AislingLeprechaun(Effect):
+    """Whenever this creature blocks or becomes blocked, that creature becomes green indefinitely;
+    from Google: causes the creature to become green, which removes its existing colors & replaces with green only"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker == s:
+            other = event.blocker
+        elif event.blocker == s:
+            other = event.attacker
+        else:
+            return
+        other.colors = 'G'
 
 class EvilPresence(Effect):
     """Enchant land Enchanted land is a Swamp"""

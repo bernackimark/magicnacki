@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
-from models.events.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent
+from models.events.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent
 from models.zone import Zone
-from utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -33,6 +32,19 @@ class DestroyAll(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         for c in self.card_filter_func(gs, s):
             gs.destroy(c)
+
+class DestroyAtCombatEnd(Effect):
+    """Destroys target if it is still on the battlefield; unregisters itself"""
+    listens_to = CombatEndEvent
+
+    def __init__(self, source: GameCard, target: GameCard):
+        self.source = source
+        self.target = target
+
+    def on_event(self, gs: GameState, s: GameCard, event: CombatEndEvent):
+        if self.target.zone == Zone.BATTLEFIELD:
+            gs.destroy(self.target)
+        gs.unregister_specific_effect(self)
 
 class DestroyIfItAttacked(Effect):
     """Destroy creature if it attacked this turn."""

@@ -66,6 +66,8 @@ class StealCardLeaves(Effect):
         Steal().resolve(gs, source, host)
         print('I think I returned control to', flip(host.owner_id))
 
+
+# --- CARD-SPECIFIC ---
 class GhazbanOgre(Effect):
     """At your upkeep, if a player has more life than each other player,
     the player with the most life gains control of this creature (assuming "your" = the current controller)"""
@@ -85,3 +87,8 @@ class GraveRobbersAA(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         GraveyardToExile().resolve(gs, source, target)
         gs.increment_life(source.orig_owner_id, 2)
+
+class TimeElementalBounce(Effect):
+    """... {2UU}, {T}: Return target unenchanted permanent to its owner's hand"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        gs.bounce(target)
