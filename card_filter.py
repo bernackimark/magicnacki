@@ -175,6 +175,14 @@ class CardFilter:
                        [b for combat in self._gs.combats for b in combat.blockers])
         return self
 
+    # --- is enchanted ---
+    def is_enchanted(self, bool_: bool = True):
+        if bool_:
+            self._cards = [c for c in self._cards if c.modifiers.is_enchanted]
+        else:
+            self._cards = [c for c in self._cards if not c.modifiers.is_enchanted]
+        return self
+
     # --- Has a Keyword Ability ---
     def has(self, kwa: str, bool_: bool = True):
         if bool_:
