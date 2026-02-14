@@ -3,7 +3,8 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
-from models.events.events_all import DiesEvent
+from models.events.events_all import DiesEvent, UnblockedAttackerEvent
+from utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 
 from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
-    RemoveCounterForLifeChoice
+    RemoveCounterForLifeChoice, FloralSpuzzemChoice
 from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, CounterType, VITALITY
 from models.damage import PreventNextDamage
@@ -143,6 +144,15 @@ class FlashFlood(Effect):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         gs.bounce(t) if t.props.slug == 'mountain' else gs.destroy(t)
+
+class FloralSpuzzem(Effect):
+    """Whenever this creature walks, you may destroy target opp artifact instead of dealing the combat damage."""
+    listens_to = UnblockedAttackerEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
+        if event.attacker != s or not gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result():
+            return
+        gs.action_stack.push(FloralSpuzzemChoice(s.owner_id, gs, s), gs, False)
 
 class ForestCast(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

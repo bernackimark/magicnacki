@@ -2,13 +2,31 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import CounterType
+from models.damage import PreventNextDamage
+from models.effects.damage_preventions import PreventAllDamage, PreventNextDamageEffect
 from phase_fsm import Phase
+from utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
 from models.actions.base import Action
+
+class DestroyAndForegoCombatDamage(Action):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.target = target
+
+    def __repr__(self):
+        return f'Destroy {self.target} & forego combat damage assigned by {self.source.props.name}'
+
+    def play(self):
+        self.gs.destroy(self.target)
+        pnd = PreventNextDamage(self.source, target_player=flip(self.source.owner_id), combat_only=True)
+        self.gs.damage_preventions.append(pnd)
+        self.gs.action_stack.pop()
 
 class PayManaForLife(Action):
     def __init__(self, p_id: int, gs: GameState, mana_cost: str, gain_life_amt: int):
@@ -40,6 +58,7 @@ class RemoveCounterGainLife(Action):
         self.counter_type = counter_type
         self.counter_cnt = counter_cnt
         self.gain_life_amt = gain_life_amt
+        self.gs.action_stack.pop()
 
     def play(self):
         self.source.counters.remove_counter(self.counter_type, self.counter_cnt)

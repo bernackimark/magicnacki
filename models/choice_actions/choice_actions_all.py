@@ -8,9 +8,10 @@ from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
-    RemoveCounterGainLife
+    RemoveCounterGainLife, DestroyAndForegoCombatDamage
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
+from utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -165,6 +166,16 @@ class FastingChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [SkipDrawPhaseGainLife(self.p_id, self.gs, 2), Sac(self.p_id, self.gs, self.source)]
+
+class FloralSpuzzemChoice(ChoiceAction):
+    """Whenever this creature walks, you may destroy target opp artifact instead of dealing the combat damage."""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        opp_artifacts = self.gs.card_filter.on_player_board(flip(self.source.owner_id)).artifacts().result()
+        return [DestroyAndForegoCombatDamage(self.p_id, self.gs, self.source, art)
+                for art in opp_artifacts] + [DoNothing(self.p_id, self.gs)]
 
 class ForceOfNatureUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str, damage_amt: int):

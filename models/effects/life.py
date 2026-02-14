@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+from models.actions.life import GainLifeAction
 from models.choice_actions.choice_actions_all import PayOneColorlessForOneLifeChoice
-from models.events.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, CastResolvedEvent, LifeLossEvent
+from models.events.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, CastResolvedEvent, LifeLossEvent, \
+    UnblockedAttackerEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -80,6 +82,15 @@ class IvoryTower(Effect):
             return
         if (hand_size := len(gs.hands[p_id].cards)) > 4:
             gs.increment_life(p_id, hand_size - 4)
+
+class MerchantShip(Effect):
+    """Whenever this creature attacks and isn't blocked, you gain 2 life"""
+    listens_to = UnblockedAttackerEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
+        if event.attacker != s:
+            return
+        gs.increment_life(s.owner_id, 2)
 
 class Onulet(Effect):
     """When this creature dies, you gain 2 life"""

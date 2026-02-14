@@ -3,6 +3,7 @@ from typing import Optional, TYPE_CHECKING
 
 from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
+from models.events.events_all import UnblockedAttackerEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -103,6 +104,15 @@ class Morale(Effect):
     """Attacking creatures get +1/+1 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.register_effect_until_eot((MoraleEOT(), source))
+
+class MurkDwellers(Effect):
+    """Whenever this creature attacks and isn't blocked, it gets +2/+0 until end of combat"""
+    listens_to = UnblockedAttackerEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
+        if event.attacker != s:
+            return
+        s.modifiers.temps.append(PTTemp(s, 2, 0))
 
 class Piety(Effect):
     """Blocking creatures get 0/+3 until end of turn"""

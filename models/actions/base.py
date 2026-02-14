@@ -21,5 +21,8 @@ class Action(ABC):
 
 @dataclass
 class DoNothing(Action):
+    def __repr__(self):
+        return 'Do Nothing'
+
     def play(self) -> None:
         self.gs.action_stack.pop()

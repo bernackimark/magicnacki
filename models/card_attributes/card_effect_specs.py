@@ -37,13 +37,13 @@ from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
-    StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo
+    StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
     StealCardLeaves, GhazbanOgre
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
-    Transmutation
+    Transmutation, MurkDwellers
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
@@ -57,13 +57,13 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
-    LivingArtifactUpkeep
+    LivingArtifactUpkeep, FloralSpuzzem
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
 from models.events.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
-    DrawStepEvent
+    DrawStepEvent, UnblockedAttackerEvent
 from phase_fsm import Phase
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
@@ -278,6 +278,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'flood': [Activated('UU', TapCardEffect(), T_FUNCS['untapped_creatures_without_flying'])],
     'fishliver-oil':
         [Triggered(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'floral-spuzzem': [Triggered(FloralSpuzzem(), None, UnblockedAttackerEvent)],
     'flying-carpet': [Activated('2T', KWAModEffect('add', 'Flying', True), T_FUNCS['creatures_in_play'])],
     'fog': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'force-of-nature': [Triggered(ForceOfNatureUpkeep(), None, UpkeepEvent)],
@@ -419,6 +420,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'martyrs-of-korlis': [Static(MartyrsOfKorlisDamageReplacement())],  # note: no way this works
     'maze-of-ith': [Activated('T', MazeOfIth(), T_FUNCS['attackers'])],
     'meekstone': [Static(Meekstone())],
+    'merchant-ship': [Triggered(MerchantShip(), None, UnblockedAttackerEvent)],
     'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
     'mightstone': [Static(Mightstone())],
     'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
@@ -436,6 +438,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'mox-pearl': [Activated('T', AddMana('W'), T_FUNCS['card_owner'])],
     'mox-ruby': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'mox-sapphire': [Activated('T', AddMana('U'), T_FUNCS['card_owner'])],
+    'murk-dwellers': [Triggered(MurkDwellers(), None, UnblockedAttackerEvent)],
     'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
                          Activated('1T', True, DestroyAll(T_FUNCS['artifacts_creatures_enchantments_in_play']))],
