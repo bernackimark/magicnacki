@@ -10,9 +10,10 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
-    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice
+    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
+    RemoveCounterForLifeChoice
 from models.actions.special import SacCreatureAndAddMana
-from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER
+from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, CounterType, VITALITY
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
@@ -34,6 +35,16 @@ class CreateTokenCreature(Effect):
         gs.create_token_creature(owner_id=source.owner_id, name=self.name, power=self.power, toughness=self.toughness,
                                  kwa=self.kwa, other_types=self.other_types, sub_types=self.sub_types,
                                  colors=self.colors)
+
+class RemoveCounterGainLife(Effect):
+    def __init__(self, counter_type: CounterType, counter_cnt: int = 1, gain_life_amt: int = 1):
+        self.counter_type = counter_type
+        self.counter_cnt = counter_cnt
+        self.gain_life_amt = gain_life_amt
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.counters.remove_counter(self.counter_type, self.counter_cnt)
+        gs.increment_life(source.owner_id, self.gain_life_amt)
 
 class AshnodsTransmogrant(Effect):
     """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.
@@ -194,6 +205,13 @@ class KryShield(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
         t.modifiers.temps.append(PTTemp(s, 0, t.props.casting_weight))
+
+class LivingArtifactUpkeep(Effect):
+    """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
+    def resolve(self, gs: GameState, s: GameCard, target=None):
+        if gs.player_turn_idx != s.owner_id:
+            return
+        gs.action_stack.push(RemoveCounterForLifeChoice(s.owner_id, gs, s, VITALITY), gs, False)
 
 class MartyrsCry(Effect):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""

@@ -68,11 +68,12 @@ class ExileSelfCost(Cost):
         gs.exile(source)
 
 class RemoveCounterCost(Cost):
-    def __init__(self, counter_type: CounterType):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
         self.counter_type = counter_type
+        self.cnt = cnt
 
     def can_pay(self, gs: GameState, source: GameCard) -> bool:
-        return source.counters.get_count(self.counter_type) > 0
+        return source.counters.get_count(self.counter_type) >= self.cnt
 
     def pay(self, gs: GameState, source: GameCard):
-        source.counters.remove_counter(self.counter_type)
+        source.counters.remove_counter(self.counter_type, self.cnt)

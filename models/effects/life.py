@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 from models.choice_actions.choice_actions_all import PayOneColorlessForOneLifeChoice
-from models.events.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, CastResolvedEvent
+from models.events.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, CastResolvedEvent, LifeLossEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -51,6 +51,19 @@ class GainLife(Effect):
         gs.increment_life(target, self.amt)
 
 # --- CARD-SPECIFIC ---
+class AliFromCairo(Effect):
+    """Damage that would reduce your life total to less than 1 reduces it to 1 instead"""
+    listens_to = LifeLossEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: LifeLossEvent):
+        if event.p_id_taking_damage != s.owner_id:
+            return
+
+        current_life = gs.life[event.p_id_taking_damage]
+
+        if current_life - event.amt < 1:
+            event.amt = max(current_life - 1, 0)
+
 class ElHajjaj(Effect):
     """Whenever this creature deals damage, you gain that much life"""
     listens_to = DamageResolvedEvent

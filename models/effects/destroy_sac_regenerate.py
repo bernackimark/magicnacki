@@ -73,16 +73,22 @@ class EaterOfTheDeadAA(Effect):
 class EnergyFlux(Effect):
     """All artifacts have 'At your upkeep, sacrifice this artifact unless you pay {2}'"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.player_turn_idx != source.owner_id:
+            return
         for your_artifact in gs.card_filter.on_player_board(gs.player_turn_idx).artifacts().result():
             gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_artifact, '2'))
 
 class ErosionUpkeep(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.player_turn_idx != source.owner_id:
+            return
         gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
 
 class ForceOfNatureUpkeep(Effect):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
     def resolve(self, gs: GameState, s: GameCard, target=None):
+        if gs.player_turn_idx != s.owner_id:
+            return
         gs.action_stack.push(ForceOfNatureUpkeepChoice(s.orig_owner_id, gs, s, 'GGGG', 8), gs, False)
 
 class LandEquilibrium(Effect):

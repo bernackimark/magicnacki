@@ -9,7 +9,8 @@ from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
-
+from models.counter_tokens import CounterType
+from models.effects.special import RemoveCounterGainLife
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -67,6 +68,18 @@ class PayOneColorlessForOneLifeChoice(ChoiceAction):
         if not self.gs.mana_pools[self.p_id].can_pay('1'):
             return []
         return [PayManaForLife(self.p_id, self.gs, '1', 1), DoNothing(self.p_id, self.gs)]
+
+class RemoveCounterForLifeChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard,
+                 counter_type: CounterType, counter_cnt: int = 1, gain_life_amt: int = 1):
+        super().__init__(p_id, gs, source)
+        self.counter_type = counter_type
+        self.counter_cnt = counter_cnt
+        self.gain_life_amt = gain_life_amt
+
+    def get_actions(self) -> list[Action]:
+        return [RemoveCounterGainLife(self.counter_type, self.counter_cnt, self.gain_life_amt),
+                DoNothing(self.p_id, self.gs)]
 
 class SacALandChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):

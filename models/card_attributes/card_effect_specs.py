@@ -37,7 +37,7 @@ from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
-    StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice
+    StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
     StealCardLeaves, GhazbanOgre
@@ -55,7 +55,8 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
-    FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature
+    FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
+    LivingArtifactUpkeep
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
@@ -92,6 +93,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play'])],
     'aladdins-ring': [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'ali-baba': [Activated('RT', TapCardEffect(), T_FUNCS['walls_in_play'])],
+    'ali-from-cairo': [Static(AliFromCairo())],
     'alchors-tomb': [Activated('2T', SetColor(c), T_FUNCS['your_permanents_in_play'], text=f'Set color to {{{c}}}')
                      for c in COLOR_LETTERS],
     'amrou-kithkin': [Static(AmrouKithkin())],
@@ -393,7 +395,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
     'living-artifact':
         [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
-         Triggered(LivingArtifactOnDamage(), None, DamageResolvedEvent)],
+         Triggered(LivingArtifactOnDamage(), None, DamageResolvedEvent),
+         Triggered(LivingArtifactUpkeep(), None, UpkeepEvent)],
     'living-lands': [Static(LivingLands())],
     'living-plane': [Static(LivingPlane())],
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
@@ -443,7 +446,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'onulet': [Triggered(Onulet(), None, DiesEvent)],
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
     'orcish-oriflamme': [Static(OrcishOriflamme())],
-    'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent)],
+    'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent),
+                      Activated('', PumpEffect(1, 1, True),
+                                extra_costs=[RemoveCounterCost(CARRION, 2)], text='Remove 2 counters for +1/+1')],
     'paralyze': [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
                  Triggered(HostStaysTapped(), T_FUNCS['host'], UntapPhaseEvent),
                  untap_host_for_mana_at_opp_upkeep('4')],
