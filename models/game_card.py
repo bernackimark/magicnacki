@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Callable, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING, Optional
 
 from models.zone import Zone
 
@@ -33,7 +33,7 @@ def attach_invocations(card: GameCard):
 
 
 class GameCard:
-    def __init__(self, props: Card, orig_owner_id: int):
+    def __init__(self, props: Card, orig_owner_id: int, is_token: bool = False, colors: str = ''):
         self.props: Card = props
         self._orig_owner_id: int = orig_owner_id
         self.owner_id: int = orig_owner_id
@@ -42,7 +42,8 @@ class GameCard:
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self._card_types: list[str] = self.props.card_types.copy()
         self._card_sub_types: list[str] = self.props.card_sub_types.copy()
-        self.colors: str = self.props.colors[:]
+        self.colors: str = colors or self.props.colors[:]
+        self.is_token: bool = is_token
         self.is_tapped: bool = False
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
         self.attached_to: "GameCard" = None
