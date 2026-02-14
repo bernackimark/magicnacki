@@ -3,7 +3,8 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.effects.identity import SetColor, AddCreatureType, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence
+from models.effects.identity import SetColor, AddCreatureType, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
+    PhantasmalTerrain
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -455,6 +456,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)),
                    Triggered(PestilenceEndStep(), None, EndStepEvent)],
     'phantasmal-forces': [Triggered(PayManaOrSac('U'), None, UpkeepEvent)],
+    'phantasmal-terrain': [Triggered(PhantasmalTerrain(land_type), T_FUNCS['lands_in_play'], CastResolvedEvent,
+                                     text=f'convert to {land_type}')
+                           for land_type in {'Swamp', 'Island', 'Forest', 'Mountain', 'Plains'}],
+                           # TODO: All 5 of these are getting registered, and I think that's causing problems
     'phyrexian-gremlins': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'piety': [Triggered(Piety(), None, CastResolvedEvent)],
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],

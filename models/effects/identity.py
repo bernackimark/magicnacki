@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Literal
 
 from models.modifiers import KWAModifier, KWATemp, TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
 
@@ -82,5 +82,18 @@ class EvilPresence(Effect):
         sub_types = target.card_sub_types.copy()
         print(target.props.name, sub_types)
         target.modifiers.auras.append(SubTypeModifier(source, 'add', 'Swamp'))
+        for sub_type in sub_types:
+            target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))
+
+class PhantasmalTerrain(Effect):
+    """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type"""
+    def __init__(self, land_type: Literal['Swamp', 'Island', 'Forest', 'Mountain', 'Plains']):
+        self.land_type = land_type
+
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        sub_types = target.card_sub_types.copy()
+        target.modifiers.auras.append(SubTypeModifier(source, 'add', self.land_type))
         for sub_type in sub_types:
             target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))
