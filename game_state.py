@@ -19,14 +19,14 @@ from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule, CanCastBaseRule
 from models.events.base import Event
-from models.events.events_all import EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent, \
-    UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent, DiesEvent, ZoneChangeEvent, DrawCardEvent, \
-    DrawStepEvent
+from models.events.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
+                                      UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
+                                      DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
 from models.mana import ManaPool
-from models.state_based_rules import StateBasedRule, IslandhomeSBR
+from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
 from models.zone import Zone
 from phase_fsm import Phase
@@ -62,7 +62,7 @@ class GameState:
 
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule(), CanCastBaseRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
-        self.state_based_rules: list[type[StateBasedRule]] = [IslandhomeSBR]
+        self.state_based_rules: list[type[StateBasedRule]] = [STATE_BASED_RULES]
 
         self.damage_replacements: list[DamageReplacement] = []
         self.damage_preventions: list[PreventNextDamage] = []
@@ -195,8 +195,6 @@ class GameState:
         else:
             if isinstance(target, GameCard):
                 target.damage_received_this_turn += event.remaining
-                if target.damage_received_this_turn >= target.toughness:  # this doesn't feel correct here
-                    self.destroy(target)
             else:
                 self.decrement_life(target, event.remaining, source)
 
@@ -205,7 +203,7 @@ class GameState:
         # 4. Emit resolved events
         for e in resolved_events:
             self.emit(e)
-            # TODO: i don't think anything is listening for these events
+            self.check_state_based_actions()  # checks if damage_received_this_turn >= creature.toughness
 
     def trigger_damage_prevention(self, event: DamageEvent):
         # Replacement effects (statics + globals)

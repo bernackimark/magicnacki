@@ -22,3 +22,18 @@ class IslandhomeSBR(StateBasedRule):
                 changed = True
 
         return changed
+
+class ZeroToughnessSBR(StateBasedRule):
+    @staticmethod
+    def apply(gs: GameState) -> bool:
+        changed = False
+
+        for creature in gs.card_filter.in_play().creatures().result():
+            if creature.damage_received_this_turn >= creature.toughness:
+                gs.destroy(creature)
+                changed = True
+
+        return changed
+
+
+STATE_BASED_RULES = [IslandhomeSBR, ZeroToughnessSBR]
