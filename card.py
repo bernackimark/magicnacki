@@ -31,10 +31,11 @@ class Card:
     data_url: str
     images: dict[str: str]
     rulings: list[Ruling]
-    keyword_abilities: list[str] = field(default=list)
+    keyword_abilities: list[str] = field(default_factory=list)
 
     def __post_init__(self):
-        object.__setattr__(self, 'keyword_abilities', CREATURE_KW_ABILITIES.get(self.slug, []).copy())
+        if not self.keyword_abilities:  # token creatures may arrive w keyword_abilities declared at construction
+            object.__setattr__(self, 'keyword_abilities', CREATURE_KW_ABILITIES.get(self.slug, []).copy())
         object.__setattr__(self, 'power', str_to_int(self.power) if self.power is not None else None)
         object.__setattr__(self, 'toughness', str_to_int(self.toughness) if self.toughness is not None else None)
 
