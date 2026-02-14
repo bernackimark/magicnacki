@@ -3,8 +3,7 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.effects.identity import SetColor, AddCreatureType, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
-    PhantasmalTerrain
+from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, PhantasmalTerrain
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -25,7 +24,7 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
     DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
-    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee
+    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee, RukhEgg
 from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention
@@ -56,7 +55,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
-    FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant
+    FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
@@ -64,7 +63,6 @@ from models.events.events_all import CastResolvedEvent, UntapPhaseEvent, EndStep
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent
 from phase_fsm import Phase
-
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
     return [Activated('T', AddMana(color), T_FUNCS['card_owner'], text=f'Add {{{color}}}') for color in colors]
@@ -502,6 +500,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                         Activated('2', RocketLauncherAA(), T_FUNCS['all_creatures_and_players'])],
     'rod-of-ruin': [Activated('3T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
+    'rukh-egg': [Triggered(RukhEgg(), None, DiesEvent)],
     'sacrifice': [Triggered(SacrificeOnCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent)],
     'samite-healer': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['cards_in_play'])],
     'sandals-of-abdallah': [Activated('2', SandalsOfAbdallahIslandWalk(), T_FUNCS['creatures_in_play'])],
@@ -557,6 +556,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tawnoss-coffin': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'tetravus': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
+    'the-hive': [Activated('5T', CreateTokenCreature('Wasp', 1, 1, ['Flying', 'Attack'], ['Artifact'], [], 'C'))],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale(), None, UpkeepEvent)],
     'thoughtlace': [Triggered(SetColor('U'), T_FUNCS['cards_in_play'], CastResolvedEvent)],

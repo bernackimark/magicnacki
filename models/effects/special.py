@@ -2,7 +2,7 @@ from __future__ import annotations
 import random
 from typing import Optional, TYPE_CHECKING
 
-from models.effects.damage_preventions import DamagePreventionEffect, PreventAllDamage
+from models.effects.damage_preventions import PreventAllDamage
 from models.events.events_all import DiesEvent
 
 if TYPE_CHECKING:
@@ -11,11 +11,29 @@ if TYPE_CHECKING:
 
 from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice
-from models.actions.special import SacCreatureAndAddMana, PayManaToDrawCards
+from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
+
+
+class CreateTokenCreature(Effect):
+    """Generic to create a GameCard with .is_token = True and place it on the board"""
+    def __init__(self, name: str, power: int, toughness: int, kwa: list[str],
+                 other_types: list[str], sub_types: list[str], colors: str):
+        self.name = name
+        self.power = power
+        self.toughness = toughness
+        self.kwa = kwa
+        self.other_types = other_types
+        self.sub_types = sub_types or []
+        self.colors = colors or ''
+
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        gs.create_token_creature(owner_id=source.owner_id, name=self.name, power=self.power, toughness=self.toughness,
+                                 kwa=self.kwa, other_types=self.other_types, sub_types=self.sub_types,
+                                 colors=self.colors)
 
 class AshnodsTransmogrant(Effect):
     """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.

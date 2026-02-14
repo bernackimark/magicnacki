@@ -266,6 +266,15 @@ class PowerSurge(Effect):
         untapped_lands = gs.card_filter.in_play().untapped().lands().result()
         gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
 
+class RukhEgg(Effect):
+    """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if not isinstance(event, DiesEvent) or event.card != source:
+            return
+        gs.create_token_creature(source.owner_id, 'Bird', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
+
 class StormSeeker(Effect):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
