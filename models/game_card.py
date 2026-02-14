@@ -13,7 +13,8 @@ from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec, Effect
 from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.modifiers import Modifiers, PTModifier, PTTemp, KWAModifier, KWATemp, TypeModifier, TypeTemp
+from models.modifiers import Modifiers, PTModifier, PTTemp, KWAModifier, KWATemp, TypeModifier, TypeTemp, \
+    SubTypeModifier, SubTypeTemp, ModType
 
 
 def attach_invocations(card: GameCard):
@@ -40,7 +41,7 @@ class GameCard:
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self._card_types: list[str] = self.props.card_types.copy()
-        self.card_sub_types: list[str] = self.props.card_sub_types.copy()
+        self._card_sub_types: list[str] = self.props.card_sub_types.copy()
         self.colors: str = self.props.colors[:]
         self.is_tapped: bool = False
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
@@ -75,6 +76,8 @@ class GameCard:
             text += f' w {self.modifiers}'
         if self.counters:
             text += f' w {self.counters}'
+        if self.card_sub_types:
+            text += f' sub-types: {self.card_sub_types}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
@@ -127,6 +130,22 @@ class GameCard:
         return list((types | adds | global_adds) - (removes | global_removes))
 
     @property
+    def card_sub_types(self) -> list[str]:
+        return self._get_sub_types()
+
+    def _get_sub_types(self) -> list[str]:
+        types = set(self._card_sub_types)
+        adds, removes = self.modifiers.sub_type_delta
+        global_adds, global_removes = set(), set()
+        for mod in self._get_global_query('sub_type_mod'):
+            if not mod:
+                continue
+            mods = [mod] if isinstance(mod, ModType) else mod
+            for m in mods:
+                global_adds.add(m.card_sub_type) if m.add_or_remove == 'add' else global_removes.add(m.card_sub_type)
+        return list((types | adds | global_adds) - (removes | global_removes))
+
+    @property
     def keyword_abilities(self) -> list[str]:
         """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, global removes = {'Reach', 'First Strike'}
         returns ['Flying', 'Trample']"""
@@ -144,7 +163,7 @@ class GameCard:
                     global_removes.add(mod.kwa)
         return list((kwa | adds | global_adds) - (removes | global_removes))
 
-    def _get_global_query(self, global_type: str) -> list[PTModifier | PTTemp | KWAModifier | KWATemp | TypeModifier | TypeTemp]:
+    def _get_global_query(self, global_type: str) -> list[ModType]:
         effects_and_cards: list[tuple[Effect, GameCard]] = []
         # static effects on other permanents (ex: crusade lives in static abilities)
         for c in self.game_state.card_filter.in_play().result():
@@ -159,9 +178,8 @@ class GameCard:
         for effect, source in effects_and_cards:
             if not hasattr(effect, 'on_query'):
                 continue
-            mod: PTModifier | PTTemp | KWAModifier | KWATemp = effect.on_query(self.game_state, global_type,
-                                                                               card=self, source=source)
-            modifiers.append(mod)
+            mod: ModType | list[ModType] = effect.on_query(self.game_state, global_type, card=self, source=source)
+            modifiers.extend(mod) if isinstance(mod, ModType) else modifiers.append(mod)
         return modifiers
 
     def clear_all_mods(self) -> None:

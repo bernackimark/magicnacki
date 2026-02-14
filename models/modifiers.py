@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Union
 
 if TYPE_CHECKING:
     from game_card import GameCard
@@ -89,7 +89,7 @@ class SubTypeModifier:
     expires_end_of_turn: bool = False
 
     def __repr__(self):
-        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type_type}"
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type}"
 
 @dataclass
 class SubTypeTemp:
@@ -192,3 +192,6 @@ class Modifiers:
 
     def clear_all(self) -> None:
         self.auras.clear()
+
+
+ModType = Union[PTModifier | PTTemp | KWAModifier | KWATemp | TypeModifier | TypeTemp | SubTypeModifier | SubTypeTemp]

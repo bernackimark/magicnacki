@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from models.modifiers import KWAModifier, KWATemp, TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
 
@@ -72,3 +72,15 @@ class SetColor(Effect):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         target.colors = self.color
+
+class EvilPresence(Effect):
+    """Enchant land Enchanted land is a Swamp"""
+
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        sub_types = target.card_sub_types.copy()
+        print(target.props.name, sub_types)
+        target.modifiers.auras.append(SubTypeModifier(source, 'add', 'Swamp'))
+        for sub_type in sub_types:
+            target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))

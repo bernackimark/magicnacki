@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier
+from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier, SubTypeModifier
 from utils import flip
 
 if TYPE_CHECKING:
@@ -135,6 +135,16 @@ class ConcordantCrossroads(Effect):
         if card not in gs.card_filter.in_play().creatures().result():
             return None
         return KWAModifier(source, 'add', 'Haste')
+
+class Conversion(Effect):
+    """All Mountains are Plains"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'sub_type_mod':
+            return None
+        return [SubTypeModifier(source, 'add', 'Plains'), SubTypeModifier(source, 'remove', 'Mountain')]
 
 class Crusade(Effect):
     event = 'query'

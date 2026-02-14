@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.effects.identity import SetColor, AddCreatureType, AddCreatureTypePTManaValue, BecomeCreature
+from models.effects.identity import SetColor, AddCreatureType, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -48,7 +48,8 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
-    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane
+    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
+    Conversion
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -196,7 +197,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
     'control-magic': [Triggered(Steal(), T_FUNCS['opp_creatures_in_play'], CastResolvedEvent),
                       Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
-    'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent)],
+    'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent), Static(Conversion())],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
     'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],
     'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
@@ -250,6 +251,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'eternal-warrior': [Triggered(KWAModEffect('add', 'Vigilance'), T_FUNCS, CastResolvedEvent)],
     'evil-eye-of-orms-by-gore': [Triggered(EvilEyeOfOrmsByGoreCast(), None, CastResolvedEvent),
                                  Static(EvilEyeOfOrmsByGoreCanBeBlocked())],
+    'evil-presence': [Triggered(EvilPresence(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'exorcist': [Activated('1W', Destroy(), T_FUNCS['black_creatures_in_play'])],
     'eye-for-an-eye': [Triggered(EyeForAnEye(), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'faint': [Triggered(Feint(), T_FUNCS['attackers'], CastResolvedEvent)],
