@@ -24,7 +24,7 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
     DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
-    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee, RukhEgg
+    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee, RukhEgg, Tracker
 from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention
@@ -38,11 +38,12 @@ from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDj
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo
-from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
+from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
     StealCardLeaves, GhazbanOgre
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
-    KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump
+    KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
+    Transmutation
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
@@ -581,9 +582,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tormods-crypt':
         [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
     'tower-of-coireall': [Activated('T', TowerOfCoireall(), T_FUNCS['creatures_in_play'])],
+    'tracker': [Activated('GGT', Tracker(), T_FUNCS['creatures_in_play'])],
     'tranquility':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Enchantment').result()),
                    None, CastResolvedEvent)],
+    'transmutation': [Triggered(Transmutation(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'triskelion': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent),
                    Activated('', DealDamage(1), T_FUNCS['all_creatures_and_players'],
                              extra_costs=[RemoveCounterCost(PLUS_ONE)])],
@@ -636,6 +639,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                            # TODO: the x_value isn't making it to .resolve(); might be true of all specs w max_var_x_fun
     'white-ward': [Triggered(KWAModEffect('add', 'Protection From White'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'wild_growth': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
+                    Triggered(WildGrowth(), None, TapCardEvent)],
     'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures_in_play'])],

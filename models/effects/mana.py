@@ -73,3 +73,11 @@ class UrzasTrio(Effect):
             gs.mana_pools[s.orig_owner_id].add_floating('CCC')
         else:
             gs.mana_pools[s.orig_owner_id].add_floating('CC')
+
+class WildGrowth(Effect):
+    """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""
+
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.mana_pools[source.attached_to.owner_id].add_floating('G')

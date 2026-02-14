@@ -299,6 +299,14 @@ class TheRack(Effect):
         if opp_hand_len < 3:
             gs.apply_damage(s, 3 - opp_hand_len, opp_id)
 
+class Tracker(Effect):
+    """Tracker deals damage = its power to target creature. That creature deals damage = its power to this creature."""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.apply_damage(source, source.power, target)
+        gs.apply_damage(target, target.power, source)
+
 class Typhoon(Effect):
     """Typhoon deals damage to opponent = the number of Islands that player controls"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):

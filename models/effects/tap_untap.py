@@ -103,7 +103,6 @@ class Riptide(Effect):
 class Twiddle(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            # toggle tapped state
             target.untap(gs) if target.is_tapped else target.tap(gs)
 
 class VenarianGoldHostStaysTapped(Effect):
@@ -117,7 +116,7 @@ class Reset(Effect):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if gs.phase == Phase.UPKEEP or gs.player_turn_idx == source.orig_owner_id:
-            raise ValueError("Reset must be played on opponent's turn after their upkeep phase")
+            return
         for land in gs.card_filter.on_player_board(source.orig_owner_id).lands().untapped().result():
             land.untap(gs)
 

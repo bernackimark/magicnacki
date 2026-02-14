@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
-    MoraleEOT, PietyEOT, ShieldWallEOT
+    MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -113,3 +113,10 @@ class ShieldWall(Effect):
     """Creatures you control get +0/+2 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.register_effect_until_eot((ShieldWallEOT(), source))
+
+class Transmutation(Effect):
+    """Switch target creature's power and toughness until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.register_effect_until_eot((TransmutationEOT(), source))

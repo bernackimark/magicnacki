@@ -135,6 +135,18 @@ class ShieldWallEOT(Effect):
             return None
         return PTTemp(source, 0, 2)
 
+class TransmutationEOT(Effect):
+    """Stored in GameState & cleared EOT; how does this class know who the target is?"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        power_delta = card.toughness - card.power
+        toughness_delta = card.power - card.toughness
+        return PTTemp(source, power_delta, toughness_delta)
+
 class TowerOfCoireallEOT(Effect):
     """Stored in GameState & cleared EOT; target creature can't be blocked by Walls this turn"""
     event = 'query'
