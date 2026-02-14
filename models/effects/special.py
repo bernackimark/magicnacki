@@ -36,16 +36,6 @@ class CreateTokenCreature(Effect):
                                  kwa=self.kwa, other_types=self.other_types, sub_types=self.sub_types,
                                  colors=self.colors)
 
-class RemoveCounterGainLife(Effect):
-    def __init__(self, counter_type: CounterType, counter_cnt: int = 1, gain_life_amt: int = 1):
-        self.counter_type = counter_type
-        self.counter_cnt = counter_cnt
-        self.gain_life_amt = gain_life_amt
-
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.counters.remove_counter(self.counter_type, self.counter_cnt)
-        gs.increment_life(source.owner_id, self.gain_life_amt)
-
 class AshnodsTransmogrant(Effect):
     """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.
     That creature becomes an artifact in addition to its other types."""

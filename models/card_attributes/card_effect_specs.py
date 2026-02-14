@@ -14,7 +14,7 @@ from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN, \
     CHARGE
 from models.effects.base import EffSpec, Activated, Triggered, Static
-from models.effects.combat import WalkRuleRemoved
+from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
     RockHydraCast, AddCounterPerCreatureDeath, AddCounterToHost, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
@@ -49,7 +49,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
-    Conversion
+    Conversion, JuggernautUnblockableByWalls
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -231,6 +231,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],
                   # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'])],
+    'dwarven-warriors': [Activated('T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
     'earthbind': [Triggered(Earthbind(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
     'eater-of-the-dead':
@@ -361,6 +362,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
+    'juggernaut': [Static(JuggernautUnblockableByWalls())],
     'jump':
         [Triggered(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'junun-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
@@ -559,7 +561,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tablet-of-epityr': [Triggered(TabletOfEpityr(), None, DiesEvent)],
     'taiga': dual_land_activated_ability_specs('RG'),
     'tawnoss-coffin': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'tawnoss-wand': [Activated('2T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
     'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'teleport': [Triggered(UnblockableThisTurn(), T_FUNCS['creatures_in_play'], CastResolvedEvent,
+                           allowed_phases=[Phase.DECLARE_COMBAT])],
     'tetravus': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
     'the-hive': [Activated('5T', CreateTokenCreature('Wasp', 1, 1, ['Flying', 'Attack'], ['Artifact'], [], 'C'))],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
@@ -575,6 +580,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    None, CastResolvedEvent)],
     'tormods-crypt':
         [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
+    'tower-of-coireall': [Activated('T', TowerOfCoireall(), T_FUNCS['creatures_in_play'])],
     'tranquility':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Enchantment').result()),
                    None, CastResolvedEvent)],

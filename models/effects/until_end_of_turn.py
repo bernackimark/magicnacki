@@ -6,8 +6,28 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from models.modifiers import PTModifier, PTTemp
+from models.modifiers import PTTemp
 
+"""EOT Effects are stored in GameState.until_eot_effects_and_cards and removed at the end of the turn;
+They must have a class attribute: event = 'query' ... They must implement and on_query() method;
+They are called from another Effect (ex: UnblockableEOT is called by UnblockableThisTurn(Effect))"""
+
+# --- GENERICS ---
+class UnblockableEOT(Effect):
+    """Stored in GameState & cleared EOT; target creature can't be blocked this turn"""
+    event = 'query'
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker is not self.target:
+            return None
+        return False
+
+
+# --- CARD-SPECIFIC ---
 class ArmyOfAllahEOT(Effect):
     """This will be called only by ArmyOfAllah(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +2/+0 until end of turn"""
@@ -114,3 +134,16 @@ class ShieldWallEOT(Effect):
         if card not in gs.card_filter.in_play().on_player_board(source.orig_owner_id).creatures().result():
             return None
         return PTTemp(source, 0, 2)
+
+class TowerOfCoireallEOT(Effect):
+    """Stored in GameState & cleared EOT; target creature can't be blocked by Walls this turn"""
+    event = 'query'
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker is not self.target or card not in gs.card_filter.walls().result():
+            return None
+        return False

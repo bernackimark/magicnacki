@@ -7,10 +7,10 @@ from models.actions.destroy_sac_regen import Sac, Destroy
 from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
-from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands
+from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
+    RemoveCounterGainLife
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
-from models.effects.special import RemoveCounterGainLife
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -78,7 +78,8 @@ class RemoveCounterForLifeChoice(ChoiceAction):
         self.gain_life_amt = gain_life_amt
 
     def get_actions(self) -> list[Action]:
-        return [RemoveCounterGainLife(self.counter_type, self.counter_cnt, self.gain_life_amt),
+        return [RemoveCounterGainLife(self.p_id, self.gs, self.source,
+                                      self.counter_type, self.counter_cnt, self.gain_life_amt),
                 DoNothing(self.p_id, self.gs)]
 
 class SacALandChoice(ChoiceAction):

@@ -15,14 +15,15 @@ from models.effects.base import Effect
 
 # --- CARD-SPECIFIC ---
 class AmrouKithkin(Effect):
+    """This creature can't be blocked by creatures with power 3 or greater"""
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = 'amrou-kithkin', mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or card.props.slug != 'amrou-kithkin' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker.props.slug != 'amrou-kithkin':
             return None
-        if blocker.power > 3:
+        if card.power >= 3:
             return False
 
 class AngelicVoices(Effect):
@@ -58,22 +59,23 @@ class ArtifactWardCanBeBlocked(Effect):
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = the enchanted card, mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or not blocker or not card.modifiers.is_enchanted_by('artifact-ward'):
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or not attacker.modifiers.is_enchanted_by('artifact-ward'):
             return None
-        if 'Artifact' in blocker.props.card_types:
+        if 'Artifact' in card.card_types:
             return False
 
 class ArgothianPixiesCanBeBlocked(Effect):
+    """This creature can't be blocked by artifact creatures"""
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = 'argothian-pixies', mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or card.props.slug != 'argothian-pixies' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker.props.slug != 'argothian-pixies':
             return None
-        if 'Artifact' in blocker.props.card_types:
+        if 'Artifact' in card.props.card_types:
             return False
 
 class AspectOfWolfPT(Effect):
@@ -103,14 +105,15 @@ class BadMoon(Effect):
         return PTModifier(source, 1, 1)
 
 class BogRats(Effect):
+    """This creature can't be blocked by Walls"""
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = 'bog-rats', mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or card.props.slug != 'bog-rats' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker.props.slug != 'bog-rats':
             return None
-        if 'Wall' in blocker.props.card_sub_types:
+        if 'Wall' in card.card_sub_types:
             return False
 
 class Castle(Effect):
@@ -158,36 +161,39 @@ class Crusade(Effect):
         return PTModifier(source, 1, 1)
 
 class ElderSpawnCanBeBlocked(Effect):
+    """This creature can't be blocked by red creatures"""
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = 'elder-spawn', mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or card.props.slug != 'elder-spawn' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker.props.slug != 'elder-spawn':
             return None
-        if 'R' in blocker.props.colors:
+        if 'R' in card.props.colors:
             return False
 
 class ElvenRidersCanBeBlocked(Effect):
+    """This creature can't be blocked except by Walls and/or creatures with flying"""
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = 'elven-riders', mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or card.props.slug != 'elven-riders' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker.props.slug != 'elven-riders':
             return None
-        if 'Wall' not in blocker.props.card_sub_types or 'Flying' not in blocker.keyword_abilities:
+        if 'Wall' not in card.card_sub_types or 'Flying' not in card.keyword_abilities:
             return False
 
 class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
+    """Can only be blocked by walls"""
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = 'EEOOBG', req'd kwargs: blocker. This creature can only be blocked by Walls"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or card.props.slug != 'evil-eye-of-orms-by-gore' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker.props.slug != 'evil-eye-of-orms-by-gore':
             return None
-        if 'Wall' not in blocker.props.card_sub_types:
+        if 'Wall' not in card.card_sub_types:
             return False
 
 class Fear(Effect):
@@ -195,13 +201,13 @@ class Fear(Effect):
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_be_blocked, card = 'fear', mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != 'can_be_blocked' or card.attached_to.props.slug != 'fear' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or not card or not attacker.attached_to or attacker.attached_to.props.slug != 'fear':
             return None
         artifact_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).artifacts().creatures().result()
         black_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).black().creatures().result()
-        if blocker not in artifact_creatures + black_creatures:
+        if card not in artifact_creatures + black_creatures:
             return False
 
 class GaeasAvengerPT(Effect):
@@ -300,11 +306,12 @@ class Invisibility(Effect):
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card = 'amrou-kithkin', mandatory kwargs: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != 'can_be_blocked' or card.attached_to.props.slug != 'invisibility' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if (event != 'can_block' or not attacker.attached_to or
+                attacker.attached_to.props.slug != 'invisibility' or not card):
             return None
-        if 'Wall' not in blocker.props.card_sub_types:
+        if 'Wall' not in card.card_sub_types:
             return False
 
 class IronclawOrcs(Effect):
@@ -317,6 +324,17 @@ class IronclawOrcs(Effect):
         if event != 'can_block' or card.props.slug != 'ironclaw-orcs' or not attacker:
             return None
         if attacker.power >= 2:
+            return False
+
+class JuggernautUnblockableByWalls(Effect):
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get("attacker")
+        if event != 'can_block' or attacker.props.slug != 'juggernaut':
+            return None
+        if card in gs.card_filter.walls().result():
             return False
 
 class KeldonWarlordPT(Effect):
@@ -512,11 +530,11 @@ class Seeker(Effect):
     event = 'query'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        """Query: can_block, card should be "seeker's" host, mandatory kwarg: blocker"""
-        blocker: GameCard = kwargs.get("blocker")
-        if event != "can_be_blocked" or card.attached_to.props.slug != 'seeker' or not blocker:
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != "can_block" or not attacker.attached_to or attacker.attached_to.props.slug != 'seeker':
             return None
-        if 'Artifact' not in blocker.props.card_types or 'U' not in blocker.props.colors:
+        if 'Artifact' not in card.card_types or 'U' not in card.colors:
             return False
 
 class SunkenCity(Effect):

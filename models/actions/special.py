@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.counter_tokens import CounterType
 from phase_fsm import Phase
 
 if TYPE_CHECKING:
@@ -30,6 +31,19 @@ class PayManaToDrawCards(Action):
         self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
         self.gs.draw(self.player_idx, self.card_cnt)
         self.gs.action_stack.pop()
+
+class RemoveCounterGainLife(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard,
+                 counter_type: CounterType, counter_cnt: int = 1, gain_life_amt: int = 1):
+        super().__init__(p_id, gs)
+        self.source = s
+        self.counter_type = counter_type
+        self.counter_cnt = counter_cnt
+        self.gain_life_amt = gain_life_amt
+
+    def play(self):
+        self.source.counters.remove_counter(self.counter_type, self.counter_cnt)
+        self.gs.increment_life(self.source.owner_id, self.gain_life_amt)
 
 class SacCreatureAndAddMana(Action):
     def __init__(self, p_id: int, gs: GameState, _: GameCard, creature: GameCard, color: str, amt: int = 0):

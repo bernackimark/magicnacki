@@ -79,4 +79,4 @@ class SandalsOfAbdallahIslandWalk(Effect):
         target.modifiers.temps.append(KWATemp(source, 'add', 'Islandwalk'))
 
         temp_effect = SandalsOfAbdallahIfCreatureDies(target_creature=target)
-        gs.register_effect_until_eot(temp_effect, source)
+        gs.register_effect_until_eot((temp_effect, source))

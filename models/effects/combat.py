@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
+
+from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -7,6 +9,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 
+# --- GENERICS ---
 class WalkRuleRemoved(Effect):
     """Creatures with a landwalk can be blocked as though they didn't have that landwalk."""
     event = 'query'
@@ -24,3 +27,19 @@ class WalkRuleRemoved(Effect):
             return None
         return True  # a hard-confirm that the block is allowed
 
+class UnblockableThisTurn(Effect):
+    """Target creature can't be blocked this turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        temp_effect = UnblockableEOT(target)
+        gs.register_effect_until_eot((temp_effect, source))
+
+# --- CARD-SPECIFIC ---
+class TowerOfCoireall(Effect):
+    """{T}: Target creature can't be blocked by Walls this turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        temp_effect = TowerOfCoireallEOT(target)
+        gs.register_effect_until_eot((temp_effect, source))
