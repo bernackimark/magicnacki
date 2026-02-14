@@ -22,7 +22,7 @@ from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRul
 from models.events.base import Event
 from models.events.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                       UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
-                                      DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent)
+                                      DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -94,9 +94,7 @@ class GameState:
         """Remove any event listeners tied to this card."""
         for event_type, effect_list in self._event_listeners.items():
             # Keep only effects whose source_card is not the leaving card
-            self._event_listeners[event_type] = [
-                (eff, source_card) for eff, source_card in effect_list
-                if source_card != card]
+            self._event_listeners[event_type] = [(eff, source) for eff, source in effect_list if source != card]
 
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something,they check the cards in play; however,
@@ -342,7 +340,11 @@ class GameState:
         self.life[p_id] += amt
 
     def decrement_life(self, p_id: int, amt: int, source: GameCard):
-        """Reduce player life; check for end game condition"""
+        """Create LifeLossEvent, emit, Reduce player life; check for end game condition"""
+        event = LifeLossEvent(p_id, amt, source)
+        self.emit(event)
+        if event.amt <= 0:
+            return
         self.life[p_id] -= amt
         print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
 

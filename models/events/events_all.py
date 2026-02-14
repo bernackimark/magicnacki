@@ -45,6 +45,13 @@ class DiesEvent(Event):
 class EndStepEvent(Event):
     active_player: int
 
+@dataclass
+class LifeLossEvent(Event):
+    """Is not frozen as it may be modified (ex: alie-from-cairo)"""
+    p_id_taking_damage: int
+    amt: int
+    source: GameCard
+
 @dataclass(frozen=True)
 class StateBasedEvent(Event):
     """Emitted whenever a relevant board state change happens (play to board, remove from board, control changes)"""
