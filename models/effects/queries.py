@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.modifiers import PTModifier, PTTemp, KWAModifier
+from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier
 from utils import flip
 
 if TYPE_CHECKING:
@@ -50,7 +50,7 @@ class AngryMobPT(Effect):
             return None
         if gs.player_turn_idx != source.owner_id:
             return PTTemp(source, 2, 2)
-        opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).by_slug('swamp').result())
+        opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).swamps().result())
         return PTTemp(source, 2 + opp_swamp_cnt, 2 + opp_swamp_cnt)
 
 class ArtifactWardCanBeBlocked(Effect):
@@ -86,7 +86,7 @@ class AspectOfWolfPT(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod' or card is not source.attached_to:
             return None
-        your_forest_cnt = len(gs.card_filter.on_player_board(source.orig_owner_id).by_slug('forest').result())
+        your_forest_cnt = len(gs.card_filter.on_player_board(source.orig_owner_id).forests().result())
         p_adj = math.floor(your_forest_cnt / 2)
         t_adj = math.ceil(your_forest_cnt / 2)
         return PTModifier(source, p_adj, t_adj)
@@ -218,9 +218,9 @@ class GaeasLiegePT(Effect):
             return None
         is_attacking = card in gs.card_filter.attackers().result()
         if is_attacking:
-            cnt = len(gs.card_filter.on_player_board(flip(card.owner_id)).by_slug('forest').result())
+            cnt = len(gs.card_filter.on_player_board(flip(card.owner_id)).forests().result())
         else:
-            cnt = len(gs.card_filter.on_player_board(card.owner_id).by_slug('forest').result())
+            cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
         return PTModifier(source, cnt, cnt)
 
 class GoblinCaves(Effect):
@@ -328,8 +328,27 @@ class KirdApePT(Effect):
         if event != 'pt_mod' or card.props.slug != 'kird-ape':
             return None
 
-        if gs.card_filter.on_player_board(card.orig_owner_id).by_slug('forest').result():
+        if gs.card_filter.on_player_board(card.orig_owner_id).forests().result():
             return PTModifier(card, 1, 2)
+
+class KormusBell(Effect):
+    """All Swamps are 1/1 creatures that are still lands"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        # if card not in gs.card_filter.in_play().subtype('Swamp').result():  TODO: this is the way to handle instead of .swamps()
+        if card not in gs.card_filter.in_play().by_sub_type('Swamp').result():
+            return None
+
+        if event == 'type_mod':
+            return TypeModifier(source, 'add', 'Creature')
+
+        # SET P/T to 1/1
+        if event == 'pt_mod':
+            return PTModifier(source, 1, 1)
+
+        return None
 
 class LordOfAtlantisPT(Effect):
     """All other Merfolk gain +1/+1 and Islandwalk"""
@@ -387,7 +406,7 @@ class NightmarePT(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod' or card is not source:
             return None
-        your_swamp_cnt = len(gs.card_filter.on_player_board(card.owner_id).by_slug('swamp').result())
+        your_swamp_cnt = len(gs.card_filter.on_player_board(card.owner_id).swamps().result())
         return PTModifier(source, your_swamp_cnt, your_swamp_cnt)
 
 class Moat(Effect):
@@ -424,7 +443,7 @@ class PeopleOfTheWoodsPT(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod' or card is not source:
             return None
-        your_forest_cnt = len(gs.card_filter.on_player_board(card.owner_id).by_slug('forest').result())
+        your_forest_cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
         return PTModifier(source, 0, your_forest_cnt)
 
 class PlagueRatsPT(Effect):
@@ -498,7 +517,7 @@ class WaterWurmPT(Effect):
         if event != 'pt_mod' or card.props.slug != 'water-wurm':
             return None
 
-        if gs.card_filter.on_player_board(flip(card.orig_owner_id)).by_slug('island').result():
+        if gs.card_filter.on_player_board(flip(card.orig_owner_id)).islands().result():
             return PTModifier(card, 0, 1)
 
 class Weakstone(Effect):

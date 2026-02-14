@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.effects.identity import SetColor, TurnIntoCreature, NoLongerACreature
+from models.effects.identity import SetColor, AddCreatureType, NoLongerACreature, AddCreatureTypePTManaValue
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -40,7 +40,7 @@ from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    StealCardLeaves, GhazbanOgre
+    StealCardLeaves, GhazbanOgre, AnimatorCardLeaves
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
@@ -48,7 +48,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
-    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear
+    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -99,6 +99,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ancestral-recall': [Triggered(DrawCards(3), T_FUNCS['all_players'], CastResolvedEvent)],
     'angelic-voices': [Static(AngelicVoices())],
     'angry-mob': [Static(AngryMobPT())],
+    'animate-artifact':
+        [Triggered(AddCreatureTypePTManaValue(), T_FUNCS['non_creature_artifacts_in_play'], CastResolvedEvent),
+         Triggered(AnimatorCardLeaves(), T_FUNCS['host'], ZoneChangeEvent)],
     'animate-dead': [Triggered(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'animate-wall':
         [Triggered(KWAModEffect('remove', 'Defender'), T_FUNCS['walls_in_play'], CastResolvedEvent)],
@@ -265,7 +268,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                       Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'flash-flood': [Triggered(FlashFlood(), T_FUNCS['flash_flood'], CastResolvedEvent)],
     'flashfires':
-        [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_slug('plains').result()),
+        [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().plains().result()),
                    None, CastResolvedEvent)],
     'flight': [Triggered(KWAModEffect('add', 'Flying'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'flood': [Activated('UU', TapCardEffect(), T_FUNCS['untapped_creatures_without_flying'])],
@@ -351,7 +354,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-tower': [Triggered(IvoryTower(), None, UpkeepEvent)],
     'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],
-    'jade-statue': [Activated('2', TurnIntoCreature(3, 6, 'Golem'), T_FUNCS['self'],
+    'jade-statue': [Activated('2', AddCreatureType(3, 6, 'Golem', True), T_FUNCS['self'],
                               allowed_phases=[Phase.CAST]),
                     Triggered(NoLongerACreature(), T_FUNCS['self'], CombatEndEvent)],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
@@ -371,6 +374,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'kobold-drill-sergeant': [Triggered(KoboldDrillSergeant(), None, CastResolvedEvent)],
     'kobold-overlord': [Triggered(KoboldOverlordCast(), None, CastResolvedEvent)],
     'kobold-taskmaster': [Triggered(KoboldTaskmaster(), None, CastResolvedEvent)],
+    'kormus-bell': [Static(KormusBell())],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures_in_play'])],
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
@@ -472,8 +476,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
     'reconstruction': [Triggered(Bounce(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE,
-                           Activated('T', ManaBatteriesAddMana('R'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+                         Activated('T', ManaBatteriesAddMana('R'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                   max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'red-ward': [Triggered(KWAModEffect('add', 'Protection From Red'),
                            T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'regrowth': [Triggered(Bounce(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
@@ -564,7 +568,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                              extra_costs=[RemoveCounterCost(PLUS_ONE)])],
     'tropical-island': dual_land_activated_ability_specs('GU'),
     'tsunami':
-        [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_slug('island').result()),
+        [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().islands().result()),
                    None, CastResolvedEvent)],
     'tundra': dual_land_activated_ability_specs('WU'),
     'twiddle': [Triggered(Twiddle(), T_FUNCS['artifacts_creatures_lands_in_play'], CastResolvedEvent)],
