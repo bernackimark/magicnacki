@@ -240,9 +240,9 @@ class GameState:
         # self._after_zone_change(card, from_zone, to_zone)
 
     def destroy(self, card: GameCard):
+        self.emit(DiesEvent(card))
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
         self.cards_that_died_this_turn.append(card)
-        self.emit(DiesEvent(card))
         print(f'{card} is destroyed')
 
     def exile(self, card: GameCard):
