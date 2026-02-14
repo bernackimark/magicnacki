@@ -23,7 +23,7 @@ from models.events.base import Event
 from models.events.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                       UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                       DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
-                                      UnblockedAttackerEvent, BlockEvent)
+                                      UnblockedAttackerEvent, BlockEvent, AttackEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -589,6 +589,8 @@ class GameState:
                     available_actions.append(CreatureAttack(p_id, self, c))
 
         if self.phase == Phase.DECLARE_BLOCKERS:
+            for com in self.combats:
+                self.emit(AttackEvent(com.attacker))
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
             for blocker in self.card_filter.on_player_board(self.action_on_idx).creatures().result():

@@ -12,6 +12,10 @@ if TYPE_CHECKING:
 from models.events.base import Event
 
 @dataclass(frozen=True)
+class AttackEvent(Event):
+    attacker: GameCard
+
+@dataclass(frozen=True)
 class BlockEvent(Event):
     attacker: GameCard
     blocker: GameCard
