@@ -337,17 +337,40 @@ class KormusBell(Effect):
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
-        # if card not in gs.card_filter.in_play().subtype('Swamp').result():  TODO: this is the way to handle instead of .swamps()
         if card not in gs.card_filter.in_play().by_sub_type('Swamp').result():
             return None
-
         if event == 'type_mod':
             return TypeModifier(source, 'add', 'Creature')
-
-        # SET P/T to 1/1
         if event == 'pt_mod':
             return PTModifier(source, 1, 1)
+        return None
 
+class LivingLands(Effect):
+    """All Forests are 1/1 creatures that are still lands"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().by_sub_type('Forest').result():
+            return None
+        if event == 'type_mod':
+            return TypeModifier(source, 'add', 'Creature')
+        if event == 'pt_mod':
+            return PTModifier(source, 1, 1)
+        return None
+
+class LivingPlane(Effect):
+    """All lands are 1/1 creatures that are still lands"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().by_sub_type('Land').result():
+            return None
+        if event == 'type_mod':
+            return TypeModifier(source, 'add', 'Creature')
+        if event == 'pt_mod':
+            return PTModifier(source, 1, 1)
         return None
 
 class LordOfAtlantisPT(Effect):

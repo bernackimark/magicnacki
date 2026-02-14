@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.effects.identity import SetColor, AddCreatureType, NoLongerACreature, AddCreatureTypePTManaValue
+from models.effects.identity import SetColor, AddCreatureType, AddCreatureTypePTManaValue, BecomeCreature
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -40,7 +40,7 @@ from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    StealCardLeaves, GhazbanOgre, AnimatorCardLeaves
+    StealCardLeaves, GhazbanOgre
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
@@ -48,7 +48,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
-    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell
+    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -99,9 +99,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ancestral-recall': [Triggered(DrawCards(3), T_FUNCS['all_players'], CastResolvedEvent)],
     'angelic-voices': [Static(AngelicVoices())],
     'angry-mob': [Static(AngryMobPT())],
-    'animate-artifact':
-        [Triggered(AddCreatureTypePTManaValue(), T_FUNCS['non_creature_artifacts_in_play'], CastResolvedEvent),
-         Triggered(AnimatorCardLeaves(), T_FUNCS['host'], ZoneChangeEvent)],
+    'animate-artifact': [Triggered(None, T_FUNCS['non_creature_artifacts_in_play'], CastResolvedEvent),
+                         Static(AddCreatureTypePTManaValue())],
     'animate-dead': [Triggered(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'animate-wall':
         [Triggered(KWAModEffect('remove', 'Defender'), T_FUNCS['walls_in_play'], CastResolvedEvent)],
@@ -354,9 +353,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-tower': [Triggered(IvoryTower(), None, UpkeepEvent)],
     'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],
-    'jade-statue': [Activated('2', AddCreatureType(3, 6, 'Golem', True), T_FUNCS['self'],
-                              allowed_phases=[Phase.CAST]),
-                    Triggered(NoLongerACreature(), T_FUNCS['self'], CombatEndEvent)],
+    'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), T_FUNCS['self'],
+                              allowed_phases=[Phase.CAST])],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
@@ -395,6 +393,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'living-artifact':
         [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
          Triggered(LivingArtifactOnDamage(), None, DamageResolvedEvent)],
+    'living-lands': [Static(LivingLands())],
+    'living-plane': [Static(LivingPlane())],
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
@@ -418,6 +418,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
+    'mishras-factory': [Activated('T', AddMana('C'), T_FUNCS['card_owner'], text='Add {C}'),
+                        Activated('1', BecomeCreature(2, 2, 'Assembly-Worker', True), T_FUNCS['self'], text='Become 2/2'),
+                        Activated('T', PumpEffect(1, 1, True), T_FUNCS['assembly_workers'], text='Pump Assembly-Worker')],
     'moat': [Static(Moat())],
     'morale': [Triggered(Morale(), None, CastResolvedEvent)],
     'mountain': [Triggered(MountainTap(), None, TapCardEvent)],

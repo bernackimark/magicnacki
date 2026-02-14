@@ -21,6 +21,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'artifacts_in_play': lambda gs, s: gs.card_filter.in_play().artifacts().result(),
     'artifacts_in_graveyards': lambda gs, s: gs.card_filter.in_graveyards().artifacts().result(),
     'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).artifacts().result(),
+    'assembly_workers': lambda gs, s: gs.card_filter.in_play().by_sub_type('Assembly-Worker').result(),
     'attackers': lambda gs, s: gs.card_filter.attackers().result(),
     'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result()
                                      for a in c.modifiers.auras if isinstance(a, GameCard)],

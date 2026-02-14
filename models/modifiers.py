@@ -68,6 +68,9 @@ class TypeModifier:
     card_type: str
     expires_end_of_turn: bool = False
 
+    def __repr__(self):
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_type}"
+
 @dataclass
 class TypeTemp:
     source: GameCard
@@ -75,11 +78,34 @@ class TypeTemp:
     card_type: str
     expires_end_of_turn: bool = True
 
+    def __repr__(self):
+        return f"{'adds' if self.add_or_remove == 'add' else 'loses'} {self.card_type} type until end of turn"
+
+@dataclass
+class SubTypeModifier:
+    source: GameCard
+    add_or_remove: Literal['add', 'remove']
+    card_sub_type: str
+    expires_end_of_turn: bool = False
+
+    def __repr__(self):
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type_type}"
+
+@dataclass
+class SubTypeTemp:
+    source: GameCard
+    add_or_remove: Literal['add', 'remove']
+    card_sub_type: str
+    expires_end_of_turn: bool = True
+
+    def __repr__(self):
+        return f"{'adds' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type} type until end of turn"
+
 @dataclass
 class Modifiers:
     """Contains general auras (ex Creature Bond), PTModifiers (ex Holy Strength), and KWA Modifiers (ex Flight)"""
-    auras: list[GameCard | PTModifier | KWAModifier | TypeModifier] = field(default_factory=list)
-    temps: list[PTTemp | KWATemp | TypeTemp] = field(default_factory=list)
+    auras: list[GameCard | PTModifier | KWAModifier | TypeModifier | SubTypeModifier] = field(default_factory=list)
+    temps: list[PTTemp | KWATemp | TypeTemp | SubTypeTemp] = field(default_factory=list)
 
     def __repr__(self):
         pt_mod_cards = (ptm.card for ptm in self.auras if isinstance(ptm, PTModifier))
@@ -110,6 +136,10 @@ class Modifiers:
         return self._type_adds - self._type_subtracts, self._type_subtracts - self._type_adds
 
     @property
+    def sub_type_delta(self) -> tuple[set[str], set[str]]:
+        return self._sub_type_adds - self._sub_type_subtracts, self._sub_type_subtracts - self._sub_type_adds
+
+    @property
     def _kwa_adds(self) -> set[str]:
         return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'add'} |
                 {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'add'})
@@ -121,13 +151,23 @@ class Modifiers:
 
     @property
     def _type_adds(self) -> set[str]:
-        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'add'} |
-                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'add'})
+        return ({a.card_type for a in self.auras if isinstance(a, TypeModifier) if a.add_or_remove == 'add'} |
+                {a.card_type for a in self.temps if isinstance(a, TypeTemp) if a.add_or_remove == 'add'})
 
     @property
     def _type_subtracts(self) -> set[str]:
-        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'remove'} |
-                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'remove'})
+        return ({a.card_type for a in self.auras if isinstance(a, TypeModifier) if a.add_or_remove == 'remove'} |
+                {a.card_type for a in self.temps if isinstance(a, TypeTemp) if a.add_or_remove == 'remove'})
+
+    @property
+    def _sub_type_adds(self) -> set[str]:
+        return ({a.card_sub_type for a in self.auras if isinstance(a, SubTypeModifier) if a.add_or_remove == 'add'} |
+                {a.card_sub_type for a in self.temps if isinstance(a, SubTypeTemp) if a.add_or_remove == 'add'})
+
+    @property
+    def _sub_type_subtracts(self) -> set[str]:
+        return ({a.card_sub_type for a in self.auras if isinstance(a, SubTypeModifier) if a.add_or_remove == 'remove'} |
+                {a.card_sub_type for a in self.temps if isinstance(a, SubTypeTemp) if a.add_or_remove == 'remove'})
 
     @property
     def is_enchanted(self) -> bool:
