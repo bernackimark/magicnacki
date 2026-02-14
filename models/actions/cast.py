@@ -60,6 +60,7 @@ class CastToTargetAddToStack(Action):
     card: GameCard
     target: GameCard | list[GameCard] | None
     x_values_for_variable_cast: int | None = None
+    text: str = ''
 
     def __post_init__(self):
         self.card.variable_x = self.x_values_for_variable_cast
@@ -74,7 +75,7 @@ class CastToTargetAddToStack(Action):
             target_text = f', targeting Player #{self.target}'
         if self.x_values_for_variable_cast is not None:
             variable_cast_text = f", X={self.x_values_for_variable_cast}"
-        return f"Cast {self.card.props.name}{target_text}{variable_cast_text}"
+        return f"Cast {self.card.props.name} {self.text}{target_text}{variable_cast_text}"
 
     def play(self) -> None:
         if self.x_values_for_variable_cast is not None:

@@ -62,7 +62,7 @@ class GameState:
 
         self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule(), CanCastBaseRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
-        self.state_based_rules: list[type[StateBasedRule]] = [STATE_BASED_RULES]
+        self.state_based_rules: list[type[StateBasedRule]] = STATE_BASED_RULES
 
         self.damage_replacements: list[DamageReplacement] = []
         self.damage_preventions: list[PreventNextDamage] = []
@@ -452,8 +452,8 @@ class GameState:
                                   if eff_spec.activation_type == 'triggered'
                                   and eff_spec.trigger_event is CastResolvedEvent]
 
-                # if there are no specs or if the target_filter is None, a target is not required & can be played
-                if not cast_eff_specs or cast_eff_specs[0].target_filter is None:
+                # there are no specs, it can be played
+                if not cast_eff_specs:
                     if 'X' in c.casting_cost:
                         max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
                         for x in range(max_x + 1):
@@ -463,23 +463,37 @@ class GameState:
                         avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None))
                     continue
 
-                # Normally there is only one "cast" effect per card; this may become problematic later
-                print(f"{cast_eff_specs=}")
-                targets: list[GameCard | None] = cast_eff_specs[0].target_filter(self, c)
+                for cast_eff_spec in cast_eff_specs:
+                    # the effect doesn't have targets, it can be played
+                    if cast_eff_spec.target_filter is None:
+                        if 'X' in c.casting_cost:
+                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
+                            for x in range(max_x + 1):
+                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
+                                                                                      x_values_for_variable_cast=x,
+                                                                                      text=cast_eff_spec.text))
+                        else:
+                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
+                                                                                  text=cast_eff_spec.text))
+                        continue
 
-                # if targets = [], the card needs targets but can't find any, so the card is unplayable
-                if isinstance(targets, list) and not targets:
-                    continue
+                    targets: list[GameCard | None] = cast_eff_spec.target_filter(self, c)
 
-                # targets is a list of GameCard; append available action for each Target & each target-variable_X combo
-                for t in targets:
-                    if 'X' in c.casting_cost:
-                        max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
-                        for x in range(max_x + 1):
+                    # if targets = [], the card needs targets but can't find any, so the card is unplayable
+                    if isinstance(targets, list) and not targets:
+                        continue
+
+                    # targets is a list of GameCard; append available action for each Target/target-variable_X combo
+                    for t in targets:
+                        if 'X' in c.casting_cost:
+                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
+                            for x in range(max_x + 1):
+                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t,
+                                                                                      x_values_for_variable_cast=x,
+                                                                                      text=cast_eff_spec.text))
+                        else:
                             avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t,
-                                                                                  x_values_for_variable_cast=x))
-                    else:
-                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t))
+                                                                                  text=cast_eff_spec.text))
             return list({repr(x): x for x in avail_actions_from_hand}.values())  # only return unique (by repr) actions
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
