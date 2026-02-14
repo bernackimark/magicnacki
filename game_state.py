@@ -22,7 +22,8 @@ from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRul
 from models.events.base import Event
 from models.events.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                       UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
-                                      DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent)
+                                      DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
+                                      UnblockedAttackerEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -601,6 +602,9 @@ class GameState:
             self.phase = Phase.FIRST_STRIKE_DAMAGE
             self.phase = Phase.COMBAT_DAMAGE
             for com in self.combats:
+                if not com.blockers:
+                    event = UnblockedAttackerEvent(com.attacker, flip(self.player_turn_idx))
+                    self.emit(event)
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
             self.emit(CombatEndEvent(active_player=self.player_turn_idx))

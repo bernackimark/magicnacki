@@ -66,6 +66,11 @@ class UpkeepEvent(Event):
     active_player: int
 
 @dataclass(frozen=True)
+class UnblockedAttackerEvent(Event):
+    attacker: GameCard
+    defending_player_id: int
+
+@dataclass(frozen=True)
 class UntapCardEvent(Event):
     card: GameCard
 
