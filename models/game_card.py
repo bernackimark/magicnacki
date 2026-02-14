@@ -59,7 +59,12 @@ class GameCard:
         self.variable_x: int | None = None  # for variable casting costs
 
         # perform look-up to add base keyword abilities, activated abilities, and effects
-        self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug) if self.props.is_creature else ()
+        if self.is_token:
+            self._base_kwa = self.props.keyword_abilities
+        elif self.props.is_creature:
+            self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug)
+        else:
+            self._base_kwa = ()
         self.activated_abilities: list[ActivatedAbility] = []
         self.static_abilities: list[EffSpec] = []
         self.triggered_abilities: list[EffSpec] = []
