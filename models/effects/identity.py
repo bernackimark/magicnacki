@@ -1,19 +1,16 @@
 from __future__ import annotations
 
-import copy
 from typing import TYPE_CHECKING, Optional, Literal
 
-from models.choice_actions.choice_actions_all import CopyCardChoice
-from models.events.base import Event
-from models.events.events_all import BlockEvent, EnterBattlefieldEvent, UpkeepEvent
-from models.modifiers import KWAModifier, KWATemp, TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
+from models.choice_actions.choice_actions_all import CopyCardChoice, PrimalClayChoice
+from models.events.events_all import BlockEvent, UpkeepEvent
+from models.modifiers import TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from utils import flip
 
 # --- GENERICS ---
 class AddCreatureType(Effect):
@@ -133,6 +130,12 @@ class PhantasmalTerrain(Effect):
         target.modifiers.auras.append(SubTypeModifier(source, 'add', self.land_type))
         for sub_type in sub_types:
             target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))
+
+class PrimalClay(Effect):
+    """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,
+    or a 1/6 Wall artifact creature with defender in addition to its other types."""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        gs.action_stack.push(PrimalClayChoice(s.owner_id, gs, s), gs, False)
 
 class VesuvanDoppelgangerCast(Effect):
     """You may have this creature enter as a copy of any creature on the battlefield,

@@ -39,10 +39,6 @@ class CopyCard(Action):
         self.s.has_summoning_sickness = the_copy.props.is_creature and 'Haste' not in the_copy.props.keyword_abilities
         self.s.base_pt = the_copy.base_pt
         self.s._base_kwa = self._handle_kwa(the_copy, the_copy.props.keyword_abilities)
-        # self.s._base_kwa = the_copy.props.keyword_abilities
-        # if the_copy.props.is_creature and 'Defender' not in the_copy.props.keyword_abilities:
-        #     self.s._base_kwa = self.s._base_kwa.append('Attack')
-        # self.s._base_kwa = tuple(self.s._base_kwa)
         self.s.activated_abilities = the_copy.activated_abilities
         self.s.static_abilities = the_copy.static_abilities
         self.s.triggered_abilities = the_copy.triggered_abilities
@@ -142,3 +138,51 @@ class SkipDrawPhaseGainLife(Action):
         self.gs.phase = Phase.CAST
         self.gs.increment_life(self.player_idx, self.amt)
         self.gs.action_stack.pop()
+
+# --- CARD-SPECIFIC ---
+class PrimalClayA(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+
+    def __repr__(self):
+        return 'Cast as a 3/3'
+
+    def play(self) -> None:
+        self.s.base_pt = (3, 3)
+        self.gs.action_stack.pop()
+        self.gs.cast(self.s)
+
+
+class PrimalClayB(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+
+    def __repr__(self):
+        return 'Cast as a 2/2 flier'
+
+    def play(self) -> None:
+        self.s.base_pt = (2, 2)
+        kwa = list(self.s._base_kwa)
+        kwa.append('Flying')
+        self.s._base_kwa = kwa
+        self.gs.action_stack.pop()
+        self.gs.cast(self.s)
+
+class PrimalClayC(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+
+    def __repr__(self):
+        return 'Cast as a 1/6 wall'
+
+    def play(self) -> None:
+        self.s.base_pt = (1, 6)
+        kwa = list(self.s._base_kwa)
+        kwa.append('Defender')
+        kwa.remove('Attack')
+        self.s._base_kwa = kwa
+        self.gs.action_stack.pop()
+        self.gs.cast(self.s)

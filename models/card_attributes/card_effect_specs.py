@@ -34,7 +34,8 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
     HypnoticSpecter
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
-    PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep
+    PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
+    PrimalClay
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
@@ -499,6 +500,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'power-surge': [Triggered(PowerSurge(), None, UpkeepEvent)],
     'pradesh-gypsies': [Activated('1GT', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'preacher': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'primal-clay': [Triggered(PrimalClay(), None, CastResolvedEvent)],
     'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'prodigal-sorcerer': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'], text="Deal 1 Damage}")],
     'psionic-blast': [Triggered(DealDamageToTargetAndYou(4, 2),

@@ -8,7 +8,7 @@ from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
-    RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard
+    RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from utils import flip
@@ -222,6 +222,14 @@ class LordOfThePitUpkeepChoice(ChoiceAction):
         if not your_other_creatures:
             return []
         return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
+
+class PrimalClayChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [PrimalClayA(self.p_id, self.gs, self.source), PrimalClayB(self.p_id, self.gs, self.source),
+                PrimalClayC(self.p_id, self.gs, self.source)]
 
 class PsychicAllergyUpkeepChoice(ChoiceAction):
     """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
