@@ -63,6 +63,7 @@ class RemoveCounterGainLife(Action):
     def play(self):
         self.source.counters.remove_counter(self.counter_type, self.counter_cnt)
         self.gs.increment_life(self.source.owner_id, self.gain_life_amt)
+        self.gs.action_stack.pop()
 
 class SacCreatureAndAddMana(Action):
     def __init__(self, p_id: int, gs: GameState, _: GameCard, creature: GameCard, color: str, amt: int = 0):
