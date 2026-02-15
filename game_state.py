@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import Callable
+from typing import Callable, Iterable
 
 from action_stack import ActionStack
 from card import Card
@@ -23,7 +23,7 @@ from models.events.base import Event
 from models.events.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                       UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                       DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
-                                      UnblockedAttackerEvent, BlockEvent, AttackEvent)
+                                      UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -341,7 +341,24 @@ class GameState:
         game_card.game_state = self
         self.boards[owner_id].append(game_card)
 
-    # Life Operations; using Registry Pattern
+    @staticmethod
+    def randomize_event(p_id: int, iterable: Iterable) -> str:
+        event = RandomEvent(p_id, iterable)
+        event.result = random.choice([_ for _ in iterable])
+        return event.result
+
+    def remove_from_combat(self, c: GameCard):
+        """If attacker, delete that combat object, untap attacker; if blocker, remove blocker from the combat object"""
+        for com in self.combats:
+            if com.attacker is c:
+                self.untap_card(com.attacker)
+                self.combats.remove(com)
+                return
+            for blocker in com.blockers:
+                if blocker is c:
+                    com.blockers.remove(blocker)
+                    return
+
     def increment_life(self, p_id: int, amt: int):
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
         self.life[p_id] += amt
@@ -591,6 +608,13 @@ class GameState:
         if self.phase == Phase.DECLARE_BLOCKERS:
             for com in self.combats:
                 self.emit(AttackEvent(com.attacker))
+
+            # it's possible to not have any combats if something removed the attack (ex: Maze Of Ith, Mijae Djinn)
+            # probably want to move to 2nd main, but currently rocketing right to end step
+            if not self.combats:
+                self.phase = Phase.END_STEP
+                return
+
             available_actions.append((FinishBlocking(self.action_on_idx, self)))
 
             for blocker in self.card_filter.on_player_board(self.action_on_idx).creatures().result():
@@ -602,6 +626,9 @@ class GameState:
             available_actions.extend(add_activated_abilities_from_board())
 
         if self.phase == Phase.PRE_COMBAT_DAMAGE:
+            for com in self.combats:
+                for blocker in com.blockers:
+                    self.emit(BlockEvent(com.attacker, blocker))
             available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
             available_actions.extend(available_actions_from_hand())
             available_actions.extend(add_activated_abilities_from_board())
@@ -613,8 +640,6 @@ class GameState:
                 if not com.blockers:
                     event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                     self.emit(event)
-                for blocker in com.blockers:
-                    self.emit(BlockEvent(com.attacker, blocker))
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
             self.emit(CombatEndEvent(active_player=self.player_turn_idx))
