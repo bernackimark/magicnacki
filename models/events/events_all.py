@@ -1,7 +1,6 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Any
 
 from constants import Target
 from models.zone import Zone
@@ -60,6 +59,12 @@ class LifeLossEvent(Event):
     p_id_taking_damage: int
     amt: int
     source: GameCard
+
+@dataclass
+class RandomEvent(Event):
+    player_id: int
+    iterable: Iterable
+    result: Any = None
 
 @dataclass(frozen=True)
 class StateBasedEvent(Event):
