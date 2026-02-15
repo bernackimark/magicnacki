@@ -13,8 +13,7 @@ from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec, Effect
 from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.modifiers import Modifiers, PTModifier, PTTemp, KWAModifier, KWATemp, TypeModifier, TypeTemp, \
-    SubTypeModifier, SubTypeTemp, ModType
+from models.modifiers import Modifiers, KWAModifier, KWATemp, ModType
 
 
 def attach_invocations(card: GameCard):
@@ -82,8 +81,6 @@ class GameCard:
             text += f' w {self.modifiers}'
         if self.counters:
             text += f' w {self.counters}'
-        if self.card_sub_types:
-            text += f' sub-types: {self.card_sub_types}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
