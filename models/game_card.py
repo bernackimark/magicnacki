@@ -59,7 +59,7 @@ class GameCard:
 
         # perform look-up to add base keyword abilities, activated abilities, and effects
         if self.is_token:
-            self._base_kwa = self.props.keyword_abilities
+            self._base_kwa = tuple(self.props.keyword_abilities)
         elif self.props.is_creature:
             self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug)
         else:
@@ -182,7 +182,8 @@ class GameCard:
             if not hasattr(effect, 'on_query'):
                 continue
             mod: ModType | list[ModType] = effect.on_query(self.game_state, global_type, card=self, source=source)
-            modifiers.extend(mod) if isinstance(mod, ModType) else modifiers.append(mod)
+            if mod:
+                modifiers.append(mod) if isinstance(mod, ModType) else modifiers.extend(mod)
         return modifiers
 
     def clear_all_mods(self) -> None:
