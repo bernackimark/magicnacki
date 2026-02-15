@@ -8,7 +8,7 @@ from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
-    RemoveCounterGainLife, DestroyAndForegoCombatDamage
+    RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from utils import flip
@@ -31,6 +31,18 @@ class AddManaOfColorChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [AddMana(self.p_id, self.gs, self.source, color, self.amt) for color in self.possible_colors]
+
+class CopyCardChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, card_options: list[GameCard],
+                 additional_types: list[str] = None, copy_color: bool = True):
+        super().__init__(p_id, gs, source)
+        self.card_options = card_options
+        self.additional_types = additional_types
+        self.copy_color = copy_color
+
+    def get_actions(self) -> list[Action]:
+        return [CopyCard(self.p_id, self.gs, self.source, t,
+                         self.additional_types, self.copy_color) for t in self.card_options]
 
 class DrawCardsOrDontChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cnt: int = 1):

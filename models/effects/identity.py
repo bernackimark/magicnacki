@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import copy
 from typing import TYPE_CHECKING, Optional, Literal
 
-from models.events.events_all import BlockEvent
+from models.choice_actions.choice_actions_all import CopyCardChoice
+from models.events.base import Event
+from models.events.events_all import BlockEvent, EnterBattlefieldEvent, UpkeepEvent
 from models.modifiers import KWAModifier, KWATemp, TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
 
 if TYPE_CHECKING:
@@ -89,6 +92,24 @@ class AislingLeprechaun(Effect):
             return
         other.colors = 'G'
 
+class Clone(Effect):
+    """You may have this creature enter as a copy of any creature on the battlefield;
+    pushes valid targets to the stack for user selection, which then calls an Action that copies select target attrs"""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
+        if not card_options:
+            return
+        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options), gs, False)
+
+class CopyArtifact(Effect):
+    """You may have this enchantment enter as a copy of any artifact on the battlefield,
+    except it's an enchantment in addition to its other types"""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
+        if not card_options:
+            return
+        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options,), gs, False)
+
 class EvilPresence(Effect):
     """Enchant land Enchanted land is a Swamp"""
 
@@ -96,7 +117,6 @@ class EvilPresence(Effect):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         sub_types = target.card_sub_types.copy()
-        print(target.props.name, sub_types)
         target.modifiers.auras.append(SubTypeModifier(source, 'add', 'Swamp'))
         for sub_type in sub_types:
             target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))
@@ -113,3 +133,33 @@ class PhantasmalTerrain(Effect):
         target.modifiers.auras.append(SubTypeModifier(source, 'add', self.land_type))
         for sub_type in sub_types:
             target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))
+
+class VesuvanDoppelgangerCast(Effect):
+    """You may have this creature enter as a copy of any creature on the battlefield,
+    except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        print('AA')
+        if gs.player_turn_idx != s.owner_id:
+            return
+        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
+        if not card_options:
+            print('BB')
+            return
+        print('CC')
+        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False), gs, False)
+
+class VesuvanDoppelgangerUpkeep(Effect):
+    """You may have this creature enter as a copy of any creature on the battlefield,
+    except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
+        print('A')
+        if gs.player_turn_idx != s.owner_id:
+            return
+        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
+        print('B', card_options)
+        if not card_options:
+            return
+        print('C')
+        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False), gs, False)

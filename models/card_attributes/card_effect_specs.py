@@ -2,9 +2,6 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
-    PhantasmalTerrain, AislingLeprechaun
-
 if TYPE_CHECKING:
     from models.game_card import GameCard
 
@@ -36,6 +33,8 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
     HypnoticSpecter
+from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
+    PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
@@ -197,6 +196,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 7), T_FUNCS['self'], CastResolvedEvent),
          Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
                    max_variable_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO))],
+    'clone': [Triggered(Clone(), None, CastResolvedEvent)],
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
     'cockatrice': [Triggered(CockatriceAndThicketBasilisk(), None, BlockEvent)],
     'cocoon':
@@ -211,6 +211,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                       Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent), Static(Conversion())],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
+    'copy-artifact': [Triggered(CopyArtifact(), None, CastResolvedEvent)],
     'coral-helm': [Activated('3', PumpEffect(2, 2, True), T_FUNCS['creatures_in_play'],
                              extra_costs=[DiscardAtRandomCost()])],
     'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],
@@ -223,6 +224,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'cursed-land': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['lands_in_play'], UpkeepEvent)],
     'cursed-rack': [Triggered(CursedRackEffect(), None, EndStepEvent)],
     'cyclopean-mummy': [Triggered(CyclopeanMummy(), None, DiesEvent)],
+    'dance-of-many': [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],  # the rest of the card still needs coding
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
     'darkness': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'deadfall': [Static(WalkRuleRemoved('Forestwalk'))],
@@ -641,6 +643,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(VenarianGoldHostStaysTapped(), None, UntapPhaseEvent)],
     'venom': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent), Triggered(Venom(), None, BlockEvent)],
     'verduran-enchantress': [Static(VerduranEnchantress())],
+    'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerCast(), None, CastResolvedEvent),
+                             Triggered(VesuvanDoppelgangerUpkeep(), None, UpkeepEvent)],
+    # TODO: despite being the same code, VesuvanDoppelgangerUpkeep doesn't trigger;
+    #  the card goes to the graveyard during cast as well but gets pulled out somehow;
+    #  the SBA looking at 0 toughness may be the culprit
     'volcanic-island': dual_land_activated_ability_specs('RU'),
     'voodoo-doll':
         [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent),

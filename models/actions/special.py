@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import copy
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import CounterType
@@ -12,6 +14,48 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.actions.base import Action
+
+class CopyCard(Action):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard,
+                 addtional_types: list[str] = None, copy_color: bool = True):
+        super().__init__(p_id, gs)
+        self.s = source
+        self.t = target
+        self.additional_types = addtional_types
+        self.copy_color = copy_color
+
+    def __repr__(self):
+        return f'{self.s} copies {self.t}'
+
+    def play(self) -> None:
+        the_copy = copy.deepcopy(self.t)
+        if self.additional_types:
+            self.s._card_types = list(set(self.additional_types + the_copy.props.card_types))
+        else:
+            self.s._card_types = the_copy.props.card_types
+        self.s._card_sub_types = the_copy.props.card_sub_types
+        if self.copy_color:
+            self.s.colors = the_copy.props.colors
+        self.s.has_summoning_sickness = the_copy.props.is_creature and 'Haste' not in the_copy.props.keyword_abilities
+        self.s.base_pt = the_copy.base_pt
+        self.s._base_kwa = self._handle_kwa(the_copy, the_copy.props.keyword_abilities)
+        # self.s._base_kwa = the_copy.props.keyword_abilities
+        # if the_copy.props.is_creature and 'Defender' not in the_copy.props.keyword_abilities:
+        #     self.s._base_kwa = self.s._base_kwa.append('Attack')
+        # self.s._base_kwa = tuple(self.s._base_kwa)
+        self.s.activated_abilities = the_copy.activated_abilities
+        self.s.static_abilities = the_copy.static_abilities
+        self.s.triggered_abilities = the_copy.triggered_abilities
+        self.gs.action_stack.pop()  # remove choice
+        self.gs.cast(self.s)
+
+    def _handle_kwa(self, copied_card: GameCard, prop_kwas: list[str | None]) -> tuple[str | None]:
+        my_base_kwa = []
+        if copied_card.props.is_creature and 'Defender' not in copied_card.props.keyword_abilities:
+            self.s._base_kwa = my_base_kwa.append('Attack')
+        else:
+            my_base_kwa = prop_kwas
+        return tuple(my_base_kwa)
 
 class DestroyAndForegoCombatDamage(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard):

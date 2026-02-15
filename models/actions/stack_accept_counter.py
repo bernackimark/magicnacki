@@ -5,7 +5,7 @@ from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
 from models.effects.base import ActivatedAbility
 from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.events.events_all import CastResolvedEvent
+from models.events.events_all import CastResolvedEvent, EnterBattlefieldEvent
 from models.zone import Zone
 from utils import flip
 

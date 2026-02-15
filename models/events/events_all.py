@@ -53,6 +53,11 @@ class DiesEvent(Event):
 class EndStepEvent(Event):
     active_player: int
 
+@dataclass(frozen=True)
+class EnterBattlefieldEvent(Event):
+    caster: int
+    card: GameCard
+
 @dataclass
 class LifeLossEvent(Event):
     """Is not frozen as it may be modified (ex: alie-from-cairo)"""
