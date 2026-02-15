@@ -6,7 +6,7 @@ from models.effects.counters import AddCounterAtEndStep
 from models.effects.destroy_sac_regenerate import DestroyAtCombatEnd
 from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
 from models.events.events_all import BlockEvent, CombatEndEvent, AttackEvent
-from models.modifiers import PTTemp, KWATemp
+from models.modifiers import PTTemp, KWATemp, KWAModifier
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -83,6 +83,16 @@ class CockatriceAndThicketBasilisk(Effect):
         delayed = DestroyAtCombatEnd(s, other)
         gs.register_effect(delayed, s)
         # this will later get unregistered at combat end
+
+class ElderLandWurm(Effect):
+    """When this creature blocks, it loses defender"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.blocker is not s:
+            return
+        s.modifiers.auras.append(KWAModifier(s, 'remove', 'Defender'))
+        s.modifiers.auras.append(KWAModifier(s, 'add', 'Attack'))
 
 class GiantShark(Effect):
     """Whenever this creature blocks/is blocked by a creature that's been dealt damage this turn,

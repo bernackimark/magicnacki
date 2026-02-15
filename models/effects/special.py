@@ -3,7 +3,7 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
-from models.events.events_all import DiesEvent, UnblockedAttackerEvent
+from models.events.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent
 from utils import flip
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, 
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
     RemoveCounterForLifeChoice, FloralSpuzzemChoice
 from models.actions.special import SacCreatureAndAddMana
-from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, CounterType, VITALITY
+from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
@@ -230,6 +230,19 @@ class MazeOfIth(Effect):
             gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
         t.untap(gs)
 
+class MijaeDjinn(Effect):
+    """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
+    listens_to = AttackEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
+        if event.attacker is not s:
+            return
+        result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
+        print(f'The result of the random event was: {result}')
+        if result == 'tails':
+            gs.remove_from_combat(s)
+            gs.tap_card(s)
+
 class Rakalite(Effect):
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
         """target is the card dealing damage"""
@@ -402,3 +415,16 @@ class WormwoodTreefolkSwampwalk(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.modifiers.temps.append(KWATemp(source, 'add', 'Swampwalk'))
         gs.apply_damage(source, 2, source.orig_owner_id)
+
+class YdwenEfreet(Effect):
+    """Whenever Ydwen Efreet blocks, flip a coin.
+    If you lose, remove Ydwen Efreet from combat who can't block this turn."""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.blocker is not s:
+            return
+        result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
+        print(f'The result of the random event was: {result}')
+        if result == 'tails':
+            gs.remove_from_combat(s)

@@ -16,7 +16,7 @@ from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINU
     CHARGE
 from models.effects.base import EffSpec, Activated, Triggered, Static
 from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
-    CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump
+    CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, ElderLandWurm
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
     RockHydraCast, AddCounterPerCreatureDeath, AddCounterToHost, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
@@ -59,7 +59,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
-    LivingArtifactUpkeep, FloralSpuzzem
+    LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
@@ -245,6 +245,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'eater-of-the-dead':
         [Activated('', EaterOfTheDeadAA(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
     'el-hajjâj': [Triggered(ElHajjaj(), T_FUNCS['self'], DamageResolvedEvent)],
+    'elder-land-wurm': [Triggered(ElderLandWurm(), None, BlockEvent)],
     'elder-spawn': [Triggered(ElderSpawnUpkeep(), None, UpkeepEvent), Static(ElderSpawnCanBeBlocked())],
     'electric-eel': [Triggered(DealDamage(1), T_FUNCS['self'], CastResolvedEvent), Activated('RR', ElectricEel())],
     'elven-riders': [Static(ElvenRidersCanBeBlocked())],
@@ -431,6 +432,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'merchant-ship': [Triggered(MerchantShip(), None, UnblockedAttackerEvent)],
     'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
     'mightstone': [Static(Mightstone())],
+    'mijae-djinn': [Triggered(MijaeDjinn(), None, AttackEvent)],
     'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
@@ -664,4 +666,5 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                           Activated('BB', WormwoodTreefolkSwampwalk())],
     'wrath-of-god': [Triggered(ExileAllCreatures(), None, CastResolvedEvent)],
     'wyuli-wolf': [Activated('T', PumpEffect(1, 1, True), T_FUNCS['creatures_in_play'])],
+    'ydwen-efreet': [Triggered(YdwenEfreet(), None, BlockEvent)],
 }
