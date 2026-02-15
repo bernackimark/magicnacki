@@ -1,6 +1,6 @@
 import random
 from collections import defaultdict
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Any
 
 from action_stack import ActionStack
 from card import Card
@@ -342,7 +342,7 @@ class GameState:
         self.boards[owner_id].append(game_card)
 
     @staticmethod
-    def randomize_event(p_id: int, iterable: Iterable) -> str:
+    def randomize_event(p_id: int, iterable: Iterable) -> Any:
         event = RandomEvent(p_id, iterable)
         event.result = random.choice([_ for _ in iterable])
         return event.result
