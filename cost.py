@@ -17,6 +17,20 @@ class Cost(ABC):
     def pay(self, gs: GameState, source: GameCard) -> None:
         ...
 
+class DiscardAtRandomCost(Cost):
+    def can_pay(self, gs: GameState, source: GameCard):
+        return len(gs.hands[source.owner_id].cards) > 0
+
+    def pay(self, gs: GameState, source: GameCard):
+        cards = gs.hands[source.owner_id].cards
+        if not cards:
+            return
+        if len(cards) == 1:
+            gs.discard(cards[0])
+            return
+        random_card: GameCard = gs.randomize_event(source.owner_id, cards)
+        gs.discard(random_card)
+
 class ManaCost(Cost):
     def __init__(self, cost: str):
         self.cost = cost
