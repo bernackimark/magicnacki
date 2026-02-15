@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from itertools import combinations
 from typing import TYPE_CHECKING
 
@@ -10,7 +9,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from constants import COLOR_LETTERS
-from cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost
+from cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost, DiscardAtRandomCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN, \
     CHARGE
@@ -35,7 +34,8 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale
-from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress
+from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
+    HypnoticSpecter
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
@@ -59,7 +59,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
-    LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet
+    LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
@@ -138,7 +138,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'bayou': dual_land_activated_ability_specs('BG'),
     'berserk': [Triggered(BerserkPump(), T_FUNCS['creatures_in_play'],
                           CastResolvedEvent, allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE]),
-                Triggered(DestroyIfItAttacked(), T_FUNCS['creatures_in_play'], EndStepEvent)],  # warning: i don't think this target func is correct; it needs to know the target previously selected
+                Triggered(DestroyIfItAttacked(), T_FUNCS['creatures_in_play'], EndStepEvent)],  # warning: I don't think this target func is correct; it needs to know the target previously selected
     'birds-of-paradise': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'black-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                            Activated('T', ManaBatteriesAddMana('B'), extra_costs=[RemoveCounterCost(CHARGE)],
@@ -150,14 +150,15 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'blight': Triggered(Destroy(), T_FUNCS['host'], TapCardEvent),
     'blood-lust': [Triggered(BloodLust(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE,
-                           Activated('T', ManaBatteriesAddMana('U'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+                          Activated('T', ManaBatteriesAddMana('U'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                    max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'blue-ward': [Triggered(KWAModEffect('add', 'Protection From Blue'),
                             T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'bog-rats': [Static(BogRats())],
     'bone-flute': [Activated('2T', BoneFlute())],
     'book-of-rass': [Activated('2', BookOfRass())],
     'boomerang': [Triggered(Bounce(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
+    'bottle-of-suleiman': [Activated('1', BottleOfSuleiman(), extra_costs=[SacSelfCost()])],
     'braingeyser': [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
     'brainwash':
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
@@ -172,6 +173,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self'], AttackEvent),
                     Activated('1RRT', KWAModEffect('add', 'Mountainwalk', True), T_FUNCS['creatures_in_play'])],
     'celestial-prism': [Activated('2T', AddMana(c), T_FUNCS['card_owner'], text=f'Add 1 {c}') for c in COLOR_LETTERS],
+    'chaos-orb': [Activated('1T', ChaosOrb(), T_FUNCS['opp_non_token_perms_in_play'], extra_costs=[SacSelfCost()],
+                            text='If random di roll is 1-4, destroy target')],
     'chaoslace': [Triggered(SetColor('R'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts_in_play'])],
     'circle-of-protection-black': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['black_in_play'])],
@@ -208,6 +211,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                       Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent), Static(Conversion())],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
+    'coral-helm': [Activated('3', PumpEffect(2, 2, True), T_FUNCS['creatures_in_play'],
+                             extra_costs=[DiscardAtRandomCost()])],
     'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],
     'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
     'creature-bond': [Triggered(CreatureBond(), None, DiesEvent)],
@@ -266,6 +271,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'exorcist': [Activated('1W', Destroy(), T_FUNCS['black_creatures_in_play'])],
     'eye-for-an-eye': [Triggered(EyeForAnEye(), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'faint': [Triggered(Feint(), T_FUNCS['attackers'], CastResolvedEvent)],
+    'falling-star': [Triggered(FallingStar(), T_FUNCS['opp_creatures_in_play'], CastResolvedEvent,
+                               text='If a di roll is 1-5, deal 3 damage to it')],
     'farmstead': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
                   Activated('WW', GainLife(), T_FUNCS['host_owner'], allowed_phases=[Phase.UPKEEP],
                             allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
@@ -350,6 +357,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'hurkyls-recall': [Triggered(HurkylsRecall(), T_FUNCS['all_players'], CastResolvedEvent)],
     'hyperion-blacksmith': [Activated('T', TapCardEffect(), T_FUNCS['opp_untapped_artifacts']),
                             Activated('T', UntapCardEffect(), T_FUNCS['opp_tapped_artifacts'])],
+    'hypnotic-specter': [Triggered(HypnoticSpecter(), None, DamageResolvedEvent)],
     'icy-manipulator': [Activated('1T', TapCardEffect(), T_FUNCS['untapped_artifacts_creatures_lands'])],
     'ice-storm': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'immolation': [Triggered(PumpEffect(2, -2), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
@@ -415,6 +423,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
+    'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
     'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
@@ -621,7 +630,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(PumpEffect(3, 3), T_FUNCS['creatures_in_play'], CastResolvedEvent),
          Triggered(AddCountersOnHostTurn(MINUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'unsummon': [Triggered(Bounce(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
-    'urzas-chalice': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('C'))],  # not sure if 'C' is ever in props.colors
+    'urzas-chalice': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('C'))],
     'urzas-mine': [Activated('T', UrzasTrio())],
     'urzas-miter': [Triggered(UrzasMiter(), None, DiesEvent)],
     'urzas-power-plant': [Activated('T', UrzasTrio())],

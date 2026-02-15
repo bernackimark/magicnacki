@@ -63,6 +63,26 @@ class BookOfRass(Effect):
         gs.apply_damage(source, 2, source.orig_owner_id)
         gs.draw(source.owner_id)
 
+class BottleOfSuleiman(Effect):
+    """{1}, Sac: Flip a coin. If you win the flip, create a 5/5 colorless Djinn artifact creature token with flying.
+    If you lose the flip, this artifact deals 5 damage to you."""
+    def resolve(self, gs: GameState, s: GameCard, _: GameCard = None):
+        result: str = gs.randomize_event(s.owner_id, ['heads', 'tails'])
+        if result == 'heads':
+            gs.create_token_creature(s.owner_id, 'Djinn', 5, 5, ['Flying', 'Attack'],
+                                     other_types=[], sub_types=['Djinn'], colors='C')
+        else:
+            gs.apply_damage(s, 5, s.owner_id)
+
+class ChaosOrb(Effect):
+    """{1}, {T}, Sac: Choose an opponent's non-token permanent. If random di roll is 1-4, destroy target."""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        if not t:
+            raise ValueError(f'{s.props.name} needs a target')
+        result: int = gs.randomize_event(s.owner_id, [1, 2, 3, 4, 5, 6])
+        if result <= 4:
+            gs.destroy(t)
+
 class CocoonUpkeep(Effect):
     """At your upkeep, remove a pupa counter from this Aura.
         If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
@@ -108,6 +128,16 @@ class ElvesOfTheDeepShadow(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.mana_pools[source.orig_owner_id].add_floating('B')
         gs.apply_damage(source, 1, source.orig_owner_id)
+
+class FallingStar(Effect):
+    """Select an opponent's creature. If a di roll is 1-5, deal 3 damage to it"""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        if not t:
+            raise ValueError(f'{s.props.name} needs a target')
+        result: int = gs.randomize_event(s.owner_id, [1, 2, 3, 4, 5, 6])
+        print(f'The roll is a: {result}')
+        if result <= 5:
+            gs.apply_damage(s, 3, t)
 
 class Fasting(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
@@ -212,6 +242,23 @@ class LivingArtifactUpkeep(Effect):
         if gs.player_turn_idx != s.owner_id:
             return
         gs.action_stack.push(RemoveCounterForLifeChoice(s.owner_id, gs, s, VITALITY), gs, False)
+
+class ManaClash(Effect):
+    """You and target opponent each flip a coin. Mana Clash deals 1 damage to each player whose coin comes up tails.
+    Repeat this process until both players' coins come up heads on the same flip."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        caster_id, opp_id = source.owner_id, flip(source.owner_id)
+        while True:
+            caster_result = gs.randomize_event(caster_id, ['heads', 'tails'])
+            opp_result = gs.randomize_event(opp_id, ['heads', 'tails'])
+            print(f"Caster's result is {caster_result}; opponent's result is {opp_result}")
+            if caster_result == 'heads' and opp_result == 'heads':
+                print('Since both flips were heads, there are no more flips')
+                break
+            if caster_result == 'tails':
+                gs.apply_damage(source, 1, caster_id)
+            if opp_result == 'tails':
+                gs.apply_damage(source, 1, opp_id)
 
 class MartyrsCry(Effect):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""

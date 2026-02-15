@@ -75,6 +75,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
         lambda gs, s: [c for c in gs.card_filter.on_player_board(flip(s.orig_owner_id)).creatures().result()
                        if c not in gs.card_filter.attackers().result()
                        and not c.has_summoning_sickness and 'Attack' in c.keyword_abilities],
+    'opp_non_token_perms_in_play':
+        lambda gs, s: [c for c in gs.card_filter.on_player_board(flip(s.orig_owner_id)).permanents.result()
+                       if not c.is_token],
     'opp_non_wall_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).non_wall_creatures().result(),
     'opp_tapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).tapped().artifacts().result(),
     'opp_untapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.orig_owner_id)).untapped().artifacts().result(),

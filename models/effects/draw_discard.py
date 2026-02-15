@@ -13,7 +13,7 @@ from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
 from utils import flip
 
-from models.events.events_all import EndStepEvent, ZoneChangeEvent
+from models.events.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent
 
 
 # --- GENERIC ---
@@ -47,6 +47,23 @@ class CursedRackEffect(Effect):
         hand = gs.hands[opp_id]
         for i in range(len(hand.cards) - 4):
             gs.action_stack.push(DiscardCard(opp_id, gs, hand.cards[0]), gs, False)
+
+class HypnoticSpecter(Effect):
+    """Whenever this creature deals damage to an opponent, that player discards a card at random"""
+    listens_to = DamageResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
+        opp_id = flip(source.owner_id)
+        if event.source is not source or event.target is not opp_id:
+            return
+        opp_cards = gs.hands[opp_id].cards
+        if not opp_cards:
+            return
+        if len(opp_cards) == 1:
+            gs.discard(opp_cards[0])
+            return
+        random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
+        gs.discard(random_card)
 
 class VerduranEnchantress(Effect):
     """Whenever you cast an enchantment spell, you may draw a card"""
