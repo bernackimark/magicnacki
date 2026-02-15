@@ -5,8 +5,8 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from constants import Target, ALL_PLAYER_INDICES
-from utils import flip
+from models.constants import Target, ALL_PLAYER_INDICES
+from models.utils import flip
 
 T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     # --- COMMON TARGET FUNCS ---

@@ -1,4 +1,4 @@
-from constants import KEYWORD_ABILITIES
+from models.constants import KEYWORD_ABILITIES
 
 CREATURE_KW_ABILITIES = {
     "abbey-gargoyles": ["Flying", "Protection From Red"],

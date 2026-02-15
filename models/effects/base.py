@@ -5,13 +5,11 @@ from enum import Enum, auto
 from functools import partial
 from typing import TYPE_CHECKING, Optional, Literal, Union, Callable
 
-from cost import Cost, TapCost, ManaCost
+from models.cost import Cost, TapCost, ManaCost
 from phase_fsm import Phase
-from utils import flip
+from models.utils import flip
 
-from ..damage import DamageEvent
-from ..events.base import Event
-from ..events.events_all import StateBasedEvent
+from models.events_all import Event
 
 if TYPE_CHECKING:
     from ..game_card import GameCard

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from models.actions.base import Action
 from models.effects.base import ActivatedAbility
-from models.events.events_all import StateBasedEvent
+from models.events_all import StateBasedEvent
 from models.game_card import GameCard
 
 

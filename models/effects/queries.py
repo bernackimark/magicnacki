@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING
 
 from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier, SubTypeModifier
-from utils import flip
+from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState

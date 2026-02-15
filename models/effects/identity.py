@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Literal
 
-from models.choice_actions.choice_actions_all import CopyCardChoice, PrimalClayChoice
-from models.events.events_all import BlockEvent, UpkeepEvent
+from models.choice_actions_all import CopyCardChoice, PrimalClayChoice
+from models.events_all import BlockEvent, UpkeepEvent
 from models.modifiers import TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
 
 if TYPE_CHECKING:

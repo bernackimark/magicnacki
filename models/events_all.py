@@ -2,13 +2,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterable, Any
 
-from constants import Target
+from models.constants import Target
 from models.zone import Zone
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
 
-from models.events.base import Event
+
+class Event:
+    pass
+
 
 @dataclass(frozen=True)
 class AttackEvent(Event):

@@ -4,7 +4,7 @@ from models.actions.base import Action
 from models.combat import Combat
 from models.game_card import GameCard
 from phase_fsm import Phase
-from utils import flip
+from models.utils import flip
 
 
 @dataclass

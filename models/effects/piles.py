@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from utils import flip
-from ..events.base import Event
-from ..events.events_all import ZoneChangeEvent, UpkeepEvent
+from models.utils import flip
+from models.events_all import ZoneChangeEvent, UpkeepEvent, Event
 from ..zone import Zone
 
 if TYPE_CHECKING:

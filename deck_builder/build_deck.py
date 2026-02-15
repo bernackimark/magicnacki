@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field
 from typing import Iterable
 
-from card import Card, CardUniverse
-from constants import (BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS, X_POINTS,
-                       GENTLEMENS_RULES_BANNED_SLUGS, OLD_SCHOOL_SETS)
+from models.card import Card, CardUniverse
+from models.constants import (BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS, X_POINTS,
+                              GENTLEMENS_RULES_BANNED_SLUGS, OLD_SCHOOL_SETS)
 from models.game_card import GameCard
 
 @dataclass

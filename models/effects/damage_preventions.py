@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from models.effects.base import Effect, Static
-from utils import flip
+from models.effects.base import Effect
+from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState

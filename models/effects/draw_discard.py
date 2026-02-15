@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from models.choice_actions.choice_actions_all import DrawCardsOrDontChoice
-from models.events.base import Event
+from models.choice_actions_all import DrawCardsOrDontChoice
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -11,9 +10,9 @@ if TYPE_CHECKING:
 
 from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
-from utils import flip
+from models.utils import flip
 
-from models.events.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent
+from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent
 
 
 # --- GENERIC ---

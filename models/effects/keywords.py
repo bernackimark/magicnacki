@@ -8,11 +8,11 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 
-from card_filter import CardFilter
+from models.card_filter import CardFilter
 from models.actions.kwa import AddKWA
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, KWATemp
-from utils import flip
+from models.utils import flip
 
 # --- GENERIC ---
 class AllWalksRemoved(Effect):

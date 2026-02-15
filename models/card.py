@@ -1,12 +1,13 @@
 from dataclasses import dataclass, field
 from functools import cached_property
 import re
+from pathlib import Path
 from typing import Iterator
 
 from models.card_attributes.kwa_abilities import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
-from constants import COLOR_LETTERS, BASIC_LANDS
-from utils import str_to_int
+from models.constants import COLOR_LETTERS, BASIC_LANDS
+from models.utils import str_to_int
 
 
 @dataclass
@@ -78,7 +79,7 @@ class Card:
 @dataclass
 class CardUniverse:
     set_codes: list[str]
-    file_path: str = '/Users/Bernacki_Laptop/PycharmProjects/magicnacki/gatherer/card_data.json'  # TODO: make relative
+    file_path: str = Path(__file__).resolve().parents[1] / "gatherer" / "card_data.json"
     cards: list[Card] = field(default_factory=list)
     all_cards_dict: dict = field(default=dict)  # bypasses set_codes and always pulls entire card_data.json file
 

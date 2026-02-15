@@ -5,9 +5,9 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from constants import BASIC_LANDS
+from models.constants import BASIC_LANDS
 from models.effects.base import Effect
-from utils import flip
+from models.utils import flip
 
 
 class CanBlockBaseRule(Effect):

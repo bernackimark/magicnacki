@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 
 from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
-from models.events.events_all import UnblockedAttackerEvent
+from models.events_all import UnblockedAttackerEvent
 
 if TYPE_CHECKING:
     from game_state import GameState

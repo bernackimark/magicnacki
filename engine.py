@@ -29,7 +29,7 @@ class Engine:
 
 # build decks from json file
 import json
-with open('cards_for_game_testing.json', 'r') as f:
+with open('testing/cards_for_game_testing.json', 'r') as f:
     data = json.load(f)
 
 universe = CardUniverse(data['universe'])

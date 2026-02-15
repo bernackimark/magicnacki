@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game_state import GameState
 
-from constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTER_SLUG, BASIC_LAND_MANA_PRODUCED, COLOR_LETTERS
+from models.constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTER_SLUG, BASIC_LAND_MANA_PRODUCED, COLOR_LETTERS
 
 
 def parse_casting_cost(casting_cost: str) -> dict[str, int]:

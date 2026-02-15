@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from models.actions.base import Action
 from models.turn import Turn
 from phase_fsm import Phase
-from utils import flip
+from models.utils import flip
 
 
 @dataclass

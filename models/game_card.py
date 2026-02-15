@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-import copy
-from typing import Callable, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
 
-from card import Card
+from models.card import Card
 from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec, Effect

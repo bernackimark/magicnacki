@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.choice_actions.base import ChoiceAction
+from models.choice_actions_all import ChoiceAction
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 from dataclasses import dataclass, field
 
-from utils import flip
+from models.utils import flip
 
 
 @dataclass

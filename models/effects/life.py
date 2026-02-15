@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
-from models.actions.life import GainLifeAction
-from models.choice_actions.choice_actions_all import PayOneColorlessForOneLifeChoice
-from models.events.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, CastResolvedEvent, LifeLossEvent, \
+from models.choice_actions_all import PayOneColorlessForOneLifeChoice
+from models.events_all import DamageResolvedEvent, DiesEvent, CastResolvedEvent, LifeLossEvent, \
     UnblockedAttackerEvent
 
 if TYPE_CHECKING:
@@ -11,7 +10,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from utils import flip
+from models.utils import flip
 
 
 # --- GENERICS ---

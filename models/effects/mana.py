@@ -1,14 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from ..events.events_all import DiesEvent
+from models.events_all import DiesEvent
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
 
-from constants import COLOR_LETTERS_W_COLORLESS
-from utils import flip
+from models.constants import COLOR_LETTERS_W_COLORLESS
+from models.utils import flip
 from .base import Effect
 
 class AddMana(Effect):

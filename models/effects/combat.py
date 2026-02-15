@@ -5,7 +5,7 @@ from models.counter_tokens import PLUS_ONE
 from models.effects.counters import AddCounterAtEndStep
 from models.effects.destroy_sac_regenerate import DestroyAtCombatEnd
 from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
-from models.events.events_all import BlockEvent, CombatEndEvent, AttackEvent
+from models.events_all import BlockEvent, CombatEndEvent, AttackEvent
 from models.modifiers import PTTemp, KWATemp, KWAModifier
 
 if TYPE_CHECKING:

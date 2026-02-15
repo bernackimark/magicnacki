@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
     from game_state import GameState
 
-from constants import BASIC_LANDS
+from models.constants import BASIC_LANDS
 
 class CardFilter:
     """Filters a list of cards based on chained predicates; does not modify the original list.

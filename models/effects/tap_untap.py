@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 from phase_fsm import Phase
-from utils import flip
-from ..events.events_all import ZoneChangeEvent
+from models.utils import flip
+from models.events_all import ZoneChangeEvent
 from ..zone import Zone
 
 if TYPE_CHECKING:
@@ -11,8 +11,8 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from card_filter import CardFilter
-from models.choice_actions.choice_actions_all import UntapChoice, UntapWithManaChoice
+from models.card_filter import CardFilter
+from models.choice_actions_all import UntapChoice, UntapWithManaChoice
 from ..actions.tap_untap import LeaveTapped
 from ..counter_tokens import PUPA, SLEEP
 

@@ -1,10 +1,9 @@
 from dataclasses import dataclass
 
-from constants import BASIC_LAND_MANA_PRODUCED
 from models.actions.base import Action
 from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.effects.base import ActivatedAbility
-from models.events.events_all import StateBasedEvent, CastResolvedEvent
+from models.events_all import StateBasedEvent, CastResolvedEvent
 from models.game_card import GameCard
 from models.zone import Zone
 

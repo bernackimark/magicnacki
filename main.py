@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from card import CardUniverse
+from models.card import CardUniverse
 import pygame as pg
 
 from renderer_pygame.game import Game

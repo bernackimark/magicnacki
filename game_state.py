@@ -2,14 +2,14 @@ import random
 from collections import defaultdict
 from typing import Callable, Iterable, Any
 
-from action_stack import ActionStack
-from card import Card
+from models.action_stack import ActionStack
+from models.card import Card
 from deck_builder.build_deck import Deck
-from card_filter import CardFilter
+from models.card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
-from models.choice_actions.base import ChoiceAction
+from models.choice_actions_all import ChoiceAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
 from models.actions.combat import (CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker,
                                    FinishBlocking, AssignCombatDamage)
@@ -19,11 +19,10 @@ from models.actions.stack_accept_counter import AcceptAction
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule, CanCastBaseRule
-from models.events.base import Event
-from models.events.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
-                                      UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
-                                      DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
-                                      UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent)
+from models.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
+                               UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
+                               DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
+                               UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent, Event)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -32,7 +31,7 @@ from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
 from models.zone import Zone
 from phase_fsm import Phase
-from utils import flip
+from models.utils import flip
 
 
 class GameState:

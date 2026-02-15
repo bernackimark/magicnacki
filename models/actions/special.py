@@ -5,9 +5,8 @@ from typing import TYPE_CHECKING
 
 from models.counter_tokens import CounterType
 from models.damage import PreventNextDamage
-from models.effects.damage_preventions import PreventAllDamage, PreventNextDamageEffect
 from phase_fsm import Phase
-from utils import flip
+from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState

@@ -3,14 +3,14 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
-from models.events.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent
-from utils import flip
+from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent
+from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.choice_actions.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
+from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
     RemoveCounterForLifeChoice, FloralSpuzzemChoice
 from models.actions.special import SacCreatureAndAddMana

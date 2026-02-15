@@ -1,9 +1,16 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Iterable, Optional
 
-from constants import COLOR_LETTERS_W_COLORLESS
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
+
+from models.constants import COLOR_LETTERS_W_COLORLESS, Target
+from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamage, PayLife
-from models.actions.destroy_sac_regen import Sac, Destroy
+from models.actions.destroy_sac_regen import Sac
 from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
@@ -11,17 +18,22 @@ from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDr
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
-from utils import flip
-
-if TYPE_CHECKING:
-    from game_state import GameState
-    from models.game_card import GameCard
-
-from models.actions.base import Action, DoNothing
-from models.choice_actions.base import ChoiceAction
+from models.utils import flip
 
 
 # --- GENERIC CHOICE ACTIONS ---
+@dataclass
+class ChoiceAction(ABC):
+    p_id: int
+    gs: GameState
+    source: GameCard
+    target: Optional[Target] = None
+
+    @abstractmethod
+    def get_actions(self) -> list[Action]:
+        ...
+
+
 class AddManaOfColorChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard,
                  possible_colors: Iterable[str] = COLOR_LETTERS_W_COLORLESS, amt: int = 1):
