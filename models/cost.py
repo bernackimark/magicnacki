@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
+
+from models.choice_actions_all import SacChoice
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -31,6 +33,13 @@ class DiscardAtRandomCost(Cost):
         random_card: GameCard = gs.randomize_event(source.owner_id, cards)
         gs.discard(random_card)
 
+class ExileSelfCost(Cost):
+    def can_pay(self, gs, source):
+        return source in gs.card_filter.in_play().result()
+
+    def pay(self, gs, source):
+        gs.exile(source)
+
 class ManaCost(Cost):
     def __init__(self, cost: str):
         self.cost = cost
@@ -51,12 +60,30 @@ class PayLifeCost(Cost):
     def pay(self, gs, source):
         gs.apply_damage(source, self.amt, source.owner_id)
 
-class TapCost(Cost):
-    def can_pay(self, gs, source):
-        return not source.is_tapped
+class RemoveCounterCost(Cost):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
 
-    def pay(self, gs, source):
-        source.tap(gs)
+    def can_pay(self, gs: GameState, source: GameCard) -> bool:
+        return source.counters.get_count(self.counter_type) >= self.cnt
+
+    def pay(self, gs: GameState, source: GameCard):
+        source.counters.remove_counter(self.counter_type, self.cnt)
+
+class SacCardCost(Cost):
+    def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]]):
+        self.target_func = target_func
+
+    def can_pay(self, gs: GameState, source: GameCard) -> bool:
+        return len(self.target_func(gs, source)) >= 1
+
+    def pay(self, gs: GameState, source: GameCard):
+        sac_options = self.target_func(gs, source)
+        # because this is a cost, it must be paid before its action goes on the stack
+        # within gs.get_available_actions(), it first seeks out gs.pending_choice, presents user w the action options,
+        # executes and then pushes the effect onto the stack
+        gs.pending_choice = SacChoice(gs.action_on_idx, gs, source, sac_options)
 
 class SacSelfCost(Cost):
     def can_pay(self, gs, source):
@@ -74,20 +101,10 @@ class SacTwoIslandsCost(Cost):
         for island in your_islands[:2]:
             gs.destroy(island)
 
-class ExileSelfCost(Cost):
+class TapCost(Cost):
     def can_pay(self, gs, source):
-        return source in gs.card_filter.in_play().result()
+        return not source.is_tapped
 
     def pay(self, gs, source):
-        gs.exile(source)
+        source.tap(gs)
 
-class RemoveCounterCost(Cost):
-    def __init__(self, counter_type: CounterType, cnt: int = 1):
-        self.counter_type = counter_type
-        self.cnt = cnt
-
-    def can_pay(self, gs: GameState, source: GameCard) -> bool:
-        return source.counters.get_count(self.counter_type) >= self.cnt
-
-    def pay(self, gs: GameState, source: GameCard):
-        source.counters.remove_counter(self.counter_type, self.cnt)
