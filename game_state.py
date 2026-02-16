@@ -55,6 +55,7 @@ class GameState:
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
         self.phase = Phase.UNTAP
         self.action_stack = ActionStack()
+        self.pending_choice: ChoiceAction | None = None  # used for when a cost.pay() does not go onto the stack
         self.game_history: list[tuple[int, Action]] = []  # turn number & Action; appended to in engine.play()
         self.turn_number = 1
         self.combats: list[Combat] = []
@@ -460,6 +461,9 @@ class GameState:
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         """Determine all legal actions available to player_id in the current phase ...
          (casting, activating abilities, combat, phase-specific actions, etc.)"""
+
+        if self.pending_choice:
+            return self.pending_choice.get_actions()
 
         self.check_state_based_actions()
 
