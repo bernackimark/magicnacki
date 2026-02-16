@@ -96,7 +96,7 @@ class Clone(Effect):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options), gs, False)
+        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
 
 class CopyArtifact(Effect):
     """You may have this enchantment enter as a copy of any artifact on the battlefield,
@@ -105,7 +105,7 @@ class CopyArtifact(Effect):
         card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
         if not card_options:
             return
-        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options,), gs, False)
+        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
 
 class EvilPresence(Effect):
     """Enchant land Enchanted land is a Swamp"""
@@ -135,21 +135,18 @@ class PrimalClay(Effect):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,
     or a 1/6 Wall artifact creature with defender in addition to its other types."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        gs.action_stack.push(PrimalClayChoice(s.owner_id, gs, s), gs, False)
+        gs.pending_choice = PrimalClayChoice(s.owner_id, gs, s)
 
 class VesuvanDoppelgangerCast(Effect):
     """You may have this creature enter as a copy of any creature on the battlefield,
     except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        print('AA')
         if gs.player_turn_idx != s.owner_id:
             return
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
-            print('BB')
             return
-        print('CC')
-        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False), gs, False)
+        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False)
 
 class VesuvanDoppelgangerUpkeep(Effect):
     """You may have this creature enter as a copy of any creature on the battlefield,
@@ -157,12 +154,9 @@ class VesuvanDoppelgangerUpkeep(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        print('A')
         if gs.player_turn_idx != s.owner_id:
             return
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
-        print('B', card_options)
         if not card_options:
             return
-        print('C')
-        gs.action_stack.push(CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False), gs, False)
+        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False)

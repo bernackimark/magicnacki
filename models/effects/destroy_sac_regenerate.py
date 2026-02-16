@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 from models.card_filter import CardFilter
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
-    ForceOfNatureUpkeepChoice, SacALandChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice
+    ForceOfNatureUpkeepChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
@@ -115,16 +115,16 @@ class LandEquilibrium(Effect):
         opp_lands = gs.card_filter.on_player_board(event.card.owner_id).lands().result()
         if len(opp_lands) < your_land_cnt:
             return
-        gs.action_stack.push(SacALandChoice(event.card.owner_id, gs, source))
+        gs.action_stack.push(SacChoice(event.card.owner_id, gs, source, opp_lands), gs, False)
 
 class ManaVortexUpkeep(Effect):
     """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if len(CardFilter(gs).lands().in_play().result()) == 0:
+        if len(gs.card_filter.lands().in_play().result()) == 0:
             gs.destroy(source)
             return
-        for land in CardFilter(gs).on_player_board(gs.player_turn_idx).lands().result():
-            SacALandChoice(gs.player_turn_idx, gs, land)
+        your_lands = gs.card_filter.on_player_board(gs.player_turn_idx).lands().result()
+        gs.action_stack.push(SacChoice(gs.player_turn_idx, gs, source, your_lands), gs, False)
 
 class Millstone(Effect):
     """{2}, {T}: Target player mills two cards"""

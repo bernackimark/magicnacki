@@ -14,6 +14,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                  gs.card_filter.in_play().islands().result(),
     'all_creatures_and_players': lambda gs, s: gs.card_filter.in_play().creatures().result() + [0, 1],
     'all_players': lambda gs, s: [0, 1],
+    'another_orc_or_goblin_in_play':
+        lambda gs, s: [c for c in gs.card_filter.in_play().by_sub_type(['Orc', 'Golbin']).result() if c is not s],
     'artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().artifacts().creatures().result(),
     'artifacts_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Enchantment']).result(),
     'artifacts_creatures_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Enchantment']).result(),
@@ -97,13 +99,21 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'unenchanted_perms_in_play': lambda gs, s: gs.card_filter.is_enchanted(False).permanents().in_play().result(),
     'untapped_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().artifacts().untapped().result(),
     'untapped_artifacts_creatures_lands': lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).untapped().result(),
-    'untapped_creatures_without_flying': lambda gs, s: gs.card_filter.in_play().creatures().untapped().has('Flying', False).result(),
+    'untapped_creatures_without_flying':
+        lambda gs, s: gs.card_filter.in_play().creatures().untapped().has('Flying', False).result(),
     'walls_in_play': lambda gs, s: gs.card_filter.in_play().walls().result(),
     'white_creatures_in_play': lambda gs, s: gs.card_filter.in_play().white().creatures().result(),
     'white_in_play': lambda gs, s: gs.card_filter.in_play().white().result(),
+    'your_artifacts_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).artifacts().result(),
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.orig_owner_id).creatures().result(),
     'your_lands_in_play': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).lands().result(),
+    'your_other_creatures_in_play':
+        lambda gs, s: [c for c in gs.card_filter.on_player_board(s.orig_owner_id).creatures().result() if c is not s],
+    'your_other_orcs_in_play':
+        lambda gs, s: [c for c in gs.card_filter.on_player_board(s.orig_owner_id).by_sub_type('Orc').result()
+                       if c is not s],
     'your_permanents_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).permanents().result(),
-    'your_untapped_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),
+    'your_untapped_creatures':
+        lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),
     'your_walls_in_play': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).in_play().walls().result(),
 }

@@ -41,8 +41,12 @@ class CopyCard(Action):
         self.s.activated_abilities = the_copy.activated_abilities
         self.s.static_abilities = the_copy.static_abilities
         self.s.triggered_abilities = the_copy.triggered_abilities
-        self.gs.action_stack.pop()  # remove choice
-        self.gs.cast(self.s)
+        if self.gs.phase != Phase.UPKEEP:  # hack. Vesuvan Doppel is the only card that calls this during upkeep
+            self.gs.cast(self.s)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
+        else:
+            self.gs.action_stack.pop()
 
     def _handle_kwa(self, copied_card: GameCard, prop_kwas: list[str | None]) -> tuple[str | None]:
         my_base_kwa = []
@@ -139,6 +143,36 @@ class SkipDrawPhaseGainLife(Action):
         self.gs.action_stack.pop()
 
 # --- CARD-SPECIFIC ---
+class HealingSalveA(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+
+    def __repr__(self):
+        return 'You gain 3 life'
+
+    def play(self) -> None:
+        self.gs.increment_life(self.player_idx, 3)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
+
+class HealingSalveB(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, t: GameCard | int):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.target = t
+
+    def __repr__(self):
+        return 'Prevent the next 3 damage that would be dealt to any target this turn'
+
+    def play(self) -> None:
+        if isinstance(self.target, int):
+            pnd = PreventNextDamage(self.s, 3, target_player=self.target)
+        else:
+            pnd = PreventNextDamage(self.s, 3, target_card=self.target)
+        self.gs.damage_preventions.append(pnd)
+        self.gs.action_stack.pop()
+
 class PrimalClayA(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
         super().__init__(p_id, gs)
@@ -149,8 +183,9 @@ class PrimalClayA(Action):
 
     def play(self) -> None:
         self.s.base_pt = (3, 3)
-        self.gs.action_stack.pop()
         self.gs.cast(self.s)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 
 class PrimalClayB(Action):
@@ -166,8 +201,9 @@ class PrimalClayB(Action):
         kwa = list(self.s._base_kwa)
         kwa.append('Flying')
         self.s._base_kwa = kwa
-        self.gs.action_stack.pop()
         self.gs.cast(self.s)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 class PrimalClayC(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -183,5 +219,6 @@ class PrimalClayC(Action):
         kwa.append('Defender')
         kwa.remove('Attack')
         self.s._base_kwa = kwa
-        self.gs.action_stack.pop()
         self.gs.cast(self.s)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None

@@ -10,12 +10,13 @@ if TYPE_CHECKING:
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamage, PayLife
-from models.actions.destroy_sac_regen import Sac
+from models.actions.destroy_sac_regen import Sac, Destroy
 from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
-    RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
+    RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
+    HealingSalveB
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -24,7 +25,7 @@ from models.utils import flip
 # --- GENERIC CHOICE ACTIONS ---
 @dataclass
 class ChoiceAction(ABC):
-    p_id: int
+    player_idx: int
     gs: GameState
     source: GameCard
     target: Optional[Target] = None
@@ -42,7 +43,7 @@ class AddManaOfColorChoice(ChoiceAction):
         self.amt = amt
 
     def get_actions(self) -> list[Action]:
-        return [AddMana(self.p_id, self.gs, self.source, color, self.amt) for color in self.possible_colors]
+        return [AddMana(self.player_idx, self.gs, self.source, color, self.amt) for color in self.possible_colors]
 
 class CopyCardChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, card_options: list[GameCard],
@@ -53,7 +54,7 @@ class CopyCardChoice(ChoiceAction):
         self.copy_color = copy_color
 
     def get_actions(self) -> list[Action]:
-        return [CopyCard(self.p_id, self.gs, self.source, t,
+        return [CopyCard(self.player_idx, self.gs, self.source, t,
                          self.additional_types, self.copy_color) for t in self.card_options]
 
 class DrawCardsOrDontChoice(ChoiceAction):
@@ -62,8 +63,8 @@ class DrawCardsOrDontChoice(ChoiceAction):
         self.cnt = cnt
 
     def get_actions(self) -> list[Action]:
-        actions: list[Action] = [DrawCard(self.p_id, self.gs) for _ in range(self.cnt)]
-        actions.append(DoNothing(self.p_id, self.gs))
+        actions: list[Action] = [DrawCard(self.player_idx, self.gs) for _ in range(self.cnt)]
+        actions.append(DoNothing(self.player_idx, self.gs))
         return actions
 
 class PayManaOrSacUpkeepChoice(ChoiceAction):
@@ -73,9 +74,9 @@ class PayManaOrSacUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         actions: list[Action] = []
-        if self.gs.mana_pools[self.p_id].can_pay(self.cost):
-            actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
-        actions.append(Sac(self.p_id, self.gs, self.source))
+        if self.gs.mana_pools[self.player_idx].can_pay(self.cost):
+            actions.append(PayMana(self.player_idx, self.gs, self.source, self.cost))
+        actions.append(Sac(self.player_idx, self.gs, self.source))
         return actions
 
 class PayManaToDrawCardsChoice(ChoiceAction):
@@ -83,16 +84,16 @@ class PayManaToDrawCardsChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [PayManaToDrawCardsChoice(self.p_id, self.gs, self.source), DoNothing(self.p_id, self.gs)]
+        return [PayManaToDrawCardsChoice(self.player_idx, self.gs, self.source), DoNothing(self.player_idx, self.gs)]
 
 class PayOneColorlessForOneLifeChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        if not self.gs.mana_pools[self.p_id].can_pay('1'):
+        if not self.gs.mana_pools[self.player_idx].can_pay('1'):
             return []
-        return [PayManaForLife(self.p_id, self.gs, '1', 1), DoNothing(self.p_id, self.gs)]
+        return [PayManaForLife(self.player_idx, self.gs, '1', 1), DoNothing(self.player_idx, self.gs)]
 
 class RemoveCounterForLifeChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard,
@@ -103,32 +104,25 @@ class RemoveCounterForLifeChoice(ChoiceAction):
         self.gain_life_amt = gain_life_amt
 
     def get_actions(self) -> list[Action]:
-        return [RemoveCounterGainLife(self.p_id, self.gs, self.source,
+        return [RemoveCounterGainLife(self.player_idx, self.gs, self.source,
                                       self.counter_type, self.counter_cnt, self.gain_life_amt),
-                DoNothing(self.p_id, self.gs)]
+                DoNothing(self.player_idx, self.gs)]
 
-class SacALandChoice(ChoiceAction):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+class SacChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, card_options: list[GameCard]):
         super().__init__(p_id, gs, source)
+        self.card_options = card_options
 
     def get_actions(self) -> list[Action]:
-        p_id = self.gs.player_turn_idx
-        return [Sac(self.p_id, self.gs, c) for c in self.gs.card_filter.on_player_board(p_id).lands.result()]
-
-class SacYourCreatureChoice(ChoiceAction):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard):
-        super().__init__(p_id, gs, source)
-
-    def get_actions(self) -> list[Action]:
-        p_id = self.gs.player_turn_idx
-        return [Sac(self.p_id, self.gs, c) for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
+        print('Card Options:', self.card_options)
+        return [Sac(self.player_idx, self.gs, c) for c in self.card_options]
 
 class UntapChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [LeaveTapped(self.p_id, self.gs, self.source), UntapCardStackPop(self.p_id, self.gs, self.source)]
+        return [LeaveTapped(self.player_idx, self.gs, self.source), UntapCardStackPop(self.player_idx, self.gs, self.source)]
 
 class UntapWithManaChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, mana_cost: str):
@@ -136,8 +130,8 @@ class UntapWithManaChoice(ChoiceAction):
         self.mana_cost = mana_cost
 
     def get_actions(self) -> list[Action]:
-        return [LeaveTapped(self.p_id, self.gs, self.source),
-                UntapWithManaAction(self.p_id, self.gs, self.source, self.mana_cost)]
+        return [LeaveTapped(self.player_idx, self.gs, self.source),
+                UntapWithManaAction(self.player_idx, self.gs, self.source, self.mana_cost)]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):
@@ -147,9 +141,9 @@ class CosmicHorrorUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         actions: list[Action] = []
-        if self.gs.mana_pools[self.p_id].can_pay(self.cost):
-            actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
-        actions.append(Sac(self.p_id, self.gs, self.source, 7))
+        if self.gs.mana_pools[self.player_idx].can_pay(self.cost):
+            actions.append(PayMana(self.player_idx, self.gs, self.source, self.cost))
+        actions.append(Sac(self.player_idx, self.gs, self.source, 7))
         return actions
 
 class CurseArtifactUpkeepChoice(ChoiceAction):
@@ -167,9 +161,9 @@ class ElderSpawnUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         actions: list[Action] = []
-        for island in self.gs.card_filter.on_player_board(self.p_id).islands().result():
-            actions.append(Sac(self.p_id, self.gs, island))
-        actions.append(Sac(self.p_id, self.gs, self.source, 6))
+        for island in self.gs.card_filter.on_player_board(self.player_idx).islands().result():
+            actions.append(Sac(self.player_idx, self.gs, island))
+        actions.append(Sac(self.player_idx, self.gs, self.source, 6))
         return actions
 
 class ErosionUpkeepChoice(ChoiceAction):
@@ -178,10 +172,10 @@ class ErosionUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         actions: list[Action] = []
-        if self.gs.mana_pools[self.p_id].can_pay('1'):
-            actions.append(PayMana(self.p_id, self.gs, self.source, '1'))
-        actions.append(PayLife(self.p_id, self.gs, self.source, 1))
-        actions.append(Sac(self.p_id, self.gs, self.source.attached_to))
+        if self.gs.mana_pools[self.player_idx].can_pay('1'):
+            actions.append(PayMana(self.player_idx, self.gs, self.source, '1'))
+        actions.append(PayLife(self.player_idx, self.gs, self.source, 1))
+        actions.append(Sac(self.player_idx, self.gs, self.source.attached_to))
         return actions
 
 class FastingChoice(ChoiceAction):
@@ -189,7 +183,7 @@ class FastingChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [SkipDrawPhaseGainLife(self.p_id, self.gs, 2), Sac(self.p_id, self.gs, self.source)]
+        return [SkipDrawPhaseGainLife(self.player_idx, self.gs, 2), Sac(self.player_idx, self.gs, self.source)]
 
 class FloralSpuzzemChoice(ChoiceAction):
     """Whenever this creature walks, you may destroy target opp artifact instead of dealing the combat damage."""
@@ -198,8 +192,8 @@ class FloralSpuzzemChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         opp_artifacts = self.gs.card_filter.on_player_board(flip(self.source.owner_id)).artifacts().result()
-        return [DestroyAndForegoCombatDamage(self.p_id, self.gs, self.source, art)
-                for art in opp_artifacts] + [DoNothing(self.p_id, self.gs)]
+        return [DestroyAndForegoCombatDamage(self.player_idx, self.gs, self.source, art)
+                for art in opp_artifacts] + [DoNothing(self.player_idx, self.gs)]
 
 class ForceOfNatureUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str, damage_amt: int):
@@ -209,27 +203,36 @@ class ForceOfNatureUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         actions: list[Action] = []
-        if self.gs.mana_pools[self.p_id].can_pay(self.cost):
-            actions.append(PayMana(self.p_id, self.gs, self.source, self.cost))
-        actions.append(DealDamage(self.p_id, self.gs, self.source, self.damage_amt))
+        if self.gs.mana_pools[self.player_idx].can_pay(self.cost):
+            actions.append(PayMana(self.player_idx, self.gs, self.source, self.cost))
+        actions.append(DealDamage(self.player_idx, self.gs, self.source, self.damage_amt))
         return actions
+
+class HealingSalveChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        all_targets = self.gs.card_filter.in_play().creatures().result() + [0, 1]
+        return ([HealingSalveA(self.player_idx, self.gs, self.source)] +
+                [HealingSalveB(self.player_idx, self.gs, self.source, t) for t in all_targets])
 
 class LeviathanUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        your_island_cnt = len([i for i in self.gs.card_filter.on_player_board(self.p_id).islands().result()])
+        your_island_cnt = len([i for i in self.gs.card_filter.on_player_board(self.player_idx).islands().result()])
         if your_island_cnt < 2:
             return []
-        return [LeaveTapped(self.p_id, self.gs, self.source), SacTwoIslands(self.p_id, self.gs, self.source)]
+        return [LeaveTapped(self.player_idx, self.gs, self.source), SacTwoIslands(self.player_idx, self.gs, self.source)]
 
 class LordOfThePitUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        your_other_creatures = [c for c in self.gs.card_filter.on_player_board(self.p_id).creatures().result()
+        your_other_creatures = [c for c in self.gs.card_filter.on_player_board(self.player_idx).creatures().result()
                                 if c != self.source]
         if not your_other_creatures:
             return []
@@ -240,8 +243,8 @@ class PrimalClayChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [PrimalClayA(self.p_id, self.gs, self.source), PrimalClayB(self.p_id, self.gs, self.source),
-                PrimalClayC(self.p_id, self.gs, self.source)]
+        return [PrimalClayA(self.player_idx, self.gs, self.source), PrimalClayB(self.player_idx, self.gs, self.source),
+                PrimalClayC(self.player_idx, self.gs, self.source)]
 
 class PsychicAllergyUpkeepChoice(ChoiceAction):
     """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
@@ -249,7 +252,7 @@ class PsychicAllergyUpkeepChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [SacTwoIslands(self.p_id, self.gs, self.source), Sac(self.p_id, self.gs, self.source)]
+        return [SacTwoIslands(self.player_idx, self.gs, self.source), Sac(self.player_idx, self.gs, self.source)]
 
 class SacrificeCastChoice(ChoiceAction):
     """This is used by the card named 'Sacrifice'; is not a generic class about the concept of sacrifice"""
@@ -258,7 +261,7 @@ class SacrificeCastChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         p_id = self.gs.player_turn_idx
-        return [SacCreatureAndAddMana(self.p_id, self.gs, self.source, c, 'B', c.props.casting_weight)
+        return [SacCreatureAndAddMana(self.player_idx, self.gs, self.source, c, 'B', c.props.casting_weight)
                 for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
 
 class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
@@ -282,4 +285,4 @@ class ShapeshifterChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [VariablePTMod(self.p_id, self.gs, self.source, self.source, i, 7 - i) for i in range(8)]
+        return [VariablePTMod(self.player_idx, self.gs, self.source, self.source, i, 7 - i) for i in range(8)]

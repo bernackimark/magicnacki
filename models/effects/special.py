@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
-    RemoveCounterForLifeChoice, FloralSpuzzemChoice
+    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice
 from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY
 from models.damage import PreventNextDamage
@@ -211,6 +211,11 @@ class GlyphOfDestruction(Effect):
         t.modifiers.temps(PTTemp(s, 10, 0))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         gs.end_step_funcs.append(lambda gs, s, t: gs.destroy(s))
+
+class HealingSalve(Effect):
+    """Choose one - * You gain 3 life. * Prevent the next 3 damage that would be dealt to any target this turn."""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        gs.pending_choice = HealingSalveChoice(s.owner_id, gs, s)
 
 class HurkylsRecall(Effect):
     """Return all artifacts target player owns to their hand"""

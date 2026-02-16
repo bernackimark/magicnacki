@@ -6,7 +6,8 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.constants import COLOR_LETTERS
-from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost, DiscardAtRandomCost
+from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost, \
+    DiscardAtRandomCost, SacCardCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN, \
     CHARGE
@@ -59,7 +60,8 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
-    LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar
+    LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
+    HealingSalve
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
@@ -123,6 +125,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'army-of-allah': [Triggered(ArmyOfAllah(), None, CastResolvedEvent)],
     'artifact-ward': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
                       Static(ArtifactWardCanBeBlocked(), Static(ArtifactWardPrevention()))],
+    'ashnods-altar': [Activated('', AddMana('C', 2), extra_costs=[SacCardCost(T_FUNCS['your_creatures_in_play'])])],
     'ashnods-battle-gear': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'ashnods-transmogrant':
         [Activated('T', AshnodsTransmogrant(), T_FUNCS['non_artifact_creatures_in_play'], extra_costs=[SacSelfCost()])],
@@ -248,6 +251,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                   # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'])],
     'dwarven-warriors': [Activated('T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
+    'dwarven-weaponsmith': [Activated('T', AddCounter(PLUS_ONE), T_FUNCS['creatures_in_play'],
+                                      extra_costs=[SacCardCost(T_FUNCS['your_artifacts_in_play'])],
+                                      allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner'])],
+                    # TODO: allowed_p_id_turn wants an int and i think this returns a func
     'earthbind': [Triggered(Earthbind(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
     'eater-of-the-dead':
@@ -274,6 +281,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'exorcist': [Activated('1W', Destroy(), T_FUNCS['black_creatures_in_play'])],
     'eye-for-an-eye': [Triggered(EyeForAnEye(), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'faint': [Triggered(Feint(), T_FUNCS['attackers'], CastResolvedEvent)],
+    'fallen-angel': [Activated('', PumpEffect(2, 1, True), T_FUNCS['self'],
+                               extra_costs=[SacCardCost(T_FUNCS['your_other_creatures_in_play'])])],
     'falling-star': [Triggered(FallingStar(), T_FUNCS['opp_creatures_in_play'], CastResolvedEvent,
                                text='If a di roll is 1-5, deal 3 damage to it')],
     'farmstead': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
@@ -312,6 +321,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
                               allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
     'gaseous-form': [Triggered(GaseousForm(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'gate-to-phyrexia': [Activated('', Destroy(), T_FUNCS['artifacts_in_play'],
+                                   extra_costs=[SacCardCost(T_FUNCS['your_creatures_in_play'])],
+                                   allowed_phases=[Phase.UPKEEP], max_activations_per_turn=1,
+                                   allowed_p_id_turn=T_FUNCS['card_owner'])],
     'ghazbán-ogre': [Triggered(GhazbanOgre(), None, UpkeepEvent)],
     'ghosts-of-the-damned': [Activated('T', PumpEffect(-1, 0, True), T_FUNCS['creatures_in_play'])],
     'giant-growth':
@@ -347,6 +360,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures_in_play'])],
+    'healing-salve': [Triggered(HealingSalve(), None, CastResolvedEvent)],
     'hell-swarm': [Triggered(HellSwarm(), None, CastResolvedEvent)],
     'hidden-path': [Static(HiddenPath())],
     'holy-armor': [Triggered(PumpEffect(0, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent),
@@ -472,7 +486,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                            Triggered(OptionalUntap(), None, UntapPhaseEvent),
                            Triggered(StealCardLeaves(), None, UntapCardEvent)],  # WARNING: doubt this works;
     'onulet': [Triggered(Onulet(), None, DiesEvent)],
+    'orc-general': [Activated('T', PumpEffect(1, 1, True), T_FUNCS['your_other_orcs_in_play'],
+                              extra_costs=[SacCardCost(T_FUNCS['another_orc_or_goblin_in_play'])])],
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
+    'orcish-mechanics': [Activated('T', DealDamage(2), T_FUNCS['all_creatures_and_players'],
+                                   extra_costs=[SacCardCost(T_FUNCS['your_artifacts_in_play'])])],
     'orcish-oriflamme': [Static(OrcishOriflamme())],
     'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent),
                       Activated('', PumpEffect(1, 1, True),
@@ -536,6 +554,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'rukh-egg': [Triggered(RukhEgg(), None, DiesEvent)],
     'sacrifice': [Triggered(SacrificeOnCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent)],
+    'sage-of-lat-nam': [Activated('T', DrawCards(), T_FUNCS['card_owner'],
+                                  extra_costs=[SacCardCost(T_FUNCS['your_artifacts_in_play'])])],
     'samite-healer': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['cards_in_play'])],
     'sandals-of-abdallah': [Activated('2', SandalsOfAbdallahIslandWalk(), T_FUNCS['creatures_in_play'])],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],

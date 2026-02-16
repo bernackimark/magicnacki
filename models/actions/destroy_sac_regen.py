@@ -59,4 +59,7 @@ class Sac(Action):
         if self.w_damage_amt:
             self.gs.apply_damage(self.source, self.w_damage_amt, self.source.orig_owner_id)
         self.gs.destroy(self.source)
-        self.gs.action_stack.pop()  # remove choice
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
+        elif len(self.gs.action_stack):
+            self.gs.action_stack.pop()  # remove choice
