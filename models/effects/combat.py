@@ -17,8 +17,6 @@ from models.effects.base import Effect
 # --- GENERICS ---
 class WalkRuleRemoved(Effect):
     """Creatures with a landwalk can be blocked as though they didn't have that landwalk."""
-    event = 'query'
-
     def __init__(self, walk_type: str):
         self.walk_type = walk_type
 

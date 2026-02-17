@@ -9,14 +9,12 @@ from models.effects.base import Effect
 from models.modifiers import PTTemp
 
 """EOT Effects are stored in GameState.until_eot_effects_and_cards and removed at the end of the turn;
-They must have a class attribute: event = 'query' ... They must implement and on_query() method;
+They must implement and on_query() method;
 They are called from another Effect (ex: UnblockableEOT is called by UnblockableThisTurn(Effect))"""
 
 # --- GENERICS ---
 class UnblockableEOT(Effect):
     """Stored in GameState & cleared EOT; target creature can't be blocked this turn"""
-    event = 'query'
-
     def __init__(self, target: GameCard):
         self.target = target
 
@@ -31,8 +29,6 @@ class UnblockableEOT(Effect):
 class ArmyOfAllahEOT(Effect):
     """This will be called only by ArmyOfAllah(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +2/+0 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -44,8 +40,6 @@ class ArmyOfAllahEOT(Effect):
 class BoneFluteEOT(Effect):
     """This will be called only by BoneFlute(); this effect is stored in GameState and cleared at EOT;
     All creatures get -1/-0 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -57,8 +51,6 @@ class BoneFluteEOT(Effect):
 class HellSwarmEOT(Effect):
     """This will be called only by HellSwarm(); this effect is stored in GameState and cleared at EOT;
     All creatures get -1/-0 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -70,8 +62,6 @@ class HellSwarmEOT(Effect):
 class HolyLightEOT(Effect):
     """This will be called only by HolyLight(); this effect is stored in GameState and cleared at EOT
     Nonwhite creatures get -1/-1 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -86,8 +76,6 @@ class HolyLightEOT(Effect):
 class MarshGasEOT(Effect):
     """This will be called only by MarshGas(); this effect is stored in GameState and cleared at EOT;
     All creatures get -2/-0 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -99,8 +87,6 @@ class MarshGasEOT(Effect):
 class MoraleEOT(Effect):
     """This will be called only by Morale(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +1/+1 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -112,8 +98,6 @@ class MoraleEOT(Effect):
 class PietyEOT(Effect):
     """This will be called only by Piety(); this effect is stored in GameState and cleared at EOT;
     Blocking creatures get 0/+3 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -125,8 +109,6 @@ class PietyEOT(Effect):
 class ShieldWallEOT(Effect):
     """This will be called only by ShieldWall(); this effect is stored in GameState and cleared at EOT;
     Creatures you control get +0/+2 until end of turn"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -137,8 +119,6 @@ class ShieldWallEOT(Effect):
 
 class TransmutationEOT(Effect):
     """Stored in GameState & cleared EOT; how does this class know who the target is?"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -149,8 +129,6 @@ class TransmutationEOT(Effect):
 
 class TowerOfCoireallEOT(Effect):
     """Stored in GameState & cleared EOT; target creature can't be blocked by Walls this turn"""
-    event = 'query'
-
     def __init__(self, target: GameCard):
         self.target = target
 

@@ -16,8 +16,6 @@ from models.effects.base import Effect
 # --- CARD-SPECIFIC ---
 class AmrouKithkin(Effect):
     """This creature can't be blocked by creatures with power 3 or greater"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -28,8 +26,6 @@ class AmrouKithkin(Effect):
 
 class AngelicVoices(Effect):
     """Creatures you control get +1/+1 as long as you control no nonartifact, nonwhite creatures."""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -42,8 +38,6 @@ class AngelicVoices(Effect):
 class AngryMobPT(Effect):
     """During your turn, Angry Mob's power & toughness are each = 2 plus the number of Swamps your opponents control.
     During turns other than yours, Angry Mob's power and toughness are each 2."""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -56,8 +50,6 @@ class AngryMobPT(Effect):
 
 class ArtifactWardCanBeBlocked(Effect):
     """This creature can't be blocked by artifact creatures"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -68,8 +60,6 @@ class ArtifactWardCanBeBlocked(Effect):
 
 class ArgothianPixiesCanBeBlocked(Effect):
     """This creature can't be blocked by artifact creatures"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -81,8 +71,6 @@ class ArgothianPixiesCanBeBlocked(Effect):
 class AspectOfWolfPT(Effect):
     """Enchant creature Enchanted creature gets +X/+Y, where X is half the number of Forests you control, rounded down,
     and Y is half the number of Forests you control, rounded up."""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -94,8 +82,6 @@ class AspectOfWolfPT(Effect):
         return PTModifier(source, p_adj, t_adj)
 
 class BadMoon(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -106,8 +92,6 @@ class BadMoon(Effect):
 
 class BogRats(Effect):
     """This creature can't be blocked by Walls"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -117,8 +101,6 @@ class BogRats(Effect):
             return False
 
 class Castle(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -129,8 +111,6 @@ class Castle(Effect):
 
 class ConcordantCrossroads(Effect):
     """All creatures have haste"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'kwa_mod':
@@ -141,8 +121,6 @@ class ConcordantCrossroads(Effect):
 
 class Conversion(Effect):
     """All Mountains are Plains"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'sub_type_mod':
@@ -150,8 +128,6 @@ class Conversion(Effect):
         return [SubTypeModifier(source, 'add', 'Plains'), SubTypeModifier(source, 'remove', 'Mountain')]
 
 class Crusade(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -162,8 +138,6 @@ class Crusade(Effect):
 
 class ElderSpawnCanBeBlocked(Effect):
     """This creature can't be blocked by red creatures"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -174,8 +148,6 @@ class ElderSpawnCanBeBlocked(Effect):
 
 class ElvenRidersCanBeBlocked(Effect):
     """This creature can't be blocked except by Walls and/or creatures with flying"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -186,8 +158,6 @@ class ElvenRidersCanBeBlocked(Effect):
 
 class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
     """Can only be blocked by walls"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -198,8 +168,6 @@ class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
 
 class Fear(Effect):
     """Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -212,8 +180,6 @@ class Fear(Effect):
 
 class GaeasAvengerPT(Effect):
     """Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -225,8 +191,6 @@ class GaeasAvengerPT(Effect):
 class GaeasLiegePT(Effect):
     """As long as Gaea's Liege isn't attacking, its power & toughness are each = the number of Forests you control.
     If Gaea's Liege is attacking, its power & toughness are each = the # of Forests defending player controls."""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -241,8 +205,6 @@ class GaeasLiegePT(Effect):
 
 class GiantTortoisePT(Effect):
     """This creature gets +0/+3 as long as it's untapped"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -254,8 +216,6 @@ class GiantTortoisePT(Effect):
 class GoblinCaves(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
     # WARNING: I don't yet have a way to validate that something is a basic land, since it lives in read-only props
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -267,8 +227,6 @@ class GoblinCaves(Effect):
 class GoblinShrinePump(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0 ..."""
     # WARNING: I don't yet have a way to validate that something is a basic land, since it lives in read-only props
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -279,8 +237,6 @@ class GoblinShrinePump(Effect):
 
 class GoblinsOfTheFlarg(Effect):
     """When you control a Dwarf, sacrifice this creature"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if source.props.slug != 'goblins-of-the-flarg':
@@ -291,8 +247,6 @@ class GoblinsOfTheFlarg(Effect):
 
 class GravitySphere(Effect):
     """All creatures lose flying"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'kwa_mod':
@@ -303,8 +257,6 @@ class GravitySphere(Effect):
 
 class HiddenPath(Effect):
     """Green creatures have forestwalk"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'kwa_mod':
@@ -315,8 +267,6 @@ class HiddenPath(Effect):
 
 class Invisibility(Effect):
     """Enchanted creature can't be blocked except by Walls"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -328,8 +278,6 @@ class Invisibility(Effect):
 
 class IronclawOrcs(Effect):
     """This creature can't block creatures with power 2 or greater"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = 'ironclaw-orcs', mandatory kwargs: blocker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -339,16 +287,12 @@ class IronclawOrcs(Effect):
             return False
 
 class JuggernautMustAttack(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         if event != 'must_attack' or card.props.slug != 'juggernaut':
             return None
         return True
 
 class JuggernautUnblockableByWalls(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get("attacker")
@@ -359,8 +303,6 @@ class JuggernautUnblockableByWalls(Effect):
 
 class KeldonWarlordPT(Effect):
     """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -370,8 +312,6 @@ class KeldonWarlordPT(Effect):
         return PTModifier(source, your_non_wall_creature_cnt, your_non_wall_creature_cnt)
 
 class KirdApePT(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         if event != 'pt_mod' or card.props.slug != 'kird-ape':
             return None
@@ -381,8 +321,6 @@ class KirdApePT(Effect):
 
 class KormusBell(Effect):
     """All Swamps are 1/1 creatures that are still lands"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if card not in gs.card_filter.in_play().by_sub_type('Swamp').result():
@@ -395,8 +333,6 @@ class KormusBell(Effect):
 
 class LivingLands(Effect):
     """All Forests are 1/1 creatures that are still lands"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if card not in gs.card_filter.in_play().by_sub_type('Forest').result():
@@ -409,8 +345,6 @@ class LivingLands(Effect):
 
 class LivingPlane(Effect):
     """All lands are 1/1 creatures that are still lands"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if card not in gs.card_filter.in_play().by_sub_type('Land').result():
@@ -423,8 +357,6 @@ class LivingPlane(Effect):
 
 class LordOfAtlantisPT(Effect):
     """All other Merfolk gain +1/+1 and Islandwalk"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source = kwargs.get('source')
         if event != 'pt_mod':
@@ -435,8 +367,6 @@ class LordOfAtlantisPT(Effect):
 
 class LordOfAtlantisWalk(Effect):
     """All other Merfolk gain +1/+1 and Islandwalk"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source = kwargs.get('source')
         if event != 'kwa_mod':
@@ -446,8 +376,6 @@ class LordOfAtlantisWalk(Effect):
 
 class Meekstone(Effect):
     """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         if event != 'can_untap':
             return None
@@ -458,8 +386,6 @@ class Meekstone(Effect):
 
 class Mightstone(Effect):
     """Attacking creatures get +1/+0"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -470,8 +396,6 @@ class Mightstone(Effect):
 
 class NightmarePT(Effect):
     """Nightmare's power and toughness are each equal to the number of Swamps you control"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -482,8 +406,6 @@ class NightmarePT(Effect):
 
 class Moat(Effect):
     """Creatures without flying can't attack"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'kwa_mod':
@@ -494,8 +416,6 @@ class Moat(Effect):
 
 class OrcishOriflamme(Effect):
     """Attacking creatures you control get +1/+0"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -507,8 +427,6 @@ class OrcishOriflamme(Effect):
 
 class PeopleOfTheWoodsPT(Effect):
     """People of the Woods's toughness is equal to the number of Forests you control"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -519,8 +437,6 @@ class PeopleOfTheWoodsPT(Effect):
 
 class PlagueRatsPT(Effect):
     """Plague Rats' power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -530,8 +446,6 @@ class PlagueRatsPT(Effect):
         return PTModifier(source, cnt, cnt)
 
 class PrimordialOozeMustAttack(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         if event != 'must_attack' or card.props.slug != 'primordial-ooze':
             return None
@@ -539,8 +453,6 @@ class PrimordialOozeMustAttack(Effect):
 
 class RabidWombat(Effect):
     """This creature gets +2/+2 for each Aura attached to it"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -555,8 +467,6 @@ class RabidWombat(Effect):
 
 class Seeker(Effect):
     """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
@@ -566,8 +476,6 @@ class Seeker(Effect):
             return False
 
 class SunkenCity(Effect):
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
@@ -578,8 +486,6 @@ class SunkenCity(Effect):
 
 class WallOfTombstonesPT(Effect):
     """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
@@ -590,8 +496,6 @@ class WallOfTombstonesPT(Effect):
 
 class WaterWurmPT(Effect):
     """This creature gets +0/+1 as long as an opponent controls an Island"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         if event != 'pt_mod' or card.props.slug != 'water-wurm':
             return None
@@ -601,8 +505,6 @@ class WaterWurmPT(Effect):
 
 class Weakstone(Effect):
     """Attacking creatures get -1/-0"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':

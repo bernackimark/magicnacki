@@ -15,8 +15,6 @@ from models.effects.base import Effect
 # --- GENERICS ---
 class AddCreatureType(Effect):
     """Turns the card into a creature"""
-    event = 'query'
-
     def __init__(self, power: int, toughness: int, sub_type: str = None):
         self.power = power
         self.toughness = toughness
@@ -35,8 +33,6 @@ class AddCreatureType(Effect):
 
 class AddCreatureTypePTManaValue(Effect):
     """Turns card into a creature with power and toughness each equal to its mana value"""
-    event = 'query'
-
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
         if card is not source:
