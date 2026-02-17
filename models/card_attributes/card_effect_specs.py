@@ -55,7 +55,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
-    Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, JuggernautMustAttack, PrimordialOozeMustAttack
+    Conversion, JuggernautUnblockableByWalls, GiantTortoisePT
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -413,7 +413,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
-    'juggernaut': [Static(JuggernautUnblockableByWalls(), Static(JuggernautMustAttack()))],
+    'juggernaut': [Static(JuggernautUnblockableByWalls())],
     'jump':
         [Triggered(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'junun-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
@@ -536,8 +536,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'pradesh-gypsies': [Activated('1GT', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'preacher': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'primal-clay': [Triggered(PrimalClay(), None, CastResolvedEvent)],
-    'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent),
-                        Static(PrimordialOozeMustAttack())],
+    'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'prodigal-sorcerer': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'], text="Deal 1 Damage}")],
     'psionic-blast': [Triggered(DealDamageToTargetAndYou(4, 2),
                                 T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
