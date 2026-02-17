@@ -589,7 +589,8 @@ class GameState:
 
         if self.phase == Phase.DRAW:
             self.emit(DrawStepEvent(active_player=self.player_turn_idx))
-            return [DrawCard(p_id, self)]
+            self.draw(p_id)
+            self.phase = Phase.CAST
 
         if self.phase == Phase.CAST:
             available_actions.append(MoveToEndStep(p_id, self))
