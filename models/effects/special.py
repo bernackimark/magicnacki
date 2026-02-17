@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
-    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice
+    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage
 from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY
 from models.damage import PreventNextDamage
@@ -211,6 +211,15 @@ class GlyphOfDestruction(Effect):
         t.modifiers.temps(PTTemp(s, 10, 0))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         gs.end_step_funcs.append(lambda gs, s, t: gs.destroy(s))
+
+class HasranOgress(Effect):
+    """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
+    listens_to = AttackEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
+        if event.attacker is not s:
+            return
+        gs.action_stack.push(PayManaOrTakeDamage(s.owner_id, gs, s, '2', 3), gs, False)
 
 class HealingSalve(Effect):
     """Choose one - * You gain 3 life. * Prevent the next 3 damage that would be dealt to any target this turn."""

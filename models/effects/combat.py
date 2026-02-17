@@ -5,8 +5,8 @@ from models.counter_tokens import PLUS_ONE
 from models.effects.counters import AddCounterAtEndStep
 from models.effects.destroy_sac_regenerate import DestroyAtCombatEnd
 from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
-from models.events_all import BlockEvent, CombatEndEvent, AttackEvent
-from models.modifiers import PTTemp, KWATemp, KWAModifier
+from models.events_all import BlockEvent, CombatEndEvent, AttackEvent, DamageResolvedEvent
+from models.modifiers import PTTemp, KWATemp, KWAModifier, PTModifier
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -108,6 +108,64 @@ class GiantShark(Effect):
             s.modifiers.temps.append(PTTemp(s, 2, 0))
             s.modifiers.temps.append(KWATemp(s, 'add', 'Trample'))
 
+class GlyphOfDoom(Effect):
+    """On cast, select a wall.  Register GlyphOfDoomListener."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        temp_effect = GlyphOfDoomListener(target)
+        gs.register_effect_until_eot((temp_effect, source))
+
+class GlyphOfDoomListener(Effect):
+    """Registered by GlyphOfDoom. At this turn's combat end, destroy creature blocked by that wall this turn."""
+    listens_to = BlockEvent
+
+    def __init__(self, the_wall: GameCard):
+        self.the_wall = the_wall
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.blocker is not self.the_wall:
+            return
+        delayed = DestroyAtCombatEnd(self.the_wall, event.attacker)
+        gs.register_effect(delayed, self.the_wall)
+        # this will later get unregistered at combat end
+
+class GlyphOfLife(Effect):
+    """On cast, select a wall.  Register GlyphOfLifeListener."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        temp_effect = GlyphOfLifeListener(target)
+        gs.register_effect_until_eot((temp_effect, source))
+
+class GlyphOfLifeListener(Effect):
+    """Registered by GlyphOfLife. Whenever that wall is dealt damage by an attacker this turn, gain that much life."""
+    listens_to = DamageResolvedEvent
+
+    def __init__(self, the_wall: GameCard):
+        self.the_wall = the_wall
+
+    def on_event(self, gs: GameState, s: GameCard, event: DamageResolvedEvent):
+        if event.target is not self.the_wall or not event.is_combat:
+            return
+        gs.increment_life(s.owner_id, event.amt)
+
+class InfernalMedusa(Effect):
+    """Whenever this creature blocks, destroy attacker at combat end.
+    Whenever this creature becomes blocked by a non-Wall creature, destroy blocker at combat end."""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker is s and 'Wall' not in event.blocker.card_sub_types:
+            other = event.blocker
+        elif event.blocker is s:
+            other = event.attacker
+        else:
+            return
+        delayed = DestroyAtCombatEnd(s, other)
+        gs.register_effect(delayed, s)
+        # this will later get unregistered at combat end
+
 class InfiniteAuthority(Effect):
     """Whenever host blocks/is blocked by a creature with toughness <= 3, destroy the other creature at end of combat.
     At end step, if that creature was destroyed this way, put a +1/+1 counter on host"""
@@ -129,6 +187,20 @@ class InfiniteAuthority(Effect):
         delayed_pump = AddCounterAtEndStep(s, s.attached_to, PLUS_ONE)
         gs.register_effect(delayed_pump, s)
         # this will later get unregistered at end step
+
+class Sentinel(Effect):
+    """Indefinitely change Sentinel's base T to 1 + power of target creature blocking or blocked by this creature"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker is s:
+            other = event.blocker
+        elif event.blocker is s:
+            other = event.attacker
+        else:
+            return
+        new_t = other.power + 1
+        s.modifiers.auras.append(PTModifier(s, 0, new_t - s.toughness))
 
 class TimeElementalAttackedOrBlocked(Effect):
     """When this creature attacks or blocks, at end of combat, sacrifice it & it deals 5 damage to you"""

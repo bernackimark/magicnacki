@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
-from models.actions.damage import DealDamage, PayLife
+from models.actions.damage import DealDamageToYou, PayLife
 from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand
 from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.mana import AddMana, PayMana
@@ -97,7 +97,6 @@ class OpponentDestroysLandChoice(ChoiceAction):
         lands = self.gs.card_filter.on_player_board(self.source.owner_id).lands().result()
         return [Destroy(flip(self.player_idx), self.gs, self.source, t) for t in lands]
 
-
 class PayManaOrSacUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):
         super().__init__(p_id, gs, source)
@@ -109,6 +108,16 @@ class PayManaOrSacUpkeepChoice(ChoiceAction):
             actions.append(PayMana(self.player_idx, self.gs, self.source, self.cost))
         actions.append(Sac(self.player_idx, self.gs, self.source))
         return actions
+
+class PayManaOrTakeDamage(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str, damage_amt: int):
+        super().__init__(p_id, gs, source)
+        self.cost = cost
+        self.damage_amt = damage_amt
+
+    def get_actions(self) -> list[Action]:
+        return [PayMana(self.player_idx, self.gs, self.source, self.cost),
+                DealDamageToYou(self.source.owner_id, self.gs, self.source, self.damage_amt)]
 
 class PayManaToDrawCardsChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
@@ -246,7 +255,7 @@ class ForceOfNatureUpkeepChoice(ChoiceAction):
         actions: list[Action] = []
         if self.gs.mana_pools[self.player_idx].can_pay(self.cost):
             actions.append(PayMana(self.player_idx, self.gs, self.source, self.cost))
-        actions.append(DealDamage(self.player_idx, self.gs, self.source, self.damage_amt))
+        actions.append(DealDamageToYou(self.player_idx, self.gs, self.source, self.damage_amt))
         return actions
 
 class HealingSalveChoice(ChoiceAction):

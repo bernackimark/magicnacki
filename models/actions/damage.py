@@ -6,7 +6,7 @@ if TYPE_CHECKING:
 
 from models.actions.base import Action
 
-class DealDamage(Action):
+class DealDamageToYou(Action):
     def __init__(self, p_id, gs, source: GameCard, damage_amt: int):
         super().__init__(p_id, gs)
         self.source = source

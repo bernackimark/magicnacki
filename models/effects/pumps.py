@@ -124,6 +124,13 @@ class ShieldWall(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.register_effect_until_eot((ShieldWallEOT(), source))
 
+class SingingTree(Effect):
+    """Target attacking creature has base power 0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.temps.append(PTTemp(source, -target.base_pt[0], 0))
+
 class Transmutation(Effect):
     """Switch target creature's power and toughness until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

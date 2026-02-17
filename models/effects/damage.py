@@ -284,6 +284,13 @@ class RukhEgg(Effect):
             return
         gs.create_token_creature(source.owner_id, 'Bird', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
 
+class Sandstorm(Effect):
+    """Sandstorm deals 1 damage to each attacking creature.
+    [from Google: it only hits creatures already attacking when it resolves.]"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        for attacker in gs.card_filter.attackers().result():
+            gs.apply_damage(source, 1, attacker)
+
 class StormSeeker(Effect):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
