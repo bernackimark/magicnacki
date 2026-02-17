@@ -65,12 +65,17 @@ class DiscardChoice(ChoiceAction):
         self.discarding_p_id = discarding_p_id
         self.min_cnt = min_cnt
         self.max_cnt = max_cnt
+        print('AA')
 
     def get_actions(self) -> list[Action]:
+        """Discard entire hand if hand size is <= the minimum discard count requirement;
+        else, if there are options, present every combination of cards back to the user"""
+        print('BB')
         cards = self.gs.hands[self.discarding_p_id].cards
-        for r in range(self.min_cnt, self.max_cnt + 1):
-            for combo in combinations(cards, r):
-                print(combo)
+        if len(cards) <= self.min_cnt:
+            for c in cards[:]:
+                cards.remove(c)
+            return []
         return [DiscardCard(self.player_idx, self.gs, list(combo))
                 for r in range(self.min_cnt, self.max_cnt + 1) for combo in combinations(cards, r)]
 

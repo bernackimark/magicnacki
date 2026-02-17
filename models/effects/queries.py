@@ -338,6 +338,14 @@ class IronclawOrcs(Effect):
         if attacker.power >= 2:
             return False
 
+class JuggernautMustAttack(Effect):
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'must_attack' or card.props.slug != 'juggernaut':
+            return None
+        return True
+
 class JuggernautUnblockableByWalls(Effect):
     event = 'query'
 
@@ -520,6 +528,14 @@ class PlagueRatsPT(Effect):
             return None
         cnt = len(gs.card_filter.in_play().by_slug('plague-rats').result())
         return PTModifier(source, cnt, cnt)
+
+class PrimordialOozeMustAttack(Effect):
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'must_attack' or card.props.slug != 'primordial-ooze':
+            return None
+        return True
 
 class RabidWombat(Effect):
     """This creature gets +2/+2 for each Aura attached to it"""

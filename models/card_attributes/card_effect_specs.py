@@ -9,14 +9,15 @@ from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost, \
     DiscardAtRandomCost, SacCardCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
-from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ZERO_TWO, MINUS_ONE, SLEEP, PIN, \
+from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
     CHARGE
 from models.effects.base import EffSpec, Activated, Triggered, Static
 from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
-    CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, ElderLandWurm
+    CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, \
+    ElderLandWurm
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
-    RockHydraCast, AddCounterPerCreatureDeath, AddCounterToHost, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
+    RockHydraCast, AddCounterPerCreatureDeath, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
     CitanulDruid, ManaBatteriesAddMana, AddCounter, SpiritShackle
 from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifactUpkeep, DealDamageOnTargetTurn, \
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
@@ -34,7 +35,7 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
     Blight, DemonicHordesUpkeep
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
-    HypnoticSpecter, JalumTome
+    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -54,7 +55,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
-    Conversion, JuggernautUnblockableByWalls, GiantTortoisePT
+    Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, JuggernautMustAttack, PrimordialOozeMustAttack
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -140,15 +141,18 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'basalt-monolith': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_activated_ability_specs('BG'),
+    'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
     'berserk': [Triggered(BerserkPump(), T_FUNCS['creatures_in_play'],
                           CastResolvedEvent, allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE]),
-                Triggered(DestroyIfItAttacked(), T_FUNCS['creatures_in_play'], EndStepEvent)],  # warning: I don't think this target func is correct; it needs to know the target previously selected
+                Triggered(DestroyIfItAttacked(), T_FUNCS['creatures_in_play'], EndStepEvent)],
+    # warning: I don't think this target func is correct; it needs to know the target previously selected
     'birds-of-paradise': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'black-lotus': [Activated('T', AddMana(c, 3), extra_costs=[SacSelfCost], text=f'Add {{3{c}}}')
                     for c in COLOR_LETTERS],
     'black-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                            Activated('T', ManaBatteriesAddMana('B'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+                                     max_variable_x_func=lambda gs, s:
+                                     T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'black-vise': [Triggered(BlackVise(), T_FUNCS['opponent'], UpkeepEvent)],
     'black-ward': [Triggered(KWAModEffect('add', 'Protection From Black'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
@@ -192,7 +196,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap(), None, TapCardEvent)],
     'city-of-shadows':
-        [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],  # TODO: needs a way to find a creature to exile in extra_costs
+        [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],
+        # TODO: needs a way to find a creature to exile in extra_costs
     'cleanse':
         [Triggered(DestroyAll(T_FUNCS['black_creatures_in_play']), None, CastResolvedEvent)],
     'clockwork-avian':
@@ -244,6 +249,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'desert-twister': [Triggered(Destroy(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
     'dingus-egg': [Triggered(DingusEgg(), None, ZoneChangeEvent)],
+    'disrupting-scepter': [Activated('3T', Discard(), T_FUNCS['all_players'],
+                                     allowed_p_id_turn=0)],  # TODO: p_id_turn needs a solution
     'disenchant':
         [Triggered(Destroy(), T_FUNCS['artifacts_and_enchantments_in_play'], CastResolvedEvent)],
     'divine-offering': [Triggered(DivineOffering(), T_FUNCS['artifacts_in_play'], CastResolvedEvent)],
@@ -253,7 +260,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'dragon-whelp': [Triggered(DragonWhelpEndStep(), None, EndStepEvent)],
     'drain-power': [Triggered(DrainPower(), T_FUNCS['opponent'], CastResolvedEvent)],
     'dream-coat': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent)] +
-                  [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1, text=f'{{{combo}}}')
+                  [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,
+                             text=f'{{{combo}}}')
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],
                   # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'])],
@@ -261,7 +269,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'dwarven-weaponsmith': [Activated('T', AddCounter(PLUS_ONE), T_FUNCS['creatures_in_play'],
                                       extra_costs=[SacCardCost(T_FUNCS['your_artifacts_in_play'])],
                                       allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner'])],
-                    # TODO: allowed_p_id_turn wants an int and i think this returns a func
+                    # TODO: all allowed_p_id_turn needs a better solution
     'earthbind': [Triggered(Earthbind(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
     'eater-of-the-dead':
@@ -324,9 +332,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fungusaur': [Triggered(FungusaurOnDamage(), None, DamageResolvedEvent)],
     'gaeas-avenger': [Static(GaeasAvengerPT())],
     'gaeas-liege': [Static(GaeasLiegePT())],
-    'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()], text='Exile for {GG}'),
+    'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()],
+                              text='Exile for {GG}'),
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
-                              allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],  # TODO: activated_cnt_this_turn needs to increment
+                              allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],
+    # TODO: activated_cnt_this_turn needs to increment
     'gaseous-form': [Triggered(GaseousForm(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'gate-to-phyrexia': [Activated('', Destroy(), T_FUNCS['artifacts_in_play'],
                                    extra_costs=[SacCardCost(T_FUNCS['your_creatures_in_play'])],
@@ -403,7 +413,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
-    'juggernaut': [Static(JuggernautUnblockableByWalls())],
+    'juggernaut': [Static(JuggernautUnblockableByWalls(), Static(JuggernautMustAttack()))],
     'jump':
         [Triggered(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'junun-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
@@ -481,7 +491,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'mox-ruby': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'mox-sapphire': [Activated('T', AddMana('U'), T_FUNCS['card_owner'])],
     'murk-dwellers': [Triggered(MurkDwellers(), None, UnblockedAttackerEvent)],
-    'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],  # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],
+    # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
                          Activated('1T', True, DestroyAll(T_FUNCS['artifacts_creatures_enchantments_in_play']))],
     'nightmare': [Static(NightmarePT())],
@@ -525,7 +536,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'pradesh-gypsies': [Activated('1GT', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'preacher': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'primal-clay': [Triggered(PrimalClay(), None, CastResolvedEvent)],
-    'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],
+    'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent),
+                        Static(PrimordialOozeMustAttack())],
     'prodigal-sorcerer': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'], text="Deal 1 Damage}")],
     'psionic-blast': [Triggered(DealDamageToTargetAndYou(4, 2),
                                 T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
@@ -547,8 +559,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                            T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'regrowth': [Triggered(Bounce(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'relic-barrier': [Activated('T', TapCardEffect(), T_FUNCS['untapped_artifacts_in_play'])],
-    'reset':
-        [Triggered(Reset(), None, CastResolvedEvent, conditions=[])],  # TODO: Cast this spell only during an opponent's turn after their upkeep step
+    'reset': [Triggered(Reset(), None, CastResolvedEvent, conditions=[])],
+              # TODO: Cast this spell only during an opponent's turn after their upkeep step
     'resurrection': [Triggered(Reanimate(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'reverse-damage': [Triggered(ReverseDamage(), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'riptide': [Triggered(Riptide(), None, CastResolvedEvent)],
@@ -696,7 +708,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wheel-of-fortune': [Triggered(WheelOfFortune(), None, CastResolvedEvent)],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                            Activated('T', ManaBatteriesAddMana('W'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+                                     max_variable_x_func=lambda gs, s:
+                                     T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
                            # TODO: the x_value isn't making it to .resolve(); might be true of all specs w max_var_x_fun
     'white-ward': [Triggered(KWAModEffect('add', 'Protection From White'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],

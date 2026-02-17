@@ -24,10 +24,20 @@ class DrawCards(Effect):
         if target is None:
             return
         gs.draw(target, self.card_cnt)
-        print(f"{source.props.name} has player #{target} draw {self.card_cnt} card(s).")
 
+class Discard(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.pending_choice = DiscardChoice(target, gs, source, target)
 
 # --- CARD-SPECIFIC ---
+class BazaarOfBaghdad(Effect):
+    """Draw two cards, then discard three cards"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.draw(source.owner_id, 2)
+        gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id, 3, 3)
+
 class Braingeyser(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is not None:
@@ -38,7 +48,7 @@ class CursedRackEffect(Effect):
     """Opponent's maximum hand size is four [at their discard phase]"""
     listens_to = EndStepEvent
 
-    def resolve(self, gs: GameState, source: GameCard, target=None):
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
         opp_id = flip(source.orig_owner_id)
         if gs.player_turn_idx != opp_id:
             return
