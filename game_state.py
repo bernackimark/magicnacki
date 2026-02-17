@@ -132,6 +132,9 @@ class GameState:
     def can_cast(self, card: GameCard, p_id: int) -> bool:
         return self._query_effects_by_event('can_cast', card, p_id=p_id)
 
+    def must_attack(self, card: GameCard) -> bool:
+        return self._query_effects_by_event('must_attack', card)
+
     def _query_effects_by_event(self, event_str: str, card: GameCard, **kwargs) -> bool:
         """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
         can be True (which is either hard permission or the lack of a hard-veto) or False (a hard veto);
@@ -593,7 +596,10 @@ class GameState:
             self.phase = Phase.CAST
 
         if self.phase == Phase.CAST:
-            available_actions.append(MoveToEndStep(p_id, self))
+            req_attackers_remaining = any(c for c in board if self.must_attack(c) and self.can_attack(c) and
+                                          c not in self.card_filter.attackers().result())
+            if not req_attackers_remaining:
+                available_actions.append(MoveToEndStep(p_id, self))
             available_actions.extend(available_actions_from_hand())
             available_actions.extend(add_activated_abilities_from_board())
 
@@ -602,7 +608,10 @@ class GameState:
                 available_actions.append(BeginCombat(p_id, self))
 
         if self.phase == Phase.DECLARE_ATTACKERS:
-            if self.combats:
+            req_attackers_remaining = any(c for c in board if self.must_attack(c) and self.can_attack(c) and
+                                          c not in self.card_filter.attackers().result())
+
+            if self.combats and not req_attackers_remaining:
                 available_actions.append(FinishDeclaringAttackers(p_id, self))
 
             for c in board:
