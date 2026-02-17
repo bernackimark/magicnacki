@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
-from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent
+from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent
+from models.utils import flip
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -10,7 +11,8 @@ if TYPE_CHECKING:
 
 from models.card_filter import CardFilter
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
-    ForceOfNatureUpkeepChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice
+    ForceOfNatureUpkeepChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice, \
+    DemonicHordesUpkeepChoice, OpponentDestroysLandChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
@@ -65,6 +67,15 @@ class PayManaOrSac(Effect):
         gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, self.mana_cost), gs, False)
 
 # --- CARD-SPECIFIC ---
+class Blight(Effect):
+    """Enchant land; When enchanted land becomes tapped, destroy it."""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
+        if not source.attached_to or source.props.slug != 'blight' or event.card is not source.attached_to:
+            return
+        gs.destroy(source.attached_to)
+
 class CyclopeanMummy(Effect):
     """When this creature dies, exile it"""
     listens_to = DiesEvent
@@ -73,6 +84,24 @@ class CyclopeanMummy(Effect):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
         gs.exile(source)
+
+class DemonicHordesUpkeep(Effect):
+    """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if gs.player_turn_idx != source.owner_id:
+            return
+        your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
+        if not your_lands:
+            gs.tap_card(source)
+        elif len(your_lands) == 1:
+            gs.tap_card(source)
+            gs.destroy(your_lands[0])
+        elif not gs.mana_pools[source.owner_id].can_pay('BBB'):
+            gs.action_stack.push(OpponentDestroysLandChoice(flip(source.owner_id), gs, source))
+        else:
+            gs.action_stack.push(DemonicHordesUpkeepChoice(source.owner_id, gs, source), gs, False)
 
 class EaterOfTheDeadAA(Effect):
     """Exile target creature card from a graveyard and untap this creature"""

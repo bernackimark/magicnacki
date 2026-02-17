@@ -3,7 +3,7 @@ import math
 from typing import Optional, TYPE_CHECKING
 
 from models.counter_tokens import VITALITY, PLUS_ONE
-from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent
+from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, TapCardEvent
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -123,6 +123,15 @@ class BlackVise(Effect):
         opp_hand_len = len(gs.hands[opp_id].cards)
         if opp_hand_len > 4:
             gs.apply_damage(s, opp_hand_len - 4, opp_id)
+
+class CityOfBrassDamageOnTap(Effect):
+    """Whenever this land becomes tapped, it deals 1 damage to you"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
+        if event.card is not source:
+            return
+        gs.apply_damage(source, 1, source.owner_id)
 
 class CreatureBond(Effect):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamage, PayLife
-from models.actions.destroy_sac_regen import Sac, Destroy
+from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand
 from models.actions.draw_discard import DrawCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
@@ -66,6 +66,15 @@ class DrawCardsOrDontChoice(ChoiceAction):
         actions: list[Action] = [DrawCard(self.player_idx, self.gs) for _ in range(self.cnt)]
         actions.append(DoNothing(self.player_idx, self.gs))
         return actions
+
+class OpponentDestroysLandChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        lands = self.gs.card_filter.on_player_board(self.source.owner_id).lands().result()
+        return [Destroy(flip(self.player_idx), self.gs, self.source, t) for t in lands]
+
 
 class PayManaOrSacUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):
@@ -154,6 +163,16 @@ class CurseArtifactUpkeepChoice(ChoiceAction):
         # warning: Curse Artifact is usually played on opp cards and that's a mismatch on "orig_owner_id" !!!
         return [PayLife(self.source.attached_to.orig_owner_id, self.gs, self.source, 2),
                 Sac(self.source.attached_to.orig_owner_id, self.gs, self.source.attached_to)]
+
+class DemonicHordesUpkeepChoice(ChoiceAction):
+    """It is known that the owner can pay {BBB}, so present the choice to pay or not;
+    if the choice is made to not pay, must give the opponent the choice of which land to destroy (a nested choice)"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [PayMana(self.player_idx, self.gs, self.source, 'BBB'),
+                AllowOpponentToDestroyALand(flip(self.player_idx), self.gs, self.source)]
 
 class ElderSpawnUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):

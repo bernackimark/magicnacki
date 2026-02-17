@@ -1,10 +1,27 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Iterable
 
+from models.utils import flip
+
 if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.actions.base import Action
+
+class AllowOpponentToDestroyALand(Action):
+    def __init__(self, p_id, gs, source: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+
+    def __repr__(self):
+        return f'Allow Opponent to Destroy One of Your Lands'
+
+    def play(self) -> None:
+        if self.gs.action_stack:
+            self.gs.action_stack.pop()
+            # must first pop Demonic Hordes' controller's choice to pay
+        from models.choice_actions_all import OpponentDestroysLandChoice
+        self.gs.action_stack.push(OpponentDestroysLandChoice(flip(self.player_idx), self.gs, self.source), self.gs, True)
 
 class Destroy(Action):
     def __init__(self, p_id, gs, source: GameCard, target: GameCard):
@@ -13,7 +30,7 @@ class Destroy(Action):
         self.target = target
 
     def __repr__(self):
-        return f'Destroy {self.source.props.name}'
+        return f'Destroy {self.target.props.name}'
 
     def play(self):
         self.gs.destroy(self.target)
