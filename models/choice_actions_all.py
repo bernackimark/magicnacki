@@ -1,6 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from itertools import combinations
 from typing import TYPE_CHECKING, Iterable, Optional
 
 if TYPE_CHECKING:
@@ -11,7 +12,7 @@ from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamage, PayLife
 from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand
-from models.actions.draw_discard import DrawCard
+from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
@@ -56,6 +57,22 @@ class CopyCardChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         return [CopyCard(self.player_idx, self.gs, self.source, t,
                          self.additional_types, self.copy_color) for t in self.card_options]
+
+class DiscardChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, discarding_p_id: int,
+                 min_cnt: int = 1, max_cnt: int = 1):
+        super().__init__(p_id, gs, source)
+        self.discarding_p_id = discarding_p_id
+        self.min_cnt = min_cnt
+        self.max_cnt = max_cnt
+
+    def get_actions(self) -> list[Action]:
+        cards = self.gs.hands[self.discarding_p_id].cards
+        for r in range(self.min_cnt, self.max_cnt + 1):
+            for combo in combinations(cards, r):
+                print(combo)
+        return [DiscardCard(self.player_idx, self.gs, list(combo))
+                for r in range(self.min_cnt, self.max_cnt + 1) for combo in combinations(cards, r)]
 
 class DrawCardsOrDontChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cnt: int = 1):
