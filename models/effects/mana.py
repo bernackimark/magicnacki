@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from models.events_all import DiesEvent
+from models.events_all import DiesEvent, TapCardEvent
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -76,8 +76,9 @@ class UrzasTrio(Effect):
 
 class WildGrowth(Effect):
     """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""
+    listens_to = TapCardEvent
 
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.mana_pools[source.attached_to.owner_id].add_floating('G')
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
+        if source.attached_to is not event.card:
+            return
+        gs.mana_pools[event.card.owner_id].add_floating('G')

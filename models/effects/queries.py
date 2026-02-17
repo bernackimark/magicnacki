@@ -239,6 +239,18 @@ class GaeasLiegePT(Effect):
             cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
         return PTModifier(source, cnt, cnt)
 
+class GiantTortoisePT(Effect):
+    """This creature gets +0/+3 as long as it's untapped"""
+    event = 'query'
+
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        if not card.is_tapped:
+            return PTModifier(source, 0, 3)
+
 class GoblinCaves(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
     # WARNING: I don't yet have a way to validate that something is a basic land, since it lives in read-only props

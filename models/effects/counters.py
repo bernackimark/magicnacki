@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from models.events_all import ZoneChangeEvent, EndStepEvent
+from models.events_all import ZoneChangeEvent, EndStepEvent, TapCardEvent
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE, PLUS_ONE, \
-    PUPA, CounterType, CHARGE
+    PUPA, CounterType, CHARGE, MINUS_ZERO_TWO
 from models.effects.base import Effect
 
 # --- GENERICS ---
@@ -147,3 +147,12 @@ class RockHydraCast(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
             source.counters.add_counter(PLUS_ONE, x)
+
+class SpiritShackle(Effect):
+    """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
+        if event.card is not s.attached_to:
+            return
+        s.attached_to.counters.add_counter(MINUS_ZERO_TWO)

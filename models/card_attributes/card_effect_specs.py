@@ -17,7 +17,7 @@ from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableT
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
     RockHydraCast, AddCounterPerCreatureDeath, AddCounterToHost, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
-    CitanulDruid, ManaBatteriesAddMana, AddCounter
+    CitanulDruid, ManaBatteriesAddMana, AddCounter, SpiritShackle
 from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifactUpkeep, DealDamageOnTargetTurn, \
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
@@ -54,7 +54,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
-    Conversion, JuggernautUnblockableByWalls
+    Conversion, JuggernautUnblockableByWalls, GiantTortoisePT
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -64,8 +64,8 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
     HealingSalve
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
-    StaysTapped, CocoonHostStaysTapped, ForestTap, GiantTortoiseTap, UntapCardEffect, ManaShort, MountainTap, \
-    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet
+    StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
+    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent
@@ -153,8 +153,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'black-ward': [Triggered(KWAModEffect('add', 'Protection From Black'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'blessing': [Activated('W', PumpEffect(1, 1, True), T_FUNCS['host'])],
-    'blight': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
-               Triggered(Blight(), None, TapCardEvent)],
+    'blight': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent), Triggered(Blight(), None, TapCardEvent)],
     'blood-lust': [Triggered(BloodLust(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                           Activated('T', ManaBatteriesAddMana('U'), extra_costs=[RemoveCounterCost(CHARGE)],
@@ -318,7 +317,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fog': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'force-of-nature': [Triggered(ForceOfNatureUpkeep(), None, UpkeepEvent)],
     'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
-    'forest': [Triggered(ForestCast(), None, CastResolvedEvent), Triggered(ForestTap(), None, TapCardEvent)],
+    'forest': [Triggered(ForestCast(), None, CastResolvedEvent)],
     'forethought-amulet': [Triggered(PayManaOrSac('3'), None, UpkeepEvent)],
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
     'frozen-shade': [Activated('B', PumpEffect(1, 1, True), T_FUNCS['self'])],
@@ -340,10 +339,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'giant-shark': [Triggered(GiantShark(), None, BlockEvent)],
     'giant-strength':
         [Triggered(PumpEffect(2, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
-    'giant-tortoise':
-        [Triggered(PumpEffect(0, 3), None, CastResolvedEvent),
-         Triggered(GiantTortoiseTap(), None, TapCardEvent),
-         Triggered(PumpEffect(0, 3), None, UntapCardEvent)],
+    'giant-tortoise': [Static(GiantTortoisePT())],
     'glyph-of-destruction': [Triggered(GlyphOfDestruction(), T_FUNCS['your_walls_in_play'], CastResolvedEvent)],
     'goblin-balloon-brigade': [Activated('R', KWAModEffect('add', 'Flying', True), T_FUNCS['self'])],
     'goblin-caves': [Static(GoblinCaves())],
@@ -436,7 +432,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    allowed_phases=Phase.DECLARE_ATTACKERS, allowed_player_turn=T_FUNCS['card_owner'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
     'lightning-bolt': [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
+    'lifeblood': [Triggered(Lifeblood(), None, TapCardEvent)],
     'lifelace': [Triggered(SetColor('G'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
+    'lifetap': [Triggered(Lifetap(), None, TapCardEvent)],
     'living-armor':
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
     'living-artifact':
@@ -476,7 +474,6 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                         Activated('T', PumpEffect(1, 1, True), T_FUNCS['assembly_workers'], text='Pump Assembly-Worker')],
     'moat': [Static(Moat())],
     'morale': [Triggered(Morale(), None, CastResolvedEvent)],
-    'mountain': [Triggered(MountainTap(), None, TapCardEvent)],
     'mox-emerald': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'mox-jet': [Activated('T', AddMana('B'), T_FUNCS['card_owner'])],
     'mox-pearl': [Activated('T', AddMana('W'), T_FUNCS['card_owner'])],
@@ -534,8 +531,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'psionic-entity': [Activated('T', DealDamageToTargetAndSelf(2, 3), T_FUNCS['all_creatures_and_players'])],
     'psychic-allergy': [Triggered(PsychicAllergyUpkeep(), T_FUNCS['self'], UpkeepEvent)],
     'psychic-venom':
-        [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
-         Triggered(DealDamage(2), T_FUNCS['host_owner']), TapCardEvent],
+        [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent), Triggered(PsychicVenom(), None, TapCardEvent)],
     'purelace': [Triggered(SetColor('W'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
     'rabid-wombat': [Static(RabidWombat())],
@@ -594,7 +590,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'spinal-villain': [Activated('T', Destroy(), T_FUNCS['blue_creatures_in_play'])],
     'spirit-link': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
                     Triggered(SpiritLink(), None, DamageResolvedEvent)],
-    'spirit-shackle': [Triggered(AddCounterToHost(MINUS_ZERO_TWO), T_FUNCS['host'], TapCardEvent)],
+    'spirit-shackle': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
+                       Triggered(SpiritShackle(), None, TapCardEvent)],
     'spiritual-sanctuary': [Triggered(SpiritualSanctuary(), None, UpkeepEvent)],
     'staff-of-zegon': [Activated('3T', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
