@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..game_card import GameCard
@@ -16,19 +16,30 @@ class DrawCard(Action):
 
     def play(self) -> None:
         self.gs.draw(self.player_idx)
-        self.gs.phase = Phase.CAST
+        if len(self.gs.action_stack):
+            self.gs.action_stack.pop()
 
 
 @dataclass
 class DiscardCard(Action):
-    card: GameCard
+    cards: GameCard | list[GameCard]
 
     def __repr__(self) -> str:
-        return f"Discard {self.card} to graveyard"
+        if not isinstance(self.cards, list):
+            return f"Discard {self.cards} to graveyard"
+        else:
+            return f"Discard {', '.join([c.__repr__() for c in self.cards])} to graveyard"
 
     def play(self) -> None:
-        print(f"Discarding {self.card} from player {self.player_idx}'s hand")
-        self.gs.discard(self.card)
+        if not isinstance(self.cards, list):
+            self.cards = [self.cards]
+        for c in self.cards:
+            print(f"Discarding {c} from player {self.player_idx}'s hand")
+            self.gs.discard(c)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
+        elif len(self.gs.action_stack):
+            self.gs.action_stack.pop()
 
 @dataclass
 class MoveToDrawPhase(Action):
