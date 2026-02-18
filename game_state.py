@@ -17,6 +17,7 @@ from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
+from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule, CanCastBaseRule
 from models.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
@@ -66,6 +67,7 @@ class GameState:
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: list[type[StateBasedRule]] = STATE_BASED_RULES
 
+        self.destroy_replacements: list[RegenerationShield] = []
         self.damage_replacements: list[DamageReplacement] = []
         self.damage_preventions: list[PreventNextDamage] = []
         self.end_step_funcs: list[Callable] = []
@@ -131,6 +133,10 @@ class GameState:
 
     def can_cast(self, card: GameCard, p_id: int) -> bool:
         return self._query_effects_by_event('can_cast', card, p_id=p_id)
+
+    def can_be_destroyed(self, card: GameCard) -> bool:
+        result = self._query_effects_by_event('can_be_destroyed', card)
+        return False if result is False else True
 
     def _query_effects_by_event(self, event_str: str, card: GameCard, **kwargs) -> bool:
         """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
@@ -244,7 +250,16 @@ class GameState:
         # Post-move hooks
         # self._after_zone_change(card, from_zone, to_zone)
 
-    def destroy(self, card: GameCard):
+    def destroy(self, card: GameCard, allow_regeneration: bool = True):
+        # ask replacement system if destruction is prevented
+        # as of now, this destruction replacement & damage are handled separately but could be unified later
+        if allow_regeneration:
+            for shield in list(self.destroy_replacements):
+                if shield.applies_to(card):
+                    shield.apply(self, card)
+                    self.destroy_replacements.remove(shield)
+                    return
+
         self.emit(DiesEvent(card))
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
         self.cards_that_died_this_turn.append(card)
@@ -268,6 +283,7 @@ class GameState:
 
     def cast(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='cast')
+        print(f'{card} is cast')
 
     def draw(self, p_id: int, cnt: int = 1):
         for _ in range(cnt):

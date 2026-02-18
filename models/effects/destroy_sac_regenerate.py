@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
+from models.destroy_replacements import RegenerationShield
 from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent
 from models.utils import flip
 from models.zone import Zone
@@ -18,14 +19,13 @@ from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
 
 # --- GENERICS --
-class AcidRain(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        for forest in CardFilter(gs).in_play().forests().result():
-            gs.destroy(forest)
-
 class Destroy(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.destroy(target)
+
+class DestroyNoRegen(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard | None = None):
+        gs.destroy(target, allow_regeneration=False)
 
 class DestroyAll(Effect):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
@@ -66,7 +66,16 @@ class PayManaOrSac(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, self.mana_cost), gs, False)
 
+class RegenerateSelf(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        gs.destroy_replacements.append(RegenerationShield(source))
+
 # --- CARD-SPECIFIC ---
+class AcidRain(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        for forest in CardFilter(gs).in_play().forests().result():
+            gs.destroy(forest)
+
 class Blight(Effect):
     """Enchant land; When enchanted land becomes tapped, destroy it."""
     listens_to = TapCardEvent

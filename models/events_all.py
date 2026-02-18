@@ -39,6 +39,11 @@ class DamageResolvedEvent(Event):
     target: Target
     is_combat: bool
 
+@dataclass
+class DestroyAttemptEvent(Event):
+    card: GameCard
+    allow_regeneration: bool = True
+
 @dataclass(frozen=True)
 class DrawCardEvent(Event):
     player_id: int
