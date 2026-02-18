@@ -28,6 +28,19 @@ class AddPoisonCounter(Effect):
                   f"Poison Totals: {gs.poison_counters}")
             gs.add_poison_counter(opp, self.cnt)
 
+class OnColorSpellGainLife(Effect):
+    """Whenever a player casts a [certain color] spell, you gain 1 life"""
+    listens_to = CastResolvedEvent
+
+    def __init__(self, color: str, life_amt: int = 1):
+        self.color = color
+        self.life_amt = life_amt
+
+    def on_event(self, gs: GameState, s: GameCard, event: CastResolvedEvent):
+        if self.color not in event.card.props.colors:
+            return
+        gs.increment_life(s.owner_id, self.life_amt)
+
 class OnColorSpellPayOneColorlessForOneLifeChoice(Effect):
     """Whenever a player casts a [certain color] spell, you may {1}: Gain 1 life"""
     listens_to = CastResolvedEvent

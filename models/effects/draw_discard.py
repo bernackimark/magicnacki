@@ -57,6 +57,20 @@ class CursedRackEffect(Effect):
         for i in range(len(hand.cards) - 4):
             gs.action_stack.push(DiscardCard(opp_id, gs, hand.cards[0]), gs, False)
 
+class GwendlynDiCorci(Effect):
+    """{T}: Target player discards a card at random. Activate only during your turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        cards = gs.hands[target].cards
+        if not cards:
+            return
+        if len(cards) == 1:
+            gs.discard(cards[0])
+            return
+        random_card: GameCard = gs.randomize_event(target, cards)
+        gs.discard(random_card)
+
 class HypnoticSpecter(Effect):
     """Whenever this creature deals damage to an opponent, that player discards a card at random"""
     listens_to = DamageResolvedEvent
@@ -79,6 +93,20 @@ class JalumTome(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.draw(source.owner_id)
         gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id)
+
+class NicolBolas(Effect):
+    """Whenever this creature deals damage to an opponent, that player discards their hand"""
+    listens_to = DamageResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
+        opp_id = flip(source.owner_id)
+        if event.source is not source or event.target is not opp_id:
+            return
+        opp_cards = gs.hands[opp_id].cards
+        if not opp_cards:
+            return
+        for c in opp_cards:
+            gs.discard(c)
 
 class VerduranEnchantress(Effect):
     """Whenever you cast an enchantment spell, you may draw a card"""

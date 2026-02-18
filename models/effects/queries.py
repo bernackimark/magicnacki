@@ -48,6 +48,18 @@ class AngryMobPT(Effect):
         opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).swamps().result())
         return PTTemp(source, 2 + opp_swamp_cnt, 2 + opp_swamp_cnt)
 
+class ArcadesSabbathAllCreaturePump(Effect):
+    """... Each untapped creature you control gets +0/+2 as long as it's not attacking ..."""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        attackers = gs.card_filter.attackers().result()
+        your_untapped_creatures = gs.card_filter.creatures().on_player_board(card.orig_owner_id).tapped(False).result()
+        for c in your_untapped_creatures:
+            if c not in attackers:
+                return PTModifier(source, 0, 2)
+
 class ArtifactWardCanBeBlocked(Effect):
     """This creature can't be blocked by artifact creatures"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -135,6 +147,16 @@ class Crusade(Effect):
         if card not in gs.card_filter.in_play().white().creatures().result():
             return None
         return PTModifier(source, 1, 1)
+
+class DakkonBlackbladePT(Effect):
+    """Dakkon Blackblade's power and toughness are each equal to the number of lands you control"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """kwarg 'source' is the source that is providing this effect"""
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card is not source:
+            return None
+        your_land_cnt = len(gs.card_filter.on_player_board(source.owner_id).lands().result())
+        return PTModifier(source, your_land_cnt, your_land_cnt)
 
 class ElderSpawnCanBeBlocked(Effect):
     """This creature can't be blocked by red creatures"""
@@ -285,6 +307,16 @@ class IronclawOrcs(Effect):
             return None
         if attacker.power >= 2:
             return False
+
+class JacquesLeVert(Effect):
+    """Green creatures you control get +0/+2"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if card not in gs.card_filter.on_player_board(source.owner_id).green().creatures().result():
+            return None
+        return PTModifier(source, 0, 2)
 
 class JuggernautUnblockableByWalls(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):

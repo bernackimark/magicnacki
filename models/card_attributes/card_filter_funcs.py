@@ -53,6 +53,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                                   if c.power <= 2],
     'djinns_and_efreets': lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
     'enchanted_cards': lambda gs, s: gs.card_filter.is_enchanted().result(),
+    'enchanted_creatures': lambda gs, s: gs.card_filter.is_enchanted().creatures().result(),
     'enchants_in_play': lambda gs, s: gs.card_filter.in_play.enchantments().result(),
     'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.orig_owner_id).enchantments().result(),
     'flash_flood': lambda gs, s: gs.card_filter.in_play().red().permanents().result() +
@@ -97,6 +98,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
                                   if c.toughness < s.power],
     'tapped_creatures': lambda gs, s: gs.card_filter.in_play().creatures().tapped().result(),
+    'tapped_or_blocking_creatures': lambda gs, s: list(set(gs.card_filter.blockers().result() +
+                                                           gs.card_filter.tapped().creatures().result())),
     'tapped_lands': lambda gs, s: gs.card_filter.in_play().lands().tapped().result(),
     'unblocked_attackers': lambda gs, s: gs.card_filter.unblocked_attackers().result(),
     'unenchanted_perms_in_play': lambda gs, s: gs.card_filter.is_enchanted(False).permanents().in_play().result(),
