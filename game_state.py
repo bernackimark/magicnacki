@@ -196,8 +196,8 @@ class GameState:
 
             damage_to_player = event.remaining - damage_to_card
             if damage_to_player > 0:
-                self.decrement_life(target.orig_owner_id, damage_to_player, source)
-                resolved_events.append(DamageResolvedEvent(source, damage_to_player, target.orig_owner_id, True))
+                self.decrement_life(target.owner_id, damage_to_player, source)
+                resolved_events.append(DamageResolvedEvent(source, damage_to_player, target.owner_id, True))
         else:
             if isinstance(target, GameCard):
                 target.damage_received_this_turn += event.remaining
@@ -298,7 +298,7 @@ class GameState:
             case Zone.BATTLEFIELD:
                 self.boards[card.owner_id].remove(card)
             case Zone.HAND:
-                self.hands[card.owner_id].cards.remove(card)
+                self.hands[card.orig_owner_id].cards.remove(card)
                 self.hands[card.orig_owner_id].sort_cards()
             case Zone.GRAVEYARD:
                 self.graveyards[card.owner_id].remove(card)
@@ -583,7 +583,7 @@ class GameState:
             self.emit(UpkeepEvent(active_player=self.player_turn_idx))
             for c in self.boards[self.player_turn_idx]:
                 if activated_abilities := self.get_available_activated_abilities(c):
-                    return [MoveToDrawPhase(c.orig_owner_id, self)] + activated_abilities
+                    return [MoveToDrawPhase(c.owner_id, self)] + activated_abilities
             self.phase = Phase.DRAW
             return
 

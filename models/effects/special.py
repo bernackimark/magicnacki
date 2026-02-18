@@ -60,7 +60,7 @@ class AnimateDead(Effect):
 
 class BookOfRass(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.apply_damage(source, 2, source.orig_owner_id)
+        gs.apply_damage(source, 2, source.owner_id)
         gs.draw(source.owner_id)
 
 class BottleOfSuleiman(Effect):
@@ -89,7 +89,7 @@ class CocoonUpkeep(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         p_id = gs.player_turn_idx
         host = source.attached_to
-        if p_id != source.orig_owner_id:
+        if p_id != source.owner_id:
             return
         if not host.counters.get_count(PUPA):
             gs.destroy(source)
@@ -102,14 +102,14 @@ class Crumble(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
             gs.destroy(target)
-            gs.increment_life(target.orig_owner_id, target.props.casting_weight)
+            gs.increment_life(target.owner_id, target.props.casting_weight)
 
 class DivineOffering(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f"{source.props.name} needs a target")
         if target:
-            gs.increment_life(source.orig_owner_id, target.power)
+            gs.increment_life(source.owner_id, target.power)
             gs.destroy(target)
 
 class Earthbind(Effect):
@@ -117,17 +117,17 @@ class Earthbind(Effect):
         if target:
             target.modifiers.auras.append(KWAModifier(source, 'remove', 'Flying'))
         if 'Flying' in target.keyword_abilities:
-            gs.apply_damage(source, 2, target.orig_owner_id)
+            gs.apply_damage(source, 2, target.owner_id)
 
 class ElectricEel(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         source.modifiers.temps.append(PTTemp(source, 2, 0))
-        gs.apply_damage(source, 1, source.orig_owner_id)
+        gs.apply_damage(source, 1, source.owner_id)
 
 class ElvesOfTheDeepShadow(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.mana_pools[source.orig_owner_id].add_floating('B')
-        gs.apply_damage(source, 1, source.orig_owner_id)
+        gs.mana_pools[source.owner_id].add_floating('B')
+        gs.apply_damage(source, 1, source.owner_id)
 
 class FallingStar(Effect):
     """Select an opponent's creature. If a di roll is 1-5, deal 3 damage to it"""
@@ -141,7 +141,7 @@ class FallingStar(Effect):
 
 class Fasting(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.orig_owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
@@ -184,16 +184,10 @@ class FloralSpuzzem(Effect):
             return
         gs.action_stack.push(FloralSpuzzemChoice(s.owner_id, gs, s), gs, False)
 
-class ForestCast(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        for c in gs.card_filter.on_player_board(source.orig_owner_id).result():
-            if c.props.slug == 'kird-ape' and PTModifier(c, 1, 2) not in c.modifiers.auras:
-                c.modifiers.auras.append(PTModifier(c, 1, 2))
-
 class GoblinKing(Effect):
     """All of your other Goblins gain +1+/+1 and Mountainwalk"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Goblin').result()
+        targets = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Goblin').result()
         for t in targets:
             if source != t:
                 t.modifiers.auras.append(KWAModifier(source, 'add', 'Mountainwalk'))
@@ -201,7 +195,7 @@ class GoblinKing(Effect):
 
 class Greed(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.apply_damage(source, 2, source.orig_owner_id)
+        gs.apply_damage(source, 2, source.owner_id)
         gs.draw(source.owner_id)
 
 class GlyphOfDestruction(Effect):
@@ -237,7 +231,7 @@ class HurkylsRecall(Effect):
 class KoboldDrillSergeant(Effect):
     """Other Kobold creatures you control get +0/+1 and have trample"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        kobolds = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result()
+        kobolds = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result()
         for k in kobolds:
             if source != k:
                 k.modifiers.auras.append(KWAModifier(source, 'add', 'Trample'))
@@ -320,10 +314,10 @@ class ReverseDamage(Effect):
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         """target = the GameCard doing the damage"""
         def gain_life(prevented: int):
-            gs.increment_life(s.orig_owner_id, prevented)
+            gs.increment_life(s.owner_id, prevented)
 
         gs.damage_preventions.append(
-            PreventNextDamage(s, None, target_player=s.orig_owner_id, source_card=target, on_prevent=gain_life))
+            PreventNextDamage(s, None, target_player=s.owner_id, source_card=target, on_prevent=gain_life))
 
 class RocketLauncherCast(Effect):
     """To support 'Activate only if you've controlled continuously since the beginning of your most recent turn."""
@@ -342,21 +336,21 @@ class SacrificeOnCast(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         if not t:
             raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
-        gs.action_stack.push(SacCreatureAndAddMana(s.orig_owner_id, gs, s, t, 'B', t.props.casting_weight), gs, False)
+        gs.action_stack.push(SacCreatureAndAddMana(s.owner_id, gs, s, t, 'B', t.props.casting_weight), gs, False)
 
 class SerendibDjinn(Effect):
     """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.orig_owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
 
 class Shapeshifter(Effect):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != source.orig_owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
-        gs.action_stack.push(ShapeshifterChoice(source.orig_owner_id, gs, source), gs, False)
+        gs.action_stack.push(ShapeshifterChoice(source.owner_id, gs, source), gs, False)
 
 class StoneGiant(Effect):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
@@ -370,10 +364,10 @@ class SoulNet(Effect):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent):
+        if not isinstance(event, DiesEvent) or not event.card.is_creature:
             return
 
-        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.orig_owner_id, gs, source), gs, False)
+        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
 
 class Subdue(Effect):
     """Prevent all combat damage that would be dealt by target creature this turn.
@@ -386,7 +380,7 @@ class SwordsToPlowshares(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
             gs.exile(target)  # which is correct?  exile_from_play() or exile()
-            gs.increment_life(target.orig_owner_id, target.power)
+            gs.increment_life(target.owner_id, target.power)
 
 class SylvanLibrary(Effect):
     """At your draw step, you may draw two additional cards.
@@ -400,7 +394,7 @@ class SyphonSoul(Effect):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, target)
-        gs.increment_life(source.orig_owner_id, 2)
+        gs.increment_life(source.owner_id, 2)
 
 class TabletOfEpityr(Effect):
     """Whenever an artifact you control dies, {1}: Gain 1 life"""
@@ -408,9 +402,9 @@ class TabletOfEpityr(Effect):
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
-                or event.card.orig_owner_id != source.orig_owner_id:
+                or event.card.owner_id != source.owner_id:
             return
-        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.orig_owner_id, gs, source), gs, False)
+        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
 
 class Timetwister(Effect):
     """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
@@ -435,9 +429,9 @@ class UrzasMiter(Effect):
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
-                or event.card.orig_owner_id != source.orig_owner_id:
+                or event.card.owner_id != source.owner_id:
             return
-        gs.action_stack.push(PayManaToDrawCardsChoice(source.orig_owner_id, gs, source), gs, False)
+        gs.action_stack.push(PayManaToDrawCardsChoice(source.owner_id, gs, source), gs, False)
 
 class VenarianGoldCast(Effect):
     """When this Aura enters, tap enchanted creature and put X sleep counters on it ..."""
@@ -469,13 +463,13 @@ class WormwoodTreefolkForestwalk(Effect):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.modifiers.temps.append(KWATemp(source, 'add', 'Forestwalk'))
-        gs.apply_damage(source, 2, source.orig_owner_id)
+        gs.apply_damage(source, 2, source.owner_id)
 
 class WormwoodTreefolkSwampwalk(Effect):
     """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.modifiers.temps.append(KWATemp(source, 'add', 'Swampwalk'))
-        gs.apply_damage(source, 2, source.orig_owner_id)
+        gs.apply_damage(source, 2, source.owner_id)
 
 class YdwenEfreet(Effect):
     """Whenever Ydwen Efreet blocks, flip a coin.

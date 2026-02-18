@@ -193,9 +193,8 @@ class CurseArtifactUpkeepChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        # warning: Curse Artifact is usually played on opp cards and that's a mismatch on "orig_owner_id" !!!
-        return [PayLife(self.source.attached_to.orig_owner_id, self.gs, self.source, 2),
-                Sac(self.source.attached_to.orig_owner_id, self.gs, self.source.attached_to)]
+        return [PayLife(self.source.attached_to.owner_id, self.gs, self.source, 2),
+                Sac(self.source.attached_to.owner_id, self.gs, self.source.attached_to)]
 
 class DemonicHordesUpkeepChoice(ChoiceAction):
     """It is known that the owner can pay {BBB}, so present the choice to pay or not;
@@ -330,7 +329,7 @@ class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [PayLife(self.source.attached_to.orig_owner_id, self.gs, self.source, 2),
+        return [PayLife(self.source.attached_to.owner_id, self.gs, self.source, 2),
                 Sac(self.gs.player_turn_idx, self.gs, self.source)]
 
 class SerendibDjinnUpkeepChoice(ChoiceAction):

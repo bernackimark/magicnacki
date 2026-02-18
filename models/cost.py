@@ -45,10 +45,10 @@ class ManaCost(Cost):
         self.cost = cost
 
     def can_pay(self, gs, source):
-        return gs.mana_pools[source.orig_owner_id].can_pay(self.cost)
+        return gs.mana_pools[source.owner_id].can_pay(self.cost)
 
     def pay(self, gs, source):
-        gs.mana_pools[source.orig_owner_id].pay(self.cost)
+        gs.mana_pools[source.owner_id].pay(self.cost)
 
 class PayLifeCost(Cost):
     def __init__(self, amt: int = 1):
@@ -94,10 +94,10 @@ class SacSelfCost(Cost):
 
 class SacTwoIslandsCost(Cost):
     def can_pay(self, gs: GameState, source: GameCard):
-        return len([i for i in gs.card_filter.on_player_board(source.orig_owner_id).islands().result()]) >= 2
+        return len([i for i in gs.card_filter.on_player_board(source.owner_id).islands().result()]) >= 2
 
     def pay(self, gs, source):
-        your_islands = gs.card_filter.on_player_board(source.orig_owner_id).islands().result()
+        your_islands = gs.card_filter.on_player_board(source.owner_id).islands().result()
         for island in your_islands[:2]:
             gs.destroy(island)
 

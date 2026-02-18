@@ -53,7 +53,7 @@ class AddCountersOnHostTurn(Effect):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.attached_to.orig_owner_id:
+        if gs.player_turn_idx != source.attached_to.owner_id:
             return
         source.attached_to.counters.add_counter(self.counter_type, self.cnt)
 
@@ -72,7 +72,7 @@ class RemoveCountersOnHostTurn(Effect):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.attached_to.orig_owner_id:
+        if gs.player_turn_idx != source.attached_to.owner_id:
             return
         source.attached_to.counters.remove_counter(self.counter_type, self.cnt)
 
@@ -87,7 +87,7 @@ class AddCountersYourTurnOnly(Effect):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None, x_value: int = None):
-        if gs.player_turn_idx != s.orig_owner_id:
+        if gs.player_turn_idx != s.owner_id:
             return
         cnt = self.cnt if x_value is None else x_value
         s.counters.add_counter(self.counter_type, cnt)

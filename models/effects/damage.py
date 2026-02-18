@@ -31,18 +31,18 @@ class DealDamageOnSourceTurn(Effect):
         self.amount = amount
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != source.orig_owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
-        gs.apply_damage(source, 1, target.orig_owner_id)
+        gs.apply_damage(source, 1, target.owner_id)
 
 class DealDamageOnTargetTurn(Effect):
     def __init__(self, amount):
         self.amount = amount
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != target.orig_owner_id:
+        if gs.player_turn_idx != target.owner_id:
             return
-        gs.apply_damage(source, 1, target.orig_owner_id)
+        gs.apply_damage(source, 1, target.owner_id)
 
 class DealDamageToAllCreaturesAndPlayers(Effect):
     def __init__(self, amt: int):
@@ -72,7 +72,7 @@ class DealDamageToTargetAndYou(Effect):
         if not target:
             raise RuntimeError(f"{source.props.name} needs a target")
         gs.apply_damage(source, self.amt_to_target, target)
-        gs.apply_damage(source, self.amt_to_you, source.orig_owner_id)
+        gs.apply_damage(source, self.amt_to_you, source.owner_id)
 
 class PreventAllCombatDamageThisTurn(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
@@ -93,15 +93,15 @@ class AnkhOfMishra(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
         if event.to_zone != Zone.BATTLEFIELD or not event.card.props.is_land:
             return
-        gs.apply_damage(source, 2, event.card.orig_owner_id)
+        gs.apply_damage(source, 2, event.card.owner_id)
 
 class Backfire(Effect):
     """Whenever host deals damage to you, this Aura deals that much damage to that creature's controller"""
     listens_to = DamageResolvedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
-        if event.source is source.attached_to and event.target == source.orig_owner_id:
-            gs.apply_damage(source, event.amt, source.attached_to.orig_owner_id)
+        if event.source is source.attached_to and event.target == source.owner_id:
+            gs.apply_damage(source, event.amt, source.attached_to.owner_id)
 
 class Banshee(Effect):
     """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
@@ -140,12 +140,12 @@ class CreatureBond(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source.attached_to:
             return
-        gs.apply_damage(source, source.attached_to.toughness, source.attached_to.orig_owner_id)
+        gs.apply_damage(source, source.attached_to.toughness, source.attached_to.owner_id)
 
 class CurseArtifactUpkeep(Effect):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        if gs.player_turn_idx != target.orig_owner_id:
+        if gs.player_turn_idx != target.owner_id:
             return
         gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
 
@@ -170,17 +170,17 @@ class Earthquake(Effect):
 class ElderSpawnUpkeep(Effect):
     """At your upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
     def resolve(self, gs: GameState, s: GameCard, target=None):
-        if gs.player_turn_idx != s.orig_owner_id:
+        if gs.player_turn_idx != s.owner_id:
             return
         gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
 
 class ErgRaiders(Effect):
     """At YOUR end step, except for summoning sickness, if this creature didn't attack, 2 damage to you"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != s.orig_owner_id or s.has_summoning_sickness:
+        if gs.player_turn_idx != s.owner_id or s.has_summoning_sickness:
             return
         if s not in gs.card_filter.attackers().result():
-            gs.apply_damage(s, 2, s.orig_owner_id)
+            gs.apply_damage(s, 2, s.owner_id)
 
 class EternalFlame(Effect):
     """deal X damage = number of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
@@ -196,11 +196,11 @@ class EyeForAnEye(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         """target = the GameCard doing the original damage"""
         def deal_damage(prevented: int):
-            gs.apply_damage(t, prevented, s.orig_owner_id)
-            gs.apply_damage(s, prevented, t.orig_owner_id)
+            gs.apply_damage(t, prevented, s.owner_id)
+            gs.apply_damage(s, prevented, t.owner_id)
 
         gs.damage_preventions.append(
-            PreventNextDamage(s, None, target_player=s.orig_owner_id, source_card=t, on_prevent=deal_damage))
+            PreventNextDamage(s, None, target_player=s.owner_id, source_card=t, on_prevent=deal_damage))
 
 class GaseousForm(Effect):
     """Prevent all combat damage that would be dealt this turn by enchanted creature and each creature blocking it."""
@@ -238,14 +238,14 @@ class Karma(Effect):
         p_id = gs.player_turn_idx
         swamp_cnt = len(CardFilter(gs).on_player_board(p_id).swamps().result())
         if swamp_cnt:
-            gs.apply_damage(source, swamp_cnt, source.orig_owner_id)
+            gs.apply_damage(source, swamp_cnt, source.owner_id)
 
 class LordOfThePitUpkeep(Effect):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         possible_sacrifice_actions = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
         if not possible_sacrifice_actions:
-            gs.apply_damage(source, 7, source.orig_owner_id)
+            gs.apply_damage(source, 7, source.owner_id)
             return
         for action in possible_sacrifice_actions:
             gs.action_stack.push(action, gs, False)
@@ -265,8 +265,8 @@ class PersonalIncarnation(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        reduce_life_by = math.ceil(gs.life[source.orig_owner_id] / 2)
-        gs.apply_damage(source, reduce_life_by, source.orig_owner_id)
+        reduce_life_by = math.ceil(gs.life[source.owner_id] / 2)
+        gs.apply_damage(source, reduce_life_by, source.owner_id)
 
 class PowerSurge(Effect):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
@@ -294,7 +294,7 @@ class Sandstorm(Effect):
 class StormSeeker(Effect):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
-        opp_idx = flip(source.orig_owner_id)
+        opp_idx = flip(source.owner_id)
         gs.apply_damage(source, len(gs.hands[opp_idx].cards), opp_idx)
 
 class StormWorld(Effect):
@@ -333,7 +333,8 @@ class Typhoon(Effect):
 
 
 class LivingArtifactOnDamage(Effect):
-    """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ... """
+    """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ...
+    You can target opponent artifacts. The controller of the Aura controls the Living Artifact ability"""
     listens_to = DamageResolvedEvent
 
     def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):

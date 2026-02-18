@@ -59,7 +59,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
     JacquesLeVert
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
-    Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, ForestCast, GlyphOfDestruction, GoblinKing, Greed, \
+    Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
@@ -337,7 +337,6 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fog': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'force-of-nature': [Triggered(ForceOfNatureUpkeep(), None, UpkeepEvent)],
     'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
-    'forest': [Triggered(ForestCast(), None, CastResolvedEvent)],
     'forethought-amulet': [Triggered(PayManaOrSac('3'), None, UpkeepEvent)],  # more to code
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
     'frozen-shade': [Activated('B', PumpEffect(1, 1, True), T_FUNCS['self'])],

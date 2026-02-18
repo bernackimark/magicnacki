@@ -74,7 +74,7 @@ class Sac(Action):
 
     def play(self):
         if self.w_damage_amt:
-            self.gs.apply_damage(self.source, self.w_damage_amt, self.source.orig_owner_id)
+            self.gs.apply_damage(self.source, self.w_damage_amt, self.source.owner_id)
         self.gs.destroy(self.source)
         if self.gs.pending_choice:
             self.gs.pending_choice = None

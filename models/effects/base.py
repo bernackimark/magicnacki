@@ -92,9 +92,9 @@ class ActivatedAbility:
         allowed_p_id_turns need knowledge of the card's owner and is assigned here;
         if allowed_player_turn is None, then the ability should be permitted on both turns"""
         if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.CASTER:
-            self.eff_spec.allowed_p_id_turn = self.source.orig_owner_id
+            self.eff_spec.allowed_p_id_turn = self.source.owner_id
         if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
-            self.eff_spec.allowed_p_id_turn = flip(self.source.orig_owner_id)
+            self.eff_spec.allowed_p_id_turn = flip(self.source.owner_id)
 
     def can_activate(self, gs: GameState) -> bool:
         if self.eff_spec.allowed_phases and gs.phase not in self.eff_spec.allowed_phases:
@@ -103,7 +103,7 @@ class ActivatedAbility:
         if self.eff_spec.allowed_player_turn and gs.player_turn_idx != self.eff_spec.allowed_p_id_turn:
             print("F")
             return False
-        if self.eff_spec.allowed_p_id_turn and self.source.orig_owner_id != self.eff_spec.allowed_p_id_turn:
+        if self.eff_spec.allowed_p_id_turn and self.source.owner_id != self.eff_spec.allowed_p_id_turn:
             print("D")
             return False
         if self.eff_spec.activated_cnt_this_turn >= self.eff_spec.max_activations_per_turn:
@@ -126,9 +126,9 @@ class TriggeredAbility:
         allowed_p_id_turns need knowledge of the card's owner and is assigned here;
         if allowed_player_turn is None, then the ability should be permitted on both turns"""
         if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.CASTER:
-            self.eff_spec.allowed_p_id_turn = self.source.orig_owner_id
+            self.eff_spec.allowed_p_id_turn = self.source.owner_id
         if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
-            self.eff_spec.allowed_p_id_turn = flip(self.source.orig_owner_id)
+            self.eff_spec.allowed_p_id_turn = flip(self.source.owner_id)
 
 
 """
