@@ -738,3 +738,21 @@ class GameState:
 
 # TODO:
 #  can_cast() must take into account multi-mana-color producers (dual lands, etc)
+
+# TODO:
+# ChatGPT is saying this:
+#   while True:
+#     player = self.current_priority_player()
+#
+#     action = player.choose_action()
+#
+#     if action:
+#         self.action_stack.push(action)
+#         continue
+#
+#     self.mark_player_passed(player)
+#
+#     if both_players_passed():
+#         resolve_top_of_stack()
+#         reset_passes()
+# Without this, regeneration can never be used correctly.
