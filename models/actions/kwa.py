@@ -17,8 +17,15 @@ class AddKWA(Action):
         self.ability = ability
         self.until_eot = until_eot
 
+    def __repr__(self):
+        return f'Give {self.ability} to {self.target.props.name}'
+
     def play(self):
         if self.until_eot:
-            self.target.modifiers.temps.append(KWATemp('add', self.ability))
+            self.target.modifiers.temps.append(KWATemp(self.source, 'add', self.ability))
         else:
             self.target.modifiers.auras.append(KWAModifier(self.source, 'add', self.ability))
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
+        else:
+            self.gs.action_stack.pop()

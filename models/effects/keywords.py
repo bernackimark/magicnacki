@@ -1,7 +1,9 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Literal
 
+from models.choice_actions_all import ErhnamDjinnChoice
 from models.effects.destroy_sac_regenerate import SandalsOfAbdallahIfCreatureDies
+from models.events_all import UpkeepEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -47,12 +49,12 @@ class AkronLegionnaireCast(Effect):
 
 class ErhnamDjinn(Effect):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != source.orig_owner_id:
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
+        if gs.player_turn_idx != s.owner_id:
             return
-        opp_id = flip(source.orig_owner_id)
-        for c in gs.card_filter.on_player_board(opp_id).non_wall_creatures().result():
-            gs.action_stack.push(AddKWA(opp_id, gs, source, c, 'Forestwalk'))
+        gs.pending_choice = ErhnamDjinnChoice(s.owner_id, gs, s)
 
 class EvilEyeOfOrmsByGoreCast(Effect):
     """Non-Eye creatures you control can't attack."""

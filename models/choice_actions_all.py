@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from itertools import combinations
 from typing import TYPE_CHECKING, Iterable, Optional
 
+from models.actions.kwa import AddKWA
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -215,6 +217,15 @@ class ElderSpawnUpkeepChoice(ChoiceAction):
             actions.append(Sac(self.player_idx, self.gs, island))
         actions.append(Sac(self.player_idx, self.gs, self.source, 6))
         return actions
+
+class ErhnamDjinnChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        opp_id = flip(self.source.owner_id)
+        return [AddKWA(self.source.owner_id, self.gs, self.source, c, 'Forestwalk')
+                for c in self.gs.card_filter.on_player_board(opp_id).non_artifact_creatures().result()]
 
 class ErosionUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
