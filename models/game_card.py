@@ -227,3 +227,6 @@ class GameCard:
     @property
     def is_white(self) -> bool:
         return 'W' in self.colors
+
+    def is_color(self, color: str) -> bool:
+        return color in self.colors
