@@ -207,3 +207,23 @@ class GameCard:
     @property
     def is_creature(self) -> bool:
         return 'Creature' in self.card_types
+
+    @property
+    def is_black(self) -> bool:
+        return 'B' in self.colors
+
+    @property
+    def is_blue(self) -> bool:
+        return 'U' in self.colors
+
+    @property
+    def is_green(self) -> bool:
+        return 'G' in self.colors
+
+    @property
+    def is_red(self) -> bool:
+        return 'R' in self.colors
+
+    @property
+    def is_white(self) -> bool:
+        return 'W' in self.colors
