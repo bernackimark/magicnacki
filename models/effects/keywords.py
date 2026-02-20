@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 
-from models.card_filter import CardFilter
+from models.game_card_filter import CardFilter
 from models.actions.kwa import AddKWA
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, KWATemp

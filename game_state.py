@@ -5,7 +5,7 @@ from typing import Callable, Iterable, Any
 from models.action_stack import ActionStack
 from models.card import Card
 from deck_builder.build_deck import Deck
-from models.card_filter import CardFilter
+from models.game_card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter

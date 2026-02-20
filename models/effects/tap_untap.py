@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from models.card_filter import CardFilter
+from models.game_card_filter import CardFilter
 from models.choice_actions_all import UntapChoice, UntapWithManaChoice
 from ..actions.tap_untap import LeaveTapped
 from ..counter_tokens import PUPA, SLEEP
