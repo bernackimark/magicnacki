@@ -465,7 +465,7 @@ class GameState:
             targets = [targets] if not isinstance(targets, (list, tuple)) else targets
 
             for t in targets:
-                if not self.can_target(t, c):
+                if isinstance(t, GameCard) and not self.can_target(t, c):
                     continue
                 if 'X' in ability.eff_spec.cost:
                     min_x = ability.eff_spec.min_x
@@ -550,7 +550,7 @@ class GameState:
                     # targets is a list of GameCard; append available action for each Target/target-variable_X combo
                     for t in targets:
                         print(f"{c.props.name} can{'not' if not self.can_target(t, c) else ''} target {t.props.name}")
-                        if not self.can_target(t, c):
+                        if isinstance(t, GameCard) and not self.can_target(t, c):
                             continue
                         if 'X' in c.casting_cost:
                             max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
