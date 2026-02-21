@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
 from models.destroy_replacements import RegenerationShield
-from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent
+from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent, \
+    DrawCardEvent
 from models.utils import flip
 from models.zone import Zone
 
@@ -271,6 +272,15 @@ class TheTabernacleAtPendrellVale(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for your_creature in gs.card_filter.on_player_board(gs.player_turn_idx).creatures().result():
             gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_creature, '1'))
+
+class UnderworldDreams(Effect):
+    """Whenever an opponent draws a card, this enchantment deals 1 damage to that player"""
+    listens_to = DrawCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawCardEvent):
+        if source.owner_id == event.player_id:
+            return
+        gs.apply_damage(source, 1, event.player_id)
 
 class VoodooDollEndStep(Effect):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
