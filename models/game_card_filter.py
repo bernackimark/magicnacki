@@ -204,6 +204,11 @@ class CardFilter:
             self._cards = [c for c in self._cards if kwa not in c.keyword_abilities]
         return self
 
+    # -- by set code ---
+    def by_set_code(self, set_code: str):
+        self._cards = [c for c in self._cards if set_code in c.props.set_codes]
+        return self
+
     def result(self) -> list[GameCard]:
         cards_to_return = self._cards
         self._cards = self._gs.all_cards  # since self._cards continuously filters, must reset it for subsequent use
