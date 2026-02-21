@@ -43,6 +43,11 @@ class CardFilter:
         self._cards = [c for c in self._cards if c.props.slug == slug]
         return self
 
+    # -- by super-type ---
+    def legendary(self):
+        self._cards = [c for c in self._cards if 'Legendary' in c.props.card_super_types]
+        return self
+
     # --- by type/sub-type ---
     def artifacts(self):
         self._cards = [c for c in self._cards if 'Artifact' in c.card_types]
