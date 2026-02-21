@@ -1,14 +1,18 @@
+from __future__ import annotations
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
-from models.game_card import GameCard
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card import GameCard
 
 
 @dataclass
 class Combat:
-    gs: "GameState"
-    attacker: "GameCard"
-    blockers: list["GameCard"] = field(default_factory=list)
-    killed_creatures: list["GameCard"] = field(default_factory=list)
+    gs: GameState
+    attacker: GameCard
+    blockers: list[GameCard] = field(default_factory=list)
+    killed_creatures: list[GameCard] = field(default_factory=list)
 
     def __repr__(self):
         return f"{self.attacker} attacking {self.blockers}"
@@ -41,13 +45,15 @@ class Combat:
         if self.attacker not in self.killed_creatures:
             if self._phase_applicable(self.attacker, first_strike):
                 target = self.blockers[0]
-                self.gs.apply_damage(self.attacker, self.attacker.power, target, is_combat=True)
+                if self.gs.can_damage(target, self.attacker):
+                    self.gs.apply_damage(self.attacker, self.attacker.power, target, is_combat=True)
 
         # Blocker damage to attacker
         for blocker in self.blockers:
             if blocker not in self.killed_creatures:
                 if self._phase_applicable(blocker, first_strike):
-                    self.gs.apply_damage(blocker, blocker.power, self.attacker, is_combat=True)
+                    if self.gs.can_damage(self.attacker, blocker):
+                        self.gs.apply_damage(blocker, blocker.power, self.attacker, is_combat=True)
 
     @staticmethod
     def _phase_applicable(creature: GameCard, first_strike: bool) -> bool:
