@@ -300,22 +300,20 @@ class GameState:
             print(f'Player #{p_id} draws')
 
     def _add_to_zone(self, card: GameCard, zone: Zone):
+        if card.is_token and zone != Zone.BATTLEFIELD:
+            return
         match zone:
             case Zone.BATTLEFIELD:
                 self.boards[card.owner_id].append(card)
             case Zone.HAND:
-                if not card.is_token:
-                    self.hands[card.orig_owner_id].cards.append(card)
-                    self.hands[card.orig_owner_id].sort_cards()
+                self.hands[card.orig_owner_id].cards.append(card)
+                self.hands[card.orig_owner_id].sort_cards()
             case Zone.GRAVEYARD:
-                if not card.is_token:
-                    self.graveyards[card.orig_owner_id].append(card)
+                self.graveyards[card.orig_owner_id].append(card)
             case Zone.EXILE:
-                if not card.is_token:
-                    self.exiles[card.orig_owner_id].append(card)
+                self.exiles[card.orig_owner_id].append(card)
             case Zone.LIBRARY:
-                if not card.is_token:
-                    self.libraries[card.orig_owner_id].cards.insert(0, card)
+                self.libraries[card.orig_owner_id].cards.insert(0, card)
 
     def _remove_from_zone(self, card: GameCard, zone: Zone):
         match zone:
@@ -347,11 +345,6 @@ class GameState:
         card.clear_all_mods()
         self.emit(StateBasedEvent())
 
-    # THIS IS A RELATED CONCEPT THAT DOESN'T BELONG HERE.  JUST STORING HERE TEMPORARILY
-    # class DiesTrigger(TriggeredAbility):
-    #     def matches(self, event):
-    #         return isinstance(event, ZoneChangeEvent) and event.from_zone == Zone.BATTLEFIELD
-    #           and event.to_zone == Zone.GRAVEYARD
     def create_token_creature(self, owner_id: int, name: str, power: int, toughness: int, kwa: list[str],
                               other_types: list[str], sub_types: list[str], colors: str):
         card = Card(slug=name.replace(' ', '-').lower(),
@@ -753,9 +746,9 @@ class GameState:
 #  can_cast() must take into account multi-mana-color producers (dual lands, etc)
 
 # TODO:
-#  combat damage must use can_damage()
+#  Black Knight (2/2) is killing Northern Palladin (3/3)
 
-# TODO:
+# TODO: currently, Destroy() is being placed on the stack, but there is no option to respond to that, only 'Accept'
 # ChatGPT is saying this:
 #   while True:
 #     player = self.current_priority_player()
