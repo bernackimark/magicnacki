@@ -132,6 +132,14 @@ class Castle(Effect):
             return None
         return PTModifier(source, 0, 2)
 
+class CityInABottle(Effect):
+    """Players can't cast spells or play lands with a name originally printed in the Arabian Nights expansion"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'can_cast':
+            return None
+        if card in gs.card_filter.by_set_code('AN').result():
+            return False
+
 class ConcordantCrossroads(Effect):
     """All creatures have haste"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):

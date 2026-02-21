@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamageToYou, PayLife
-from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand
+from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand, SacCards
 from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
@@ -297,6 +297,17 @@ class LordOfThePitUpkeepChoice(ChoiceAction):
         if not your_other_creatures:
             return []
         return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
+
+class MoldDemonChoice(ChoiceAction):
+    """Is called from MoldDemonETB; When this creature ETB, sac it or two Swamps; guaranteed to have >= 2 swamps"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, your_swamps: list[GameCard]):
+        super().__init__(p_id, gs, source)
+        self.your_swamps = your_swamps
+
+    def get_actions(self) -> list[Action]:
+        two_swamp_combos = list(combinations(self.your_swamps, 2))
+        sac_swamps = [SacCards(self.player_idx, self.gs, self.source, two_swamps) for two_swamps in two_swamp_combos]
+        return [Sac(self.player_idx, self.gs, self.source)] + sac_swamps
 
 class PrimalClayChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):

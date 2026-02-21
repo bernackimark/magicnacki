@@ -34,7 +34,7 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
-    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave
+    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
@@ -57,7 +57,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
-    JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump
+    JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -208,6 +208,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'circle-of-protection-red': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['red_in_play'])],
     'circle-of-protection-white': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['white_in_play'])],
     'citanul-druid': [Triggered(CitanulDruid(), None, ZoneChangeEvent)],
+    'city-in-a-bottle': [Triggered(SacAll(T_FUNCS['city_in_a_bottle']), None, CastResolvedEvent),
+                         Triggered(SacAll(T_FUNCS['city_in_a_bottle']), None, ZoneChangeEvent),
+                         Static(CityInABottle())],
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap(), None, TapCardEvent)],
     'city-of-shadows':
@@ -382,6 +385,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand']),
                       Activated('T', KWAModEffect('add', 'Protection From White', True), T_FUNCS['goblins_in_play'])],
     'goblins-of-the-flarg': [Static(GoblinsOfTheFlarg())],
+    'golgothian-sylex': [Activated('1T', SacAll(T_FUNCS['golgothian_sylex']))],
     'gosta-dirk': [Static(WalkRuleRemoved('Islandwalk'))],
     'granite-gargoyle': [Activated('R', PumpEffect(0, 1, True), T_FUNCS['self'])],
     'grapeshot-catapult': [Activated('T', DealDamage(4), T_FUNCS['fliers_in_play'])],

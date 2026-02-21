@@ -75,7 +75,24 @@ class Sac(Action):
     def play(self):
         if self.w_damage_amt:
             self.gs.apply_damage(self.source, self.w_damage_amt, self.source.owner_id)
-        self.gs.destroy(self.source)
+        self.gs.destroy(self.source, False)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
+        elif len(self.gs.action_stack):
+            self.gs.action_stack.pop()  # remove choice
+
+class SacCards(Action):
+    def __init__(self, p_id, gs, source: GameCard, cards: list[GameCard]):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.cards = cards
+
+    def __repr__(self):
+        return f'Sacrifice {", ".join([c.props.name for c in self.cards])}'
+
+    def play(self):
+        for c in self.cards:
+            self.gs.destroy(c, False)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         elif len(self.gs.action_stack):

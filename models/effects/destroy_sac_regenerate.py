@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from models.game_card_filter import CardFilter
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice, \
-    DemonicHordesUpkeepChoice, OpponentDestroysLandChoice
+    DemonicHordesUpkeepChoice, OpponentDestroysLandChoice, MoldDemonChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
@@ -69,6 +69,14 @@ class PayManaOrSac(Effect):
 class RegenerateSelf(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         gs.destroy_replacements.append(RegenerationShield(source))
+
+class SacAll(Effect):
+    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
+        self.card_filter_func = card_filter_func
+
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        for c in self.card_filter_func(gs, s):
+            gs.destroy(c, False)
 
 # --- CARD-SPECIFIC ---
 class AcidRain(Effect):
@@ -172,6 +180,18 @@ class Millstone(Effect):
         for _ in range(2):
             top_card = gs.libraries[target].cards[0]  # Warning: if no cards, this pukes
             gs.move_card(top_card, Zone.GRAVEYARD, cause='mill')
+
+class MoldDemonETB(Effect):
+    """When this creature enters, sacrifice this creature unless you sacrifice two Swamps"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if source is not event.card or event.to_zone != Zone.BATTLEFIELD:
+            return
+        your_swamps = gs.card_filter.on_player_board(source.owner_id).swamps().result()
+        if len(your_swamps) < 2:
+            gs.destroy(event.card, False)
+        gs.action_stack.push(MoldDemonChoice(gs.player_turn_idx, gs, source, your_swamps), gs, False)
 
 class PestilenceEndStep(Effect):
     """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""

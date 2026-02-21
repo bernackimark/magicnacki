@@ -41,6 +41,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'card_owner': lambda gs, s: s.owner_id,
     'cards_in_play': lambda gs, s: gs.card_filter.in_play().result(),
     'cards_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).result(),
+    'city_in_a_bottle': lambda gs, s: [c for c in
+                                       gs.card_filter.in_play().non_token().permanents().by_set_code('AN').result()
+                                       if c.props.slug != 'city-in-a-bottle'],
     'combatants': lambda gs, s: gs.card_filter.combatants().result(),
     'creatures_in_all_graveyards': lambda gs, s: gs.card_filter.in_graveyards().creatures().result(),
     'creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().result(),
@@ -64,6 +67,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'forestwalkers': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
     'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).by_sub_type('Goblin').permanents().result(),
     'goblins_in_play': lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result(),
+    'golgothian_sylex': lambda gs, s: [c for c in
+                                       gs.card_filter.in_play().non_token().permanents().by_set_code('AQ').result()
+                                       if c.props.slug != 'golgothian-sylex'],
     'green_in_play': lambda gs, s: gs.card_filter.in_play().green().result(),
     'host': lambda gs, s: s.attached_to,
     'host_owner': lambda gs, s: s.attached.to.orig_owner_id,
@@ -73,6 +79,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'legendary_creatures_in_play': lambda gs, s: gs.card_filter.in_play().legendary().creatures().result(),
     'non_artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
     'non_creature_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
+    'non_token_permanents_in_play': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                 if c.power == 1 and c.toughness == 1],
     'opp_artifacts_in_play': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),
