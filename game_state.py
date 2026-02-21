@@ -748,6 +748,9 @@ class GameState:
 # TODO:
 #  Black Knight (2/2) is killing Northern Palladin (3/3)
 
+# TODO:
+#  Global Legendary Rule, only one legendary slug-board pair allowed
+
 # TODO: currently, Destroy() is being placed on the stack, but there is no option to respond to that, only 'Accept'
 # ChatGPT is saying this:
 #   while True:
