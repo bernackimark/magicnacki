@@ -53,6 +53,10 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'Artifact' in c.card_types]
         return self
 
+    def auras(self):
+        self._cards = [c for c in self._cards if 'Aura' in c.card_sub_types]
+        return self
+
     def basic_lands(self):
         self._cards = [c for c in self._cards if c.props.slug in BASIC_LANDS]
         return self
