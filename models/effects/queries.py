@@ -392,6 +392,16 @@ class LivingPlane(Effect):
             return PTModifier(source, 1, 1)
         return None
 
+class LivonyaSilone(Effect):
+    """Legendary landwalk (This creature can't be blocked as long as defending player controls a legendary land.)"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        attacker: GameCard = kwargs.get('attacker')
+        if event != 'can_block' or attacker.props.slug != 'livonya-silone':
+            return None
+        if gs.card_filter.on_player_board(card.owner_id).legendary().lands().result():
+            return False
+
 class LordOfAtlantisPT(Effect):
     """All other Merfolk gain +1/+1 and Islandwalk"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -419,7 +429,6 @@ class Meekstone(Effect):
         if card.props.is_creature and card.power >= 3:
             return False
         return None
-
 
 class Mightstone(Effect):
     """Attacking creatures get +1/+0"""
@@ -495,6 +504,16 @@ class RabidWombat(Effect):
         if not aura_cnt:
             return None
         return PTTemp(source, 2 * aura_cnt, 2 * aura_cnt)
+
+class RohgahhOfKherKeepPump(Effect):
+    """Creatures you control named Kobolds of Kher Keep get +2/+2"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'pt_mod':
+            return None
+        s: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.on_player_board(s.owner_id).by_slug('kobolds-of-kher-keep').result():
+            return None
+        return PTModifier(s, 2, 2)
 
 class Seeker(Effect):
     """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""

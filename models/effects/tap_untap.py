@@ -1,9 +1,9 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Callable
 
 from phase_fsm import Phase
 from models.utils import flip
-from models.events_all import ZoneChangeEvent, TapCardEvent
+from models.events_all import ZoneChangeEvent, TapCardEvent, UntapPhaseEvent
 from ..zone import Zone
 
 if TYPE_CHECKING:
@@ -18,6 +18,17 @@ from ..counter_tokens import PUPA, SLEEP
 
 
 # --- GENERICS ---
+class CardsDontUntapAtUntapPhase(Effect):
+    """Cards [from card_filter_func] don't untap during their controllers' untap steps"""
+    listens_to = UntapPhaseEvent
+
+    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard | None]]):
+        self.card_filter_func = card_filter_func
+
+    def on_event(self, gs: GameState, s: GameCard, event: UntapPhaseEvent):
+        for c in self.card_filter_func(gs, s):
+            gs.action_stack.push(LeaveTapped(event.active_player, gs, c), gs, False)
+
 class TapCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.tap(gs)
@@ -58,6 +69,12 @@ class UntapHostForManaEffect(Effect):
 
 
 # --- CARD-SPECIFIC ---
+class ArenaOfTheAncientsCast(Effect):
+    """When this artifact enters, tap all legendary creatures"""
+    def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
+        for c in gs.card_filter.in_play().creatures().untapped().legendary().result():
+            c.tap(gs)
+
 class CocoonHostStaysTapped(Effect):
     """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
@@ -97,6 +114,16 @@ class Lifetap(Effect):
             return
         if 'Forest' in event.card.card_sub_types:
             gs.increment_life(s.owner_id, 1)
+
+class MagneticMountainOnUntapStep(Effect):
+    """Blue creatures don't untap during their controllers' untap steps"""
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UntapPhaseEvent):
+        if event.active_player != s.owner_id:
+            return
+        if s in gs.card_filter.on_player_board(event.active_player).blue().creatures().result():
+            gs.action_stack.push(LeaveTapped(s.owner_id, gs, s), gs, False)
 
 class ManaShort(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):

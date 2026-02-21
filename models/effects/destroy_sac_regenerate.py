@@ -233,6 +233,19 @@ class SerendibDjinnNoLands(Effect):
             print(f'Player #{source.orig_owner_id} has no lands, so Serendib Djinn is destroyed')
             gs.destroy(source)
 
+class StanggOnLeave(Effect):
+    """Exile that Stangg Twin token when Stangg leaves the battlefield; sacrific Stangg when Stangg Twin LTB"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if event.card.props.slug not in ('stangg', 'stangg-twin') or event.card.owner_id != source.owner_id:
+            return
+        if event.from_zone != Zone.BATTLEFIELD:
+            return
+        other_slug = 'stangg-twin' if event.card.props.slug == 'stangg' else 'stangg'
+        other_card = gs.card_filter.on_player_board(event.card.owner_id).by_slug(other_slug).result()[0]
+        gs.destroy(other_card)
+
 class TheTabernacleAtPendrellVale(Effect):
     """All creatures have 'At your upkeep, destroy this creature unless you pay {1}.'"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

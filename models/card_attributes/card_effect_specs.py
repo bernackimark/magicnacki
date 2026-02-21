@@ -10,7 +10,7 @@ from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCo
     DiscardAtRandomCost, SacCardCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
-    CHARGE
+    CHARGE, DREAM
 from models.effects.base import EffSpec, Activated, Triggered, Static
 from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
     CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, \
@@ -34,9 +34,9 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
-    Blight, DemonicHordesUpkeep, RegenerateSelf
+    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
-    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas
+    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -57,7 +57,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
-    JacquesLeVert, BeastsOfBogardan
+    JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -68,7 +68,8 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     HealingSalve, HasranOgress
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
-    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom
+    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
+    ArenaOfTheAncientsCast, MagneticMountainOnUntapStep, CardsDontUntapAtUntapPhase
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent
@@ -99,6 +100,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'abomination': [Triggered(Abomination(), None, BlockEvent)],
     'acid-rain': [Triggered(AcidRain(), None, CastResolvedEvent)],
     'active-volcano': [Triggered(ActiveVolcano(), T_FUNCS['active_volcano_targets'], CastResolvedEvent)],
+    'adun-oakenshield': [Activated('BRGT', Bounce(), T_FUNCS['creatures_in_your_graveyard'])],
     'aisling-leprechaun': [Triggered(AislingLeprechaun(), None, BlockEvent)],
     'akron-legionnaire': [Triggered(AkronLegionnaireCast(), None, CastResolvedEvent)],
     'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play'])],
@@ -123,6 +125,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'arcades-sabboth': [Triggered(PayManaOrSac('GWU'), None, UpkeepEvent), Static(ArcadesSabbathAllCreaturePump()),
                         Activated('W', PumpEffect(0, 1, True), T_FUNCS['self'])],
+    'arena-of-the-ancients': [Triggered(ArenaOfTheAncientsCast(), None, CastResolvedEvent),
+                              Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['legendary_creatures_in_play']),
+                                        None, UntapPhaseEvent)],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageEffect(2), T_FUNCS['artifact_creatures_in_play'])],
     'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked(), Static(ArgothianPixiesPrevention()))],
@@ -175,6 +180,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'bone-flute': [Activated('2T', BoneFlute())],
     'book-of-rass': [Activated('2', BookOfRass())],
     'boomerang': [Triggered(Bounce(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
+    'boris-devilboon': [Activated('2BRTT', CreateTokenCreature('Minor Demon', 1, 1, kwa=[],
+                                                               other_types=[], sub_types=['Demon'], colors='BR'))],
     'bottle-of-suleiman': [Activated('1', BottleOfSuleiman(), extra_costs=[SacSelfCost()])],
     'braingeyser': [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
     'brainwash':
@@ -210,12 +217,12 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(DestroyAll(T_FUNCS['black_creatures_in_play']), None, CastResolvedEvent)],
     'clockwork-avian':
         [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
-         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 4), T_FUNCS['self'], CastResolvedEvent),
+         Triggered(AddCounter(PLUS_ONE_ZERO, 4), None, CastResolvedEvent),
          Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
                    max_variable_x_func=lambda gs, s: 4 - s.counters.get_count(PLUS_ONE_ZERO))],
     'clockwork-beast':
         [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
-         Triggered(AddCountersYourTurnOnly(PLUS_ONE_ZERO, 7), T_FUNCS['self'], CastResolvedEvent),
+         Triggered(AddCounter(PLUS_ONE_ZERO, 7), None, CastResolvedEvent),
          Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
                    max_variable_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO))],
     'clone': [Triggered(Clone(), None, CastResolvedEvent)],
@@ -249,6 +256,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'cyclopean-mummy': [Triggered(CyclopeanMummy(), None, DiesEvent)],
     'dakkon-blackblade': [Static(DakkonBlackbladePT())],
     'dance-of-many': [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],  # the rest of the card still needs coding
+    'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests_in_play'])])],
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
     'darkness': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'davenant-archer': [Activated('T', DealDamage(1), T_FUNCS['combatants'])],
@@ -371,7 +379,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'goblin-digging-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'], extra_costs=[SacSelfCost()])],
     'goblin-king': [Triggered(GoblinKing(), None, CastResolvedEvent)],
     'goblin-shrine': [Static(GoblinShrinePump()), Triggered(GoblinShrineOnLeave(), None, ZoneChangeEvent)],
-    'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand'])],  # more to code
+    'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand']),
+                      Activated('T', KWAModEffect('add', 'Protection From White', True), T_FUNCS['goblins_in_play'])],
     'goblins-of-the-flarg': [Static(GoblinsOfTheFlarg())],
     'gosta-dirk': [Static(WalkRuleRemoved('Islandwalk'))],
     'granite-gargoyle': [Activated('R', PumpEffect(0, 1, True), T_FUNCS['self'])],
@@ -403,6 +412,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True),
                                     T_FUNCS['creatures_in_play'])],
     'howl-from-beyond': [Triggered(HowlFromBeyond(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'howling-mine': [Triggered(HowlingMine(), None, DrawStepEvent)],
     'hurkyls-recall': [Triggered(HurkylsRecall(), T_FUNCS['all_players'], CastResolvedEvent)],
     'hyperion-blacksmith': [Activated('T', TapCardEffect(), T_FUNCS['opp_untapped_artifacts']),
                             Activated('T', UntapCardEffect(), T_FUNCS['opp_tapped_artifacts'])],
@@ -438,6 +448,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'junún-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
     'juzám-djinn': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
+    'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures_in_play'])],
     'karma': [Triggered(Karma(), None, UpkeepEvent)],
     'keldon-warlord': [Static(KeldonWarlordPT())],
     'khabál-ghoul': [AddCounterPerCreatureDeath(PLUS_ONE), None, EndStepEvent],
@@ -475,10 +486,16 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(LivingArtifactUpkeep(), None, UpkeepEvent)],
     'living-lands': [Static(LivingLands())],
     'living-plane': [Static(LivingPlane())],
+    'livonya-silone': [Static(LivonyaSilone())],
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
     'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
+    'magnetic-mountain': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['your_tapped_blue_creatures']),
+                                    None, UntapPhaseEvent),
+                          Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
+                                    allowed_phases=[Phase.UPKEEP],
+                                    allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER)],
     'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
     'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
@@ -578,6 +595,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'raise-dead': [Triggered(Bounce(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
     'ramses-overdark': [Activated('T', Destroy(), T_FUNCS['enchanted_creatures'])],
+    'rasputin-dreamweaver': [Triggered(AddCounter(DREAM, 7), None, CastResolvedEvent),
+                             Activated('', AddMana('C'), extra_costs=[RemoveCounterCost(DREAM)]),
+                             Activated('', PreventNextDamageToCardEffect(), T_FUNCS['self'],
+                                       extra_costs=[RemoveCounterCost(DREAM)])],  # more to code
     'reconstruction': [Triggered(Bounce(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                          Activated('T', ManaBatteriesAddMana('R'), extra_costs=[RemoveCounterCost(CHARGE)],
@@ -597,7 +618,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'rocket-launcher': [Triggered(RocketLauncherCast(), None, CastResolvedEvent),
                         Activated('2', RocketLauncherAA(), T_FUNCS['all_creatures_and_players'])],
     'rod-of-ruin': [Activated('3T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
+    'rohgahh-of-kher-keep': [Static(RohgahhOfKherKeepPump())],  # note: there's an upkeep thing too
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
+    'rubinia-soulsinger': [Activated('T', Steal(), T_FUNCS['opp_creatures_in_play']),
+                           Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                           Triggered(StealCardLeaves(), None, UntapCardEvent)],  # works if old-man-of-the-sea works
     'rukh-egg': [Triggered(RukhEgg(), None, DiesEvent)],
     'sacrifice': [Triggered(SacrificeOnCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent)],
     'sage-of-lat-nam': [Activated('T', DrawCards(), T_FUNCS['card_owner'],
@@ -622,6 +647,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'serendib-djinn':
         [Triggered(SerendibDjinn(), None, UpkeepEvent), Triggered(SerendibDjinnNoLands(), None, StateBasedEvent)],
     'serendib-efreet': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
+    'serpent-generator': [Activated('4T', CreateTokenCreature('Snake', 1, 1, kwa=[], other_types=[], sub_types=[], colors='C'))],
     'shapeshifter': [Triggered(Shapeshifter(), None, CastResolvedEvent), Triggered(Shapeshifter(), None, UpkeepEvent)],
     'shatter': [Triggered(Destroy(), T_FUNCS['artifacts_in_play'], CastResolvedEvent)],
     'shield-wall': [Triggered(ShieldWall(), None, CastResolvedEvent)],
@@ -630,6 +656,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'sinkhole': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'skull-of-orm': [Activated('5T', Bounce(), T_FUNCS['enchants_in_your_graveyard'])],
+    'snake': [Triggered(AddPoisonCounter(), None, DamageResolvedEvent)],  # token creature created by serpent-generator
     'sol-ring': [Activated('T', AddMana('C', 2), T_FUNCS['card_owner'])],
     'solkanar-the-swamp-king': [Triggered(OnColorSpellGainLife('B'), None, CastResolvedEvent)],
     'soul-net': [Triggered(SoulNet(), None, DiesEvent)],
@@ -642,6 +669,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'staff-of-zegon': [Activated('3T', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
                         for c in COLOR_LETTERS],
+    'stangg': [Triggered(CreateTokenCreature('Stangg Twin', 3, 4, kwa=[], other_types=[],
+                                             sub_types=['Human', 'Warrior'], colors='GR'), None, CastResolvedEvent),
+               Triggered(StanggOnLeave(), None, ZoneChangeEvent)],
     'steal-artifact': [Triggered(Steal(), T_FUNCS['opp_artifacts_in_play'], CastResolvedEvent),
                        Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
     'stone-giant': [Activated('T', StoneGiant(), T_FUNCS['stone_giant'])],

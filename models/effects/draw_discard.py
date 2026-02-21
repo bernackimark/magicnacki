@@ -12,7 +12,7 @@ from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
 from models.utils import flip
 
-from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent
+from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent
 
 
 # --- GENERIC ---
@@ -70,6 +70,15 @@ class GwendlynDiCorci(Effect):
             return
         random_card: GameCard = gs.randomize_event(target, cards)
         gs.discard(random_card)
+
+class HowlingMine(Effect):
+    """At each player's draw step, if this artifact is untapped, that player draws an additional card"""
+    listens_to = DrawStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent):
+        if source.is_tapped:
+            return
+        gs.draw(event.active_player)
 
 class HypnoticSpecter(Effect):
     """Whenever this creature deals damage to an opponent, that player discards a card at random"""

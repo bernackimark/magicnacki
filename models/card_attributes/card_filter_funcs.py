@@ -63,12 +63,14 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).forests().result(),
     'forestwalkers': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
     'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).by_sub_type('Goblin').permanents().result(),
+    'goblins_in_play': lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result(),
     'green_in_play': lambda gs, s: gs.card_filter.in_play().green().result(),
     'host': lambda gs, s: s.attached_to,
     'host_owner': lambda gs, s: s.attached.to.orig_owner_id,
     'in_turn_player': lambda gs, _: gs.player_turn_idx,
     'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),
     'lands_in_play': lambda gs, s: gs.card_filter.in_play().lands().result(),
+    'legendary_creatures_in_play': lambda gs, s: gs.card_filter.in_play().legendary().creatures().result(),
     'non_artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
     'non_creature_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
@@ -113,6 +115,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'white_in_play': lambda gs, s: gs.card_filter.in_play().white().result(),
     'your_artifacts_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).artifacts().result(),
     'your_creatures_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().result(),
+    'your_forests_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
     'your_lands_in_play': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).lands().result(),
     'your_other_creatures_in_play':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result() if c is not s],
@@ -120,6 +123,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Orc').result()
                        if c is not s],
     'your_permanents_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).permanents().result(),
+    'your_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).tapped().blue().creatures().result(),
     'your_untapped_creatures':
         lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),
     'your_walls_in_play': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).in_play().walls().result(),
