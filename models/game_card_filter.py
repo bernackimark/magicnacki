@@ -85,6 +85,10 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'Artifact' in c.card_types and 'Creature' not in c.card_types]
         return self
 
+    def non_token(self):
+        self._cards = [c for c in self._cards if not c.is_token]
+        return self
+
     def by_type(self, type_: str | list):
         if isinstance(type_, list):
             self._cards = [c for c in self._cards for t in type_ if t in c.card_types]
