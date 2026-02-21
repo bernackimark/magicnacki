@@ -13,13 +13,13 @@ from models.choice_actions_all import ChoiceAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
 from models.actions.combat import (CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker,
                                    FinishBlocking, AssignCombatDamage)
-from models.actions.draw_discard import DrawCard, DiscardCard, MoveToDrawPhase
+from models.actions.draw_discard import DiscardCard, MoveToDrawPhase
 from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
-from models.effects.base_rules_queries import CanAttackBaseRule, CanBlockBaseRule, CanCastBaseRule
+from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCastRule, CanTargetRule, CanDamageRule
 from models.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
@@ -63,7 +63,8 @@ class GameState:
         self.card_filter = CardFilter(self)
         self.is_game_over: bool = False
 
-        self.query_effects: list[Effect] = [CanAttackBaseRule(), CanBlockBaseRule(), CanCastBaseRule()]
+        self.query_effects: list[Effect] = [CanAttackRule(), CanBlockRule(), CanCastRule(),
+                                            CanDamageRule(), CanTargetRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: list[type[StateBasedRule]] = STATE_BASED_RULES
 
@@ -127,6 +128,13 @@ class GameState:
 
     def can_block(self, blocker: GameCard, attacker: GameCard):
         return self._query_effects_by_event('can_block', blocker, attacker=attacker)
+
+    def can_damage(self, target: GameCard, source: GameCard):
+        return self._query_effects_by_event('can_damage', target, source=source)
+
+    def can_target(self, target: GameCard, source: GameCard):
+        result = self._query_effects_by_event('can_target', target, source=source)
+        return False if result is False else True
 
     def can_untap(self, card: GameCard) -> bool:
         return self._query_effects_by_event('can_untap', card)
@@ -464,6 +472,8 @@ class GameState:
             targets = [targets] if not isinstance(targets, (list, tuple)) else targets
 
             for t in targets:
+                if not self.can_target(t, c):
+                    continue
                 if 'X' in ability.eff_spec.cost:
                     min_x = ability.eff_spec.min_x
                     max_x = ability.eff_spec.max_variable_x_func(self, c)
@@ -546,6 +556,9 @@ class GameState:
 
                     # targets is a list of GameCard; append available action for each Target/target-variable_X combo
                     for t in targets:
+                        print(f"{c.props.name} can{'not' if not self.can_target(t, c) else ''} target {t.props.name}")
+                        if not self.can_target(t, c):
+                            continue
                         if 'X' in c.casting_cost:
                             max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
                             for x in range(max_x + 1):
@@ -738,6 +751,9 @@ class GameState:
 
 # TODO:
 #  can_cast() must take into account multi-mana-color producers (dual lands, etc)
+
+# TODO:
+#  combat damage must use can_damage()
 
 # TODO:
 # ChatGPT is saying this:
