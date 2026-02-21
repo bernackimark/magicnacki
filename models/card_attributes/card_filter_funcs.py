@@ -33,6 +33,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'black_and_red_in_play': lambda gs, s: [gs.card_filter.in_play().black().result() +
                                             gs.card_filter.in_play().red().result()],
     'black_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().black().result(),
+    'black_permanents_in_play': lambda gs, s: gs.card_filter.in_play().permanents().black().result(),
     'blockers': lambda gs, s: gs.card_filter.blockers().result(),
     'blocking_walls': lambda gs, s: gs.card_filter.blockers().walls().result(),
     'blue_creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().blue().result(),

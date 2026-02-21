@@ -102,6 +102,17 @@ class BadMoon(Effect):
             return None
         return PTModifier(source, 1, 1)
 
+class BeastsOfBogardan(Effect):
+    """This creature gets +1/+1 as long as an opponent controls a nontoken white permanent"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source: GameCard = kwargs.get('source')
+        if event != 'pt_mod' or card.props.slug != 'beasts-of-bogardan':
+            return None
+        opp_id = flip(card.owner_id)
+        opp_non_token_white_perms = gs.card_filter.on_player_board(opp_id).non_token().white().permanents().result()
+        if opp_non_token_white_perms:
+            return PTModifier(source, 1, 1)
+
 class BogRats(Effect):
     """This creature can't be blocked by Walls"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):

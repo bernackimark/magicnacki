@@ -57,7 +57,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
-    JacquesLeVert
+    JacquesLeVert, BeastsOfBogardan
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -148,6 +148,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_activated_ability_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
+    'beasts-of-bogardan': [Static(BeastsOfBogardan())],
     'berserk': [Triggered(BerserkPump(), T_FUNCS['creatures_in_play'],
                           CastResolvedEvent, allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE]),
                 Triggered(DestroyIfItAttacked(), T_FUNCS['creatures_in_play'], EndStepEvent)],
@@ -519,7 +520,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'nicol-bolas': [Triggered(PayManaOrSac('UBR'), None, UpkeepEvent),
                     Triggered(NicolBolas(), None, DamageResolvedEvent)],
     'nightmare': [Static(NightmarePT())],
-    'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['creatures_and_enchantments_in_play'])],
+    'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents_in_play'])],
     'oasis': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['creatures_in_play'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
     'old-man-of-the-sea': [Activated('T', Steal(), T_FUNCS['opp_creatures_power_not_greater_than_source']),
