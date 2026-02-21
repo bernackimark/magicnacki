@@ -10,13 +10,11 @@ from models.effects.base import Effect
 from models.utils import flip
 
 
-class CanBlockBaseRule(Effect):
+class CanBlockRule(Effect):
     event = 'can_block'
 
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: card = blocker, mandatory kwarg: attacker"""
-        if event != "can_block":
-            return None
         attacker: GameCard = kwargs.get("attacker")
         if not attacker or not card:
             return None
@@ -38,10 +36,18 @@ class CanBlockBaseRule(Effect):
                 not any(kwa for kwa in card.keyword_abilities if kwa in ('Flying', 'Reach'))):
             return False
 
+        # Protection from color rule
+        for kwa in attacker.keyword_abilities:
+            if 'Protection From' in kwa:
+                *_, color_full_word = kwa.split()
+                color_map = {'Black': 'B', 'Blue': 'U', 'Green': 'G', 'Red': 'R', 'White': 'W'}
+                if color_map[color_full_word] in card.colors:
+                    return False
+
         return None  # no opinion if can_block
 
 
-class CanAttackBaseRule(Effect):
+class CanAttackRule(Effect):
     event = 'can_attack'
 
     def on_query(self, gs: GameState, event: str, **kwargs):
@@ -60,7 +66,7 @@ class CanAttackBaseRule(Effect):
 
         return None  # no opinion on whether the card can attack
 
-class CanCastBaseRule(Effect):
+class CanCastRule(Effect):
     event = 'can_cast'
 
     def on_query(self, gs: GameState, event: str, **kwargs):
@@ -80,3 +86,42 @@ class CanCastBaseRule(Effect):
             return False
 
         return None  # no opinion on whether the cast can be cast
+
+class CanDamageRule(Effect):
+    event = 'can_damage'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_damage':
+            return
+        source: GameCard = kwargs.get('source')
+        target: GameCard = kwargs.get('card')
+        if not source:
+            return
+
+        # Protection from color rule
+        for kwa in target.keyword_abilities:
+            if 'Protection From' in kwa:
+                *_, color_full_word = kwa.split()
+                color_map = {'Black': 'B', 'Blue': 'U', 'Green': 'G', 'Red': 'R', 'White': 'W'}
+                if color_map[color_full_word] in source.colors:
+                    return False
+
+class CanTargetRule(Effect):
+    event = 'can_target'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_target':
+            return
+        source: GameCard = kwargs.get('source')
+        target: GameCard = kwargs.get('card')
+        if not source:
+            return
+
+        # Protection from color rule
+        for kwa in target.keyword_abilities:
+            if 'Protection From' in kwa:
+                *_, color_full_word = kwa.split()
+                color_map = {'Black': 'B', 'Blue': 'U', 'Green': 'G', 'Red': 'R', 'White': 'W'}
+                if color_map[color_full_word] in source.colors:
+                    return False
+
