@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier, SubTypeModifier
 from models.utils import flip
+from phase_fsm import Phase
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -68,6 +69,20 @@ class ArtifactWardCanBeBlocked(Effect):
         if event != 'can_block' or not attacker.modifiers.is_enchanted_by('artifact-ward'):
             return None
         if 'Artifact' in card.card_types:
+            return False
+
+class ArtifactWardCanBeTargeted(Effect):
+    """Enchanted creature can't be the target of abilities from artifact sources"""
+    event = 'can_target'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_target':
+            return
+        source: GameCard = kwargs.get('source')
+        target: GameCard = kwargs.get('card')
+        if not source or not target or not target.modifiers.is_enchanted_by('artifact-ward'):
+            return
+        if 'Artifact' in source.card_types:
             return False
 
 class ArgothianPixiesCanBeBlocked(Effect):
@@ -531,6 +546,14 @@ class Seeker(Effect):
         if event != "can_block" or not attacker.attached_to or attacker.attached_to.props.slug != 'seeker':
             return None
         if 'Artifact' not in card.card_types or 'U' not in card.colors:
+            return False
+
+class SirensCallCanCast(Effect):
+    """Cast this spell only during an opponent's turn, before attackers are declared ..."""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'can_cast' or gs.player_turn_idx == card.orig_owner_id:
+            return None
+        if gs.phase >= Phase.DECLARE_ATTACKERS:
             return False
 
 class SunkenCity(Effect):

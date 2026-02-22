@@ -12,7 +12,7 @@ from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
 from models.utils import flip
 
-from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent
+from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent, DiscardEvent
 
 
 # --- GENERIC ---
@@ -66,10 +66,10 @@ class GwendlynDiCorci(Effect):
         if not cards:
             return
         if len(cards) == 1:
-            gs.discard(cards[0])
+            gs.discard(cards[0], source)
             return
         random_card: GameCard = gs.randomize_event(target, cards)
-        gs.discard(random_card)
+        gs.discard(random_card, source)
 
 class HowlingMine(Effect):
     """At each player's draw step, if this artifact is untapped, that player draws an additional card"""
@@ -92,10 +92,10 @@ class HypnoticSpecter(Effect):
         if not opp_cards:
             return
         if len(opp_cards) == 1:
-            gs.discard(opp_cards[0])
+            gs.discard(opp_cards[0], source)
             return
         random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
-        gs.discard(random_card)
+        gs.discard(random_card, source)
 
 class JalumTome(Effect):
     """Draw a card, then discard a card"""
@@ -115,7 +115,16 @@ class NicolBolas(Effect):
         if not opp_cards:
             return
         for c in opp_cards:
-            gs.discard(c)
+            gs.discard(c, source)
+
+class PsychicPurgeDiscard(Effect):
+    """... When a spell or ability an opponent controls causes you to discard this card, that player loses 5 life"""
+    listens_to = DiscardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiscardEvent):
+        if not event.source or event.source.owner_id != source.owner_id:
+            return
+        gs.apply_damage(source, 5, event.source.owner_id)
 
 class VerduranEnchantress(Effect):
     """Whenever you cast an enchantment spell, you may draw a card"""

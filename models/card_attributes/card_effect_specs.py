@@ -36,7 +36,7 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
     Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
-    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine
+    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -57,7 +57,8 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
-    JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle
+    JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
+    ArtifactWardCanBeTargeted
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -72,7 +73,7 @@ from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect,
     ArenaOfTheAncientsCast, MagneticMountainOnUntapStep, CardsDontUntapAtUntapPhase
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
-    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent
+    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent
 from phase_fsm import Phase
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
@@ -137,7 +138,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    None, CastResolvedEvent)],
     'army-of-allah': [Triggered(ArmyOfAllah(), None, CastResolvedEvent)],
     'artifact-ward': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
-                      Static(ArtifactWardCanBeBlocked(), Static(ArtifactWardPrevention()))],
+                      Static(ArtifactWardCanBeBlocked()), Static(ArtifactWardPrevention()),
+                      Static(ArtifactWardCanBeTargeted())],
     'ashnods-altar': [Activated('', AddMana('C', 2), extra_costs=[SacCardCost(T_FUNCS['your_creatures_in_play'])])],
     'ashnods-battle-gear': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],  # more to code
     'ashnods-transmogrant':
@@ -590,6 +592,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                 T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'psionic-entity': [Activated('T', DealDamageToTargetAndSelf(2, 3), T_FUNCS['all_creatures_and_players'])],
     'psychic-allergy': [Triggered(PsychicAllergyUpkeep(), T_FUNCS['self'], UpkeepEvent)],
+    'psychic-purge': [Triggered(DealDamage(1), T_FUNCS['all_creatures_and_players'], CastResolvedEvent),
+                      Triggered(PsychicPurgeDiscard(), None, DiscardEvent)],
     'psychic-venom':
         [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent), Triggered(PsychicVenom(), None, TapCardEvent)],
     'purelace': [Triggered(SetColor('W'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
@@ -658,6 +662,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'shivan-dragon': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
     'sinkhole': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
+    'sirens-call': [Static(SirensCallCanCast()), # this doesn't feel right
+                    Triggered(KWAModEffect('add', 'Goad', True), T_FUNCS['opp_creatures_in_play'], CastResolvedEvent)],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'skull-of-orm': [Activated('5T', Bounce(), T_FUNCS['enchants_in_your_graveyard'])],
     'snake': [Triggered(AddPoisonCounter(), None, DamageResolvedEvent)],  # token creature created by serpent-generator
