@@ -103,6 +103,22 @@ class JalumTome(Effect):
         gs.draw(source.owner_id)
         gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id)
 
+class MindTwist(Effect):
+    """Target player discards X cards at random"""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+        opp_id = flip(source.owner_id)
+        opp_cards = gs.hands[opp_id].cards
+        if not opp_cards:
+            return
+        if len(opp_cards) <= x:
+            for c in opp_cards:
+                gs.discard(c, source)
+            return
+        for _ in range(x):
+            random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
+            gs.discard(random_card, source)
+
 class NicolBolas(Effect):
     """Whenever this creature deals damage to an opponent, that player discards their hand"""
     listens_to = DamageResolvedEvent

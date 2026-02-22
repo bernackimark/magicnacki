@@ -113,8 +113,8 @@ class CanTargetRule(Effect):
         if event != 'can_target':
             return
         source: GameCard = kwargs.get('source')
-        target: GameCard = kwargs.get('card')
-        if not source:
+        target: GameCard | int = kwargs.get('card')
+        if not source or isinstance(target, int):
             return
 
         # Protection from color rule

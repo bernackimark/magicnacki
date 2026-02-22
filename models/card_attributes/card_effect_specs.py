@@ -36,7 +36,8 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
     Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
-    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard
+    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
+    MindTwist
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -522,6 +523,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'mightstone': [Static(Mightstone())],
     'mijae-djinn': [Triggered(MijaeDjinn(), None, AttackEvent)],
     'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
+    'mind-twist': [Triggered(MindTwist(), T_FUNCS['all_players'], CastResolvedEvent)],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],

@@ -132,7 +132,9 @@ class GameState:
     def can_damage(self, target: GameCard, source: GameCard):
         return self._query_effects_by_event('can_damage', target, source=source)
 
-    def can_target(self, target: GameCard, source: GameCard):
+    def can_target(self, target: GameCard | int, source: GameCard):
+        if isinstance(target, int):
+            return True
         result = self._query_effects_by_event('can_target', target, source=source)
         return False if result is False else True
 
@@ -466,7 +468,7 @@ class GameState:
             targets = [targets] if not isinstance(targets, (list, tuple)) else targets
 
             for t in targets:
-                if isinstance(t, GameCard) and not self.can_target(t, c):
+                if not self.can_target(t, c):
                     continue
                 if 'X' in ability.eff_spec.cost:
                     min_x = ability.eff_spec.min_x
@@ -550,8 +552,7 @@ class GameState:
 
                     # targets is a list of GameCard; append available action for each Target/target-variable_X combo
                     for t in targets:
-                        print(f"{c.props.name} can{'not' if not self.can_target(t, c) else ''} target {t.props.name}")
-                        if isinstance(t, GameCard) and not self.can_target(t, c):
+                        if not self.can_target(t, c):
                             continue
                         if 'X' in c.casting_cost:
                             max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
