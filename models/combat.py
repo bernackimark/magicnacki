@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from models.modifiers import PTTemp
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
@@ -43,10 +45,15 @@ class Combat:
         # Currently only assigns damage to the first blocker w no damage splitting across blockers
         # Trample logic is inside gs.apply_damage() cuz I need access to damage preventions (would prefer it's here)
         if self.attacker not in self.killed_creatures:
-            if self._phase_applicable(self.attacker, first_strike):
+            a = self.attacker
+            if self._phase_applicable(a, first_strike):
+                print('ZZZ', len(self.blockers), a.rampage_amt)
+                if len(self.blockers) > 1 and a.rampage_amt:
+                    multiplier = len(self.blockers) - 1
+                    a.modifiers.temps.append(PTTemp(a, a.rampage_amt * multiplier, a.rampage_amt * multiplier))
                 target = self.blockers[0]
-                if self.gs.can_damage(target, self.attacker):
-                    self.gs.apply_damage(self.attacker, self.attacker.power, target, is_combat=True)
+                if self.gs.can_damage(target, a):
+                    self.gs.apply_damage(a, a.power, target, is_combat=True)
 
         # Blocker damage to attacker
         for blocker in self.blockers:
