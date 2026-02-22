@@ -230,3 +230,10 @@ class GameCard:
 
     def is_color(self, color: str) -> bool:
         return color in self.colors
+
+    @property
+    def rampage_amt(self) -> int | None:
+        for kwa in self.keyword_abilities:
+            if 'Rampage' in kwa:
+                return int(kwa[-1])
+        return None
