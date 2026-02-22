@@ -23,7 +23,7 @@ from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCa
 from models.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
-                               UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent, Event)
+                               UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent, Event, DiscardEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -281,7 +281,8 @@ class GameState:
         self.move_card(card, Zone.HAND, cause="bounce")
         print(f'{card} is bounced')
 
-    def discard(self, card: GameCard):
+    def discard(self, card: GameCard, source: GameCard | None = None):
+        self.emit(DiscardEvent(card.orig_owner_id, card, source))
         self.move_card(card, Zone.GRAVEYARD, cause="discard")
         print(f'{card} is discarded')
 
