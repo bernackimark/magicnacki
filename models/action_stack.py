@@ -20,6 +20,10 @@ class ActionStack:
         return len(self._actions)
 
     @property
+    def actions(self) -> list[Action | ChoiceAction]:
+        return self._actions
+
+    @property
     def first_actor_idx(self) -> int:
         return self._actions[0].player_idx
 
