@@ -1,4 +1,9 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game_state import GameState
 
 from models.actions.base import Action
 from models.effects.base import ActivatedAbility
@@ -42,3 +47,27 @@ class ActivateAbility(Action):
         self.gs.action_stack.push(self, self.gs)
         self.gs.emit(StateBasedEvent())
 
+@dataclass
+class BeginAbilityActivationAction(Action):
+    """Handles pre-activation choices: X-values and target selection."""
+    ability: ActivatedAbility
+
+    def play(self):
+        self.gs.action_stack.pop()
+
+        # --- X selection first
+        if 'X' in getattr(self.ability.eff_spec, 'cost', ''):
+            from models.choice_actions_all import XValueChoice
+            self.gs.pending_choice = XValueChoice(self.ability.source.owner_id, self.gs,
+                                                  self.ability.source, self.ability.eff_spec)
+            return
+
+        # --- Target selection
+        if self.ability.eff_spec.target_spec:
+            from models.choice_actions_all import MultiTargetChoice
+            self.gs.pending_choice = MultiTargetChoice(self.ability.source.owner_id, self.gs,
+                                                       self.ability.source, self.ability.eff_spec)
+            return
+
+        # --- No X or targets → simple activation
+        self.gs.action_stack.append(ActivateAbility(self.player_idx, self.gs, self.ability))

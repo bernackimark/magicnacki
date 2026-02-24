@@ -15,6 +15,12 @@ if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
 
+@dataclass
+class TargetSpec:
+    filter_func: Callable
+    min_cnt: int = 1
+    max_cnt: int = 1
+
 class Effect:
     """Base class for all card effects."""
     listens_to: type[Event] | None = None  # new system
@@ -40,10 +46,10 @@ class EffSpec:
         CASTER = auto()
         OPPONENT = auto()
 
-    activation_type: Literal["cast", "upkeep", "activated", "untap", "static"]
+    activation_type: Literal['activated', 'static', 'triggered']
     cost: str
     effect: Effect
-    target_filter: Union[Callable, None] = None
+    target_spec: Union[tuple[Callable, int, int | None], Callable, None] = None
     trigger_event: type[Event] | None = None
     conditions: list[Callable[[], bool], None] = field(default_factory=list)
     extra_costs: list[Cost | None] = None
@@ -55,6 +61,27 @@ class EffSpec:
     text: str = ''
     max_variable_x_func: Union[Callable[..., int], None] = None
     min_x: int = 1
+
+    def __post_init__(self):
+        """Some slug-eff_spec mappings provide a callable (assume exactly 1 target will be chosen);
+        to support multi-card targets, TargetSpec was created and tuple[filter_func, min_cnt, max_cnt] is acceptable;
+        either way, we convert that to a TargetSpec via _normalize_target_spec"""
+        self.target_spec: TargetSpec | None = self._normalize_target_spec(self.target_spec)
+
+    @staticmethod
+    def _normalize_target_spec(target_spec: tuple[Callable, int, int] | None | Callable | None) -> TargetSpec | None:
+        if target_spec is None:
+            return None
+
+        if isinstance(target_spec, tuple):
+            filter_func, min_cnt, max_cnt = target_spec
+            return TargetSpec(filter_func, min_cnt, max_cnt)
+
+        # Legacy support: assume single-target filter
+        if callable(target_spec):
+            return TargetSpec(target_spec, 1, 1)
+
+        raise TypeError(f"Invalid target type: {target_spec}")
 
     @property
     def costs(self) -> list[Cost | None]:
@@ -70,11 +97,6 @@ class EffSpec:
             for extra_cost in self.extra_costs:
                 the_costs.append(extra_cost)
         return the_costs
-
-    def get_targets(self) -> list[GameCard] | list[None] | None:
-        """Return a list of GameCard (legitimate targets), an empty list (no legitimate target),
-        or None (the Spec doesn't require a target)"""
-        return self.target_filter() if self.target_filter else None
 
 
 @dataclass

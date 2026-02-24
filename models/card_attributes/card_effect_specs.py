@@ -137,7 +137,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                         None, UntapPhaseEvent)],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures_in_play'])],
-    'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked(), Static(ArgothianPixiesPrevention()))],
+    'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked()), Static(ArgothianPixiesPrevention())],
     'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
     'armageddon':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Land').result()),
@@ -272,7 +272,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'dance-of-many': [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],  # the rest of the card still needs coding
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests_in_play'])])],
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
-    'dark-sphere': [Triggered('T', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts_in_play'],
+    'dark-sphere': [Activated('T', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts_in_play'],
                               extra_costs=[SacSelfCost()])],
     'darkness': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'davenant-archer': [Activated('T', DealDamage(1), T_FUNCS['combatants'])],
@@ -327,7 +327,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'erosion':
         [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent), Triggered(ErosionUpkeep(), None, UpkeepEvent)],
     'eternal-flame': [Triggered(EternalFlame(), None, CastResolvedEvent)],
-    'eternal-warrior': [Triggered(KWAModEffect('add', 'Vigilance'), T_FUNCS, CastResolvedEvent)],
+    'eternal-warrior': [Triggered(KWAModEffect('add', 'Vigilance'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'evil-eye-of-orms-by-gore': [Triggered(EvilEyeOfOrmsByGoreCast(), None, CastResolvedEvent),
                                  Static(EvilEyeOfOrmsByGoreCanBeBlocked())],
     'evil-presence': [Triggered(EvilPresence(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
@@ -557,7 +557,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],
     # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
-                         Activated('1T', True, DestroyAll(T_FUNCS['artifacts_creatures_enchantments_in_play']))],
+                         Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments_in_play']))],
     'nicol-bolas': [Triggered(PayManaOrSac('UBR'), None, UpkeepEvent),
                     Triggered(NicolBolas(), None, DamageResolvedEvent)],
     'nightmare': [Static(NightmarePT())],

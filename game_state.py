@@ -6,9 +6,9 @@ from models.action_stack import ActionStack
 from models.card import Card
 from deck_builder.build_deck import Deck
 from models.game_card_filter import CardFilter
-from models.actions.activate_ability import ActivateAbility
+from models.actions.activate_ability import ActivateAbility, BeginAbilityActivationAction
 from models.actions.base import Action
-from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter
+from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
 from models.actions.combat import (CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker,
@@ -440,44 +440,82 @@ class GameState:
                     self.emit(UntapCardEvent(c))
                     self.untap_card(c)
 
+    # former approach
+    # def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
+    #     actions: list[ActivateAbility] = []
+    #
+    #     for ability in c.activated_abilities:
+    #         if not ability.can_activate(self):
+    #             continue
+    #         if ability.eff_spec.extra_costs:
+    #             for extra_cost in ability.eff_spec.extra_costs:
+    #                 if not extra_cost.can_pay(self, c):
+    #                     continue  # this just break out of this loop, or does it exit entire ability loop (desired)?
+    #         if c.has_summoning_sickness:
+    #             continue
+    #
+    #         if ability.eff_spec.target_filter is None and c.attached_to:  # janky solution
+    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
+    #             continue
+    #
+    #         targets = ability.eff_spec.target_filter(self, c) if ability.eff_spec.target_filter else None
+    #         # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
+    #         print(f"{c=}, {ability=}, {targets=}")
+    #
+    #         # I need at least one target, but I don't have any.  Skip.
+    #         if isinstance(targets, (list, tuple)) and not len(targets):
+    #             continue
+    #
+    #         # convert targets into something iterable
+    #         targets = [targets] if not isinstance(targets, (list, tuple)) else targets
+    #
+    #         for t in targets:
+    #             if not self.can_target(t, c):
+    #                 continue
+    #             if 'X' in ability.eff_spec.cost:
+    #                 min_x = ability.eff_spec.min_x
+    #                 max_x = ability.eff_spec.max_variable_x_func(self, c)
+    #                 for x in range(min_x, max_x + 1):
+    #                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t, x))
+    #             else:
+    #                 actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+    #
+    #     return actions
+
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
-        actions: list[ActivateAbility] = []
+        actions: list[ActivateAbility | BeginAbilityActivationAction] = []
 
         for ability in c.activated_abilities:
+            spec = ability.eff_spec
+
             if not ability.can_activate(self):
                 continue
-            if ability.eff_spec.extra_costs:
-                for extra_cost in ability.eff_spec.extra_costs:
-                    if not extra_cost.can_pay(self, c):
-                        continue  # this just break out of this loop, or does it exit entire ability loop (desired)?
+            if spec.extra_costs and any(not cost.can_pay(self, c) for cost in spec.extra_costs):
+                continue
             if c.has_summoning_sickness:
                 continue
 
-            if ability.eff_spec.target_filter is None and c.attached_to:  # janky solution
-                actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
-                continue
-
-            targets = ability.eff_spec.target_filter(self, c) if ability.eff_spec.target_filter else None
-            # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
-            print(f"{c=}, {ability=}, {targets=}")
-
-            # I need at least one target, but I don't have any.  Skip.
-            if isinstance(targets, (list, tuple)) and not len(targets):
-                continue
-
-            # convert targets into something iterable
-            targets = [targets] if not isinstance(targets, (list, tuple)) else targets
-
-            for t in targets:
-                if not self.can_target(t, c):
+            # Determine potential targets
+            target_spec = ability.eff_spec.target_spec
+            if target_spec:
+                targets = target_spec.filter_func(self, c)
+                # convert to list
+                targets = [targets] if not isinstance(targets, (list, tuple)) else targets
+                # remove illegal targets
+                targets = [t for t in targets if self.can_target(t, c)]
+                if len(targets) < target_spec.min_cnt:
+                    # Not enough legal targets → skip ability entirely
                     continue
-                if 'X' in ability.eff_spec.cost:
-                    min_x = ability.eff_spec.min_x
-                    max_x = ability.eff_spec.max_variable_x_func(self, c)
-                    for x in range(min_x, max_x + 1):
-                        actions.append(ActivateAbility(self.action_on_idx, self, ability, t, x))
-                else:
-                    actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
+            else:
+                targets = []
+
+            # At this point, we have a valid ability with legal targets
+            if target_spec and target_spec.max_cnt > 1:
+                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, ability))
+            elif target_spec and target_spec.min_cnt == 1:
+                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, ability))
+            else:
+                actions.append(ActivateAbility(self.action_on_idx, self, ability, target=None))
 
         return actions
 
@@ -506,57 +544,67 @@ class GameState:
             return actions
 
         def available_actions_from_hand() -> list[Action]:
-            avail_actions_from_hand: list[Action] = []
+            actions: list[Action] = []
 
-            def _append_action(c: GameCard, target: GameCard | None = None, eff_spec=None):
-                """Append CastToTargetAddToStack actions, handling X if present."""
-                texts = [eff_spec.text] if eff_spec and eff_spec.text else [None]
-
-                if eff_spec and 'X' in c.casting_cost:
-                    min_x = eff_spec.min_x
-                    max_x = eff_spec.max_variable_x_func(self, c)
-                    for x in range(min_x, max_x + 1):
-                        for text in texts:
-                            full_text = f"{text}, X={x}" if text else f"X={x}"
-                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, target, text=full_text,
-                                                                                  x_values_for_variable_cast=x))
-                    return
-
-                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, target))
+            # part of former approach
+            # def _append_action(c: GameCard, target: GameCard | None = None, eff_spec=None):
+            #     """Append CastToTargetAddToStack actions, handling X if present."""
+            #     texts = [eff_spec.text] if eff_spec and eff_spec.text else [None]
+            #
+            #     if eff_spec and 'X' in c.casting_cost:
+            #         min_x = eff_spec.min_x
+            #         max_x = eff_spec.max_variable_x_func(self, c)
+            #         for x in range(min_x, max_x + 1):
+            #             for text in texts:
+            #                 full_text = f"{text}, X={x}" if text else f"X={x}"
+            #                 actions.append(CastToTargetAddToStack(p_id, self, c, target, text=full_text,
+            #                                                       x_values_for_variable_cast=x))
+            #         return
+            #
+            #     actions.append(CastToTargetAddToStack(p_id, self, c, target))
 
             for c in hand.cards:
                 if not self.can_cast(c, p_id):
                     continue
 
-                # Permanent that is not an Aura → cast directly to board
+                # Short-cutting these directly to the board for testing expedience
                 if c.props.is_permanent and not c.props.is_aura:
-                    avail_actions_from_hand.append(CastToBoard(p_id, self, c))
+                    actions.append(CastToBoard(p_id, self, c))
                     continue
 
                 # Gather triggered abilities tied to casting
                 cast_eff_specs = [e for e in c.triggered_abilities
                                   if e.activation_type == 'triggered' and e.trigger_event is CastResolvedEvent]
 
-                # No triggered abilities → can be cast with no targets
                 if not cast_eff_specs:
-                    _append_action(c)
+                    actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=None))
                     continue
 
-                # Process each effect spec
+                # --- For each cast-triggered spec
                 for eff_spec in cast_eff_specs:
-                    if eff_spec.target_filter is None:
-                        _append_action(c, eff_spec=eff_spec)
-                        continue
+                    actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=eff_spec))
 
-                    targets: list[GameCard | None] = eff_spec.target_filter(self, c)
-                    if not targets:
-                        continue
+                # previous code before new TargetSpec approach
+                # # No triggered abilities → can be cast with no targets
+                # if not cast_eff_specs:
+                #     _append_action(c)
+                #     continue
+                #
+                # # Process each effect spec
+                # for eff_spec in cast_eff_specs:
+                #     if eff_spec.target_filter is None:
+                #         _append_action(c, eff_spec=eff_spec)
+                #         continue
+                #
+                #     targets: list[GameCard | None] = eff_spec.target_filter(self, c)
+                #     if not targets:
+                #         continue
+                #
+                #     for t in targets:
+                #         if self.can_target(t, c):
+                #             _append_action(c, target=t, eff_spec=eff_spec)
 
-                    for t in targets:
-                        if self.can_target(t, c):
-                            _append_action(c, target=t, eff_spec=eff_spec)
-
-            return list({repr(x): x for x in avail_actions_from_hand}.values())  # Deduplicate by repr
+            return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):

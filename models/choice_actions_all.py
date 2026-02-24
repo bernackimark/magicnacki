@@ -6,10 +6,12 @@ from typing import TYPE_CHECKING, Iterable, Optional
 
 from models.actions.kwa import AddKWA
 from models.actions.piles import HandToBattlefield
+from models.actions.target import AddTargetAction, FinishTargetsAction
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
+    from models.effects.base import EffSpec
 
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
@@ -20,7 +22,7 @@ from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
-    HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep
+    HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep, SelectXAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -38,6 +40,15 @@ class ChoiceAction(ABC):
     def get_actions(self) -> list[Action]:
         ...
 
+
+class TargetChoiceAction(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+        self.selected_targets: list[GameCard] = []
+
+    @abstractmethod
+    def get_actions(self) -> list[Action]:
+        ...
 
 class AddManaOfColorChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard,
@@ -90,6 +101,30 @@ class DrawCardsOrDontChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         actions: list[Action] = [DrawCard(self.player_idx, self.gs) for _ in range(self.cnt)]
         actions.append(DoNothing(self.player_idx, self.gs))
+        return actions
+
+class MultiTargetChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec,
+                 x_value_for_variable_cast: int | None = None):
+        super().__init__(p_id, gs, source)
+        self.eff_spec = eff_spec
+        self.x_value_for_variable_cast = x_value_for_variable_cast
+        self.selected_targets = []
+
+    def get_actions(self) -> list[Action]:
+        actions = []
+        target_spec = self.eff_spec.target_spec
+
+        candidates = target_spec.filter_func(self.gs, self.source)
+
+        if target_spec.max_cnt is None or len(self.selected_targets) < target_spec.max_cnt:
+            for c in candidates:
+                if c not in self.selected_targets and self.gs.can_target(c, self.source):
+                    actions.append(AddTargetAction(self.player_idx, self.gs, self, c))
+
+        if len(self.selected_targets) >= target_spec.min_cnt:
+            actions.append(FinishTargetsAction(self.player_idx, self.gs, self))
+
         return actions
 
 class OpponentDestroysLandChoice(ChoiceAction):
@@ -175,6 +210,24 @@ class UntapWithManaChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         return [LeaveTapped(self.player_idx, self.gs, self.source),
                 UntapWithManaAction(self.player_idx, self.gs, self.source, self.mana_cost)]
+
+class XValueChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec):
+        super().__init__(p_id, gs, source)
+        self.eff_spec = eff_spec
+        self.selected_x: int | None = None
+
+    def get_actions(self) -> list[Action]:
+        actions: list[Action] = []
+
+        # Determine range of X
+        min_x = self.eff_spec.min_x
+        max_x = self.eff_spec.max_variable_x_func(self.gs, self.source)
+
+        for x in range(min_x, max_x + 1):
+            actions.append(SelectXAction(self, x))
+
+        return actions
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):

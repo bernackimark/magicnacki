@@ -4,7 +4,6 @@ from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
 from models.effects.base import ActivatedAbility
-from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.events_all import CastResolvedEvent
 from models.zone import Zone
 from models.utils import flip
@@ -34,6 +33,7 @@ class AcceptAction(Action):
             target.modifiers.auras.append(card)
 
         # --- new system: resolve the card's own effect(s) ---
+        from models.card_attributes.card_effect_specs import INVOCATIONS
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
             if eff_spec.activation_type in ('activated', 'triggered'):
                 # resolve immediately if it's a 'cast' effect

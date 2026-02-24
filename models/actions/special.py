@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
+from models.actions.cast import CastToTargetAddToStack
 from models.counter_tokens import CounterType, WIND
 from models.damage import PreventNextDamage
 from phase_fsm import Phase
@@ -11,6 +12,7 @@ from models.utils import flip
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
+    from models.choice_actions_all import XValueChoice
 
 from models.actions.base import Action
 
@@ -131,6 +133,29 @@ class SacTwoIslands(Action):
         for island in your_islands[:2]:
             self.gs.destroy(island)
         self.gs.action_stack.pop()
+
+class SelectXAction(Action):
+    def __init__(self, choice: XValueChoice, x_value: int):
+        self.choice = choice
+        self.x_value = x_value
+
+    def play(self):
+        self.choice.selected_x = self.x_value
+        self.choice.gs.action_stack.pop()
+
+        # After selecting X, check if the spell also has targets
+        if self.choice.eff_spec.target_spec:
+            from models.choice_actions_all import MultiTargetChoice
+            self.choice.gs.pending_choice = MultiTargetChoice(self.choice.player_idx, self.choice.gs,
+                                                              self.choice.source, self.choice.eff_spec,
+                                                              x_value_for_variable_cast=self.choice.selected_x)
+        else:
+            # No targets → spell goes straight to stack
+            self.choice.gs.action_stack.append(
+                CastToTargetAddToStack(self.choice.player_idx, self.choice.gs, self.choice.source, target=None,
+                                       eff_spec=self.choice.eff_spec,
+                                       x_values_for_variable_cast=self.choice.selected_x))
+            self.choice.gs.pending_choice = None
 
 class SkipDrawPhaseGainLife(Action):
     def __init__(self, p_id: int, gs: GameState, amt: int):

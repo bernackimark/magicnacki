@@ -1,10 +1,13 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card import GameCard
 
 from models.actions.base import Action
-from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.effects.base import ActivatedAbility
+from models.effects.base import ActivatedAbility, EffSpec
 from models.events_all import StateBasedEvent, CastResolvedEvent
-from models.game_card import GameCard
 from models.zone import Zone
 
 
@@ -33,6 +36,7 @@ class CastToBoard(Action):
         self.gs.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
 
         # --- new event/phase-aware registration
+        from models.card_attributes.card_effect_specs import INVOCATIONS
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack
@@ -41,8 +45,25 @@ class CastToBoard(Action):
                 if eff_spec.activation_type != 'triggered':
                     continue
                 if eff_spec.trigger_event == CastResolvedEvent:
-                    targets = eff_spec.target_filter(self.gs, self.card) if eff_spec.target_filter else None
-                    eff_spec.effect.resolve(self.gs, self.card, targets)
+                    target_spec = eff_spec.target_spec
+
+                    if target_spec is None:
+                        eff_spec.effect.resolve(self.gs, self.card, None)
+                        return
+
+                    candidates = target_spec.filter_func(self.gs, self.card)
+
+                    # --- exactly 1 target (legacy behavior)
+                    if target_spec.min_cnt == 1 and target_spec.max_cnt == 1:
+                        if not candidates:
+                            return  # fizzles silently
+                        target = candidates[0]
+                        eff_spec.effect.resolve(self.gs, self.card, target)
+                        return
+
+                    # --- multi-target or open-ended
+                    from models.choice_actions_all import MultiTargetChoice
+                    self.gs.pending_choice = MultiTargetChoice(self.card.owner_id, self.gs, self.card, eff_spec)
                     print(f"Activated the ability on cast for {self.card.props.name}")
 
         # --- if card has activated abilities, add them to the board
@@ -59,6 +80,7 @@ class CastToBoard(Action):
 class CastToTargetAddToStack(Action):
     card: GameCard
     target: GameCard | list[GameCard] | None
+    eff_spec: EffSpec | None = None
     x_values_for_variable_cast: int | None = None
     text: str = ''
 
@@ -106,3 +128,25 @@ class CastCounter(Action):
         # --- new event emission approach
         for eff_spec in self.card.triggered_abilities:
             self.gs.register_effect(eff_spec.effect, self.card)
+
+@dataclass
+class BeginSpellCastAction(Action):
+    card: GameCard
+    eff_spec: EffSpec | None
+
+    def play(self) -> None:
+        """Determines which pipeline to enter"""
+        # --- X selection first (if needed)
+        if self.eff_spec and 'X' in self.card.casting_cost:
+            from models.choice_actions_all import XValueChoice
+            self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, self.eff_spec)
+            return
+
+        # --- Targeting
+        if self.eff_spec and self.eff_spec.target_spec:
+            from models.choice_actions_all import MultiTargetChoice
+            self.gs.pending_choice = MultiTargetChoice(self.player_idx, self.gs, self.card, self.eff_spec)
+            return
+
+        # --- No targeting → cast immediately
+        self.gs.action_stack.append(CastToTargetAddToStack(self.player_idx, self.gs, self.card))
