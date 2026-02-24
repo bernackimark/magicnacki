@@ -13,12 +13,18 @@ class AddTargetAction(Action):
     choice: TargetChoiceAction | MultiTargetChoice
     card: GameCard
 
+    def __repr__(self):
+        return f'{self.choice.source}: add target: {self.card}'
+
     def play(self):
         self.choice.selected_targets.append(self.card)
 
 @dataclass
 class FinishTargetsAction(Action):
     choice: TargetChoiceAction | MultiTargetChoice
+
+    def __repr__(self):
+        return 'Finish Adding Targets'
 
     def play(self):
         gs = self.choice.gs

@@ -134,6 +134,9 @@ class BeginSpellCastAction(Action):
     card: GameCard
     eff_spec: EffSpec | None
 
+    def __repr__(self):
+        return f'Cast {self.card.props.name}'
+
     def play(self) -> None:
         """Determines which pipeline to enter"""
         # --- X selection first (if needed)
