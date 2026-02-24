@@ -1,26 +1,18 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal, Union, Callable
 
 if TYPE_CHECKING:
     from game_card import GameCard
+    from game_state import GameState
 
 from dataclasses import dataclass, field
-
-
-@dataclass(frozen=True)
-class BasePT:
-    power: int
-    toughness: int
 
 
 @dataclass
 class PTModifier:
     card: GameCard
-    power_delta: int = 0
-    toughness_delta: int = 0
-
-    def __repr__(self):
-        return f'{self.card.props.name}({self.power_delta}/{self.toughness_delta})'
+    power_delta: int
+    toughness_delta: int
 
 
 @dataclass
