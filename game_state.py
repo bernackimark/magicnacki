@@ -504,66 +504,58 @@ class GameState:
                     actions.extend(self.get_available_activated_abilities(aura))
             return actions
 
-        def available_actions_from_hand() -> list[Action] | list[None]:
+        def available_actions_from_hand() -> list[Action]:
             avail_actions_from_hand: list[Action] = []
+
+            def _append_action(c: GameCard, target: GameCard | None = None, eff_spec=None):
+                """Append CastToTargetAddToStack actions, handling X if present."""
+                texts = [eff_spec.text] if eff_spec and eff_spec.text else [None]
+
+                if eff_spec and 'X' in c.casting_cost:
+                    min_x = eff_spec.min_x
+                    max_x = eff_spec.max_variable_x_func(self, c)
+                    for x in range(min_x, max_x + 1):
+                        for text in texts:
+                            full_text = f"{text}, X={x}" if text else f"X={x}"
+                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, target, text=full_text,
+                                                                                  x_values_for_variable_cast=x))
+                    return
+
+                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, target))
+
             for c in hand.cards:
-                if self.can_cast(c, p_id) is False:
+                if not self.can_cast(c, p_id):
                     continue
 
+                # Permanent that is not an Aura → cast directly to board
                 if c.props.is_permanent and not c.props.is_aura:
                     avail_actions_from_hand.append(CastToBoard(p_id, self, c))
                     continue
 
-                # --- Get targets ---
-                cast_eff_specs = [eff_spec for eff_spec in c.triggered_abilities
-                                  if eff_spec.activation_type == 'triggered'
-                                  and eff_spec.trigger_event is CastResolvedEvent]
+                # Gather triggered abilities tied to casting
+                cast_eff_specs = [e for e in c.triggered_abilities
+                                  if e.activation_type == 'triggered' and e.trigger_event is CastResolvedEvent]
 
-                # there are no specs, it can be played
+                # No triggered abilities → can be cast with no targets
                 if not cast_eff_specs:
-                    if 'X' in c.casting_cost:
-                        max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
-                        for x in range(max_x + 1):
-                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
-                                                                                  x_values_for_variable_cast=x))
-                    else:
-                        avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None))
+                    _append_action(c)
                     continue
 
-                for cast_eff_spec in cast_eff_specs:
-                    # the effect doesn't have targets, it can be played
-                    if cast_eff_spec.target_filter is None:
-                        if 'X' in c.casting_cost:
-                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
-                            for x in range(max_x + 1):
-                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
-                                                                                      x_values_for_variable_cast=x,
-                                                                                      text=cast_eff_spec.text))
-                        else:
-                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, None,
-                                                                                  text=cast_eff_spec.text))
+                # Process each effect spec
+                for eff_spec in cast_eff_specs:
+                    if eff_spec.target_filter is None:
+                        _append_action(c, eff_spec=eff_spec)
                         continue
 
-                    targets: list[GameCard | None] = cast_eff_spec.target_filter(self, c)
-
-                    # if targets = [], the card needs targets but can't find any, so the card is unplayable
-                    if isinstance(targets, list) and not targets:
+                    targets: list[GameCard | None] = eff_spec.target_filter(self, c)
+                    if not targets:
                         continue
 
-                    # targets is a list of GameCard; append available action for each Target/target-variable_X combo
                     for t in targets:
-                        if not self.can_target(t, c):
-                            continue
-                        if 'X' in c.casting_cost:
-                            max_x = self.mana_pools[p_id].get_max_x(c.casting_cost)
-                            for x in range(max_x + 1):
-                                avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t,
-                                                                                      x_values_for_variable_cast=x,
-                                                                                      text=cast_eff_spec.text))
-                        else:
-                            avail_actions_from_hand.append(CastToTargetAddToStack(p_id, self, c, t,
-                                                                                  text=cast_eff_spec.text))
-            return list({repr(x): x for x in avail_actions_from_hand}.values())  # only return unique (by repr) actions
+                        if self.can_target(t, c):
+                            _append_action(c, target=t, eff_spec=eff_spec)
+
+            return list({repr(x): x for x in avail_actions_from_hand}.values())  # Deduplicate by repr
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):

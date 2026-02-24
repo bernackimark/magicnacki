@@ -19,7 +19,8 @@ class CastToBoard(Action):
 
     def play(self) -> None:
         if self.x_values_for_variable_cast is not None:
-            cast_cost = self.card.casting_cost[:].replace('X', str(self.x_values_for_variable_cast))
+            cast_cost = self.card.casting_cost[:]
+            cast_cost = cast_cost.replace('X', str(self.x_values_for_variable_cast))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
             self.card.variable_x = self.x_values_for_variable_cast
         else:
@@ -78,7 +79,8 @@ class CastToTargetAddToStack(Action):
 
     def play(self) -> None:
         if self.x_values_for_variable_cast is not None:
-            cast_cost = self.card.casting_cost[:].replace('X', str(self.x_values_for_variable_cast))
+            cast_cost = self.card.casting_cost[:]
+            cast_cost = cast_cost.replace('X', str(self.x_values_for_variable_cast))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
             self.card.variable_x = self.x_values_for_variable_cast
         else:

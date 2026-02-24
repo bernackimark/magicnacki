@@ -38,7 +38,10 @@ class AcceptAction(Action):
             if eff_spec.activation_type in ('activated', 'triggered'):
                 # resolve immediately if it's a 'cast' effect
                 if eff_spec.trigger_event is CastResolvedEvent and eff_spec.effect:
-                    eff_spec.effect.resolve(self.gs, card, target)
+                    if last_action.x_values_for_variable_cast:
+                        eff_spec.effect.resolve(self.gs, card, target)
+                    else:
+                        eff_spec.effect.resolve(self.gs, card, target)
 
         # --- Emit event so other effects can respond ---
         print(f"Successfully cast {card.props.name}")
