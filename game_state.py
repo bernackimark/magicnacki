@@ -747,6 +747,7 @@ class GameState:
 
 # TODO:
 #  Black Knight (2/2) is killing Northern Palladin (3/3)
+#  also, dealing one damage to a creature w a higher toughness is also killing it
 
 # TODO:
 #  Global Legendary Rule, only one legendary slug-board pair allowed
