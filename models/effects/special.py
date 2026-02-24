@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
-    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage, CycloneChoice
+    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage, CycloneChoice, \
+    YawgmothDemonChoice
 from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY, WIND
 from models.damage import PreventNextDamage
@@ -483,6 +484,20 @@ class WormwoodTreefolkSwampwalk(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.modifiers.temps.append(KWATemp(source, 'add', 'Swampwalk'))
         gs.apply_damage(source, 2, source.owner_id)
+
+class YawgmothDemon(Effect):
+    """At your upkeep, Sac an artifact, or tap this creature and it deals 2 damage to you"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if source.owner_id != gs.player_turn_idx:
+            return
+        if not gs.card_filter.on_player_board(source.owner_id).artifacts().result():
+            gs.tap_card(source)
+            gs.apply_damage(source, 2, source.owner_id)
+            return
+        gs.action_stack.push(YawgmothDemonChoice(source.owner_id, gs, source), gs, False)
+
 
 class YdwenEfreet(Effect):
     """Whenever Ydwen Efreet blocks, flip a coin.

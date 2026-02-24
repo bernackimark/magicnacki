@@ -68,7 +68,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
-    HealingSalve, HasranOgress, Cyclone
+    HealingSalve, HasranOgress, Cyclone, YawgmothDemon
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -824,8 +824,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wild-growth': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
                     Triggered(WildGrowth(), None, TapCardEvent)],
     'willow-satyr': [Activated('T', Steal(), T_FUNCS['opp_legendary_creatures_in_play']),
-                           Triggered(OptionalUntap(), None, UntapPhaseEvent),
-                           Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
+                     Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                     Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
     'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures_in_play'])],
@@ -835,5 +835,6 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wrath-of-god': [Triggered(ExileAllCreatures(), None, CastResolvedEvent)],
     'wyluli-wolf': [Activated('T', PumpEffect(1, 1, True), T_FUNCS['creatures_in_play'])],
     'xira-arien': [Activated('BRGT', DrawCards(3), T_FUNCS['all_players'])],
+    'yawgmoth-demon': [Triggered(YawgmothDemon(), None, UpkeepEvent)],
     'ydwen-efreet': [Triggered(YdwenEfreet(), None, BlockEvent)],
 }

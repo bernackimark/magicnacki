@@ -20,7 +20,7 @@ from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
-    HealingSalveB, CyclonePayManaPerCounterDealDamage
+    HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -385,3 +385,13 @@ class TriassicEggChoice(ChoiceAction):
             if card_in_graveyard.is_creature:
                 actions.append(Reanimate(self.player_idx, self.gs, card_in_graveyard))
         return actions
+
+class YawgmothDemonChoice(ChoiceAction):
+    """At your upkeep, Sac an artifact, or tap this creature & it deals 2 damage to you"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        your_artifacts = self.gs.card_filter.on_player_board(self.player_idx).artifacts().result()
+        return [Sac(self.player_idx, self.gs, a) for a in your_artifacts] + \
+               [YawgmothDemonUnpaidUpkeep(self.player_idx, self.gs, self.source)]

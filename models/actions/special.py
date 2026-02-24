@@ -239,3 +239,16 @@ class PrimalClayC(Action):
         self.gs.cast(self.s)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
+
+class YawgmothDemonUnpaidUpkeep(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+
+    def __repr__(self):
+        return f'{self.s.props.name} taps and deals 2 damage to you'
+
+    def play(self) -> None:
+        self.gs.tap_card(self.s)
+        self.gs.apply_damage(self.s, 2, self.s.owner_id)
+        self.gs.action_stack.pop()
