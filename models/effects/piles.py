@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 
 from models.utils import flip
 from models.events_all import ZoneChangeEvent, UpkeepEvent, Event, StateBasedEvent, UntapCardEvent
+from ..choice_actions_all import TriassicEggChoice
 from ..modifiers import OwnershipModifier
 from ..zone import Zone
 
@@ -132,3 +133,10 @@ class TimeElementalBounce(Effect):
     """... {2UU}, {T}: Return target unenchanted permanent to its owner's hand"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.bounce(target)
+
+class TriassicEgg(Effect):
+    """Choose one:
+    * You may put a creature card from your hand onto the battlefield.
+    * Return target creature card from your graveyard to the battlefield."""
+    def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
+        gs.action_stack.push(TriassicEggChoice(source.owner_id, gs, source), gs, False)

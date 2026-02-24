@@ -1,6 +1,6 @@
 from __future__ import annotations
 from itertools import combinations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -10,7 +10,7 @@ from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCo
     DiscardAtRandomCost, SacCardCost
 from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
-    CHARGE, DREAM
+    CHARGE, DREAM, WIND, HATCHLING, CounterType
 from models.effects.base import EffSpec, Activated, Triggered, Static
 from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
     CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, \
@@ -48,10 +48,10 @@ from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    StealCardLeaves, GhazbanOgre, TimeElementalBounce, ReturnToOwnerOnUntap, ReturnToOwnerOnLTB
+    StealCardLeaves, GhazbanOgre, TimeElementalBounce, ReturnToOwnerOnUntap, ReturnToOwnerOnLTB, TriassicEgg
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
-    Transmutation, MurkDwellers, SingingTree, UntapRemovesPumpFromAnotherCard
+    Transmutation, MurkDwellers, SingingTree, UntapRemovesPumpFromAnotherCard, LesserWerewolf
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
@@ -68,7 +68,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
-    HealingSalve, HasranOgress
+    HealingSalve, HasranOgress, Cyclone
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -94,6 +94,10 @@ def untap_host_for_mana_at_opp_upkeep(untap_cost: str) -> EffSpec:
 
 def is_tapped(s: GameCard) -> bool:
     return s.is_tapped
+
+def has_ge_x_counters(card_func: Callable, counter_type: CounterType, min_cnt: int) -> bool:
+    card = card_func()
+    return s.counters.get_count(counter_type) >= min_cnt
 
 
 MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
@@ -263,6 +267,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'curse-artifact': [Triggered(CurseArtifactUpkeep(), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
     'cursed-land': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['lands_in_play'], UpkeepEvent)],
     'cursed-rack': [Triggered(CursedRackEffect(), None, EndStepEvent)],
+    'cyclone': [Triggered(Cyclone(), None, UpkeepEvent)],
     'cyclopean-mummy': [Triggered(CyclopeanMummy(), None, DiesEvent)],
     'dakkon-blackblade': [Static(DakkonBlackbladePT())],
     'dance-of-many': [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],  # the rest of the card still needs coding
@@ -481,6 +486,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'land-equilibrium': [Static(LandEquilibrium())],
+    'lesser-werewolf': [Activated('B', LesserWerewolf(), T_FUNCS['combating_against'],
+                                  allowed_phases=[Phase.DECLARE_ATTACKERS])],  # at Declare Attackers, won't know how it's combating
     'leviathan':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
          Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
@@ -747,6 +754,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Enchantment').result()),
                    None, CastResolvedEvent)],
     'transmutation': [Triggered(Transmutation(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'triassic-egg': [Activated('3T', AddCounter(HATCHLING)),
+                     Activated('', TriassicEgg(), extra_costs=[SacSelfCost()],
+                               conditions=[has_ge_x_counters(T_FUNCS['self'], HATCHLING, 2)])],  # conditions needs to know who this card is
     'triskelion': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent),
                    Activated('', DealDamage(1), T_FUNCS['all_creatures_and_players'],
                              extra_costs=[RemoveCounterCost(PLUS_ONE)])],

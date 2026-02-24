@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
+from models.counter_tokens import MINUS_ZERO_ONE
 from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.events_all import UnblockedAttackerEvent, UntapCardEvent
@@ -105,6 +106,15 @@ class KoboldTaskmaster(Effect):
         for t in gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result():
             if source != t:
                 t.modifiers.auras.append(PTModifier(source, 1, 0))
+
+class LesserWerewolf(Effect):
+    """If this creature's power is >= 1, it gets -1/-0 until EOT & put a -0/-1 counter on
+    target creature blocking/blocked by this creature. Activate only during the declare blockers step."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if source.power < 1:
+            return
+        source.modifiers.temps.append(PTTemp(source, -1, 0))
+        target.counters.add_counter(MINUS_ZERO_ONE)
 
 class MarshGas(Effect):
     """All creatures get -2/-0 until end of turn"""

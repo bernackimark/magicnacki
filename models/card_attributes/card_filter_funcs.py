@@ -45,6 +45,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                        gs.card_filter.in_play().non_token().permanents().by_set_code('AN').result()
                                        if c.props.slug != 'city-in-a-bottle'],
     'combatants': lambda gs, s: gs.card_filter.combatants().result(),
+    'combating_against': lambda gs, s: gs.card_filter.combating_against(s).result(),
     'creatures_in_all_graveyards': lambda gs, s: gs.card_filter.in_graveyards().creatures().result(),
     'creatures_in_play': lambda gs, s: gs.card_filter.in_play().creatures().result(),
     'creatures_in_play_w_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),

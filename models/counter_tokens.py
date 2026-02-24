@@ -15,9 +15,10 @@ class CounterType:
 
 PLUS_ONE = CounterType('+1/+1', 1, 1)
 PLUS_ONE_ZERO = CounterType('+1/+0', 1, 0)
-PLUS_ZERO_ONE = CounterType('+0/+1', 0, 1)
+PLUS_ZERO_ONE = CounterType('0/+1', 0, 1)
 MINUS_ONE = CounterType('-1/-1', -1, -1)
-MINUS_ZERO_TWO = CounterType('-0/-2', 0, -2)
+MINUS_ZERO_ONE = CounterType('0/-1', 0, -1)
+MINUS_ZERO_TWO = CounterType('0/-2', 0, -2)
 CARRION = CounterType('carrion')
 CHARGE = CounterType('charge')
 CORPSE = CounterType('corpse')

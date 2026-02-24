@@ -3,7 +3,7 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
-from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent
+from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent, Event
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -12,9 +12,9 @@ if TYPE_CHECKING:
 
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
-    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage
+    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage, CycloneChoice
 from models.actions.special import SacCreatureAndAddMana
-from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY
+from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY, WIND
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
@@ -103,6 +103,19 @@ class Crumble(Effect):
         if target:
             gs.destroy(target)
             gs.increment_life(target.owner_id, target.props.casting_weight)
+
+class Cyclone(Effect):
+    """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
+    If you pay, Cyclone deals damage = its wind counters to each creature and each player."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if gs.player_turn_idx != source.owner_id:
+            return
+        source.counters.add_counter(WIND)
+        if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
+            gs.destroy(source, False)
+        gs.action_stack.push(CycloneChoice(source.owner_id, gs, source), gs, False)
 
 class DivineOffering(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):

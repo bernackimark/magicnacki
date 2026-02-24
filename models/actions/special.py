@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
-from models.counter_tokens import CounterType
+from models.counter_tokens import CounterType, WIND
 from models.damage import PreventNextDamage
 from phase_fsm import Phase
 from models.utils import flip
@@ -143,6 +143,23 @@ class SkipDrawPhaseGainLife(Action):
         self.gs.action_stack.pop()
 
 # --- CARD-SPECIFIC ---
+class CyclonePayManaPerCounterDealDamage(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.wind_counters = self.s.counters.get_count(WIND)
+
+    def __repr__(self):
+        return f'Pay {self.wind_counters} G to deal {self.wind_counters} damage to all creatures & players'
+
+    def play(self) -> None:
+        self.gs.mana_pools[self.s.owner_id].pay('G' * self.wind_counters)
+        for creature in list(self.gs.card_filter.in_play().creatures().result()):
+            self.gs.destroy(creature)
+        for p_id in range(2):
+            self.gs.apply_damage(self.s, self.wind_counters, p_id)
+        self.gs.action_stack.pop()
+
 class HealingSalveA(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
         super().__init__(p_id, gs)

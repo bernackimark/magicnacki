@@ -5,6 +5,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Iterable, Optional
 
 from models.actions.kwa import AddKWA
+from models.actions.piles import HandToBattlefield
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -13,13 +14,13 @@ if TYPE_CHECKING:
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamageToYou, PayLife
-from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand, SacCards
+from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand, SacCards, Reanimate
 from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
-    HealingSalveB
+    HealingSalveB, CyclonePayManaPerCounterDealDamage
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -196,6 +197,16 @@ class CurseArtifactUpkeepChoice(ChoiceAction):
         return [PayLife(self.source.attached_to.owner_id, self.gs, self.source, 2),
                 Sac(self.source.attached_to.owner_id, self.gs, self.source.attached_to)]
 
+class CycloneChoice(ChoiceAction):
+    """At your upkeep, pay {G} for each wind counter on it or sac.
+    If you pay, Cyclone deals damage = its wind counters to each creature and each player."""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [CyclonePayManaPerCounterDealDamage(self.player_idx, self.gs, self.source),
+                Sac(self.player_idx, self.gs, self.source)]
+
 class DemonicHordesUpkeepChoice(ChoiceAction):
     """It is known that the owner can pay {BBB}, so present the choice to pay or not;
     if the choice is made to not pay, must give the opponent the choice of which land to destroy (a nested choice)"""
@@ -357,3 +368,20 @@ class ShapeshifterChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [VariablePTMod(self.player_idx, self.gs, self.source, self.source, i, 7 - i) for i in range(8)]
+
+class TriassicEggChoice(ChoiceAction):
+    """Choose one:
+    * You may put a creature card from your hand onto the battlefield.
+    * Return target creature card from your graveyard to the battlefield."""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        actions = []
+        for card_in_hand in self.gs.hands[self.source.owner_id].cards:
+            if card_in_hand.is_creature:
+                actions.append(HandToBattlefield(self.player_idx, self.gs, card_in_hand))
+        for card_in_graveyard in self.gs.graveyards[self.source.owner_id]:
+            if card_in_graveyard.is_creature:
+                actions.append(Reanimate(self.player_idx, self.gs, card_in_graveyard))
+        return actions
