@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 
 from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
-from models.events_all import UnblockedAttackerEvent
+from models.events_all import UnblockedAttackerEvent, UntapCardEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -22,11 +22,22 @@ class PumpEffect(Effect):
 
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
+            raise ValueError(f'{source.props.name} needs a target')
         if not self.eot:
             target.modifiers.auras.append(PTModifier(source, self.power_adj, self.toughness_adj))
         else:
             target.modifiers.temps.append(PTTemp(source, self.power_adj, self.toughness_adj))
+
+class UntapRemovesPumpFromAnotherCard(Effect):
+    """If an effect targeted another card and its duration was for as long as the source is tapped,
+    we untap here by polling all cards in play and seeing if they were given a Pump by this source"""
+    listens_to = UntapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UntapCardEvent):
+        for c in gs.card_filter.in_play().result():
+            for mod in list(c.modifiers):
+                if mod.source is s and isinstance(mod, (PTModifier, PTTemp)):
+                    event.card.modifiers.auras.remove(mod)
 
 # --- CARD-SPECIFIC ---
 class ArmyOfAllah(Effect):

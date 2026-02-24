@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING, Callable
 
 from phase_fsm import Phase
 from models.utils import flip
-from models.events_all import ZoneChangeEvent, TapCardEvent, UntapPhaseEvent
+from models.events_all import ZoneChangeEvent, TapCardEvent, UntapPhaseEvent, Event
 from ..zone import Zone
 
 if TYPE_CHECKING:
@@ -50,7 +50,11 @@ class StaysTapped(Effect):
         gs.action_stack.push(LeaveTapped(source.owner_id, gs, source), gs, False)
 
 class OptionalUntap(Effect):
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
+        if source.owner_id != event.active_player or not source.is_tapped:
+            return
         gs.action_stack.push(UntapChoice(gs.player_turn_idx, gs, source), gs, False)
 
 class UntapForManaEffect(Effect):

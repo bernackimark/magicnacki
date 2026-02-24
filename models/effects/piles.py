@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 from models.utils import flip
-from models.events_all import ZoneChangeEvent, UpkeepEvent, Event
+from models.events_all import ZoneChangeEvent, UpkeepEvent, Event, StateBasedEvent, UntapCardEvent
+from ..modifiers import OwnershipModifier
 from ..zone import Zone
 
 if TYPE_CHECKING:
@@ -24,14 +25,54 @@ class Reanimate(Effect):
         gs.reanimate(target)
 
 class Steal(Effect):
+    def __init__(self, new_zone: Zone = None):
+        self.new_zone = new_zone or Zone.BATTLEFIELD
+
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        """If the zone is going from battlefield to battlefield, then move_card() will not trigger"""
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        print(target, target.owner_id)
-        print(gs.boards[target.owner_id])
-        gs.boards[target.owner_id].remove(target)
-        gs.boards[flip(target.owner_id)].append(target)
-        target.owner_id = flip(target.owner_id)
+        original_owner_id = int(target.owner_id)
+        target.modifiers.auras.append(OwnershipModifier(source, target.owner_id, source.owner_id))
+        if target.zone == Zone.BATTLEFIELD:
+            gs.boards[original_owner_id].remove(target)
+            gs.boards[source.owner_id].append(target)
+        else:
+            gs.move_card(target, self.new_zone, cause='steal')
+        gs.emit(StateBasedEvent())
+
+class ReturnToOwnerOnLTB(Effect):
+    """Although the OnwershipModifier will be removed upon LTB; need to transfer the stolen GameCard across boards"""
+    listens_to = ZoneChangeEvent
+
+    def __init__(self, new_zone: Zone = None):
+        self.new_zone = new_zone or Zone.BATTLEFIELD
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
+        if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
+            return
+        for c in gs.boards[source.owner_id]:
+            for mod in c.modifiers.auras:
+                if isinstance(mod, OwnershipModifier):
+                    gs.boards[source.owner_id].remove(c)
+                    gs.boards[flip(source.owner_id)].append(c)
+
+class ReturnToOwnerOnUntap(Effect):
+    """Ownership by virtue of an aura or the source being on the battlefield will auto-remove the mod upon LTB;
+    This effect removes an ownership mod on any card the source was placed & xfers the stolen GameCard across boards"""
+    listens_to = UntapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapCardEvent):
+        if source is not event.card:
+            return
+        for c in gs.boards[source.owner_id]:
+            for mod in c.modifiers.auras:
+                if isinstance(mod, OwnershipModifier):
+                    c.modifiers.remove_aura(mod)
+                    gs.boards[source.owner_id].remove(c)
+                    gs.boards[flip(source.owner_id)].append(c)
+                    break
+
 
 class GraveyardToExile(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

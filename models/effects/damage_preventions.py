@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Callable
 
 from models.effects.base import Effect
 from models.utils import flip
@@ -27,7 +27,34 @@ class PreventAllDamage(DamagePreventionEffect):
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
         return event.target is card
 
-class PreventNextDamageEffect(Effect):
+class PreventDamageBy(Effect):
+    def __init__(self, amt: int = None, combat_only: bool = False):
+        self.amt = amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        if not target:
+            raise RuntimeError(f'{s.props.name} needs a target')
+        prevention = PreventNextDamage(s, self.amt, source_card=target, combat_only=self.combat_only)
+        gs.damage_preventions.append(prevention)
+
+class PreventDamageByMultipleSources(Effect):
+    def __init__(self, damage_dealer_func: Callable[[GameState, GameCard], list[GameCard]],
+                 amt: int = None, combat_only: bool = False):
+        self.damage_dealer_func = damage_dealer_func
+        self.amt = amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        if not self.damage_dealer_func:
+            raise RuntimeError(f"{s.props.name} doesn't know which cards to prevent damage from")
+        for damage_dealer in self.damage_dealer_func(gs, s):
+            prevention = PreventNextDamage(s, self.amt, source_card=damage_dealer, combat_only=self.combat_only)
+            gs.damage_preventions.append(prevention)
+
+class PreventNextDamageBy(Effect):
     def __init__(self, amt: int = None):
         self.amt = amt
 
@@ -100,3 +127,8 @@ class UncleIstvanPrevention(DamagePreventionEffect):
     """Prevent all damage that would be dealt to this creature by creatures"""
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
         return event.target is card and 'Creature' in event.source.props.card_types
+
+class WallOfPutridFleshPrevention(DamagePreventionEffect):
+    """Prevent all damage that would be dealt to this creature by enchanted creatures"""
+    def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None):
+        return event.target is card and event.source and event.source.modifiers.is_enchanted

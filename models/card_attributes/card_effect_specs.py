@@ -26,9 +26,10 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
     DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee, RukhEgg, Tracker, CityOfBrassDamageOnTap, \
     Sandstorm
-from models.effects.damage_preventions import PreventNextDamageEffect, ArgothianPixiesPrevention, \
+from models.effects.damage_preventions import PreventNextDamageBy, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
-    Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention
+    Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention, PreventDamageBy, \
+    WallOfPutridFleshPrevention
 from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDamageReplacement
 from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
@@ -47,10 +48,10 @@ from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    StealCardLeaves, GhazbanOgre, TimeElementalBounce
+    StealCardLeaves, GhazbanOgre, TimeElementalBounce, ReturnToOwnerOnUntap, ReturnToOwnerOnLTB
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
-    Transmutation, MurkDwellers, SingingTree
+    Transmutation, MurkDwellers, SingingTree, UntapRemovesPumpFromAnotherCard
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
@@ -105,14 +106,15 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'adun-oakenshield': [Activated('BRGT', Bounce(), T_FUNCS['creatures_in_your_graveyard'])],
     'aisling-leprechaun': [Triggered(AislingLeprechaun(), None, BlockEvent)],
     'akron-legionnaire': [Triggered(AkronLegionnaireCast(), None, CastResolvedEvent)],
-    'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play'])],
+    'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play']),
+                Triggered(ReturnToOwnerOnLTB(), None, ZoneChangeEvent)],
     'aladdins-ring': [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'ali-baba': [Activated('RT', TapCardEffect(), T_FUNCS['walls_in_play'])],
     'ali-from-cairo': [Static(AliFromCairo())],
     'alchors-tomb': [Activated('2T', SetColor(c), T_FUNCS['your_permanents_in_play'], text=f'Set color to {{{c}}}')
                      for c in COLOR_LETTERS],
     'amrou-kithkin': [Static(AmrouKithkin())],
-    'amulet-of-kroog': [Activated('2T', PreventNextDamageEffect(1), T_FUNCS['all_creatures_and_players'])],
+    'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(1), T_FUNCS['all_creatures_and_players'])],
     'ancestral-recall': [Triggered(DrawCards(3), T_FUNCS['all_players'], CastResolvedEvent)],
     'angelic-voices': [Static(AngelicVoices())],
     'angus-mackenzie': [Activated('GWUT', PreventAllCombatDamageThisTurn(),
@@ -131,7 +133,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                               Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['legendary_creatures_in_play']),
                                         None, UntapPhaseEvent)],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
-    'argivian-blacksmith': [Activated('T', PreventNextDamageEffect(2), T_FUNCS['artifact_creatures_in_play'])],
+    'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures_in_play'])],
     'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked(), Static(ArgothianPixiesPrevention()))],
     'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
     'armageddon':
@@ -142,7 +144,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                       Static(ArtifactWardCanBeBlocked()), Static(ArtifactWardPrevention()),
                       Static(ArtifactWardCanBeTargeted())],
     'ashnods-altar': [Activated('', AddMana('C', 2), extra_costs=[SacCardCost(T_FUNCS['your_creatures_in_play'])])],
-    'ashnods-battle-gear': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],  # more to code
+    'ashnods-battle-gear': [Activated('2T', PumpEffect(2, -2), T_FUNCS['your_creatures_in_play']),
+                            Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                            Triggered(UntapRemovesPumpFromAnotherCard(), None, UntapCardEffect)],
     'ashnods-transmogrant':
         [Activated('T', AshnodsTransmogrant(), T_FUNCS['non_artifact_creatures_in_play'], extra_costs=[SacSelfCost()])],
     'aspect-of-wolf': [Static(AspectOfWolfPT())],
@@ -243,7 +247,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
     'control-magic': [Triggered(Steal(), T_FUNCS['opp_creatures_in_play'], CastResolvedEvent),
-                      Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
+                      Triggered(ReturnToOwnerOnLTB(), None, ZoneChangeEvent)],
     'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent), Static(Conversion())],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
     'copy-artifact': [Triggered(CopyArtifact(), None, CastResolvedEvent)],
@@ -264,6 +268,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'dance-of-many': [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],  # the rest of the card still needs coding
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests_in_play'])])],
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
+    'dark-sphere': [Triggered('T', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts_in_play'],
+                              extra_costs=[SacSelfCost()])],
     'darkness': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'davenant-archer': [Activated('T', DealDamage(1), T_FUNCS['combatants'])],
     'deadfall': [Static(WalkRuleRemoved('Forestwalk'))],
@@ -457,6 +463,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'juzám-djinn': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
     'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures_in_play'])],
     'karma': [Triggered(Karma(), None, UpkeepEvent)],
+    'kei-takahashi': [Activated('T', PreventNextDamageBy(2), T_FUNCS['creatures_in_play'])],
     'keldon-warlord': [Static(KeldonWarlordPT())],
     'khabál-ghoul': [AddCounterPerCreatureDeath(PLUS_ONE), None, EndStepEvent],
     'killer-bees': [Activated('G', PumpEffect(1, 1, True), T_FUNCS['self'])],
@@ -469,6 +476,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'kormus-bell': [Static(KormusBell())],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures_in_play'])],
     'lady-caleria': [Activated('T', DealDamage(3), T_FUNCS['combatants'])],
+    'lady-evangela': [Activated('WBT', PreventDamageBy(combat_only=True), T_FUNCS['creatures_in_play'],
+                                CastResolvedEvent)],
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'land-equilibrium': [Static(LandEquilibrium())],
@@ -523,7 +532,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'mightstone': [Static(Mightstone())],
     'mijae-djinn': [Triggered(MijaeDjinn(), None, AttackEvent)],
     'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
-    'mind-twist': [Triggered(MindTwist(), T_FUNCS['all_players'], CastResolvedEvent)],
+    'mind-twist': [Triggered(MindTwist(), T_FUNCS['all_players'], CastResolvedEvent,
+                             max_variable_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XB'))],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
@@ -546,11 +556,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                     Triggered(NicolBolas(), None, DamageResolvedEvent)],
     'nightmare': [Static(NightmarePT())],
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents_in_play'])],
-    'oasis': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['creatures_in_play'])],
+    'oasis': [Activated('T', PreventNextDamageBy(1), T_FUNCS['creatures_in_play'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
     'old-man-of-the-sea': [Activated('T', Steal(), T_FUNCS['opp_creatures_power_not_greater_than_source']),
                            Triggered(OptionalUntap(), None, UntapPhaseEvent),
-                           Triggered(StealCardLeaves(), None, UntapCardEvent)],  # WARNING: doubt this works;
+                           Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
     'onulet': [Triggered(Onulet(), None, DiesEvent)],
     'orc-general': [Activated('T', PumpEffect(1, 1, True), T_FUNCS['your_other_orcs_in_play'],
                               extra_costs=[SacCardCost(T_FUNCS['another_orc_or_goblin_in_play'])])],
@@ -585,7 +595,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'plateau': dual_land_activated_ability_specs('RW'),
     'power-surge': [Triggered(PowerSurge(), None, UpkeepEvent)],
     'pradesh-gypsies': [Activated('1GT', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
-    'preacher': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],  # more to code
+    'preacher': [Activated('T', Steal(), T_FUNCS['opp_creatures_in_play']),
+                 Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                 Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
     'primal-clay': [Triggered(PrimalClay(), None, CastResolvedEvent)],
     'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],  # more to code
     'princess-lucrezia': [Activated('T', AddMana('U'))],
@@ -632,12 +644,12 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'rubinia-soulsinger': [Activated('T', Steal(), T_FUNCS['opp_creatures_in_play']),
                            Triggered(OptionalUntap(), None, UntapPhaseEvent),
-                           Triggered(StealCardLeaves(), None, UntapCardEvent)],  # works if old-man-of-the-sea works
+                           Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
     'rukh-egg': [Triggered(RukhEgg(), None, DiesEvent)],
     'sacrifice': [Triggered(SacrificeOnCast(), T_FUNCS['your_creatures_in_play'], CastResolvedEvent)],
     'sage-of-lat-nam': [Activated('T', DrawCards(), T_FUNCS['card_owner'],
                                   extra_costs=[SacCardCost(T_FUNCS['your_artifacts_in_play'])])],
-    'samite-healer': [Activated('T', PreventNextDamageEffect(1), T_FUNCS['cards_in_play'])],
+    'samite-healer': [Activated('T', PreventNextDamageBy(1), T_FUNCS['cards_in_play'])],
     'sandals-of-abdallah': [Activated('2', SandalsOfAbdallahIslandWalk(), T_FUNCS['creatures_in_play'])],
     'sandstorm': [Triggered(Sandstorm(), None, CastResolvedEvent)],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],
@@ -685,12 +697,13 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                              sub_types=['Human', 'Warrior'], colors='GR'), None, CastResolvedEvent),
                Triggered(StanggOnLeave(), None, ZoneChangeEvent)],
     'steal-artifact': [Triggered(Steal(), T_FUNCS['opp_artifacts_in_play'], CastResolvedEvent),
-                       Triggered(StealCardLeaves(), None, ZoneChangeEvent)],
+                       Triggered(ReturnToOwnerOnLTB(), None, ZoneChangeEvent)],
     'stone-giant': [Activated('T', StoneGiant(), T_FUNCS['stone_giant'])],
     'stone-rain': [Triggered(Destroy(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'storm-seeker': [Triggered(StormSeeker(), T_FUNCS['all_players'], CastResolvedEvent)],
     'storm-world': [Triggered(StormWorld(), None, UpkeepEvent)],
-    'stream-of-life': [Triggered(StreamOfLife(), T_FUNCS['all_players'], CastResolvedEvent)],
+    'stream-of-life': [Triggered(StreamOfLife(), T_FUNCS['all_players'], CastResolvedEvent,
+                                 max_variable_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XG'))],
     'strip-mine': [Activated('T', AddMana('C'), T_FUNCS['card_owner']),
                    Activated('T', Destroy(), T_FUNCS['lands_in_play'], extra_costs=[SacSelfCost()])],
     'su-chi': [Triggered(SuChi(), None, DiesEvent)],
@@ -703,7 +716,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'taiga': dual_land_activated_ability_specs('RG'),
     'tawnoss-coffin': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'tawnoss-wand': [Activated('2T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
-    'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                         Activated('2T', PumpEffect(1, 1, True), T_FUNCS['creatures_in_play']),
+                         (Triggered(UntapRemovesPumpFromAnotherCard(), None, UntapCardEffect))],
     'teleport': [Triggered(UnblockableThisTurn(), T_FUNCS['creatures_in_play'], CastResolvedEvent,
                            allowed_phases=[Phase.DECLARE_COMBAT])],
     'tetravus': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
@@ -779,6 +794,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    min_x=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2,
                    max_variable_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2)],
     'wall-of-opposition': [Activated('1', PumpEffect(1, 0, True), T_FUNCS['self'])],
+    'wall-of-putrid-flesh': [Static(WallOfPutridFleshPrevention())],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-water': [Activated('U', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'wanderlust': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
@@ -798,7 +814,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'wild-growth': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
                     Triggered(WildGrowth(), None, TapCardEvent)],
-    'willow-satyr': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],  # more to code
+    'willow-satyr': [Activated('T', Steal(), T_FUNCS['opp_legendary_creatures_in_play']),
+                           Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                           Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
     'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures_in_play'])],
