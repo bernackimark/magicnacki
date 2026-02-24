@@ -96,8 +96,7 @@ def is_tapped(s: GameCard) -> bool:
     return s.is_tapped
 
 def has_ge_x_counters(card_func: Callable, counter_type: CounterType, min_cnt: int) -> bool:
-    card = card_func()
-    return s.counters.get_count(counter_type) >= min_cnt
+    ...
 
 
 MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
