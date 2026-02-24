@@ -34,7 +34,7 @@ class GameCard:
     def __init__(self, props: Card, orig_owner_id: int, is_token: bool = False, colors: str = ''):
         self.props: Card = props
         self._orig_owner_id: int = orig_owner_id
-        self.owner_id: int = orig_owner_id
+        self._owner_id: int = orig_owner_id
         self.game_state: "GameState" = None
         self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
@@ -85,6 +85,12 @@ class GameCard:
     @property
     def orig_owner_id(self) -> int:
         return self._orig_owner_id
+
+    @property
+    def owner_id(self) -> int:
+        if not self.modifiers or self.modifiers.new_owner_id is None:
+            return self._owner_id
+        return self.modifiers.new_owner_id
 
     @property
     def power(self) -> int:
