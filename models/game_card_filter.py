@@ -188,6 +188,11 @@ class CardFilter:
                        [b for combat in self._gs.combats for b in combat.blockers])
         return self
 
+    def combating_against(self, c: GameCard):
+        self._cards = [b for com in self._gs.combats for b in com.blockers if com.attacker is c] + \
+                      [com.attacker for com in self._gs.combats for b in com.blockers if b is c]
+        return self
+
     # --- is enchanted ---
     def is_enchanted(self, bool_: bool = True):
         if bool_:
