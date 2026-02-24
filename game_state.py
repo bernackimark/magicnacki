@@ -55,6 +55,7 @@ class GameState:
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
         self.phase = Phase.UNTAP
+        self._phase_started: bool = False
         self.action_stack = ActionStack()
         self.pending_choice: ChoiceAction | None = None  # used for when a cost.pay() does not go onto the stack
         self.game_history: list[tuple[int, Action]] = []  # turn number & Action; appended to in engine.play()
@@ -436,7 +437,7 @@ class GameState:
                     break
             else:
                 if self.can_untap(c):
-                    self.emit(UntapPhaseEvent(active_player=self.player_turn_idx))
+                    self.emit(UntapCardEvent(c))
                     self.untap_card(c)
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
@@ -588,11 +589,16 @@ class GameState:
             return
 
         if self.phase == Phase.UNTAP:
-            self.handle_untap_phase()
+            if not self._phase_started:
+                self._phase_started = True
+                self.emit(UntapPhaseEvent(p_id))
             if len(self.action_stack):
                 if isinstance(self.action_stack.last_action, ChoiceAction):
                     return self.action_stack.last_action.get_actions()
-            self.phase = Phase.UPKEEP
+            else:
+                self.handle_untap_phase()
+                self._phase_started = False
+                self.phase = Phase.UPKEEP
             return
 
         if self.phase == Phase.UPKEEP:
