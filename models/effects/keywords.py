@@ -73,11 +73,21 @@ class KoboldOverlordCast(Effect):
             if source != t:
                 t.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
 
+class RapidFire(Effect):
+    """Cast this spell only before blockers are declared. Target creature gains first strike until end of turn.
+    If it doesn't have rampage, that creature gains rampage 2 until end of turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.temps.append(KWATemp(source, 'add', 'First Strike'))
+        if not target.rampage_amt:
+            target.modifiers.temps.append(KWATemp(source, 'add', 'Rampage 2'))
+
 class SandalsOfAbdallahIslandWalk(Effect):
     """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
+            raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.temps.append(KWATemp(source, 'add', 'Islandwalk'))
 
         temp_effect = SandalsOfAbdallahIfCreatureDies(target_creature=target)

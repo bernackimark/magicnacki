@@ -455,6 +455,13 @@ class VenarianGoldCast(Effect):
         gs.tap_card(target)
         if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
             source.counters.add_counter(SLEEP, x)
+
+class WallOfWonder(Effect):
+    """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
+    def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
+        source.modifiers.temps.append(PTTemp(source, 4, -4))
+        source.modifiers.temps.append(KWATemp(source, 'remove', 'Defender'))
+
 class Web(Effect):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:

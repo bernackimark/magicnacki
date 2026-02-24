@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING, Callable
 
 from models.destroy_replacements import RegenerationShield
 from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent, \
-    DrawCardEvent
+    DrawCardEvent, Event
 from models.utils import flip
 from models.zone import Zone
 

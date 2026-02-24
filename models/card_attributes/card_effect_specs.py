@@ -43,7 +43,7 @@ from models.effects.identity import SetColor, AddCreatureTypePTManaValue, Become
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
 from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
-    AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk
+    AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk, RapidFire
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
@@ -68,7 +68,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
-    HealingSalve, HasranOgress, Cyclone, YawgmothDemon
+    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -623,6 +623,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'raise-dead': [Triggered(Bounce(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
     'ramses-overdark': [Activated('T', Destroy(), T_FUNCS['enchanted_creatures'])],
+    'rapid-fire': [Triggered(RapidFire(), T_FUNCS['creatures_in_play'], CastResolvedEvent,
+                             allowed_phases=[p for p in Phase if p < Phase.DECLARE_BLOCKERS])],
     'rasputin-dreamweaver': [Triggered(AddCounter(DREAM, 7), None, CastResolvedEvent),
                              Activated('', AddMana('C'), extra_costs=[RemoveCounterCost(DREAM)]),
                              Activated('', PreventNextDamageToCardEffect(), T_FUNCS['self'],
@@ -806,6 +808,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wall-of-putrid-flesh': [Static(WallOfPutridFleshPrevention())],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-water': [Activated('U', PumpEffect(1, 0, True), T_FUNCS['self'])],
+    'wall-of-wonder': [Activated('2UU', WallOfWonder())],
     'wanderlust': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
                    Triggered(DealDamageOnTargetTurn(1), T_FUNCS['host_owner'], UpkeepEvent)],
     'warp-artifact': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
