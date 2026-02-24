@@ -3,10 +3,18 @@ from typing import TYPE_CHECKING, Literal, Union, Callable
 
 if TYPE_CHECKING:
     from game_card import GameCard
-    from game_state import GameState
 
 from dataclasses import dataclass, field
 
+
+@dataclass
+class OwnershipModifier:
+    source: GameCard
+    former_owner_id: int
+    new_owner_id: int
+
+    def __repr__(self):
+        return f'being stolen by {self.source.props.name}'
 
 @dataclass
 class PTModifier:
@@ -96,7 +104,7 @@ class SubTypeTemp:
 @dataclass
 class Modifiers:
     """Contains general auras (ex Creature Bond), PTModifiers (ex Holy Strength), and KWA Modifiers (ex Flight)"""
-    auras: list[GameCard | PTModifier | KWAModifier | TypeModifier | SubTypeModifier] = field(default_factory=list)
+    auras: list[GameCard | PTModifier | KWAModifier | TypeModifier | SubTypeModifier | OwnershipModifier] = field(default_factory=list)
     temps: list[PTTemp | KWATemp | TypeTemp | SubTypeTemp] = field(default_factory=list)
 
     def __repr__(self):
@@ -107,6 +115,12 @@ class Modifiers:
     def __bool__(self) -> bool:
         """True if anything contained in self.auras or self.temps"""
         return bool(self.auras or self.temps)
+
+    @property
+    def new_owner_id(self) -> int | None:
+        for aura in self.auras[::-1]:
+            if isinstance(aura, OwnershipModifier):
+                return aura.new_owner_id
 
     @property
     def power_delta(self) -> int:
@@ -169,7 +183,7 @@ class Modifiers:
     def is_enchanted_by(self, slug: str) -> bool:
         return slug in {a.props.slug for a in self.auras if hasattr(a, 'props')}
 
-    def remove_aura(self, item: GameCard | PTModifier | KWAModifier) -> None:
+    def remove_aura(self, item: GameCard | PTModifier | KWAModifier | OwnershipModifier) -> None:
         for a in self.auras:
             if a == item:
                 self.auras.remove(a)
@@ -186,4 +200,4 @@ class Modifiers:
         self.auras.clear()
 
 
-ModType = Union[PTModifier | PTTemp | KWAModifier | KWATemp | TypeModifier | TypeTemp | SubTypeModifier | SubTypeTemp]
+ModType = Union[PTModifier | PTTemp | KWAModifier | KWATemp | TypeModifier | TypeTemp | SubTypeModifier | SubTypeTemp | OwnershipModifier]
