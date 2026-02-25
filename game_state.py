@@ -582,6 +582,8 @@ class GameState:
 
                 # --- For each cast-triggered spec
                 for eff_spec in cast_eff_specs:
+                    if 'X' in c.casting_cost and self.mana_pools[p_id].get_max_x(c.casting_cost) < eff_spec.min_x:
+                        continue
                     actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=eff_spec))
 
                 # previous code before new TargetSpec approach
