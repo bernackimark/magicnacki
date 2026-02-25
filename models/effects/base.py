@@ -59,7 +59,7 @@ class EffSpec:
     activated_cnt_this_turn: int = 0
     max_activations_per_turn: int = 999
     text: str = ''
-    max_variable_x_func: Union[Callable[..., int], None] = None
+    max_x_func: Union[Callable[..., int], None] = None
     min_x: int = 1
 
     def __post_init__(self):
