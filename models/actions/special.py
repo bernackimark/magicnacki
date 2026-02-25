@@ -135,13 +135,19 @@ class SacTwoIslands(Action):
         self.gs.action_stack.pop()
 
 class SelectXAction(Action):
-    def __init__(self, choice: XValueChoice, x_value: int):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, choice: XValueChoice, x_value: int):
+        super().__init__(p_id, gs)
+        self.source = source
         self.choice = choice
         self.x_value = x_value
 
+    def __repr__(self):
+        _, the_repr = self.gs.game_history[-1]
+        return f'{the_repr}, X={self.x_value}'
+
     def play(self):
         self.choice.selected_x = self.x_value
-        self.choice.gs.action_stack.pop()
+        self.source.variable_x = self.x_value
 
         # After selecting X, check if the spell also has targets
         if self.choice.eff_spec.target_spec:
