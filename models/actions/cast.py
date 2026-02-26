@@ -13,6 +13,7 @@ from models.zone import Zone
 
 @dataclass
 class CastToBoard(Action):
+    """Should be deprecated and replaced by CastToTargetAddToStack"""
     card: GameCard
     x_values_for_variable_cast: int | None = None
 
@@ -83,7 +84,7 @@ class CastToTargetAddToStack(Action):
     eff_spec: EffSpec | None = None
     text: str = ''
 
-    # TODO: right now, activated abilities are following this path.  Need to dtermine if that's correct ...
+    # TODO: right now, activated abilities are following this path.  Need to determine if that's correct ...
     #  if so, the repr shouldn't say "Cast", the class name shouldn't include "Cast", etc.
 
     def __repr__(self) -> str:

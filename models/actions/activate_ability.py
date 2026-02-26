@@ -63,7 +63,7 @@ class BeginAbilityActivationAction(Action):
         a = self.ability
         if a.eff_spec.max_x_func:
             from models.choice_actions_all import XValueChoice
-            self.gs.pending_choice = XValueChoice(a.source.owner_id, self.gs, a.source, a.eff_spec)
+            self.gs.pending_choice = XValueChoice(a.source.owner_id, self.gs, a.source, a.eff_spec, a)
             return
 
         from models.choice_actions_all import MultiTargetChoice

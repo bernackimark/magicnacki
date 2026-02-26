@@ -11,7 +11,7 @@ from models.actions.target import AddTargetAction, FinishTargetsAction
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
-    from models.effects.base import EffSpec
+    from models.effects.base import EffSpec, ActivatedAbility
 
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
@@ -212,15 +212,16 @@ class UntapWithManaChoice(ChoiceAction):
                 UntapWithManaAction(self.player_idx, self.gs, self.source, self.mana_cost)]
 
 class XValueChoice(ChoiceAction):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec, aa: ActivatedAbility):
         super().__init__(p_id, gs, source)
         self.eff_spec = eff_spec
         self.selected_x: int | None = None
+        self.aa = aa
 
     def get_actions(self) -> list[Action]:
         min_x = self.eff_spec.min_x
         max_x = self.eff_spec.max_x_func(self.gs, self.source)
-        return [SelectXAction(self.player_idx, self.gs, self.source, self, x) for x in range(min_x, max_x + 1)]
+        return [SelectXAction(self.player_idx, self.gs, self.source, self, x, self.aa) for x in range(min_x, max_x + 1)]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):
