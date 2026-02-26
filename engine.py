@@ -55,7 +55,7 @@ for d in decks:
         if c.casting_cost[-1] not in ('B', 'U', 'G', 'R', 'W'):
             c.casting_cost = '1'
         else:
-            c.casting_cost = c.casting_cost[-1] if 'X' not in c.casting_cost else f'X{c.casting_cost[-1]}'
+            c.casting_cost = c.casting_cost[-1] * 3 if 'X' not in c.casting_cost else f'X{c.casting_cost[-1]}'
 
 # create players
 players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]

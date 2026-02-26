@@ -81,30 +81,30 @@ class CastToTargetAddToStack(Action):
     card: GameCard
     target: GameCard | list[GameCard] | None
     eff_spec: EffSpec | None = None
-    x_values_for_variable_cast: int | None = None
     text: str = ''
 
-    def __post_init__(self):
-        self.card.variable_x = self.x_values_for_variable_cast
+    # TODO: right now, activated abilities are following this path.  Need to dtermine if that's correct ...
+    #  if so, the repr shouldn't say "Cast", the class name shouldn't include "Cast", etc.
 
     def __repr__(self) -> str:
         target_text, variable_cast_text = '', ''
+        if self.card.variable_x is not None:
+            variable_cast_text = f", X={self.card.variable_x}"
+        if not self.target:
+            return f"Cast {self.card.props.name} {self.text}{variable_cast_text}"
         if isinstance(self.target, list) and self.target:
             target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
-        elif isinstance(self.target, GameCard):
-            target_text = ', targeting ' + self.target.props.name
         elif isinstance(self.target, int):
             target_text = f', targeting Player #{self.target}'
-        if self.x_values_for_variable_cast is not None:
-            variable_cast_text = f", X={self.x_values_for_variable_cast}"
+        else:  # self.target should be a GameCard ... cannot import GameCard, as circular
+            target_text = ', targeting ' + self.target.props.name
         return f"Cast {self.card.props.name} {self.text}{target_text}{variable_cast_text}"
 
     def play(self) -> None:
-        if self.x_values_for_variable_cast is not None:
+        if self.card.variable_x is not None:
             cast_cost = self.card.casting_cost[:]
-            cast_cost = cast_cost.replace('X', str(self.x_values_for_variable_cast))
+            cast_cost = cast_cost.replace('X', str(self.card.variable_x))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
-            self.card.variable_x = self.x_values_for_variable_cast
         else:
             self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
         self.gs.action_stack.push(self, self.gs)
@@ -141,15 +141,20 @@ class BeginSpellCastAction(Action):
         """Determines which pipeline to enter"""
         # --- X selection first (if needed)
         if self.eff_spec and 'X' in self.card.casting_cost:
-            from models.choice_actions_all import XValueChoice
-            self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, self.eff_spec)
-            return
+            min_x = self.eff_spec.min_x
+            max_x = self.eff_spec.max_x_func(self.gs, self.card)
+            if min_x != max_x:
+                from models.choice_actions_all import XValueChoice
+                self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, self.eff_spec)
+                return
+            else:
+                self.card.variable_x = min_x
 
-        # --- Targeting
+        # --- Targeting ---
         if self.eff_spec and self.eff_spec.target_spec:
             from models.choice_actions_all import MultiTargetChoice
             self.gs.pending_choice = MultiTargetChoice(self.player_idx, self.gs, self.card, self.eff_spec)
             return
 
-        # --- No targeting → cast immediately
-        self.gs.action_stack.append(CastToTargetAddToStack(self.player_idx, self.gs, self.card))
+        # --- No targeting → cast immediately ---
+        self.gs.action_stack.append(CastToTargetAddToStack(self.player_idx, self.gs, self.card, target=None))

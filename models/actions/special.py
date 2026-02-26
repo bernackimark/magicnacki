@@ -157,10 +157,9 @@ class SelectXAction(Action):
                                                               x_value_for_variable_cast=self.choice.selected_x)
         else:
             # No targets → spell goes straight to stack
-            self.choice.gs.action_stack.append(
+            self.choice.gs.action_stack.push(
                 CastToTargetAddToStack(self.choice.player_idx, self.choice.gs, self.choice.source, target=None,
-                                       eff_spec=self.choice.eff_spec,
-                                       x_values_for_variable_cast=self.choice.selected_x))
+                                       eff_spec=self.choice.eff_spec), self.gs)
             self.choice.gs.pending_choice = None
 
 class SkipDrawPhaseGainLife(Action):

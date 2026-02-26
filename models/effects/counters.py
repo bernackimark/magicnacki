@@ -61,10 +61,10 @@ class ManaBatteriesAddMana(Effect):
     def __init__(self, color: str):
         self.color = color
 
-    def resolve(self, gs: GameState, source: GameCard, target=None, x_value=None):
-        print('XXX', x_value)
-        source.counters.remove_counter(CHARGE, x_value)
-        gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x_value)
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        x = getattr(source, 'variable_x', 0)  # read X chosen when activating
+        source.counters.remove_counter(CHARGE, x)
+        gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x)
 
 class RemoveCountersOnHostTurn(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):

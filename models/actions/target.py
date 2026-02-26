@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from models.constants import Target
+
 if TYPE_CHECKING:
     from models.game_card import GameCard
     from models.choice_actions_all import TargetChoiceAction, MultiTargetChoice
@@ -11,13 +13,22 @@ from models.actions.base import Action
 @dataclass
 class AddTargetAction(Action):
     choice: TargetChoiceAction | MultiTargetChoice
-    card: GameCard
+    target: Target
 
     def __repr__(self):
-        return f'{self.choice.source}: add target: {self.card}'
+        return f'{self.choice.source}: add target: {self.target}'
 
     def play(self):
-        self.choice.selected_targets.append(self.card)
+        self.choice.selected_targets.append(self.target)
+
+        target_spec = self.choice.eff_spec.target_spec
+        selected = len(self.choice.selected_targets)
+
+        # If we've reached max targets, auto-finish
+        if target_spec.max_cnt is not None and selected >= target_spec.max_cnt:
+            finish = FinishTargetsAction(self.player_idx, self.gs, self.choice)
+            finish.play()
+            return
 
 @dataclass
 class FinishTargetsAction(Action):
@@ -28,7 +39,6 @@ class FinishTargetsAction(Action):
 
     def play(self):
         gs = self.choice.gs
-        eff = self.choice.eff_spec.effect
         source = self.choice.source
         targets = list(self.choice.selected_targets)
 
@@ -37,10 +47,13 @@ class FinishTargetsAction(Action):
         if gs.action_stack.actions:
             gs.action_stack.pop()
 
+        # Send spell back into normal casting pipeline
+        from models.actions.cast import CastToTargetAddToStack
         if not targets:
-            eff.resolve(gs, source, None)
+            target = None
         elif len(targets) == 1:
-            eff.resolve(gs, source, targets[0])
+            target = targets[0]
         else:
-            for t in targets:
-                eff.resolve(gs, source, t)
+            target = targets
+
+        CastToTargetAddToStack(self.player_idx, gs, source, target, self.choice.eff_spec).play()

@@ -19,11 +19,12 @@ class ActivateAbility(Action):
 
     def __repr__(self) -> str:
         target_text = ''
-        if isinstance(self.target, list) and self.target and isinstance(self.target[0], GameCard):
-            target_text = f", targeting {', '.join([_ for _ in self.target])}"
-        elif isinstance(self.target, GameCard):
-            target_text = ', targeting ' + self.target.props.name
-        elif (isinstance(self.target, list) or isinstance(self.target, tuple)) and self.target and isinstance(self.target[0], int):
+        if isinstance(self.target, list):
+            if len(self.target) > 1 and isinstance(self.target[0], GameCard):
+                target_text = f", targeting {', '.join([_ for _ in self.target])}"
+            if len(self.target) == 1 and isinstance(self.target[0], GameCard):
+                target_text = ', targeting ' + self.target[0].props.name
+        elif self.target and isinstance(self.target, (list, tuple)) and isinstance(self.target[0], int):
             target_text = ', targeting Player #' + '& '.join([_ for _ in self.target])
         elif isinstance(self.target, int):
             target_text = f', targeting Player #{self.target}'
@@ -52,22 +53,21 @@ class BeginAbilityActivationAction(Action):
     """Handles pre-activation choices: X-values and target selection."""
     ability: ActivatedAbility
 
+    def __repr__(self):
+        return f'{self.ability.eff_spec.cost}: {self.ability.eff_spec.effect}'
+
     def play(self):
-        self.gs.action_stack.pop()
+        if self.gs.action_stack.actions:
+            self.gs.action_stack.pop()
 
-        # --- X selection first
-        if 'X' in getattr(self.ability.eff_spec, 'cost', ''):
+        a = self.ability
+        if a.eff_spec.max_x_func:
             from models.choice_actions_all import XValueChoice
-            self.gs.pending_choice = XValueChoice(self.ability.source.owner_id, self.gs,
-                                                  self.ability.source, self.ability.eff_spec)
+            self.gs.pending_choice = XValueChoice(a.source.owner_id, self.gs, a.source, a.eff_spec)
             return
 
-        # --- Target selection
-        if self.ability.eff_spec.target_spec:
-            from models.choice_actions_all import MultiTargetChoice
-            self.gs.pending_choice = MultiTargetChoice(self.ability.source.owner_id, self.gs,
-                                                       self.ability.source, self.ability.eff_spec)
-            return
+        from models.choice_actions_all import MultiTargetChoice
+        self.gs.pending_choice = MultiTargetChoice(a.source.owner_id, self.gs, a.source, a.eff_spec)
 
-        # --- No X or targets → simple activation
-        self.gs.action_stack.append(ActivateAbility(self.player_idx, self.gs, self.ability))
+        # # --- No X or targets → simple activation
+        # self.gs.action_stack.append(ActivateAbility(self.player_idx, self.gs, self.ability))

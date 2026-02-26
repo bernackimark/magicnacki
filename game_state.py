@@ -497,25 +497,28 @@ class GameState:
 
             # Determine potential targets
             target_spec = ability.eff_spec.target_spec
-            if target_spec:
-                targets = target_spec.filter_func(self, c)
-                # convert to list
-                targets = [targets] if not isinstance(targets, (list, tuple)) else targets
-                # remove illegal targets
-                targets = [t for t in targets if self.can_target(t, c)]
-                if len(targets) < target_spec.min_cnt:
-                    # Not enough legal targets → skip ability entirely
-                    continue
-            else:
-                targets = []
 
-            # At this point, we have a valid ability with legal targets
-            if target_spec and target_spec.max_cnt > 1:
+            # TODO: THIS IF CHAIN ARE WRONG
+            #  EX: mana battery has no target_spec but does have a max_x_func and must enter BeginAbilityActivation ...
+
+            if (target_spec and target_spec.min_cnt > 1) or ability.eff_spec.max_x_func:
                 actions.append(BeginAbilityActivationAction(self.action_on_idx, self, ability))
-            elif target_spec and target_spec.min_cnt == 1:
-                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, ability))
-            else:
+                continue
+
+            if not target_spec:
                 actions.append(ActivateAbility(self.action_on_idx, self, ability, target=None))
+                continue
+
+            targets = target_spec.filter_func(self, c)
+            # convert to list
+            targets = [targets] if not isinstance(targets, (list, tuple)) else targets
+            # remove illegal targets
+            targets = [t for t in targets if self.can_target(t, c)]
+            if len(targets) < target_spec.min_cnt:
+                # Not enough legal targets → skip ability entirely
+                continue
+
+            actions.append(ActivateAbility(self.action_on_idx, self, ability, target=targets))
 
         return actions
 

@@ -819,8 +819,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wheel-of-fortune': [Triggered(WheelOfFortune(), None, CastResolvedEvent)],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                            Activated('T', ManaBatteriesAddMana('W'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_x_func=lambda gs, s:
-                                     T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+                                     max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
                            # TODO: the x_value isn't making it to .resolve(); might be true of all specs w max_var_x_fun
     'white-ward': [Triggered(KWAModEffect('add', 'Protection From White'),
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
