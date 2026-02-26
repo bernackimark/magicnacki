@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class TargetSpec:
     filter_func: Callable
     min_cnt: int = 1
-    max_cnt: int = 1
+    max_cnt: int | None = 1
 
 class Effect:
     """Base class for all card effects."""
@@ -49,7 +49,7 @@ class EffSpec:
     activation_type: Literal['activated', 'static', 'triggered']
     cost: str
     effect: Effect
-    target_spec: Union[tuple[Callable, int, int | None], Callable, None] = None
+    target_spec: Union[tuple[Callable, int, int | None], Callable, TargetSpec, None] = None
     trigger_event: type[Event] | None = None
     conditions: list[Callable[[], bool], None] = field(default_factory=list)
     extra_costs: list[Cost | None] = None
@@ -69,9 +69,13 @@ class EffSpec:
         self.target_spec: TargetSpec | None = self._normalize_target_spec(self.target_spec)
 
     @staticmethod
-    def _normalize_target_spec(target_spec: tuple[Callable, int, int] | None | Callable | None) -> TargetSpec | None:
+    def _normalize_target_spec(target_spec: tuple[Callable, int, int] | None | Callable | TargetSpec | None) -> (
+            TargetSpec | None):
         if target_spec is None:
             return None
+
+        if isinstance(target_spec, TargetSpec):
+            return target_spec
 
         if isinstance(target_spec, tuple):
             filter_func, min_cnt, max_cnt = target_spec

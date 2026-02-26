@@ -440,48 +440,6 @@ class GameState:
                     self.emit(UntapCardEvent(c))
                     self.untap_card(c)
 
-    # former approach
-    # def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
-    #     actions: list[ActivateAbility] = []
-    #
-    #     for ability in c.activated_abilities:
-    #         if not ability.can_activate(self):
-    #             continue
-    #         if ability.eff_spec.extra_costs:
-    #             for extra_cost in ability.eff_spec.extra_costs:
-    #                 if not extra_cost.can_pay(self, c):
-    #                     continue  # this just break out of this loop, or does it exit entire ability loop (desired)?
-    #         if c.has_summoning_sickness:
-    #             continue
-    #
-    #         if ability.eff_spec.target_filter is None and c.attached_to:  # janky solution
-    #             actions.append(ActivateAbility(self.action_on_idx, self, ability, c.attached_to))
-    #             continue
-    #
-    #         targets = ability.eff_spec.target_filter(self, c) if ability.eff_spec.target_filter else None
-    #         # Returns None | GameCard | list[GameCard] | tuple[int] (targets p_id's) | int (targets a single p_id)
-    #         print(f"{c=}, {ability=}, {targets=}")
-    #
-    #         # I need at least one target, but I don't have any.  Skip.
-    #         if isinstance(targets, (list, tuple)) and not len(targets):
-    #             continue
-    #
-    #         # convert targets into something iterable
-    #         targets = [targets] if not isinstance(targets, (list, tuple)) else targets
-    #
-    #         for t in targets:
-    #             if not self.can_target(t, c):
-    #                 continue
-    #             if 'X' in ability.eff_spec.cost:
-    #                 min_x = ability.eff_spec.min_x
-    #                 max_x = ability.eff_spec.max_variable_x_func(self, c)
-    #                 for x in range(min_x, max_x + 1):
-    #                     actions.append(ActivateAbility(self.action_on_idx, self, ability, t, x))
-    #             else:
-    #                 actions.append(ActivateAbility(self.action_on_idx, self, ability, t))
-    #
-    #     return actions
-
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility | BeginAbilityActivationAction] = []
 
