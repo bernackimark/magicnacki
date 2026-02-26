@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING, Callable
 
 from phase_fsm import Phase
 from models.utils import flip
-from models.events_all import ZoneChangeEvent, TapCardEvent, UntapPhaseEvent, Event
+from models.events_all import ZoneChangeEvent, TapCardEvent, UntapPhaseEvent
 from ..zone import Zone
 
 if TYPE_CHECKING:
@@ -31,11 +31,28 @@ class CardsDontUntapAtUntapPhase(Effect):
 
 class TapCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.tap(gs)
+        gs.tap_card(target)
+
+
+class TapCardsEffect(Effect):
+    """Accepts a list of targets and taps each"""
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a list of targets')
+        for t in target:
+            gs.tap_card(t)
 
 class UntapCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.untap(gs)
+        gs.untap_card(target)
+
+class UntapCardsEffect(Effect):
+    """Accepts a list of targets and untaps each"""
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a list of targets')
+        for t in target:
+            gs.untap_card(t)
 
 class HostStaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):

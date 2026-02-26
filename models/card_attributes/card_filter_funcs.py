@@ -117,6 +117,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'unenchanted_perms_in_play': lambda gs, s: gs.card_filter.is_enchanted(False).permanents().in_play().result(),
     'untapped_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().artifacts().untapped().result(),
     'untapped_artifacts_creatures_lands': lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).untapped().result(),
+    'untapped_creatures': lambda gs, s: gs.card_filter.in_play().creatures().untapped().result(),
     'untapped_creatures_without_flying':
         lambda gs, s: gs.card_filter.in_play().creatures().untapped().has('Flying', False).result(),
     'walls_in_play': lambda gs, s: gs.card_filter.in_play().walls().result(),

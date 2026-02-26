@@ -85,6 +85,15 @@ class AcidRain(Effect):
         for forest in CardFilter(gs).in_play().forests().result():
             gs.destroy(forest)
 
+class AshesToAshes(Effect):
+    """Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you."""
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        for t in target:
+            gs.exile(t)
+        gs.apply_damage(source, 5, source.owner_id)
+
 class Blight(Effect):
     """Enchant land; When enchanted land becomes tapped, destroy it."""
     listens_to = TapCardEvent
@@ -120,6 +129,14 @@ class DemonicHordesUpkeep(Effect):
             gs.action_stack.push(OpponentDestroysLandChoice(flip(source.owner_id), gs, source))
         else:
             gs.action_stack.push(DemonicHordesUpkeepChoice(source.owner_id, gs, source), gs, False)
+
+class DustToDust(Effect):
+    """Exile two target artifacts"""
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        for t in target:
+            gs.exile(t)
 
 class EaterOfTheDeadAA(Effect):
     """Exile target creature card from a graveyard and untap this creature"""

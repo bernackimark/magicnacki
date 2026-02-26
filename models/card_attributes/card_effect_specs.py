@@ -11,7 +11,7 @@ from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCo
 from models.card_attributes.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
     CHARGE, DREAM, WIND, HATCHLING, CounterType
-from models.effects.base import EffSpec, Activated, Triggered, Static
+from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
 from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
     CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, \
     ElderLandWurm, Sentinel, GlyphOfDoom, GlyphOfLife, InfernalMedusa
@@ -35,7 +35,7 @@ from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy,
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
-    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll
+    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
     MindTwist
@@ -72,7 +72,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
-    ArenaOfTheAncientsCast, MagneticMountainOnUntapStep, CardsDontUntapAtUntapPhase
+    ArenaOfTheAncientsCast, MagneticMountainOnUntapStep, CardsDontUntapAtUntapPhase, UntapCardsEffect, TapCardsEffect
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent
@@ -146,6 +146,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'artifact-ward': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
                       Static(ArtifactWardCanBeBlocked()), Static(ArtifactWardPrevention()),
                       Static(ArtifactWardCanBeTargeted())],
+    'ashes-to-ashes': [Triggered(AshesToAshes(), TargetSpec(T_FUNCS['non_artifact_creatures_in_play'], 2, 2),
+                                 CastResolvedEvent)],
     'ashnods-altar': [Activated('', AddMana('C', 2), extra_costs=[SacCardCost(T_FUNCS['your_creatures_in_play'])])],
     'ashnods-battle-gear': [Activated('2T', PumpEffect(2, -2), T_FUNCS['your_creatures_in_play']),
                             Triggered(OptionalUntap(), None, UntapPhaseEvent),
@@ -202,6 +204,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing':
         [Triggered(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['tapped_lands'], 1, None),
+                                       max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
+    # TODO: if candelabra's owner has 0 mana, the effect should be offered, but it's putting game in infinite loop
     'carrion-ants': [Activated('1', PumpEffect(1, 1, True), T_FUNCS['self'])],
     'castle': [Static(Castle())],
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self'], AttackEvent),
@@ -302,6 +307,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],
                   # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
     'drudge-skeletons': [Activated('B', RegenerateSelf())],
+    'dust-to-dust': [Triggered(DustToDust(), TargetSpec(T_FUNCS['artifacts_in_play'], 2, 2), CastResolvedEvent)],
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'])],
     'dwarven-warriors': [Activated('T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
     'dwarven-weaponsmith': [Activated('T', AddCounter(PLUS_ONE), T_FUNCS['creatures_in_play'],
@@ -832,6 +838,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures_in_play'])],
     'wooden-sphere': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('G'))],
+    'word-of-binding': [Triggered(TapCardsEffect(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None), CastResolvedEvent,
+                                  max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XBB'))],
     'wormwood-treefolk': [Activated('GG', WormwoodTreefolkForestwalk()),
                           Activated('BB', WormwoodTreefolkSwampwalk())],
     'wrath-of-god': [Triggered(ExileAllCreatures(), None, CastResolvedEvent)],

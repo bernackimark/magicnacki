@@ -212,7 +212,7 @@ class UntapWithManaChoice(ChoiceAction):
                 UntapWithManaAction(self.player_idx, self.gs, self.source, self.mana_cost)]
 
 class XValueChoice(ChoiceAction):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec, aa: ActivatedAbility):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec, aa: ActivatedAbility = None):
         super().__init__(p_id, gs, source)
         self.eff_spec = eff_spec
         self.selected_x: int | None = None
