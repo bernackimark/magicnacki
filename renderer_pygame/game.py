@@ -9,7 +9,8 @@ from renderer_pygame.scenes.scene_manager import SceneManager
 class Game:
     """A generic game shell using pygame-ce."""
 
-    def __init__(self, width=800, height=600, title="My Game", fps=60, images_path: str = 'assets/images'):
+    def __init__(self, width=800, height=600, title="My Game", fps=60,
+                 images_path: str = 'renderer_pygame/assets/images'):
         pg.init()
         pg.mixer.init()  # 🔊 ensure mixer is ready
         self.width = width

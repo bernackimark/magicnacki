@@ -110,10 +110,10 @@ class BuildDeckScene(Scene):
         """Rebuild the table when deck contents change"""
         self.table.clear_rows()
         for c in self.deck_builder.unique_cards_sorted:
-            p_t_text = f'{c.props.power}/{c.props.toughness}' if c.props.power or c.props.toughness else ''
-            self.table.add_row([c.props.name, str(self.deck_builder.get_slug_cnt(c.props.slug)),
-                                c.props.casting_cost, ', '.join(c.props.card_types),
-                                p_t_text, ', '.join(c.props.keyword_abilities),
+            p_t_text = f'{c.power}/{c.toughness}' if c.power or c.toughness else ''
+            self.table.add_row([c.name, str(self.deck_builder.get_slug_cnt(c.slug)),
+                                c.casting_cost, ', '.join(c.card_types),
+                                p_t_text, ', '.join(c.keyword_abilities),
                                 'Something re: Image'])
 
     # --- Draw everything ---
