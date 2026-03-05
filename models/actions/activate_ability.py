@@ -21,7 +21,7 @@ class ActivateAbility(Action):
         target_text = ''
         if isinstance(self.target, list):
             if len(self.target) > 1 and isinstance(self.target[0], GameCard):
-                target_text = f", targeting {', '.join([_ for _ in self.target])}"
+                target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
             if len(self.target) == 1 and isinstance(self.target[0], GameCard):
                 target_text = ', targeting ' + self.target[0].props.name
         elif self.target and isinstance(self.target, (list, tuple)) and isinstance(self.target[0], int):
