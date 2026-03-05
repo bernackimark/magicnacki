@@ -323,6 +323,8 @@ class GameState:
         match zone:
             case Zone.BATTLEFIELD:
                 self.boards[card.owner_id].remove(card)
+                if card.is_tapped:
+                    card.is_tapped = False
             case Zone.HAND:
                 self.hands[card.orig_owner_id].cards.remove(card)
                 self.hands[card.orig_owner_id].sort_cards()
