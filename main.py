@@ -41,8 +41,8 @@ def create_engine():
         data = json.load(f)
 
     universe = CardUniverse(data['universe'])
-    deck_0 = data['deck_0']
-    deck_1 = data['deck_1']
+    deck_0 = data['deck_0_pg']
+    deck_1 = data['deck_1_pg']
     if data['starting_deck'] == 1:
         deck_0, deck_1 = deck_1, deck_0
 
@@ -75,6 +75,6 @@ def create_engine():
 
 
 if __name__ == "__main__":
-    cu = CardUniverse(['4E'])
+    cu = CardUniverse(['1E'])
     engine = create_engine()
     MyGame(cu, engine).run()
