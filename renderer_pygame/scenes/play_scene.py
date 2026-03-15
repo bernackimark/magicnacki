@@ -1,6 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from renderer_pygame.common.dice import make_pg_dice
 
 if TYPE_CHECKING:
     from models.actions.base import Action
@@ -15,6 +18,7 @@ from renderer_pygame.scenes.scene_abc import Scene
 
 CARD_W = 100
 CARD_H = 142
+CARD_BACK_IMG = pg.image.load(Path("renderer_pygame/assets/card_back.jpg"))
 
 @dataclass
 class PGCard:
@@ -24,11 +28,11 @@ class PGCard:
     rect: pg.Rect = None
     hovered: bool = False
     selected: bool = False
-    face_down_color = (50, 50, 150)
-    face_up_color = (240, 240, 200)
+    back_surf: pg.Surface = CARD_BACK_IMG
 
     def __post_init__(self):
         self.surf = pg.transform.smoothscale(self.surf, (CARD_W, CARD_H))
+        self.back_surf = pg.transform.smoothscale(self.back_surf, (CARD_W, CARD_H))
 
 @dataclass
 class ActionRenderInfo:
@@ -121,18 +125,23 @@ class PlayScene(Scene):
         width, height = self.game.screen.get_size()
         y_base = 180 if top else height - 300
 
-        life_text = self.font.render(str(self.state.life[p_idx]), True, (255, 255, 255))
-        self.game.screen.blit(life_text, (20, y_base))
+        # draw dice in a 2-wide by 3-tall (max) configuration
+        die_base_x = 20
+        pg_dice = make_pg_dice(40, 40, self.state.life[p_idx])
+        for i, pg_die in enumerate(pg_dice):
+            die_x = die_base_x + (50 * (i % 2))
+            die_y = y_base + (50 * (i // 2))
+            self.game.screen.blit(pg_die, (die_x, die_y))
 
         self.draw_library(p_idx, 150, y_base)
         self.draw_graveyard(p_idx, 150, y_base - 150 if top else y_base + 150)
         self.draw_exile(p_idx, 20, y_base - 150 if top else y_base + 150)
-        self.draw_battlefield(p_idx, 350, y_base)
-        self.draw_hand(p_idx, 350, y_base - 150 if top else y_base + 150, top)
+        self.draw_battlefield(p_idx, 300, y_base)
+        self.draw_hand(p_idx, 300, y_base - 150 if top else y_base + 150, top)
 
     def draw_hand(self, p_idx: int, x: int, y: int, top: bool):
         # I want to draw the opponent's cards face down; self.hand_layout is really focused on the bottom player's hand
-        spacing = CARD_W + 20
+        spacing = CARD_W + 10
 
         for i, card in enumerate(self.state.hands[p_idx].cards):
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
@@ -160,12 +169,8 @@ class PlayScene(Scene):
         card.rect = pg.Rect(x, y, width, height)
         screen = self.game.screen
 
-        if face_down:
-            pg.draw.rect(screen, card.face_down_color, card.rect)
-            pg.draw.rect(screen, (0, 0, 0), card.rect, 2)
-            return
-
-        card_surf = pg.transform.smoothscale(card.surf, (width, height))
+        card_surf = card.surf if not face_down else card.back_surf
+        card_surf = pg.transform.smoothscale(card_surf, (width, height))
 
         if is_rotated:
             rotated_surf = pg.transform.rotate(card_surf, -90)
