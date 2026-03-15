@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from renderer_pygame.common.dice import make_pg_dice
+from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
 
 if TYPE_CHECKING:
     from models.actions.base import Action
@@ -19,6 +19,12 @@ from renderer_pygame.scenes.scene_abc import Scene
 CARD_W = 100
 CARD_H = 142
 CARD_BACK_IMG = pg.image.load(Path("renderer_pygame/assets/card_back.jpg"))
+X_GUTTER = 10
+Y_GUTTER = 10
+SPACING_X = 10
+SPACING_Y = 10
+COL_W = CARD_W + SPACING_X
+COL_H = CARD_H + SPACING_Y
 
 @dataclass
 class PGCard:
@@ -56,10 +62,19 @@ class PlayScene(Scene):
         self.p_idx = 0
 
         self.hand_cards: list[PGCard] = []
+        self.dice: dict[int, pg.Surface] = {i: make_pg_dice(40, 40, i) for i in range(1, 7)}
 
         self.available_actions = []
         self.action_layout = []  # list of ActionRenderInfo
         self.pending_action = None
+
+    @staticmethod
+    def _get_x(col_num: int) -> int:
+        return col_num * COL_W + X_GUTTER
+
+    def _get_y(self, row_num: int, is_top: bool) -> int:
+        """If is_top, start from top down; else, start from bottom up"""
+        return row_num * COL_H + Y_GUTTER if is_top else self.game.height - Y_GUTTER - ((row_num + 1) * COL_H)
 
     def handle_events(self, events):
         for event in events:
@@ -99,10 +114,7 @@ class PlayScene(Scene):
 
         # Draw current player zones (bottom half)
         self.draw_player_area(self.p_idx, top=False)
-
         self.draw_action_panel()
-
-        # Hover preview on top of everything
         self.draw_hover_preview()
 
     def handle_action_click(self, mouse_pos):
@@ -122,75 +134,40 @@ class PlayScene(Scene):
                 break
 
     def draw_player_area(self, p_idx: int, top: bool):
-        width, height = self.game.screen.get_size()
-        y_base = 180 if top else height - 300
+        self.draw_dice(p_idx, self._get_x(0), self._get_y(1, top))
+        self.draw_library(p_idx, self._get_x(1), self._get_y(1, top))
+        self.draw_graveyard(p_idx, self._get_x(1), self._get_y(0, top))
+        self.draw_exile(p_idx, self._get_x(0), self._get_y(0, top))
+        self.draw_battlefield(p_idx, self._get_x(2), self._get_y(1, top))
+        self.draw_hand(p_idx, self._get_x(2), self._get_y(0, top), top)
 
+    def draw_dice(self, p_idx: int, x: int, y: int):
         # draw dice in a 2-wide by 3-tall (max) configuration
-        die_base_x = 20
-        pg_dice = make_pg_dice(40, 40, self.state.life[p_idx])
-        for i, pg_die in enumerate(pg_dice):
-            die_x = die_base_x + (50 * (i % 2))
-            die_y = y_base + (50 * (i // 2))
-            self.game.screen.blit(pg_die, (die_x, die_y))
+        dice_values = int_to_dice_values(self.state.life[p_idx])
+        x += 5  # the dice are slightly too far left
+        for i, value in enumerate(dice_values):
+            die_x = x + (50 * (i % 2))
+            die_y = y + (50 * (i // 2))
+            self.game.screen.blit(self.dice[value], (die_x, die_y))
 
-        self.draw_library(p_idx, 150, y_base)
-        self.draw_graveyard(p_idx, 150, y_base - 150 if top else y_base + 150)
-        self.draw_exile(p_idx, 20, y_base - 150 if top else y_base + 150)
-        self.draw_battlefield(p_idx, 300, y_base)
-        self.draw_hand(p_idx, 300, y_base - 150 if top else y_base + 150, top)
-
-    def draw_hand(self, p_idx: int, x: int, y: int, top: bool):
-        # I want to draw the opponent's cards face down; self.hand_layout is really focused on the bottom player's hand
-        spacing = CARD_W + 10
-
+    def draw_hand(self, p_idx: int, x: int, y: int, face_down: bool, spacing_x: int = SPACING_X):
         for i, card in enumerate(self.state.hands[p_idx].cards):
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
             pg_card = PGCard(card, first_image_surf, i)
-            self.draw_card(pg_card, x, y, face_down=top)
-            x += spacing
+            self.draw_card(pg_card, x, y, face_down=face_down)
+            x += CARD_W + spacing_x
 
-            if not top:
+            if not face_down:
                 # Store x, y, width, height along with PGCard
                 pg_card.rect = pg.Rect(x, y, CARD_W, CARD_H)
                 self.hand_cards.append(pg_card)
 
-    def draw_battlefield(self, p_id: int, x: int, y: int):
-        spacing = CARD_W + 20
-
+    def draw_battlefield(self, p_id: int, x: int, y: int, spacing_x: int = SPACING_X):
         for i, card in enumerate(self.state.boards[p_id]):
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
             pg_card = PGCard(card, first_image_surf, i)
             self.draw_card(pg_card, x, y, is_rotated=card.is_tapped)
-            x += spacing
-
-    def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, height=CARD_H,
-                  face_down: bool = False, is_rotated: bool = False):
-        """Draws a card at the given position (x, y) with the given width/height. Rotated 90 degrees if is_rotated."""
-        card.rect = pg.Rect(x, y, width, height)
-        screen = self.game.screen
-
-        card_surf = card.surf if not face_down else card.back_surf
-        card_surf = pg.transform.smoothscale(card_surf, (width, height))
-
-        if is_rotated:
-            rotated_surf = pg.transform.rotate(card_surf, -90)
-            draw_rect = rotated_surf.get_rect(center=card.rect.center)
-            screen.blit(rotated_surf, draw_rect.topleft)
-        else:
-            screen.blit(card_surf, card.rect.topleft)
-
-        # Optional: highlight if hovered
-        if getattr(card, "hovered", False):
-            highlight_rect = card.rect.inflate(4, 4)
-            pg.draw.rect(screen, (255, 0, 0), highlight_rect, 2)
-
-    def draw_library(self, p_id: int, x: int, y: int):
-        rect = pg.Rect(x, y, CARD_W, CARD_H)
-        pg.draw.rect(self.game.screen, (50, 50, 150), rect)
-        pg.draw.rect(self.game.screen, (0, 0, 0), rect, 2)
-        card_cnt = len(self.state.libraries[p_id].cards)
-        card_cnt_text = self.small_font.render(str(card_cnt), True, (0, 0, 0))
-        self.game.screen.blit(card_cnt_text, (rect.x + 5, rect.y + 5))
+            x += CARD_W + spacing_x
 
     def draw_graveyard(self, p_idx: int, x, y):
         if not self.state.graveyards[p_idx]:
@@ -211,6 +188,15 @@ class PlayScene(Scene):
         first_image_surf = next(iter(self.game.images[top_card.props.slug].values()))
         pg_card = PGCard(top_card, first_image_surf, 0)
         self.draw_card(pg_card, x, y, is_rotated=True)
+
+    def draw_library(self, p_id: int, x: int, y: int):
+        card_cnt = len(self.state.libraries[p_id].cards)
+        if not card_cnt:
+            return
+        card_back_surf = pg.transform.smoothscale(CARD_BACK_IMG, (CARD_W, CARD_H))
+        self.game.screen.blit(card_back_surf, (x, y))
+        card_cnt_text = self.small_font.render(str(card_cnt), True, (200, 200, 200))
+        self.game.screen.blit(card_cnt_text, (x + 5, y + 5))
 
     def draw_stack(self, state):
         stack = state.stack
@@ -254,6 +240,27 @@ class PlayScene(Scene):
             # Highlight top of stack
             if i == len(stack) - 1:
                 pg.draw.rect(screen, (255, 215, 0), rect, 3)
+
+    def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, height=CARD_H,
+                  face_down: bool = False, is_rotated: bool = False):
+        """Draws a card at the given position (x, y) with the given width/height. Rotated 90 degrees if is_rotated."""
+        card.rect = pg.Rect(x, y, width, height)
+        screen = self.game.screen
+
+        card_surf = card.surf if not face_down else card.back_surf
+        card_surf = pg.transform.smoothscale(card_surf, (width, height))
+
+        if is_rotated:
+            rotated_surf = pg.transform.rotate(card_surf, -90)
+            draw_rect = rotated_surf.get_rect(center=card.rect.center)
+            screen.blit(rotated_surf, draw_rect.topleft)
+        else:
+            screen.blit(card_surf, card.rect.topleft)
+
+        # Optional: highlight if hovered
+        if getattr(card, "hovered", False):
+            highlight_rect = card.rect.inflate(4, 4)
+            pg.draw.rect(screen, (255, 0, 0), highlight_rect, 2)
 
     def draw_action_panel(self):
         screen = self.game.screen
