@@ -7,6 +7,7 @@ from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
 
 if TYPE_CHECKING:
     from models.actions.base import Action
+    from renderer_pygame.game import Game
 
 import pygame as pg
 
@@ -19,12 +20,6 @@ from renderer_pygame.scenes.scene_abc import Scene
 CARD_W = 100
 CARD_H = 142
 CARD_BACK_IMG = pg.image.load(Path("renderer_pygame/assets/card_back.jpg"))
-X_GUTTER = 10
-Y_GUTTER = 10
-SPACING_X = 10
-SPACING_Y = 10
-COL_W = CARD_W + SPACING_X
-COL_H = CARD_H + SPACING_Y
 
 @dataclass
 class PGCard:
@@ -47,34 +42,37 @@ class ActionRenderInfo:
     index: int
     hovered: bool = False
 
+@dataclass
+class RecentActionRow:
+    p_idx: int
+    action_text: str
+    rect: pg.Rect
+    index: int
+
 class PlayScene(Scene):
-    def __init__(self, game, engine):
+    def __init__(self, game: Game, engine):
         super().__init__(game)
         self.engine: Engine = engine
         self.font = pg.font.SysFont("arial", 48)
         self.small_font = pg.font.SysFont("arial", 12)
         self.mouse_pos = 0, 0
+
+        # grid 12 units (125 pixels each) wide by 9 units (100 pixels each) tall
+        self.cols = {i: i * 125 + self.game.gutter for i in range(12)}
+        self.rows = {i: i * 150 + self.game.gutter for i in range(6)}
+
         self.hand_layout: list[PGCard] = []
         self.hovered_card = None
         self.selected_card = None
         self.state: GameState = self.engine.gs
 
         self.p_idx = 0
-
-        self.hand_cards: list[PGCard] = []
-        self.dice: dict[int, pg.Surface] = {i: make_pg_dice(40, 40, i) for i in range(1, 7)}
+        self.dice: dict[int: pg.Surface] = {i: make_pg_dice(40, 40, i) for i in range(1, 7)}
 
         self.available_actions = []
-        self.action_layout = []  # list of ActionRenderInfo
+        self.action_layout: list[ActionRenderInfo] = []
+        self.recent_actions: list[RecentActionRow] = []  # game history
         self.pending_action = None
-
-    @staticmethod
-    def _get_x(col_num: int) -> int:
-        return col_num * COL_W + X_GUTTER
-
-    def _get_y(self, row_num: int, is_top: bool) -> int:
-        """If is_top, start from top down; else, start from bottom up"""
-        return row_num * COL_H + Y_GUTTER if is_top else self.game.height - Y_GUTTER - ((row_num + 1) * COL_H)
 
     def handle_events(self, events):
         for event in events:
@@ -89,18 +87,16 @@ class PlayScene(Scene):
 
     def update(self, dt):
         self.available_actions = self.state.get_available_actions(self.state.action_on_idx)
-        self.build_action_layout()
+        self.build_action_layout(self.cols[10], self.rows[0])
+        self.build_recent_actions_layout(self.cols[10], self.rows[3])
         self.update_action_hover()
 
     def update_action_hover(self):
         mouse_pos = pg.mouse.get_pos()
+        self.hovered_card = None
+
         for info in self.action_layout:
             info.hovered = info.rect.collidepoint(mouse_pos)
-
-        for card in self.hand_cards:
-            if card.rect.collidepoint(mouse_pos):
-                self.hovered_card = card
-                break
 
     def draw(self):
         screen = self.game.screen
@@ -114,8 +110,9 @@ class PlayScene(Scene):
 
         # Draw current player zones (bottom half)
         self.draw_player_area(self.p_idx, top=False)
-        self.draw_action_panel()
-        self.draw_hover_preview()
+        self.draw_action_panel(self.cols[10], self.rows[0])
+        self.draw_recent_actions(self.cols[10], self.rows[3])
+        self.draw_hover_preview(self.cols[10], self.rows[4])
 
     def handle_action_click(self, mouse_pos):
         for info in self.action_layout:
@@ -126,20 +123,20 @@ class PlayScene(Scene):
 
                 # Execute immediately like the console
                 info.action.play()
-                self.state.game_history.append((self.state.turn_number, info.action))
+                self.state.game_history.append((self.state.turn_number, self.state.action_on_idx, info.action))
 
                 # After action is played, refresh available actions for the next player
                 self.available_actions = self.state.get_available_actions(self.state.action_on_idx)
-                self.build_action_layout()
+                self.build_action_layout(self.cols[10], self.rows[0])
                 break
 
     def draw_player_area(self, p_idx: int, top: bool):
-        self.draw_dice(p_idx, self._get_x(0), self._get_y(1, top))
-        self.draw_library(p_idx, self._get_x(1), self._get_y(1, top))
-        self.draw_graveyard(p_idx, self._get_x(1), self._get_y(0, top))
-        self.draw_exile(p_idx, self._get_x(0), self._get_y(0, top))
-        self.draw_battlefield(p_idx, self._get_x(2), self._get_y(1, top))
-        self.draw_hand(p_idx, self._get_x(2), self._get_y(0, top), top)
+        self.draw_dice(p_idx, self.cols[0], self.rows[1] if top else self.rows[4])
+        self.draw_library(p_idx, self.cols[1], self.rows[1] if top else self.rows[4])
+        self.draw_graveyard(p_idx, self.cols[1], self.rows[0] if top else self.rows[5])
+        self.draw_exile(p_idx, self.cols[0], self.rows[0] if top else self.rows[5])
+        self.draw_battlefield(p_idx, 2, 1 if top else 4)
+        self.draw_hand(p_idx, 2, 0 if top else 5, top)
 
     def draw_dice(self, p_idx: int, x: int, y: int):
         # draw dice in a 2-wide by 3-tall (max) configuration
@@ -150,26 +147,31 @@ class PlayScene(Scene):
             die_y = y + (50 * (i // 2))
             self.game.screen.blit(self.dice[value], (die_x, die_y))
 
-    def draw_hand(self, p_idx: int, x: int, y: int, face_down: bool, spacing_x: int = SPACING_X):
+    def draw_hand(self, p_idx: int, col: int, row: int, face_down: bool):
+        mouse_pos = pg.mouse.get_pos()
+
         for i, card in enumerate(self.state.hands[p_idx].cards):
+            x_loc = self.cols[col + i]
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
             pg_card = PGCard(card, first_image_surf, i)
-            self.draw_card(pg_card, x, y, face_down=face_down)
-            x += CARD_W + spacing_x
+            self.draw_card(pg_card, x_loc, self.rows[row], face_down=face_down)
 
-            if not face_down:
-                # Store x, y, width, height along with PGCard
-                pg_card.rect = pg.Rect(x, y, CARD_W, CARD_H)
-                self.hand_cards.append(pg_card)
+            if not face_down and pg_card.rect.collidepoint(mouse_pos):
+                self.hovered_card = pg_card
 
-    def draw_battlefield(self, p_id: int, x: int, y: int, spacing_x: int = SPACING_X):
+    def draw_battlefield(self, p_id: int, col: int, row: int):
+        mouse_pos = pg.mouse.get_pos()
+
         for i, card in enumerate(self.state.boards[p_id]):
+            x_loc = self.cols[col + i]
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
             pg_card = PGCard(card, first_image_surf, i)
-            self.draw_card(pg_card, x, y, is_rotated=card.is_tapped)
-            x += CARD_W + spacing_x
+            self.draw_card(pg_card, x_loc, self.rows[row], is_rotated=card.is_tapped)
 
-    def draw_graveyard(self, p_idx: int, x, y):
+            if pg_card.rect.collidepoint(mouse_pos):
+                self.hovered_card = pg_card
+
+    def draw_graveyard(self, p_idx: int, x: int, y: int):
         if not self.state.graveyards[p_idx]:
             rect = pg.Rect(x, y, CARD_W, CARD_H)
             pg.draw.rect(self.game.screen, (120, 120, 120), rect)
@@ -197,6 +199,96 @@ class PlayScene(Scene):
         self.game.screen.blit(card_back_surf, (x, y))
         card_cnt_text = self.small_font.render(str(card_cnt), True, (200, 200, 200))
         self.game.screen.blit(card_cnt_text, (x + 5, y + 5))
+
+    def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, height=CARD_H,
+                  face_down: bool = False, is_rotated: bool = False):
+        """Draws a card at the given position (x, y) with the given width/height. Rotated 90 degrees if is_rotated."""
+        card.rect = pg.Rect(x, y, width, height)
+        screen = self.game.screen
+
+        card_surf = card.surf if not face_down else card.back_surf
+        card_surf = pg.transform.smoothscale(card_surf, (width, height))
+
+        if is_rotated:
+            rotated_surf = pg.transform.rotate(card_surf, -90)
+            draw_rect = rotated_surf.get_rect(center=card.rect.center)
+            screen.blit(rotated_surf, draw_rect.topleft)
+        else:
+            screen.blit(card_surf, card.rect.topleft)
+
+    def draw_action_panel(self, x: int, y: int):
+        screen = self.game.screen
+        width = screen.width - self.game.gutter - x
+        height = self.rows[max(self.rows)] + 150 - self.game.gutter
+
+        # Background
+        pg.draw.rect(screen, (40, 40, 40), pg.Rect(x, y, width, height))
+
+        # Title
+        title = self.small_font.render("Available Actions", True, (255, 255, 255))
+        screen.blit(title, (x + 10, 20))
+
+        for info in self.action_layout:
+            rect = info.rect
+
+            # Background
+            bg_color = (255, 255, 0) if info.hovered else (70, 70, 70)
+            pg.draw.rect(screen, bg_color, rect)
+
+            # Border
+            border_color = (150, 150, 150)
+            pg.draw.rect(screen, border_color, rect, 1)
+
+            # Text
+            text_color = (0, 0, 0) if info.hovered else (255, 255, 255)
+            text_surf = self.small_font.render(f"{info.index}: {info.action}", True, text_color)
+            screen.blit(text_surf, (rect.x + 5, rect.y + 5))
+
+    def build_action_layout(self, x: int, y: int, row_spacing: int = 40, padding: int = 10):
+        self.action_layout = []
+
+        if not self.available_actions:
+            return
+
+        for i, action in enumerate(self.available_actions):
+            rect = pg.Rect(x + padding, y + 40, 250 - (padding * 2), 30)
+            self.action_layout.append(ActionRenderInfo(action, rect, i))
+            y += row_spacing
+
+    def build_recent_actions_layout(self, x: int, y: int, row_spacing: int = 20, padding: int = 10):
+        self.recent_actions = []
+        if not self.state.game_history:
+            return
+
+        for i, recent_action_row in enumerate(self.state.game_history[-10:][::-1]):
+            _, p_id, action = recent_action_row
+            rect = pg.Rect(x + 10, y + 20, self.cols[11] - (padding * 2), 15)
+            self.recent_actions.append(RecentActionRow(p_id, action.__repr__(), rect, i))
+            y += row_spacing
+
+    def draw_recent_actions(self, x: int, y: int):
+        text_surf = self.small_font.render("Last 10 Actions", True, (255, 255, 255))
+        self.game.screen.blit(text_surf, (x + 10, y))
+
+        for act in self.recent_actions:
+            text_surf = self.small_font.render(f"P{act.p_idx}: {act.action_text}", True, (255, 255, 255))
+            self.game.screen.blit(text_surf, (act.rect.x, act.rect.y))
+
+    def draw_hover_preview(self, x: int, y: int, preview_w: int = 200, preview_h: int = 285):
+        if self.hovered_card is None:
+            return
+
+        card = self.hovered_card
+
+        # Face-up only
+        if getattr(card, "face_down", False):
+            return
+
+        first_image_surf = next(iter(self.game.images[card.card.props.slug].values()))
+        preview_surf = pg.transform.smoothscale(first_image_surf, (preview_w, preview_h))
+
+        # Blit the preview
+        self.game.screen.blit(preview_surf, (x + 20, y))
 
     def draw_stack(self, state):
         stack = state.stack
@@ -240,103 +332,3 @@ class PlayScene(Scene):
             # Highlight top of stack
             if i == len(stack) - 1:
                 pg.draw.rect(screen, (255, 215, 0), rect, 3)
-
-    def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, height=CARD_H,
-                  face_down: bool = False, is_rotated: bool = False):
-        """Draws a card at the given position (x, y) with the given width/height. Rotated 90 degrees if is_rotated."""
-        card.rect = pg.Rect(x, y, width, height)
-        screen = self.game.screen
-
-        card_surf = card.surf if not face_down else card.back_surf
-        card_surf = pg.transform.smoothscale(card_surf, (width, height))
-
-        if is_rotated:
-            rotated_surf = pg.transform.rotate(card_surf, -90)
-            draw_rect = rotated_surf.get_rect(center=card.rect.center)
-            screen.blit(rotated_surf, draw_rect.topleft)
-        else:
-            screen.blit(card_surf, card.rect.topleft)
-
-        # Optional: highlight if hovered
-        if getattr(card, "hovered", False):
-            highlight_rect = card.rect.inflate(4, 4)
-            pg.draw.rect(screen, (255, 0, 0), highlight_rect, 2)
-
-    def draw_action_panel(self):
-        screen = self.game.screen
-        screen_w, screen_h = screen.get_size()
-
-        panel_width = 300
-        panel_rect = pg.Rect(screen_w - panel_width, 0, panel_width, screen_h)
-
-        # Background
-        pg.draw.rect(screen, (40, 40, 40), panel_rect)
-
-        # Title
-        title = self.small_font.render("Available Actions", True, (255, 255, 255))
-        screen.blit(title, (panel_rect.x + 20, 40))
-
-        # Actions
-        for info in self.action_layout:
-            rect = info.rect
-
-            # Background
-            bg_color = (255, 255, 0) if info.hovered else (70, 70, 70)
-            pg.draw.rect(screen, bg_color, rect)
-
-            # Border
-            border_color = (150, 150, 150)
-            pg.draw.rect(screen, border_color, rect, 1)
-
-            # Text
-            text_color = (0, 0, 0) if info.hovered else (255, 255, 255)
-            text_surf = self.small_font.render(f"{info.index}: {info.action}", True, text_color)
-            screen.blit(text_surf, (rect.x + 5, rect.y + 5))
-
-    def build_action_layout(self):
-        self.action_layout = []
-
-        if not self.available_actions:
-            return
-
-        screen_w, screen_h = self.game.screen.get_size()
-
-        panel_width = 300
-        x = screen_w - panel_width + 20
-        y = 100
-        spacing = 40
-
-        for i, action in enumerate(self.available_actions):
-            rect = pg.Rect(x, y, panel_width - 40, 30)
-            self.action_layout.append(ActionRenderInfo(action, rect, i))
-            y += spacing
-
-    def draw_hover_preview(self):
-        if self.hovered_card is None:
-            return
-
-        card = self.hovered_card
-
-        # Face-up only
-        if getattr(card, "face_down", False):
-            return
-
-        screen = self.game.screen
-        screen_w, screen_h = screen.get_size()
-
-        preview_width = 200
-        preview_height = 285
-
-        first_image_surf = next(iter(self.game.images[card.card.props.slug].values()))
-        preview_surf = pg.transform.smoothscale(first_image_surf, (preview_width, preview_height))
-
-        padding = 20
-        x = screen_w - preview_width - padding
-        y = screen_h - preview_height - padding
-
-        # Draw border
-        border_rect = pg.Rect(x - 2, y - 2, preview_width + 4, preview_height + 4)
-        pg.draw.rect(screen, (200, 200, 200), border_rect)
-
-        # Blit the preview
-        screen.blit(preview_surf, (x, y))
