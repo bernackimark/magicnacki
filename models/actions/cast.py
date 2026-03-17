@@ -158,4 +158,5 @@ class BeginSpellCastAction(Action):
             return
 
         # --- No targeting → cast immediately ---
-        self.gs.action_stack.append(CastToTargetAddToStack(self.player_idx, self.gs, self.card, target=None))
+        self.gs.action_stack.push(CastToTargetAddToStack(self.player_idx, self.gs, self.card,
+                                                         target=None, eff_spec=self.eff_spec), self.gs)

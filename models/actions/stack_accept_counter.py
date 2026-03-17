@@ -30,7 +30,10 @@ class AcceptAction(Action):
             target.modifiers.auras.append(card)
 
         if isinstance(last_action, CastToTargetAddToStack):
-            last_action.eff_spec.effect.resolve(self.gs, card, target)
+            if not last_action.eff_spec.effect:
+                print('Warning:', last_action.card, 'has no effect')  # some cards do nothing on cast
+            else:
+                last_action.eff_spec.effect.resolve(self.gs, card, target)
 
         # # --- new system: resolve the card's own effect(s) ---
         # from models.card_attributes.card_effect_specs import INVOCATIONS
