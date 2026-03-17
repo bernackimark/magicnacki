@@ -24,7 +24,8 @@ from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCa
 from models.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
                                UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
-                               UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent, Event, DiscardEvent)
+                               UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent, Event, DiscardEvent,
+                               DiscardStepEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.hand import Hand
@@ -693,6 +694,7 @@ class GameState:
             return
 
         if self.phase == Phase.DISCARD:
+            self.emit(DiscardStepEvent(active_player=self.player_turn_idx))
             if len(hand.cards) > 7:
                 for c in hand.cards:
                     available_actions.append(DiscardCard(self.player_turn_idx, self, c))

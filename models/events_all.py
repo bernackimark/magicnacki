@@ -44,6 +44,10 @@ class DestroyAttemptEvent(Event):
     card: GameCard
     allow_regeneration: bool = True
 
+@dataclass
+class DiscardStepEvent(Event):
+    active_player: int
+
 @dataclass(frozen=True)
 class DiesEvent(Event):
     """MTG specifically considers 'dies' as moving from board to graveyard only"""
