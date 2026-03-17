@@ -10,13 +10,14 @@ class Game:
     """A generic game shell using pygame-ce."""
 
     def __init__(self, width=800, height=600, title="My Game", fps=60,
-                 images_path: str = 'renderer_pygame/assets/images'):
+                 images_path: str = 'renderer_pygame/assets/images', gutter: int = 10):
         pg.init()
         pg.mixer.init()  # 🔊 ensure mixer is ready
         self.width = width
         self.height = height
         self.fps = fps
         self.title = title
+        self.gutter = gutter
 
         # Core pygame setup
         self.screen = pg.display.set_mode((self.width, self.height))
