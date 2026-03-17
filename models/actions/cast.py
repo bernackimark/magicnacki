@@ -45,7 +45,8 @@ class CastToBoard(Action):
                 print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event}")
                 if eff_spec.activation_type != 'triggered':
                     continue
-                if eff_spec.trigger_event == CastResolvedEvent:
+
+                if eff_spec.trigger_event is CastResolvedEvent:
                     target_spec = eff_spec.target_spec
 
                     if target_spec is None:
@@ -54,11 +55,11 @@ class CastToBoard(Action):
 
                     candidates = target_spec.filter_func(self.gs, self.card)
 
-                    # --- exactly 1 target (legacy behavior)
+                    # --- exactly 1 target (legacy behavior) ---
                     if target_spec.min_cnt == 1 and target_spec.max_cnt == 1:
-                        if not candidates:
+                        if candidates is None:
                             return  # fizzles silently
-                        target = candidates[0]
+                        target = candidates[0] if isinstance(candidates, list) else candidates
                         eff_spec.effect.resolve(self.gs, self.card, target)
                         return
 
