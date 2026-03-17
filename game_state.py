@@ -509,23 +509,6 @@ class GameState:
         def available_actions_from_hand() -> list[Action]:
             actions: list[Action] = []
 
-            # part of former approach
-            # def _append_action(c: GameCard, target: GameCard | None = None, eff_spec=None):
-            #     """Append CastToTargetAddToStack actions, handling X if present."""
-            #     texts = [eff_spec.text] if eff_spec and eff_spec.text else [None]
-            #
-            #     if eff_spec and 'X' in c.casting_cost:
-            #         min_x = eff_spec.min_x
-            #         max_x = eff_spec.max_variable_x_func(self, c)
-            #         for x in range(min_x, max_x + 1):
-            #             for text in texts:
-            #                 full_text = f"{text}, X={x}" if text else f"X={x}"
-            #                 actions.append(CastToTargetAddToStack(p_id, self, c, target, text=full_text,
-            #                                                       x_values_for_variable_cast=x))
-            #         return
-            #
-            #     actions.append(CastToTargetAddToStack(p_id, self, c, target))
-
             for c in hand.cards:
                 if not self.can_cast(c, p_id):
                     continue
@@ -547,6 +530,14 @@ class GameState:
                 for eff_spec in cast_eff_specs:
                     if 'X' in c.casting_cost and self.mana_pools[p_id].get_max_x(c.casting_cost) < eff_spec.min_x:
                         continue
+
+                    if eff_spec.target_spec and eff_spec.target_spec.filter_func:
+                        candidates = eff_spec.target_spec.filter_func(self, c)
+                        valid_targets = [t for t in candidates if self.can_target(t, c)]
+
+                        if len(valid_targets) < eff_spec.target_spec.min_cnt:
+                            continue
+
                     actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=eff_spec))
 
                 # previous code before new TargetSpec approach
