@@ -3,7 +3,7 @@ import math
 from typing import Optional, TYPE_CHECKING
 
 from models.counter_tokens import VITALITY, PLUS_ONE
-from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, TapCardEvent
+from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, TapCardEvent, UpkeepEvent
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -35,14 +35,16 @@ class DealDamageOnSourceTurn(Effect):
             return
         gs.apply_damage(source, 1, target.owner_id)
 
-class DealDamageOnTargetTurn(Effect):
+class DealDamageOnHostUpkeep(Effect):
+    listens_to = UpkeepEvent
+
     def __init__(self, amount):
         self.amount = amount
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != target.owner_id:
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if not source.attached_to or gs.player_turn_idx != source.attached_to.owner_id:
             return
-        gs.apply_damage(source, 1, target.owner_id)
+        gs.apply_damage(source, self.amount, source.attached_to.owner_id)
 
 class DealDamageToAllCreaturesAndPlayers(Effect):
     def __init__(self, amt: int):
@@ -142,12 +144,14 @@ class CreatureBond(Effect):
             return
         gs.apply_damage(source, source.attached_to.toughness, source.attached_to.owner_id)
 
-class CurseArtifactUpkeep(Effect):
+class CurseArtifact(Effect):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        if gs.player_turn_idx != target.owner_id:
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if not source.attached_to or gs.player_turn_idx != source.attached_to.owner_id:
             return
-        gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
+        gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
 
 class DingusEgg(Effect):
     """Whenever a land is put into a graveyard from battlefield, deal 2 damage to that land's controller."""

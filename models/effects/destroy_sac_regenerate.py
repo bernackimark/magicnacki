@@ -146,13 +146,13 @@ class DustToDust(Effect):
         for t in target:
             gs.exile(t)
 
-class EaterOfTheDeadAA(Effect):
+class EaterOfTheDead(Effect):
     """Exile target creature card from a graveyard and untap this creature"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         GraveyardToExile().resolve(gs, source, target)
-        source.untap(gs)
+        gs.untap_card(source)
 
 class EnergyFlux(Effect):
     """All artifacts have 'At your upkeep, sacrifice this artifact unless you pay {2}'"""

@@ -12,7 +12,8 @@ from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
 from models.utils import flip
 
-from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent, DiscardEvent
+from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent, DiscardEvent, \
+    DiscardStepEvent
 
 
 # --- GENERIC ---
@@ -46,10 +47,10 @@ class Braingeyser(Effect):
 
 class CursedRackEffect(Effect):
     """Opponent's maximum hand size is four [at their discard phase]"""
-    listens_to = EndStepEvent
+    listens_to = DiscardStepEvent
 
-    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
-        opp_id = flip(source.orig_owner_id)
+    def on_event(self, gs: GameState, source: GameCard, event: DiscardEvent):
+        opp_id = flip(source.owner_id)
         if gs.player_turn_idx != opp_id:
             return
 

@@ -4,7 +4,7 @@ from typing import Optional, TYPE_CHECKING
 from models.counter_tokens import MINUS_ZERO_ONE
 from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
-from models.events_all import UnblockedAttackerEvent, UntapCardEvent
+from models.events_all import UnblockedAttackerEvent, UntapCardEvent, EndStepEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -72,9 +72,10 @@ class BoneFlute(Effect):
 
 class DragonWhelpEndStep(Effect):
     """If this [pump] ability has been activated 4+ times this turn, sac at end step."""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        cnt = len([temp for temp in s.modifiers.temps if temp.source is s])
-        if cnt >= 4:
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
+        if len([temp for temp in s.modifiers.temps if temp.source is s]) >= 4:
             gs.destroy(s)
 
 class GreatDefender(Effect):

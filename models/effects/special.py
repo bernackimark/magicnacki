@@ -100,9 +100,9 @@ class CocoonUpkeep(Effect):
         host.counters.remove_counter(PUPA)
 
 class Crumble(Effect):
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            gs.destroy(target)
+            gs.destroy(target, allow_regeneration=False)
             gs.increment_life(target.owner_id, target.props.casting_weight)
 
 class Cyclone(Effect):
@@ -122,9 +122,8 @@ class DivineOffering(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f"{source.props.name} needs a target")
-        if target:
-            gs.increment_life(source.owner_id, target.power)
-            gs.destroy(target)
+        gs.destroy(target)
+        gs.increment_life(source.owner_id, target.props.casting_weight)
 
 class Earthbind(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

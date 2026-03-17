@@ -23,15 +23,15 @@ class AddMana(Effect):
         gs.mana_pools[source.orig_owner_id].add_floating(self.color, self.cnt)
 
 class DrainPower(Effect):
+    """Target player activates a mana ability of each land they control.
+    Then that player loses all unspent mana & you add the mana lost this way."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
         """target = player_id whose available mana will be targeted & given to the other player"""
         if target is None:
-            return
+            raise ValueError(f'{source.props.name} needs a target')
         land_giver_mana = gs.mana_pools[target].available_mana.copy()
-        land_taker_id = flip(target)
         for color, amt in land_giver_mana.items():
-            gs.mana_pools[land_taker_id].add_floating(color, amt)
-        print(f"{source} steals all of Player #{target}'s unused mana.")
+            gs.mana_pools[source.owner_id].add_floating(color, amt)
 
 class EnergyTap(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

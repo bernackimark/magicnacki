@@ -19,7 +19,7 @@ from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePl
     AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
     RockHydraCast, AddCounterPerCreatureDeath, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
     CitanulDruid, ManaBatteriesAddMana, AddCounter, SpiritShackle
-from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifactUpkeep, DealDamageOnTargetTurn, \
+from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifact, DealDamageOnHostUpkeep, \
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
     DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
@@ -31,7 +31,7 @@ from models.effects.damage_preventions import PreventNextDamageBy, ArgothianPixi
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention, PreventDamageBy, \
     WallOfPutridFleshPrevention
 from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDamageReplacement
-from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
+from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOrSac, EaterOfTheDead, \
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
@@ -268,8 +268,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'crumble': [Triggered(Crumble()), T_FUNCS['artifacts_in_play'], CastResolvedEvent],
     'crusade': [Static(Crusade())],
     'crystal-rod': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('U'))],
-    'curse-artifact': [Triggered(CurseArtifactUpkeep(), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
-    'cursed-land': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['lands_in_play'], UpkeepEvent)],
+    'curse-artifact': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
+                       Triggered(CurseArtifact(), T_FUNCS['self'], UpkeepEvent)],
+    'cursed-land': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
+                    Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host'], UpkeepEvent)],
     'cursed-rack': [Triggered(CursedRackEffect(), None, EndStepEvent)],
     'cyclone': [Triggered(Cyclone(), None, UpkeepEvent)],
     'cyclopean-mummy': [Triggered(CyclopeanMummy(), None, DiesEvent)],
@@ -299,7 +301,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'divine-transformation':
         [Triggered(PumpEffect(3, 3), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'dragon-engine': [Activated('2', PumpEffect(1, 0, True), T_FUNCS['self'])],
-    'dragon-whelp': [Triggered(DragonWhelpEndStep(), None, EndStepEvent)],
+    'dragon-whelp': [Activated('R', PumpEffect(1, 0, True)), Triggered(DragonWhelpEndStep(), None, EndStepEvent)],
     'drain-power': [Triggered(DrainPower(), T_FUNCS['opponent'], CastResolvedEvent)],
     'dream-coat': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent)] +
                   [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,
@@ -317,7 +319,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'earthbind': [Triggered(Earthbind(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
     'eater-of-the-dead':
-        [Activated('', EaterOfTheDeadAA(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
+        [Activated('', EaterOfTheDead(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
     'el-hajjâj': [Triggered(ElHajjaj(), T_FUNCS['self'], DamageResolvedEvent)],
     'elder-land-wurm': [Triggered(ElderLandWurm(), None, BlockEvent)],
     'elder-spawn': [Triggered(ElderSpawnUpkeep(), None, UpkeepEvent), Static(ElderSpawnCanBeBlocked())],
@@ -349,7 +351,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fasting': [Triggered(Fasting(), T_FUNCS['self'], UpkeepEvent),
                 Triggered(Destroy(), T_FUNCS['self'], DrawCardEvent)],
     'fear': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent), Static(Fear())],
-    'feedback': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['enchants_in_play'], UpkeepEvent)],
+    'feedback': [Triggered(None, T_FUNCS['enchants_in_play'], CastResolvedEvent),
+                 Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host'], UpkeepEvent)],
     'feint': [Triggered(Feint(), T_FUNCS['attackers'], CastResolvedEvent)],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
     'fire-drake': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
@@ -816,8 +819,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wall-of-water': [Activated('U', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'wall-of-wonder': [Activated('2UU', WallOfWonder())],
     'wanderlust': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
-                   Triggered(DealDamageOnTargetTurn(1), T_FUNCS['host_owner'], UpkeepEvent)],
-    'warp-artifact': [Triggered(DealDamageOnTargetTurn(1), T_FUNCS['artifacts_in_play'], UpkeepEvent)],
+                   Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host_owner'], UpkeepEvent)],
+    'warp-artifact': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
+                      Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host_owner'], UpkeepEvent)],
     'water-wurm': [Static(WaterWurmPT())],
     'weakness': [Triggered(PumpEffect(-2, -1), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'weakstone': [Static(Weakstone())],
