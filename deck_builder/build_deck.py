@@ -75,7 +75,9 @@ class DeckBuilder:
         self.main.append(c) if to_pile == 'main' else self.side.append(c)
 
     def add_card_by_slug(self, slug: str, to_pile: Literal['main', 'side'] = 'main'):
-        card = next(c for c in self.rule_set.card_universe.cards if c.slug == slug)
+        card = next((c for c in self.rule_set.card_universe.cards if c.slug == slug), None)
+        if not card:
+            raise ValueError(f'Could not find slug: {slug}')
         self.add_card(card, to_pile)
 
     def remove_card(self, c: Card, from_pile: Literal['main', 'side'] = 'main') -> None:
