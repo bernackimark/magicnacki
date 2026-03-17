@@ -24,7 +24,7 @@ class Engine:
                 continue
             action = self.players[self.gs.action_on_idx].make_move(self.gs, actions)
             action.play()
-            self.gs.game_history.append((self.gs.turn_number, action))
+            self.gs.game_history.append((self.gs.turn_number, self.gs.action_on_idx, action))
 
 
 if __name__ == '__main__':
