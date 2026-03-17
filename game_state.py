@@ -1,5 +1,6 @@
 import random
 from collections import defaultdict
+from copy import copy
 from typing import Callable, Iterable, Any
 
 from models.action_stack import ActionStack
@@ -248,15 +249,17 @@ class GameState:
         if card.zone == to_zone:
             return
 
+        from_zone = copy(card.zone)
+
         # Unregister effects, remove all mods if leaving battlefield
         if card.zone == Zone.BATTLEFIELD:
             self._leave_battlefield(card, to_zone)
 
         self._remove_from_zone(card, card.zone)
         self._add_to_zone(card, to_zone)
-        self._set_zone(card, to_zone)
+        card.zone = to_zone
         if emit_zone_event:
-            self.emit(ZoneChangeEvent(card, card.zone, to_zone, cause))
+            self.emit(ZoneChangeEvent(card, from_zone, to_zone, cause))
 
         # Post-move hooks
         # self._after_zone_change(card, from_zone, to_zone)
@@ -334,10 +337,6 @@ class GameState:
                 self.exiles[card.owner_id].remove(card)
             case Zone.LIBRARY:
                 self.libraries[card.owner_id].cards.remove(card)
-
-    @staticmethod
-    def _set_zone(card: GameCard, zone: Zone):
-        card.zone = zone
 
     def _leave_battlefield(self, card: GameCard, to_zone: Zone):
         """Emit ZoneChangeEvent before unregistering its effects"""
