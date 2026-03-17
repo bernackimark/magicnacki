@@ -31,24 +31,24 @@ from models.effects.damage_preventions import PreventNextDamageBy, ArgothianPixi
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention, PreventDamageBy, \
     WallOfPutridFleshPrevention
 from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDamageReplacement
-from models.effects.destroy_sac_regenerate import AcidRain, DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
+from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOrSac, EaterOfTheDeadAA, \
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
-    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust
+    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
     MindTwist
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
-from models.effects.keywords import AkronLegionnaireCast, KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
+from models.effects.keywords import KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk, RapidFire
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    StealCardLeaves, GhazbanOgre, TimeElementalBounce, ReturnToOwnerOnUntap, ReturnToOwnerOnLTB, TriassicEgg
+    GhazbanOgre, TimeElementalBounce, ReturnToOwnerOnUntap, ReturnToOwnerOnLTB, TriassicEgg
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
     Transmutation, MurkDwellers, SingingTree, UntapRemovesPumpFromAnotherCard, LesserWerewolf
@@ -60,7 +60,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
     JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
-    ArtifactWardCanBeTargeted
+    ArtifactWardCanBeTargeted, AkronLegionnaire
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -72,7 +72,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
-    ArenaOfTheAncientsCast, MagneticMountainOnUntapStep, CardsDontUntapAtUntapPhase, UntapCardsEffect, TapCardsEffect
+    ArenaOfTheAncientsCast, CardsDontUntapAtUntapPhase, UntapCardsEffect, TapCardsEffect
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent
@@ -104,15 +104,15 @@ MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
 
 INVOCATIONS: dict[str, list[EffSpec]] = {
     'abomination': [Triggered(Abomination(), None, BlockEvent)],
-    'acid-rain': [Triggered(AcidRain(), None, CastResolvedEvent)],
+    'acid-rain': [Triggered(DestroyAll(T_FUNCS['forests_in_play']), None, CastResolvedEvent)],
     'active-volcano': [Triggered(ActiveVolcano(), T_FUNCS['active_volcano_targets'], CastResolvedEvent)],
     'adun-oakenshield': [Activated('BRGT', Bounce(), T_FUNCS['creatures_in_your_graveyard'])],
     'aisling-leprechaun': [Triggered(AislingLeprechaun(), None, BlockEvent)],
-    'akron-legionnaire': [Triggered(AkronLegionnaireCast(), None, CastResolvedEvent)],
+    'akron-legionnaire': [Static(AkronLegionnaire())],
     'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts_in_play']),
                 Triggered(ReturnToOwnerOnLTB(), None, ZoneChangeEvent)],
     'aladdins-ring': [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
-    'ali-baba': [Activated('RT', TapCardEffect(), T_FUNCS['walls_in_play'])],
+    'ali-baba': [Activated('R', TapCardEffect(), T_FUNCS['walls_in_play'])],
     'ali-from-cairo': [Static(AliFromCairo())],
     'alchors-tomb': [Activated('2T', SetColor(c), T_FUNCS['your_permanents_in_play'], text=f'Set color to {{{c}}}')
                      for c in COLOR_LETTERS],
@@ -143,7 +143,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Land').result()),
                    None, CastResolvedEvent)],
     'army-of-allah': [Triggered(ArmyOfAllah(), None, CastResolvedEvent)],
-    'artifact-ward': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),
+    'artifact-ward': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
                       Static(ArtifactWardCanBeBlocked()), Static(ArtifactWardPrevention()),
                       Static(ArtifactWardCanBeTargeted())],
     'ashes-to-ashes': [Triggered(AshesToAshes(), TargetSpec(T_FUNCS['non_artifact_creatures_in_play'], 2, 2),
@@ -261,7 +261,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'copy-artifact': [Triggered(CopyArtifact(), None, CastResolvedEvent)],
     'coral-helm': [Activated('3', PumpEffect(2, 2, True), T_FUNCS['creatures_in_play'],
                              extra_costs=[DiscardAtRandomCost()])],
-    'cosmic-horror': [Triggered(PayManaOrSac('3BBB'), None, UpkeepEvent)],
+    'cosmic-horror': [Triggered(CosmicHorror(), T_FUNCS['self'], UpkeepEvent)],
     'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
     'creature-bond': [Triggered(CreatureBond(), None, DiesEvent)],
     'crimson-manticore': [Activated('RT', DealDamage(1), T_FUNCS['combatants'])],

@@ -225,14 +225,13 @@ class XValueChoice(ChoiceAction):
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
-        self.cost = cost
 
     def get_actions(self) -> list[Action]:
         actions: list[Action] = []
-        if self.gs.mana_pools[self.player_idx].can_pay(self.cost):
-            actions.append(PayMana(self.player_idx, self.gs, self.source, self.cost))
+        if self.gs.mana_pools[self.player_idx].can_pay('3BBB'):
+            actions.append(PayMana(self.player_idx, self.gs, self.source, '3BBB'))
         actions.append(Sac(self.player_idx, self.gs, self.source, 7))
         return actions
 

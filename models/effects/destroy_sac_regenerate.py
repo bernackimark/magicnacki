@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 from models.game_card_filter import CardFilter
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice, \
-    DemonicHordesUpkeepChoice, OpponentDestroysLandChoice, MoldDemonChoice
+    DemonicHordesUpkeepChoice, OpponentDestroysLandChoice, MoldDemonChoice, CosmicHorrorUpkeepChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
@@ -80,11 +80,6 @@ class SacAll(Effect):
             gs.destroy(c, False)
 
 # --- CARD-SPECIFIC ---
-class AcidRain(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        for forest in CardFilter(gs).in_play().forests().result():
-            gs.destroy(forest)
-
 class AshesToAshes(Effect):
     """Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you."""
     def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
@@ -102,6 +97,19 @@ class Blight(Effect):
         if not source.attached_to or source.props.slug != 'blight' or event.card is not source.attached_to:
             return
         gs.destroy(source.attached_to)
+
+class CosmicHorror(Effect):
+    """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if gs.player_turn_idx != source.owner_id:
+            return
+        if not gs.mana_pools[source.owner_id].can_pay('3BBB'):
+            gs.destroy(source)
+            gs.apply_damage(source, 7, source.owner_id)
+            return
+        gs.action_stack.push(CosmicHorrorUpkeepChoice(source.owner_id, gs, source), gs, False)
 
 class CyclopeanMummy(Effect):
     """When this creature dies, exile it"""

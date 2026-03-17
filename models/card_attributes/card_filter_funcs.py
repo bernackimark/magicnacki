@@ -64,6 +64,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'flash_flood': lambda gs, s: gs.card_filter.in_play().red().permanents().result() +
                                  gs.card_filter.in_play().mountains().result(),
     'fliers_in_play': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
+    'forests_in_play': lambda gs, _: gs.card_filter.in_play().forests().result(),
     'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).forests().result(),
     'forestwalkers': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
     'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).by_sub_type('Goblin').permanents().result(),

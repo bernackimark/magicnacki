@@ -36,17 +36,6 @@ class KWAModEffect(Effect):
             target.modifiers.temps.append(KWATemp(source, self.add_or_remove, self.kwa))
 
 # --- CARD-SPECIFIC
-class AkronLegionnaireCast(Effect):
-    """Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack"""
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-        my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
-        artifact_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).by_color('C').result()
-        akron_legionnaires = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).by_slug(
-            'akron-legionnaire').result()
-        for my_creature in my_creatures:
-            if my_creature not in [artifact_creatures + akron_legionnaires]:
-                my_creature.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
-
 class ErhnamDjinn(Effect):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
     listens_to = UpkeepEvent

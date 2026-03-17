@@ -15,6 +15,19 @@ from models.effects.base import Effect
 
 
 # --- CARD-SPECIFIC ---
+class AkronLegionnaire(Effect):
+    """Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        """Query: can_attack, card = the subject card"""
+        if event != 'can_attack':
+            return None
+        if card not in gs.card_filter.creatures().on_player_board(card.owner_id).result():
+            return None
+        artifact_creatures = gs.card_filter.on_player_board(card.owner_id).creatures().artifacts().result()
+        akron_legionnaires = gs.card_filter.on_player_board(card.owner_id).by_slug('akron-legionnaire').result()
+        if card not in artifact_creatures + akron_legionnaires:
+            return False
+
 class AmrouKithkin(Effect):
     """This creature can't be blocked by creatures with power 3 or greater"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -33,7 +46,7 @@ class AngelicVoices(Effect):
             return None
         for my_creature in gs.card_filter.creatures().on_player_board(card.orig_owner_id).result():
             if 'W' not in my_creature.props.colors or 'C' not in my_creature.props.colors:
-                return False
+                return None
         return PTModifier(source, 1, 1)
 
 class AngryMobPT(Effect):
