@@ -15,8 +15,8 @@ from renderers import ConsoleRenderer
 
 
 class MyGame(Game):
-    def __init__(self, card_univ: CardUniverse, engine: Engine):
-        super().__init__(width=1500, height=900, title="Magicnacki")
+    def __init__(self, card_univ: CardUniverse, eng: Engine):
+        super().__init__(width=1520, height=920, title="Magicnacki")
 
         cursor_img = pg.image.load(Path("renderer_pygame/assets/cursor.png")).convert_alpha()
         cursor_img = pg.transform.scale(cursor_img, (32, 32))
@@ -24,7 +24,7 @@ class MyGame(Game):
         pg.mouse.set_cursor(cursor)
 
         self.card_univ = card_univ
-        self.engine = engine
+        self.engine = eng
 
         # Register scenes
         self.scenes.add_scene("menu", MenuScene(self))
@@ -35,7 +35,7 @@ class MyGame(Game):
         self.scenes.load_transition_sound(Path("renderer_pygame/assets/a_Major_7_Sharp_11.mp3"))
 
 
-def create_engine():
+def create_engine() -> Engine:
     import json
     with open('testing/cards_for_game_testing.json', 'r') as f:
         data = json.load(f)
