@@ -235,6 +235,14 @@ class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
         if 'Wall' not in card.card_sub_types:
             return False
 
+class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Effect):
+    """Non-Eye creatures you control can't attack."""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'can_attack':
+            return None
+        if card not in gs.card_filter.on_player_board(card.owner_id).creatures().by_sub_type('Eye').result():
+            return False
+
 class Fear(Effect):
     """Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):

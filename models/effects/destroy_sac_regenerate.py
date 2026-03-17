@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING, Callable
 
 from models.destroy_replacements import RegenerationShield
 from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent, \
-    DrawCardEvent, Event
+    DrawCardEvent, Event, EndStepEvent
 from models.utils import flip
 from models.zone import Zone
 
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 from models.game_card_filter import CardFilter
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice, \
-    DemonicHordesUpkeepChoice, OpponentDestroysLandChoice, MoldDemonChoice, CosmicHorrorUpkeepChoice
+    DemonicHordesUpkeepChoice, OpponentDestroysLandChoice, MoldDemonChoice, CosmicHorrorUpkeepChoice, PayLifeOrSacChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
@@ -77,7 +77,7 @@ class SacAll(Effect):
 
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         for c in self.card_filter_func(gs, s):
-            gs.destroy(c, False)
+            gs.destroy(c, allow_regeneration=False)
 
 # --- CARD-SPECIFIC ---
 class AshesToAshes(Effect):
@@ -155,22 +155,27 @@ class EaterOfTheDead(Effect):
         gs.untap_card(source)
 
 class EnergyFlux(Effect):
-    """All artifacts have 'At your upkeep, sacrifice this artifact unless you pay {2}'"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != source.owner_id:
-            return
+    """All artifacts have 'At your [the owner's] upkeep, sacrifice this artifact unless you pay {2}'"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         for your_artifact in gs.card_filter.on_player_board(gs.player_turn_idx).artifacts().result():
-            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_artifact, '2'))
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_artifact, '2'), gs, False)
 
 class ErosionUpkeep(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != source.owner_id:
+    """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if not source.attached_to or gs.player_turn_idx != source.attached_to.owner_id:
             return
         gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
 
 class ForceOfNatureUpkeep(Effect):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
-    def resolve(self, gs: GameState, s: GameCard, target=None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
         if gs.player_turn_idx != s.owner_id:
             return
         gs.action_stack.push(ForceOfNatureUpkeepChoice(s.orig_owner_id, gs, s, 'GGGG', 8), gs, False)
@@ -191,7 +196,9 @@ class LandEquilibrium(Effect):
 
 class ManaVortexUpkeep(Effect):
     """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if len(gs.card_filter.lands().in_play().result()) == 0:
             gs.destroy(source)
             return
@@ -221,13 +228,17 @@ class MoldDemonETB(Effect):
 
 class PestilenceEndStep(Effect):
     """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
         if not gs.card_filter.creatures().in_play().result():
-            gs.destroy(s)
+            gs.destroy(source)
 
 class PsychicAllergyUpkeep(Effect):
     """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if gs.player_turn_idx != source.owner_id:
             return
         your_island_cnt = len([i for i in gs.card_filter.on_player_board(source.owner_id).islands().result()])
@@ -253,7 +264,9 @@ class SandalsOfAbdallahIfCreatureDies(Effect):
 class SeasonOfTheWitchEndStep(Effect):
     """At YOUR end step, destroy all untapped creatures that didn't attack this turn, except those who 'couldn't'.
     Note: I'm defining 'couldn't' = summoning sickness or has no Attack"""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
         if gs.player_turn_idx != s.orig_owner_id:
             return
         your_untapped_creatures = gs.card_filter.on_player_board(s.orig_owner_id).creatures().untapped().result()
@@ -267,9 +280,12 @@ class SeasonOfTheWitchEndStep(Effect):
 
 class SeasonOfTheWitchUpkeep(Effect):
     """At your upkeep, sacrifice this enchantment unless you pay 2 life"""
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        # Pause the game and force a choice
-        gs.action_stack.push(SeasonOfTheWitchUpkeepChoice(source.orig_owner_id, gs, source), gs, False)
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if event.active_player != source.owner_id:
+            return
+        gs.action_stack.push(PayLifeOrSacChoice(source.orig_owner_id, gs, source, 2), gs, False)
 
 class SerendibDjinnNoLands(Effect):
     """When you control no lands, sacrifice this creature"""
@@ -294,7 +310,9 @@ class StanggOnLeave(Effect):
 
 class TheTabernacleAtPendrellVale(Effect):
     """All creatures have 'At your upkeep, destroy this creature unless you pay {1}.'"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         for your_creature in gs.card_filter.on_player_board(gs.player_turn_idx).creatures().result():
             gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_creature, '1'))
 
@@ -309,7 +327,9 @@ class UnderworldDreams(Effect):
 
 class VoodooDollEndStep(Effect):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
         if gs.player_turn_idx != source.orig_owner_id:
             return
         if source.is_tapped:

@@ -178,10 +178,11 @@ class Feint(Effect):
 class FeldonsCane(Effect):
     """{T}, Exile this artifact: Shuffle your graveyard into your library."""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        graveyard_cards = gs.graveyards[s.owner_id][:]
-        gs.graveyards.clear()
-        gs.libraries[s.owner_id].cards.extend(graveyard_cards)
-        random.shuffle(gs.libraries[s.owner_id].cards)
+        gy = gs.graveyards[s.owner_id]
+        lib = gs.libraries[s.owner_id]
+        lib.extend(gy)
+        gy.clear()
+        random.shuffle(lib.cards)
 
 class FlashFlood(Effect):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""

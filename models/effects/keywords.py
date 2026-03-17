@@ -45,15 +45,6 @@ class ErhnamDjinn(Effect):
             return
         gs.pending_choice = ErhnamDjinnChoice(s.owner_id, gs, s)
 
-class EvilEyeOfOrmsByGoreCast(Effect):
-    """Non-Eye creatures you control can't attack."""
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-        my_creatures = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).result()
-        my_eyes = CardFilter(gs).creatures().on_player_board(source.orig_owner_id).by_sub_type('Eye').result()
-        for my_creature in my_creatures:
-            if my_creature not in my_eyes:
-                my_creature.modifiers.auras.append(KWAModifier(source, 'remove', 'Attack'))
-
 class KoboldOverlordCast(Effect):
     """Other Kobold creatures you control have first strike"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

@@ -42,7 +42,7 @@ from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
-from models.effects.keywords import KWAModEffect, ErhnamDjinn, EvilEyeOfOrmsByGoreCast, \
+from models.effects.keywords import KWAModEffect, ErhnamDjinn, \
     AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk, RapidFire
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
@@ -60,7 +60,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
     JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
-    ArtifactWardCanBeTargeted, AkronLegionnaire
+    ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -323,7 +323,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'el-hajjâj': [Triggered(ElHajjaj(), T_FUNCS['self'], DamageResolvedEvent)],
     'elder-land-wurm': [Triggered(ElderLandWurm(), None, BlockEvent)],
     'elder-spawn': [Triggered(ElderSpawnUpkeep(), None, UpkeepEvent), Static(ElderSpawnCanBeBlocked())],
-    'electric-eel': [Triggered(DealDamage(1), T_FUNCS['self'], CastResolvedEvent), Activated('RR', ElectricEel())],
+    'electric-eel': [Triggered(DealDamage(1), T_FUNCS['card_owner'], CastResolvedEvent),
+                     Activated('RR', ElectricEel())],
     'elven-riders': [Static(ElvenRidersCanBeBlocked())],
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
@@ -332,12 +333,12 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'energy-tap': [Triggered(EnergyTap(), T_FUNCS['your_untapped_creatures'], CastResolvedEvent)],
     'erg-raiders': [Triggered(ErgRaiders(), None, EndStepEvent)],
     'erhnam-djinn': [Triggered(ErhnamDjinn(), T_FUNCS['opp_non_wall_creatures_in_play'], UpkeepEvent)],
-    'erosion':
-        [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent), Triggered(ErosionUpkeep(), None, UpkeepEvent)],
+    'erosion': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
+                Triggered(ErosionUpkeep(), None, UpkeepEvent)],
     'eternal-flame': [Triggered(EternalFlame(), None, CastResolvedEvent)],
     'eternal-warrior': [Triggered(KWAModEffect('add', 'Vigilance'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
-    'evil-eye-of-orms-by-gore': [Triggered(EvilEyeOfOrmsByGoreCast(), None, CastResolvedEvent),
-                                 Static(EvilEyeOfOrmsByGoreCanBeBlocked())],
+    'evil-eye-of-orms-by-gore': [Static(EvilEyeOfOrmsByGoreCanBeBlocked()),
+                                 Static(EvilEyeOfOrmsByGoreMyNonEyeNoAttack())],
     'evil-presence': [Triggered(EvilPresence(), T_FUNCS['lands_in_play'], CastResolvedEvent)],
     'exorcist': [Activated('1W', Destroy(), T_FUNCS['black_creatures_in_play'])],
     'eye-for-an-eye': [Triggered(EyeForAnEye(), T_FUNCS['cards_in_play'], CastResolvedEvent)],
@@ -359,14 +360,12 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],
     'firebreathing': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
                       Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'])],
+    'fishliver-oil': [Triggered(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'flash-flood': [Triggered(FlashFlood(), T_FUNCS['flash_flood'], CastResolvedEvent)],
-    'flashfires':
-        [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().plains().result()),
-                   None, CastResolvedEvent)],
+    'flashfires': [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().plains().result()),
+                             None, CastResolvedEvent)],
     'flight': [Triggered(KWAModEffect('add', 'Flying'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'flood': [Activated('UU', TapCardEffect(), T_FUNCS['untapped_creatures_without_flying'])],
-    'fishliver-oil':
-        [Triggered(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'floral-spuzzem': [Triggered(FloralSpuzzem(), None, UnblockedAttackerEvent)],
     'flying-carpet': [Activated('2T', KWAModEffect('add', 'Flying', True), T_FUNCS['creatures_in_play'])],
     'fog': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],

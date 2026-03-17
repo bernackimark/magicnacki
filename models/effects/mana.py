@@ -34,14 +34,13 @@ class DrainPower(Effect):
             gs.mana_pools[source.owner_id].add_floating(color, amt)
 
 class EnergyTap(Effect):
+    """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        """target = GameCard to be tapped"""
         if target is None:
             return
-        target.tap(gs)
-        mana_value = source.props.casting_weight
-        gs.mana_pools[source.orig_owner_id].add_floating('C', mana_value)
-        print(f"{source} taps to add {mana_value} colorless to your mana pool.")
+        gs.tap_card(target)
+        gs.mana_pools[source.orig_owner_id].add_floating('C', source.props.casting_weight)
+        print(f"{source} taps to add {source.props.casting_weight} colorless to your mana pool.")
 
 class ExchangeLifeTotals(Effect):
     def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):

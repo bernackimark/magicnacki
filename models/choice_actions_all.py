@@ -135,6 +135,14 @@ class OpponentDestroysLandChoice(ChoiceAction):
         lands = self.gs.card_filter.on_player_board(self.source.owner_id).lands().result()
         return [Destroy(flip(self.player_idx), self.gs, self.source, t) for t in lands]
 
+class PayLifeOrSacChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, amt: int):
+        super().__init__(p_id, gs, source)
+        self.amt = amt
+
+    def get_actions(self) -> list[Action]:
+        return [PayLife(self.player_idx, self.gs, self.source, self.amt), Sac(self.player_idx, self.gs, self.source)]
+
 class PayManaOrSacUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cost: str):
         super().__init__(p_id, gs, source)

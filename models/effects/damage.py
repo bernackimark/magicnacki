@@ -3,7 +3,7 @@ import math
 from typing import Optional, TYPE_CHECKING
 
 from models.counter_tokens import VITALITY, PLUS_ONE
-from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, TapCardEvent, UpkeepEvent
+from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, TapCardEvent, UpkeepEvent, EndStepEvent
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -23,6 +23,7 @@ class DealDamage(Effect):
         self.amt = amt
 
     def resolve(self, gs: GameState, source: GameCard, target: GameCard | int = None, variable_amt: int = None):
+        print(source, self.amt, target)
         amt = self.amt if not variable_amt else variable_amt
         gs.apply_damage(source, amt, target)
 
@@ -180,16 +181,18 @@ class ElderSpawnUpkeep(Effect):
 
 class ErgRaiders(Effect):
     """At YOUR end step, except for summoning sickness, if this creature didn't attack, 2 damage to you"""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
         if gs.player_turn_idx != s.owner_id or s.has_summoning_sickness:
             return
         if s not in gs.card_filter.attackers().result():
             gs.apply_damage(s, 2, s.owner_id)
 
 class EternalFlame(Effect):
-    """deal X damage = number of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
+    """X = # of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        x = len(CardFilter(gs).on_player_board(gs.player_turn_idx).mountains().result())
+        x = len(gs.card_filter.on_player_board(gs.player_turn_idx).mountains().result())
         gs.apply_damage(source, x, flip(gs.player_turn_idx))
         gs.apply_damage(source, math.ceil(x/2), gs.player_turn_idx)
 
