@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 
 from models.choice_actions_all import PayOneColorlessForOneLifeChoice
 from models.events_all import DamageResolvedEvent, DiesEvent, CastResolvedEvent, LifeLossEvent, \
-    UnblockedAttackerEvent
+    UnblockedAttackerEvent, UpkeepEvent, Event
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -88,9 +88,11 @@ class ElHajjaj(Effect):
 
 class IvoryTower(Effect):
     """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        p_id = source.orig_owner_id
-        if p_id != gs.player_turn_idx:
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        p_id = source.owner_id
+        if p_id != event.active_player:
             return
         if (hand_size := len(gs.hands[p_id].cards)) > 4:
             gs.increment_life(p_id, hand_size - 4)
@@ -122,10 +124,12 @@ class SpiritLink(Effect):
             gs.increment_life(source.orig_owner_id, event.amt)
 
 class SpiritualSanctuary(Effect):
-    """At the beginning of each player's upkeep, if that player controls a Plains, they gain 1 life"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if 'plains' in gs.card_filter.on_player_board(gs.player_turn_idx).plains().result():
-            gs.increment_life(gs.player_turn_idx, 1)
+    """At each player's upkeep, if that player controls a Plains, they gain 1 life"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if 'plains' in gs.card_filter.on_player_board(event.active_player).plains().result():
+            gs.increment_life(event.active_player, 1)
 
 class StreamOfLife(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
