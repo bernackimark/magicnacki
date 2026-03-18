@@ -286,12 +286,12 @@ class MartyrsCry(Effect):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for white_creature in gs.card_filter.in_play().white().creatures().result():
-            gs.exile(white_creature)  # which is correct?  exile_from_play() or exile()
+            gs.exile(white_creature)
             gs.draw(white_creature.owner_id)
 
 class MazeOfIth(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        the_combat = next((com for com in gs.combats if com.attacker == t), None)
+        the_combat = next((com for com in gs.combats if com.attacker is t), None)
         if not the_combat:
             return
         gs.damage_preventions.append(PreventNextDamage(s, None, target_card=t, combat_only=True))

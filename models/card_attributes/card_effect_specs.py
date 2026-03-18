@@ -35,7 +35,8 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
-    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror
+    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror, \
+    MoldDemonETB
 from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
     MindTwist
@@ -523,11 +524,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
     'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
-    'magnetic-mountain': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['your_tapped_blue_creatures']),
+    'magnetic-mountain': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['in_turn_player_tapped_blue_creatures']),
                                     None, UntapPhaseEvent),
                           Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
                                     allowed_phases=[Phase.UPKEEP],
-                                    allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER)],
+                                    allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER)],  # not correct
     'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
     'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
@@ -557,6 +558,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                         Activated('1', BecomeCreature(2, 2, 'Assembly-Worker', True), T_FUNCS['self'], text='Become 2/2'),
                         Activated('T', PumpEffect(1, 1, True), T_FUNCS['assembly_workers'], text='Pump Assembly-Worker')],
     'moat': [Static(Moat())],
+    'mold-demon': [Triggered(MoldDemonETB(), None, ZoneChangeEvent)],
     'morale': [Triggered(Morale(), None, CastResolvedEvent)],
     'mox-emerald': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'mox-jet': [Activated('T', AddMana('B'), T_FUNCS['card_owner'])],

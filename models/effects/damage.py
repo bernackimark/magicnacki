@@ -277,12 +277,11 @@ class LordOfThePitUpkeep(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if event.active_player != source.owner_id:
             return
-        possible_sacrifice_actions = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
-        if not possible_sacrifice_actions:
+        choice_obj = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source)
+        if not choice_obj.get_actions():
             gs.apply_damage(source, 7, source.owner_id)
             return
-        for action in possible_sacrifice_actions:
-            gs.action_stack.push(action, gs, False)
+        gs.action_stack.push(choice_obj, gs, False)
 
 class ManaVaultDamageIfTapped(Effect):
     """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""

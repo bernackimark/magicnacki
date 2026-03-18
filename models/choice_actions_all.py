@@ -358,9 +358,7 @@ class LordOfThePitUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         your_other_creatures = [c for c in self.gs.card_filter.on_player_board(self.player_idx).creatures().result()
-                                if c != self.source]
-        if not your_other_creatures:
-            return []
+                                if c is not self.source]
         return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
 
 class MoldDemonChoice(ChoiceAction):
