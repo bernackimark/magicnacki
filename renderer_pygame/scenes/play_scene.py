@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
+from random import randint
 from typing import TYPE_CHECKING
 
 from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
@@ -68,6 +69,9 @@ class PlayScene(Scene):
 
         self.p_idx = 0
         self.dice: dict[int: pg.Surface] = {i: make_pg_dice(40, 40, i) for i in range(1, 7)}
+        self.prev_life = self.state.life.copy()
+        self.life_shake_timer = [0.0 for _ in self.state.life]
+        self.life_shake_duration = 0.5
 
         self.available_actions = []
         self.action_layout: list[ActionRenderInfo] = []
@@ -90,6 +94,20 @@ class PlayScene(Scene):
         self.build_action_layout(self.cols[10], self.rows[0])
         self.build_recent_actions_layout(self.cols[10], self.rows[3])
         self.update_action_hover()
+
+        for p_idx in range(len(self.state.life)):
+            current = self.state.life[p_idx]
+            prev = self.prev_life[p_idx]
+
+            if current != prev:
+                # trigger shake
+                self.life_shake_timer[p_idx] = self.life_shake_duration
+                self.prev_life[p_idx] = current
+
+        # update timers
+        for p_idx in range(len(self.life_shake_timer)):
+            if self.life_shake_timer[p_idx] > 0:
+                self.life_shake_timer[p_idx] -= dt
 
     def update_action_hover(self):
         mouse_pos = pg.mouse.get_pos()
@@ -142,9 +160,16 @@ class PlayScene(Scene):
         # draw dice in a 2-wide by 3-tall (max) configuration
         dice_values = int_to_dice_values(self.state.life[p_idx])
         x += 5  # the dice are slightly too far left
+
+        shaking = self.life_shake_timer[p_idx] > 0
         for i, value in enumerate(dice_values):
             die_x = x + (50 * (i % 2))
             die_y = y + (50 * (i // 2))
+            if shaking:
+                intensity = int(6 * (self.life_shake_timer[p_idx] / self.life_shake_duration))
+                die_x += randint(-intensity, intensity)
+                die_y += randint(-intensity, intensity)
+
             self.game.screen.blit(self.dice[value], (die_x, die_y))
 
     def draw_hand(self, p_idx: int, col: int, row: int, face_down: bool):
