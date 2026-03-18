@@ -3,14 +3,14 @@ import math
 from typing import Optional, TYPE_CHECKING
 
 from models.counter_tokens import VITALITY, PLUS_ONE
-from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, TapCardEvent, UpkeepEvent, EndStepEvent
+from models.events_all import DamageResolvedEvent, DiesEvent, ZoneChangeEvent, TapCardEvent, UpkeepEvent, \
+    EndStepEvent, DrawStepEvent
 from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.game_card_filter import CardFilter
 from models.choice_actions_all import ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, LordOfThePitUpkeepChoice
 from models.damage import PreventNextDamage, DamageEvent
 from models.effects.base import Effect
@@ -119,9 +119,11 @@ class Banshee(Effect):
 
 class BlackVise(Effect):
     """As opponent's upkeep, this artifact deals X damage to that player, X is = cards in their hand minus 4"""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
         opp_id = flip(s.owner_id)
-        if gs.player_turn_idx != opp_id:
+        if event.active_player != opp_id:
             return
         opp_hand_len = len(gs.hands[opp_id].cards)
         if opp_hand_len > 4:
@@ -173,8 +175,10 @@ class Earthquake(Effect):
             gs.apply_damage(source, x, p_id)
 
 class ElderSpawnUpkeep(Effect):
-    """At your upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
-    def resolve(self, gs: GameState, s: GameCard, target=None):
+    """At YOUR upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
         if gs.player_turn_idx != s.owner_id:
             return
         gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
@@ -209,6 +213,15 @@ class EyeForAnEye(Effect):
         gs.damage_preventions.append(
             PreventNextDamage(s, None, target_player=s.owner_id, source_card=t, on_prevent=deal_damage))
 
+class FungusaurOnDamage(Effect):
+    """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
+    listens_to = DamageResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
+        if event.target is not source:
+            return
+        source.counters.add_counter(PLUS_ONE)
+
 class GaseousForm(Effect):
     """Prevent all combat damage that would be dealt this turn by enchanted creature and each creature blocking it."""
     # TODO: THIS IS ALL DAMAGE ALWAYS.  DO I HANDLE THIS SOMEWHERE IN DAMAGE PREVENTION?
@@ -239,17 +252,31 @@ class JovialEvil(Effect):
         gs.apply_damage(source, opp_white_creature_cnt * 2, target)
 
 class Karma(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        """At the beginning of each player's upkeep,
-        this enchantment deals damage to that player equal to the number of Swamps they control."""
-        p_id = gs.player_turn_idx
-        swamp_cnt = len(CardFilter(gs).on_player_board(p_id).swamps().result())
+    """At each player's upkeep, this enchantment deals damage to that player = number of Swamps they control."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        swamp_cnt = len(gs.card_filter.on_player_board(event.active_player).swamps().result())
         if swamp_cnt:
-            gs.apply_damage(source, swamp_cnt, source.owner_id)
+            gs.apply_damage(source, swamp_cnt, event.active_player)
+
+class LivingArtifactOnDamage(Effect):
+    """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ...
+    You can target opponent artifacts. The controller of the Aura controls the Living Artifact ability"""
+    listens_to = DamageResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
+        if event.target is not source:
+            return
+        source.counters.add_counter(VITALITY)
 
 class LordOfThePitUpkeep(Effect):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if event.active_player != source.owner_id:
+            return
         possible_sacrifice_actions = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
         if not possible_sacrifice_actions:
             gs.apply_damage(source, 7, source.owner_id)
@@ -259,11 +286,12 @@ class LordOfThePitUpkeep(Effect):
 
 class ManaVaultDamageIfTapped(Effect):
     """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != s.owner_id:
+    listens_to = DrawStepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: DrawStepEvent):
+        if event.active_player != s.owner_id or not s.is_tapped:
             return
-        if s.is_tapped:
-            gs.apply_damage(s, 1, s.owner_id)
+        gs.apply_damage(s, 1, s.owner_id)
 
 class PersonalIncarnation(Effect):
     """... When this creature dies, its owner loses half their life, rounding up the loss amount"""
@@ -278,9 +306,12 @@ class PersonalIncarnation(Effect):
 class PowerSurge(Effect):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
         where X is the number of untapped lands they controlled at the beginning of this turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         untapped_lands = gs.card_filter.in_play().untapped().lands().result()
-        gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
+        if untapped_lands:
+            gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
 
 class RukhEgg(Effect):
     """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""
@@ -307,16 +338,20 @@ class StormSeeker(Effect):
 class StormWorld(Effect):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
         where X is 4 minus the number of cards in their hand"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         card_cnt = len(gs.hands[gs.player_turn_idx].cards)
         if card_cnt > 4:
             gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
 
 class TheRack(Effect):
     """At opponent's upkeep, this artifact deals X damage to that player, X = 3 - len(hand) [X can't be negative]"""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
         opp_id = flip(s.owner_id)
-        if gs.player_turn_idx != opp_id:
+        if event.active_player != opp_id:
             return
         opp_hand_len = len(gs.hands[opp_id].cards)
         if opp_hand_len < 3:
@@ -337,21 +372,3 @@ class Typhoon(Effect):
         opp_island_cnt = len(gs.card_filter.on_player_board(opp).islands().result())
         if opp_island_cnt:
             gs.apply_damage(s, opp_island_cnt, opp)
-
-
-class LivingArtifactOnDamage(Effect):
-    """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ...
-    You can target opponent artifacts. The controller of the Aura controls the Living Artifact ability"""
-    listens_to = DamageResolvedEvent
-
-    def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):
-        if event.target == this_card.orig_owner_id:
-            this_card.counters.add_counter(VITALITY)
-
-class FungusaurOnDamage(Effect):
-    """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
-    listens_to = DamageResolvedEvent
-
-    def resolve(self, gs: GameState, event: DamageEvent, this_card: GameCard = None):
-        if event.target == this_card:
-            this_card.counters.add_counter(PLUS_ONE)
