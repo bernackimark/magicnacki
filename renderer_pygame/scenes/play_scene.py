@@ -4,6 +4,7 @@ from pathlib import Path
 from random import randint
 from typing import TYPE_CHECKING
 
+from renderer_pygame.common.animations import jiggle_and_slow
 from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
 
 if TYPE_CHECKING:
@@ -166,9 +167,7 @@ class PlayScene(Scene):
             die_x = x + (50 * (i % 2))
             die_y = y + (50 * (i // 2))
             if shaking:
-                intensity = int(6 * (self.life_shake_timer[p_idx] / self.life_shake_duration))
-                die_x += randint(-intensity, intensity)
-                die_y += randint(-intensity, intensity)
+                die_x, die_y = jiggle_and_slow(die_x, die_y, 6, self.life_shake_timer[p_idx] / self.life_shake_duration)
 
             self.game.screen.blit(self.dice[value], (die_x, die_y))
 
