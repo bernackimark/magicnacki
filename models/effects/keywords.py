@@ -45,14 +45,6 @@ class ErhnamDjinn(Effect):
             return
         gs.pending_choice = ErhnamDjinnChoice(s.owner_id, gs, s)
 
-class KoboldOverlordCast(Effect):
-    """Other Kobold creatures you control have first strike"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        targets = gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result()
-        for t in targets:
-            if source != t:
-                t.modifiers.auras.append(KWAModifier(source, 'add', 'First Strike'))
-
 class RapidFire(Effect):
     """Cast this spell only before blockers are declared. Target creature gains first strike until end of turn.
     If it doesn't have rampage, that creature gains rampage 2 until end of turn."""

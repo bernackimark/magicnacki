@@ -121,7 +121,7 @@ class Lifeblood(Effect):
     listens_to = TapCardEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card is not s or event.card.owner_id == s.owner_id:
+        if event.card.owner_id == s.owner_id:
             return
         if 'Mountain' in event.card.card_sub_types:
             gs.increment_life(s.owner_id, 1)
@@ -131,7 +131,7 @@ class Lifetap(Effect):
     listens_to = TapCardEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card is not s or event.card.owner_id == s.owner_id:
+        if event.card.owner_id == s.owner_id:
             return
         if 'Forest' in event.card.card_sub_types:
             gs.increment_life(s.owner_id, 1)

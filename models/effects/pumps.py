@@ -101,13 +101,6 @@ class HowlFromBeyond(Effect):
             x = getattr(source, 'variable_x', 0)  # read X chosen when casting
             target.modifiers.temps.append(PTTemp(source, x, 0))
 
-class KoboldTaskmaster(Effect):
-    """Other Kobold creatures you control get +1/+0"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        for t in gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result():
-            if source != t:
-                t.modifiers.auras.append(PTModifier(source, 1, 0))
-
 class LesserWerewolf(Effect):
     """If this creature's power is >= 1, it gets -1/-0 until EOT & put a -0/-1 counter on
     target creature blocking/blocked by this creature. Activate only during the declare blockers step."""

@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier, SubTypeModifier
+from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier, SubTypeModifier, KWATemp
 from models.utils import flip
 from phase_fsm import Phase
 
@@ -400,6 +400,28 @@ class KirdApePT(Effect):
         if gs.card_filter.on_player_board(card.orig_owner_id).forests().result():
             return PTModifier(card, 1, 2)
 
+class KoboldOverlord(Effect):
+    """Other Kobold creatures you control have first strike"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'kwa_mod':
+            return None
+        source: GameCard = kwargs.get('source')
+        if source.props.slug != 'kobold-overlord' or card is source:
+            return
+        if card in gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result():
+            return KWATemp(source, 'add', 'First Strike')
+
+class KoboldTaskmaster(Effect):
+    """Other Kobold creatures you control get +1/+0"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'pt_mod':
+            return None
+        source: GameCard = kwargs.get('source')
+        if source.props.slug != 'kobold-taskmaster' or card is source:
+            return
+        if card in gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result():
+            return PTModifier(source, 1, 0)
+
 class KormusBell(Effect):
     """All Swamps are 1/1 creatures that are still lands"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -440,8 +462,10 @@ class LivonyaSilone(Effect):
     """Legendary landwalk (This creature can't be blocked as long as defending player controls a legendary land.)"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
+        if event != 'can_block':
+            return
         attacker: GameCard = kwargs.get('attacker')
-        if event != 'can_block' or attacker.props.slug != 'livonya-silone':
+        if attacker.props.slug != 'livonya-silone':
             return None
         if gs.card_filter.on_player_board(card.owner_id).legendary().lands().result():
             return False

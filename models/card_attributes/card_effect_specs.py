@@ -43,14 +43,14 @@ from models.effects.identity import SetColor, AddCreatureTypePTManaValue, Become
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
 from models.effects.keywords import KWAModEffect, ErhnamDjinn, \
-    AllWalksRemoved, KoboldOverlordCast, SandalsOfAbdallahIslandWalk, RapidFire
+    AllWalksRemoved, SandalsOfAbdallahIslandWalk, RapidFire
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
     GhazbanOgre, TimeElementalBounce, ReturnToOwnerOnUntap, ReturnToOwnerOnLTB, TriassicEgg
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
-    KoboldTaskmaster, HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
+    HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
     Transmutation, MurkDwellers, SingingTree, UntapRemovesPumpFromAnotherCard, LesserWerewolf
 from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
@@ -60,7 +60,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
     JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
-    ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack
+    ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, KoboldTaskmaster, KoboldOverlord
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -483,8 +483,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'kird-ape': [Static(KirdApePT())],
     'kismet': [Static(Kismet())],
     'kobold-drill-sergeant': [Triggered(KoboldDrillSergeant(), None, CastResolvedEvent)],
-    'kobold-overlord': [Triggered(KoboldOverlordCast(), None, CastResolvedEvent)],
-    'kobold-taskmaster': [Triggered(KoboldTaskmaster(), None, CastResolvedEvent)],
+    'kobold-overlord': [Static(KoboldOverlord())],
+    'kobold-taskmaster': [Static(KoboldTaskmaster())],
     'kormus-bell': [Static(KormusBell())],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures_in_play'])],
     'lady-caleria': [Activated('T', DealDamage(3), T_FUNCS['combatants'])],
@@ -497,17 +497,19 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                   allowed_phases=[Phase.DECLARE_ATTACKERS])],  # at Declare Attackers, won't know how it's combating
     'leviathan':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
+         # TODO: StaysTapped() doesn't work because it uses resolve() instead of event() listening for UntapPhaseEvent
          Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+         # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
          Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
-                   allowed_phases=Phase.UPKEEP, allowed_player_turn=T_FUNCS['card_owner']),
+                   allowed_phases=[Phase.UPKEEP], allowed_player_turn=T_FUNCS['card_owner']),
          Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['self'], EndStepEvent),
          Activated(None, KWAModEffect('add', 'Attack'), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
-                   allowed_phases=Phase.DECLARE_ATTACKERS, allowed_player_turn=T_FUNCS['card_owner'])],
+                   allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_player_turn=T_FUNCS['card_owner'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
-    'lightning-bolt': [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'lifeblood': [Triggered(Lifeblood(), None, TapCardEvent)],
     'lifelace': [Triggered(SetColor('G'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'lifetap': [Triggered(Lifetap(), None, TapCardEvent)],
+    'lightning-bolt': [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'living-armor':
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_play'], extra_costs=[SacSelfCost()])],
     'living-artifact':
