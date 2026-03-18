@@ -638,6 +638,8 @@ class GameState:
                 available_actions.append(FinishDeclaringAttackers(p_id, self))
 
             for c in board:
+                if c in self.card_filter.attackers().result():  # else vigilance creatures could be added infinite times
+                    continue
                 if self.can_attack(c):
                     available_actions.append(CreatureAttack(p_id, self, c))
 
@@ -694,6 +696,7 @@ class GameState:
             return
 
         if self.phase == Phase.DISCARD:
+            self.emit(DiscardStepEvent(active_player=self.player_turn_idx))
             self.emit(DiscardStepEvent(active_player=self.player_turn_idx))
             if len(hand.cards) > 7:
                 for c in hand.cards:
