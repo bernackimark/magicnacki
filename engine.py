@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
+from models.game_history import GameHistory, HistoryRecord
 from game_state import GameState
 from players import Player, ConsolePlayer
 from renderers import Renderer, ConsoleRenderer
@@ -24,7 +25,7 @@ class Engine:
                 continue
             action = self.players[self.gs.action_on_idx].make_move(self.gs, actions)
             action.play()
-            self.gs.game_history.append((self.gs.turn_number, self.gs.action_on_idx, action))
+            self.gs.game_history.append(HistoryRecord(action, self.gs))
 
 
 if __name__ == '__main__':

@@ -28,6 +28,7 @@ from models.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCar
                                DiscardStepEvent)
 from models.game_card import GameCard
 from models.combat import Combat
+from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
@@ -60,7 +61,7 @@ class GameState:
         self._phase_started: bool = False
         self.action_stack = ActionStack()
         self.pending_choice: ChoiceAction | None = None  # used for when a cost.pay() does not go onto the stack
-        self.game_history: list[tuple[int, int, Action]] = []  # turn num, p_idx, Action; appended to in engine.play()
+        self.game_history = GameHistory()  # turn num, p_idx, Action; appended to in engine.play()
         self.turn_number = 1
         self.combats: list[Combat] = []
         self.card_filter = CardFilter(self)
@@ -425,16 +426,21 @@ class GameState:
         """Untap all cards on in-turn player's board; remove summoning sickness;
         if a card has an optional untap, check if player has already decided to leave a card tapped"""
         for c in self.boards[self.player_turn_idx]:
-            for turn_num, _, act in self.game_history:
-                if isinstance(act, CastToBoard) and act.card is c and self.turn_number - turn_num == 2:
+
+            for record in self.game_history.items:
+                act = record.action
+                gs = record.game_state
+                if isinstance(act, CastToBoard) and act.card is c and self.turn_number - gs.turn_number == 2:
                     c.has_summoning_sickness = False
             if not c.is_tapped:
                 continue
 
-            for turn_num, _, action in self.game_history:
-                if (turn_num == self.turn_number and
-                        (isinstance(action, UntapCardStackPop) or
-                         isinstance(action, LeaveTapped)) and action.card == c):
+            for record in self.game_history.items:
+                act = record.action
+                gs = record.game_state
+                if (gs.turn_number == self.turn_number and
+                        (isinstance(act, UntapCardStackPop) or
+                         isinstance(act, LeaveTapped)) and act.card == c):
                     print("You've already made an untap decision on this card this turn")
                     break
             else:

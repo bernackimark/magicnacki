@@ -1,9 +1,11 @@
 from __future__ import annotations
+
+import time
 from dataclasses import dataclass
 from pathlib import Path
-from random import randint
 from typing import TYPE_CHECKING
 
+from models.game_history import HistoryRecord
 from renderer_pygame.common.animations import jiggle_and_slow
 from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
 
@@ -63,14 +65,13 @@ class PlayScene(Scene):
         self.cols = {i: i * 125 + self.game.gutter for i in range(12)}
         self.rows = {i: i * 150 + self.game.gutter for i in range(6)}
 
-        self.hand_layout: list[PGCard] = []
         self.hovered_card = None
         self.selected_card = None
         self.state: GameState = self.engine.gs
 
         self.p_idx = 0
+
         self.dice: dict[int: pg.Surface] = {i: make_pg_dice(40, 40, i) for i in range(1, 7)}
-        self.prev_life = self.state.life.copy()
         self.life_shake_timer = [0.0 for _ in self.state.life]
         self.life_shake_duration = 0.5
 
@@ -91,24 +92,21 @@ class PlayScene(Scene):
                     self.handle_action_click(event.pos)
 
     def update(self, dt):
+        start = time.perf_counter()
         self.available_actions = self.state.get_available_actions(self.state.action_on_idx)
         self.build_action_layout(self.cols[10], self.rows[0])
         self.build_recent_actions_layout(self.cols[10], self.rows[3])
         self.update_action_hover()
 
-        for p_idx in range(len(self.state.life)):
-            current = self.state.life[p_idx]
-            prev = self.prev_life[p_idx]
-
-            if current != prev:
-                # trigger shake
-                self.life_shake_timer[p_idx] = self.life_shake_duration
-                self.prev_life[p_idx] = current
-
-        # update timers
+        # decrement shake timers
         for p_idx in range(len(self.life_shake_timer)):
             if self.life_shake_timer[p_idx] > 0:
-                self.life_shake_timer[p_idx] -= dt
+                self.life_shake_timer[p_idx] -= dt  # dt = time since last frame in seconds
+                if self.life_shake_timer[p_idx] < 0:
+                    self.life_shake_timer[p_idx] = 0
+
+        update_time = time.perf_counter() - start
+        print(f"Update took {update_time * 1000:.2f} ms")
 
     def update_action_hover(self):
         mouse_pos = pg.mouse.get_pos()
@@ -140,13 +138,22 @@ class PlayScene(Scene):
                 self.pending_action = info.action
                 print(f"Clicked action: {info.action}")
 
+                prev_life = self.state.life.copy()
+
                 # Execute immediately like the console
                 info.action.play()
-                self.state.game_history.append((self.state.turn_number, self.state.action_on_idx, info.action))
+                self.state.game_history.append(HistoryRecord(info.action, self.state))
 
                 # After action is played, refresh available actions for the next player
                 self.available_actions = self.state.get_available_actions(self.state.action_on_idx)
                 self.build_action_layout(self.cols[10], self.rows[0])
+
+                curr_life = self.state.life
+
+                for p_idx in range(len(curr_life)):
+                    if prev_life[p_idx] != curr_life[p_idx]:
+                        self.life_shake_timer[p_idx] = self.life_shake_duration
+
                 break
 
     def draw_player_area(self, p_idx: int, top: bool):
@@ -281,13 +288,12 @@ class PlayScene(Scene):
 
     def build_recent_actions_layout(self, x: int, y: int, row_spacing: int = 20, padding: int = 10):
         self.recent_actions = []
-        if not self.state.game_history:
+        if not self.state.game_history.items:
             return
 
-        for i, recent_action_row in enumerate(self.state.game_history[-10:][::-1]):
-            _, p_id, action = recent_action_row
+        for i, record in enumerate(self.state.game_history.get_last_n(10)[::-1]):
             rect = pg.Rect(x + 10, y + 20, self.cols[11] - (padding * 2), 15)
-            self.recent_actions.append(RecentActionRow(p_id, action.__repr__(), rect, i))
+            self.recent_actions.append(RecentActionRow(record.action.player_idx, record.action.__repr__(), rect, i))
             y += row_spacing
 
     def draw_recent_actions(self, x: int, y: int):
@@ -356,3 +362,26 @@ class PlayScene(Scene):
             # Highlight top of stack
             if i == len(stack) - 1:
                 pg.draw.rect(screen, (255, 215, 0), rect, 3)
+
+# TODO: unknown if this is even the bottleneck
+"""
+Cache PGCard objects so you don’t recreate them every frame
+# On first creation (or when hand changes)
+if not hasattr(self, 'hand_cards_cache'):
+    self.hand_cards_cache = []
+
+# Only rebuild if hand changed
+if len(self.hand_cards_cache) != len(self.state.hands[p_idx].cards):
+    self.hand_cards_cache = [
+        PGCard(card, next(iter(self.game.images[card.props.slug].values())), i)
+        for i, card in enumerate(self.state.hands[p_idx].cards)
+    ]
+
+# Draw from cache
+x = self.cols[col]
+y = self.rows[row]
+for pg_card in self.hand_cards_cache:
+    self.draw_card(pg_card, x, y, face_down=face_down)
+    pg_card.rect = pg.Rect(x, y, CARD_W, CARD_H)
+    x += CARD_W + 20
+"""
