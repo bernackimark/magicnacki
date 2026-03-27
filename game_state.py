@@ -34,7 +34,7 @@ from models.mana import ManaPool
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
 from models.zone import Zone
-from phase_fsm import Phase
+from phase_fsm import Phase, PhaseManager
 from models.utils import flip
 
 
@@ -58,6 +58,7 @@ class GameState:
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
         self.phase = Phase.UNTAP
+        self.phase_manager = PhaseManager(self)
         self._phase_started: bool = False
         self.action_stack = ActionStack()
         self.pending_choice: ChoiceAction | None = None  # used for when a cost.pay() does not go onto the stack
@@ -488,9 +489,57 @@ class GameState:
 
         return actions
 
+    def add_activated_abilities_from_board(self) -> list[ActivateAbility] | list[None]:
+        actions: list[ActivateAbility] = []
+        for card in self.boards[self.action_on_idx]:
+            actions.extend(self.get_available_activated_abilities(card))
+            for aura in card.modifiers.auras:
+                if not isinstance(aura, GameCard):  # some auras can be KWAModifier/PTModifiers (this is confusing)
+                    continue
+                actions.extend(self.get_available_activated_abilities(aura))
+        return actions
+
+    def available_actions_from_hand(self) -> list[Action]:
+        actions: list[Action] = []
+        p_id = self.action_on_idx
+
+        for c in self.hands[self.action_on_idx].cards:
+            if not self.can_cast(c, p_id):
+                continue
+
+            # Short-cutting these directly to the board for testing expedience
+            if c.props.is_permanent and not c.props.is_aura:
+                actions.append(CastToBoard(p_id, self, c))
+                continue
+
+            # Gather triggered abilities tied to casting
+            cast_eff_specs = [e for e in c.triggered_abilities
+                              if e.activation_type == 'triggered' and e.trigger_event is CastResolvedEvent]
+
+            if not cast_eff_specs:
+                actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=None))
+                continue
+
+            # --- For each cast-triggered spec
+            for eff_spec in cast_eff_specs:
+                if 'X' in c.casting_cost and self.mana_pools[p_id].get_max_x(c.casting_cost) < eff_spec.min_x:
+                    continue
+
+                if eff_spec.target_spec and eff_spec.target_spec.filter_func:
+                    candidates = eff_spec.target_spec.filter_func(self, c)
+                    valid_targets = [t for t in candidates if self.can_target(t, c)]
+
+                    if len(valid_targets) < eff_spec.target_spec.min_cnt:
+                        continue
+
+                actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=eff_spec))
+
+        return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
+
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         """Determine all legal actions available to player_id in the current phase ...
          (casting, activating abilities, combat, phase-specific actions, etc.)"""
+        print(f"ENTER get_available_actions: phase={self.phase.name}")
 
         if self.pending_choice:
             return self.pending_choice.get_actions()
@@ -499,74 +548,6 @@ class GameState:
 
         available_actions: list[Action] = []
         hand = self.hands[p_id]
-        board = self.boards[p_id]
-
-        # Helper: add all activated abilities for all phases
-        def add_activated_abilities_from_board() -> list[ActivateAbility] | list[None]:
-            actions: list[ActivateAbility] = []
-            for card in board:
-                actions.extend(self.get_available_activated_abilities(card))
-                for aura in card.modifiers.auras:
-                    if not isinstance(aura, GameCard):  # some auras can be KWAModifier/PTModifiers (this is confusing)
-                        continue
-                    actions.extend(self.get_available_activated_abilities(aura))
-            return actions
-
-        def available_actions_from_hand() -> list[Action]:
-            actions: list[Action] = []
-
-            for c in hand.cards:
-                if not self.can_cast(c, p_id):
-                    continue
-
-                # Short-cutting these directly to the board for testing expedience
-                if c.props.is_permanent and not c.props.is_aura:
-                    actions.append(CastToBoard(p_id, self, c))
-                    continue
-
-                # Gather triggered abilities tied to casting
-                cast_eff_specs = [e for e in c.triggered_abilities
-                                  if e.activation_type == 'triggered' and e.trigger_event is CastResolvedEvent]
-
-                if not cast_eff_specs:
-                    actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=None))
-                    continue
-
-                # --- For each cast-triggered spec
-                for eff_spec in cast_eff_specs:
-                    if 'X' in c.casting_cost and self.mana_pools[p_id].get_max_x(c.casting_cost) < eff_spec.min_x:
-                        continue
-
-                    if eff_spec.target_spec and eff_spec.target_spec.filter_func:
-                        candidates = eff_spec.target_spec.filter_func(self, c)
-                        valid_targets = [t for t in candidates if self.can_target(t, c)]
-
-                        if len(valid_targets) < eff_spec.target_spec.min_cnt:
-                            continue
-
-                    actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=eff_spec))
-
-                # previous code before new TargetSpec approach
-                # # No triggered abilities → can be cast with no targets
-                # if not cast_eff_specs:
-                #     _append_action(c)
-                #     continue
-                #
-                # # Process each effect spec
-                # for eff_spec in cast_eff_specs:
-                #     if eff_spec.target_filter is None:
-                #         _append_action(c, eff_spec=eff_spec)
-                #         continue
-                #
-                #     targets: list[GameCard | None] = eff_spec.target_filter(self, c)
-                #     if not targets:
-                #         continue
-                #
-                #     for t in targets:
-                #         if self.can_target(t, c):
-                #             _append_action(c, target=t, eff_spec=eff_spec)
-
-            return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
@@ -587,165 +568,167 @@ class GameState:
                     continue
 
                 # Handle other spells
-                available_actions.extend(available_actions_from_hand())
+                available_actions.extend(self.available_actions_from_hand())
 
                 # Activated abilities can also respond
-                available_actions.extend(add_activated_abilities_from_board())
+                available_actions.extend(self.add_activated_abilities_from_board())
 
             return available_actions
 
-        if self.phase == Phase.PASS_THE_TURN:
-            PassTheTurn(self.player_turn_idx, self).play()
-            return
+        # delegating to phase manager
+        return self.phase_manager.get_actions(p_id)
 
-        if self.phase == Phase.UNTAP:
-            if not self._phase_started:
-                self._phase_started = True
-                self.emit(UntapPhaseEvent(p_id))
-            if len(self.action_stack):
-                if isinstance(self.action_stack.last_action, ChoiceAction):
-                    return self.action_stack.last_action.get_actions()
-            else:
-                self.handle_untap_phase()
-                self._phase_started = False
-                self.phase = Phase.UPKEEP
-            return
+        # if self.phase == Phase.PASS_THE_TURN:
+        #     PassTheTurn(self.player_turn_idx, self).play()
+        #     return
 
-        if self.phase == Phase.UPKEEP:
-            self.emit(UpkeepEvent(active_player=self.player_turn_idx))
-            for c in self.boards[self.player_turn_idx]:
-                if activated_abilities := self.get_available_activated_abilities(c):
-                    return [MoveToDrawPhase(c.owner_id, self)] + activated_abilities
-            self.phase = Phase.DRAW
-            return
+        # if self.phase == Phase.UNTAP:
+        #     if not self._phase_started:
+        #         self._phase_started = True
+        #         self.emit(UntapPhaseEvent(p_id))
+        #     if len(self.action_stack):
+        #         if isinstance(self.action_stack.last_action, ChoiceAction):
+        #             return self.action_stack.last_action.get_actions()
+        #     else:
+        #         self.handle_untap_phase()
+        #         self._phase_started = False
+        #         self.phase = Phase.UPKEEP
+        #     return
 
-        if self.phase == Phase.DRAW:
-            self.emit(DrawStepEvent(active_player=self.player_turn_idx))
-            self.draw(p_id)
-            self.phase = Phase.CAST
+        # if self.phase == Phase.UPKEEP:
+        #     self.emit(UpkeepEvent(active_player=self.player_turn_idx))
+        #     for c in self.boards[self.player_turn_idx]:
+        #         if activated_abilities := self.get_available_activated_abilities(c):
+        #             return [MoveToDrawPhase(c.owner_id, self)] + activated_abilities
+        #     self.phase = Phase.DRAW
+        #     return
 
-        if self.phase == Phase.CAST:
-            req_attackers_remaining = any(c for c in board if 'Goad' in c.keyword_abilities and self.can_attack(c) and
-                                          c not in self.card_filter.attackers().result())
-            if not req_attackers_remaining:
-                available_actions.append(MoveToEndStep(p_id, self))
-            available_actions.extend(available_actions_from_hand())
-            available_actions.extend(add_activated_abilities_from_board())
+        # if self.phase == Phase.DRAW:
+        #     self.emit(DrawStepEvent(active_player=self.player_turn_idx))
+        #     self.draw(p_id)
+        #     self.phase = Phase.CAST
 
-            # declare combat
-            if any(self.can_attack(card) for card in board):
-                available_actions.append(BeginCombat(p_id, self))
+        # if self.phase == Phase.CAST:
+        #     req_attackers_remaining = any(c for c in board if 'Goad' in c.keyword_abilities and self.can_attack(c) and
+        #                                   c not in self.card_filter.attackers().result())
+        #     if not req_attackers_remaining:
+        #         available_actions.append(MoveToEndStep(p_id, self))
+        #     available_actions.extend(available_actions_from_hand())
+        #     available_actions.extend(add_activated_abilities_from_board())
+        #
+        #     # declare combat
+        #     if any(self.can_attack(card) for card in board):
+        #         available_actions.append(BeginCombat(p_id, self))
 
-        if self.phase == Phase.DECLARE_ATTACKERS:
-            req_attackers_remaining = any(c for c in board if 'Goad' in c.keyword_abilities and self.can_attack(c) and
-                                          c not in self.card_filter.attackers().result())
+        # if self.phase == Phase.DECLARE_ATTACKERS:
+        #     req_attackers_remaining = any(c for c in board if 'Goad' in c.keyword_abilities and self.can_attack(c) and
+        #                                   c not in self.card_filter.attackers().result())
+        #
+        #     if self.combats and not req_attackers_remaining:
+        #         available_actions.append(FinishDeclaringAttackers(p_id, self))
+        #
+        #     for c in board:
+        #         if c in self.card_filter.attackers().result():  # else vigilance creatures could be added infinite times
+        #             continue
+        #         if self.can_attack(c):
+        #             available_actions.append(CreatureAttack(p_id, self, c))
 
-            if self.combats and not req_attackers_remaining:
-                available_actions.append(FinishDeclaringAttackers(p_id, self))
+        # if self.phase == Phase.DECLARE_BLOCKERS:
+        #     for com in self.combats:
+        #         self.emit(AttackEvent(com.attacker))
+        #
+        #     # it's possible to not have any combats if something removed the attack (ex: Maze Of Ith, Mijae Djinn)
+        #     # probably want to move to 2nd main, but currently rocketing right to end step
+        #     if not self.combats:
+        #         self.phase = Phase.END_STEP
+        #         return
+        #
+        #     available_actions.append((FinishBlocking(self.action_on_idx, self)))
+        #
+        #     for blocker in self.card_filter.on_player_board(self.action_on_idx).creatures().result():
+        #         for com in self.combats:
+        #             if self.can_block(blocker, com.attacker):
+        #                 available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
+        #
+        #     available_actions.extend(self.available_actions_from_hand())
+        #     available_actions.extend(self.add_activated_abilities_from_board())
 
-            for c in board:
-                if c in self.card_filter.attackers().result():  # else vigilance creatures could be added infinite times
-                    continue
-                if self.can_attack(c):
-                    available_actions.append(CreatureAttack(p_id, self, c))
+        # if self.phase == Phase.PRE_COMBAT_DAMAGE:
+        #     for com in self.combats:
+        #         for blocker in com.blockers:
+        #             self.emit(BlockEvent(com.attacker, blocker))
+        #     available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
+        #     available_actions.extend(self.available_actions_from_hand())
+        #     available_actions.extend(self.add_activated_abilities_from_board())
 
-        if self.phase == Phase.DECLARE_BLOCKERS:
-            for com in self.combats:
-                self.emit(AttackEvent(com.attacker))
+        # if self.phase == Phase.ASSIGN_COMBAT_DAMAGE:
+        #     self.phase = Phase.FIRST_STRIKE_DAMAGE
+        #     self.phase = Phase.COMBAT_DAMAGE
+        #     for com in self.combats:
+        #         if not com.blockers:
+        #             event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
+        #             self.emit(event)
+        #         com.handle_damage()
+        #     self.phase = Phase.COMBAT_END
+        #     self.emit(CombatEndEvent(active_player=self.player_turn_idx))
+        #     self.phase = Phase.END_STEP
 
-            # it's possible to not have any combats if something removed the attack (ex: Maze Of Ith, Mijae Djinn)
-            # probably want to move to 2nd main, but currently rocketing right to end step
-            if not self.combats:
-                self.phase = Phase.END_STEP
-                return
+        # if self.phase == Phase.END_STEP:
+        #     self.emit(EndStepEvent(active_player=self.player_turn_idx))
+        #
+        #     # execute all end step funcs
+        #     for func in self.end_step_funcs:
+        #         func()
+        #
+        #     for c in self.card_filter.in_play().result():
+        #         c.modifiers.clear_temps()
+        #     self.phase = Phase.DISCARD
+        #     return
 
-            available_actions.append((FinishBlocking(self.action_on_idx, self)))
+        # if self.phase == Phase.DISCARD:
+        #     self.emit(DiscardStepEvent(active_player=self.player_turn_idx))
+        #     if len(hand.cards) > 7:
+        #         for c in hand.cards:
+        #             available_actions.append(DiscardCard(self.player_turn_idx, self, c))
+        #     else:
+        #         self.phase = Phase.CREATURES_HEAL
 
-            for blocker in self.card_filter.on_player_board(self.action_on_idx).creatures().result():
-                for com in self.combats:
-                    if self.can_block(blocker, com.attacker):
-                        available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
+        # if self.phase == Phase.CREATURES_HEAL:
+        #     # THIS NEEDS A RE-WRITE:
+        #     # 1) I don't want to use decks_all_cards
+        #     # 2) doesn't feel the right way to expire expiring damage
+        #     for deck in self.decks_all_cards:
+        #         for c in deck.cards:
+        #             c.damage_dealt_this_turn = 0
+        #             c.damage_received_this_turn = 0
+        #     self.phase = Phase.END_TURN_EFFECTS
 
-            available_actions.extend(available_actions_from_hand())
-            available_actions.extend(add_activated_abilities_from_board())
+        # if self.phase == Phase.END_TURN_EFFECTS:
+        #     # new approach
+        #     for eff, card in self.until_eot_effects_and_cards:
+        #         if eff in self.damage_preventions:
+        #             self.until_eot_effects_and_cards = [i for i in self.until_eot_effects_and_cards if i != eff]
+        #     self.until_eot_effects_and_cards.clear()
+        #
+        #     # Expire all temporary damage prevention
+        #     self.damage_preventions.clear()
+        #     # Clear temp modifiers
+        #     for d in self.decks_all_cards:
+        #         for c in d.cards:
+        #             c.modifiers.clear_temps()
+        #     # Empty mana pools
+        #     for pool in self.mana_pools:
+        #         pool.clear_floating()
+        #     # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
+        #     for c in self.card_filter.in_play().result():
+        #         for aa in c.activated_abilities:
+        #             aa.eff_spec.activated_cnt_this_turn = 0
+        #     # clear combats
+        #     self.combats.clear()
+        #     self.phase = Phase.PASS_THE_TURN
+        #     return
 
-        if self.phase == Phase.PRE_COMBAT_DAMAGE:
-            for com in self.combats:
-                for blocker in com.blockers:
-                    self.emit(BlockEvent(com.attacker, blocker))
-            available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
-            available_actions.extend(available_actions_from_hand())
-            available_actions.extend(add_activated_abilities_from_board())
-
-        if self.phase == Phase.ASSIGN_COMBAT_DAMAGE:
-            self.phase = Phase.FIRST_STRIKE_DAMAGE
-            self.phase = Phase.COMBAT_DAMAGE
-            for com in self.combats:
-                if not com.blockers:
-                    event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
-                    self.emit(event)
-                com.handle_damage()
-            self.phase = Phase.COMBAT_END
-            self.emit(CombatEndEvent(active_player=self.player_turn_idx))
-            self.phase = Phase.END_STEP
-
-        if self.phase == Phase.END_STEP:
-            self.emit(EndStepEvent(active_player=self.player_turn_idx))
-
-            # execute all end step funcs
-            for func in self.end_step_funcs:
-                func()
-
-            for c in self.card_filter.in_play().result():
-                c.modifiers.clear_temps()
-            self.phase = Phase.DISCARD
-            return
-
-        if self.phase == Phase.DISCARD:
-            self.emit(DiscardStepEvent(active_player=self.player_turn_idx))
-            self.emit(DiscardStepEvent(active_player=self.player_turn_idx))
-            if len(hand.cards) > 7:
-                for c in hand.cards:
-                    available_actions.append(DiscardCard(self.player_turn_idx, self, c))
-            else:
-                self.phase = Phase.CREATURES_HEAL
-
-        if self.phase == Phase.CREATURES_HEAL:
-            # THIS NEEDS A RE-WRITE:
-            # 1) I don't want to use decks_all_cards
-            # 2) doesn't feel the right way to expire expiring damage
-            for deck in self.decks_all_cards:
-                for c in deck.cards:
-                    c.damage_dealt_this_turn = 0
-                    c.damage_received_this_turn = 0
-            self.phase = Phase.END_TURN_EFFECTS
-
-        if self.phase == Phase.END_TURN_EFFECTS:
-            # new approach
-            for eff, card in self.until_eot_effects_and_cards:
-                if eff in self.damage_preventions:
-                    self.until_eot_effects_and_cards = [i for i in self.until_eot_effects_and_cards if i != eff]
-            self.until_eot_effects_and_cards.clear()
-
-            # Expire all temporary damage prevention
-            self.damage_preventions.clear()
-            # Clear temp modifiers
-            for d in self.decks_all_cards:
-                for c in d.cards:
-                    c.modifiers.clear_temps()
-            # Empty mana pools
-            for pool in self.mana_pools:
-                pool.clear_floating()
-            # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
-            for c in self.card_filter.in_play().result():
-                for aa in c.activated_abilities:
-                    aa.eff_spec.activated_cnt_this_turn = 0
-            # clear combats
-            self.combats.clear()
-            self.phase = Phase.PASS_THE_TURN
-            return
-
-        return available_actions
+        # return available_actions
 
 
 # TODO:

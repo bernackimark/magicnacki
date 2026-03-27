@@ -1,9 +1,13 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from phase_fsm import Phase
 
 from models.actions.base import Action
 from models.combat import Combat
 from models.game_card import GameCard
-from phase_fsm import Phase
 from models.utils import flip
 
 

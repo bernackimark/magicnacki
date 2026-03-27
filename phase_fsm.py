@@ -1,5 +1,12 @@
-from dataclasses import dataclass, field
+from __future__ import annotations
+from dataclasses import dataclass
 from enum import Enum, auto, IntEnum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game_state import GameState
+
+from models.utils import flip
 
 class Phase(IntEnum):
     NEW_SESSION = auto()  # roll dice; decide going first
@@ -44,133 +51,189 @@ class Action(Enum):
     DISCARD = auto()
     PASS_THE_TURN = auto()
 
-# @dataclass
-# class PhaseStateMachine:
-#     player_turn_idx: int
-#     player_cnt: int
-#     phase: Phase = Phase.NEW_SESSION
-#     turn_num: int = 1
-#     round_num: int = 1
-#     in_turn_player_available_actions: list[Action] = field(default=Action.START_GAME)
-#     out_turn_player_available_actions: list[Action] = field(default=Action.START_GAME)
-#     player_action_idx: int = None
-#
-#     def transition(self, player_idx: int, action: Action) -> None:
-#         print(f"Current state; {self.phase.value}; received this {action.value}")
-#         if self.phase == Phase.NEW_SESSION:
-#             if action == Action.START_GAME:
-#                 self.phase = Phase.DICE_ROLL
-#                 self.in_turn_player_available_actions = [Action.ROLL_DICE]
-#                 self.out_turn_player_available_actions = [Action.ROLL_DICE]
-#         if self.phase == Phase.DICE_ROLL:
-#             if action == Action.PLAY_FIRST:
-#                 self.player_turn_idx = player_idx
-#             elif action == Action.PLAY_SECOND:
-#                 self.player_turn_idx = 1 if player_idx == 0 else 1
-#             self.in_turn_player_available_actions = [Action.TAKE_MULLIGAN, Action.KEEP_HAND]
-#             self.out_turn_player_available_actions = [Action.TAKE_MULLIGAN, Action.KEEP_HAND]
-#             self.phase = Phase.NEW_GAME
-#             ...  # shuffle, 1st play decided by dice roll, mulligan
-#         if self.phase == Phase.NEW_GAME:
-#             self.phase = Phase.UNTAP
-#             self.in_turn_player_available_actions = []
-#             self.out_turn_player_available_actions = []
-#             # we head into the untap phase
-#         if self.phase == Phase.UNTAP:
-#             self.phase = Phase.UPKEEP
-#             self.in_turn_player_available_actions = [Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY]
-#             self.out_turn_player_available_actions = [Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY]
-#             ...  # game engine does everything and auto-transitions to next
-#         if self.phase == Phase.UPKEEP:
-#             self.phase = Phase.DRAW
-#             self.in_turn_player_available_actions = [Action.DRAW]  # TODO: so long as it's not the 1st turn of game, player can draw
-#             self.out_turn_player_available_actions = []
-#             ...  # any player can cast instants & activate abilities (CIAA)
-#         if self.phase == Phase.DRAW:
-#             self.phase = Phase.CAST
-#             self.in_turn_player_available_actions = [Action.PLAY_PERM_AND_SORCERY, Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY, Action.DECLARE_COMBAT, Action.MOVE_TO_END_STEP]
-#             self.out_turn_player_available_actions = [Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY]
-#             ...  # in-turn player draws; CIAA
-#             ...  # first player of game doesn't draw
-#             ...  # in-turn player can play land; no CIAA
-#         if self.phase == Phase.CAST:
-#             if action == Action.DECLARE_COMBAT:
-#                 self.phase = Phase.DECLARE_COMBAT
-#                 self.in_turn_player_available_actions = [Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY]
-#                 self.out_turn_player_available_actions = [Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY]
-#             elif action == Action.MOVE_TO_END_STEP:
-#                 self.phase = Phase.END_STEP
-#                 self.in_turn_player_available_actions = [Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY]
-#                 self.out_turn_player_available_actions = [Action.PLAY_INSTANT_AND_ACTIVATE_ABILITY]
-#
-#         # TODO: THIS IS WHERE I STOPPED.  THIS IS PRETTY CONFUSING.
-#         #  COULD I JUST A HAVE DICTIONARY OF PHASES AND POSSIBLE ACTIONS?
-#         #  EX: {Phase.CAST:
-#         #          {IN_TURN_PLAYER: (Action A, Action B, Action C),
-#         #           OUT_TURN_PLAYER: (Action A)},
-#         #       Phase.SOMEONE_PLAYED_AN_INSTANT:
-#         #           {THE_GUY_WHO_PLAYED_THE_INSTANT: (),
-#         #            THE_OTHER_GUY: (Action A)}
-#         #     }
-#
-#
-#         if self.phase == Phase.DECLARE_COMBAT:
-#             self.phase = Phase.DECLARE_ATTACKERS
-#             ...  # CIAA
-#         if self.phase == Phase.DECLARE_ATTACKERS:
-#             self.phase = Phase.DECLARE_BLOCKERS
-#             ...  # in-turn player declares who's attacking; tap non-vigils
-#         if self.phase == Phase.DECLARE_BLOCKERS:
-#             self.phase = Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES
-#             ...  # out-turn player declares who's blocking whom
-#         if self.phase == Phase.ATTACK_AND_BLOCK_INSTANTS_AND_ABILITIES:
-#             self.phase = Phase.FIRST_STRIKE_DAMAGE
-#             ...  # CIAA
-#         if self.phase == Phase.FIRST_STRIKE_DAMAGE:
-#             self.phase = Phase.COMBAT_DAMAGE
-#             ...  # 1st/double strike assigned; CIAA
-#         if self.phase == Phase.COMBAT_DAMAGE:
-#             self.phase = Phase.COMBAT_END
-#             ...  # non-1st/double strike deal combat damage; CIAA
-#         if self.phase == Phase.COMBAT_END:
-#             self.phase = Phase.END_STEP
-#             ...  # CIAA
-#         if self.phase == Phase.END_STEP:
-#             self.phase = Phase.DISCARD
-#             ...  # CIAA; last action for either player (except discard)
-#         if self.phase == Phase.DISCARD:
-#             self.phase = Phase.CREATURES_HEAL
-#             ...  # game engine determines if this step is required
-#         if self.phase == Phase.CREATURES_HEAL:
-#             self.phase = Phase.END_TURN_EFFECTS
-#             ...  # no humans can play; remove damage from perms
-#         if self.phase == Phase.END_TURN_EFFECTS:
-#             self.phase = Phase.PASS_THE_TURN
-#             ...  # no humans can play; end 'this turn' & 'til end of turn' effects
-#         if self.phase == Phase.PASS_THE_TURN:
-#             ...  # no human can play; set back to UNTAP
-#             if not (self.turn_num - 1) % self.player_cnt:
-#                 self.round_num += 1
-#             self.turn_num += 1
-#             self.player_turn_idx += 1 if not self.player_turn_idx == self.player_cnt else 0
-#             self.phase = Phase.UNTAP
-#             self.action_for_noone()
-#
-#     def action_for_noone(self) -> None:
-#         self.in_turn_player_can_action = False
-#         self.out_turn_player_can_action = False
-#
-#     def action_for_anyone(self) -> None:
-#         self.in_turn_player_can_action = True
-#         self.out_turn_player_can_action = True
-#
-#     def action_for_in_turn(self) -> None:
-#         self.in_turn_player_can_action = True
-#         self.out_turn_player_can_action = False
-#
-#     def action_for_out_turn(self) -> None:
-#         self.in_turn_player_can_action = False
-#         self.out_turn_player_can_action = True
 
+class PhaseManager:
+    def __init__(self, gs: GameState):
+        self.gs = gs
 
+    def get_actions(self, p_id: int) -> list[Action] | None:
+        phase = self.gs.phase
+        board = self.gs.boards[p_id]
+
+        if phase == Phase.UNTAP:
+            from models.choice_actions_all import ChoiceAction
+            from models.events_all import UntapPhaseEvent
+            if not self.gs._phase_started:
+                self.gs._phase_started = True
+                self.gs.emit(UntapPhaseEvent(p_id))
+            if len(self.gs.action_stack):
+                if isinstance(self.gs.action_stack.last_action, ChoiceAction):
+                    return self.gs.action_stack.last_action.get_actions()
+            else:
+                self.gs.handle_untap_phase()
+                self.gs._phase_started = False
+                self.gs.phase = Phase.UPKEEP
+            return
+
+        if phase == Phase.UPKEEP:
+            from models.actions.draw_discard import MoveToDrawPhase
+            from models.events_all import UpkeepEvent
+            self.gs.emit(UpkeepEvent(active_player=self.gs.player_turn_idx))
+            for c in board:
+                if activated_abilities := self.gs.get_available_activated_abilities(c):
+                    return [MoveToDrawPhase(c.owner_id, self)] + activated_abilities  # type: ignore
+            self.gs.phase = Phase.DRAW
+            return
+
+        if phase == Phase.DRAW:
+            from models.events_all import DrawStepEvent
+            self.gs.emit(DrawStepEvent(active_player=self.gs.player_turn_idx))
+            self.gs.draw(p_id)
+            self.gs.phase = Phase.CAST
+            return
+
+        if phase == Phase.CAST:
+            from models.actions.combat import BeginCombat
+            from models.actions.end_step_pass_turn import MoveToEndStep
+            actions: list[Action] = []
+            if not self.any_remaining_required_attackers(p_id):
+                actions.append(MoveToEndStep(p_id, self.gs))  # type: ignore
+            actions.extend(self.gs.available_actions_from_hand())
+            actions.extend(self.gs.add_activated_abilities_from_board())  # type: ignore
+
+            # declare combat
+            if any(self.gs.can_attack(card) for card in self.gs.boards[p_id]):
+                actions.append(BeginCombat(p_id, self))  # type: ignore
+            return actions
+
+        if phase == Phase.DECLARE_ATTACKERS:
+            from models.actions.combat import FinishDeclaringAttackers, CreatureAttack
+            actions: list[Action] = []
+            if self.gs.combats and not self.any_remaining_required_attackers(p_id):
+                actions.append(FinishDeclaringAttackers(p_id, self))  # type: ignore
+
+            for c in board:
+                if c in self.gs.card_filter.attackers().result():  # else vigilance creatures could be added inf times
+                    continue
+                if self.gs.can_attack(c):
+                    actions.append(CreatureAttack(p_id, self, c))  # type: ignore
+            return actions
+
+        if phase == Phase.DECLARE_BLOCKERS:
+            from models.actions.combat import FinishBlocking, AssignBlocker
+            from models.events_all import AttackEvent
+            actions: list[Action] = []
+            for com in self.gs.combats:
+                self.gs.emit(AttackEvent(com.attacker))
+
+            # it's possible to not have any combats if something removed the attack (ex: Maze Of Ith, Mijae Djinn)
+            # probably want to move to 2nd main, but currently rocketing right to end step
+            if not self.gs.combats:
+                self.gs.phase = Phase.END_STEP
+                return
+
+            actions.append((FinishBlocking(self.action_on_idx, self)))  # type: ignore
+
+            for blocker in self.gs.card_filter.on_player_board(self.gs.action_on_idx).creatures().result():
+                for com in self.gs.combats:
+                    if self.gs.can_block(blocker, com.attacker):
+                        actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))  # type: ignore
+
+            actions.extend(self.gs.available_actions_from_hand())
+            actions.extend(self.gs.add_activated_abilities_from_board())  # type: ignore
+            return actions
+
+        if phase == Phase.PRE_COMBAT_DAMAGE:
+            from models.actions.combat import AssignCombatDamage
+            from models.events_all import BlockEvent
+            actions: list[Action] = []
+            for com in self.gs.combats:
+                for blocker in com.blockers:
+                    self.gs.emit(BlockEvent(com.attacker, blocker))
+            actions.append((AssignCombatDamage(self.action_on_idx, self)))  # type: ignore
+            actions.extend(self.available_actions_from_hand())  # type: ignore
+            actions.extend(self.add_activated_abilities_from_board())  # type: ignore
+            return actions
+
+        if phase == Phase.ASSIGN_COMBAT_DAMAGE:
+            from models.events_all import UnblockedAttackerEvent, CombatEndEvent
+            self.gs.phase = Phase.FIRST_STRIKE_DAMAGE
+            self.gs.phase = Phase.COMBAT_DAMAGE
+            for com in self.gs.combats:
+                if not com.blockers:
+                    event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
+                    self.gs.emit(event)
+                com.handle_damage()
+            self.gs.phase = Phase.COMBAT_END
+            self.gs.emit(CombatEndEvent(active_player=self.gs.player_turn_idx))
+            self.gs.phase = Phase.END_STEP
+            return
+
+        if phase == Phase.END_STEP:
+            from models.events_all import EndStepEvent
+            self.gs.emit(EndStepEvent(active_player=self.gs.player_turn_idx))
+
+            # execute all end step funcs
+            for func in self.gs.end_step_funcs:
+                func()
+
+            for c in self.gs.card_filter.in_play().result():
+                c.modifiers.clear_temps()
+            self.gs.phase = Phase.DISCARD
+            return
+
+        if phase == Phase.DISCARD:
+            from models.actions.draw_discard import DiscardCard
+            from models.events_all import DiscardStepEvent
+            hand = self.gs.hands[p_id]
+            self.gs.emit(DiscardStepEvent(active_player=self.gs.player_turn_idx))
+            if len(hand.cards) > 7:
+                return [DiscardCard(self.gs.player_turn_idx, self.gs, c) for c in hand.cards]  # type: ignore
+            self.gs.phase = Phase.CREATURES_HEAL
+            return
+
+        if phase == Phase.CREATURES_HEAL:
+            # THIS NEEDS A RE-WRITE:
+            # 1) I don't want to use decks_all_cards
+            # 2) doesn't feel the right way to expire expiring damage
+            for deck in self.gs.decks_all_cards:
+                for c in deck.cards:
+                    c.damage_dealt_this_turn = 0
+                    c.damage_received_this_turn = 0
+            self.gs.phase = Phase.END_TURN_EFFECTS
+            return
+
+        if phase == Phase.END_TURN_EFFECTS:
+            # new approach
+            for eff, card in self.gs.until_eot_effects_and_cards:
+                if eff in self.gs.damage_preventions:
+                    self.gs.until_eot_effects_and_cards = [i for i in self.gs.until_eot_effects_and_cards if i != eff]
+            self.gs.until_eot_effects_and_cards.clear()
+
+            # Expire all temporary damage prevention
+            self.gs.damage_preventions.clear()
+            # Clear temp modifiers
+            for d in self.gs.decks_all_cards:
+                for c in d.cards:
+                    c.modifiers.clear_temps()
+            # Empty mana pools
+            for pool in self.gs.mana_pools:
+                pool.clear_floating()
+            # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
+            for c in self.gs.card_filter.in_play().result():
+                for aa in c.activated_abilities:
+                    aa.eff_spec.activated_cnt_this_turn = 0
+            # clear combats
+            self.gs.combats.clear()
+            self.gs.phase = Phase.PASS_THE_TURN
+            return
+
+        if phase == Phase.PASS_THE_TURN:
+            from models.actions.end_step_pass_turn import PassTheTurn
+            PassTheTurn(p_id, self.gs).play()
+            return
+
+    def any_remaining_required_attackers(self, p_id: int):
+        return any(c for c in self.gs.boards[p_id] if 'Goad' in c.keyword_abilities and self.gs.can_attack(c) and
+                   c not in self.gs.card_filter.attackers().result())
 

@@ -6,7 +6,6 @@ from functools import partial
 from typing import TYPE_CHECKING, Optional, Literal, Union, Callable
 
 from models.cost import Cost, TapCost, ManaCost
-from phase_fsm import Phase
 from models.utils import flip
 
 from models.events_all import Event
@@ -14,6 +13,7 @@ from models.events_all import Event
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
+    from phase_fsm import Phase
 
 @dataclass
 class TargetSpec:
