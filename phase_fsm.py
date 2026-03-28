@@ -132,12 +132,12 @@ class PhaseManager:
                 self.gs.phase = Phase.END_STEP
                 return
 
-            actions.append((FinishBlocking(self.action_on_idx, self.gs)))  # type: ignore
+            actions.append((FinishBlocking(self.gs.action_on_idx, self.gs)))  # type: ignore
 
             for blocker in self.gs.card_filter.on_player_board(self.gs.action_on_idx).creatures().result():
                 for com in self.gs.combats:
                     if self.gs.can_block(blocker, com.attacker):
-                        actions.append(AssignBlocker(self.action_on_idx, self.gs, blocker, com.attacker))  # type: ignore
+                        actions.append(AssignBlocker(self.gs.action_on_idx, self.gs, blocker, com.attacker))  # type: ignore
 
             actions.extend(self.gs.available_actions_from_hand())
             actions.extend(self.gs.add_activated_abilities_from_board())  # type: ignore
@@ -150,9 +150,9 @@ class PhaseManager:
             for com in self.gs.combats:
                 for blocker in com.blockers:
                     self.gs.emit(BlockEvent(com.attacker, blocker))
-            actions.append((AssignCombatDamage(self.action_on_idx, self.gs)))  # type: ignore
-            actions.extend(self.available_actions_from_hand())  # type: ignore
-            actions.extend(self.add_activated_abilities_from_board())  # type: ignore
+            actions.append((AssignCombatDamage(self.gs.action_on_idx, self.gs)))  # type: ignore
+            actions.extend(self.gs.available_actions_from_hand())  # type: ignore
+            actions.extend(self.gs.add_activated_abilities_from_board())  # type: ignore
             return actions
 
         if phase == Phase.ASSIGN_COMBAT_DAMAGE:
