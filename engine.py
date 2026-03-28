@@ -24,7 +24,7 @@ class Engine:
                 continue
             action = self.players[self.gs.action_on_idx].make_move(self.gs, actions)
             action.play()
-            self.gs.game_history.append(action, self.gs)
+            self.gs.game_history.append_action(action, self.gs)
 
 
 if __name__ == '__main__':

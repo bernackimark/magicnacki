@@ -16,7 +16,7 @@ class GameHistory:
     def items(self) -> list[dict]:
         return self._items
 
-    def append(self, item: Action, gs: GameState) -> None:
+    def append_action(self, item: Action, gs: GameState) -> None:
         d = {'player_idx': item.player_idx,
              'turn_num': gs.turn_number,
              'type': item.__class__.__name__,
@@ -27,6 +27,17 @@ class GameHistory:
         self._items.append(d)
         print('Game History')
         for item in self.items[::-1]:
+            print(item)
+
+    def append_non_action(self, gs: GameState, **kwargs) -> None:
+        d = kwargs
+        d['turn_num'] = gs.turn_number
+        d['ts'] = datetime.now()
+        if d.get('card'):
+            d['card_id'] = d['card'].id_
+        self._items.append(d)
+        print('Game History')
+        for item in self._items[::-1]:
             print(item)
 
     @property
