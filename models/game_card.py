@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from uuid import uuid4
 
 from models.zone import Zone
 
@@ -32,6 +33,7 @@ def attach_invocations(card: GameCard):
 
 class GameCard:
     def __init__(self, props: Card, orig_owner_id: int, is_token: bool = False, colors: str = ''):
+        self.id_ = str(uuid4())
         self.props: Card = props
         self._orig_owner_id: int = orig_owner_id
         self._owner_id: int = orig_owner_id
