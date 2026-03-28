@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -45,17 +43,24 @@ class ActionRenderInfo:
     index: int
     hovered: bool = False
 
-@dataclass
-class RecentActionRow:
+@dataclass(frozen=True)
+class RecentEventRow:
     p_idx: int
-    action_text: str
+    event_text: str
     rect: pg.Rect
     index: int
+
+    @property
+    def display_text(self) -> str:
+        if self.p_idx is not None:
+            return f'P{self.p_idx}: ' + (self.event_text or '')
+        return self.event_text
 
 class PlayScene(Scene):
     def __init__(self, game: Game, engine):
         super().__init__(game)
         self.engine: Engine = engine
+        self.state: GameState = self.engine.gs
         self.font = pg.font.SysFont("arial", 48)
         self.small_font = pg.font.SysFont("arial", 12)
         self.mouse_pos = 0, 0
@@ -63,10 +68,10 @@ class PlayScene(Scene):
         # grid 12 units (125 pixels each) wide by 9 units (100 pixels each) tall
         self.cols = {i: i * 125 + self.game.gutter for i in range(12)}
         self.rows = {i: i * 150 + self.game.gutter for i in range(6)}
+        self.combat_y_offset = 150
 
         self.hovered_card = None
         self.selected_card = None
-        self.state: GameState = self.engine.gs
 
         self.p_idx = 0
 
@@ -76,8 +81,10 @@ class PlayScene(Scene):
 
         self.available_actions = []
         self.action_layout: list[ActionRenderInfo] = []
-        self.recent_actions: list[RecentActionRow] = []  # game history
+        self.recent_actions: list[RecentEventRow] = []  # game history
         self.pending_action = None
+
+        self.prev_state = {'life': self.state.life.copy()}
 
     def handle_events(self, events):
         for event in events:
@@ -96,12 +103,18 @@ class PlayScene(Scene):
         self.build_recent_actions_layout(self.cols[10], self.rows[3])
         self.update_action_hover()
 
+        for p_idx in (0, 1):
+            if self.prev_state['life'][p_idx] != self.state.life[p_idx]:
+                self.life_shake_timer[p_idx] = self.life_shake_duration
+
         # decrement shake timers
         for p_idx in range(len(self.life_shake_timer)):
             if self.life_shake_timer[p_idx] > 0:
                 self.life_shake_timer[p_idx] -= dt  # dt = time since last frame in seconds
                 if self.life_shake_timer[p_idx] < 0:
                     self.life_shake_timer[p_idx] = 0
+
+        self.prev_state['life'] = self.state.life.copy()
 
     def update_action_hover(self):
         mouse_pos = pg.mouse.get_pos()
@@ -133,21 +146,9 @@ class PlayScene(Scene):
                 self.pending_action = info.action
                 print(f"Clicked action: {info.action}")
 
-                prev_life = self.state.life.copy()
-
                 # Execute immediately like the console
                 info.action.play()
-                self.state.game_history.append(info.action, self.state)
-
-                # After action is played, refresh available actions for the next player
-                # self.available_actions = self.state.get_available_actions(self.state.action_on_idx)
-                # self.build_action_layout(self.cols[10], self.rows[0])
-
-                curr_life = self.state.life
-
-                for p_idx in range(len(curr_life)):
-                    if prev_life[p_idx] != curr_life[p_idx]:
-                        self.life_shake_timer[p_idx] = self.life_shake_duration
+                self.state.game_history.append_action(info.action, self.state)
 
                 break
 
@@ -170,7 +171,6 @@ class PlayScene(Scene):
             die_y = y + (50 * (i // 2))
             if shaking:
                 die_x, die_y = jiggle_and_slow(die_x, die_y, 6, self.life_shake_timer[p_idx] / self.life_shake_duration)
-
             self.game.screen.blit(self.dice[value], (die_x, die_y))
 
     def draw_hand(self, p_idx: int, col: int, row: int, face_down: bool):
@@ -188,11 +188,24 @@ class PlayScene(Scene):
     def draw_battlefield(self, p_id: int, col: int, row: int):
         mouse_pos = pg.mouse.get_pos()
 
+        def _get_combatant_coord(c: GameCard, top: bool) -> tuple[int, int]:
+            for col_idx, com in enumerate(self.state.combats):
+                if c is com.attacker or c in com.blockers:
+                    new_x = self.cols[col + col_idx]
+                    new_y = self.rows[row + 1] if top else self.rows[row - 1]
+                    return new_x, new_y
+
+        combatants = self.state.card_filter.combatants().result()
         for i, card in enumerate(self.state.boards[p_id]):
             x_loc = self.cols[col + i]
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
             pg_card = PGCard(card, first_image_surf, i)
-            self.draw_card(pg_card, x_loc, self.rows[row], is_rotated=card.is_tapped)
+
+            if card not in combatants:
+                self.draw_card(pg_card, x_loc, self.rows[row], is_rotated=card.is_tapped)
+            else:
+                x, y = _get_combatant_coord(card, True if p_id != self.p_idx else False)
+                self.draw_card(pg_card, x, y, is_rotated=card.is_tapped)
 
             if pg_card.rect.collidepoint(mouse_pos):
                 self.hovered_card = pg_card
@@ -288,16 +301,19 @@ class PlayScene(Scene):
 
         for i, record in enumerate(self.state.game_history.get_last_n(10)[::-1]):
             rect = pg.Rect(x + 10, y + 20, self.cols[11] - (padding * 2), 15)
-            title = f'Cast {record["card"]}' if record.get('type') == 'CastToBoard' else record.get('type')
-            self.recent_actions.append(RecentActionRow(record['player_idx'], title, rect, i))
+            if record.get('type'):
+                title = f'Cast {record["card"]}' if record['type'] == 'CastToBoard' else record['type']
+            else:
+                title = record.get('text')
+            self.recent_actions.append(RecentEventRow(record.get('player_idx'), title, rect, i))
             y += row_spacing
 
     def draw_recent_actions(self, x: int, y: int):
-        text_surf = self.small_font.render("Last 10 Actions", True, (255, 255, 255))
+        text_surf = self.small_font.render("Last 10 Events", True, (255, 255, 255))
         self.game.screen.blit(text_surf, (x + 10, y))
 
         for act in self.recent_actions:
-            text_surf = self.small_font.render(f"P{act.p_idx}: {act.action_text}", True, (255, 255, 255))
+            text_surf = self.small_font.render(act.display_text, True, (255, 255, 255))
             self.game.screen.blit(text_surf, (act.rect.x, act.rect.y))
 
     def draw_hover_preview(self, x: int, y: int, preview_w: int = 200, preview_h: int = 285):
