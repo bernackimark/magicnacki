@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from renderer_pygame.common.animations import jiggle_and_slow
 from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
+from renderer_pygame.common.fan import get_fan_positions
 
 if TYPE_CHECKING:
     from models.actions.base import Action
@@ -18,6 +19,7 @@ from models.game_card import GameCard
 from models.utils import flip
 from renderer_pygame.scenes.scene_abc import Scene
 
+BASIC_LANDS = {'forest', 'island', 'mountain', 'plains', 'swamp'}
 CARD_W = 100
 CARD_H = 142
 CARD_BACK_IMG = pg.image.load(Path("renderer_pygame/assets/card_back.jpg"))
@@ -34,6 +36,7 @@ class PGCard:
 
     def __post_init__(self):
         self.surf = pg.transform.smoothscale(self.surf, (CARD_W, CARD_H))
+        self.back_surf = self.back_surf.convert_alpha()
         self.back_surf = pg.transform.smoothscale(self.back_surf, (CARD_W, CARD_H))
 
 @dataclass
@@ -69,6 +72,7 @@ class PlayScene(Scene):
         self.cols = {i: i * 125 + self.game.gutter for i in range(12)}
         self.rows = {i: i * 150 + self.game.gutter for i in range(6)}
         self.combat_y_offset = 150
+        self.seen_on_battlefield = {'attackers': 0, 'non_basics': 0} | {slug: 0 for slug in BASIC_LANDS}
 
         self.hovered_card = None
         self.selected_card = None
@@ -127,14 +131,9 @@ class PlayScene(Scene):
         screen = self.game.screen
         screen.fill((30, 100, 30))  # green felt table
 
-        # Draw opponent zones (top half)
         self.draw_player_area(flip(self.p_idx), top=True)
-
-        # Draw stack (center)
-        # self.draw_stack(state)  # skipping this for now; would probably want to use gs.action_stack
-
-        # Draw current player zones (bottom half)
         self.draw_player_area(self.p_idx, top=False)
+        # self.draw_stack(state)  # skipping this for now; would probably want to use gs.action_stack
         self.draw_action_panel(self.cols[10], self.rows[0])
         self.draw_recent_actions(self.cols[10], self.rows[3])
         self.draw_hover_preview(self.cols[10], self.rows[4])
@@ -175,37 +174,56 @@ class PlayScene(Scene):
 
     def draw_hand(self, p_idx: int, col: int, row: int, face_down: bool):
         mouse_pos = pg.mouse.get_pos()
+        cards = self.state.hands[p_idx].cards
+        if not len(cards):
+            return
 
-        for i, card in enumerate(self.state.hands[p_idx].cards):
-            x_loc = self.cols[col + i]
+        # arc/fan parameters
+        center_x = self.cols[col + 3]  # shift right for centering
+        center_y = self.rows[row] + 200  # below cards
+        radius = 300
+        angle_spread = min(60, 10 * len(cards))  # dynamic spread
+
+        positions = get_fan_positions(len(cards), center_x, center_y, radius, angle_spread)
+
+        for i, (card, (x, y, angle)) in enumerate(zip(cards, positions)):
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
             pg_card = PGCard(card, first_image_surf, i)
-            self.draw_card(pg_card, x_loc, self.rows[row], face_down=face_down)
+            self.draw_card(pg_card, int(x), int(y), face_down=face_down, rotation_angle=angle)
 
             if not face_down and pg_card.rect.collidepoint(mouse_pos):
                 self.hovered_card = pg_card
 
     def draw_battlefield(self, p_id: int, col: int, row: int):
+        """Lands stacked & staggered by slug on left; attackers promoted to middle, else rest of piles start on right"""
+        # TODO: marry-up blockers to their attackers
         mouse_pos = pg.mouse.get_pos()
+        top = True if p_id != self.p_idx else False
 
-        def _get_combatant_coord(c: GameCard, top: bool) -> tuple[int, int]:
-            for col_idx, com in enumerate(self.state.combats):
-                if c is com.attacker or c in com.blockers:
-                    new_x = self.cols[col + col_idx]
-                    new_y = self.rows[row + 1] if top else self.rows[row - 1]
-                    return new_x, new_y
+        attackers = self.state.card_filter.attackers().result()
+        seen = self.seen_on_battlefield.copy()
+        basic_lands_seen = []
 
-        combatants = self.state.card_filter.combatants().result()
-        for i, card in enumerate(self.state.boards[p_id]):
-            x_loc = self.cols[col + i]
-            first_image_surf = next(iter(self.game.images[card.props.slug].values()))
-            pg_card = PGCard(card, first_image_surf, i)
+        for i, c in enumerate(self.state.boards[p_id]):
+            first_image_surf = next(iter(self.game.images[c.props.slug].values()))
+            pg_card = PGCard(c, first_image_surf, i)
 
-            if card not in combatants:
-                self.draw_card(pg_card, x_loc, self.rows[row], is_rotated=card.is_tapped)
+            if c in attackers:
+                x = self.cols[col + seen['attackers']]
+                y = self.rows[row + 1] if top else self.rows[row - 1]
+                seen['attackers'] += 1
+            elif c.props.slug in BASIC_LANDS:
+                slug = c.props.slug
+                if slug not in basic_lands_seen:
+                    basic_lands_seen.append(slug)
+                x = self.cols[col + basic_lands_seen.index(slug)] + (seen[slug] * 2)
+                y = self.rows[row] + (seen[slug] * -10)
+                seen[slug] += 1
             else:
-                x, y = _get_combatant_coord(card, True if p_id != self.p_idx else False)
-                self.draw_card(pg_card, x, y, is_rotated=card.is_tapped)
+                x = self.cols[8 - seen['non_basics']]
+                y = self.rows[row]
+                seen['non_basics'] += 1
+            self.draw_card(pg_card, x, y, is_tapped=c.is_tapped)
 
             if pg_card.rect.collidepoint(mouse_pos):
                 self.hovered_card = pg_card
@@ -228,7 +246,7 @@ class PlayScene(Scene):
         top_card = self.state.exiles[p_idx][-1]
         first_image_surf = next(iter(self.game.images[top_card.props.slug].values()))
         pg_card = PGCard(top_card, first_image_surf, 0)
-        self.draw_card(pg_card, x, y, is_rotated=True)
+        self.draw_card(pg_card, x, y, is_tapped=True)
 
     def draw_library(self, p_id: int, x: int, y: int):
         card_cnt = len(self.state.libraries[p_id].cards)
@@ -240,7 +258,7 @@ class PlayScene(Scene):
         self.game.screen.blit(card_cnt_text, (x + 5, y + 5))
 
     def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, height=CARD_H,
-                  face_down: bool = False, is_rotated: bool = False):
+                  face_down: bool = False, is_tapped: bool = False, rotation_angle: int = 0):
         """Draws a card at the given position (x, y) with the given width/height. Rotated 90 degrees if is_rotated."""
         card.rect = pg.Rect(x, y, width, height)
         screen = self.game.screen
@@ -248,10 +266,13 @@ class PlayScene(Scene):
         card_surf = card.surf if not face_down else card.back_surf
         card_surf = pg.transform.smoothscale(card_surf, (width, height))
 
-        if is_rotated:
-            rotated_surf = pg.transform.rotate(card_surf, -90)
-            draw_rect = rotated_surf.get_rect(center=card.rect.center)
-            screen.blit(rotated_surf, draw_rect.topleft)
+        if is_tapped or rotation_angle is not 0:
+            if is_tapped:
+                rotation_angle = 90
+            rotated_surf = pg.transform.rotate(card_surf, -rotation_angle)
+            rotated_rect = rotated_surf.get_rect(center=card.rect.center)
+            screen.blit(rotated_surf, rotated_rect.topleft)
+            card.rect = rotated_rect
         else:
             screen.blit(card_surf, card.rect.topleft)
 
