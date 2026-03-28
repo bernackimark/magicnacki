@@ -146,8 +146,8 @@ class SelectXAction(Action):
         self.activated_ability = activated_ability
 
     def __repr__(self):
-        act, _ = self.gs.game_history.last_action
-        return f'{act}, X={self.x_value}'
+        record = self.gs.game_history.last_action
+        return f'{record}, X={self.x_value}'
 
     def play(self):
         self.choice.selected_x = self.x_value

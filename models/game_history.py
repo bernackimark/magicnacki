@@ -1,35 +1,40 @@
 from __future__ import annotations
-
-from copy import deepcopy
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
-
-from models.actions.base import Action
+from datetime import datetime
+from dataclasses import dataclass, field, asdict
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from game_state import GameState
+    from models.actions.base import Action
 
-@dataclass
-class HistoryRecord:
-    action: Action
-    game_state: GameState
 
 @dataclass
 class GameHistory:
-    items: list[HistoryRecord] = field(default_factory=list)
-
-    def append(self, item: HistoryRecord) -> None:
-        """Need to store a copy of game_state, not just a reference"""
-        gs_copy = deepcopy(item.game_state)
-        record = HistoryRecord(item.action, gs_copy)
-        self.items.append(record)
+    _items: list[dict] = field(default_factory=list)
 
     @property
-    def last_action(self) -> HistoryRecord | None:
-        if not self.items:
+    def items(self) -> list[dict]:
+        return self._items
+
+    def append(self, item: Action, gs: GameState) -> None:
+        d = {'player_idx': item.player_idx,
+             'turn_num': gs.turn_number,
+             'type': item.__class__.__name__,
+             'ts': datetime.now()}
+        if hasattr(item, 'card'):
+            d['card'] = item.card
+            d['card_id'] = item.card.id_
+        self._items.append(d)
+        print('Game History')
+        for item in self.items[::-1]:
+            print(item)
+
+    @property
+    def last_action(self) -> dict | None:
+        if not self._items:
             return None
         return self.items[-1]
 
-    def get_last_n(self, n: int) -> list[HistoryRecord]:
-        return self.items[-n:]
+    def get_last_n(self, n: int) -> list[dict] | None:
+        return self._items[-n:]
 

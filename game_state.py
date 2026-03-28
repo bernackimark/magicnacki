@@ -429,19 +429,13 @@ class GameState:
         for c in self.boards[self.player_turn_idx]:
 
             for record in self.game_history.items:
-                act = record.action
-                gs = record.game_state
-                if isinstance(act, CastToBoard) and act.card is c and self.turn_number - gs.turn_number == 2:
+                if record.get('type') == 'CastToBoard' and record.get('card_id') == c.id_ and self.turn_number - record['turn_num'] == 2:
                     c.has_summoning_sickness = False
             if not c.is_tapped:
                 continue
 
             for record in self.game_history.items:
-                act = record.action
-                gs = record.game_state
-                if (gs.turn_number == self.turn_number and
-                        (isinstance(act, UntapCardStackPop) or
-                         isinstance(act, LeaveTapped)) and act.card == c):
+                if record['turn_num'] == self.turn_number and (record.get('type') == 'UntapCardStackPop' or record.get('type') == 'LeaveTapped') and record.get('card_id') == c.id_:
                     print("You've already made an untap decision on this card this turn")
                     break
             else:
@@ -539,7 +533,6 @@ class GameState:
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         """Determine all legal actions available to player_id in the current phase ...
          (casting, activating abilities, combat, phase-specific actions, etc.)"""
-        print(f"ENTER get_available_actions: phase={self.phase.name}")
 
         if self.pending_choice:
             return self.pending_choice.get_actions()
