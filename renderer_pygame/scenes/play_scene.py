@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import TYPE_CHECKING
+
+from renderer_pygame.common.pg_card import CARD_W, CARD_H, CARD_BACK_IMG, PGCard
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -10,7 +11,6 @@ if TYPE_CHECKING:
 
 import pygame as pg
 from models.actions.base import Action
-from models.game_card import GameCard
 from models.utils import flip
 from renderer_pygame.common.animations import Animation, jiggle
 from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
@@ -19,30 +19,6 @@ from renderer_pygame.game import Game
 from renderer_pygame.scenes.scene_abc import Scene
 
 BASIC_LANDS = {'forest', 'island', 'mountain', 'plains', 'swamp'}
-CARD_W = 100
-CARD_H = 142
-CARD_BACK_IMG = pg.image.load(Path("renderer_pygame/assets/card_back.jpg"))
-RENDER_SCALE = 2
-
-@dataclass
-class PGCard:
-    card: GameCard
-    surf: pg.Surface
-    index: int
-    rect: pg.Rect = None
-    hovered: bool = False
-    selected: bool = False
-    back_surf: pg.Surface = CARD_BACK_IMG
-
-    def __post_init__(self):
-        hi_w = int(CARD_W * RENDER_SCALE)
-        hi_h = int(CARD_H * RENDER_SCALE)
-
-        self.hi_res_surf = pg.transform.smoothscale(self.surf, (hi_w, hi_h))
-
-        # self.surf = pg.transform.smoothscale(self.surf, (CARD_W, CARD_H))
-        self.back_surf = self.back_surf.convert_alpha()
-        self.back_surf = pg.transform.smoothscale(self.back_surf, (CARD_W, CARD_H))
 
 
 @dataclass
@@ -126,7 +102,7 @@ class PlayScene(Scene):
                 break
 
     def update(self, dt):
-        """Executes once per frame"""
+        """Executes once per frame; processes animations if applicable change occurs"""
         self.available_actions = self.state.get_available_actions(self.state.action_on_idx)
         self.build_action_layout(self.cols[10], self.rows[0])
         self.build_recent_actions_layout(self.cols[10], self.rows[3])
@@ -146,6 +122,7 @@ class PlayScene(Scene):
             if anim.finished:
                 self.active_animations.remove(anim)
 
+        # assign current to previous state
         self.prev_state['life'] = self.state.life.copy()
 
     def update_action_hover(self):
@@ -207,8 +184,8 @@ class PlayScene(Scene):
         for i, (card, (x, y, angle)) in enumerate(zip(cards, positions)):
             first_image_surf = next(iter(self.game.images[card.props.slug].values()))
             pg_card = PGCard(card, first_image_surf, i)
-            self.draw_card(pg_card, int(x), int(y), face_down=face_down, rotation_angle=angle,
-                           crop_ratio=0.61 if not is_opp else 1.0, scale=1.4 if not is_opp else 1.0)
+            pg_card.draw(self.game.screen, int(x), int(y), face_down=face_down, rotation_angle=angle,
+                         crop_ratio=0.61 if not is_opp else 1.0, scale=1.4 if not is_opp else 1.0)
 
             if not face_down and pg_card.rect.collidepoint(mouse_pos):
                 self.hovered_card = pg_card
@@ -242,7 +219,7 @@ class PlayScene(Scene):
                 x = self.cols[8 - seen['non_basics']]
                 y = self.rows[row]
                 seen['non_basics'] += 1
-            self.draw_card(pg_card, x, y, is_tapped=c.is_tapped)
+            pg_card.draw(self.game.screen, x, y)
 
             if pg_card.rect.collidepoint(mouse_pos):
                 self.hovered_card = pg_card
@@ -256,7 +233,7 @@ class PlayScene(Scene):
         top_card = self.state.graveyards[p_idx][-1]
         first_image_surf = next(iter(self.game.images[top_card.props.slug].values()))
         pg_card = PGCard(top_card, first_image_surf, 0)
-        self.draw_card(pg_card, x, y)
+        pg_card.draw(self.game.screen, x, y)
 
     def draw_exile(self, p_idx: int, x, y):
         if not self.state.exiles[p_idx]:
@@ -265,7 +242,7 @@ class PlayScene(Scene):
         top_card = self.state.exiles[p_idx][-1]
         first_image_surf = next(iter(self.game.images[top_card.props.slug].values()))
         pg_card = PGCard(top_card, first_image_surf, 0)
-        self.draw_card(pg_card, x, y, is_tapped=True)
+        pg_card.draw(self.game.screen, x, y, rotation_angle=-90)
 
     def draw_library(self, p_id: int, x: int, y: int):
         card_cnt = len(self.state.libraries[p_id].cards)
@@ -275,44 +252,6 @@ class PlayScene(Scene):
         self.game.screen.blit(card_back_surf, (x, y))
         card_cnt_text = self.small_font.render(str(card_cnt), True, (200, 200, 200))
         self.game.screen.blit(card_cnt_text, (x + 5, y + 5))
-
-    def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, height=CARD_H,
-                  face_down=False, is_tapped=False, rotation_angle=0, crop_ratio=1.0, scale=1.0):
-        """Crop, rotate, scale, draw card, update interaction rectangle"""
-        surf = card.hi_res_surf if not face_down else card.back_surf
-
-        if is_tapped:
-            rotation_angle = 90
-
-        # STEP 1: crop BEFORE rotation (visual only)
-        if crop_ratio < 1.0:
-            w, h = surf.get_size()
-            crop_rect = pg.Rect(0, 0, w, int(h * crop_ratio))
-            surf = surf.subsurface(crop_rect)
-
-        # STEP 2: rotate
-        rotated = pg.transform.rotate(surf, -rotation_angle)
-
-        # --- 3. Scale (constant, based on original surface) ---
-        base_w, base_h = surf.get_size()
-        scale_ratio = (width / base_w) * scale
-        new_w = int(rotated.get_width() * scale_ratio)
-        new_h = int(rotated.get_height() * scale_ratio)
-        final = pg.transform.smoothscale(rotated, (new_w, new_h))
-
-        # ✅ STEP 4: position using FULL card geometry (not cropped!)
-        full_rect = pg.Rect(0, 0, width, height)
-        full_rect.topleft = (int(x), int(y))
-
-        # center the rotated surface inside the full rect
-        draw_rect = final.get_rect(center=full_rect.center)
-
-        # Optional: slight downward shift so cropped cards sit nicely
-        if crop_ratio < 1.0:
-            draw_rect.centery += int((1 - crop_ratio) * height * 0.5)
-
-        self.game.screen.blit(final, draw_rect.topleft)
-        card.rect = draw_rect
 
     def draw_action_panel(self, x: int, y: int):
         screen = self.game.screen
@@ -401,6 +340,10 @@ class PlayScene(Scene):
 
         dice_values = int_to_dice_values(life_total, 36)
         for i in range(len(dice_values)):  # each die has its own animation
+            # Expand the list if necessary to accommodate when life is added & another die is needed
+            while len(self.life_jiggle_offsets[p_idx]) <= i:
+                self.life_jiggle_offsets[p_idx].append((0.0, 0.0))
+
             def make_update_fn(idx, player_idx):
                 def update_fn(progress):
                     self.life_jiggle_offsets[player_idx][idx] = jiggle(progress, slows_over_time=True)
