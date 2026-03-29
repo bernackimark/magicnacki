@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -13,7 +12,7 @@ import pygame as pg
 from models.actions.base import Action
 from models.game_card import GameCard
 from models.utils import flip
-from renderer_pygame.common.animations import jiggle_and_slow
+from renderer_pygame.common.animations import Animation, jiggle
 from renderer_pygame.common.dice import make_pg_dice, int_to_dice_values
 from renderer_pygame.common.fan import get_fan_positions
 from renderer_pygame.game import Game
@@ -69,7 +68,7 @@ class RecentEventRow:
 
 
 class PlayScene(Scene):
-    def __init__(self, game: Game, engine):
+    def __init__(self, game: Game, engine: Engine, p_idx: int):
         super().__init__(game)
         self.engine: Engine = engine
         self.state: GameState = self.engine.gs
@@ -86,11 +85,14 @@ class PlayScene(Scene):
         self.hovered_card = None
         self.selected_card = None
 
-        self.p_idx = 0
+        self.p_idx = p_idx
 
         self.dice: dict[int: pg.Surface] = {i: make_pg_dice(40, 40, i) for i in range(1, 7)}
-        self.life_shake_timer = [0.0 for _ in self.state.life]
-        self.life_shake_duration = 0.5
+
+        self.active_animations: list[Animation] = []
+        self.life_jiggle_offsets: list[list[tuple[float, float]]] = [
+            [(0, 0) for _ in range(len(int_to_dice_values(life)))] for life in self.state.life]
+        self.flash_surface = pg.Surface(self.game.screen.get_size(), pg.SRCALPHA)
 
         self.available_actions = []
         self.action_layout: list[ActionRenderInfo] = []
@@ -124,21 +126,25 @@ class PlayScene(Scene):
                 break
 
     def update(self, dt):
+        """Executes once per frame"""
         self.available_actions = self.state.get_available_actions(self.state.action_on_idx)
         self.build_action_layout(self.cols[10], self.rows[0])
         self.build_recent_actions_layout(self.cols[10], self.rows[3])
         self.update_action_hover()
 
-        for p_idx in (0, 1):
+        # detect life changes
+        for p_idx, life_total in enumerate(self.state.life):
             if self.prev_state['life'][p_idx] != self.state.life[p_idx]:
-                self.life_shake_timer[p_idx] = self.life_shake_duration
+                new_life_total = self.state.life[p_idx]
+                is_opp = p_idx != self.p_idx
+                color = (0, 125, 0, 100) if life_total > self.prev_state['life'][p_idx] else (125, 0, 0, 100)
+                self.life_change_animations(p_idx, new_life_total, is_opp, color)
 
-        # decrement shake timers
-        for p_idx in range(len(self.life_shake_timer)):
-            if self.life_shake_timer[p_idx] > 0:
-                self.life_shake_timer[p_idx] -= dt  # dt = time since last frame in seconds
-                if self.life_shake_timer[p_idx] < 0:
-                    self.life_shake_timer[p_idx] = 0
+        # update active animations
+        for anim in self.active_animations[:]:
+            anim.update(dt)
+            if anim.finished:
+                self.active_animations.remove(anim)
 
         self.prev_state['life'] = self.state.life.copy()
 
@@ -160,6 +166,8 @@ class PlayScene(Scene):
         self.draw_recent_actions(self.cols[10], self.rows[3])
         self.draw_hover_preview(self.cols[10], self.rows[4])
 
+        self.game.screen.blit(self.flash_surface, (0, 0))
+
     def draw_player_area(self, p_idx: int, top: bool):
         self.draw_dice(p_idx, self.cols[0], self.rows[1] if top else self.rows[4])
         self.draw_library(p_idx, self.cols[1], self.rows[1] if top else self.rows[4])
@@ -173,12 +181,10 @@ class PlayScene(Scene):
         dice_values = int_to_dice_values(self.state.life[p_idx])
         x += 5  # the dice are slightly too far left
 
-        shaking = self.life_shake_timer[p_idx] > 0
         for i, value in enumerate(dice_values):
-            die_x = x + (50 * (i % 2))
-            die_y = y + (50 * (i // 2))
-            if shaking:
-                die_x, die_y = jiggle_and_slow(die_x, die_y, 6, self.life_shake_timer[p_idx] / self.life_shake_duration)
+            offset_x, offset_y = self.life_jiggle_offsets[p_idx][i]
+            die_x = x + (50 * (i % 2)) + offset_x
+            die_y = y + (50 * (i // 2)) + offset_y
             self.game.screen.blit(self.dice[value], (die_x, die_y))
 
     def draw_hand(self, p_idx: int, col: int, row: int, face_down: bool, is_opp: bool):
@@ -270,33 +276,9 @@ class PlayScene(Scene):
         card_cnt_text = self.small_font.render(str(card_cnt), True, (200, 200, 200))
         self.game.screen.blit(card_cnt_text, (x + 5, y + 5))
 
-    # def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, face_down=False, is_tapped=False, rotation_angle=0,
-    #               is_cropped: bool = False):
-    #     """Rotates, resizes, and smooths cards in a way that best reduces blurriness"""
-    #     surf = card.hi_res_surf if not face_down else card.back_surf
-    #
-    #     if is_tapped:
-    #         rotation_angle = 90
-    #     rotated = pg.transform.rotate(surf, -rotation_angle)
-    #
-    #     base_w, base_h = surf.get_size()
-    #     scale_ratio = width / base_w
-    #
-    #     new_w = int(rotated.get_width() * scale_ratio)
-    #     new_h = int(rotated.get_height() * scale_ratio)
-    #     final = pg.transform.smoothscale(rotated, (new_w, new_h))
-    #     rect = final.get_rect(topleft=(int(x), int(y)))
-    #
-    #     self.game.screen.blit(final, rect.topleft)
-    #     card.rect = rect
-
-    def draw_card(self, card: PGCard, x: int, y: int,
-                  width=CARD_W, height=CARD_H,
-                  face_down=False, is_tapped=False, rotation_angle=0,
-                  crop_ratio=1.0, scale=1.0):
-
-        screen = self.game.screen
-
+    def draw_card(self, card: PGCard, x: int, y: int, width=CARD_W, height=CARD_H,
+                  face_down=False, is_tapped=False, rotation_angle=0, crop_ratio=1.0, scale=1.0):
+        """Crop, rotate, scale, draw card, update interaction rectangle"""
         surf = card.hi_res_surf if not face_down else card.back_surf
 
         if is_tapped:
@@ -314,10 +296,8 @@ class PlayScene(Scene):
         # --- 3. Scale (constant, based on original surface) ---
         base_w, base_h = surf.get_size()
         scale_ratio = (width / base_w) * scale
-
         new_w = int(rotated.get_width() * scale_ratio)
         new_h = int(rotated.get_height() * scale_ratio)
-
         final = pg.transform.smoothscale(rotated, (new_w, new_h))
 
         # ✅ STEP 4: position using FULL card geometry (not cropped!)
@@ -331,7 +311,7 @@ class PlayScene(Scene):
         if crop_ratio < 1.0:
             draw_rect.centery += int((1 - crop_ratio) * height * 0.5)
 
-        screen.blit(final, draw_rect.topleft)
+        self.game.screen.blit(final, draw_rect.topleft)
         card.rect = draw_rect
 
     def draw_action_panel(self, x: int, y: int):
@@ -402,6 +382,32 @@ class PlayScene(Scene):
         first_image_surf = next(iter(self.game.images[self.hovered_card.card.props.slug].values()))
         preview_surf = pg.transform.smoothscale(first_image_surf, (preview_w, preview_h))
         self.game.screen.blit(preview_surf, (x + 20, y))
+
+    def life_change_animations(self, p_idx: int, life_total: int, is_opp: bool,
+                               color: tuple[int, int, int, int]) -> None:
+        # Flash green/red for the half of the screen of the player whose life total changed
+        half_screen_rect = pg.Rect(0, 0 if is_opp else self.rows[3],
+                                   self.game.screen.get_width(), self.game.screen.get_height() // 2)
+
+        def flash_update(progress, col=color):
+            fade_progress = progress * 2 if progress < 0.5 else (1 - progress) * 2  # fade in then out
+            alpha = int(100 * fade_progress)
+            self.flash_surface.fill((0, 0, 0, 0))
+            temp = pg.Surface(half_screen_rect.size, pg.SRCALPHA)
+            temp.fill((*col[:3], alpha))
+            self.flash_surface.blit(temp, half_screen_rect.topleft)
+
+        self.active_animations.append(Animation(flash_update, 0.5))
+
+        dice_values = int_to_dice_values(life_total, 36)
+        for i in range(len(dice_values)):  # each die has its own animation
+            def make_update_fn(idx, player_idx):
+                def update_fn(progress):
+                    self.life_jiggle_offsets[player_idx][idx] = jiggle(progress, slows_over_time=True)
+
+                return update_fn
+
+            self.active_animations.append(Animation(make_update_fn(i, p_idx), 1))
 
     def draw_stack(self, state):
         stack = state.stack
