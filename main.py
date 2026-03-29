@@ -15,7 +15,7 @@ from renderers import ConsoleRenderer
 
 
 class MyGame(Game):
-    def __init__(self, card_univ: CardUniverse, eng: Engine):
+    def __init__(self, card_univ: CardUniverse, eng: Engine, p_idx: int = 0):
         super().__init__(width=1520, height=920, title="Magicnacki")
 
         cursor_img = pg.image.load(Path("renderer_pygame/assets/cursor.png")).convert_alpha()
@@ -25,11 +25,12 @@ class MyGame(Game):
 
         self.card_univ = card_univ
         self.engine = eng
+        self.p_idx = p_idx
 
         # Register scenes
         self.scenes.add_scene("menu", MenuScene(self))
         self.scenes.add_scene("build_deck", BuildDeckScene(self))
-        self.scenes.add_scene("play", PlayScene(self, self.engine))
+        self.scenes.add_scene("play", PlayScene(self, self.engine, self.p_idx))
         self.scenes.set_scene("menu", use_fade=False)  # Start in menu
 
         self.scenes.load_transition_sound(Path("renderer_pygame/assets/a_Major_7_Sharp_11.mp3"))
