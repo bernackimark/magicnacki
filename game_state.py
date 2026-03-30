@@ -51,7 +51,7 @@ class GameState:
         self.exiles: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
-        self.phase = Phase.UNTAP
+        self.phase = Phase.NEW_GAME
         self.phase_manager = PhaseManager(self)
         self._phase_started: bool = False
         self.action_stack = ActionStack()
@@ -534,13 +534,15 @@ class GameState:
         return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
-        """Determine all legal actions available to player_id in the current phase ...
-         (casting, activating abilities, combat, phase-specific actions, etc.)"""
+        """This method is called by the engine;
+        in order, check for:
+            -   Pending Choice (selections that are forced & are not placed on stack)
+            -   Check global state-based actions
+            -   Check the stack
+            -   Get actions by phase"""
 
         if self.pending_choice:
             return self.pending_choice.get_actions()
-
-        print('XXX')
 
         self.check_state_based_actions()
 

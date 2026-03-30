@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from models.constants import Mulligan
+from phase_fsm import Phase
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
@@ -24,6 +25,7 @@ Flow:
         -   Select a card to be bottomed, add to BottomChoice selected until count of cards is met
         -   Once met, present only FinishBottom
     -   FinishBottom.play() exits flow
+    -   When exiting flow, set GameState.phase == Phase.CAST, as On The Play player does not get to draw
 """
 
 class MulliganChoice(ChoiceAction):
@@ -41,7 +43,7 @@ class MulliganChoice(ChoiceAction):
     def is_all_or_no_lands(self) -> bool:
         hand = self.gs.hands[self.player_idx].cards
         lands = [c for c in hand if c.props.is_land]
-        return len(hand) == 0 or len(lands) == len(hand)
+        return len(lands) in (0, len(hand))
 
     def get_actions(self) -> list[Action]:
         if self.rule == Mulligan.ORIGINAL:
@@ -120,10 +122,11 @@ class KeepHand(Action):
     def play(self):
         if self.choice.rule in (Mulligan.LONDON, Mulligan.LONDON_WITH_GENTLEMENS) and self.choice.mulligans_taken > 0:
             self.gs.pending_choice = BottomChoice(self.player_idx, self.gs, self.choice.mulligans_taken)
-        else:
-            self.gs.pending_choice = None
+            return
+        self.gs.pending_choice = None
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
+        self.gs.phase = Phase.CAST
 
 @dataclass
 class FinishBottoming(Action):
@@ -139,3 +142,4 @@ class FinishBottoming(Action):
         self.gs.pending_choice = None
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
+        self.gs.phase = Phase.CAST
