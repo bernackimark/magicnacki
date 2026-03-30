@@ -9,28 +9,22 @@ from deck_builder.build_deck import Deck
 from models.game_card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility, BeginAbilityActivationAction
 from models.actions.base import Action
-from models.actions.cast import CastToBoard, CastToTargetAddToStack, CastCounter, BeginSpellCastAction
+from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
-from models.actions.tap_untap import UntapCardStackPop, LeaveTapped
-from models.actions.combat import (CreatureAttack, BeginCombat, FinishDeclaringAttackers, AssignBlocker,
-                                   FinishBlocking, AssignCombatDamage)
-from models.actions.draw_discard import DiscardCard, MoveToDrawPhase
-from models.actions.end_step_pass_turn import MoveToEndStep, PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCastRule, CanTargetRule, CanDamageRule
-from models.events_all import (EndStepEvent, UpkeepEvent, CombatEndEvent, TapCardEvent, UntapCardEvent,
-                               UntapPhaseEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
-                               DiesEvent, ZoneChangeEvent, DrawCardEvent, DrawStepEvent, LifeLossEvent,
-                               UnblockedAttackerEvent, BlockEvent, AttackEvent, RandomEvent, Event, DiscardEvent,
-                               DiscardStepEvent)
+from models.events_all import (TapCardEvent, UntapCardEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
+                               DiesEvent, ZoneChangeEvent, DrawCardEvent, LifeLossEvent,
+                               RandomEvent, Event, DiscardEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool
+from models.mulligan import MulliganChoice
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
 from models.zone import Zone
@@ -39,15 +33,15 @@ from models.utils import flip
 
 
 class GameState:
-    def __init__(self, player_cnt: int, player_turn_idx: int, decks: list[Deck]):
+    def __init__(self, player_cnt: int, player_turn_idx: int, rules: dict, decks: list[Deck]):
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
-        self._decks = decks  # the decks should not be mutated from inside GameState
+        self.rules: dict = rules
+        self.decks_all_cards = decks.copy()
         self.libraries = decks.copy()
         for d in self.libraries:
             for c in d.cards:
                 c.game_state = self
-        self.decks_all_cards = decks.copy()
         self.life = [20, 20]
         self._poison_counters = [0, 0]
         self.action_on_idx: int = self.player_turn_idx
@@ -86,6 +80,8 @@ class GameState:
         for i in range(self.player_cnt):
             random.shuffle(self.libraries[i].cards)
             self.draw(i, 7)
+
+        self.pending_choice = MulliganChoice(self.player_turn_idx, self, self.rules['mulligan'])
 
     # --- EVENT LISTENER SYSTEM ---
     def emit(self, event: Event):
@@ -543,6 +539,8 @@ class GameState:
 
         if self.pending_choice:
             return self.pending_choice.get_actions()
+
+        print('XXX')
 
         self.check_state_based_actions()
 

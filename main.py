@@ -6,6 +6,7 @@ from game_state import GameState
 from models.card import CardUniverse
 import pygame as pg
 
+from models.constants import Mulligan
 from players import ConsolePlayer
 from renderer_pygame.game import Game
 from renderer_pygame.scenes.build_deck_scene import BuildDeckScene
@@ -69,9 +70,11 @@ def create_engine() -> Engine:
     # create players
     players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]
 
-    e = Engine(players=players,
-               renderer=ConsoleRenderer(),
-               gs=GameState(len(players), 0, decks=decks))
+    # create rules
+    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS}
+
+    e = Engine(players=players, renderer=ConsoleRenderer(), gs=GameState(len(players),
+               player_turn_idx=0, rules=rules, decks=decks))
     return e
 
 

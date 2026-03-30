@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
 from game_state import GameState
+from models.constants import Mulligan
 from players import Player, ConsolePlayer
 from renderers import Renderer, ConsoleRenderer
 
@@ -61,9 +62,12 @@ if __name__ == '__main__':
     # create players
     players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]
 
+    # create rules
+    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS}
+
     # create engine
     e = Engine(players=players, renderer=ConsoleRenderer(),
-               gs=GameState(len(players), 0, decks=decks))
+               gs=GameState(len(players), 0, rules=rules, decks=decks))
     e.play()
 
 

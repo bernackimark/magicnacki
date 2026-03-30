@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from enum import Enum, auto
 from typing import Union
 
 ALL_PLAYER_INDICES = (0, 1)
@@ -26,6 +27,14 @@ KEYWORD_ABILITIES = ['Attack', 'Banding', 'Defender', 'First Strike', 'Flying', 
                      'Protection From Red', 'Protection From White', 'Rampage 1', 'Rampage 2', 'Rampage 3', 'Reach',
                      'Swampwalk', 'Foresthome', 'Islandhome', 'Mountainhome', 'Plainswalk', 'Swamphome', 'Trample',
                      'Vigilance']
+
+class Mulligan(Enum):
+    ORIGINAL = auto()
+    LONDON = auto()
+    PARIS = auto()
+    ORIGINAL_WITH_GENTLEMENS = auto()
+    LONDON_WITH_GENTLEMENS = auto()
+    PARIS_WITH_GENTLEMENS = auto()
 
 X_POINTS = {
     'ancestral-recall': 5, 'mind-twist': 4, 'black-lotus': 3, 'demonic-tutor': 3, 'library-of-alexandria': 3,
