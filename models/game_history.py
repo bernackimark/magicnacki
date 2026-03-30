@@ -25,9 +25,6 @@ class GameHistory:
             d['card'] = item.card
             d['card_id'] = item.card.id_
         self._items.append(d)
-        print('Game History')
-        for item in self.items[::-1]:
-            print(item)
 
     def append_non_action(self, gs: GameState, **kwargs) -> None:
         d = kwargs
@@ -36,9 +33,6 @@ class GameHistory:
         if d.get('card'):
             d['card_id'] = d['card'].id_
         self._items.append(d)
-        print('Game History')
-        for item in self._items[::-1]:
-            print(item)
 
     @property
     def last_action(self) -> dict | None:
