@@ -61,11 +61,14 @@ class GameState:
         self.combats: list[Combat] = []
         self.card_filter = CardFilter(self)
         self.is_game_over: bool = False
+        self.is_match_over: bool = False
+        self.winners: list[int] = []  # -1 for a draw, 0 for player 0, 1 for player 1
+        self.winner: int | None = None
 
         self.query_effects: list[Effect] = [CanAttackRule(), CanBlockRule(), CanCastRule(),
                                             CanDamageRule(), CanTargetRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
-        self.state_based_rules: list[type[StateBasedRule]] = STATE_BASED_RULES
+        self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
         self.destroy_replacements: list[RegenerationShield] = []
         self.damage_replacements: list[DamageReplacement] = []
@@ -400,13 +403,6 @@ class GameState:
         self.life[p_id] -= amt
         print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
 
-        if self.life[p_id] <= 0 < self.life[flip(p_id)]:
-            print(f"Player #{p_id} has lost")
-            self.is_game_over = True
-        elif self.life[p_id] <= 0 and self.life[flip(p_id)] <= 0:
-            print(f"Both players have lost")
-            self.is_game_over = True
-
     def tap_card(self, c: GameCard):
         # new system
         if c.is_tapped:
@@ -534,10 +530,11 @@ class GameState:
         return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
 
     def get_available_actions(self, p_id: int) -> list[Action] | None:
-        """This method is called by the engine;
-        in order, check for:
+        """This method is called by the engine; in order, check for:
             -   Pending Choice (selections that are forced & are not placed on stack)
-            -   Check global state-based actions
+            -   Check global state-based actions (which includes game over & match over)
+            -   Is match over?
+            -   Is game over?
             -   Check the stack
             -   Get actions by phase"""
 
@@ -545,6 +542,27 @@ class GameState:
             return self.pending_choice.get_actions()
 
         self.check_state_based_actions()
+
+        print(f'{self.is_match_over = } {self.is_game_over = }')
+
+        # TODO: the ordering is wrong in this print statement; at that point, the game doesn't proceed.
+        #  Should print out the 'P# wins the game, here's the win totals',
+        #  then self.is_match_over should print, but it doesn't get there
+        """
+        self.is_match_over = False self.is_game_over = False
+        Phantom Monster deals 3 damage to player #1. Life is now at [20, -1]
+        Player #0 wins the game
+        Player #0 has 1 win(s); Player #1 has 0 win(s)
+        """
+
+        if self.is_match_over:
+            exit()
+
+        if self.is_game_over:
+            if not self.pending_choice:
+                from models.game_over import GameOverChoice
+                self.pending_choice = GameOverChoice(p_id, self)
+            return self.pending_choice.get_actions()
 
         available_actions: list[Action] = []
         hand = self.hands[p_id]

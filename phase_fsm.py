@@ -11,6 +11,7 @@ from models.utils import flip
 class Phase(IntEnum):
     NEW_SESSION = auto()  # roll dice; decide going first
     DICE_ROLL = auto()
+    SIDEBOARDING = auto()
     NEW_GAME = auto()  # shuffle; deal; mulligan
     UNTAP = auto()  # (phasing happens, if relevant); untap permanents
     UPKEEP = auto()  # any player can cast instants & activate abilities (CIAA)

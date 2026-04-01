@@ -18,7 +18,7 @@ class Engine:
         return len(self.players)
 
     def play(self) -> None:
-        while not self.gs.is_game_over:
+        while not self.gs.is_match_over:
             actions = self.gs.get_available_actions(self.gs.action_on_idx)
             self.renderer.render(self.gs, self.players)
             if not actions:
@@ -63,7 +63,8 @@ if __name__ == '__main__':
     players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]
 
     # create rules
-    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS}
+    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS,
+             'best_of': 3}
 
     # create engine
     e = Engine(players=players, renderer=ConsoleRenderer(),

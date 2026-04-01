@@ -71,7 +71,8 @@ def create_engine() -> Engine:
     players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]
 
     # create rules
-    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS}
+    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS,
+             'best_of': 3}
 
     e = Engine(players=players, renderer=ConsoleRenderer(), gs=GameState(len(players),
                player_turn_idx=0, rules=rules, decks=decks))
