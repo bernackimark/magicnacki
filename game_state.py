@@ -24,6 +24,7 @@ from models.combat import Combat
 from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool
+from models.match_manager import MatchManager
 from models.mulligan import MulliganChoice
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
@@ -55,15 +56,13 @@ class GameState:
         self.phase_manager = PhaseManager(self)
         self._phase_started: bool = False
         self.action_stack = ActionStack()
-        self.pending_choice: ChoiceAction | None = None  # used for when a cost.pay() does not go onto the stack
+        self.pending_choice: ChoiceAction | None = None  # used for forced decisions that don't go on the stack
         self.game_history = GameHistory()  # turn num, p_idx, Action; appended to in engine.play()
         self.turn_number = 1
         self.combats: list[Combat] = []
         self.card_filter = CardFilter(self)
-        self.is_game_over: bool = False
-        self.is_match_over: bool = False
-        self.winners: list[int] = []  # -1 for a draw, 0 for player 0, 1 for player 1
-        self.winner: int | None = None
+
+        self.match_manager = MatchManager(self)
 
         self.query_effects: list[Effect] = [CanAttackRule(), CanBlockRule(), CanCastRule(),
                                             CanDamageRule(), CanTargetRule()]
@@ -182,9 +181,6 @@ class GameState:
 
     def add_poison_counter(self, p_idx: int, cnt: int = 1):
         self._poison_counters[p_idx] += cnt
-        if self._poison_counters[p_idx] >= 10:
-            print(f"Player #{p_idx} has lost")
-            self.is_game_over = True
 
     # Pile Helpers & card movement
     @property
@@ -543,7 +539,7 @@ class GameState:
 
         self.check_state_based_actions()
 
-        print(f'{self.is_match_over = } {self.is_game_over = }')
+        print(f'{self.match_manager.is_match_over = } {self.match_manager.is_game_over = }')
 
         # TODO: the ordering is wrong in this print statement; at that point, the game doesn't proceed.
         #  Should print out the 'P# wins the game, here's the win totals',
@@ -555,10 +551,10 @@ class GameState:
         Player #0 has 1 win(s); Player #1 has 0 win(s)
         """
 
-        if self.is_match_over:
+        if self.match_manager.is_match_over:
             exit()
 
-        if self.is_game_over:
+        if self.match_manager.is_game_over:
             if not self.pending_choice:
                 from models.game_over import GameOverChoice
                 self.pending_choice = GameOverChoice(p_id, self)

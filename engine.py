@@ -18,7 +18,7 @@ class Engine:
         return len(self.players)
 
     def play(self) -> None:
-        while not self.gs.is_match_over:
+        while not self.gs.match_manager.is_match_over:
             actions = self.gs.get_available_actions(self.gs.action_on_idx)
             self.renderer.render(self.gs, self.players)
             if not actions:
