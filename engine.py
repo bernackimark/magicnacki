@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
 from game_state import GameState
 from models.constants import Mulligan
+from models.match_manager import MatchManager
 from players import Player, ConsolePlayer
 from renderers import Renderer, ConsoleRenderer
 
@@ -10,6 +11,7 @@ from renderers import Renderer, ConsoleRenderer
 class Engine:
     players: list[Player]
     renderer: Renderer
+    match_manager: MatchManager
     gs: GameState = None
     # log: Log = field(default_factory=Log)
 
@@ -18,14 +20,20 @@ class Engine:
         return len(self.players)
 
     def play(self) -> None:
-        while not self.gs.match_manager.is_match_over:
-            actions = self.gs.get_available_actions(self.gs.action_on_idx)
-            self.renderer.render(self.gs, self.players)
-            if not actions:
-                continue
-            action = self.players[self.gs.action_on_idx].make_move(self.gs, actions)
-            action.play()
-            self.gs.game_history.append_action(action, self.gs)
+        """Controls game flow, user inputs & rendering;
+        creates GameState if not passed in; double loop for match & game, creating a new GameState in between"""
+        if self.gs is None:
+            self.gs = self.match_manager.create_game_state()
+        while not self.match_manager.is_match_over:
+            while not self.gs.is_game_over:
+                actions = self.gs.get_available_actions(self.gs.action_on_idx)
+                self.renderer.render(self.gs, self.players)
+                if not actions:
+                    continue
+                action = self.players[self.gs.action_on_idx].make_move(self.gs, actions)
+                action.play()
+                self.gs.game_history.append_action(action, self.gs)
+            self.match_manager.create_game_state()
 
 
 if __name__ == '__main__':
@@ -68,7 +76,7 @@ if __name__ == '__main__':
 
     # create engine
     e = Engine(players=players, renderer=ConsoleRenderer(),
-               gs=GameState(len(players), 0, rules=rules, decks=decks))
+               match_manager=MatchManager(len(players), rules, decks, first_to_act=data['starting_deck']))
     e.play()
 
 

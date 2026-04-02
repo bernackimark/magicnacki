@@ -47,7 +47,7 @@ class PlayScene(Scene):
     def __init__(self, game: Game, engine: Engine, p_idx: int):
         super().__init__(game)
         self.engine: Engine = engine
-        self.state: GameState = self.engine.gs
+        self.state: GameState = self.engine.gs or self.engine.match_manager.create_game_state()
         self.font = pg.font.SysFont("arial", 48)
         self.small_font = pg.font.SysFont("arial", 12)
         self.mouse_pos = 0, 0

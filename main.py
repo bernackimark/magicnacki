@@ -7,6 +7,7 @@ from models.card import CardUniverse
 import pygame as pg
 
 from models.constants import Mulligan
+from models.match_manager import MatchManager
 from players import ConsolePlayer
 from renderer_pygame.game import Game
 from renderer_pygame.scenes.build_deck_scene import BuildDeckScene
@@ -74,8 +75,8 @@ def create_engine() -> Engine:
     rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS,
              'best_of': 3}
 
-    e = Engine(players=players, renderer=ConsoleRenderer(), gs=GameState(len(players),
-               player_turn_idx=0, rules=rules, decks=decks))
+    e = Engine(players=players, renderer=ConsoleRenderer(),
+               match_manager=MatchManager(len(players), rules, decks, first_to_act=data['starting_deck']))
     return e
 
 

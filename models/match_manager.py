@@ -1,21 +1,24 @@
 from __future__ import annotations
 from collections import Counter
-from typing import TYPE_CHECKING
+import random
 
-if TYPE_CHECKING:
-    from game_state import GameState
-
+from deck_builder.build_deck import Deck
+from game_state import GameState
 from models.utils import flip
 
 
 class MatchManager:
-    def __init__(self, gs: GameState):
-        self.gs = gs
-        self.is_game_over: bool = False
+    """Class that stores game winners and determines if there is a match winner;
+    could be extended for more rules; first to act can be provided else will assign randomly"""
+    def __init__(self, player_cnt: int, rules: dict, decks: list[Deck], first_to_act: int | None = None):
+        self.player_cnt = player_cnt
+        self.rules = rules
+        self.decks = decks
         self.is_match_over: bool = False
-        self._best_of = self.gs.rules['best_of']
+        self._best_of = self.rules['best_of']
         self._winners: list[int] = []  # -1 for a draw, 0 for player 0, 1 for player 1
         self._match_winner: int | None = None
+        self.first_to_act = first_to_act if first_to_act is not None else self.set_first_to_act()
 
         if not self._best_of % 2:
             raise ValueError('Best Of must be an odd number')
@@ -25,30 +28,16 @@ class MatchManager:
         return self._match_winner
 
     @property
-    def wins_needed(self):
+    def _wins_needed(self):
         return self._best_of // 2 + 1
 
-    def determine_game_winner(self) -> int | None:
-        """Returns None if game is not over;
-        else -1 if a draw, 0 for player #0, 1 for player #1, updates gs.is_game_over"""
-        zero_life = [idx for idx, life in enumerate(self.gs.life) if life <= 0]
-        ten_poison = [idx for idx, poison in enumerate(self.gs.poison_counters) if poison >= 10]
-
-        losers = tuple(set(zero_life + ten_poison))
-        if not losers:
-            return None
-        if len(losers) > 1:
-            self._winners.append(-1)
-            self.is_game_over = True
-            print('The game ends in a draw')
-            return -1
-        else:
-            winner = flip(losers[0])
-            self._winners.append(winner)
-            self.is_game_over = True
-            print(f'Player #{winner} wins the game')
-            print(f'Player #0 has {self._winners.count(0)} win(s); Player #1 has {self._winners.count(1)} win(s)')
-            return winner
+    def set_first_to_act(self) -> None:
+        """If this is the first game, return random 0 or 1; if last game was a draw, return the previous first_to_act;
+        if last game was won/lost, return the loser"""
+        if self.first_to_act is None:
+            self.first_to_act = random.randint(0, 1)
+        elif len(self._winners) and self._winners[-1] in (0, 1):
+            self.first_to_act = flip(self._winners[-1])
 
     def determine_match_winner(self) -> int | None:
         """Returns None if match is not over;
@@ -61,7 +50,7 @@ class MatchManager:
             return winner
 
         for idx, wins in c.items():
-            if wins >= self.wins_needed:
+            if wins >= self._wins_needed:
                 self._match_winner = idx
                 self.is_match_over = True
                 print(f'Player #{idx} wins the match')
@@ -69,12 +58,6 @@ class MatchManager:
 
         return None
 
-    def concede(self, conceder_idx: int) -> int:
-        """Appends winner to self._winners, sets gs.is_game_over, calls determine_match_winner(), returns game winner"""
-        winner = flip(conceder_idx)
-        self._winners.append(winner)
-        self.is_game_over = True
-        print(f'Player #{winner} wins the game')
-        print(f'Player #0 has {self._winners.count(0)} win(s); Player #1 has {self._winners.count(1)} win(s)')
-        self.determine_match_winner()
-        return winner
+    def create_game_state(self) -> GameState:
+        self.set_first_to_act()
+        return GameState(self.player_cnt, self.first_to_act, self.rules, self.decks)

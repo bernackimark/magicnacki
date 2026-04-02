@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from common.file_utils import read_json_file
 from game_state import GameState, Action
 from models.actions.base import Action
+from models.game_over import Concede
 
 
 @dataclass
@@ -27,10 +28,12 @@ class ConsolePlayer(Player):
             print(f"{i}: {avail_action}")
         with suppress(KeyboardInterrupt):
             while True:
-                sel_action = input("Please select an action (or type a card slug to get info about it) ")
+                sel_action = input("Please select an action (type a card slug for info; C to concede) ")
                 if sel_action.isnumeric():
                     sel_action = int(sel_action)
                     break
+                elif sel_action.lower() == 'c':
+                    return Concede(self.idx, gs)
                 else:
                     print_quick_card_info(sel_action)
             return available_actions[sel_action]

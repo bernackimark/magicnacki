@@ -24,7 +24,6 @@ from models.combat import Combat
 from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool
-from models.match_manager import MatchManager
 from models.mulligan import MulliganChoice
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
@@ -62,7 +61,8 @@ class GameState:
         self.combats: list[Combat] = []
         self.card_filter = CardFilter(self)
 
-        self.match_manager = MatchManager(self)
+        self.is_game_over: bool = False
+        self.winner: int | None = None
 
         self.query_effects: list[Effect] = [CanAttackRule(), CanBlockRule(), CanCastRule(),
                                             CanDamageRule(), CanTargetRule()]
@@ -528,9 +528,8 @@ class GameState:
     def get_available_actions(self, p_id: int) -> list[Action] | None:
         """This method is called by the engine; in order, check for:
             -   Pending Choice (selections that are forced & are not placed on stack)
-            -   Check global state-based actions (which includes game over & match over)
-            -   Is match over?
-            -   Is game over?
+            -   Check global state-based actions (game over, creatures w 0 weakness die, etc.)
+                -   If game is over, ask player to sideboard
             -   Check the stack
             -   Get actions by phase"""
 
@@ -539,32 +538,21 @@ class GameState:
 
         self.check_state_based_actions()
 
-        print(f'{self.match_manager.is_match_over = } {self.match_manager.is_game_over = }')
+        # TODO: when the game ends, it just hangs, GameOverChoice is never presented
+        #  PyGame just hangs at game over as well
 
-        # TODO: the ordering is wrong in this print statement; at that point, the game doesn't proceed.
-        #  Should print out the 'P# wins the game, here's the win totals',
-        #  then self.is_match_over should print, but it doesn't get there
-        """
-        self.is_match_over = False self.is_game_over = False
-        Phantom Monster deals 3 damage to player #1. Life is now at [20, -1]
-        Player #0 wins the game
-        Player #0 has 1 win(s); Player #1 has 0 win(s)
-        """
-
-        if self.match_manager.is_match_over:
-            exit()
-
-        if self.match_manager.is_game_over:
+        # TODO: if the match is over, it shouldn't go here but GameState has no knowledge of the match
+        if self.is_game_over:
+            print('YYY')
             if not self.pending_choice:
                 from models.game_over import GameOverChoice
                 self.pending_choice = GameOverChoice(p_id, self)
             return self.pending_choice.get_actions()
 
-        available_actions: list[Action] = []
-        hand = self.hands[p_id]
-
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
+            available_actions: list[Action] = []
+            hand = self.hands[p_id]
             if isinstance(self.action_stack.last_action, ChoiceAction):
                 return self.action_stack.last_action.get_actions()
 
