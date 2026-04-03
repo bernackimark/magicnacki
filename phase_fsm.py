@@ -74,7 +74,7 @@ class PhaseManager:
             else:
                 gs.handle_untap_phase()
                 gs._phase_started = False
-                gs.phase = Phase.UPKEEP
+                self.phase = Phase.UPKEEP
             return
 
         if phase == Phase.UPKEEP:
@@ -84,14 +84,14 @@ class PhaseManager:
             for c in board:
                 if activated_abilities := gs.get_available_activated_abilities(c):
                     return [MoveToDrawPhase(c.owner_id, gs)] + activated_abilities  # type: ignore
-            gs.phase = Phase.DRAW
+            self.phase = Phase.DRAW
             return
 
         if phase == Phase.DRAW:
             from models.events_all import DrawStepEvent
             gs.emit(DrawStepEvent(active_player=gs.player_turn_idx))
             gs.draw(p_id)
-            gs.phase = Phase.CAST
+            self.phase = Phase.CAST
             return
 
         if phase == Phase.CAST:
@@ -131,7 +131,7 @@ class PhaseManager:
             # it's possible to not have any combats if something removed the attack (ex: Maze Of Ith, Mijae Djinn)
             # probably want to move to 2nd main, but currently rocketing right to end step
             if not gs.combats:
-                gs.phase = Phase.END_STEP
+                self.phase = Phase.END_STEP
                 return
 
             actions.append((FinishBlocking(gs.action_on_idx, gs)))  # type: ignore
@@ -159,16 +159,16 @@ class PhaseManager:
 
         if phase == Phase.ASSIGN_COMBAT_DAMAGE:
             from models.events_all import UnblockedAttackerEvent, CombatEndEvent
-            gs.phase = Phase.FIRST_STRIKE_DAMAGE
-            gs.phase = Phase.COMBAT_DAMAGE
+            self.phase = Phase.FIRST_STRIKE_DAMAGE
+            self.phase = Phase.COMBAT_DAMAGE
             for com in gs.combats:
                 if not com.blockers:
                     event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                     gs.emit(event)
                 com.handle_damage()
-            gs.phase = Phase.COMBAT_END
+            self.phase = Phase.COMBAT_END
             gs.emit(CombatEndEvent(active_player=gs.player_turn_idx))
-            gs.phase = Phase.END_STEP
+            self.phase = Phase.END_STEP
             return
 
         if phase == Phase.END_STEP:
@@ -181,7 +181,7 @@ class PhaseManager:
 
             for c in gs.card_filter.in_play().result():
                 c.modifiers.clear_temps()
-            gs.phase = Phase.DISCARD
+            self.phase = Phase.DISCARD
             return
 
         if phase == Phase.DISCARD:
@@ -191,7 +191,7 @@ class PhaseManager:
             gs.emit(DiscardStepEvent(active_player=gs.player_turn_idx))
             if len(hand.cards) > 7:
                 return [DiscardCard(gs.player_turn_idx, gs, c) for c in hand.cards]  # type: ignore
-            gs.phase = Phase.CREATURES_HEAL
+            self.phase = Phase.CREATURES_HEAL
             return
 
         if phase == Phase.CREATURES_HEAL:
@@ -202,7 +202,7 @@ class PhaseManager:
                 for c in deck.cards:
                     c.damage_dealt_this_turn = 0
                     c.damage_received_this_turn = 0
-            gs.phase = Phase.END_TURN_EFFECTS
+            self.phase = Phase.END_TURN_EFFECTS
             return
 
         if phase == Phase.END_TURN_EFFECTS:
@@ -227,7 +227,7 @@ class PhaseManager:
                     aa.eff_spec.activated_cnt_this_turn = 0
             # clear combats
             gs.combats.clear()
-            gs.phase = Phase.PASS_THE_TURN
+            self.phase = Phase.PASS_THE_TURN
             return
 
         if phase == Phase.PASS_THE_TURN:
