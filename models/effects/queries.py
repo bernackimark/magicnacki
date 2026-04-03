@@ -598,7 +598,7 @@ class SirensCallCanCast(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         if event != 'can_cast' or gs.player_turn_idx == card.orig_owner_id:
             return None
-        if gs.phase >= Phase.DECLARE_ATTACKERS:
+        if gs.phase_manager.phase >= Phase.DECLARE_ATTACKERS:
             return False
 
 class SunkenCity(Effect):

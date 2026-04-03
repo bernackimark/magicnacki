@@ -168,7 +168,7 @@ class PsychicVenom(Effect):
 class Reset(Effect):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.phase == Phase.UPKEEP or gs.player_turn_idx == source.owner_id:
+        if gs.phase_manager.phase == Phase.UPKEEP or gs.player_turn_idx == source.owner_id:
             return
         for land in gs.card_filter.on_player_board(source.owner_id).lands().untapped().result():
             land.untap(gs)

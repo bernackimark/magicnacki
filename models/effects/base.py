@@ -123,7 +123,7 @@ class ActivatedAbility:
             self.eff_spec.allowed_p_id_turn = flip(self.source.owner_id)
 
     def can_activate(self, gs: GameState) -> bool:
-        if self.eff_spec.allowed_phases and gs.phase not in self.eff_spec.allowed_phases:
+        if self.eff_spec.allowed_phases and gs.phase_manager.phase not in self.eff_spec.allowed_phases:
             print("C")
             return False
         if self.eff_spec.allowed_player_turn and gs.player_turn_idx != self.eff_spec.allowed_p_id_turn:

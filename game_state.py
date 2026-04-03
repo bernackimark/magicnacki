@@ -62,9 +62,9 @@ class GameState:
         self.combats: list[Combat] = []
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
         # phase info ... if I have a phase manager, then why is phase being stored here?
-        self.phase = Phase.NEW_GAME
-        self.phase_manager = PhaseManager(self)
-        self._phase_started: bool = False
+        # self.phase = Phase.NEW_GAME
+        self.phase_manager = PhaseManager(Phase.NEW_GAME)
+        # self._phase_started: bool = False
 
         self.action_stack = ActionStack()
 
@@ -595,159 +595,7 @@ class GameState:
             return available_actions
 
         # delegating to phase manager
-        return self.phase_manager.get_actions(p_id)
-
-        # if self.phase == Phase.PASS_THE_TURN:
-        #     PassTheTurn(self.player_turn_idx, self).play()
-        #     return
-
-        # if self.phase == Phase.UNTAP:
-        #     if not self._phase_started:
-        #         self._phase_started = True
-        #         self.emit(UntapPhaseEvent(p_id))
-        #     if len(self.action_stack):
-        #         if isinstance(self.action_stack.last_action, ChoiceAction):
-        #             return self.action_stack.last_action.get_actions()
-        #     else:
-        #         self.handle_untap_phase()
-        #         self._phase_started = False
-        #         self.phase = Phase.UPKEEP
-        #     return
-
-        # if self.phase == Phase.UPKEEP:
-        #     self.emit(UpkeepEvent(active_player=self.player_turn_idx))
-        #     for c in self.boards[self.player_turn_idx]:
-        #         if activated_abilities := self.get_available_activated_abilities(c):
-        #             return [MoveToDrawPhase(c.owner_id, self)] + activated_abilities
-        #     self.phase = Phase.DRAW
-        #     return
-
-        # if self.phase == Phase.DRAW:
-        #     self.emit(DrawStepEvent(active_player=self.player_turn_idx))
-        #     self.draw(p_id)
-        #     self.phase = Phase.CAST
-
-        # if self.phase == Phase.CAST:
-        #     req_attackers_remaining = any(c for c in board if 'Goad' in c.keyword_abilities and self.can_attack(c) and
-        #                                   c not in self.card_filter.attackers().result())
-        #     if not req_attackers_remaining:
-        #         available_actions.append(MoveToEndStep(p_id, self))
-        #     available_actions.extend(available_actions_from_hand())
-        #     available_actions.extend(add_activated_abilities_from_board())
-        #
-        #     # declare combat
-        #     if any(self.can_attack(card) for card in board):
-        #         available_actions.append(BeginCombat(p_id, self))
-
-        # if self.phase == Phase.DECLARE_ATTACKERS:
-        #     req_attackers_remaining = any(c for c in board if 'Goad' in c.keyword_abilities and self.can_attack(c) and
-        #                                   c not in self.card_filter.attackers().result())
-        #
-        #     if self.combats and not req_attackers_remaining:
-        #         available_actions.append(FinishDeclaringAttackers(p_id, self))
-        #
-        #     for c in board:
-        #         if c in self.card_filter.attackers().result():  # else vigilance creatures could be added infinite times
-        #             continue
-        #         if self.can_attack(c):
-        #             available_actions.append(CreatureAttack(p_id, self, c))
-
-        # if self.phase == Phase.DECLARE_BLOCKERS:
-        #     for com in self.combats:
-        #         self.emit(AttackEvent(com.attacker))
-        #
-        #     # it's possible to not have any combats if something removed the attack (ex: Maze Of Ith, Mijae Djinn)
-        #     # probably want to move to 2nd main, but currently rocketing right to end step
-        #     if not self.combats:
-        #         self.phase = Phase.END_STEP
-        #         return
-        #
-        #     available_actions.append((FinishBlocking(self.action_on_idx, self)))
-        #
-        #     for blocker in self.card_filter.on_player_board(self.action_on_idx).creatures().result():
-        #         for com in self.combats:
-        #             if self.can_block(blocker, com.attacker):
-        #                 available_actions.append(AssignBlocker(self.action_on_idx, self, blocker, com.attacker))
-        #
-        #     available_actions.extend(self.available_actions_from_hand())
-        #     available_actions.extend(self.add_activated_abilities_from_board())
-
-        # if self.phase == Phase.PRE_COMBAT_DAMAGE:
-        #     for com in self.combats:
-        #         for blocker in com.blockers:
-        #             self.emit(BlockEvent(com.attacker, blocker))
-        #     available_actions.append((AssignCombatDamage(self.action_on_idx, self)))
-        #     available_actions.extend(self.available_actions_from_hand())
-        #     available_actions.extend(self.add_activated_abilities_from_board())
-
-        # if self.phase == Phase.ASSIGN_COMBAT_DAMAGE:
-        #     self.phase = Phase.FIRST_STRIKE_DAMAGE
-        #     self.phase = Phase.COMBAT_DAMAGE
-        #     for com in self.combats:
-        #         if not com.blockers:
-        #             event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
-        #             self.emit(event)
-        #         com.handle_damage()
-        #     self.phase = Phase.COMBAT_END
-        #     self.emit(CombatEndEvent(active_player=self.player_turn_idx))
-        #     self.phase = Phase.END_STEP
-
-        # if self.phase == Phase.END_STEP:
-        #     self.emit(EndStepEvent(active_player=self.player_turn_idx))
-        #
-        #     # execute all end step funcs
-        #     for func in self.end_step_funcs:
-        #         func()
-        #
-        #     for c in self.card_filter.in_play().result():
-        #         c.modifiers.clear_temps()
-        #     self.phase = Phase.DISCARD
-        #     return
-
-        # if self.phase == Phase.DISCARD:
-        #     self.emit(DiscardStepEvent(active_player=self.player_turn_idx))
-        #     if len(hand.cards) > 7:
-        #         for c in hand.cards:
-        #             available_actions.append(DiscardCard(self.player_turn_idx, self, c))
-        #     else:
-        #         self.phase = Phase.CREATURES_HEAL
-
-        # if self.phase == Phase.CREATURES_HEAL:
-        #     # THIS NEEDS A RE-WRITE:
-        #     # 1) I don't want to use decks_all_cards
-        #     # 2) doesn't feel the right way to expire expiring damage
-        #     for deck in self.decks_all_cards:
-        #         for c in deck.cards:
-        #             c.damage_dealt_this_turn = 0
-        #             c.damage_received_this_turn = 0
-        #     self.phase = Phase.END_TURN_EFFECTS
-
-        # if self.phase == Phase.END_TURN_EFFECTS:
-        #     # new approach
-        #     for eff, card in self.until_eot_effects_and_cards:
-        #         if eff in self.damage_preventions:
-        #             self.until_eot_effects_and_cards = [i for i in self.until_eot_effects_and_cards if i != eff]
-        #     self.until_eot_effects_and_cards.clear()
-        #
-        #     # Expire all temporary damage prevention
-        #     self.damage_preventions.clear()
-        #     # Clear temp modifiers
-        #     for d in self.decks_all_cards:
-        #         for c in d.cards:
-        #             c.modifiers.clear_temps()
-        #     # Empty mana pools
-        #     for pool in self.mana_pools:
-        #         pool.clear_floating()
-        #     # Reset all activated ability counts to 0 (ex: fire-drake {R}: +1/+0; Activate only once each turn.)
-        #     for c in self.card_filter.in_play().result():
-        #         for aa in c.activated_abilities:
-        #             aa.eff_spec.activated_cnt_this_turn = 0
-        #     # clear combats
-        #     self.combats.clear()
-        #     self.phase = Phase.PASS_THE_TURN
-        #     return
-
-        # return available_actions
+        return self.phase_manager.get_actions(p_id, self)
 
 
 # TODO:

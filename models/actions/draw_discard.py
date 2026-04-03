@@ -48,7 +48,7 @@ class MoveToDrawPhase(Action):
         return "Move to Draw Phase"
 
     def play(self) -> None:
-        self.gs.phase = Phase.DRAW
+        self.gs.phase_manager.phase = Phase.DRAW
 
 @dataclass
 class SkipDrawPhase(Action):
@@ -57,4 +57,4 @@ class SkipDrawPhase(Action):
         return "Skip Draw Phase"
 
     def play(self) -> None:
-        self.gs.phase = Phase.CAST
+        self.gs.phase_manager.phase = Phase.CAST

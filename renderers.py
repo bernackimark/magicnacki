@@ -21,7 +21,7 @@ class ConsoleRenderer(Renderer):
         action_idx = gs.action_on_idx
         opp_idx = 1 if gs.action_on_idx == 0 else 0
         print()
-        print(f"{players[p_idx].name}'s turn; {players[action_idx].name}'s action; current phase: {gs.phase.name}; current life: {gs.life}")
+        print(f"{players[p_idx].name}'s turn; {players[action_idx].name}'s action; current phase: {gs.phase_manager.phase.name}; current life: {gs.life}")
         print(f"Their board: {[c for c in gs.boards[opp_idx] if not c.props.is_aura]}")
         print(f"Combats: {gs.combats}")
         print(f"Board: {[c for c in gs.boards[action_idx] if not c.props.is_aura]}")
