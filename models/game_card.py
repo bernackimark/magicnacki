@@ -37,8 +37,7 @@ class GameCard:
         self.props: Card = props
         self._orig_owner_id: int = orig_owner_id
         self._owner_id: int = orig_owner_id
-        self.game_state: "GameState" = None
-        self.img_url: str = next(iter(self.props.images.values()))  # set to the earliest set's image
+        self.game_state: GameState | None = None
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self._card_types: list[str] = self.props.card_types.copy()
         self._card_sub_types: list[str] = self.props.card_sub_types.copy()
@@ -46,7 +45,7 @@ class GameCard:
         self.is_token: bool = is_token
         self.is_tapped: bool = False
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
-        self.attached_to: "GameCard" = None
+        self.attached_to: GameCard | None = None
         self.modifiers = Modifiers()
         self.counters = Counters()
 
@@ -56,7 +55,7 @@ class GameCard:
         self.damage_received_this_turn: int = 0
 
         self.base_pt = (self.props.power, self.props.toughness)
-        self.variable_x: int | None = None  # for variable casting costs
+        self.variable_x: int | None = None  # for variable casting costs that need to be preserved
 
         # perform look-up to add base keyword abilities, activated abilities, and effects
         if self.is_token:
@@ -96,10 +95,13 @@ class GameCard:
 
     @property
     def power(self) -> int:
+        """Anytime this property is requested, it calls: 1) its own base_power,
+        2) GameState's query system for 'pt_mod', 3) self.modifiers.power_delta, 4) self.counters.power_delta"""
         return self._pt[0]
 
     @property
     def toughness(self) -> int:
+        """See doc string on .power"""
         return self._pt[1]
 
     @property
@@ -120,58 +122,61 @@ class GameCard:
 
     @property
     def card_types(self) -> list[str]:
+        """Anytime this property is requested, it calls: 1) its own base _card_types, 2) self.modifiers.type_delta,
+        3) GameState's query system for 'type_mod'"""
         return self._get_types()
 
     def _get_types(self) -> list[str]:
         types = set(self._card_types)
         adds, removes = self.modifiers.type_delta
-        global_adds, global_removes = set(), set()
         for mod in self._get_global_query('type_mod'):
-            if mod:
-                if mod.add_or_remove == 'add':
-                    global_adds.add(mod.card_type)
-                    if mod.card_type == 'Creature' and 'Creature' not in self._card_types:
-                        if mod.expires_end_of_turn:
-                            self.modifiers.temps.append(KWATemp(mod.source, 'add', 'Attack'))
-                        else:
-                            self.modifiers.auras.append(KWAModifier(mod.source, 'add', 'Attack'))
-                else:
-                    global_removes.add(mod.card_type)
-        return list((types | adds | global_adds) - (removes | global_removes))
+            if mod is None:
+                continue
+            if mod.add_or_remove == 'remove':
+                removes.add(mod.card_type)
+                continue
+            if mod.add_or_remove == 'add':
+                adds.add(mod.card_type)
+                if mod.card_type == 'Creature' and 'Creature' not in self._card_types:
+                    parms = (mod.source, 'add', 'Attack')
+                    target_attr = self.modifiers.temps if mod.expires_end_of_turn else self.modifiers.auras
+                    target_attr.append(KWATemp(*parms) if mod.expires_end_of_turn else KWAModifier(*parms))
+
+        return list((types | adds) - removes)
 
     @property
     def card_sub_types(self) -> list[str]:
+        """Anytime this property is requested, it calls: 1) its own base _card_sub_types,
+        2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type_mod'"""
         return self._get_sub_types()
 
     def _get_sub_types(self) -> list[str]:
         types = set(self._card_sub_types)
         adds, removes = self.modifiers.sub_type_delta
-        global_adds, global_removes = set(), set()
         for mod in self._get_global_query('sub_type_mod'):
             if not mod:
                 continue
             mods = [mod] if isinstance(mod, ModType) else mod
             for m in mods:
-                global_adds.add(m.card_sub_type) if m.add_or_remove == 'add' else global_removes.add(m.card_sub_type)
-        return list((types | adds | global_adds) - (removes | global_removes))
+                adds.add(m.card_sub_type) if m.add_or_remove == 'add' else removes.add(m.card_sub_type)
+        return list((types | adds) - removes)
 
     @property
     def keyword_abilities(self) -> list[str]:
         """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, global removes = {'Reach', 'First Strike'}
-        returns ['Flying', 'Trample']"""
+        returns ['Flying', 'Trample'] ...
+        Anytime this prioerty is requested, it calls: 1) its own base _base_kwa,
+        2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa_mod'"""
         return self._get_keyword_abilities()
 
     def _get_keyword_abilities(self) -> list[str]:
         kwa = set(self._base_kwa)
         adds, removes = self.modifiers.kwa_delta
-        global_adds, global_removes = set(), set()
         for mod in self._get_global_query('kwa_mod'):
-            if mod:
-                if mod.add_or_remove == 'add':
-                    global_adds.add(mod.kwa)
-                else:
-                    global_removes.add(mod.kwa)
-        return list((kwa | adds | global_adds) - (removes | global_removes))
+            if mod is None:
+                continue
+            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
+        return list((kwa | adds) - removes)
 
     def _get_global_query(self, global_type: str) -> list[ModType]:
         effects_and_cards: list[tuple[Effect, GameCard]] = []
@@ -194,7 +199,7 @@ class GameCard:
         return modifiers
 
     def clear_all_mods(self) -> None:
-        """attached_to = None for all auras and host; all modifiers are emptied"""
+        """set attached_to = None for all auras and host; all modifiers are emptied"""
         if self.props.is_aura:
             host = self.attached_to
             host.attached_to = None
@@ -203,14 +208,11 @@ class GameCard:
         self.attached_to = None
         self.modifiers.clear_all()
 
-    def tap(self, gs: "GameState") -> None:
+    def tap(self, gs: GameState) -> None:
         gs.tap_card(self)
 
-    def untap(self, gs: "GameState") -> None:
+    def untap(self, gs: GameState) -> None:
         gs.untap_card(self)
-
-    def set_image(self, set_code: str):
-        self.img_url = self.props.images.get(set_code) or self.img_url
 
     @property
     def is_creature(self) -> bool:
@@ -235,9 +237,6 @@ class GameCard:
     @property
     def is_white(self) -> bool:
         return 'W' in self.colors
-
-    def is_color(self, color: str) -> bool:
-        return color in self.colors
 
     @property
     def rampage_amt(self) -> int | None:

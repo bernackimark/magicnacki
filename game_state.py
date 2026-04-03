@@ -1,7 +1,7 @@
 import random
 from collections import defaultdict
 from copy import copy
-from typing import Callable, Iterable, Any
+from typing import Callable, Iterable, Any, Sequence
 
 from models.action_stack import ActionStack
 from models.card import Card
@@ -33,34 +33,45 @@ from models.utils import flip
 
 
 class GameState:
+    """All-knowing class responsible for everything after a new game is created;
+    registers effects, emits events, runs queries;
+    stores card piles & moves cards; contains stack & pending choice"""
     def __init__(self, player_cnt: int, player_turn_idx: int, rules: dict, decks: list[Deck]):
+        # assign all arguments to attributes
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
         self.rules: dict = rules
         self.decks_all_cards = decks.copy()
         self.libraries = decks.copy()
+        # give GameCard a reference to GameState (a ChatGPT suggestion, not sold on that design choice)
         for d in self.libraries:
             for c in d.cards:
                 c.game_state = self
+        # game over conditions (candidate for extraction to a Scorer-type object)
         self.life = [20, 20]
         self._poison_counters = [0, 0]
+        # action & turn-based concepts; not sure self.turn is being used
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
+        self.turn_number = 1
+        # piles, combats, mana pools
         self.boards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
+        self.combats: list[Combat] = []
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
+        # phase info ... if I have a phase manager, then why is phase being stored here?
         self.phase = Phase.NEW_GAME
         self.phase_manager = PhaseManager(self)
         self._phase_started: bool = False
-        self.action_stack = ActionStack()
-        self.pending_choice: ChoiceAction | None = None  # used for forced decisions that don't go on the stack
-        self.game_history = GameHistory()  # turn num, p_idx, Action; appended to in engine.play()
-        self.turn_number = 1
-        self.combats: list[Combat] = []
-        self.card_filter = CardFilter(self)
 
+        self.action_stack = ActionStack()
+
+        self.game_history = GameHistory()  # turn num, p_idx, Action; appended to in engine.play()
+
+        self.card_filter = CardFilter(self)
+        # only has knowledge of the current game; match info is handled in Engine's MatchManager
         self.is_game_over: bool = False
         self.winner: int | None = None
 
@@ -83,7 +94,8 @@ class GameState:
             random.shuffle(self.libraries[i].cards)
             self.draw(i, 7)
 
-        self.pending_choice = MulliganChoice(self.player_turn_idx, self, self.rules['mulligan'])
+        # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
+        self.pending_choice: ChoiceAction | None = MulliganChoice(self.player_turn_idx, self, self.rules['mulligan'])
 
     # --- EVENT LISTENER SYSTEM ---
     def emit(self, event: Event):
@@ -185,6 +197,7 @@ class GameState:
     # Pile Helpers & card movement
     @property
     def all_cards(self) -> list[GameCard]:
+        """Returns all cards, including tokens"""
         return ([c for b in self.libraries for c in b.cards] + [c for h in self.hands for c in h.cards] +
                 [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
                 [c for b in self.boards for c in b])
@@ -212,13 +225,13 @@ class GameState:
 
             damage_to_player = event.remaining - damage_to_card
             if damage_to_player > 0:
-                self.decrement_life(target.owner_id, damage_to_player, source)
+                self._decrement_life(target.owner_id, damage_to_player, source)
                 resolved_events.append(DamageResolvedEvent(source, damage_to_player, target.owner_id, True))
         else:
             if isinstance(target, GameCard):
                 target.damage_received_this_turn += event.remaining
             else:
-                self.decrement_life(target, event.remaining, source)
+                self._decrement_life(target, event.remaining, source)
 
             resolved_events.append(DamageResolvedEvent(source, event.remaining, target, is_combat))
 
@@ -344,7 +357,8 @@ class GameState:
                 self.libraries[card.owner_id].cards.remove(card)
 
     def _leave_battlefield(self, card: GameCard, to_zone: Zone):
-        """Emit ZoneChangeEvent before unregistering its effects"""
+        """Emit ZoneChangeEvent before unregistering its effects, doing so for the subject card;
+        detach all attached GameCard auras; call GameCard.clear_all_mods()"""
         self.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'))
         self.unregister_effects(card)
         for aura in list(card.modifiers.auras):
@@ -357,6 +371,8 @@ class GameState:
 
     def create_token_creature(self, owner_id: int, name: str, power: int, toughness: int, kwa: list[str],
                               other_types: list[str], sub_types: list[str], colors: str):
+        # TODO: all possible tokens seem knowable; why not just treat like normal cards but for an is_token indicator?
+        #  creation of Card could be handled pre-game; all that left is GameCard creation
         card = Card(slug=name.replace(' ', '-').lower(),
                     name=name, casting_cost='', card_types=['Creature'] + other_types,
                     card_sub_types=sub_types,
@@ -369,9 +385,10 @@ class GameState:
         self.boards[owner_id].append(game_card)
 
     @staticmethod
-    def randomize_event(p_id: int, iterable: Iterable) -> Any:
-        event = RandomEvent(p_id, iterable)
-        event.result = random.choice([_ for _ in iterable])
+    def randomize_event(p_id: int, sequence: Sequence[Any]) -> Any:
+        """Creates an event, but doesn't raise it (not sure why not); selects a random choice from the sequence"""
+        event = RandomEvent(p_id, sequence)
+        event.result = random.choice(sequence)
         return event.result
 
     def remove_from_combat(self, c: GameCard):
@@ -387,20 +404,21 @@ class GameState:
                     return
 
     def increment_life(self, p_id: int, amt: int):
-        print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
+        """Increments player life; no event is raised/emitted, as there's seemingly no cards w increased life effects"""
         self.life[p_id] += amt
+        print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
 
-    def decrement_life(self, p_id: int, amt: int, source: GameCard):
-        """Create LifeLossEvent, emit, Reduce player life; check for end game condition"""
+    def _decrement_life(self, p_id: int, amt: int, source: GameCard):
+        """Create LifeLossEvent; if amt <=0, skip; emit, decrement player life"""
         event = LifeLossEvent(p_id, amt, source)
-        self.emit(event)
         if event.amt <= 0:
             return
+        self.emit(event)
         self.life[p_id] -= amt
         print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
 
     def tap_card(self, c: GameCard):
-        # new system
+        """If card is already tapped, skip; emit TapCardEvent, tap card, tap all attached auras"""
         if c.is_tapped:
             return
         self.emit(TapCardEvent(card=c))
@@ -409,11 +427,10 @@ class GameState:
             a.is_tapped = True
 
     def untap_card(self, c: GameCard):
-        # new system
+        """If card is already untapped, skip; emit UntapCardEvent, tap card, tap all attached auras"""
         if not c.is_tapped:
             return
         self.emit(UntapCardEvent(card=c))
-        # is this all supposed to happen here, in the UntapCardEvent(Event), in a dedicated UntapCardEffect(Effect)?
         c.is_tapped = False
         for a in c.modifiers.auras:
             a.is_tapped = False

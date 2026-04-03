@@ -54,6 +54,8 @@ class Action(Enum):
 
 
 class PhaseManager:
+    # why store gs instead of phase, it's like the one thing it should know
+    # get_actions() can take receive GameState
     def __init__(self, gs: GameState):
         self.gs = gs
 
