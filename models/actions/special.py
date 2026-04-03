@@ -45,7 +45,7 @@ class CopyCard(Action):
         self.s.activated_abilities = the_copy.activated_abilities
         self.s.static_abilities = the_copy.static_abilities
         self.s.triggered_abilities = the_copy.triggered_abilities
-        if self.gs.phase_manager.phase != Phase.UPKEEP:  # hack. Vesuvan Doppel =only card that calls this during upkeep
+        if self.gs.phase_mgr.phase != Phase.UPKEEP:  # hack. Vesuvan Doppel =only card that calls this during upkeep
             self.gs.cast(self.s)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
@@ -177,7 +177,7 @@ class SkipDrawPhaseGainLife(Action):
         self.amt = amt
 
     def play(self):
-        self.gs.phase_manager.phase = Phase.CAST
+        self.gs.phase_mgr.phase = Phase.CAST
         self.gs.increment_life(self.player_idx, self.amt)
         self.gs.action_stack.pop()
 

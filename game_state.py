@@ -50,10 +50,11 @@ class GameState:
         # game over conditions (candidate for extraction to a Scorer-type object)
         self.life = [20, 20]
         self._poison_counters = [0, 0]
-        # action & turn-based concepts; not sure self.turn is being used
+        # action, turn, phase (game flow) concepts; not sure self.turn is being used
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
         self.turn_number = 1
+        self.phase_mgr = PhaseManager(Phase.NEW_GAME)
         # piles, combats, mana pools
         self.boards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
@@ -61,10 +62,6 @@ class GameState:
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
         self.combats: list[Combat] = []
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
-        # phase info ... if I have a phase manager, then why is phase being stored here?
-        # self.phase = Phase.NEW_GAME
-        self.phase_manager = PhaseManager(Phase.NEW_GAME)
-        # self._phase_started: bool = False
 
         self.action_stack = ActionStack()
 
@@ -595,7 +592,7 @@ class GameState:
             return available_actions
 
         # delegating to phase manager
-        return self.phase_manager.get_actions(p_id, self)
+        return self.phase_mgr.get_actions(p_id, self)
 
 
 # TODO:
