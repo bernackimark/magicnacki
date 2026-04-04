@@ -124,7 +124,7 @@ class Lifeblood(Effect):
         if event.card.owner_id == s.owner_id:
             return
         if 'Mountain' in event.card.card_sub_types:
-            gs.increment_life(s.owner_id, 1)
+            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
 
 class Lifetap(Effect):
     """Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
@@ -134,7 +134,7 @@ class Lifetap(Effect):
         if event.card.owner_id == s.owner_id:
             return
         if 'Forest' in event.card.card_sub_types:
-            gs.increment_life(s.owner_id, 1)
+            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
 
 class MagneticMountainOnUntapStep(Effect):
     """Blue creatures don't untap during their controllers' untap steps"""

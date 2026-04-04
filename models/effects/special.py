@@ -103,7 +103,7 @@ class Crumble(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
             gs.destroy(target, allow_regeneration=False)
-            gs.increment_life(target.owner_id, target.props.casting_weight)
+            gs.score_mgr.increment_life(target.owner_id, target.props.casting_weight, source, gs)
 
 class Cyclone(Effect):
     """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
@@ -123,7 +123,7 @@ class DivineOffering(Effect):
         if not target:
             raise ValueError(f"{source.props.name} needs a target")
         gs.destroy(target)
-        gs.increment_life(source.owner_id, target.props.casting_weight)
+        gs.score_mgr.increment_life(source.owner_id, target.props.casting_weight, source, gs)
 
 class Earthbind(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -328,7 +328,7 @@ class ReverseDamage(Effect):
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         """target = the GameCard doing the damage"""
         def gain_life(prevented: int):
-            gs.increment_life(s.owner_id, prevented)
+            gs.score_mgr.increment_life(s.owner_id, prevented, s, gs)
 
         gs.damage_preventions.append(
             PreventNextDamage(s, None, target_player=s.owner_id, source_card=target, on_prevent=gain_life))
@@ -394,7 +394,7 @@ class SwordsToPlowshares(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
             gs.exile(target)  # which is correct?  exile_from_play() or exile()
-            gs.increment_life(target.owner_id, target.power)
+            gs.score_mgr.increment_life(target.owner_id, target.power, source, gs)
 
 class SylvanLibrary(Effect):
     """At your draw step, you may draw two additional cards.
@@ -408,7 +408,7 @@ class SyphonSoul(Effect):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, target)
-        gs.increment_life(source.owner_id, 2)
+        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
 class TabletOfEpityr(Effect):
     """Whenever an artifact you control dies, {1}: Gain 1 life"""

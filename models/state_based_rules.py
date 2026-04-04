@@ -23,8 +23,8 @@ class GameOverSBR(StateBasedRule):
 
         """Returns None if game is not over;
         else -1 if a draw, 0 for player #0, 1 for player #1, updates gs.is_game_over"""
-        zero_life = [idx for idx, life in enumerate(gs.life) if life <= 0]
-        ten_poison = [idx for idx, poison in enumerate(gs.poison_counters) if poison >= 10]
+        zero_life = [idx for idx, life in enumerate(gs.score_mgr.life) if life <= 0]
+        ten_poison = [idx for idx, poison in enumerate(gs.score_mgr.poison_counters) if poison >= 10]
 
         losers = tuple(set(zero_life + ten_poison))
         if not losers:

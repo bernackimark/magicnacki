@@ -301,7 +301,7 @@ class PersonalIncarnation(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        reduce_life_by = math.ceil(gs.life[source.owner_id] / 2)
+        reduce_life_by = math.ceil(gs.score_mgr.life[source.owner_id] / 2)
         gs.apply_damage(source, reduce_life_by, source.owner_id)
 
 class PowerSurge(Effect):

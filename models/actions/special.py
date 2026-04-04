@@ -83,7 +83,7 @@ class PayManaForLife(Action):
 
     def play(self):
         self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
-        self.gs.increment_life(self.player_idx, self.gain_life_amt)
+        self.gs.score_mgr.increment_life(self.player_idx, self.gain_life_amt, source=None, gs=self.gs)
         self.gs.action_stack.pop()
 
 class PayManaToDrawCards(Action):
@@ -109,7 +109,7 @@ class RemoveCounterGainLife(Action):
 
     def play(self):
         self.source.counters.remove_counter(self.counter_type, self.counter_cnt)
-        self.gs.increment_life(self.source.owner_id, self.gain_life_amt)
+        self.gs.score_mgr.increment_life(self.source.owner_id, self.gain_life_amt, self.source, self.gs)
         self.gs.action_stack.pop()
 
 class SacCreatureAndAddMana(Action):
@@ -178,7 +178,7 @@ class SkipDrawPhaseGainLife(Action):
 
     def play(self):
         self.gs.phase_mgr.phase = Phase.CAST
-        self.gs.increment_life(self.player_idx, self.amt)
+        self.gs.score.mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
         self.gs.action_stack.pop()
 
 # --- CARD-SPECIFIC ---
@@ -208,7 +208,7 @@ class HealingSalveA(Action):
         return 'You gain 3 life'
 
     def play(self) -> None:
-        self.gs.increment_life(self.player_idx, 3)
+        self.gs.score_mgr.increment_life(self.player_idx, 3, self.s, self.gs)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
 

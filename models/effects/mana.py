@@ -44,9 +44,9 @@ class EnergyTap(Effect):
 
 class ExchangeLifeTotals(Effect):
     def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):
-        your_life = gs.life[s.orig_owner_id]
-        opp_life = gs.life[flip(s.orig_owner_id)]
-        gs.life[s.orig_owner_id], gs.life[flip(s.orig_owner_id)] = opp_life, your_life
+        your_life = gs.score_mgr.life[s.orig_owner_id]
+        opp_life = gs.score_mgr.life[flip(s.orig_owner_id)]
+        gs.score_mgr.life[s.orig_owner_id], gs.score_mgr.life[flip(s.orig_owner_id)] = opp_life, your_life
 
 class SuChi(Effect):
     """When this creature dies, add {CCCC}"""

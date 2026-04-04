@@ -117,9 +117,9 @@ class GhazbanOgre(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: Event):
         if gs.player_turn_idx != source.owner_id:
             return
-        if len(set(gs.life)) == 1:
+        if len(set(gs.score_mgr.life)) == 1:
             return
-        most_life_player_idx = max(range(len(gs.life)), key=lambda i: gs.life[i])
+        most_life_player_idx = max(range(len(gs.score_mgr.life)), key=lambda i: gs.score_mgr.life[i])
         if most_life_player_idx != source.owner_id:
             Steal().resolve(gs, source, source)
 
@@ -127,7 +127,7 @@ class GraveRobbersAA(Effect):
     """{B}, {T}: Exile target artifact card from a graveyard. You gain 2 life."""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         GraveyardToExile().resolve(gs, source, target)
-        gs.increment_life(source.orig_owner_id, 2)
+        gs.score_mgr.increment_life(source.orig_owner_id, 2, source, gs)
 
 class TimeElementalBounce(Effect):
     """... {2UU}, {T}: Return target unenchanted permanent to its owner's hand"""

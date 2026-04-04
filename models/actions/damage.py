@@ -30,7 +30,7 @@ class GainLife(Action):
         return f'Player #{self.target_p_id} gains {self.amt} life from {self.source.props.name}'
 
     def play(self):
-        self.gs.increment_life(self.target_p_id, self.amt)
+        self.gs.score_mgr.increment_life(self.target_p_id, self.amt, self.source, self.gs)
         self.gs.action_stack.pop()
 
 class PayLife(Action):

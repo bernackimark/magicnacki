@@ -1,7 +1,6 @@
 import random
-from collections import defaultdict
 from copy import copy
-from typing import Callable, Iterable, Any, Sequence
+from typing import Callable, Any, Sequence
 
 from models.action_stack import ActionStack
 from models.card import Card
@@ -26,6 +25,7 @@ from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool
 from models.mulligan import MulliganChoice
+from models.score_manager import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
 from models.zone import Zone
@@ -49,8 +49,9 @@ class GameState:
             for c in d.cards:
                 c.game_state = self
         # game over conditions
-        self.life = [20, 20]
-        self._poison_counters = [0, 0]
+        self.score_mgr = ScoreManager()
+        # self.life = [20, 20]
+        # self._poison_counters = [0, 0]
         # action, turn, phase (game flow) concepts; not sure self.turn is being used
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
@@ -160,13 +161,6 @@ class GameState:
                 explicit_forbids = True
         return False if explicit_forbids else True
 
-    @property
-    def poison_counters(self) -> list[int]:
-        return self._poison_counters
-
-    def add_poison_counter(self, p_idx: int, cnt: int = 1):
-        self._poison_counters[p_idx] += cnt
-
     # Pile Helpers & card movement
     @property
     def all_cards(self) -> list[GameCard]:
@@ -198,13 +192,13 @@ class GameState:
 
             damage_to_player = event.remaining - damage_to_card
             if damage_to_player > 0:
-                self._decrement_life(target.owner_id, damage_to_player, source)
+                self.score_mgr.decrement_life(target.owner_id, damage_to_player, source, self)
                 resolved_events.append(DamageResolvedEvent(source, damage_to_player, target.owner_id, True))
         else:
             if isinstance(target, GameCard):
                 target.damage_received_this_turn += event.remaining
             else:
-                self._decrement_life(target, event.remaining, source)
+                self.score_mgr.decrement_life(target, event.remaining, source, self)
 
             resolved_events.append(DamageResolvedEvent(source, event.remaining, target, is_combat))
 
@@ -375,20 +369,6 @@ class GameState:
                 if blocker is c:
                     com.blockers.remove(blocker)
                     return
-
-    def increment_life(self, p_id: int, amt: int):
-        """Increments player life; no event is raised/emitted, as there's seemingly no cards w increased life effects"""
-        self.life[p_id] += amt
-        print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
-
-    def _decrement_life(self, p_id: int, amt: int, source: GameCard):
-        """Create LifeLossEvent; if amt <=0, skip; emit, decrement player life"""
-        event = LifeLossEvent(p_id, amt, source)
-        if event.amt <= 0:
-            return
-        self.event_mgr.emit(event, self)
-        self.life[p_id] -= amt
-        print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
 
     def tap_card(self, c: GameCard):
         """If card is already tapped, skip; emit TapCardEvent, tap card, tap all attached auras"""

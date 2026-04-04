@@ -39,7 +39,7 @@ class OnColorSpellGainLife(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: CastResolvedEvent):
         if self.color not in event.card.props.colors:
             return
-        gs.increment_life(s.owner_id, self.life_amt)
+        gs.score_mgr.increment_life(s.owner_id, self.life_amt, s, gs)
 
 class OnColorSpellPayOneColorlessForOneLifeChoice(Effect):
     """Whenever a player casts a [certain color] spell, you may {1}: Gain 1 life"""
@@ -62,7 +62,7 @@ class GainLife(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gs.increment_life(target, self.amt)
+        gs.score_mgr.increment_life(target, self.amt, source, gs)
 
 # --- CARD-SPECIFIC ---
 class AliFromCairo(Effect):
@@ -73,7 +73,7 @@ class AliFromCairo(Effect):
         if event.p_id_taking_damage != s.owner_id:
             return
 
-        current_life = gs.life[event.p_id_taking_damage]
+        current_life = gs.score_mgr.life[event.p_id_taking_damage]
 
         if current_life - event.amt < 1:
             event.amt = max(current_life - 1, 0)
@@ -84,7 +84,7 @@ class ElHajjaj(Effect):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
         if event.source is source and event.amt > 0:
-            gs.increment_life(source.orig_owner_id, event.amt)
+            gs.score_mgr.increment_life(source.orig_owner_id, event.amt, source, gs)
 
 class IvoryTower(Effect):
     """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
@@ -95,7 +95,7 @@ class IvoryTower(Effect):
         if p_id != event.active_player:
             return
         if (hand_size := len(gs.hands[p_id].cards)) > 4:
-            gs.increment_life(p_id, hand_size - 4)
+            gs.score_mgr.increment_life(p_id, hand_size - 4, source, gs)
 
 class MerchantShip(Effect):
     """Whenever this creature attacks and isn't blocked, you gain 2 life"""
@@ -104,7 +104,7 @@ class MerchantShip(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
         if event.attacker != s:
             return
-        gs.increment_life(s.owner_id, 2)
+        gs.score_mgr.increment_life(s.owner_id, 2, s, gs)
 
 class Onulet(Effect):
     """When this creature dies, you gain 2 life"""
@@ -113,7 +113,7 @@ class Onulet(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        gs.increment_life(source.orig_owner_id, 2)
+        gs.score_mgr.increment_life(source.orig_owner_id, 2, source, gs)
 
 class SpiritLink(Effect):
     """Enchant creature  Whenever enchanted creature deals damage, you gain that much life"""
@@ -121,7 +121,7 @@ class SpiritLink(Effect):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
         if event.source is source.attached_to and event.amt > 0:
-            gs.increment_life(source.orig_owner_id, event.amt)
+            gs.score_mgr.increment_life(source.orig_owner_id, event.amt, source, gs)
 
 class SpiritualSanctuary(Effect):
     """At each player's upkeep, if that player controls a Plains, they gain 1 life"""
@@ -129,9 +129,9 @@ class SpiritualSanctuary(Effect):
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if 'plains' in gs.card_filter.on_player_board(event.active_player).plains().result():
-            gs.increment_life(event.active_player, 1)
+            gs.score_mgr.increment_life(event.active_player, 1, source, gs)
 
 class StreamOfLife(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         x = getattr(source, 'variable_x', 0)  # read X chosen when casting
-        gs.increment_life(target, x)
+        gs.score_mgr.increment_life(target, x, source, gs)

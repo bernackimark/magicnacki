@@ -76,9 +76,15 @@ class EnterBattlefieldEvent(Event):
     caster: int
     card: GameCard
 
+@dataclass(frozen=True)
+class LifeGainEvent(Event):
+    p_id_gaining_life: int
+    amt: int
+    source: GameCard
+
 @dataclass
 class LifeLossEvent(Event):
-    """Is not frozen as it may be modified (ex: alie-from-cairo)"""
+    """Is not frozen as it may be modified (ex: ali-from-cairo)"""
     p_id_taking_damage: int
     amt: int
     source: GameCard

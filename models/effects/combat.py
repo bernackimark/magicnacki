@@ -148,7 +148,7 @@ class GlyphOfLifeListener(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: DamageResolvedEvent):
         if event.target is not self.the_wall or not event.is_combat:
             return
-        gs.increment_life(s.owner_id, event.amt)
+        gs.score_mgr.increment_life(s.owner_id, event.amt, s, gs)
 
 class InfernalMedusa(Effect):
     """Whenever this creature blocks, destroy attacker at combat end.
