@@ -5,7 +5,7 @@ from models.game_card import GameCard
 
 class ScoreManager:
     def __init__(self, life: tuple[int, int] = (20, 20), poison_death_amt: int = 10):
-        self.life = list(life)
+        self.life = list(life)  # SwapLifeTotals needs to assign to life, else life would only implement a getter
         self._poison = [0, 0]
         self.poison_death_amt = poison_death_amt
 
@@ -23,7 +23,7 @@ class ScoreManager:
         if event.amt <= 0:
             return
         gs.event_mgr.emit(event, gs)
-        self._life[p_id] += amt
+        self.life[p_id] += amt
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
 
     def decrement_life(self, p_id: int, amt: int, source: GameCard, gs: GameState):
