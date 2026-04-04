@@ -67,7 +67,7 @@ class PhaseManager:
             from models.events_all import UntapPhaseEvent
             if not self._phase_started:
                 self._phase_started = True
-                gs.emit(UntapPhaseEvent(p_id))
+                gs.event_mgr.emit(UntapPhaseEvent(p_id), gs)
             if len(gs.action_stack):
                 if isinstance(gs.action_stack.last_action, ChoiceAction):
                     return gs.action_stack.last_action.get_actions()
@@ -80,7 +80,7 @@ class PhaseManager:
         if phase == Phase.UPKEEP:
             from models.actions.draw_discard import MoveToDrawPhase
             from models.events_all import UpkeepEvent
-            gs.emit(UpkeepEvent(active_player=gs.player_turn_idx))
+            gs.event_mgr.emit(UpkeepEvent(active_player=gs.player_turn_idx), gs)
             for c in board:
                 if activated_abilities := gs.get_available_activated_abilities(c):
                     return [MoveToDrawPhase(c.owner_id, gs)] + activated_abilities  # type: ignore
@@ -89,7 +89,7 @@ class PhaseManager:
 
         if phase == Phase.DRAW:
             from models.events_all import DrawStepEvent
-            gs.emit(DrawStepEvent(active_player=gs.player_turn_idx))
+            gs.event_mgr.emit(DrawStepEvent(active_player=gs.player_turn_idx), gs)
             gs.draw(p_id)
             self.phase = Phase.CAST
             return
@@ -126,7 +126,7 @@ class PhaseManager:
             from models.events_all import AttackEvent
             actions: list[Action] = []
             for com in gs.combats:
-                gs.emit(AttackEvent(com.attacker))
+                gs.event_mgr.emit(AttackEvent(com.attacker), gs)
 
             # it's possible to not have any combats if something removed the attack (ex: Maze Of Ith, Mijae Djinn)
             # probably want to move to 2nd main, but currently rocketing right to end step
@@ -151,7 +151,7 @@ class PhaseManager:
             actions: list[Action] = []
             for com in gs.combats:
                 for blocker in com.blockers:
-                    gs.emit(BlockEvent(com.attacker, blocker))
+                    gs.event_mgr.emit(BlockEvent(com.attacker, blocker), gs)
             actions.append((AssignCombatDamage(gs.action_on_idx, gs)))  # type: ignore
             actions.extend(gs.available_actions_from_hand())  # type: ignore
             actions.extend(gs.add_activated_abilities_from_board())  # type: ignore
@@ -164,16 +164,16 @@ class PhaseManager:
             for com in gs.combats:
                 if not com.blockers:
                     event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
-                    gs.emit(event)
+                    gs.event_mgr.emit(event, gs)
                 com.handle_damage()
             self.phase = Phase.COMBAT_END
-            gs.emit(CombatEndEvent(active_player=gs.player_turn_idx))
+            gs.event_mgr.emit(CombatEndEvent(active_player=gs.player_turn_idx), gs)
             self.phase = Phase.END_STEP
             return
 
         if phase == Phase.END_STEP:
             from models.events_all import EndStepEvent
-            gs.emit(EndStepEvent(active_player=gs.player_turn_idx))
+            gs.event_mgr.emit(EndStepEvent(active_player=gs.player_turn_idx), gs)
 
             # execute all end step funcs
             for func in gs.end_step_funcs:
@@ -188,7 +188,7 @@ class PhaseManager:
             from models.actions.draw_discard import DiscardCard
             from models.events_all import DiscardStepEvent
             hand = gs.hands[p_id]
-            gs.emit(DiscardStepEvent(active_player=gs.player_turn_idx))
+            gs.event_mgr.emit(DiscardStepEvent(active_player=gs.player_turn_idx), gs)
             if len(hand.cards) > 7:
                 return [DiscardCard(gs.player_turn_idx, gs, c) for c in hand.cards]  # type: ignore
             self.phase = Phase.CREATURES_HEAL

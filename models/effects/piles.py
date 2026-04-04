@@ -40,7 +40,7 @@ class Steal(Effect):
             gs.boards[source.owner_id].append(target)
         else:
             gs.move_card(target, self.new_zone, cause='steal')
-        gs.emit(StateBasedEvent())
+        gs.event_mgr.emit(StateBasedEvent(), gs)
 
 class ReturnToOwnerOnLTB(Effect):
     """Although the OnwershipModifier will be removed upon LTB; need to transfer the stolen GameCard across boards"""

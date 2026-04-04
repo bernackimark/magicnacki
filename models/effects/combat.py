@@ -36,7 +36,7 @@ class UnblockableThisTurn(Effect):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         temp_effect = UnblockableEOT(target)
-        gs.register_effect_until_eot((temp_effect, source))
+        gs.event_mgr.register_effect_until_eot((temp_effect, source))
 
 # --- CARD-SPECIFIC ---
 class Abomination(Effect):
@@ -53,7 +53,7 @@ class Abomination(Effect):
         if not any(c in other.colors for c in ('G', 'W')):
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.register_effect(delayed, s)
+        gs.event_mgr.register_effect(delayed, s)
         # this will later get unregistered at combat end
 
 class CavePeopleAttackPump(Effect):
@@ -79,7 +79,7 @@ class CockatriceAndThicketBasilisk(Effect):
         if 'Wall' in other.card_sub_types:
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.register_effect(delayed, s)
+        gs.event_mgr.register_effect(delayed, s)
         # this will later get unregistered at combat end
 
 class ElderLandWurm(Effect):
@@ -114,7 +114,7 @@ class GlyphOfDoom(Effect):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         temp_effect = GlyphOfDoomListener(target)
-        gs.register_effect_until_eot((temp_effect, source))
+        gs.event_mgr.register_effect_until_eot((temp_effect, source))
 
 class GlyphOfDoomListener(Effect):
     """Registered by GlyphOfDoom. At this turn's combat end, destroy creature blocked by that wall this turn."""
@@ -127,7 +127,7 @@ class GlyphOfDoomListener(Effect):
         if event.blocker is not self.the_wall:
             return
         delayed = DestroyAtCombatEnd(self.the_wall, event.attacker)
-        gs.register_effect(delayed, self.the_wall)
+        gs.event_mgr.register_effect(delayed, self.the_wall)
         # this will later get unregistered at combat end
 
 class GlyphOfLife(Effect):
@@ -136,7 +136,7 @@ class GlyphOfLife(Effect):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         temp_effect = GlyphOfLifeListener(target)
-        gs.register_effect_until_eot((temp_effect, source))
+        gs.event_mgr.register_effect_until_eot((temp_effect, source))
 
 class GlyphOfLifeListener(Effect):
     """Registered by GlyphOfLife. Whenever that wall is dealt damage by an attacker this turn, gain that much life."""
@@ -163,7 +163,7 @@ class InfernalMedusa(Effect):
         else:
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.register_effect(delayed, s)
+        gs.event_mgr.register_effect(delayed, s)
         # this will later get unregistered at combat end
 
 class InfiniteAuthority(Effect):
@@ -181,11 +181,11 @@ class InfiniteAuthority(Effect):
         if other.toughness > 3:
             return
         delayed_destroy = DestroyAtCombatEnd(s, other)
-        gs.register_effect(delayed_destroy, s)
+        gs.event_mgr.register_effect(delayed_destroy, s)
         # this will later get unregistered at combat end
 
         delayed_pump = AddCounterAtEndStep(s, s.attached_to, PLUS_ONE)
-        gs.register_effect(delayed_pump, s)
+        gs.event_mgr.register_effect(delayed_pump, s)
         # this will later get unregistered at end step
 
 class Sentinel(Effect):
@@ -218,7 +218,7 @@ class TowerOfCoireall(Effect):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         temp_effect = TowerOfCoireallEOT(target)
-        gs.register_effect_until_eot((temp_effect, source))
+        gs.event_mgr.register_effect_until_eot((temp_effect, source))
 
 class Venom(Effect):
     """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
@@ -234,5 +234,5 @@ class Venom(Effect):
         if 'Wall' in other.card_sub_types:
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.register_effect(delayed, s)
+        gs.event_mgr.register_effect(delayed, s)
         # this will later get unregistered at combat end

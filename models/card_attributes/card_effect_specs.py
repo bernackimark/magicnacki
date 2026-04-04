@@ -22,7 +22,7 @@ from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePl
 from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifact, DealDamageOnHostUpkeep, \
     PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
     FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
-    DealDamageOnSourceTurn, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
+    DealDamageToOwnerOnUpkeep, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
     DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee, RukhEgg, Tracker, CityOfBrassDamageOnTap, \
     Sandstorm
@@ -473,7 +473,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'jump':
         [Triggered(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'junún-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
-    'juzám-djinn': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
+    'juzám-djinn': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'], UpkeepEvent)],
     'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures_in_play'])],
     'karma': [Triggered(Karma(), None, UpkeepEvent)],
     'kei-takahashi': [Activated('T', PreventNextDamageBy(2), T_FUNCS['creatures_in_play'])],
@@ -688,7 +688,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'sentinel': [Activated('', Sentinel(), None, BlockEvent)],
     'serendib-djinn':
         [Triggered(SerendibDjinn(), None, UpkeepEvent), Triggered(SerendibDjinnNoLands(), None, StateBasedEvent)],
-    'serendib-efreet': [Triggered(DealDamageOnSourceTurn(1), None, UpkeepEvent)],
+    'serendib-efreet': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'], UpkeepEvent)],
     'serpent-generator': [Activated('4T', CreateTokenCreature('Snake', 1, 1, kwa=[], other_types=[], sub_types=[], colors='C'))],
     'shapeshifter': [Triggered(Shapeshifter(), None, CastResolvedEvent), Triggered(Shapeshifter(), None, UpkeepEvent)],
     'shatter': [Triggered(Destroy(), T_FUNCS['artifacts_in_play'], CastResolvedEvent)],

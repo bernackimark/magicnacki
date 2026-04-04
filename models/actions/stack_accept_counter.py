@@ -50,7 +50,7 @@ class AcceptAction(Action):
 
         # --- Emit event so other effects can respond ---
         print(f"Successfully cast {card.props.name}")
-        self.gs.emit(CastResolvedEvent(card=card, owner_id=card.orig_owner_id, target=target))
+        self.gs.event_mgr.emit(CastResolvedEvent(card=card, owner_id=card.orig_owner_id, target=target), self.gs)
 
         # --- if permanent, add card to board, else graveyard ---
         zone = Zone.BATTLEFIELD if card.props.is_permanent else Zone.GRAVEYARD
@@ -60,8 +60,8 @@ class AcceptAction(Action):
         from models.card_attributes.card_effect_specs import INVOCATIONS
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
             if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
-                self.gs.register_effect(eff_spec.effect, card)
-                print(f"Registered triggered effect for {card.props.name} on {eff_spec.trigger_event}")
+                self.gs.event_mgr.register_effect(eff_spec.effect, card)
+                print(f"Registered triggered effect for {card.props.name} on {eff_spec.trigger_event.__name__}")
 
         # --- reset action stack and current actor ---
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor

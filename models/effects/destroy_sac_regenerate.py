@@ -47,7 +47,7 @@ class DestroyAtCombatEnd(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: CombatEndEvent):
         if self.target.zone == Zone.BATTLEFIELD:
             gs.destroy(self.target)
-        gs.unregister_specific_effect(self)
+        gs.event_mgr.unregister_specific_effect(self)
 
 class DestroyIfItAttacked(Effect):
     """Destroy creature if it attacked this turn."""

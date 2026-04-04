@@ -37,7 +37,7 @@ class AddCounterAtEndStep(Effect):
         if self.target.zone != Zone.BATTLEFIELD:
             return
         self.target.counters.add_counter(self.counter_type, self.cnt)
-        gs.unregister_specific_effect(self)
+        gs.event_mgr.unregister_specific_effect(self)
 
 class AddCounterToHost(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):

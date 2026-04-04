@@ -41,8 +41,8 @@ class CastToBoard(Action):
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack
-                self.gs.register_effect(eff_spec.effect, self.card)
-                print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event}")
+                self.gs.event_mgr.register_effect(eff_spec.effect, self.card)
+                print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event.__name__}")
                 if eff_spec.activation_type != 'triggered':
                     continue
 
@@ -74,8 +74,8 @@ class CastToBoard(Action):
                 ability = ActivatedAbility(self.card, eff_spec)
                 self.card.activated_abilities.append(ability)
 
-        self.gs.emit(StateBasedEvent())
-        self.gs.emit(CastResolvedEvent(self.card, self.card.orig_owner_id, None))
+        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        self.gs.event_mgr.emit(CastResolvedEvent(self.card, self.card.orig_owner_id, None), self.gs)
 
 
 @dataclass
@@ -110,7 +110,7 @@ class CastToTargetAddToStack(Action):
         else:
             self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
         self.gs.action_stack.push(self, self.gs)
-        self.gs.emit(StateBasedEvent())
+        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 
 
 @dataclass
@@ -129,7 +129,7 @@ class CastCounter(Action):
 
         # --- new event emission approach
         for eff_spec in self.card.triggered_abilities:
-            self.gs.register_effect(eff_spec.effect, self.card)
+            self.gs.event_mgr.register_effect(eff_spec.effect, self.card)
 
 @dataclass
 class BeginSpellCastAction(Action):

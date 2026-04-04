@@ -6,6 +6,7 @@ from typing import Callable, Iterable, Any, Sequence
 from models.action_stack import ActionStack
 from models.card import Card
 from deck_builder.build_deck import Deck
+from models.event_manager import EventManager
 from models.game_card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility, BeginAbilityActivationAction
 from models.actions.base import Action
@@ -47,7 +48,7 @@ class GameState:
         for d in self.libraries:
             for c in d.cards:
                 c.game_state = self
-        # game over conditions (candidate for extraction to a Scorer-type object)
+        # game over conditions
         self.life = [20, 20]
         self._poison_counters = [0, 0]
         # action, turn, phase (game flow) concepts; not sure self.turn is being used
@@ -83,9 +84,8 @@ class GameState:
         self.end_step_funcs: list[Callable] = []
         self.cards_that_died_this_turn: list[GameCard] = []
 
-        # --- event registry for new system ---
-        # key = Event subclass, value = list of (effect, source_card) tuples
-        self._event_listeners: dict[type, list[tuple[Effect, GameCard]]] = defaultdict(list)
+        # emits, registers, unregisters Effect that implement on_event()
+        self.event_mgr = EventManager()
 
         for i in range(self.player_cnt):
             random.shuffle(self.libraries[i].cards)
@@ -94,33 +94,9 @@ class GameState:
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.player_turn_idx, self, self.rules['mulligan'])
 
-    # --- EVENT LISTENER SYSTEM ---
-    def emit(self, event: Event):
-        """Call all effects listening to a certain type of event (ex: EndStepEvent); only Effects w 'on_event' listen"""
-        for eff, source_card in self._event_listeners[type(event)]:
-            if hasattr(eff, 'on_event'):
-                eff.on_event(self, source_card, event)
-
-    def register_effect(self, effect: Effect, source_card: GameCard):
-        """Store the effect + source card tuple for later event emission."""
-        if effect and effect.listens_to:
-            self._event_listeners[effect.listens_to].append((effect, source_card))
-
-    def unregister_effects(self, card: GameCard):
-        """Remove any event listeners tied to this card."""
-        for event_type, effect_list in self._event_listeners.items():
-            # Keep only effects whose source_card is not the leaving card
-            self._event_listeners[event_type] = [(eff, source) for eff, source in effect_list if source != card]
-
-    def unregister_specific_effect(self, effect: Effect):
-        """Used when an effect is neither unregistered when the source leaves the battlefield nor at EOT
-        (ex: Abomination destroying a creature that blocked it at the end of combat)"""
-        for event_type, effect_list in self._event_listeners.items():
-            self._event_listeners[event_type] = [(eff, source) for eff, source in effect_list if eff != effect]
-
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
-        """When GameCards look if they are effected by something,they check the cards in play; however,
-        some card effects (such as instants that are cast and go to the graveyard) last throughout the turn"""
+        """When GameCards look if they are effected by something, they check the cards in play;
+        however, some card effects (such as instants cast & placed in graveyard) last throughout the turn"""
         self.until_eot_effects_and_cards.append(eff_and_card)
 
     def check_state_based_actions(self):
@@ -234,7 +210,7 @@ class GameState:
 
         # 4. Emit resolved events
         for e in resolved_events:
-            self.emit(e)
+            self.event_mgr.emit(e, self)
             self.check_state_based_actions()  # checks if damage_received_this_turn >= creature.toughness
 
     def trigger_damage_prevention(self, event: DamageEvent):
@@ -267,7 +243,7 @@ class GameState:
         self._add_to_zone(card, to_zone)
         card.zone = to_zone
         if emit_zone_event:
-            self.emit(ZoneChangeEvent(card, from_zone, to_zone, cause))
+            self.event_mgr.emit(ZoneChangeEvent(card, from_zone, to_zone, cause), self)
 
         # Post-move hooks
         # self._after_zone_change(card, from_zone, to_zone)
@@ -282,7 +258,7 @@ class GameState:
                     self.destroy_replacements.remove(shield)
                     return
 
-        self.emit(DiesEvent(card))
+        self.event_mgr.emit(DiesEvent(card), self)
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
         self.cards_that_died_this_turn.append(card)
         print(f'{card} is destroyed')
@@ -299,7 +275,7 @@ class GameState:
         self.game_history.append_non_action(self, card=card, text=f'{card} is bounced')
 
     def discard(self, card: GameCard, source: GameCard | None = None):
-        self.emit(DiscardEvent(card.orig_owner_id, card, source))
+        self.event_mgr.emit(DiscardEvent(card.orig_owner_id, card, source), self)
         self.move_card(card, Zone.GRAVEYARD, cause="discard")
         print(f'{card} is discarded')
         self.game_history.append_non_action(self, card=card, text=f'{card} is bounced')
@@ -317,7 +293,7 @@ class GameState:
     def draw(self, p_id: int, cnt: int = 1):
         for _ in range(cnt):
             self.move_card(self.libraries[p_id].cards[0], Zone.HAND, cause='draw')
-            self.emit(DrawCardEvent(p_id))
+            self.event_mgr.emit(DrawCardEvent(p_id), self)
             print(f'Player #{p_id} draws')
             self.game_history.append_non_action(self, text=f'Player #{p_id} draws')
 
@@ -356,15 +332,15 @@ class GameState:
     def _leave_battlefield(self, card: GameCard, to_zone: Zone):
         """Emit ZoneChangeEvent before unregistering its effects, doing so for the subject card;
         detach all attached GameCard auras; call GameCard.clear_all_mods()"""
-        self.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'))
-        self.unregister_effects(card)
+        self.event_mgr.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'), self)
+        self.event_mgr.unregister_effects(card)
         for aura in list(card.modifiers.auras):
             if isinstance(aura, GameCard):
-                self.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'))
+                self.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self)
                 self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
-                self.unregister_effects(aura)
+                self.event_mgr.unregister_effects(aura)
         card.clear_all_mods()
-        self.emit(StateBasedEvent())
+        self.event_mgr.emit(StateBasedEvent(), self)
 
     def create_token_creature(self, owner_id: int, name: str, power: int, toughness: int, kwa: list[str],
                               other_types: list[str], sub_types: list[str], colors: str):
@@ -410,7 +386,7 @@ class GameState:
         event = LifeLossEvent(p_id, amt, source)
         if event.amt <= 0:
             return
-        self.emit(event)
+        self.event_mgr.emit(event, self)
         self.life[p_id] -= amt
         print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
 
@@ -418,7 +394,7 @@ class GameState:
         """If card is already tapped, skip; emit TapCardEvent, tap card, tap all attached auras"""
         if c.is_tapped:
             return
-        self.emit(TapCardEvent(card=c))
+        self.event_mgr.emit(TapCardEvent(card=c), self)
         c.is_tapped = True
         for a in c.modifiers.auras:
             a.is_tapped = True
@@ -427,7 +403,7 @@ class GameState:
         """If card is already untapped, skip; emit UntapCardEvent, tap card, tap all attached auras"""
         if not c.is_tapped:
             return
-        self.emit(UntapCardEvent(card=c))
+        self.event_mgr.emit(UntapCardEvent(card=c), self)
         c.is_tapped = False
         for a in c.modifiers.auras:
             a.is_tapped = False
@@ -449,7 +425,7 @@ class GameState:
                     break
             else:
                 if self.can_untap(c):
-                    self.emit(UntapCardEvent(c))
+                    self.event_mgr.emit(UntapCardEvent(c), self)
                     self.untap_card(c)
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:

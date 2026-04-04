@@ -27,19 +27,21 @@ class DealDamage(Effect):
         amt = self.amt if not variable_amt else variable_amt
         gs.apply_damage(source, amt, target)
 
-class DealDamageOnSourceTurn(Effect):
-    def __init__(self, amount):
+class DealDamageToOwnerOnUpkeep(Effect):
+    listens_to = UpkeepEvent
+
+    def __init__(self, amount: int):
         self.amount = amount
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if gs.player_turn_idx != source.owner_id:
             return
-        gs.apply_damage(source, 1, target.owner_id)
+        gs.apply_damage(source, self.amount, source.owner_id)
 
 class DealDamageOnHostUpkeep(Effect):
     listens_to = UpkeepEvent
 
-    def __init__(self, amount):
+    def __init__(self, amount: int):
         self.amount = amount
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
