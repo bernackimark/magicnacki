@@ -113,7 +113,7 @@ class ShieldWallEOT(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
-        if card not in gs.card_filter.in_play().on_player_board(source.orig_owner_id).creatures().result():
+        if card not in gs.card_filter.in_play().on_player_board(source.owner_id).creatures().result():
             return None
         return PTMod(s=source, t_adj=2, expires='EOT')
 

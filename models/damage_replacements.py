@@ -16,7 +16,7 @@ class MartyrsOfKorlisReplacement(DamageReplacement):
     def applies(self, gs: GameState, event: DamageEvent) -> bool:
         if self.card.is_tapped:
             return False
-        if event.target != self.card.orig_owner_id:
+        if event.target != self.card.owner_id:
             return False
         if 'Artifact' not in event.source.props.card_types:
             return False

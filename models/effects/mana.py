@@ -20,7 +20,7 @@ class AddMana(Effect):
             raise ValueError(f"Color must be one of: {COLOR_LETTERS_W_COLORLESS}")
 
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.mana_pools[source.orig_owner_id].add_floating(self.color, self.cnt)
+        gs.mana_pools[source.owner_id].add_floating(self.color, self.cnt)
 
 class DrainPower(Effect):
     """Target player activates a mana ability of each land they control.
@@ -39,14 +39,14 @@ class EnergyTap(Effect):
         if target is None:
             return
         gs.tap_card(target)
-        gs.mana_pools[source.orig_owner_id].add_floating('C', source.props.casting_weight)
+        gs.mana_pools[source.owner_id].add_floating('C', source.props.casting_weight)
         print(f"{source} taps to add {source.props.casting_weight} colorless to your mana pool.")
 
 class ExchangeLifeTotals(Effect):
     def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):
-        your_life = gs.score_mgr.life[s.orig_owner_id]
-        opp_life = gs.score_mgr.life[flip(s.orig_owner_id)]
-        gs.score_mgr.life[s.orig_owner_id], gs.score_mgr.life[flip(s.orig_owner_id)] = opp_life, your_life
+        your_life = gs.score_mgr.life[s.owner_id]
+        opp_life = gs.score_mgr.life[flip(s.owner_id)]
+        gs.score_mgr.life[s.owner_id], gs.score_mgr.life[flip(s.owner_id)] = opp_life, your_life
 
 class SuChi(Effect):
     """When this creature dies, add {CCCC}"""
@@ -55,7 +55,7 @@ class SuChi(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        gs.mana_pools[source.orig_owner_id].add_floating('C', 4)
+        gs.mana_pools[source.owner_id].add_floating('C', 4)
 
 class UrzasTrio(Effect):
     """{T}: Add {C}.
@@ -63,15 +63,15 @@ class UrzasTrio(Effect):
     urzas-power-plant: If you control an Urza's Mine and an Urza's Tower, add {CC} instead.
     urzas-tower: If you control an Urza's Mine and an Urza's Power-Plant, add {CCC} instead"""
     def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):
-        mines = gs.card_filter.on_player_board(s.orig_owner_id).by_slug('urzas-mine').result()
-        power_plants = gs.card_filter.on_player_board(s.orig_owner_id).by_slug('urzas-power-plant').result()
-        towers = gs.card_filter.on_player_board(s.orig_owner_id).by_slug('urzas-tower').result()
+        mines = gs.card_filter.on_player_board(s.owner_id).by_slug('urzas-mine').result()
+        power_plants = gs.card_filter.on_player_board(s.owner_id).by_slug('urzas-power-plant').result()
+        towers = gs.card_filter.on_player_board(s.owner_id).by_slug('urzas-tower').result()
         if not (mines and power_plants and towers):
-            gs.mana_pools[s.orig_owner_id].add_floating('C')
+            gs.mana_pools[s.owner_id].add_floating('C')
         elif s.props.slug == 'urzas-tower':
-            gs.mana_pools[s.orig_owner_id].add_floating('CCC')
+            gs.mana_pools[s.owner_id].add_floating('CCC')
         else:
-            gs.mana_pools[s.orig_owner_id].add_floating('CC')
+            gs.mana_pools[s.owner_id].add_floating('CC')
 
 class WildGrowth(Effect):
     """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""

@@ -53,7 +53,7 @@ class UntapWithManaAction(Action):
         return f'{{{self.mana_cost}}}: Untap {self.source}'
 
     def play(self):
-        self.gs.mana_pools[self.source.orig_owner_id].pay(self.mana_cost)
+        self.gs.mana_pools[self.source.owner_id].pay(self.mana_cost)
         self.source.untap(self.gs)
         self.gs.action_stack.pop()
 

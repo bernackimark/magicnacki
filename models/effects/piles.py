@@ -86,8 +86,8 @@ class GraveyardToExileInItsEntirety(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gy = gs.graveyards[source.orig_owner_id][:]
-        gs.graveyards[source.orig_owner_id].clear()
+        gy = gs.graveyards[target][:]
+        gs.graveyards[target].clear()
         for card in gy:
             gs.exile(card)
 
@@ -127,7 +127,7 @@ class GraveRobbersAA(Effect):
     """{B}, {T}: Exile target artifact card from a graveyard. You gain 2 life."""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         GraveyardToExile().resolve(gs, source, target)
-        gs.score_mgr.increment_life(source.orig_owner_id, 2, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
 class TimeElementalBounce(Effect):
     """... {2UU}, {T}: Return target unenchanted permanent to its owner's hand"""

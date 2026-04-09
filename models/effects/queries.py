@@ -44,7 +44,7 @@ class AngelicVoices(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
-        for my_creature in gs.card_filter.creatures().on_player_board(card.orig_owner_id).result():
+        for my_creature in gs.card_filter.creatures().on_player_board(card.owner_id).result():
             if 'W' not in my_creature.props.colors or 'C' not in my_creature.props.colors:
                 return None
         return PTMod(s=source, p_adj=1, t_adj=1)
@@ -69,7 +69,7 @@ class ArcadesSabbathAllCreaturePump(Effect):
         if event != 'pt_mod':
             return None
         attackers = gs.card_filter.attackers().result()
-        your_untapped_creatures = gs.card_filter.creatures().on_player_board(card.orig_owner_id).tapped(False).result()
+        your_untapped_creatures = gs.card_filter.creatures().on_player_board(card.owner_id).tapped(False).result()
         for c in your_untapped_creatures:
             if c not in attackers:
                 return PTMod(s=source, t_adj=2)
@@ -116,7 +116,7 @@ class AspectOfWolfPT(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod' or card is not source.host:
             return None
-        your_forest_cnt = len(gs.card_filter.on_player_board(source.orig_owner_id).forests().result())
+        your_forest_cnt = len(gs.card_filter.on_player_board(source.owner_id).forests().result())
         p_adj = math.floor(your_forest_cnt / 2)
         t_adj = math.ceil(your_forest_cnt / 2)
         return PTMod(s=source, p_adj=p_adj, t_adj=t_adj)
@@ -156,7 +156,7 @@ class Castle(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
-        if card not in gs.card_filter.creatures().on_player_board(card.orig_owner_id).tapped(False).white().result():
+        if card not in gs.card_filter.creatures().on_player_board(card.owner_id).tapped(False).white().result():
             return None
         return PTMod(s=source, t_adj=2)
 
@@ -263,7 +263,7 @@ class GaeasAvengerPT(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod' or card is not source:
             return None
-        opp_artifact_cnt = len(gs.card_filter.on_player_board(flip(source.orig_owner_id)).artifacts().result())
+        opp_artifact_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).artifacts().result())
         return PTMod(s=source, p_adj=opp_artifact_cnt + 1, t_adj=opp_artifact_cnt + 1)
 
 class GaeasLiegePT(Effect):
@@ -398,7 +398,7 @@ class KirdApePT(Effect):
         if event != 'pt_mod' or card.props.slug != 'kird-ape':
             return None
 
-        if gs.card_filter.on_player_board(card.orig_owner_id).forests().result():
+        if gs.card_filter.on_player_board(card.owner_id).forests().result():
             return PTMod(s=card, p_adj=1, t_adj=2)
 
 class KoboldOverlord(Effect):
@@ -409,7 +409,7 @@ class KoboldOverlord(Effect):
         source: GameCard = kwargs.get('source')
         if source.props.slug != 'kobold-overlord' or card is source:
             return
-        if card in gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result():
+        if card in gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result():
             return KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT')
 
 class KoboldTaskmaster(Effect):
@@ -535,7 +535,7 @@ class OrcishOriflamme(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
-        if card not in gs.card_filter.on_player_board(source.orig_owner_id).attackers().result():
+        if card not in gs.card_filter.on_player_board(source.owner_id).attackers().result():
             return None
         return PTMod(s=source, p_adj=1, expires='EOT')
 
@@ -596,7 +596,7 @@ class Seeker(Effect):
 class SirensCallCanCast(Effect):
     """Cast this spell only during an opponent's turn, before attackers are declared ..."""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        if event != 'can_cast' or gs.player_turn_idx == card.orig_owner_id:
+        if event != 'can_cast' or gs.player_turn_idx == card.owner_id:
             return None
         if gs.phase_mgr.phase >= Phase.DECLARE_ATTACKERS:
             return False
@@ -626,7 +626,7 @@ class WaterWurmPT(Effect):
         if event != 'pt_mod' or card.props.slug != 'water-wurm':
             return None
 
-        if gs.card_filter.on_player_board(flip(card.orig_owner_id)).islands().result():
+        if gs.card_filter.on_player_board(flip(card.owner_id)).islands().result():
             return PTMod(s=card, t_adj=1)
 
 class Weakstone(Effect):

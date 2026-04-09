@@ -65,7 +65,7 @@ class PayManaOrSac(Effect):
         self.mana_cost = mana_cost
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        gs.action_stack.push(PayManaOrSacUpkeepChoice(source.orig_owner_id, gs, source, self.mana_cost), gs, False)
+        gs.action_stack.push(PayManaOrSacUpkeepChoice(source.owner_id, gs, source, self.mana_cost), gs, False)
 
 class RegenerateSelf(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
@@ -178,7 +178,7 @@ class ForceOfNatureUpkeep(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
         if gs.player_turn_idx != s.owner_id:
             return
-        gs.action_stack.push(ForceOfNatureUpkeepChoice(s.orig_owner_id, gs, s, 'GGGG', 8), gs, False)
+        gs.action_stack.push(ForceOfNatureUpkeepChoice(s.owner_id, gs, s, 'GGGG', 8), gs, False)
 
 class LandEquilibrium(Effect):
     """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,
@@ -267,9 +267,9 @@ class SeasonOfTheWitchEndStep(Effect):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if gs.player_turn_idx != s.orig_owner_id:
+        if gs.player_turn_idx != s.owner_id:
             return
-        your_untapped_creatures = gs.card_filter.on_player_board(s.orig_owner_id).creatures().untapped().result()
+        your_untapped_creatures = gs.card_filter.on_player_board(s.owner_id).creatures().untapped().result()
         attackers = gs.card_filter.attackers().result()
         for creature in your_untapped_creatures:
             if creature in attackers:
@@ -285,14 +285,14 @@ class SeasonOfTheWitchUpkeep(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if event.active_player != source.owner_id:
             return
-        gs.action_stack.push(PayLifeOrSacChoice(source.orig_owner_id, gs, source, 2), gs, False)
+        gs.action_stack.push(PayLifeOrSacChoice(source.owner_id, gs, source, 2), gs, False)
 
 class SerendibDjinnNoLands(Effect):
     """When you control no lands, sacrifice this creature"""
     def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent):
-        your_lands = gs.card_filter.on_player_board(source.orig_owner_id).lands().result()
+        your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
         if not your_lands:
-            print(f'Player #{source.orig_owner_id} has no lands, so Serendib Djinn is destroyed')
+            print(f'Player #{source.owner_id} has no lands, so Serendib Djinn is destroyed')
             gs.destroy(source)
 
 class StanggOnLeave(Effect):
@@ -330,10 +330,10 @@ class VoodooDollEndStep(Effect):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
-        if gs.player_turn_idx != source.orig_owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         if source.is_tapped:
             return
         if pin_cnt := source.counters.get_count(PIN) > 0:
-            gs.apply_damage(source, pin_cnt, source.orig_owner_id)
+            gs.apply_damage(source, pin_cnt, source.owner_id)
         gs.destroy(source)

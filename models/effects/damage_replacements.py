@@ -20,7 +20,7 @@ class RedirectDamageFromOwnerToCreature(DamageReplacement):
     def applies(self, gs: GameState, event: DamageEvent) -> bool:
         if self.used:
             return False
-        return (event.source is self.damage_source and event.target is self.to_creature.orig_owner_id
+        return (event.source is self.damage_source and event.target is self.to_creature.owner_id
                 and event.remaining > 0)
 
     def replace(self, gs: GameState, event: DamageEvent) -> None:
@@ -41,7 +41,7 @@ class RedirectDamageToOwner(DamageReplacement):
 
     def replace(self, gs: GameState, event: DamageEvent) -> None:
         # redirect the damage
-        event.target = self.to_creature.orig_owner_id
+        event.target = self.to_creature.owner_id
         self.used = True
 
 class JadeMonolith(Effect):

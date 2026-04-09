@@ -135,7 +135,7 @@ class CityOfShadowsAA2(Effect):
     """{T}: Add {C} for each storage counter on this land"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         cnt = len(source.counters.get_count(STORAGE))
-        gs.mana_pools[source.orig_owner_id].add_floating('C', cnt)
+        gs.mana_pools[source.owner_id].add_floating('C', cnt)
 
 class CocoonCast(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):

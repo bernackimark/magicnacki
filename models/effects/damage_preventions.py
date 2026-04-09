@@ -71,7 +71,7 @@ class PreventNextDamageToSourceOwner(Effect):
         self.combat_only = combat_only
 
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        prevention = PreventNextDamage(s, self.amt, target_player=s.orig_owner_id, source_card=target,
+        prevention = PreventNextDamage(s, self.amt, target_player=s.owner_id, source_card=target,
                                        combat_only=self.combat_only)
         gs.damage_preventions.append(prevention)
 
@@ -109,9 +109,8 @@ class EnchantedBeingPrevention(DamagePreventionEffect):
 class Forcefield(Effect):
     """Next time an unblocked creature of your choice would deal combat damage to you this turn, reduce damage to 1"""
     def resolve(self, gs, s: GameCard, t: Optional[GameCard] = None):
-        gs.damage_preventions.append(PreventNextDamage(s, source_card=t,
-                                                       target_player=s.orig_owner_id, combat_only=True))
-        gs.apply_damage(t, 1, s.orig_owner_id, is_combat=True)
+        gs.damage_preventions.append(PreventNextDamage(s, source_card=t, target_player=s.owner_id, combat_only=True))
+        gs.apply_damage(t, 1, s.owner_id, is_combat=True)
 
 class MarblePriestPrevention(DamagePreventionEffect):
     """Prevent all combat damage that would be dealt to this creature by Walls"""

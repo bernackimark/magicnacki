@@ -16,7 +16,7 @@ class DealDamageToYou(Action):
         return f'{self.source.props.name} deals {self.damage_amt} damage to you'
 
     def play(self):
-        self.gs.apply_damage(self.source, self.damage_amt, self.source.orig_owner_id)
+        self.gs.apply_damage(self.source, self.damage_amt, self.source.owner_id)
         self.gs.action_stack.pop()  # remove choice
 
 class GainLife(Action):
@@ -43,5 +43,5 @@ class PayLife(Action):
         return f'Pay {self.amt} life for {self.source.props.name}'
 
     def play(self):
-        self.gs.apply_damage(self.source, self.amt, self.source.host.orig_owner_id)
+        self.gs.apply_damage(self.source, self.amt, self.source.host.owner_id)
         self.gs.action_stack.pop()

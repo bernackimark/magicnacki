@@ -73,7 +73,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                        if c.props.slug != 'golgothian-sylex'],
     'green_in_play': lambda gs, s: gs.card_filter.in_play().green().result(),
     'host': lambda gs, s: s.host,
-    'host_owner': lambda gs, s: s.attached.to.orig_owner_id,
+    'host_owner': lambda gs, s: s.host.owner_id,
     'in_turn_player': lambda gs, _: gs.player_turn_idx,
     'in_turn_player_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).tapped().blue().creatures().result(),
     'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),

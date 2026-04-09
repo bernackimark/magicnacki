@@ -22,11 +22,11 @@ class AddPoisonCounter(Effect):
         self.cnt = cnt
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
-        opp = flip(source.orig_owner_id)
+        opp = flip(source.owner_id)
         if event.source is source and event.target == opp:
             print(f"{event.source.props.name} adds {self.cnt} poison counter(s) to Player #{opp}. "
-                  f"Poison Totals: {gs.poison_counters}")
-            gs.add_poison_counter(opp, self.cnt)
+                  f"Poison Totals: {gs.score_mgr.poison_counters}")
+            gs.score_mgr.add_poison_counter(opp, self.cnt)
 
 class OnColorSpellGainLife(Effect):
     """Whenever a player casts a [certain color] spell, you gain 1 life"""
@@ -84,7 +84,7 @@ class ElHajjaj(Effect):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
         if event.source is source and event.amt > 0:
-            gs.score_mgr.increment_life(source.orig_owner_id, event.amt, source, gs)
+            gs.score_mgr.increment_life(source.owner_id, event.amt, source, gs)
 
 class IvoryTower(Effect):
     """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
@@ -113,7 +113,7 @@ class Onulet(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        gs.score_mgr.increment_life(source.orig_owner_id, 2, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
 class SpiritLink(Effect):
     """Enchant creature  Whenever enchanted creature deals damage, you gain that much life"""
@@ -121,7 +121,7 @@ class SpiritLink(Effect):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
         if event.source is source.host and event.amt > 0:
-            gs.score_mgr.increment_life(source.orig_owner_id, event.amt, source, gs)
+            gs.score_mgr.increment_life(source.owner_id, event.amt, source, gs)
 
 class SpiritualSanctuary(Effect):
     """At each player's upkeep, if that player controls a Plains, they gain 1 life"""

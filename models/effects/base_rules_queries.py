@@ -26,7 +26,7 @@ class CanBlockRule(Effect):
             return False
 
         # Global land walk rule
-        defender_idx = card.orig_owner_id
+        defender_idx = card.owner_id
         for walk, basic_land in zip([land.capitalize() + 'walk' for land in BASIC_LANDS], BASIC_LANDS):
             if walk in attacker.keyword_abilities and gs.card_filter.on_player_board(defender_idx).by_slug(basic_land).result():
                 return False
@@ -61,7 +61,7 @@ class CanAttackRule(Effect):
             return False
 
         if 'Islandhome' in card.keyword_abilities:
-            if not gs.card_filter.on_player_board(flip(card.orig_owner_id)).islands().result():
+            if not gs.card_filter.on_player_board(flip(card.owner_id)).islands().result():
                 return False
 
         return None  # no opinion on whether the card can attack
