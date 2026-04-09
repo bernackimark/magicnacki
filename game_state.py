@@ -17,8 +17,7 @@ from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCastRule, CanTargetRule, CanDamageRule
 from models.events_all import (TapCardEvent, UntapCardEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
-                               DiesEvent, ZoneChangeEvent, DrawCardEvent, LifeLossEvent,
-                               RandomEvent, Event, DiscardEvent)
+                               DiesEvent, ZoneChangeEvent, DrawCardEvent, RandomEvent, DiscardEvent)
 from models.game_card import GameCard
 from models.combat import Combat
 from models.game_history import GameHistory
@@ -48,10 +47,9 @@ class GameState:
         for d in self.libraries:
             for c in d.cards:
                 c.game_state = self
-        # game over conditions
-        self.score_mgr = ScoreManager()
-        # self.life = [20, 20]
-        # self._poison_counters = [0, 0]
+
+        self.score_mgr = ScoreManager()  # manages life & poison
+
         # action, turn, phase (game flow) concepts; not sure self.turn is being used
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))

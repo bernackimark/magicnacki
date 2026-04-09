@@ -1,7 +1,11 @@
-from game_state import GameState
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
 from models.events_all import LifeLossEvent, LifeGainEvent
 from models.game_card import GameCard
 
+if TYPE_CHECKING:
+    from game_state import GameState
 
 class ScoreManager:
     def __init__(self, life: tuple[int, int] = (20, 20), poison_death_amt: int = 10):
