@@ -78,6 +78,6 @@ class WildGrowth(Effect):
     listens_to = TapCardEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
-        if source.attached_to is not event.card:
+        if source.host is not event.card:
             return
         gs.mana_pools[event.card.owner_id].add_floating('G')

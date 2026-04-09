@@ -11,23 +11,21 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from models.modifiers import PTModifier, PTTemp, KWATemp
+from models.modifiers import PTMod, KWAMod
 
 
 # --- GENERIC ---
 class PumpEffect(Effect):
     def __init__(self, power_adj: int, toughness_adj: int, eot: bool = False):
-        self.power_adj = power_adj
-        self.toughness_adj = toughness_adj
+        self.p_adj = power_adj
+        self.t_adj = toughness_adj
         self.eot = eot
 
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
         if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        if not self.eot:
-            target.modifiers.auras.append(PTModifier(source, self.power_adj, self.toughness_adj))
-        else:
-            target.modifiers.temps.append(PTTemp(source, self.power_adj, self.toughness_adj))
+            raise ValueError(f'{s.props.name} needs a target')
+        target.modifiers.items.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj,
+                                            expires='EOT' if self.eot else None))
 
 class UntapRemovesPumpFromAnotherCard(Effect):
     """If an effect targeted another card and its duration was for as long as the source is tapped,
@@ -37,8 +35,8 @@ class UntapRemovesPumpFromAnotherCard(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: UntapCardEvent):
         for c in gs.card_filter.in_play().result():
             for mod in list(c.modifiers):
-                if mod.source is s and isinstance(mod, (PTModifier, PTTemp)):
-                    event.card.modifiers.auras.remove(mod)
+                if mod.source is s and isinstance(mod, PTMod):
+                    event.card.modifiers.items.remove(mod)
 
 # --- CARD-SPECIFIC ---
 class ArmyOfAllah(Effect):
@@ -53,8 +51,8 @@ class BerserkPump(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        target.modifiers.temps.append(PTTemp(source, int(target.power) * 2, 0))
-        target.modifiers.temps.append(KWATemp(source, 'add', 'Trample'))
+        target.modifiers.items.append(PTMod(s=source, p_adj=int(target.power) * 2, expires='EOT'))
+        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
 
 class BloodLust(Effect):
     """Target creature gains +4/-4 until end of turn. If this reduces creature's toughness < 1, toughness = 1."""
@@ -63,7 +61,7 @@ class BloodLust(Effect):
             raise RuntimeError(f'{source.props.name} needs a target')
         new_toughness = max(1, target.toughness - 4)
         toughness_mod = new_toughness - target.toughness
-        target.modifiers.auras.append(PTTemp(source, 4, toughness_mod))
+        target.modifiers.items.append(PTMod(s=source, p_adj=4, t_adj=toughness_mod, expires='EOT'))
 
 class BoneFlute(Effect):
     """All creatures get -1/-0 until end of turn"""
@@ -75,14 +73,14 @@ class DragonWhelpEndStep(Effect):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if len([temp for temp in s.modifiers.temps if temp.source is s]) >= 4:
-            gs.destroy(s)
+        if len([temp for temp in s.modifiers.items if temp.source is s]) >= 4:
+            gs.destroy(s, allow_regeneration=False)
 
 class GreatDefender(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         """Target creature gets +0/+X until end of turn, where X is its mana value."""
         if target:
-            target.modifiers.auras.append(PTTemp(source, 0, target.props.casting_weight))
+            target.modifiers.items.append(PTMod(s=source, t_adj=target.props.casting_weight, expires='EOT'))
 
 class HellSwarm(Effect):
     """All creatures get -1/-0 until end of turn"""
@@ -99,7 +97,7 @@ class HowlFromBeyond(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if target is not None:
             x = getattr(source, 'variable_x', 0)  # read X chosen when casting
-            target.modifiers.temps.append(PTTemp(source, x, 0))
+            target.modifiers.items.append(PTMod(s=source, p_adj=x, expires='EOT'))
 
 class LesserWerewolf(Effect):
     """If this creature's power is >= 1, it gets -1/-0 until EOT & put a -0/-1 counter on
@@ -107,7 +105,7 @@ class LesserWerewolf(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if source.power < 1:
             return
-        source.modifiers.temps.append(PTTemp(source, -1, 0))
+        source.modifiers.items.append(PTMod(s=source, p_adj=-1, expires='EOT'))
         target.counters.add_counter(MINUS_ZERO_ONE)
 
 class MarshGas(Effect):
@@ -127,7 +125,7 @@ class MurkDwellers(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
         if event.attacker != s:
             return
-        s.modifiers.temps.append(PTTemp(s, 2, 0))
+        s.modifiers.items.append(PTMod(s=s, p_adj=2, expires='EOT'))
 
 class Piety(Effect):
     """Blocking creatures get 0/+3 until end of turn"""
@@ -144,7 +142,7 @@ class SingingTree(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.temps.append(PTTemp(source, -target.base_pt[0], 0))
+        target.modifiers.items.append(PTMod(s=source, p_adj=-target.base_pt[0], expires='EOT'))
 
 class Transmutation(Effect):
     """Switch target creature's power and toughness until end of turn"""

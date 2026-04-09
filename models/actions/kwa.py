@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.actions.base import Action
-from models.modifiers import KWATemp, KWAModifier
+from models.modifiers import KWAMod
 
 
 class AddKWA(Action):
@@ -21,10 +21,8 @@ class AddKWA(Action):
         return f'Give {self.ability} to {self.target.props.name}'
 
     def play(self):
-        if self.until_eot:
-            self.target.modifiers.temps.append(KWATemp(self.source, 'add', self.ability))
-        else:
-            self.target.modifiers.auras.append(KWAModifier(self.source, 'add', self.ability))
+        self.target.modifiers.items.append(KWAMod(s=self.source, add_or_remove='add', kwa=self.ability,
+                                                  expires='EOT' if self.until_eot else None))
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         else:

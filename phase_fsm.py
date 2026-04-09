@@ -180,7 +180,7 @@ class PhaseManager:
                 func()
 
             for c in gs.card_filter.in_play().result():
-                c.modifiers.clear_temps()
+                c.modifiers.clear_eots()
             self.phase = Phase.DISCARD
             return
 
@@ -217,7 +217,7 @@ class PhaseManager:
             # Clear temp modifiers
             for d in gs.decks_all_cards:
                 for c in d.cards:
-                    c.modifiers.clear_temps()
+                    c.modifiers.clear_eots()
             # Empty mana pools
             for pool in gs.mana_pools:
                 pool.clear_floating()

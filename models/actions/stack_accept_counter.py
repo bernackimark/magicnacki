@@ -31,8 +31,8 @@ class AcceptAction(Action):
 
         card = last_action.card
         if card.props.is_aura:
-            card.attached_to = target
-            target.modifiers.auras.append(card)
+            card.host = target
+            target.auras.append(card)
 
         if isinstance(last_action, CastToTargetAddToStack):
             if not last_action.eff_spec.effect:

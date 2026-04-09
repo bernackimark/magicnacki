@@ -94,9 +94,9 @@ class Blight(Effect):
     listens_to = TapCardEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
-        if not source.attached_to or source.props.slug != 'blight' or event.card is not source.attached_to:
+        if not source.host or source.props.slug != 'blight' or event.card is not source.host:
             return
-        gs.destroy(source.attached_to)
+        gs.destroy(source.host)
 
 class CosmicHorror(Effect):
     """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
@@ -167,7 +167,7 @@ class ErosionUpkeep(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.attached_to or gs.player_turn_idx != source.attached_to.owner_id:
+        if not source.host or gs.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
 

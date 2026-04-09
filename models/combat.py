@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from models.modifiers import PTTemp
+from models.modifiers import PTMod
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -50,7 +50,8 @@ class Combat:
                 print('ZZZ', len(self.blockers), a.rampage_amt)
                 if len(self.blockers) > 1 and a.rampage_amt:
                     multiplier = len(self.blockers) - 1
-                    a.modifiers.temps.append(PTTemp(a, a.rampage_amt * multiplier, a.rampage_amt * multiplier))
+                    a.modifiers.items.append(PTMod(s=a, p_adj=a.rampage_amt * multiplier,
+                                                   t_adj=a.rampage_amt * multiplier, expires='EOT'))
                 target = self.blockers[0]
                 if self.gs.can_damage(target, a):
                     self.gs.apply_damage(a, a.power, target, is_combat=True)

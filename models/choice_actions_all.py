@@ -248,8 +248,8 @@ class CurseArtifactUpkeepChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [PayLife(self.source.attached_to.owner_id, self.gs, self.source, 2),
-                Sac(self.source.attached_to.owner_id, self.gs, self.source.attached_to)]
+        return [PayLife(self.source.host.owner_id, self.gs, self.source, 2),
+                Sac(self.source.host.owner_id, self.gs, self.source.host)]
 
 class CycloneChoice(ChoiceAction):
     """At your upkeep, pay {G} for each wind counter on it or sac.
@@ -300,7 +300,7 @@ class ErosionUpkeepChoice(ChoiceAction):
         if self.gs.mana_pools[self.player_idx].can_pay('1'):
             actions.append(PayMana(self.player_idx, self.gs, self.source, '1'))
         actions.append(PayLife(self.player_idx, self.gs, self.source, 1))
-        actions.append(Sac(self.player_idx, self.gs, self.source.attached_to))
+        actions.append(Sac(self.player_idx, self.gs, self.source.host))
         return actions
 
 class FastingChoice(ChoiceAction):
@@ -403,7 +403,7 @@ class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [PayLife(self.source.attached_to.owner_id, self.gs, self.source, 2),
+        return [PayLife(self.source.host.owner_id, self.gs, self.source, 2),
                 Sac(self.gs.player_turn_idx, self.gs, self.source)]
 
 class SerendibDjinnUpkeepChoice(ChoiceAction):

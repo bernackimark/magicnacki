@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.choice_actions_all import CopyCardChoice, PrimalClayChoice
 from models.events_all import BlockEvent, UpkeepEvent
-from models.modifiers import TypeModifier, PTModifier, SubTypeModifier, SubTypeTemp, TypeTemp
+from models.modifiers import TypeMod, PTMod, SubTypeMod
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -25,11 +25,11 @@ class AddCreatureType(Effect):
         if card is not source:
             return None
         if event == 'type_mod':
-            return TypeModifier(source, 'add', 'Creature')
+            return TypeMod(s=source, add_or_remove='add', card_type='Creature')
         if event == 'sub_type_mod':
-            return SubTypeModifier(source, 'add', self.sub_type)
+            return SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type)
         if event == 'pt_mod':
-            return PTModifier(source, self.power, self.toughness)
+            return PTMod(s=source, p_adj=self.power, t_adj=self.toughness)
 
 class AddCreatureTypePTManaValue(Effect):
     """Turns card into a creature with power and toughness each equal to its mana value"""
@@ -38,9 +38,9 @@ class AddCreatureTypePTManaValue(Effect):
         if card is not source:
             return None
         if event == 'type_mod':
-            return TypeModifier(source, 'add', 'Creature')
+            return TypeMod(s=source, add_or_remove='add', card_type='Creature')
         if event == 'pt_mod':
-            return PTModifier(source, card.props.casting_weight, card.props.casting_weight)
+            return PTMod(s=source, p_adj=card.props.casting_weight, t_adj=card.props.casting_weight)
 
 class BecomeCreature(Effect):
     def __init__(self, power: int, toughness: int, sub_type: str = None, until_eot: bool = False):
@@ -52,14 +52,11 @@ class BecomeCreature(Effect):
     def resolve(self, gs, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        if not self.until_eot:
-            target.modifiers.auras.append(TypeModifier(source, 'add', 'Creature'))
-            if self.sub_type:
-                target.modifiers.auras.append(SubTypeModifier(source, 'add', self.sub_type, False))
-        else:
-            target.modifiers.auras.append(TypeTemp(source, 'add', 'Creature'))
-            if self.sub_type:
-                target.modifiers.auras.append(SubTypeTemp(source, 'add', self.sub_type, True))
+        target.modifiers.items.append(TypeMod(s=source, add_or_remove='add', card_type='Creature',
+                                              expires='EOT' if self.until_eot else None))
+        if self.sub_type:
+            target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type,
+                                                     expires='EOT' if self.until_eot else None))
 
 class SetColor(Effect):
     def __init__(self, color: str):
@@ -110,9 +107,9 @@ class EvilPresence(Effect):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         sub_types = target.card_sub_types.copy()
-        target.modifiers.auras.append(SubTypeModifier(source, 'add', 'Swamp'))
+        target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Swamp'))
         for sub_type in sub_types:
-            target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))
+            target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
 
 class PhantasmalTerrain(Effect):
     """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type"""
@@ -123,9 +120,9 @@ class PhantasmalTerrain(Effect):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         sub_types = target.card_sub_types.copy()
-        target.modifiers.auras.append(SubTypeModifier(source, 'add', self.land_type))
+        target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.land_type))
         for sub_type in sub_types:
-            target.modifiers.auras.append(SubTypeModifier(source, 'remove', sub_type))
+            target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
 
 class PrimalClay(Effect):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,

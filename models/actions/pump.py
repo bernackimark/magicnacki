@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.actions.base import Action
-from models.modifiers import PTModifier
+from models.modifiers import PTMod
 
 
 class VariablePTMod(Action):
@@ -22,5 +22,5 @@ class VariablePTMod(Action):
     def play(self):
         new_power = self.power - self.target.power
         new_toughness = self.toughness - self.target.toughness
-        self.target.modifiers.auras.append(PTModifier(self.target, new_power, new_toughness))
+        self.target.modifiers.items.append(PTMod(s=self.target, p_adj=new_power, t_adj=new_toughness))
         self.gs.action_stack.pop()

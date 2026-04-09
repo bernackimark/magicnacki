@@ -90,21 +90,21 @@ class ArgothianTreefolkPrevention(DamagePreventionEffect):
 class ArtifactWardPrevention(DamagePreventionEffect):
     """Prevent all damage that would be dealt to enchanted creature by artifact sources"""
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
-        if event.target is not card.attached_to:
+        if event.target is not card.host:
             return False
         return 'Artifact' in event.source.props.card_types
 
 class EnchantedBeingPrevention(DamagePreventionEffect):
     """Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None):
-        if event.target is not card.attached_to:
+        if event.target is not card.host:
             return False
         if not event.is_combat:
             return False
         if not event.source:
             return False
 
-        return any(aura.props for aura in event.source.modifiers.auras if hasattr(aura, 'props'))
+        return any(aura.props for aura in event.source.auras if hasattr(aura, 'props'))
 
 class Forcefield(Effect):
     """Next time an unblocked creature of your choice would deal combat damage to you this turn, reduce damage to 1"""
@@ -131,4 +131,4 @@ class UncleIstvanPrevention(DamagePreventionEffect):
 class WallOfPutridFleshPrevention(DamagePreventionEffect):
     """Prevent all damage that would be dealt to this creature by enchanted creatures"""
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None):
-        return event.target is card and event.source and event.source.modifiers.is_enchanted
+        return event.target is card and event.source and event.source.is_enchanted

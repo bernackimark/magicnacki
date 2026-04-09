@@ -6,198 +6,109 @@ if TYPE_CHECKING:
 
 from dataclasses import dataclass, field
 
+@dataclass(kw_only=True)
+class Modifier:
+    s: GameCard  # source
+    expires: str | None = None  # None, 'EOT', 'UNTIL_SOURCE_LEAVES', 'NEXT_TURN'
 
 @dataclass
-class OwnershipModifier:
-    source: GameCard
-    former_owner_id: int
+class OwnershipMod(Modifier):
     new_owner_id: int
 
     def __repr__(self):
-        return f'being stolen by {self.source.props.name}'
+        return f'being stolen by {self.s.props.name}'
 
 @dataclass
-class PTModifier:
-    card: GameCard
-    power_delta: int
-    toughness_delta: int
-
-
-@dataclass
-class PTTemp:
-    source: GameCard
-    power_delta: int
-    toughness_delta: int
-    expires_end_of_turn: bool = True
+class PTMod(Modifier):
+    p_adj: int = 0
+    t_adj: int = 0
 
     def __repr__(self):
-        power_symbol = '+' if self.power_delta > 0 else ''
-        toughness_symbol = '+' if self.toughness_delta > 0 else ''
-        end_of_turn_text = ' until end of turn' if self.expires_end_of_turn else ''
-        return f"({power_symbol}{self.power_delta}/{toughness_symbol}{self.toughness_delta}){end_of_turn_text}"
-
+        power_symbol = '+' if self.p_adj > 0 else ''
+        toughness_symbol = '+' if self.t_adj > 0 else ''
+        end_of_turn_text = ' until end of turn' if self.expires == 'EOT' else ''
+        return f"({power_symbol}{self.p_adj}/{toughness_symbol}{self.t_adj}){end_of_turn_text}"
 
 @dataclass
-class KWAModifier:
-    card: GameCard
+class KWAMod(Modifier):
     add_or_remove: str
     kwa: str
 
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa}"
 
-
 @dataclass
-class KWATemp:
-    source: GameCard
-    add_or_remove: str
-    kwa: str
-    expires_end_of_turn: bool = True
-
-    def __post_init__(self):
-        if self.add_or_remove not in ('add', 'remove'):
-            raise ValueError(f"attribute add_or_remove must be: 'add' or 'remove', instead got {self.add_or_remove}")
-
-    def __repr__(self):
-        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa} until end of turn"
-
-@dataclass
-class TypeModifier:
-    source: GameCard
+class TypeMod(Modifier):
     add_or_remove: Literal['add', 'remove']
     card_type: str
-    expires_end_of_turn: bool = False
 
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_type}"
 
 @dataclass
-class TypeTemp:
-    source: GameCard
-    add_or_remove: Literal['add', 'remove']
-    card_type: str
-    expires_end_of_turn: bool = True
-
-    def __repr__(self):
-        return f"{'adds' if self.add_or_remove == 'add' else 'loses'} {self.card_type} type until end of turn"
-
-@dataclass
-class SubTypeModifier:
-    source: GameCard
+class SubTypeMod(Modifier):
     add_or_remove: Literal['add', 'remove']
     card_sub_type: str
-    expires_end_of_turn: bool = False
 
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type}"
 
 @dataclass
-class SubTypeTemp:
-    source: GameCard
-    add_or_remove: Literal['add', 'remove']
-    card_sub_type: str
-    expires_end_of_turn: bool = True
-
-    def __repr__(self):
-        return f"{'adds' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type} type until end of turn"
-
-@dataclass
 class Modifiers:
     """Contains general auras (ex Creature Bond), PTModifiers (ex Holy Strength), and KWA Modifiers (ex Flight)"""
-    auras: list[GameCard | PTModifier | KWAModifier | TypeModifier | SubTypeModifier | OwnershipModifier] = field(default_factory=list)
-    temps: list[PTTemp | KWATemp | TypeTemp | SubTypeTemp] = field(default_factory=list)
+    items: list[Modifier] = field(default_factory=list)
 
     def __repr__(self):
-        pt_mod_cards = (ptm.card for ptm in self.auras if isinstance(ptm, PTModifier))
-        return ', '.join([a.__repr__() for a in self.auras if a not in pt_mod_cards] +
-                         [t.__repr__() for t in self.temps])
+        return ', '.join([m.__repr__() for m in self.items])
 
     def __bool__(self) -> bool:
-        """True if anything contained in self.auras or self.temps"""
-        return bool(self.auras or self.temps)
+        """True if any modifiers else False"""
+        return bool(self.items)
 
     @property
     def new_owner_id(self) -> int | None:
-        for aura in self.auras[::-1]:
-            if isinstance(aura, OwnershipModifier):
-                return aura.new_owner_id
+        for mod in self.items[::-1]:
+            if isinstance(mod, OwnershipMod):
+                return mod.new_owner_id
 
     @property
     def power_delta(self) -> int:
-        return (sum(a.power_delta for a in self.auras if isinstance(a, PTModifier)) +
-                sum(a.power_delta for a in self.temps if isinstance(a, PTTemp)))
+        return sum(a.p_adj for a in self.items if isinstance(a, PTMod))
 
     @property
     def toughness_delta(self) -> int:
-        return (sum(a.toughness_delta for a in self.auras if isinstance(a, PTModifier)) +
-                sum(a.toughness_delta for a in self.temps if isinstance(a, PTTemp)))
+        return sum(a.t_adj for a in self.items if isinstance(a, PTMod))
 
     @property
     def kwa_delta(self) -> tuple[set[str], set[str]]:
         """KWAMod('add', 'Flying'), KWAMod('add', 'Trample'), KWA('remove', 'Trample') returns ({'Flying'}, {})"""
-        return self._kwa_adds - self._kwa_subtracts, self._kwa_subtracts - self._kwa_adds
+        adds, removes = set(), set()
+        for m in self.items:
+            if isinstance(m, KWAMod):
+                adds.add(m.kwa) if m.add_or_remove == 'add' else removes.add(m.kwa)
+        return adds - removes, removes - adds
 
     @property
     def type_delta(self) -> tuple[set[str], set[str]]:
-        return self._type_adds - self._type_subtracts, self._type_subtracts - self._type_adds
+        adds, removes = set(), set()
+        for m in self.items:
+            if isinstance(m, TypeMod):
+                adds.add(m.card_type) if m.add_or_remove == 'add' else removes.add(m.card_type)
+        return adds - removes, removes - adds
 
     @property
     def sub_type_delta(self) -> tuple[set[str], set[str]]:
-        return self._sub_type_adds - self._sub_type_subtracts, self._sub_type_subtracts - self._sub_type_adds
+        adds, removes = set(), set()
+        for m in self.items:
+            if isinstance(m, SubTypeMod):
+                adds.add(m.card_sub_type) if m.add_or_remove == 'add' else removes.add(m.card_sub_type)
+        return adds - removes, removes - adds
 
-    @property
-    def _kwa_adds(self) -> set[str]:
-        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'add'} |
-                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'add'})
-
-    @property
-    def _kwa_subtracts(self) -> set[str]:
-        return ({a.kwa for a in self.auras if isinstance(a, KWAModifier) if a.add_or_remove == 'remove'} |
-                {a.kwa for a in self.temps if isinstance(a, KWATemp) if a.add_or_remove == 'remove'})
-
-    @property
-    def _type_adds(self) -> set[str]:
-        return ({a.card_type for a in self.auras if isinstance(a, TypeModifier) if a.add_or_remove == 'add'} |
-                {a.card_type for a in self.temps if isinstance(a, TypeTemp) if a.add_or_remove == 'add'})
-
-    @property
-    def _type_subtracts(self) -> set[str]:
-        return ({a.card_type for a in self.auras if isinstance(a, TypeModifier) if a.add_or_remove == 'remove'} |
-                {a.card_type for a in self.temps if isinstance(a, TypeTemp) if a.add_or_remove == 'remove'})
-
-    @property
-    def _sub_type_adds(self) -> set[str]:
-        return ({a.card_sub_type for a in self.auras if isinstance(a, SubTypeModifier) if a.add_or_remove == 'add'} |
-                {a.card_sub_type for a in self.temps if isinstance(a, SubTypeTemp) if a.add_or_remove == 'add'})
-
-    @property
-    def _sub_type_subtracts(self) -> set[str]:
-        return ({a.card_sub_type for a in self.auras if isinstance(a, SubTypeModifier) if a.add_or_remove == 'remove'} |
-                {a.card_sub_type for a in self.temps if isinstance(a, SubTypeTemp) if a.add_or_remove == 'remove'})
-
-    @property
-    def is_enchanted(self) -> bool:
-        auras = [a for a in self.auras if isinstance(a, GameCard)]
-        return True if auras else False
-
-    def is_enchanted_by(self, slug: str) -> bool:
-        return slug in {a.props.slug for a in self.auras if hasattr(a, 'props')}
-
-    def remove_aura(self, item: GameCard | PTModifier | KWAModifier | OwnershipModifier) -> None:
-        for a in self.auras:
-            if a == item:
-                self.auras.remove(a)
-        else:
-            print(f"Warning: Attempted to remove {item} but it wasn't found")
-
-    def clear_temps(self) -> None:
-        self.temps.clear()
-
-    def clear_perms(self) -> None:
-        self.auras.clear()
+    def clear_eots(self) -> None:
+        self.items = [m for m in self.items if m.expires != 'EOT']
 
     def clear_all(self) -> None:
-        self.auras.clear()
+        self.items.clear()
 
 
-ModType = Union[PTModifier | PTTemp | KWAModifier | KWATemp | TypeModifier | TypeTemp | SubTypeModifier | SubTypeTemp | OwnershipModifier]
+ModType = Union[PTMod | KWAMod | TypeMod | SubTypeMod | OwnershipMod]

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from models.utils import flip
 from models.events_all import ZoneChangeEvent, UpkeepEvent, Event, StateBasedEvent, UntapCardEvent
 from ..choice_actions_all import TriassicEggChoice
-from ..modifiers import OwnershipModifier
+from ..modifiers import OwnershipMod
 from ..zone import Zone
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ class Steal(Effect):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         original_owner_id = int(target.owner_id)
-        target.modifiers.auras.append(OwnershipModifier(source, target.owner_id, source.owner_id))
+        target.modifiers.items.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
         if target.zone == Zone.BATTLEFIELD:
             gs.boards[original_owner_id].remove(target)
             gs.boards[source.owner_id].append(target)
@@ -43,7 +43,7 @@ class Steal(Effect):
         gs.event_mgr.emit(StateBasedEvent(), gs)
 
 class ReturnToOwnerOnLTB(Effect):
-    """Although the OnwershipModifier will be removed upon LTB; need to transfer the stolen GameCard across boards"""
+    """Although the OnwershipMod will be removed upon LTB; need to transfer the stolen GameCard across boards"""
     listens_to = ZoneChangeEvent
 
     def __init__(self, new_zone: Zone = None):
@@ -53,8 +53,8 @@ class ReturnToOwnerOnLTB(Effect):
         if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
             return
         for c in gs.boards[source.owner_id]:
-            for mod in c.modifiers.auras:
-                if isinstance(mod, OwnershipModifier):
+            for mod in c.auras:
+                if isinstance(mod, OwnershipMod):
                     gs.boards[source.owner_id].remove(c)
                     gs.boards[flip(source.owner_id)].append(c)
 
@@ -67,9 +67,9 @@ class ReturnToOwnerOnUntap(Effect):
         if source is not event.card:
             return
         for c in gs.boards[source.owner_id]:
-            for mod in c.modifiers.auras:
-                if isinstance(mod, OwnershipModifier):
-                    c.modifiers.remove_aura(mod)
+            for mod in c.auras:
+                if isinstance(mod, OwnershipMod):
+                    c.modifiers.remove(mod)
                     gs.boards[source.owner_id].remove(c)
                     gs.boards[flip(source.owner_id)].append(c)
                     break
@@ -100,10 +100,10 @@ class StealCardLeaves(Effect):
     listens_to = ZoneChangeEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        print(source, event, f'The host {event.card.attached_to} belongs to player #{event.card.attached_to.owner_id if event.card.attached_to else "no host"}')
+        print(source, event, f'The host {event.card.host} belongs to player #{event.card.host.owner_id if event.card.host else "no host"}')
         if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
             return
-        host = event.card.attached_to
+        host = event.card.host
         Steal().resolve(gs, source, host)
         print('I think I returned control to', flip(host.owner_id))
 

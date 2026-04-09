@@ -59,11 +59,11 @@ class Counters:
 
     @property
     def power_delta(self) -> int:
-        return sum(ct.power_delta * n for ct, n in self._counters.items())
+        return sum(ct.p_adj * n for ct, n in self._counters.items())
 
     @property
     def toughness_delta(self) -> int:
-        return sum(ct.toughness_delta * n for ct, n in self._counters.items())
+        return sum(ct.t_adj * n for ct, n in self._counters.items())
 
     def __repr__(self):
         return ', '.join(f"{cnt}×{ctr_type}" for ctr_type, cnt in self._counters.items())

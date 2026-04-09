@@ -9,19 +9,15 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-
-from models.game_card_filter import CardFilter
-from models.actions.kwa import AddKWA
 from models.effects.base import Effect
-from models.modifiers import KWAModifier, KWATemp
-from models.utils import flip
+from models.modifiers import KWAMod
 
 # --- GENERIC ---
 class AllWalksRemoved(Effect):
     """Target creature loses all landwalk abilities until end of turn"""
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
-            target.modifiers.temps.append(KWATemp(source, 'remove', f'{land}walk'))
+            target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa=f'{land}walk', expires='EOT'))
 
 class KWAModEffect(Effect):
     def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):
@@ -29,11 +25,9 @@ class KWAModEffect(Effect):
         self.kwa = kwa
         self.eot = eot
 
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-        if not self.eot:
-            target.modifiers.auras.append(KWAModifier(source, self.add_or_remove, self.kwa))
-        else:
-            target.modifiers.temps.append(KWATemp(source, self.add_or_remove, self.kwa))
+    def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
+        target.modifiers.items.append(KWAMod(s=s, add_or_remove=self.add_or_remove, kwa=self.kwa,
+                                             expires='EOT' if self.eot else None))
 
 # --- CARD-SPECIFIC
 class ErhnamDjinn(Effect):
@@ -51,16 +45,16 @@ class RapidFire(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.temps.append(KWATemp(source, 'add', 'First Strike'))
+        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
         if not target.rampage_amt:
-            target.modifiers.temps.append(KWATemp(source, 'add', 'Rampage 2'))
+            target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Rampage 2', expires='EOT'))
 
 class SandalsOfAbdallahIslandWalk(Effect):
     """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.temps.append(KWATemp(source, 'add', 'Islandwalk'))
+        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Islandwalk', expires='EOT'))
 
         temp_effect = SandalsOfAbdallahIfCreatureDies(target_creature=target)
         gs.register_effect_until_eot((temp_effect, source))

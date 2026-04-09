@@ -120,7 +120,7 @@ class SpiritLink(Effect):
     listens_to = DamageResolvedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
-        if event.source is source.attached_to and event.amt > 0:
+        if event.source is source.host and event.amt > 0:
             gs.score_mgr.increment_life(source.orig_owner_id, event.amt, source, gs)
 
 class SpiritualSanctuary(Effect):

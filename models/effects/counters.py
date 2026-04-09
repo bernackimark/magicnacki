@@ -45,7 +45,7 @@ class AddCounterToHost(Effect):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        source.attached_to.counters.add_counter(self.counter_type, self.cnt)
+        source.host.counters.add_counter(self.counter_type, self.cnt)
 
 class AddCountersOnHostTurn(Effect):
     def __init__(self, counter_type: CounterType, cnt: int = 1):
@@ -53,9 +53,9 @@ class AddCountersOnHostTurn(Effect):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.attached_to.owner_id:
+        if gs.player_turn_idx != source.host.owner_id:
             return
-        source.attached_to.counters.add_counter(self.counter_type, self.cnt)
+        source.host.counters.add_counter(self.counter_type, self.cnt)
 
 class ManaBatteriesAddMana(Effect):
     def __init__(self, color: str):
@@ -72,9 +72,9 @@ class RemoveCountersOnHostTurn(Effect):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.attached_to.owner_id:
+        if gs.player_turn_idx != source.host.owner_id:
             return
-        source.attached_to.counters.remove_counter(self.counter_type, self.cnt)
+        source.host.counters.remove_counter(self.counter_type, self.cnt)
 
 class RemovePlusOneZeroFromCombatant(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -153,6 +153,6 @@ class SpiritShackle(Effect):
     listens_to = TapCardEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card is not s.attached_to:
+        if event.card is not s.host:
             return
-        s.attached_to.counters.add_counter(MINUS_ZERO_TWO)
+        s.host.counters.add_counter(MINUS_ZERO_TWO)

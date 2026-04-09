@@ -13,7 +13,7 @@ from models.card_attributes.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec, Effect
 from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.modifiers import Modifiers, KWAModifier, KWATemp, ModType
+from models.modifiers import Modifiers, KWAMod, ModType
 
 
 def attach_invocations(card: GameCard):
@@ -45,7 +45,8 @@ class GameCard:
         self.is_token: bool = is_token
         self.is_tapped: bool = False
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
-        self.attached_to: GameCard | None = None
+        self.host: GameCard | None = None
+        self.auras: list[GameCard | None] = []
         self.modifiers = Modifiers()
         self.counters = Counters()
 
@@ -94,6 +95,10 @@ class GameCard:
         return self.modifiers.new_owner_id
 
     @property
+    def is_enchanted(self) -> bool:
+        return bool(self.auras)
+
+    @property
     def power(self) -> int:
         """Anytime this property is requested, it calls: 1) its own base_power,
         2) GameState's query system for 'pt_mod', 3) self.modifiers.power_delta, 4) self.counters.power_delta"""
@@ -116,8 +121,8 @@ class GameCard:
         power, toughness = 0, 0
         for mod in self._get_global_query('pt_mod'):
             if mod:
-                power += mod.power_delta
-                toughness += mod.toughness_delta
+                power += mod.p_adj
+                toughness += mod.t_adj
         return power, toughness
 
     @property
@@ -138,10 +143,8 @@ class GameCard:
             if mod.add_or_remove == 'add':
                 adds.add(mod.card_type)
                 if mod.card_type == 'Creature' and 'Creature' not in self._card_types:
-                    parms = (mod.source, 'add', 'Attack')
-                    target_attr = self.modifiers.temps if mod.expires_end_of_turn else self.modifiers.auras
-                    target_attr.append(KWATemp(*parms) if mod.expires_end_of_turn else KWAModifier(*parms))
-
+                    self.modifiers.items.append(KWAMod(s=mod.source, add_or_remove='add',
+                                                       kwa='Attack', expires=mod.expires))
         return list((types | adds) - removes)
 
     @property
@@ -201,11 +204,11 @@ class GameCard:
     def clear_all_mods(self) -> None:
         """set attached_to = None for all auras and host; all modifiers are emptied"""
         if self.props.is_aura:
-            host = self.attached_to
-            host.attached_to = None
+            host = self.host
+            host.host = None
             host.modifiers.clear_all()
         # Remove all attachments
-        self.attached_to = None
+        self.host = None
         self.modifiers.clear_all()
 
     def tap(self, gs: GameState) -> None:

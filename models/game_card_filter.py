@@ -196,9 +196,9 @@ class CardFilter:
     # --- is enchanted ---
     def is_enchanted(self, bool_: bool = True):
         if bool_:
-            self._cards = [c for c in self._cards if c.modifiers.is_enchanted]
+            self._cards = [c for c in self._cards if c.is_enchanted]
         else:
-            self._cards = [c for c in self._cards if not c.modifiers.is_enchanted]
+            self._cards = [c for c in self._cards if not c.is_enchanted]
         return self
 
     # --- Has a Keyword Ability ---

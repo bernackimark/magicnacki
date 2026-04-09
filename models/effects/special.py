@@ -18,7 +18,7 @@ from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY, WIND
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
-from models.modifiers import KWAModifier, PTModifier, PTTemp, KWATemp
+from models.modifiers import KWAMod, PTMod
 
 
 class CreateTokenCreature(Effect):
@@ -57,7 +57,7 @@ class AnimateDead(Effect):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         gs.reanimate(target)
-        target.modifiers.auras.append(PTModifier(source, -1, 0))
+        target.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=0))
 
 class BookOfRass(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -89,13 +89,13 @@ class CocoonUpkeep(Effect):
         If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
     def resolve(self, gs: GameState, source: GameCard, target=None):
         p_id = gs.player_turn_idx
-        host = source.attached_to
+        host = source.host
         if p_id != source.owner_id:
             return
         if not host.counters.get_count(PUPA):
             gs.destroy(source)
             host.counters.add_counter(PLUS_ONE)
-            host.modifiers.auras.append(KWAModifier(source, 'add', 'Flying'))
+            host.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
             return
         host.counters.remove_counter(PUPA)
 
@@ -128,13 +128,13 @@ class DivineOffering(Effect):
 class Earthbind(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            target.modifiers.auras.append(KWAModifier(source, 'remove', 'Flying'))
+            target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='Flying'))
         if 'Flying' in target.keyword_abilities:
             gs.apply_damage(source, 2, target.owner_id)
 
 class ElectricEel(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.temps.append(PTTemp(source, 2, 0))
+        source.modifiers.items.append(PTMod(s=source, p_adj=2, expires='EOT'))
         gs.apply_damage(source, 1, source.owner_id)
 
 class ElvesOfTheDeepShadow(Effect):
@@ -204,8 +204,8 @@ class GoblinKing(Effect):
         targets = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Goblin').result()
         for t in targets:
             if source != t:
-                t.modifiers.auras.append(KWAModifier(source, 'add', 'Mountainwalk'))
-                t.modifiers.auras.append(PTModifier(source, 1, 1))
+                t.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Mountainwalk'))
+                t.modifiers.items.append(PTMod(s=source, p_adj=1, t_adj=1))
 
 class Greed(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -216,7 +216,7 @@ class GlyphOfDestruction(Effect):
     """Target blocking Wall you control gets +10/+0 until end of combat.
     Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        t.modifiers.temps(PTTemp(s, 10, 0))
+        t.modifiers.items.append(PTMod(s=s, p_adj=10, expires='EOT'))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         gs.end_step_funcs.append(lambda gs, s, t: gs.destroy(s))
 
@@ -248,15 +248,15 @@ class KoboldDrillSergeant(Effect):
         kobolds = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result()
         for k in kobolds:
             if source != k:
-                k.modifiers.auras.append(KWAModifier(source, 'add', 'Trample'))
-                k.modifiers.auras.append(PTModifier(source, 0, 1))
+                k.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Trample'))
+                k.modifiers.items.append(PTMod(s=source, p_adj=0, t_adj=1))
 
 class KryShield(Effect):
     """Prevent all damage that would be dealt this turn by target creature you control.
     That creature gets +0/+X until end of turn, where X is its mana value"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
-        t.modifiers.temps.append(PTTemp(s, 0, t.props.casting_weight))
+        t.modifiers.items.append(PTMod(s=s, t_adj=t.props.casting_weight, expires='EOT'))
 
 class LivingArtifactUpkeep(Effect):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
@@ -370,7 +370,7 @@ class StoneGiant(Effect):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        t.modifiers.temps.append(KWATemp(s, 'add', 'Flying'))
+        t.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
         gs.end_step_funcs.append(lambda gs, s: gs.destroy(t))
 
 class SoulNet(Effect):
@@ -388,7 +388,7 @@ class Subdue(Effect):
     That creature gets +0/+X until end of turn, where X is its mana value."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.damage_preventions.append(PreventNextDamage(s, None, source_card=t, combat_only=True))
-        t.modifiers.temps.append(PTModifier(s, 0, t.props.casting_weight))
+        t.modifiers.items.append(PTMod(s=s, p_adj=0, t_adj=t.props.casting_weight))
 
 class SwordsToPlowshares(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
@@ -459,14 +459,14 @@ class VenarianGoldCast(Effect):
 class WallOfWonder(Effect):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
-        source.modifiers.temps.append(PTTemp(source, 4, -4))
-        source.modifiers.temps.append(KWATemp(source, 'remove', 'Defender'))
+        source.modifiers.items.append(PTMod(s=source, p_adj=4, t_adj=-4, expires='EOT'))
+        source.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='Defender', expires='EOT'))
 
 class Web(Effect):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            target.modifiers.auras.append(PTModifier(source, 0, 2))
-            target.modifiers.auras.append(KWAModifier(source, 'add', 'Reach'))
+            target.modifiers.items.append(PTMod(s=source, p_adj=0, t_adj=2))
+            target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Reach'))
 
 class WindsOfChange(Effect):
     """Each player shuffles the cards from their hand into their library, then draws that many cards"""
@@ -483,13 +483,13 @@ class WindsOfChange(Effect):
 class WormwoodTreefolkForestwalk(Effect):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.modifiers.temps.append(KWATemp(source, 'add', 'Forestwalk'))
+        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Forestwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
 
 class WormwoodTreefolkSwampwalk(Effect):
     """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.modifiers.temps.append(KWATemp(source, 'add', 'Swampwalk'))
+        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Swampwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
 
 class YawgmothDemon(Effect):

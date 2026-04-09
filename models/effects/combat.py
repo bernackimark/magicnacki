@@ -6,7 +6,7 @@ from models.effects.counters import AddCounterAtEndStep
 from models.effects.destroy_sac_regenerate import DestroyAtCombatEnd
 from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
 from models.events_all import BlockEvent, CombatEndEvent, AttackEvent, DamageResolvedEvent
-from models.modifiers import PTTemp, KWATemp, KWAModifier, PTModifier
+from models.modifiers import KWAMod, PTMod
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -63,7 +63,7 @@ class CavePeopleAttackPump(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
         if event.attacker is not s:
             return
-        event.attacker.modifiers.temps.append(PTTemp(s, 1, -2))
+        event.attacker.modifiers.items.append(PTMod(s=s, p_adj=1, t_adj=-2, expires='EOT'))
 
 class CockatriceAndThicketBasilisk(Effect):
     """Whenever this creature blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
@@ -89,8 +89,8 @@ class ElderLandWurm(Effect):
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
         if event.blocker is not s:
             return
-        s.modifiers.auras.append(KWAModifier(s, 'remove', 'Defender'))
-        s.modifiers.auras.append(KWAModifier(s, 'add', 'Attack'))
+        s.modifiers.items.append(KWAMod(s=s, add_or_remove='remove', kwa='Defender'))
+        s.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Attack'))
 
 class GiantShark(Effect):
     """Whenever this creature blocks/is blocked by a creature that's been dealt damage this turn,
@@ -105,8 +105,8 @@ class GiantShark(Effect):
         else:
             return
         if other.damage_received_this_turn:
-            s.modifiers.temps.append(PTTemp(s, 2, 0))
-            s.modifiers.temps.append(KWATemp(s, 'add', 'Trample'))
+            s.modifiers.items.append(PTMod(s=s, p_adj=2, expires='EOT'))
+            s.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Trample', expires='EOT'))
 
 class GlyphOfDoom(Effect):
     """On cast, select a wall.  Register GlyphOfDoomListener."""
@@ -172,9 +172,9 @@ class InfiniteAuthority(Effect):
     listens_to = BlockEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if s.attached_to is event.attacker:
+        if s.host is event.attacker:
             other = event.blocker
-        elif s.attached_to is event.blocker:
+        elif s.host is event.blocker:
             other = event.attacker
         else:
             return
@@ -184,7 +184,7 @@ class InfiniteAuthority(Effect):
         gs.event_mgr.register_effect(delayed_destroy, s)
         # this will later get unregistered at combat end
 
-        delayed_pump = AddCounterAtEndStep(s, s.attached_to, PLUS_ONE)
+        delayed_pump = AddCounterAtEndStep(s, s.host, PLUS_ONE)
         gs.event_mgr.register_effect(delayed_pump, s)
         # this will later get unregistered at end step
 
@@ -200,7 +200,7 @@ class Sentinel(Effect):
         else:
             return
         new_t = other.power + 1
-        s.modifiers.auras.append(PTModifier(s, 0, new_t - s.toughness))
+        s.modifiers.items.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
 
 class TimeElementalAttackedOrBlocked(Effect):
     """When this creature attacks or blocks, at end of combat, sacrifice it & it deals 5 damage to you"""
@@ -225,9 +225,9 @@ class Venom(Effect):
     listens_to = BlockEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.attacker is s.attached_to:
+        if event.attacker is s.host:
             other = event.blocker
-        elif event.blocker is s.attached_to:
+        elif event.blocker is s.host:
             other = event.attacker
         else:
             return

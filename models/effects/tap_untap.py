@@ -56,11 +56,11 @@ class UntapCardsEffect(Effect):
 
 class HostStaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if not source.attached_to:
+        if not source.host:
             raise RuntimeError(f"{source.props.name} needs a host at untap phase")
-        if gs.player_turn_idx != source.attached_to.owner_id:
+        if gs.player_turn_idx != source.host.owner_id:
             return
-        gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.attached_to), gs, False)
+        gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
 
 class StaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
@@ -86,7 +86,7 @@ class UntapHostForManaEffect(Effect):
         self.mana_cost = mana_cost
 
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        gs.action_stack.push(UntapWithManaChoice(source.attached_to.owner_id, gs, source, self.mana_cost))
+        gs.action_stack.push(UntapWithManaChoice(source.host.owner_id, gs, source, self.mana_cost))
 
 
 # --- CARD-SPECIFIC ---
@@ -99,8 +99,8 @@ class ArenaOfTheAncientsCast(Effect):
 class CocoonHostStaysTapped(Effect):
     """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if source.attached_to.counters.get_count(PUPA):
-            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.attached_to), gs, False)
+        if source.host.counters.get_count(PUPA):
+            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
 
 class Kismet(Effect):
     """Artifacts, creatures, and lands your opponents control enter tapped"""
@@ -161,7 +161,7 @@ class PsychicVenom(Effect):
     listens_to = TapCardEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card is not s.attached_to:
+        if event.card is not s.host:
             return
         gs.apply_damage(s, 2, event.card.owner_id)
 
@@ -187,5 +187,5 @@ class Twiddle(Effect):
 class VenarianGoldHostStaysTapped(Effect):
     """Enchanted creature doesn't untap during its controller's untap step if it has a sleep counter on it."""
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if source.attached_to.counters.get_count(SLEEP):
-            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.attached_to), gs, False)
+        if source.host.counters.get_count(SLEEP):
+            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)

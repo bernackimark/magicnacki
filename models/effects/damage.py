@@ -45,9 +45,9 @@ class DealDamageOnHostUpkeep(Effect):
         self.amount = amount
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.attached_to or gs.player_turn_idx != source.attached_to.owner_id:
+        if not source.host or gs.player_turn_idx != source.host.owner_id:
             return
-        gs.apply_damage(source, self.amount, source.attached_to.owner_id)
+        gs.apply_damage(source, self.amount, source.host.owner_id)
 
 class DealDamageToAllCreaturesAndPlayers(Effect):
     def __init__(self, amt: int):
@@ -105,8 +105,8 @@ class Backfire(Effect):
     listens_to = DamageResolvedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
-        if event.source is source.attached_to and event.target == source.owner_id:
-            gs.apply_damage(source, event.amt, source.attached_to.owner_id)
+        if event.source is source.host and event.target == source.owner_id:
+            gs.apply_damage(source, event.amt, source.host.owner_id)
 
 class Banshee(Effect):
     """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
@@ -145,16 +145,16 @@ class CreatureBond(Effect):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or event.card != source.attached_to:
+        if not isinstance(event, DiesEvent) or event.card != source.host:
             return
-        gs.apply_damage(source, source.attached_to.toughness, source.attached_to.owner_id)
+        gs.apply_damage(source, source.host.toughness, source.host.owner_id)
 
 class CurseArtifact(Effect):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.attached_to or gs.player_turn_idx != source.attached_to.owner_id:
+        if not source.host or gs.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
 

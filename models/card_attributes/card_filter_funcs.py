@@ -25,10 +25,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).artifacts().result(),
     'assembly_workers': lambda gs, s: gs.card_filter.in_play().by_sub_type('Assembly-Worker').result(),
     'attackers': lambda gs, s: gs.card_filter.attackers().result(),
-    'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result()
-                                     for a in c.modifiers.auras if isinstance(a, GameCard)],
+    'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result() for a in c.auras],
     'auras_on_owners_creatures': lambda gs, s: [a for c in gs.card_filter.on_player_board(s.owner_id).creatures().result()
-                                                for a in c.modifiers.auras if isinstance(a, GameCard)],
+                                                for a in c.auras],
     'black_in_play': lambda gs, s: gs.card_filter.in_play().black().result(),
     'black_and_red_in_play': lambda gs, s: [gs.card_filter.in_play().black().result() +
                                             gs.card_filter.in_play().red().result()],
@@ -73,7 +72,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                        gs.card_filter.in_play().non_token().permanents().by_set_code('AQ').result()
                                        if c.props.slug != 'golgothian-sylex'],
     'green_in_play': lambda gs, s: gs.card_filter.in_play().green().result(),
-    'host': lambda gs, s: s.attached_to,
+    'host': lambda gs, s: s.host,
     'host_owner': lambda gs, s: s.attached.to.orig_owner_id,
     'in_turn_player': lambda gs, _: gs.player_turn_idx,
     'in_turn_player_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).tapped().blue().creatures().result(),

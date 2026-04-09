@@ -326,11 +326,11 @@ class GameState:
         detach all attached GameCard auras; call GameCard.clear_all_mods()"""
         self.event_mgr.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'), self)
         self.event_mgr.unregister_effects(card)
-        for aura in list(card.modifiers.auras):
-            if isinstance(aura, GameCard):
-                self.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self)
-                self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
-                self.event_mgr.unregister_effects(aura)
+        # TODO: GameCard needs to also know which cards enchant it; not just in the reverse
+        for aura in list(card.auras):
+            self.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self)
+            self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
+            self.event_mgr.unregister_effects(aura)
         card.clear_all_mods()
         self.event_mgr.emit(StateBasedEvent(), self)
 
@@ -374,8 +374,6 @@ class GameState:
             return
         self.event_mgr.emit(TapCardEvent(card=c), self)
         c.is_tapped = True
-        for a in c.modifiers.auras:
-            a.is_tapped = True
 
     def untap_card(self, c: GameCard):
         """If card is already untapped, skip; emit UntapCardEvent, tap card, tap all attached auras"""
@@ -383,8 +381,6 @@ class GameState:
             return
         self.event_mgr.emit(UntapCardEvent(card=c), self)
         c.is_tapped = False
-        for a in c.modifiers.auras:
-            a.is_tapped = False
 
     def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness;
@@ -450,9 +446,7 @@ class GameState:
         actions: list[ActivateAbility] = []
         for card in self.boards[self.action_on_idx]:
             actions.extend(self.get_available_activated_abilities(card))
-            for aura in card.modifiers.auras:
-                if not isinstance(aura, GameCard):  # some auras can be KWAModifier/PTModifiers (this is confusing)
-                    continue
+            for aura in card.auras:
                 actions.extend(self.get_available_activated_abilities(aura))
         return actions
 
@@ -559,13 +553,6 @@ class GameState:
 
 # TODO:
 #  can_cast() must take into account multi-mana-color producers (dual lands, etc)
-
-# TODO:
-#  Black Knight (2/2) is killing Northern Palladin (3/3)
-#  also, dealing one damage to a creature w a higher toughness is also killing it
-
-# TODO:
-#  Global Legendary Rule, only one legendary slug-board pair allowed
 
 # TODO: currently, Destroy() is being placed on the stack, but there is no option to respond to that, only 'Accept'
 # ChatGPT is saying this:

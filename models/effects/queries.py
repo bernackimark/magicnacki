@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.modifiers import PTModifier, PTTemp, KWAModifier, TypeModifier, SubTypeModifier, KWATemp
+from models.modifiers import PTMod, KWAMod, TypeMod, SubTypeMod
 from models.utils import flip
 from phase_fsm import Phase
 
@@ -47,7 +47,7 @@ class AngelicVoices(Effect):
         for my_creature in gs.card_filter.creatures().on_player_board(card.orig_owner_id).result():
             if 'W' not in my_creature.props.colors or 'C' not in my_creature.props.colors:
                 return None
-        return PTModifier(source, 1, 1)
+        return PTMod(s=source, p_adj=1, t_adj=1)
 
 class AngryMobPT(Effect):
     """During your turn, Angry Mob's power & toughness are each = 2 plus the number of Swamps your opponents control.
@@ -58,9 +58,9 @@ class AngryMobPT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         if gs.player_turn_idx != source.owner_id:
-            return PTTemp(source, 2, 2)
+            return PTMod(s=source, p_adj=2, t_adj=2, expires='EOT')
         opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).swamps().result())
-        return PTTemp(source, 2 + opp_swamp_cnt, 2 + opp_swamp_cnt)
+        return PTMod(s=source, p_adj=2 + opp_swamp_cnt, t_adj=2 + opp_swamp_cnt, expires='EOT')
 
 class ArcadesSabbathAllCreaturePump(Effect):
     """... Each untapped creature you control gets +0/+2 as long as it's not attacking ..."""
@@ -72,14 +72,14 @@ class ArcadesSabbathAllCreaturePump(Effect):
         your_untapped_creatures = gs.card_filter.creatures().on_player_board(card.orig_owner_id).tapped(False).result()
         for c in your_untapped_creatures:
             if c not in attackers:
-                return PTModifier(source, 0, 2)
+                return PTMod(s=source, t_adj=2)
 
 class ArtifactWardCanBeBlocked(Effect):
     """This creature can't be blocked by artifact creatures"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
-        if event != 'can_block' or not attacker.modifiers.is_enchanted_by('artifact-ward'):
+        if event != 'can_block' or 'artifact-ward' not in {a.props.slug for a in attacker.auras}:
             return None
         if 'Artifact' in card.card_types:
             return False
@@ -93,7 +93,7 @@ class ArtifactWardCanBeTargeted(Effect):
             return
         source: GameCard = kwargs.get('source')
         target: GameCard = kwargs.get('card')
-        if not source or not target or not target.modifiers.is_enchanted_by('artifact-ward'):
+        if not source or not target or 'artifact-ward' not in {a.props.slug for a in target.auras}:
             return
         if 'Artifact' in source.card_types:
             return False
@@ -114,12 +114,12 @@ class AspectOfWolfPT(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
-        if event != 'pt_mod' or card is not source.attached_to:
+        if event != 'pt_mod' or card is not source.host:
             return None
         your_forest_cnt = len(gs.card_filter.on_player_board(source.orig_owner_id).forests().result())
         p_adj = math.floor(your_forest_cnt / 2)
         t_adj = math.ceil(your_forest_cnt / 2)
-        return PTModifier(source, p_adj, t_adj)
+        return PTMod(s=source, p_adj=p_adj, t_adj=t_adj)
 
 class BadMoon(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -128,7 +128,7 @@ class BadMoon(Effect):
             return None
         if card not in gs.card_filter.in_play().black().creatures().result():
             return None
-        return PTModifier(source, 1, 1)
+        return PTMod(s=source, p_adj=1, t_adj=1)
 
 class BeastsOfBogardan(Effect):
     """This creature gets +1/+1 as long as an opponent controls a nontoken white permanent"""
@@ -139,7 +139,7 @@ class BeastsOfBogardan(Effect):
         opp_id = flip(card.owner_id)
         opp_non_token_white_perms = gs.card_filter.on_player_board(opp_id).non_token().white().permanents().result()
         if opp_non_token_white_perms:
-            return PTModifier(source, 1, 1)
+            return PTMod(s=source, p_adj=1, t_adj=1)
 
 class BogRats(Effect):
     """This creature can't be blocked by Walls"""
@@ -158,7 +158,7 @@ class Castle(Effect):
             return None
         if card not in gs.card_filter.creatures().on_player_board(card.orig_owner_id).tapped(False).white().result():
             return None
-        return PTModifier(source, 0, 2)
+        return PTMod(s=source, t_adj=2)
 
 class CityInABottle(Effect):
     """Players can't cast spells or play lands with a name originally printed in the Arabian Nights expansion"""
@@ -176,15 +176,16 @@ class ConcordantCrossroads(Effect):
             return None
         if card not in gs.card_filter.in_play().creatures().result():
             return None
-        return KWAModifier(source, 'add', 'Haste')
+        return KWAMod(s=source, add_or_remove='add', kwa='Haste')
 
 class Conversion(Effect):
     """All Mountains are Plains"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
+        s: GameCard = kwargs.get('source')
         if event != 'sub_type_mod':
             return None
-        return [SubTypeModifier(source, 'add', 'Plains'), SubTypeModifier(source, 'remove', 'Mountain')]
+        return [SubTypeMod(s=s, add_or_remove='add', card_sub_type='Plains'),
+                SubTypeMod(s=s, add_or_remove='remove', card_sub_type='Mountain')]
 
 class Crusade(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -193,7 +194,7 @@ class Crusade(Effect):
             return None
         if card not in gs.card_filter.in_play().white().creatures().result():
             return None
-        return PTModifier(source, 1, 1)
+        return PTMod(s=source, p_adj=1, t_adj=1)
 
 class DakkonBlackbladePT(Effect):
     """Dakkon Blackblade's power and toughness are each equal to the number of lands you control"""
@@ -203,7 +204,7 @@ class DakkonBlackbladePT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         your_land_cnt = len(gs.card_filter.on_player_board(source.owner_id).lands().result())
-        return PTModifier(source, your_land_cnt, your_land_cnt)
+        return PTMod(s=source, p_adj=your_land_cnt, t_adj=your_land_cnt)
 
 class ElderSpawnCanBeBlocked(Effect):
     """This creature can't be blocked by red creatures"""
@@ -248,7 +249,7 @@ class Fear(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
-        if event != 'can_block' or not card or not attacker.attached_to or attacker.attached_to.props.slug != 'fear':
+        if event != 'can_block' or not card or not attacker.host or attacker.host.props.slug != 'fear':
             return None
         artifact_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).artifacts().creatures().result()
         black_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).black().creatures().result()
@@ -263,7 +264,7 @@ class GaeasAvengerPT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         opp_artifact_cnt = len(gs.card_filter.on_player_board(flip(source.orig_owner_id)).artifacts().result())
-        return PTModifier(source, opp_artifact_cnt + 1, opp_artifact_cnt + 1)
+        return PTMod(s=source, p_adj=opp_artifact_cnt + 1, t_adj=opp_artifact_cnt + 1)
 
 class GaeasLiegePT(Effect):
     """As long as Gaea's Liege isn't attacking, its power & toughness are each = the number of Forests you control.
@@ -278,7 +279,7 @@ class GaeasLiegePT(Effect):
             cnt = len(gs.card_filter.on_player_board(flip(card.owner_id)).forests().result())
         else:
             cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
-        return PTModifier(source, cnt, cnt)
+        return PTMod(s=source, p_adj=cnt, t_adj=cnt)
 
 class GiantTortoisePT(Effect):
     """This creature gets +0/+3 as long as it's untapped"""
@@ -288,7 +289,7 @@ class GiantTortoisePT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         if not card.is_tapped:
-            return PTModifier(source, 0, 3)
+            return PTMod(s=source, t_adj=3)
 
 class GoblinCaves(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
@@ -297,9 +298,9 @@ class GoblinCaves(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
-        if source.attached_to.props.is_basic_land and source.attached_to.props.slug == 'mountain':
+        if source.host.props.is_basic_land and source.host.props.slug == 'mountain':
             if card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
-                return PTModifier(source, 0, 2)
+                return PTMod(s=source, t_adj=2)
 
 class GoblinShrinePump(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0 ..."""
@@ -308,9 +309,9 @@ class GoblinShrinePump(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod':
             return None
-        if source.attached_to.props.is_basic_land and source.attached_to.props.slug == 'mountain':
+        if source.host.props.is_basic_land and source.host.props.slug == 'mountain':
             if card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
-                return PTModifier(source, 1, 0)
+                return PTMod(s=source, p_adj=1)
 
 class GoblinsOfTheFlarg(Effect):
     """When you control a Dwarf, sacrifice this creature"""
@@ -330,7 +331,7 @@ class GravitySphere(Effect):
             return None
         if card not in gs.card_filter.in_play().creatures().result():
             return None
-        return KWAModifier(source, 'remove', 'Flying')
+        return KWAMod(s=source, add_or_remove='remove', kwa='Flying')
 
 class HiddenPath(Effect):
     """Green creatures have forestwalk"""
@@ -340,15 +341,15 @@ class HiddenPath(Effect):
             return None
         if card not in gs.card_filter.in_play().green().creatures().result():
             return None
-        return KWAModifier(source, 'add', 'Forestwalk')
+        return KWAMod(s=source, add_or_remove='add', kwa='Forestwalk')
 
 class Invisibility(Effect):
     """Enchanted creature can't be blocked except by Walls"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
-        if (event != 'can_block' or not attacker.attached_to or
-                attacker.attached_to.props.slug != 'invisibility' or not card):
+        if (event != 'can_block' or not attacker.host or
+                attacker.host.props.slug != 'invisibility' or not card):
             return None
         if 'Wall' not in card.card_sub_types:
             return False
@@ -371,7 +372,7 @@ class JacquesLeVert(Effect):
             return None
         if card not in gs.card_filter.on_player_board(source.owner_id).green().creatures().result():
             return None
-        return PTModifier(source, 0, 2)
+        return PTMod(s=source, t_adj=2)
 
 class JuggernautUnblockableByWalls(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -390,7 +391,7 @@ class KeldonWarlordPT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         your_non_wall_creature_cnt = len(gs.card_filter.on_player_board(card.owner_id).non_wall_creatures().result())
-        return PTModifier(source, your_non_wall_creature_cnt, your_non_wall_creature_cnt)
+        return PTMod(s=source, p_adj=your_non_wall_creature_cnt, t_adj=your_non_wall_creature_cnt)
 
 class KirdApePT(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -398,7 +399,7 @@ class KirdApePT(Effect):
             return None
 
         if gs.card_filter.on_player_board(card.orig_owner_id).forests().result():
-            return PTModifier(card, 1, 2)
+            return PTMod(s=card, p_adj=1, t_adj=2)
 
 class KoboldOverlord(Effect):
     """Other Kobold creatures you control have first strike"""
@@ -409,7 +410,7 @@ class KoboldOverlord(Effect):
         if source.props.slug != 'kobold-overlord' or card is source:
             return
         if card in gs.card_filter.on_player_board(source.orig_owner_id).creatures().by_sub_type('Kobold').result():
-            return KWATemp(source, 'add', 'First Strike')
+            return KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT')
 
 class KoboldTaskmaster(Effect):
     """Other Kobold creatures you control get +1/+0"""
@@ -420,7 +421,7 @@ class KoboldTaskmaster(Effect):
         if source.props.slug != 'kobold-taskmaster' or card is source:
             return
         if card in gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result():
-            return PTModifier(source, 1, 0)
+            return PTMod(s=source, p_adj=1)
 
 class KormusBell(Effect):
     """All Swamps are 1/1 creatures that are still lands"""
@@ -429,9 +430,9 @@ class KormusBell(Effect):
         if card not in gs.card_filter.in_play().by_sub_type('Swamp').result():
             return None
         if event == 'type_mod':
-            return TypeModifier(source, 'add', 'Creature')
+            return TypeMod(s=source, add_or_remove='add', card_type='Creature')
         if event == 'pt_mod':
-            return PTModifier(source, 1, 1)
+            return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
 class LivingLands(Effect):
@@ -441,9 +442,9 @@ class LivingLands(Effect):
         if card not in gs.card_filter.in_play().by_sub_type('Forest').result():
             return None
         if event == 'type_mod':
-            return TypeModifier(source, 'add', 'Creature')
+            return TypeMod(s=source, add_or_remove='add', card_type='Creature')
         if event == 'pt_mod':
-            return PTModifier(source, 1, 1)
+            return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
 class LivingPlane(Effect):
@@ -453,9 +454,9 @@ class LivingPlane(Effect):
         if card not in gs.card_filter.in_play().by_sub_type('Land').result():
             return None
         if event == 'type_mod':
-            return TypeModifier(source, 'add', 'Creature')
+            return TypeMod(s=source, add_or_remove='add', card_type='Creature')
         if event == 'pt_mod':
-            return PTModifier(source, 1, 1)
+            return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
 class LivonyaSilone(Effect):
@@ -471,14 +472,13 @@ class LivonyaSilone(Effect):
             return False
 
 class LordOfAtlantisPT(Effect):
-    """All other Merfolk gain +1/+1 and Islandwalk"""
+    """All other Merfolk gain +1/+1 and Islandwalk (presuming that Islandwalk is being handled elsewhere)"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source = kwargs.get('source')
         if event != 'pt_mod':
             return None
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
-            return PTModifier(source, 1, 1)
-            # card.modifiers.auras.append(KWAModifier(source, 'add', 'Islandwalk'))
+            return PTMod(s=source, p_adj=1, t_adj=1)
 
 class LordOfAtlantisWalk(Effect):
     """All other Merfolk gain +1/+1 and Islandwalk"""
@@ -487,7 +487,7 @@ class LordOfAtlantisWalk(Effect):
         if event != 'kwa_mod':
             return None
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
-            return KWAModifier(source, 'add', 'Islandwalk')
+            return KWAMod(s=source, add_or_remove='add', kwa='Islandwalk')
 
 class Meekstone(Effect):
     """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
@@ -506,7 +506,7 @@ class Mightstone(Effect):
             return None
         if card not in gs.card_filter.attackers().result():
             return None
-        return PTTemp(source, 1, 0)
+        return PTMod(s=source, p_adj=1, expires='EOT')
 
 class NightmarePT(Effect):
     """Nightmare's power and toughness are each equal to the number of Swamps you control"""
@@ -516,7 +516,7 @@ class NightmarePT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         your_swamp_cnt = len(gs.card_filter.on_player_board(card.owner_id).swamps().result())
-        return PTModifier(source, your_swamp_cnt, your_swamp_cnt)
+        return PTMod(s=source, p_adj=your_swamp_cnt, t_adj=your_swamp_cnt)
 
 class Moat(Effect):
     """Creatures without flying can't attack"""
@@ -526,7 +526,7 @@ class Moat(Effect):
             return None
         if card not in gs.card_filter.in_play().has('Flying', False).creatures().result():
             return None
-        return KWAModifier(source, 'remove', 'Attack')
+        return KWAMod(s=source, add_or_remove='remove', kwa='Attack')
 
 class OrcishOriflamme(Effect):
     """Attacking creatures you control get +1/+0"""
@@ -537,7 +537,7 @@ class OrcishOriflamme(Effect):
             return None
         if card not in gs.card_filter.on_player_board(source.orig_owner_id).attackers().result():
             return None
-        return PTTemp(source, 1, 0)
+        return PTMod(s=source, p_adj=1, expires='EOT')
 
 class PeopleOfTheWoodsPT(Effect):
     """People of the Woods's toughness is equal to the number of Forests you control"""
@@ -547,7 +547,7 @@ class PeopleOfTheWoodsPT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         your_forest_cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
-        return PTModifier(source, 0, your_forest_cnt)
+        return PTMod(s=source, t_adj=your_forest_cnt)
 
 class PlagueRatsPT(Effect):
     """Plague Rats' power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
@@ -557,7 +557,7 @@ class PlagueRatsPT(Effect):
         if event != 'pt_mod' or card is not source:
             return None
         cnt = len(gs.card_filter.in_play().by_slug('plague-rats').result())
-        return PTModifier(source, cnt, cnt)
+        return PTMod(s=source, p_adj=cnt, t_adj=cnt)
 
 class RabidWombat(Effect):
     """This creature gets +2/+2 for each Aura attached to it"""
@@ -568,10 +568,10 @@ class RabidWombat(Effect):
             return None
         if card is not source:
             return None
-        aura_cnt = len([a for a in source.modifiers.auras if isinstance(a, GameCard)])
+        aura_cnt = len(source.auras)
         if not aura_cnt:
             return None
-        return PTTemp(source, 2 * aura_cnt, 2 * aura_cnt)
+        return PTMod(s=source, p_adj=2 * aura_cnt, t_adj=2 * aura_cnt, expires='EOT')
 
 class RohgahhOfKherKeepPump(Effect):
     """Creatures you control named Kobolds of Kher Keep get +2/+2"""
@@ -581,14 +581,14 @@ class RohgahhOfKherKeepPump(Effect):
         s: GameCard = kwargs.get('source')
         if card not in gs.card_filter.on_player_board(s.owner_id).by_slug('kobolds-of-kher-keep').result():
             return None
-        return PTModifier(s, 2, 2)
+        return PTMod(s=s, p_adj=2, t_adj=2)
 
 class Seeker(Effect):
     """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
         attacker: GameCard = kwargs.get('attacker')
-        if event != "can_block" or not attacker.attached_to or attacker.attached_to.props.slug != 'seeker':
+        if event != "can_block" or not attacker.host or attacker.host.props.slug != 'seeker':
             return None
         if 'Artifact' not in card.card_types or 'U' not in card.colors:
             return False
@@ -608,7 +608,7 @@ class SunkenCity(Effect):
             return None
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
-        return PTModifier(source, 1, 1)
+        return PTMod(s=source, p_adj=1, t_adj=1)
 
 class WallOfTombstonesPT(Effect):
     """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""
@@ -618,7 +618,7 @@ class WallOfTombstonesPT(Effect):
         if event != 'pt_mod' or card is not source or gs.player_turn_idx != source.owner_id:
             return None
         cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
-        return PTModifier(source, 0, 1 + cnt)
+        return PTMod(s=source, t_adj=1 + cnt)
 
 class WaterWurmPT(Effect):
     """This creature gets +0/+1 as long as an opponent controls an Island"""
@@ -627,7 +627,7 @@ class WaterWurmPT(Effect):
             return None
 
         if gs.card_filter.on_player_board(flip(card.orig_owner_id)).islands().result():
-            return PTModifier(card, 0, 1)
+            return PTMod(s=card, t_adj=1)
 
 class Weakstone(Effect):
     """Attacking creatures get -1/-0"""
@@ -637,4 +637,4 @@ class Weakstone(Effect):
             return None
         if card not in gs.card_filter.in_play().attackers().result():
             return None
-        return PTTemp(source, -1, 0)
+        return PTMod(s=source, p_adj=-1, expires='EOT')
