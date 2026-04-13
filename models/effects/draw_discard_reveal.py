@@ -161,6 +161,23 @@ class PsychicPurgeDiscard(Effect):
             return
         gs.apply_damage(source, 5, event.source.owner_id)
 
+class RagMan(Effect):
+    """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target player')
+        opp_cards = gs.hands[target].cards
+        for c in opp_cards:
+            c.reveal()
+        opp_creatures = [c for c in opp_cards if c.is_creature]
+        if not opp_creatures:
+            return
+        if len(opp_creatures) == 1:
+            gs.discard(opp_creatures[0], source)
+            return
+        random_card: GameCard = gs.randomize_event(target, opp_creatures)
+        gs.discard(random_card, source)
+
 class Revelation(Effect):
     """Players play with their hands revealed"""
     listens_to = ZoneChangeEvent

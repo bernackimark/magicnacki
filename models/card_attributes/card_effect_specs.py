@@ -40,7 +40,7 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
 from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
     VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
-    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions
+    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions, RagMan
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -70,7 +70,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
-    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition
+    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition, WandOfIth
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -641,6 +641,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures_in_play'])],
+    'rag-man': [Activated('BBBT', RagMan(), T_FUNCS['opponent'], allowed_p_id_turn=T_FUNCS['card_owner'])],
     'raise-dead': [Triggered(Bounce(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
     'ramses-overdark': [Activated('T', Destroy(), T_FUNCS['enchanted_creatures'])],
@@ -838,6 +839,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-water': [Activated('U', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'wall-of-wonder': [Activated('2UU', WallOfWonder())],
+    'wand-of-ith': [Activated('3T', WandOfIth(), allowed_p_id_turn=T_FUNCS['card_owner'])],
     'wanderlust': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
                    Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host_owner'], UpkeepEvent)],
     'warp-artifact': [Triggered(None, T_FUNCS['artifacts_in_play'], CastResolvedEvent),

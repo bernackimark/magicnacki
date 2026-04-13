@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
     RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage, CycloneChoice, \
-    YawgmothDemonChoice
+    YawgmothDemonChoice, PayLifeOrDiscardChoice
 from models.actions.special import SacCreatureAndAddMana
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY, WIND
 from models.damage import PreventNextDamage
@@ -482,6 +482,18 @@ class WallOfWonder(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
         source.modifiers.items.append(PTMod(s=source, p_adj=4, t_adj=-4, expires='EOT'))
         source.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='Defender', expires='EOT'))
+
+class WandOfIth(Effect):
+    """Opponent reveals a card at random from their hand. If it's a land, that player pays 1 lift or discards.
+    If a non-land, the player pays life = to its mana value else discards it.  Activate only during your turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        opp = flip(source.owner_id)
+        opp_cards = gs.hands[opp].cards
+        if not opp_cards:
+            return
+        the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
+        life_payment_amt = the_card.props.casting_weight if 'Land' not in the_card.card_types else 1
+        gs.pending_choice = PayLifeOrDiscardChoice(opp, gs, source, life_payment_amt, the_card)
 
 class Web(Effect):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
