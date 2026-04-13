@@ -41,6 +41,7 @@ class GameState:
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
         self.rules: dict = rules
+        # TODO: GameState shouldn't need knowledge of Deck, only list GameCard (no sideboard, etc)
         self.decks_all_cards = decks.copy()
         self.libraries = decks.copy()
         # give GameCard a reference to GameState (a ChatGPT suggestion, not sold on that design choice)
@@ -294,13 +295,16 @@ class GameState:
             return
         match zone:
             case Zone.BATTLEFIELD:
+                card.reveal()
                 self.boards[card.owner_id].append(card)
             case Zone.HAND:
                 self.hands[card.orig_owner_id].cards.append(card)
                 self.hands[card.orig_owner_id].sort_cards()
             case Zone.GRAVEYARD:
+                card.reveal()
                 self.graveyards[card.orig_owner_id].append(card)
             case Zone.EXILE:
+                card.reveal()
                 self.exiles[card.orig_owner_id].append(card)
             case Zone.LIBRARY:
                 self.libraries[card.orig_owner_id].cards.insert(0, card)
