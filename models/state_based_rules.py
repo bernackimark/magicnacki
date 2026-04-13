@@ -71,4 +71,5 @@ class ZeroToughnessSBR(StateBasedRule):
             if creature.damage_received_this_turn >= creature.toughness:
                 gs.destroy(creature)
 
+
 STATE_BASED_RULES = (GameOverSBR, IslandhomeSBR, LegendarySBR, ZeroToughnessSBR)
