@@ -198,8 +198,8 @@ class PhaseManager:
             # THIS NEEDS A RE-WRITE:
             # 1) I don't want to use decks_all_cards
             # 2) doesn't feel the right way to expire expiring damage
-            for deck in gs.decks_all_cards:
-                for c in deck.cards:
+            for player_cards in gs.all_player_cards:
+                for c in player_cards:
                     c.damage_dealt_this_turn = 0
                     c.damage_received_this_turn = 0
             self.phase = Phase.END_TURN_EFFECTS
@@ -215,8 +215,8 @@ class PhaseManager:
             # Expire all temporary damage prevention
             gs.damage_preventions.clear()
             # Clear temp modifiers
-            for d in gs.decks_all_cards:
-                for c in d.cards:
+            for player_cards in gs.all_player_cards:
+                for c in player_cards:
                     c.modifiers.clear_eots()
             # Empty mana pools
             for pool in gs.mana_pools:

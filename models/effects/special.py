@@ -23,20 +23,19 @@ from models.modifiers import KWAMod, PTMod
 
 class CreateTokenCreature(Effect):
     """Generic to create a GameCard with .is_token = True and place it on the board"""
-    def __init__(self, name: str, power: int, toughness: int, kwa: list[str],
-                 other_types: list[str], sub_types: list[str], colors: str):
-        self.name = name
-        self.power = power
-        self.toughness = toughness
-        self.kwa = kwa
-        self.other_types = other_types
-        self.sub_types = sub_types or []
-        self.colors = colors or ''
+    def __init__(self, slug: str):
+        self.slug = slug
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        gs.create_token_creature(owner_id=source.owner_id, name=self.name, power=self.power, toughness=self.toughness,
-                                 kwa=self.kwa, other_types=self.other_types, sub_types=self.sub_types,
-                                 colors=self.colors)
+        from models.game_card import GameCard
+        from models.zone import Zone
+        card = gs.tokens.get(self.slug)
+        if not card:
+            raise ValueError(f'No token found for {self.slug}')
+        game_card = GameCard(card, source.owner_id, is_token=True)
+        game_card.zone = Zone.BATTLEFIELD
+        game_card.game_state = gs
+        gs.boards[source.owner_id].append(game_card)
 
 class AshnodsTransmogrant(Effect):
     """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.
@@ -80,8 +79,10 @@ class BottleOfSuleiman(Effect):
     def resolve(self, gs: GameState, s: GameCard, _: GameCard = None):
         result: str = gs.randomize_event(s.owner_id, ['heads', 'tails'])
         if result == 'heads':
-            gs.create_token_creature(s.owner_id, 'Djinn', 5, 5, ['Flying', 'Attack'],
-                                     other_types=[], sub_types=['Djinn'], colors='C')
+            obj = CreateTokenCreature('Djinn', 5, 5, ['Flying', 'Attack'], [], ['Djinn'], 'C')
+            obj.resolve(gs, s)
+            # gs.create_token_creature(s.owner_id, 'Djinn', 5, 5, ['Flying', 'Attack'],
+            #                          other_types=[], sub_types=['Djinn'], colors='C')
         else:
             gs.apply_damage(s, 5, s.owner_id)
 

@@ -1,10 +1,12 @@
+from __future__ import annotations
 import random
 from copy import copy
-from typing import Callable, Any, Sequence
+from typing import Callable, Any, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.card import Card
 
 from models.action_stack import ActionStack
-from models.card import Card
-from deck_builder.build_deck import Deck
 from models.event_manager import EventManager
 from models.game_card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility, BeginAbilityActivationAction
@@ -36,18 +38,14 @@ class GameState:
     """All-knowing class responsible for everything after a new game is created;
     registers effects, emits events, runs queries;
     stores card piles & moves cards; contains stack & pending choice"""
-    def __init__(self, player_cnt: int, player_turn_idx: int, rules: dict, decks: list[Deck]):
+    def __init__(self, player_cnt: int, player_turn_idx: int, rules: dict, cards: list[list[GameCard]],
+                 tokens: dict[str, Card]):
         # assign all arguments to attributes
         self.player_cnt = player_cnt
         self.player_turn_idx = player_turn_idx
         self.rules: dict = rules
-        # TODO: GameState shouldn't need knowledge of Deck, only list GameCard (no sideboard, etc)
-        self.decks_all_cards = decks.copy()
-        self.libraries = decks.copy()
-        # give GameCard a reference to GameState (a ChatGPT suggestion, not sold on that design choice)
-        for d in self.libraries:
-            for c in d.cards:
-                c.game_state = self
+        self.tokens = tokens
+        self.all_player_cards = cards.copy()
 
         self.score_mgr = ScoreManager()  # manages life & poison
 
@@ -56,13 +54,20 @@ class GameState:
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
         self.turn_number = 1
         self.phase_mgr = PhaseManager(Phase.NEW_GAME)
+
         # piles, combats, mana pools
+        self.libraries: list[list[GameCard]] = cards.copy()
         self.boards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
         self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
         self.combats: list[Combat] = []
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
+
+        # GameCard getting reference to GameState is a ChatGPT suggestion
+        for lib in self.libraries:
+            for c in lib:
+                c.game_state = self
 
         self.action_stack = ActionStack()
 
@@ -88,7 +93,7 @@ class GameState:
         self.event_mgr = EventManager()
 
         for i in range(self.player_cnt):
-            random.shuffle(self.libraries[i].cards)
+            random.shuffle(self.libraries[i])
             self.draw(i, 7)
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
@@ -159,7 +164,7 @@ class GameState:
     @property
     def all_cards(self) -> list[GameCard]:
         """Returns all cards, including tokens"""
-        return ([c for b in self.libraries for c in b.cards] + [c for h in self.hands for c in h.cards] +
+        return ([c for lib in self.libraries for c in lib] + [c for h in self.hands for c in h.cards] +
                 [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
                 [c for b in self.boards for c in b])
 
@@ -280,7 +285,7 @@ class GameState:
 
     def draw(self, p_id: int, cnt: int = 1):
         for _ in range(cnt):
-            self.move_card(self.libraries[p_id].cards[0], Zone.HAND, cause='draw')
+            self.move_card(self.libraries[p_id][0], Zone.HAND, cause='draw')
             self.event_mgr.emit(DrawCardEvent(p_id), self)
             print(f'Player #{p_id} draws')
             self.game_history.append_non_action(self, text=f'Player #{p_id} draws')
@@ -302,7 +307,7 @@ class GameState:
                 card.reveal()
                 self.exiles[card.orig_owner_id].append(card)
             case Zone.LIBRARY:
-                self.libraries[card.orig_owner_id].cards.insert(0, card)
+                self.libraries[card.orig_owner_id].insert(0, card)
 
     def _remove_from_zone(self, card: GameCard, zone: Zone):
         match zone:
@@ -318,7 +323,7 @@ class GameState:
             case Zone.EXILE:
                 self.exiles[card.owner_id].remove(card)
             case Zone.LIBRARY:
-                self.libraries[card.owner_id].cards.remove(card)
+                self.libraries[card.owner_id].remove(card)
 
     def _leave_battlefield(self, card: GameCard, to_zone: Zone):
         """Emit ZoneChangeEvent before unregistering its effects, doing so for the subject card;
@@ -332,21 +337,6 @@ class GameState:
             self.event_mgr.unregister_effects(aura)
         card.clear_all_mods()
         self.event_mgr.emit(StateBasedEvent(), self)
-
-    def create_token_creature(self, owner_id: int, name: str, power: int, toughness: int, kwa: list[str],
-                              other_types: list[str], sub_types: list[str], colors: str):
-        # TODO: all possible tokens seem knowable; why not just treat like normal cards but for an is_token indicator?
-        #  creation of Card could be handled pre-game; all that left is GameCard creation
-        card = Card(slug=name.replace(' ', '-').lower(),
-                    name=name, casting_cost='', card_types=['Creature'] + other_types,
-                    card_sub_types=sub_types,
-                    card_super_types=[], rarity='', rules_text='', oracle_rules_text='',
-                    power=power, toughness=toughness, set_codes=[], data_url='', images={'1E': ''}, rulings=[],
-                    keyword_abilities=kwa)
-        game_card = GameCard(card, owner_id, is_token=True, colors=colors)
-        game_card.zone = Zone.BATTLEFIELD
-        game_card.game_state = self
-        self.boards[owner_id].append(game_card)
 
     @staticmethod
     def randomize_event(p_id: int, sequence: Sequence[Any]) -> Any:
@@ -387,13 +377,16 @@ class GameState:
         for c in self.boards[self.player_turn_idx]:
 
             for record in self.game_history.items:
-                if record.get('type') == 'CastToBoard' and record.get('card_id') == c.id_ and self.turn_number - record['turn_num'] == 2:
+                if record.get('type') == 'CastToBoard' and record.get('card_id') == c.id_ \
+                        and self.turn_number - record['turn_num'] == 2:
                     c.has_summoning_sickness = False
             if not c.is_tapped:
                 continue
 
             for record in self.game_history.items:
-                if record['turn_num'] == self.turn_number and (record.get('type') == 'UntapCardStackPop' or record.get('type') == 'LeaveTapped') and record.get('card_id') == c.id_:
+                if (record['turn_num'] == self.turn_number and
+                        (record.get('type') == 'UntapCardStackPop' or record.get('type') == 'LeaveTapped')
+                        and record.get('card_id') == c.id_):
                     print("You've already made an untap decision on this card this turn")
                     break
             else:

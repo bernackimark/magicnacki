@@ -1,6 +1,11 @@
 from __future__ import annotations
 from collections import Counter
 import random
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.card import Card
+    from models.game_card import GameCard
 
 from deck_builder.build_deck import Deck
 from game_state import GameState
@@ -10,10 +15,12 @@ from models.utils import flip
 class MatchManager:
     """Class that stores game winners and determines if there is a match winner;
     could be extended for more rules; first to act can be provided else will assign randomly"""
-    def __init__(self, player_cnt: int, rules: dict, decks: list[Deck], first_to_act: int | None = None):
+    def __init__(self, player_cnt: int, rules: dict, decks: list[Deck], tokens: dict[str: Card],
+                 first_to_act: int | None = None):
         self.player_cnt = player_cnt
         self.rules = rules
         self.decks = decks
+        self.tokens = tokens
         self.is_match_over: bool = False
         self._best_of = self.rules['best_of']
         self._winners: list[int] = []  # -1 for a draw, 0 for player 0, 1 for player 1
@@ -60,4 +67,7 @@ class MatchManager:
 
     def create_game_state(self) -> GameState:
         self.set_first_to_act()
-        return GameState(self.player_cnt, self.first_to_act, self.rules, self.decks)
+        return GameState(self.player_cnt, self.first_to_act, self.rules, self._decks_to_lists(), self.tokens)
+
+    def _decks_to_lists(self) -> list[list[GameCard]]:
+        return [[c for c in deck.cards] for deck in self.decks]

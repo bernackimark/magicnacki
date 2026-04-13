@@ -321,7 +321,10 @@ class RukhEgg(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        gs.create_token_creature(source.owner_id, 'Bird', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
+        from special import CreateTokenCreature
+        obj = CreateTokenCreature('Rukh', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
+        obj.resolve(gs, source)
+        # gs.create_token_creature(source.owner_id, 'Bird', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
 
 class Sandstorm(Effect):
     """Sandstorm deals 1 damage to each attacking creature.

@@ -75,8 +75,10 @@ def create_engine() -> Engine:
     rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS,
              'best_of': 3}
 
+    tokens = universe.token_cards
+
     e = Engine(players=players, renderer=ConsoleRenderer(),
-               match_manager=MatchManager(len(players), rules, decks, first_to_act=data['starting_deck']))
+               match_manager=MatchManager(len(players), rules, decks, tokens, first_to_act=data['starting_deck']))
     return e
 
 

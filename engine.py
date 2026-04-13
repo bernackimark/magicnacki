@@ -1,4 +1,9 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.card import Card
 
 from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
 from game_state import GameState
@@ -74,9 +79,11 @@ if __name__ == '__main__':
     rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS,
              'best_of': 3}
 
+    tokens = universe.token_cards
+
     # create engine
     e = Engine(players=players, renderer=ConsoleRenderer(),
-               match_manager=MatchManager(len(players), rules, decks, first_to_act=data['starting_deck']))
+               match_manager=MatchManager(len(players), rules, decks, tokens, first_to_act=data['starting_deck']))
     e.play()
 
 

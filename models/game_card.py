@@ -61,7 +61,7 @@ class GameCard:
 
         # perform look-up to add base keyword abilities, activated abilities, and effects
         if self.is_token:
-            self._base_kwa = tuple(self.props.keyword_abilities)
+            pass  # kwa's are already part of the token JSON file
         elif self.props.is_creature:
             self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug)
         else:

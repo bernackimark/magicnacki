@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 import re
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Any
 
 from models.card_attributes.kwa_abilities import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
@@ -82,9 +82,12 @@ class CardUniverse:
     file_path: str = Path(__file__).resolve().parents[1] / "gatherer" / "card_data.json"
     cards: list[Card] = field(default_factory=list)
     all_cards_dict: dict = field(default=dict)  # bypasses set_codes and always pulls entire card_data.json file
+    token_file_path: str = Path(__file__).resolve().parents[1] / "gatherer" / "tokens.json"
+    token_cards: dict[str: Card] = field(default_factory=list)
 
     def __post_init__(self):
         self.cards = self.create_card_universe_from_json()
+        self.token_cards = self.create_tokens_from_json()
 
     def __getitem__(self, slug: str) -> Card:
         return next(c for c in self.cards if slug == c.slug)
@@ -142,3 +145,14 @@ class CardUniverse:
 
         return cards
 
+    def create_tokens_from_json(self) -> dict[str: Card]:
+        cards = {}
+        data: dict[str: dict[str: Any]] = read_json_file(self.token_file_path)
+        for slug, card_data in data.items():
+            card = Card(slug=slug, name=card_data['name'], casting_cost='',
+                        card_types=card_data['card_types'], card_sub_types=card_data['card_sub_types'],
+                        card_super_types=card_data['card_super_types'], rarity='', rules_text='', oracle_rules_text='',
+                        power=card_data['power'], toughness=card_data['toughness'], set_codes=[], data_url='',
+                        images={'1E': ''}, rulings=[], keyword_abilities=card_data['kwa'])
+            cards[slug] = card
+        return cards
