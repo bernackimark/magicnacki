@@ -33,3 +33,5 @@ class Shuffle(Action):
         random.shuffle(self.cards)
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
