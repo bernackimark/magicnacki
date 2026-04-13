@@ -45,8 +45,8 @@ if __name__ == '__main__':
     universe = CardUniverse(data['universe'])
     deck_0 = data['deck_0']
     deck_1 = data['deck_1']
-    if data['starting_deck'] == 1:
-        deck_0, deck_1 = deck_1, deck_0
+    # if data['starting_deck'] == 1:
+    #     deck_0, deck_1 = deck_1, deck_0
 
     decks = []
     for i, cards in enumerate((deck_0, deck_1)):
