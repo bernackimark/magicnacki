@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.choice_actions_all import CopyCardChoice, PrimalClayChoice
 from models.events_all import BlockEvent, UpkeepEvent
-from models.modifiers import TypeMod, PTMod, SubTypeMod
+from models.modifiers import TypeMod, PTMod, SubTypeMod, ColorMod
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -59,13 +59,14 @@ class BecomeCreature(Effect):
                                                      expires='EOT' if self.until_eot else None))
 
 class SetColor(Effect):
-    def __init__(self, color: str):
+    def __init__(self, color: str, expires: str | None = None):
         self.color = color
+        self.expires = expires
 
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.colors = self.color
+        target.modifiers.items.append(ColorMod(s=source, expires=self.expires, new_colors=self.color))
 
 # --- CARD-SPECIFIC ---
 class AislingLeprechaun(Effect):

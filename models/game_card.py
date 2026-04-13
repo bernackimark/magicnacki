@@ -41,7 +41,7 @@ class GameCard:
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self._card_types: list[str] = self.props.card_types.copy()
         self._card_sub_types: list[str] = self.props.card_sub_types.copy()
-        self.colors: str = colors or self.props.colors[:]
+        self._colors: str = colors or self.props.colors[:]
         self.is_token: bool = is_token
         self.is_tapped: bool = False
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
@@ -180,6 +180,11 @@ class GameCard:
                 continue
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
         return list((kwa | adds) - removes)
+
+    @property
+    def colors(self) -> str:
+        """Does not currently lookup global queries"""
+        return self.modifiers.colors if self.modifiers.colors else self._colors
 
     def _get_global_query(self, global_type: str) -> list[ModType]:
         effects_and_cards: list[tuple[Effect, GameCard]] = []

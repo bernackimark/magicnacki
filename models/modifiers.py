@@ -13,7 +13,7 @@ class Modifier:
 
 @dataclass
 class ColorMod(Modifier):
-    new_colors: list[str]
+    new_colors: str
 
     def __repr__(self):
         return f'is now colored {self.new_colors}'
@@ -110,6 +110,13 @@ class Modifiers:
             if isinstance(m, SubTypeMod):
                 adds.add(m.card_sub_type) if m.add_or_remove == 'add' else removes.add(m.card_sub_type)
         return adds - removes, removes - adds
+
+    @property
+    def colors(self) -> str:
+        """Returns the last color(s) assigned; does not currently support adding/subtracting multiple color layers"""
+        for m in self.items[::-1]:
+            if isinstance(m, ColorMod):
+                return m.new_colors
 
     def clear_eots(self) -> None:
         self.items = [m for m in self.items if m.expires != 'EOT']
