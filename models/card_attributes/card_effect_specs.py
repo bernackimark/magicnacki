@@ -37,9 +37,10 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
     Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror, \
     MoldDemonETB
-from models.effects.draw_discard import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, VerduranEnchantress, \
+from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
+    VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
-    MindTwist
+    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -69,7 +70,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
-    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder
+    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -117,6 +118,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ali-from-cairo': [Static(AliFromCairo())],
     'alchors-tomb': [Activated('2T', SetColor(c), T_FUNCS['your_permanents_in_play'], text=f'Set color to {{{c}}}')
                      for c in COLOR_LETTERS],
+    'amnesia': [Triggered(Amnesia(), T_FUNCS['all_players'], CastResolvedEvent)],
     'amrou-kithkin': [Static(AmrouKithkin())],
     'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(1), T_FUNCS['all_creatures_and_players'])],
     'ancestral-recall': [Triggered(DrawCards(3), T_FUNCS['all_players'], CastResolvedEvent)],
@@ -312,6 +314,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'drudge-skeletons': [Activated('B', RegenerateSelf())],
     'dust-to-dust': [Triggered(DustToDust(), TargetSpec(T_FUNCS['artifacts_in_play'], 2, 2), CastResolvedEvent)],
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'])],
+    'dwarven-song': [Triggered(SetColor('R', 'EOT'), TargetSpec(T_FUNCS['creatures_in_play'], 1, None),
+                               CastResolvedEvent)],
     'dwarven-warriors': [Activated('T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
     'dwarven-weaponsmith': [Activated('T', AddCounter(PLUS_ONE), T_FUNCS['creatures_in_play'],
                                       extra_costs=[SacCardCost(T_FUNCS['your_artifacts_in_play'])],
@@ -357,6 +361,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                  Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host'], UpkeepEvent)],
     'feint': [Triggered(Feint(), T_FUNCS['attackers'], CastResolvedEvent)],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
+    'field-of-dreams': [Triggered(FieldOfDreams(), None, ZoneChangeEvent)],
     'fire-drake': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],
     'firebreathing': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent),
@@ -396,6 +401,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'giant-strength':
         [Triggered(PumpEffect(2, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'giant-tortoise': [Static(GiantTortoisePT())],
+    'glasses-of-urza': [Activated('T', GlassesOfUrza())],
     'glyph-of-destruction': [Triggered(GlyphOfDestruction(), T_FUNCS['your_walls_in_play'], CastResolvedEvent)],
     'glyph-of-doom': [Triggered(GlyphOfDoom(), T_FUNCS['walls_in_play'], CastResolvedEvent)],
     'glyph-of-life': [Triggered(GlyphOfLife(), T_FUNCS['walls_in_play'], CastResolvedEvent)],
@@ -428,6 +434,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures_in_play'])],
     'hasran-ogress': [Triggered(HasranOgress(), None, AttackEvent)],
     'healing-salve': [Triggered(HealingSalve(), None, CastResolvedEvent)],
+    'heavens-gate': [Triggered(SetColor('W', 'EOT'), TargetSpec(T_FUNCS['creatures_in_play'], 1, None),
+                               CastResolvedEvent)],
     'hell-swarm': [Triggered(HellSwarm(), None, CastResolvedEvent)],
     'hidden-path': [Static(HiddenPath())],
     'holy-armor': [Triggered(PumpEffect(0, 2), T_FUNCS['creatures_in_play'], CastResolvedEvent),
@@ -455,6 +463,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Activated('', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'],
                    max_activations_per_turn=1)],
     'invisibility': [Triggered(None, T_FUNCS['creatures_in_play'], CastResolvedEvent), Static(Invisibility())],
+    'inquisition': [Triggered(Inquisition(), T_FUNCS['all_players'], CastResolvedEvent)],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
     'island-fish-jasconius': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
@@ -652,6 +661,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'reset': [Triggered(Reset(), None, CastResolvedEvent, conditions=[])],
               # TODO: Cast this spell only during an opponent's turn after their upkeep step
     'resurrection': [Triggered(Reanimate(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
+    'revelation': [Triggered(Revelation(), None, ZoneChangeEvent)],
     'reverse-damage': [Triggered(ReverseDamage(), T_FUNCS['cards_in_play'], CastResolvedEvent)],
     'righteousness': [Triggered(PumpEffect(7, 7, True), T_FUNCS['blockers'], CastResolvedEvent)],
     'riptide': [Triggered(Riptide(), None, CastResolvedEvent)],
@@ -681,6 +691,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'scavenger-folk': [Activated('GT', Destroy(), T_FUNCS['artifacts_in_play'], extra_costs=[SacSelfCost()])],
     'scavenging-ghoul': [Triggered(AddCounterPerCreatureDeath(CORPSE), T_FUNCS['self'], EndStepEvent)],
     'scrubland': dual_land_activated_ability_specs('BW'),
+    'sea-kings-blessing': [Triggered(SetColor('U', 'EOT'), TargetSpec(T_FUNCS['creatures_in_play'], 1, None),
+                               CastResolvedEvent)],
     'season-of-the-witch':
         [Triggered(SeasonOfTheWitchUpkeep(), None, UpkeepEvent),
          Triggered(SeasonOfTheWitchEndStep(), None, EndStepEvent)],
@@ -731,6 +743,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'sunastian-falconer': [Activated('T', AddMana('C', 2))],
     'sunken-city': [Static(SunkenCity()), Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],
     'swords-to-plowshares': [Triggered(SwordsToPlowshares(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'sylvan-paradise': [Triggered(SetColor('G', 'EOT'), TargetSpec(T_FUNCS['creatures_in_play'], 1, None),
+                               CastResolvedEvent)],
     'syphon-soul': [Triggered(SyphonSoul(), T_FUNCS['opponent'], CastResolvedEvent)],
     'tablet-of-epityr': [Triggered(TabletOfEpityr(), None, DiesEvent)],
     'taiga': dual_land_activated_ability_specs('RG'),
@@ -761,6 +775,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'tor-wauki': [Activated('T', DealDamage(2), T_FUNCS['combatants'])],
     'tormods-crypt':
         [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
+    'touch-of-darkness': [Triggered(SetColor('B', 'EOT'), TargetSpec(T_FUNCS['creatures_in_play'], 1, None),
+                               CastResolvedEvent)],
     'tower-of-coireall': [Activated('T', TowerOfCoireall(), T_FUNCS['creatures_in_play'])],
     'tracker': [Activated('GGT', Tracker(), T_FUNCS['creatures_in_play'])],
     'tranquility':
@@ -809,6 +825,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     # TODO: despite being the same code, VesuvanDoppelgangerUpkeep doesn't trigger;
     #  the card goes to the graveyard during cast as well but gets pulled out somehow;
     #  the SBA looking at 0 toughness may be the culprit
+    'visions': [Triggered(Visions(), T_FUNCS['all_players'], CastResolvedEvent)],
     'volcanic-island': dual_land_activated_ability_specs('RU'),
     'voodoo-doll':
         [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent),

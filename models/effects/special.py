@@ -52,10 +52,20 @@ class ActiveVolcano(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         gs.bounce(t) if t.props.slug == 'island' else gs.destroy(t)
 
+class Amnesia(Effect):
+    """Target player reveals their hand and discards all nonland cards"""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        for c in gs.hands[target].cards[:]:
+            c.reveal()
+            if 'Land' not in c.card_types:
+                gs.discard(c, source)
+
 class AnimateDead(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
+            raise ValueError(f'{source.props.name} needs a target')
         gs.reanimate(target)
         target.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=0))
 
@@ -241,6 +251,17 @@ class HurkylsRecall(Effect):
             raise ValueError(f"{source.props.name} needs a target player")
         for artifact in gs.card_filter.on_player_board(target).artifacts().result():
             gs.bounce(artifact)
+
+class Inquisition(Effect):
+    """Target player reveals their hand. Deal damage to that player = number of white cards in their hand."""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f"{source.props.name} needs a target player")
+        opp_cards = gs.hands[flip(source.owner_id)].cards
+        for c in opp_cards:
+            c.reveal()
+        if white_cnt := len([c for c in opp_cards if c.is_white]):
+            gs.apply_damage(source, white_cnt, flip(source.owner_id))
 
 class KoboldDrillSergeant(Effect):
     """Other Kobold creatures you control get +0/+1 and have trample"""

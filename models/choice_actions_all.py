@@ -5,7 +5,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Iterable, Optional
 
 from models.actions.kwa import AddKWA
-from models.actions.piles import HandToBattlefield
+from models.actions.piles import HandToBattlefield, Shuffle
 from models.actions.target import AddTargetAction, FinishTargetsAction
 
 if TYPE_CHECKING:
@@ -202,6 +202,14 @@ class SacChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         print('Card Options:', self.card_options)
         return [Sac(self.player_idx, self.gs, c) for c in self.card_options]
+
+class ShuffleOrDontChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, cards: list[GameCard]):
+        super().__init__(p_id, gs, source)
+        self.cards = cards
+
+    def get_actions(self) -> list[Action]:
+        return [Shuffle(self.player_idx, self.gs, self.cards), DoNothing(self.player_idx, self.gs)]
 
 class UntapChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
