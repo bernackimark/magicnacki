@@ -22,7 +22,7 @@ from models.modifiers import KWAMod, PTMod
 
 
 class CreateTokenCreature(Effect):
-    """Generic to create a GameCard with .is_token = True and place it on the board"""
+    """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""
     def __init__(self, slug: str):
         self.slug = slug
 
@@ -79,7 +79,7 @@ class BottleOfSuleiman(Effect):
     def resolve(self, gs: GameState, s: GameCard, _: GameCard = None):
         result: str = gs.randomize_event(s.owner_id, ['heads', 'tails'])
         if result == 'heads':
-            obj = CreateTokenCreature('Djinn', 5, 5, ['Flying', 'Attack'], [], ['Djinn'], 'C')
+            obj = CreateTokenCreature('djinn')
             obj.resolve(gs, s)
             # gs.create_token_creature(s.owner_id, 'Djinn', 5, 5, ['Flying', 'Attack'],
             #                          other_types=[], sub_types=['Djinn'], colors='C')

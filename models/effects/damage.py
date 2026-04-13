@@ -322,7 +322,7 @@ class RukhEgg(Effect):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
         from special import CreateTokenCreature
-        obj = CreateTokenCreature('Rukh', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
+        obj = CreateTokenCreature('rukh')
         obj.resolve(gs, source)
         # gs.create_token_creature(source.owner_id, 'Bird', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
 

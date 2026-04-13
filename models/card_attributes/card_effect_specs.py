@@ -195,8 +195,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'bone-flute': [Activated('2T', BoneFlute())],
     'book-of-rass': [Activated('2', BookOfRass())],
     'boomerang': [Triggered(Bounce(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
-    'boris-devilboon': [Activated('2BRTT', CreateTokenCreature('Minor Demon', 1, 1, kwa=[],
-                                                               other_types=[], sub_types=['Demon'], colors='BR'))],
+    'boris-devilboon': [Activated('2BRTT', CreateTokenCreature('minor-demon'))],
     'bottle-of-suleiman': [Activated('1', BottleOfSuleiman(), extra_costs=[SacSelfCost()])],
     'braingeyser': [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
     'brainwash':
@@ -702,7 +701,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'serendib-djinn':
         [Triggered(SerendibDjinn(), None, UpkeepEvent), Triggered(SerendibDjinnNoLands(), None, StateBasedEvent)],
     'serendib-efreet': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'], UpkeepEvent)],
-    'serpent-generator': [Activated('4T', CreateTokenCreature('Snake', 1, 1, kwa=[], other_types=[], sub_types=[], colors='C'))],
+    'serpent-generator': [Activated('4T', CreateTokenCreature('snake'))],
     'shapeshifter': [Triggered(Shapeshifter(), None, CastResolvedEvent), Triggered(Shapeshifter(), None, UpkeepEvent)],
     'shatter': [Triggered(Destroy(), T_FUNCS['artifacts_in_play'], CastResolvedEvent)],
     'shield-wall': [Triggered(ShieldWall(), None, CastResolvedEvent)],
@@ -726,8 +725,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'staff-of-zegon': [Activated('3T', PumpEffect(-2, 0, True), T_FUNCS['creatures_in_play'])],
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
                         for c in COLOR_LETTERS],
-    'stangg': [Triggered(CreateTokenCreature('Stangg Twin', 3, 4, kwa=[], other_types=[],
-                                             sub_types=['Human', 'Warrior'], colors='GR'), None, CastResolvedEvent),
+    'stangg': [Triggered(CreateTokenCreature('stangg-twin'), None, CastResolvedEvent),
                Triggered(StanggOnLeave(), None, ZoneChangeEvent)],
     'steal-artifact': [Triggered(Steal(), T_FUNCS['opp_artifacts_in_play'], CastResolvedEvent),
                        Triggered(ReturnToOwnerOnLTB(), None, ZoneChangeEvent)],
@@ -758,7 +756,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                            allowed_phases=[Phase.DECLARE_COMBAT])],
     'tetravus': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
     'tetsuo-umezawa': [Activated('UBBRT', Destroy(), T_FUNCS['tapped_or_blocking_creatures'])],  # more to code
-    'the-hive': [Activated('5T', CreateTokenCreature('Wasp', 1, 1, ['Flying', 'Attack'], ['Artifact'], [], 'C'))],
+    'the-hive': [Activated('5T', CreateTokenCreature('wasp'))],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale(), None, UpkeepEvent)],
     'thicket-basilisk': [Triggered(CockatriceAndThicketBasilisk(), None, BlockEvent)],
