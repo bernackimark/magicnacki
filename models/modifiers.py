@@ -12,6 +12,13 @@ class Modifier:
     expires: str | None = None  # None, 'EOT', 'UNTIL_SOURCE_LEAVES', 'NEXT_TURN'
 
 @dataclass
+class ColorMod(Modifier):
+    new_colors: list[str]
+
+    def __repr__(self):
+        return f'is now colored {self.new_colors}'
+
+@dataclass
 class OwnershipMod(Modifier):
     new_owner_id: int
 
