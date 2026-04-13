@@ -102,13 +102,8 @@ class GameState:
     def check_state_based_actions(self):
         """state_based_rules are invariant; they must repeat until stable; there is no player choice, no stack, etc.;
         (ex: creatures w 0 toughness or unattached auras must die, etc.)"""
-        while True:
-            changed = False
-            for rule in self.state_based_rules:
-                if rule.apply(self):
-                    changed = True
-            if not changed:
-                break
+        for rule in self.state_based_rules:
+            rule.apply(self)
 
     # --- QUERY SYSTEM ---
     def can_attack(self, card: GameCard) -> bool:
@@ -496,6 +491,7 @@ class GameState:
             -   Pending Choice (selections that are forced & are not placed on stack)
             -   Check global state-based actions (game over, creatures w 0 weakness die, etc.)
                 -   If game is over, ask player to sideboard
+            -   Pending Choice again, since state-based actions may produce a choice
             -   Check the stack
             -   Get actions by phase"""
 
@@ -504,10 +500,9 @@ class GameState:
 
         self.check_state_based_actions()
 
-        # TODO: when the game ends, it just hangs, GameOverChoice is never presented
-        #  PyGame just hangs at game over as well
+        if self.pending_choice:
+            return self.pending_choice.get_actions()
 
-        # TODO: if the match is over, it shouldn't go here but GameState has no knowledge of the match
         if self.is_game_over:
             print('YYY')
             if not self.pending_choice:

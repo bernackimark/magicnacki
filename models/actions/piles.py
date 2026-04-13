@@ -9,6 +9,18 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 # --- GENERICS ---
+class BattlefieldToGraveyard(Action):
+    def __init__(self, p_id, gs, target: GameCard):
+        super().__init__(p_id, gs)
+        self.target = target
+
+    def __repr__(self):
+        return f'Move {self.target} to graveyard'
+
+    def play(self) -> None:
+        self.gs.move_card(self.target, Zone.GRAVEYARD, cause='legendary_rule')
+        self.gs.pending_choice = None
+
 class HandToBattlefield(Action):
     def __init__(self, p_id, gs, target: GameCard):
         super().__init__(p_id, gs)

@@ -112,6 +112,10 @@ class CardFilter:
             self._cards = [c for c in self._cards if type_ in c.card_sub_types]
         return self
 
+    def legendaries(self):
+        self._cards = [c for c in self._cards if 'Legendary' in c.props.card_super_types]
+        return self
+
     # --- by color ---
     def by_color(self, color: str | list):
         if isinstance(color, list):

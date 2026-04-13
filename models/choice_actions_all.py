@@ -5,7 +5,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Iterable, Optional
 
 from models.actions.kwa import AddKWA
-from models.actions.piles import HandToBattlefield, Shuffle
+from models.actions.piles import HandToBattlefield, Shuffle, BattlefieldToGraveyard
 from models.actions.target import AddTargetAction, FinishTargetsAction
 
 if TYPE_CHECKING:
@@ -102,6 +102,15 @@ class DrawCardsOrDontChoice(ChoiceAction):
         actions: list[Action] = [DrawCard(self.player_idx, self.gs) for _ in range(self.cnt)]
         actions.append(DoNothing(self.player_idx, self.gs))
         return actions
+
+class BattlefieldToGraveyardChoice(ChoiceAction):
+    """Doesn't count as 'destroy'; bypasses hexproof/indestructible; counts as "dying"; triggers any such abilities"""
+    def __init__(self, p_id: int, gs: GameState, legends: list[GameCard]):
+        super().__init__(p_id, gs, source=None)
+        self.legends = legends
+
+    def get_actions(self) -> list[Action]:
+        return [BattlefieldToGraveyard(self.player_idx, self.gs, c) for c in self.legends]
 
 class MultiTargetChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec,

@@ -42,7 +42,6 @@ class CastToBoard(Action):
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack
                 self.gs.event_mgr.register_effect(eff_spec.effect, self.card)
-                print(f"Registered triggered effect for {self.card.props.name} on {eff_spec.trigger_event.__name__}")
                 if eff_spec.activation_type != 'triggered':
                     continue
 

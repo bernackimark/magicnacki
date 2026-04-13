@@ -1,7 +1,9 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from typing import TYPE_CHECKING
 
+from models.choice_actions_all import BattlefieldToGraveyardChoice
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -10,16 +12,16 @@ if TYPE_CHECKING:
 class StateBasedRule(ABC):
     @staticmethod
     @abstractmethod
-    def apply(gs: GameState) -> bool:
-        """Return True if the game state changed"""
+    def apply(gs: GameState) -> None:
+        """Apply the rule"""
 
 
 class GameOverSBR(StateBasedRule):
-    """Check for game_over (player life <= 0 & poison counters >= 10); sets gs.winner as -1 draw or 0/1 for win"""
+    """Check for game_over (player life <= 0 & poison >= 10); set GameState's winner = -1 draw or 0/1 for win"""
     @staticmethod
-    def apply(gs: GameState) -> bool:
+    def apply(gs: GameState) -> None:
         if gs.is_game_over:  # there could be a win condition that sets is_game_over to True elsewhere
-            return True
+            return
 
         """Returns None if game is not over;
         else -1 if a draw, 0 for player #0, 1 for player #1, updates gs.is_game_over"""
@@ -28,41 +30,45 @@ class GameOverSBR(StateBasedRule):
 
         losers = tuple(set(zero_life + ten_poison))
         if not losers:
-            return False
+            return
         if len(losers) > 1:
             gs.winner = -1
             gs.is_game_over = True
             print('The game ends in a draw')
-            return True
+            return
         else:
             gs.winner = flip(losers[0])
             gs.is_game_over = True
             print(f'Player #{gs.winner} wins the game')
-            return True
+            return
 
 class IslandhomeSBR(StateBasedRule):
     @staticmethod
-    def apply(gs: GameState) -> bool:
-        changed = False
-
+    def apply(gs: GameState) -> None:
         for creature in gs.card_filter.in_play().has('Islandhome').result():
             if not gs.card_filter.on_player_board(creature.owner_id).islands().result():
                 gs.destroy(creature)
-                changed = True
 
-        return changed
+class LegendarySBR(StateBasedRule):
+    """A state-based action that immediately forces you to choose one and put the other into its owner's graveyard;
+    it bypasses hexproof or indestructible; this counts as "dying" and will trigger any such abilities"""
+    @staticmethod
+    def apply(gs: GameState) -> None:
+        for p_id in (0, 1):
+            legends_seen = {}
+            for c in gs.card_filter.on_player_board(p_id).legendaries().result():
+                print('XYZ', legends_seen)
+                if c.props.slug not in legends_seen:
+                    legends_seen[c.props.slug] = c
+                else:
+                    gs.pending_choice = BattlefieldToGraveyardChoice(p_id, gs, [legends_seen[c.props.slug], c])
+                    changed = True
 
 class ZeroToughnessSBR(StateBasedRule):
     @staticmethod
-    def apply(gs: GameState) -> bool:
-        changed = False
-
+    def apply(gs: GameState) -> None:
         for creature in gs.card_filter.in_play().creatures().result():
             if creature.damage_received_this_turn >= creature.toughness:
                 gs.destroy(creature)
-                changed = True
 
-        return changed
-
-
-STATE_BASED_RULES = (GameOverSBR, IslandhomeSBR, ZeroToughnessSBR)
+STATE_BASED_RULES = (GameOverSBR, IslandhomeSBR, LegendarySBR, ZeroToughnessSBR)
