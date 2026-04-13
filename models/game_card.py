@@ -44,6 +44,7 @@ class GameCard:
         self._colors: str = colors or self.props.colors[:]
         self.is_token: bool = is_token
         self.is_tapped: bool = False
+        self.is_face_up: bool = False
         self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
         self.host: GameCard | None = None
         self.auras: list[GameCard | None] = []
@@ -221,6 +222,10 @@ class GameCard:
 
     def untap(self, gs: GameState) -> None:
         gs.untap_card(self)
+
+    def reveal(self) -> None:
+        if not self.is_face_up:
+            self.is_face_up = True
 
     @property
     def is_creature(self) -> bool:
