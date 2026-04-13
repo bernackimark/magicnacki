@@ -130,9 +130,6 @@ class GameCard:
     def card_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_types, 2) self.modifiers.type_delta,
         3) GameState's query system for 'type_mod'"""
-        return self._get_types()
-
-    def _get_types(self) -> list[str]:
         types = set(self._card_types)
         adds, removes = self.modifiers.type_delta
         for mod in self._get_global_query('type_mod'):
@@ -152,9 +149,6 @@ class GameCard:
     def card_sub_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_sub_types,
         2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type_mod'"""
-        return self._get_sub_types()
-
-    def _get_sub_types(self) -> list[str]:
         types = set(self._card_sub_types)
         adds, removes = self.modifiers.sub_type_delta
         for mod in self._get_global_query('sub_type_mod'):
@@ -171,9 +165,6 @@ class GameCard:
         returns ['Flying', 'Trample'] ...
         Anytime this prioerty is requested, it calls: 1) its own base _base_kwa,
         2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa_mod'"""
-        return self._get_keyword_abilities()
-
-    def _get_keyword_abilities(self) -> list[str]:
         kwa = set(self._base_kwa)
         adds, removes = self.modifiers.kwa_delta
         for mod in self._get_global_query('kwa_mod'):
