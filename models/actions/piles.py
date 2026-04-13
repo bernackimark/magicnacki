@@ -1,13 +1,12 @@
 from __future__ import annotations
+import random
 from typing import TYPE_CHECKING
 
-from models.utils import flip
+from models.actions.base import Action
 from models.zone import Zone
 
 if TYPE_CHECKING:
     from models.game_card import GameCard
-
-from models.actions.base import Action
 
 # --- GENERICS ---
 class HandToBattlefield(Action):
@@ -21,3 +20,16 @@ class HandToBattlefield(Action):
     def play(self):
         self.gs.move_card(self.target, Zone.BATTLEFIELD, cause='hand_to_battlefield')
         self.gs.action_stack.pop()  # remove choice
+
+class Shuffle(Action):
+    def __init__(self, p_id, gs, cards: list[GameCard]):
+        super().__init__(p_id, gs)
+        self.cards = cards
+
+    def __repr__(self):
+        return 'Shuffle Cards'
+
+    def play(self) -> None:
+        random.shuffle(self.cards)
+        if self.gs.action_stack.actions:
+            self.gs.action_stack.pop()
