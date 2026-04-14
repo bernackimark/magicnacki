@@ -1,19 +1,13 @@
 from pathlib import Path
 
-from deck_builder.build_deck import Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
 from engine import Engine, create_engine_from_json
-from game_state import GameState
 from models.card import CardUniverse
 import pygame as pg
 
-from models.constants import Mulligan
-from models.match_manager import MatchManager
-from players import ConsolePlayer
 from renderer_pygame.game import Game
 from renderer_pygame.scenes.build_deck_scene import BuildDeckScene
 from renderer_pygame.scenes.menu_scene import MenuScene
 from renderer_pygame.scenes.play_scene import PlayScene
-from renderers import ConsoleRenderer
 
 
 class MyGame(Game):
