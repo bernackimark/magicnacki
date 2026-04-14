@@ -70,4 +70,4 @@ class MatchManager:
         return GameState(self.player_cnt, self.first_to_act, self.rules, self._decks_to_lists(), self.tokens)
 
     def _decks_to_lists(self) -> list[list[GameCard]]:
-        return [[c for c in deck.cards] for deck in self.decks]
+        return [[c for c in deck.game_cards] for deck in self.decks]

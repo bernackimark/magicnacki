@@ -1,6 +1,9 @@
 from dataclasses import dataclass, field
-from typing import Iterable, Literal
+from pathlib import Path
+from typing import Iterable, Literal, Self
 
+from common.file_utils import read_json_file
+from data.deck_data import DeckData, get_deck
 from models.card import Card, CardUniverse
 from models.constants import (BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS, X_POINTS,
                               GENTLEMENS_RULES_BANNED_SLUGS, OLD_SCHOOL_SETS)
@@ -27,58 +30,30 @@ SINGLETON_DB_RULE_SET = DeckBuilderRuleSet(OS_CARD_UNIV, play_set_cnt=1)
 
 @dataclass
 class Deck:
-    cards: list[GameCard]
-    side: list[GameCard] = field(default_factory=list)
-
-    def promote(self, c: GameCard) -> None:
-        # if the GameCard has undergone changes in game play, they must be removed to pass this check
-        card = next(x for x in self.side if x is c)
-        self.side.remove(card)
-        self.cards.append(card)
-
-    def demote(self, c: GameCard) -> None:
-        # if the GameCard has undergone changes in game play, they must be removed to pass this check
-        card = next(x for x in self.cards if x is c)
-        self.cards.remove(card)
-        self.side.append(card)
-
-
-@dataclass
-class DeckBuilder:
-    rule_set: DeckBuilderRuleSet
-    player_idx: int
+    deck_id: str
+    user_id: str
+    name: str
     main: list[Card] = field(default_factory=list)
     side: list[Card] = field(default_factory=list)
 
     @property
-    def cards(self) -> list[Card]:
-        return self.main + self.side
+    def unique_cards_sorted(self) -> list:
+        return sorted({c.slug: c for c in self.main}.values(), key=lambda x: x.slug)
 
     @property
-    def unique_cards_sorted(self) -> list:
-        return sorted({c.slug: c for c in self.cards}.values(), key=lambda x: x.slug)
+    def colors(self) -> str:
+        colors_seen = set()
+        for c in self.main:
+            for color in c.colors:
+                colors_seen.add(color)
+        return ''.join(colors_seen)
 
-    def get_slug_cnt(self, slug: str) -> int:
-        return sum([1 for c in self.cards if c.slug == slug]) if self.cards else 0
+    @property
+    def game_cards(self) -> list[GameCard]:
+        return [GameCard(c, self.player_idx) for c in self.main]
 
-    def add_card(self, c: Card, to_pile: Literal['main', 'side'] = 'main') -> None:
-        """Card cannot be on the banned list; only one allowed from restricted; can only have cnt up to max play set"""
-        if c.slug in self.rule_set.banned_slugs:
-            raise ValueError(f"{c.name} is on the Banned List and cannot be added to your deck")
-        if c.slug in self.rule_set.restricted_slugs and self.get_slug_cnt(c.slug) == 1:
-            raise ValueError(f"{c.name} is on the Restricted List and you already have one in your deck")
-        if c.slug not in BASIC_LANDS and self.get_slug_cnt(c.slug) >= self.rule_set.play_set_cnt:
-            raise ValueError(f"You can only have the max play set ({self.rule_set.play_set_cnt}) for {c.name}")
-        if self.rule_set.max_x_points and sum([X_POINTS.get(c.slug, 0) for c in self.cards],
-                                              X_POINTS.get(c.slug, 0)) > self.rule_set.max_x_points:
-            raise ValueError(f"You have exceeded the allowed X-points")
+    def add_card(self, c: Card, to_pile: str = 'main') -> None:
         self.main.append(c) if to_pile == 'main' else self.side.append(c)
-
-    def add_card_by_slug(self, slug: str, to_pile: Literal['main', 'side'] = 'main'):
-        card = next((c for c in self.rule_set.card_universe.cards if c.slug == slug), None)
-        if not card:
-            raise ValueError(f'Could not find slug: {slug}')
-        self.add_card(card, to_pile)
 
     def remove_card(self, c: Card, from_pile: Literal['main', 'side'] = 'main') -> None:
         if from_pile == 'main':
@@ -90,11 +65,55 @@ class DeckBuilder:
                 raise ValueError("That card doesn't exist in your deck")
             self.side.remove(c)
 
-    def complete_deck(self) -> Deck:
-        if not self.rule_set.min_deck_size <= len(self.main) <= self.rule_set.max_deck_size:
-            raise ValueError(f"Your deck has {len(self.main)} but must have between "
-                             f"{self.rule_set.min_deck_size} & {self.rule_set.max_deck_size} cards")
-        if len(self.side) > self.rule_set.max_side_cnt:
-            raise ValueError(f"Your sideboard may only contain up to {self.rule_set.max_side_cnt} cards")
-        game_cards = [GameCard(c, self.player_idx) for c in self.cards]
-        return Deck(game_cards)
+    def promote(self, c: Card) -> None:
+        card = next(x for x in self.side if x is c)
+        self.side.remove(card)
+        self.main.append(card)
+
+    def demote(self, c: Card) -> None:
+        card = next(x for x in self.main if x is c)
+        self.main.remove(card)
+        self.side.append(card)
+
+    @classmethod
+    def from_json(cls, deck_id: str, user_id: str) -> Self | None:
+        deck_data: DeckData = get_deck(deck_id, user_id)
+        if not deck_data:
+            raise ValueError('No such deck found')
+        main, side = [], []
+        for slug, qty in deck_data.main:
+            for _ in range(qty):
+                card = OS_CARD_UNIV[slug]
+                main.append(card)
+        for slug, qty in deck_data.side:
+            for _ in range(qty):
+                card = OS_CARD_UNIV[slug]
+                side.append(card)
+        return cls(deck_id, user_id, deck_data.name, main, side)
+
+    def save_to_json(self, deck: Self) -> None:
+        raise NotImplementedError
+
+
+"""Validations for Match Manager, comparing cards to format rules:
+
+    def complete_deck(self) -> Self:
+        # if not self.rule_set.min_deck_size <= len(self.main) <= self.rule_set.max_deck_size:
+        #     raise ValueError(f"Your deck has {len(self.main)} but must have between "
+        #                      f"{self.rule_set.min_deck_size} & {self.rule_set.max_deck_size} cards")
+        # if len(self.side) > self.rule_set.max_side_cnt:
+        #     raise ValueError(f"Your sideboard may only contain up to {self.rule_set.max_side_cnt} cards")
+
+    def add_card(self, c: Card, to_pile: str = 'main') -> None:
+        # Card can't be on the banned list; only one allowed from restricted; can only have cnt up to max play set
+        # if c.slug in self.rule_set.banned_slugs:
+        #     raise ValueError(f"{c.name} is on the Banned List and cannot be added to your deck")
+        # if c.slug in self.rule_set.restricted_slugs and self.get_slug_cnt(c.slug) == 1:
+        #     raise ValueError(f"{c.name} is on the Restricted List and you already have one in your deck")
+        # if c.slug not in BASIC_LANDS and self.get_slug_cnt(c.slug) >= self.rule_set.play_set_cnt:
+        #     raise ValueError(f"You can only have the max play set ({self.rule_set.play_set_cnt}) for {c.name}")
+        # if self.rule_set.max_x_points and sum([X_POINTS.get(c.slug, 0) for c in self.cards],
+        #                                       X_POINTS.get(c.slug, 0)) > self.rule_set.max_x_points:
+        #     raise ValueError(f"You have exceeded the allowed X-points")
+
+"""

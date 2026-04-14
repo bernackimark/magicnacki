@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
+from deck_builder.build_deck import CardUniverse, Deck, OLD_SCHOOL_DB_RULE_SET
 from game_state import GameState
 from models.constants import Mulligan
 from models.match_manager import MatchManager
@@ -35,18 +35,10 @@ class Engine:
                 self.gs.game_history.append_action(action, self.gs)
             self.match_manager.create_game_state()
 
-def create_deck_from_slugs_and_quantities(slugs_and_quantities: list[list[str, int]], p_id: int) -> Deck:
-    """Ex input: [["island", 20], ["amnesia", 4], ["mahamoti-djinn", 4]"""
-    deck_builder = DeckBuilder(OLD_SCHOOL_DB_RULE_SET, p_id)
-    for card_slug, qty in slugs_and_quantities:
-        for _ in range(qty):
-            deck_builder.add_card_by_slug(card_slug)
-    return deck_builder.complete_deck()
-
 def deflate_casting_costs(the_decks: list[Deck]) -> None:
     """For speed of testing, reduce all cards' casting costs"""
     for d in the_decks:
-        for c in d.cards:
+        for c in d.main:
             if not c.casting_cost:
                 continue
             if c.casting_cost[-1] not in ('B', 'U', 'G', 'R', 'W'):
@@ -65,8 +57,9 @@ def create_engine_from_json(file_path_str: str, settings_key: str, deflate_c_cos
 
     universe = CardUniverse(data['universe'])
 
-    decks = [create_deck_from_slugs_and_quantities(info, i)
-             for i, info in enumerate((data['deck_0'], data['deck_1']))]
+    # TODO: this will fail because it's expecting a dict including user_id, name, etc
+    decks = [Deck.from_json(str(i), str(i)) for i, info in enumerate((data['deck_0'], data['deck_1']))]
+
     if deflate_c_costs:
         deflate_casting_costs(decks)
 
