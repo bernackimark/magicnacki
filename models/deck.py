@@ -1,13 +1,10 @@
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Iterable, Literal, Self
 
-from common.file_utils import read_json_file
-from data.deck_data import DeckData, get_deck
+from data.deck_data import DeckData, get_deck, get_decks
 from models.card import Card, CardUniverse
 from models.constants import (BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS, X_POINTS,
                               GENTLEMENS_RULES_BANNED_SLUGS, OLD_SCHOOL_SETS)
-from models.game_card import GameCard
 
 @dataclass
 class DeckBuilderRuleSet:
@@ -36,6 +33,10 @@ class Deck:
     main: list[Card] = field(default_factory=list)
     side: list[Card] = field(default_factory=list)
 
+    def __post_init__(self):
+        if not self.deck_id:
+            self.deck_id = str(max([int(d.deck_id) for d in get_decks()]) + 1) if get_decks() else "0"
+
     @property
     def unique_cards_sorted(self) -> list:
         return sorted({c.slug: c for c in self.main}.values(), key=lambda x: x.slug)
@@ -47,10 +48,6 @@ class Deck:
             for color in c.colors:
                 colors_seen.add(color)
         return ''.join(colors_seen)
-
-    @property
-    def game_cards(self) -> list[GameCard]:
-        return [GameCard(c, self.player_idx) for c in self.main]
 
     def add_card(self, c: Card, to_pile: str = 'main') -> None:
         self.main.append(c) if to_pile == 'main' else self.side.append(c)
@@ -77,18 +74,12 @@ class Deck:
 
     @classmethod
     def from_json(cls, deck_id: str, user_id: str) -> Self | None:
+        """Obtains existing deck slugs & quantities; converts it to a card; returns a fully-formed Deck object"""
         deck_data: DeckData = get_deck(deck_id, user_id)
         if not deck_data:
             raise ValueError('No such deck found')
-        main, side = [], []
-        for slug, qty in deck_data.main:
-            for _ in range(qty):
-                card = OS_CARD_UNIV[slug]
-                main.append(card)
-        for slug, qty in deck_data.side:
-            for _ in range(qty):
-                card = OS_CARD_UNIV[slug]
-                side.append(card)
+        main = [OS_CARD_UNIV[slug] for slug, qty in deck_data.main for _ in range(qty)]
+        side = [OS_CARD_UNIV[slug] for slug, qty in deck_data.side for _ in range(qty)]
         return cls(deck_id, user_id, deck_data.name, main, side)
 
     def save_to_json(self, deck: Self) -> None:

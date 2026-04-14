@@ -5,9 +5,9 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.card import Card
-    from models.game_card import GameCard
 
-from deck_builder.build_deck import Deck
+from models.deck import Deck
+from models.game_card import GameCard
 from game_state import GameState
 from models.utils import flip
 
@@ -67,7 +67,7 @@ class MatchManager:
 
     def create_game_state(self) -> GameState:
         self.set_first_to_act()
-        return GameState(self.player_cnt, self.first_to_act, self.rules, self._decks_to_lists(), self.tokens)
+        return GameState(self.player_cnt, self.first_to_act, self.rules, self._create_game_cards(), self.tokens)
 
-    def _decks_to_lists(self) -> list[list[GameCard]]:
-        return [[c for c in deck.game_cards] for deck in self.decks]
+    def _create_game_cards(self) -> list[list[GameCard]]:
+        return [[GameCard(c, i) for c in deck.main] for i, deck in enumerate(self.decks)]

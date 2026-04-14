@@ -38,8 +38,8 @@ def write_json_to_file(file_path: str | Path, new_dict: dict):
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(new_dict, f, indent=2, ensure_ascii=False)
 
-def write_to_json_file_one_line_per_key(path: str | Path, data: dict):
-    with open(path, "w", encoding="utf-8") as f:
+def write_to_json_file_one_line_per_key(path: str | Path, data: dict, mode: str = 'w'):
+    with open(path, mode, encoding="utf-8") as f:
         f.write("{\n")
 
         items = list(data.items())

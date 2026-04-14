@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
-from deck_builder.build_deck import CardUniverse, Deck, OLD_SCHOOL_DB_RULE_SET
+from data.user_data import get_user
+from models.deck import CardUniverse, Deck
 from game_state import GameState
 from models.constants import Mulligan
 from models.match_manager import MatchManager
@@ -60,10 +61,15 @@ def create_engine_from_json(file_path_str: str, settings_key: str, deflate_c_cos
     # TODO: this will fail because it's expecting a dict including user_id, name, etc
     decks = [Deck.from_json(str(i), str(i)) for i, info in enumerate((data['deck_0'], data['deck_1']))]
 
-    if deflate_c_costs:
-        deflate_casting_costs(decks)
+    # if deflate_c_costs:
+    #     deflate_casting_costs(decks)
 
-    players = [ConsolePlayer(i, p[0], p[1]) for i, p in enumerate(data['players'])]
+    # create players
+    players = []
+    for i, user_id in enumerate(data['users']):
+        user_data = get_user(user_id)
+        player = ConsolePlayer(i, user_data.handle, user_data.is_bot)
+        players.append(player)
 
     # would put in the testing JSON, but not sure how to convert mulligan to enum member
     rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS, 'best_of': 3}
