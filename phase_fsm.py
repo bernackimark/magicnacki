@@ -106,6 +106,12 @@ class PhaseManager:
             # declare combat
             if any(gs.can_attack(card) for card in gs.boards[p_id]):
                 actions.append(BeginCombat(p_id, gs))  # type: ignore
+
+            # if the only option is to move to end step, do so
+            if not [a for a in actions if not isinstance(a, MoveToEndStep)]:
+                self.phase = Phase.END_STEP
+                return
+
             return actions
 
         if phase == Phase.DECLARE_ATTACKERS:
@@ -143,6 +149,12 @@ class PhaseManager:
 
             actions.extend(gs.available_actions_from_hand())
             actions.extend(gs.add_activated_abilities_from_board())  # type: ignore
+
+            # if the only option is finish blocking, auto-advance to pre-combat damage
+            if not [a for a in actions if not isinstance(a, FinishBlocking)]:
+                self.phase = Phase.PRE_COMBAT_DAMAGE
+                return
+
             return actions
 
         if phase == Phase.PRE_COMBAT_DAMAGE:
@@ -155,6 +167,12 @@ class PhaseManager:
             actions.append((AssignCombatDamage(gs.action_on_idx, gs)))  # type: ignore
             actions.extend(gs.available_actions_from_hand())  # type: ignore
             actions.extend(gs.add_activated_abilities_from_board())  # type: ignore
+
+            # if the only option is to Assign Combat Damage, auto-advance to Assign Combat Damage
+            if not [a for a in actions if not isinstance(a, AssignCombatDamage)]:
+                self.phase = Phase.ASSIGN_COMBAT_DAMAGE
+                return
+
             return actions
 
         if phase == Phase.ASSIGN_COMBAT_DAMAGE:
