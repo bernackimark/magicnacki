@@ -75,14 +75,14 @@ class GameCard:
     def __repr__(self) -> str:
         text = self.props.name
         if self.is_creature:
-            text += f' ({self.power}/{self.toughness}) SS:{self.has_summoning_sickness}'
+            text += f' ({self.power}/{self.toughness}) '
         if self.keyword_abilities:
             kwas = self.keyword_abilities.copy()
             text += ' '.join(kwas)
         if self.modifiers:
-            text += f' w {self.modifiers}'
+            text += f'w {self.modifiers}'
         if self.counters:
-            text += f' w {self.counters}'
+            text += f'w {self.counters}'
         return text.upper() if not self.is_tapped else text.lower()
 
     @property
