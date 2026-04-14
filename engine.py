@@ -1,9 +1,4 @@
-from __future__ import annotations
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from models.card import Card
 
 from deck_builder.build_deck import CardUniverse, Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
 from game_state import GameState
@@ -40,30 +35,17 @@ class Engine:
                 self.gs.game_history.append_action(action, self.gs)
             self.match_manager.create_game_state()
 
+def create_deck_from_slugs_and_quantities(slugs_and_quantities: list[list[str, int]], p_id: int) -> Deck:
+    """Ex input: [["island", 20], ["amnesia", 4], ["mahamoti-djinn", 4]"""
+    deck_builder = DeckBuilder(OLD_SCHOOL_DB_RULE_SET, p_id)
+    for card_slug, qty in slugs_and_quantities:
+        for _ in range(qty):
+            deck_builder.add_card_by_slug(card_slug)
+    return deck_builder.complete_deck()
 
-if __name__ == '__main__':
-    # build decks from json file
-    import json
-    with open('testing/cards_for_game_testing.json', 'r') as f:
-        data = json.load(f)
-
-    universe = CardUniverse(data['universe'])
-    deck_0 = data['deck_0']
-    deck_1 = data['deck_1']
-    # if data['starting_deck'] == 1:
-    #     deck_0, deck_1 = deck_1, deck_0
-
-    decks = []
-    for i, cards in enumerate((deck_0, deck_1)):
-        deck_builder = DeckBuilder(OLD_SCHOOL_DB_RULE_SET, i)
-        for card_slug, qty in cards:
-            for _ in range(qty):
-                deck_builder.add_card_by_slug(card_slug)
-        deck: Deck = deck_builder.complete_deck()
-        decks.append(deck)
-
-    # for speed of testing, reduce all cards' casting costs
-    for d in decks:
+def deflate_casting_costs(the_decks: list[Deck]) -> None:
+    """For speed of testing, reduce all cards' casting costs"""
+    for d in the_decks:
         for c in d.cards:
             if not c.casting_cost:
                 continue
@@ -72,18 +54,33 @@ if __name__ == '__main__':
             else:
                 c.casting_cost = c.casting_cost[-1] if 'X' not in c.casting_cost else f'X{c.casting_cost[-1]}'
 
-    # create players
-    players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]
+def create_engine_from_json(file_path_str: str, settings_key: str, deflate_c_costs: bool = False) -> Engine:
+    """From provided path string & key, pull JSON; create CardUniverse; create decks;
+    deflate casting costs, if applicable; set rules; create & return a fresh Engine oboject
+    """
+    import json
+    with open(file_path_str, 'r') as f:
+        data = json.load(f)
+        data = data[settings_key]
 
-    # create rules
-    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS,
-             'best_of': 3}
+    universe = CardUniverse(data['universe'])
 
-    tokens = universe.token_cards
+    decks = [create_deck_from_slugs_and_quantities(info, i)
+             for i, info in enumerate((data['deck_0'], data['deck_1']))]
+    if deflate_c_costs:
+        deflate_casting_costs(decks)
 
-    # create engine
-    e = Engine(players=players, renderer=ConsoleRenderer(),
-               match_manager=MatchManager(len(players), rules, decks, tokens, first_to_act=data['starting_deck']))
+    players = [ConsolePlayer(i, p[0], p[1]) for i, p in enumerate(data['players'])]
+
+    # would put in the testing JSON, but not sure how to convert mulligan to enum member
+    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS, 'best_of': 3}
+
+    eng = Engine(players=players, renderer=ConsoleRenderer(),
+                 match_manager=MatchManager(len(players), rules, decks, universe.token_cards,
+                                            first_to_act=data['starting_deck']))
+    return eng
+
+
+if __name__ == '__main__':
+    e = create_engine_from_json('testing/game_testing_settings.json', 'engine_testing_setup_a', True)
     e.play()
-
-

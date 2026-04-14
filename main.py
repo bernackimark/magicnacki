@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from deck_builder.build_deck import Deck, DeckBuilder, OLD_SCHOOL_DB_RULE_SET
-from engine import Engine
+from engine import Engine, create_engine_from_json
 from game_state import GameState
 from models.card import CardUniverse
 import pygame as pg
@@ -38,51 +38,7 @@ class MyGame(Game):
         self.scenes.load_transition_sound(Path("renderer_pygame/assets/a_Major_7_Sharp_11.mp3"))
 
 
-def create_engine() -> Engine:
-    import json
-    with open('testing/cards_for_game_testing.json', 'r') as f:
-        data = json.load(f)
-
-    universe = CardUniverse(data['universe'])
-    deck_0 = data['deck_0_pg']
-    deck_1 = data['deck_1_pg']
-    if data['starting_deck'] == 1:
-        deck_0, deck_1 = deck_1, deck_0
-
-    decks = []
-    for i, cards in enumerate((deck_0, deck_1)):
-        deck_builder = DeckBuilder(OLD_SCHOOL_DB_RULE_SET, i)
-        for card_slug, qty in cards:
-            for _ in range(qty):
-                deck_builder.add_card_by_slug(card_slug)
-        deck: Deck = deck_builder.complete_deck()
-        decks.append(deck)
-
-    # for speed of testing, reduce all cards' casting costs
-    for d in decks:
-        for c in d.cards:
-            if not c.casting_cost:
-                continue
-            if c.casting_cost[-1] not in ('B', 'U', 'G', 'R', 'W'):
-                c.casting_cost = '1'
-            else:
-                c.casting_cost = c.casting_cost[-1] if 'X' not in c.casting_cost else f'X{c.casting_cost[-1]}'
-
-    # create players
-    players = [ConsolePlayer(0, 'Mark', False), ConsolePlayer(1, 'Bull', False)]
-
-    # create rules
-    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS,
-             'best_of': 3}
-
-    tokens = universe.token_cards
-
-    e = Engine(players=players, renderer=ConsoleRenderer(),
-               match_manager=MatchManager(len(players), rules, decks, tokens, first_to_act=data['starting_deck']))
-    return e
-
-
 if __name__ == "__main__":
     cu = CardUniverse(['1E'])
-    engine = create_engine()
+    engine = create_engine_from_json('testing/game_testing_settings.json', 'py_game_testing_setup_a', True)
     MyGame(cu, engine).run()
