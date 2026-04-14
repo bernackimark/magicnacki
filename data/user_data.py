@@ -39,3 +39,18 @@ def create_user(handle: str, is_bot: bool = False, card_sort: str = 'A'):
     record = {user_id: {'handle': handle, 'is_bot': is_bot, 'card_sort': card_sort}}
     update_json_file_with_dict(FILE_PATH, record)
 
+
+"""
+{
+  "0": {
+    "handle": "Mark",
+    "is_bot": false,
+    "card_sort": "A"
+  },
+  "1": {
+    "handle": "Bull",
+    "is_bot": false,
+    "card_sort": "B"
+  }
+}
+"""
