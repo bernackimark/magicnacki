@@ -34,5 +34,5 @@ class MyGame(Game):
 
 if __name__ == "__main__":
     cu = CardUniverse(['1E'])
-    engine = create_engine_from_json('testing/game_testing_settings.json', 'py_game_testing_setup_a', True)
+    engine = create_engine_from_json('testing/game_testing_settings.json', 'pygame_testing_setup_a', True)
     MyGame(cu, engine).run()
