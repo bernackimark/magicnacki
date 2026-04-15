@@ -45,6 +45,12 @@ class KWAMod(Modifier):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa}"
 
 @dataclass
+class RegenerationMod(Modifier):
+    """Prevents next destruction"""
+    def __repr__(self):
+        return f"regeneration shield"
+
+@dataclass
 class TypeMod(Modifier):
     add_or_remove: Literal['add', 'remove']
     card_type: str
@@ -125,4 +131,4 @@ class Modifiers:
         self.items.clear()
 
 
-ModType = Union[PTMod | KWAMod | TypeMod | SubTypeMod | OwnershipMod]
+ModType = Union[PTMod | KWAMod | TypeMod | SubTypeMod | OwnershipMod | RegenerationMod]

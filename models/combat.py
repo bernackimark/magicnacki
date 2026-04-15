@@ -34,34 +34,41 @@ class Combat:
 
     def _combat_phase(self, first_strike: bool):
         """Resolves damage for a phase (first strike or normal)"""
-        # If no blockers, attacker damage goes to defending player
-        if not self.blockers:
-            if not first_strike:  # only deal damage once, during normal phase
-                defender = self.gs.turn.out_turn_player_idx
-                self.gs.apply_damage(self.attacker, self.attacker.power, defender, is_combat=True)
-            return
+        damage_assignments = []  # (source, amount, target)
 
-        # Attacker damage to blockers
-        # Currently only assigns damage to the first blocker w no damage splitting across blockers
-        # Trample logic is inside gs.apply_damage() cuz I need access to damage preventions (would prefer it's here)
-        if self.attacker not in self.killed_creatures:
+        # --- No blockers ---
+        if not self.blockers:
+            if not first_strike:
+                defender = self.gs.turn.out_turn_player_idx
+                damage_assignments.append((self.attacker, self.attacker.power, defender))
+
+        else:
+            # --- Attacker → blocker ---
             a = self.attacker
             if self._phase_applicable(a, first_strike):
-                print('ZZZ', len(self.blockers), a.rampage_amt)
                 if len(self.blockers) > 1 and a.rampage_amt:
                     multiplier = len(self.blockers) - 1
-                    a.modifiers.items.append(PTMod(s=a, p_adj=a.rampage_amt * multiplier,
-                                                   t_adj=a.rampage_amt * multiplier, expires='EOT'))
+                    a.modifiers.items.append(
+                        PTMod(s=a, p_adj=a.rampage_amt * multiplier,
+                              t_adj=a.rampage_amt * multiplier, expires='EOT')
+                    )
+
                 target = self.blockers[0]
                 if self.gs.can_damage(target, a):
-                    self.gs.apply_damage(a, a.power, target, is_combat=True)
+                    damage_assignments.append((a, a.power, target))
 
-        # Blocker damage to attacker
-        for blocker in self.blockers:
-            if blocker not in self.killed_creatures:
+            # --- Blockers → attacker ---
+            for blocker in self.blockers:
                 if self._phase_applicable(blocker, first_strike):
                     if self.gs.can_damage(self.attacker, blocker):
-                        self.gs.apply_damage(blocker, blocker.power, self.attacker, is_combat=True)
+                        damage_assignments.append((blocker, blocker.power, self.attacker))
+
+        # --- apply damage ---
+        for source, amount, target in damage_assignments:
+            self.gs.apply_damage(source, amount, target, is_combat=True)
+
+        # --- run SBAs ---
+        self.gs.check_state_based_actions()
 
     @staticmethod
     def _phase_applicable(creature: GameCard, first_strike: bool) -> bool:
@@ -75,16 +82,20 @@ class Combat:
 
     def _end_combat(self):
         """Moves all creatures with lethal damage to the graveyard"""
-        # Attacker
-        if self.attacker.toughness - self.attacker.damage_received_this_turn <= 0:
-            self.killed_creatures.append(self.attacker)
-
-        # Blockers
-        for b in self.blockers:
-            if b.toughness - b.damage_received_this_turn <= 0:
-                if b not in self.killed_creatures:
-                    self.killed_creatures.append(b)
-
-        # Send killed creatures to graveyard
-        for c in self.killed_creatures:
-            self.gs.destroy(c)
+        pass
+        # # I don't think having "killed_creatures" is the best design; and cards dying happens upstream
+        # # Attacker
+        # if self.attacker.toughness - self.attacker.damage_received_this_turn <= 0:
+        #     self.killed_creatures.append(self.attacker)
+        #
+        # # Blockers
+        # for b in self.blockers:
+        #     if b.toughness - b.damage_received_this_turn <= 0:
+        #         if b not in self.killed_creatures:
+        #             self.killed_creatures.append(b)
+        #
+        # # Send killed creatures to graveyard
+        # for c in self.killed_creatures:
+        #     print('BBB')
+        #     self.gs.destroy(c)
+        #     print('CCC')

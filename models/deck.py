@@ -85,6 +85,12 @@ class Deck:
     def save_to_json(self, deck: Self) -> None:
         raise NotImplementedError
 
+    def get_slug_cnt(self, slug: str) -> tuple[int, int]:
+        """Returns tuple of int -- slug count in main & slug count in side"""
+        main_cnt = len([c for c in self.main if c.slug == slug])
+        side_cnt = len([c for c in self.side if c.slug == slug])
+        return main_cnt, side_cnt
+
 
 """Validations for Match Manager, comparing cards to format rules:
 

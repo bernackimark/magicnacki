@@ -1,9 +1,9 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import BattlefieldToGraveyardChoice
+from models.modifiers import RegenerationMod
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -69,6 +69,7 @@ class ZeroToughnessSBR(StateBasedRule):
     def apply(gs: GameState) -> None:
         for creature in gs.card_filter.in_play().creatures().result():
             if creature.damage_received_this_turn >= creature.toughness:
+                print(f'ZeroToughnessSBR calls gs.destroy() for {creature}')
                 gs.destroy(creature)
 
 

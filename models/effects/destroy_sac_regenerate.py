@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
-from models.destroy_replacements import RegenerationShield
 from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent, \
-    DrawCardEvent, Event, EndStepEvent
+    DrawCardEvent, EndStepEvent
 from models.utils import flip
 from models.zone import Zone
 
@@ -13,11 +12,12 @@ if TYPE_CHECKING:
 
 from models.game_card_filter import CardFilter
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
-    ForceOfNatureUpkeepChoice, SeasonOfTheWitchUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice, \
+    ForceOfNatureUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice, \
     DemonicHordesUpkeepChoice, OpponentDestroysLandChoice, MoldDemonChoice, CosmicHorrorUpkeepChoice, PayLifeOrSacChoice
 from models.counter_tokens import PIN
 from models.effects.base import Effect
 from models.effects.piles import GraveyardToExile
+from models.modifiers import RegenerationMod
 
 # --- GENERICS --
 class Destroy(Effect):
@@ -67,9 +67,16 @@ class PayManaOrSac(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         gs.action_stack.push(PayManaOrSacUpkeepChoice(source.owner_id, gs, source, self.mana_cost), gs, False)
 
+class Regenerate(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.items.append(RegenerationMod(s=source, expires='EOT'))
+
 class RegenerateSelf(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        gs.destroy_replacements.append(RegenerationShield(source))
+        raise NotImplementedError(f'Please re-write this to use the Regenerate effect')
+        # gs.destroy_replacements.append(RegenerationShield(source))
 
 class SacAll(Effect):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
@@ -211,7 +218,7 @@ class Millstone(Effect):
         if not target:
             raise ValueError(f'{source.props.name} needs a player to target')
         for _ in range(2):
-            top_card = gs.libraries[target].cards[0]  # Warning: if no cards, this pukes
+            top_card = gs.libraries[target][0]  # Warning: if no cards, this pukes
             gs.move_card(top_card, Zone.GRAVEYARD, cause='mill')
 
 class MoldDemonETB(Effect):
@@ -250,7 +257,7 @@ class PsychicAllergyUpkeep(Effect):
             gs.action_stack.push(action, gs, False)
 
 class SandalsOfAbdallahIfCreatureDies(Effect):
-    """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact.."""
+    """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact"""
 
     def __init__(self, target_creature: GameCard):
         self.target_creature = target_creature
@@ -259,7 +266,6 @@ class SandalsOfAbdallahIfCreatureDies(Effect):
         if not isinstance(event, DiesEvent) or event.card != self.target_creature:
             return
         gs.destroy(source)
-
 
 class SeasonOfTheWitchEndStep(Effect):
     """At YOUR end step, destroy all untapped creatures that didn't attack this turn, except those who 'couldn't'.

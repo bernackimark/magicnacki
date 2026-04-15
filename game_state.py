@@ -3,6 +3,8 @@ import random
 from copy import copy
 from typing import Callable, Any, Sequence, TYPE_CHECKING
 
+from models.modifiers import RegenerationMod
+
 if TYPE_CHECKING:
     from models.card import Card
 
@@ -204,7 +206,9 @@ class GameState:
         # 4. Emit resolved events
         for e in resolved_events:
             self.event_mgr.emit(e, self)
-            self.check_state_based_actions()  # checks if damage_received_this_turn >= creature.toughness
+
+        # 5. Check SBAs
+        self.check_state_based_actions()  # checks if damage_received_this_turn >= creature.toughness
 
     def trigger_damage_prevention(self, event: DamageEvent):
         # Replacement effects (statics + globals)
@@ -242,14 +246,18 @@ class GameState:
         # self._after_zone_change(card, from_zone, to_zone)
 
     def destroy(self, card: GameCard, allow_regeneration: bool = True):
+        print('Entering destroy() for', card)
         # ask replacement system if destruction is prevented
         # as of now, this destruction replacement & damage are handled separately but could be unified later
         if allow_regeneration:
-            for shield in list(self.destroy_replacements):
-                if shield.applies_to(card):
-                    shield.apply(self, card)
-                    self.destroy_replacements.remove(shield)
-                    return
+            shield = next((m for m in card.modifiers.items if isinstance(m, RegenerationMod)), None)
+            if shield:
+                card.modifiers.items.remove(shield)
+                card.tapped = True
+                card.damage_received_this_turn = 0
+                self.remove_from_combat(card)
+                print(f'{card} is regenerated')
+                return
 
         self.event_mgr.emit(DiesEvent(card), self)
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
