@@ -58,8 +58,7 @@ def create_engine_from_json(file_path_str: str, settings_key: str, deflate_c_cos
 
     universe = CardUniverse(data['universe'])
 
-    # TODO: this will fail because it's expecting a dict including user_id, name, etc
-    decks = [Deck.from_json(str(i), str(i)) for i, info in enumerate((data['deck_0'], data['deck_1']))]
+    decks = [Deck.from_json(str(i), str(i)) for i in (0, 1)]
 
     # if deflate_c_costs:
     #     deflate_casting_costs(decks)
