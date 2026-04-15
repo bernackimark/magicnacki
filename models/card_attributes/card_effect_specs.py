@@ -36,7 +36,7 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
     Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror, \
-    MoldDemonETB
+    MoldDemonETB, Regenerate
 from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
     VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
@@ -810,6 +810,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'urzas-miter': [Triggered(UrzasMiter(), None, DiesEvent)],
     'urzas-power-plant': [Activated('T', UrzasTrio())],
     'urzas-tower': [Activated('T', UrzasTrio())],
+    'uthden-troll': [Activated('R', Regenerate(), T_FUNCS['self'])],
     'vaevictis-asmadi': [Triggered(PayManaOrSac('BRG'), None, UpkeepEvent),
                          Activated('B', PumpEffect(1, 0, True), T_FUNCS['self']), Activated('R', PumpEffect(1, 0, True), T_FUNCS['self']),
                          Activated('G', PumpEffect(1, 0, True), T_FUNCS['self'])],
