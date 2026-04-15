@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from models.deck import DeckBuilder, OLD_SCHOOL_DB_RULE_SET
+from models.deck import OLD_SCHOOL_DB_RULE_SET, Deck
 import pygame as pg
 from renderer_pygame.config import COLOR_DICT
 from renderer_pygame.scenes.scene_abc import Scene
@@ -29,7 +29,7 @@ class BuildDeckScene(Scene):
         self.FILTERS_Y = 10
         self.IMG_SIZE = (200, 285)
 
-        self.deck_builder = DeckBuilder(OLD_SCHOOL_DB_RULE_SET, 0)
+        self.deck = Deck("99", "2", "My New Deck")
 
         # For all cards in the universe, load CardImages to a list
         self.images = []
@@ -87,10 +87,10 @@ class BuildDeckScene(Scene):
                     if not self.selected_slug:
                         continue
                     card = self.game.card_univ[self.selected_slug]
-                    self.deck_builder.add_card(card)
+                    self.deck.add_card(card)
                     self.rows_built = False
                     print("Your deck now has these cards:")
-                    for c in self.deck_builder.cards:
+                    for c in self.deck.main:
                         print(c)
 
     def update(self, dt):
@@ -109,9 +109,10 @@ class BuildDeckScene(Scene):
     def build_table_rows(self) -> None:
         """Rebuild the table when deck contents change"""
         self.table.clear_rows()
-        for c in self.deck_builder.unique_cards_sorted:
+        for c in self.deck.unique_cards_sorted:
             p_t_text = f'{c.power}/{c.toughness}' if c.power or c.toughness else ''
-            self.table.add_row([c.name, str(self.deck_builder.get_slug_cnt(c.slug)),
+            slug_cnt_in_main, _ = self.deck.get_slug_cnt(c.slug)
+            self.table.add_row([c.name, str(slug_cnt_in_main),
                                 c.casting_cost, ', '.join(c.card_types),
                                 p_t_text, ', '.join(c.keyword_abilities),
                                 'Something re: Image'])
