@@ -57,4 +57,4 @@ class SkipDrawPhase(Action):
         return "Skip Draw Phase"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.CAST, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)

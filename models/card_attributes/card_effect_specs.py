@@ -472,7 +472,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'jacques-le-vert': [Static(JacquesLeVert())],
     'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],
     'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), T_FUNCS['self'],
-                              allowed_phases=[Phase.CAST])],
+                              allowed_phases=[Phase.MAIN])],
     'jalum-tome': [Activated('2T', JalumTome(), text='Draw one card; discard one card')],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
