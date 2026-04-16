@@ -13,13 +13,15 @@ from models.utils import flip
 
 
 class MatchManager:
-    """Class that stores game winners and determines if there is a match winner;
+    """Accepts Decks (list of Cards), rules, tokens, etc.; converts Cards to GameCards; creates GameState object;
+    stores game winners and determines if there is a match winner;
     could be extended for more rules; first to act can be provided else will assign randomly"""
     def __init__(self, player_cnt: int, rules: dict, decks: list[Deck], tokens: dict[str: Card],
                  first_to_act: int | None = None):
         self.player_cnt = player_cnt
         self.rules = rules
         self.decks = decks
+        self.deck_game_cards: list[list[GameCard]] = self._create_game_cards()
         self.tokens = tokens
         self.is_match_over: bool = False
         self._best_of = self.rules['best_of']
@@ -67,7 +69,7 @@ class MatchManager:
 
     def create_game_state(self) -> GameState:
         self.set_first_to_act()
-        return GameState(self.player_cnt, self.first_to_act, self.rules, self._create_game_cards(), self.tokens)
+        return GameState(self.player_cnt, self.first_to_act, self.rules, self.deck_game_cards, self.tokens)
 
     def _create_game_cards(self) -> list[list[GameCard]]:
         return [[GameCard(c, i) for c in deck.main] for i, deck in enumerate(self.decks)]
