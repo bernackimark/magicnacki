@@ -1,11 +1,16 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.card import Card
 
 from common.file_utils import read_json_file
-from game_state import GameState, Action
+from game_state import GameState
 from models.actions.base import Action
-from models.card_filter import filter_cards
+from models.card_filter import ARG_LOOKUP, CardFilter
 from models.game_over import Concede
 
 
@@ -36,7 +41,8 @@ class ConsolePlayer(Player):
                 elif sel_action.lower() == 'c':
                     return Concede(self.idx, gs)
                 elif sel_action.lower() == 'cf':
-                    filter_cards()
+                    args = input(f"Enter args: ({', '.join(ARG_LOOKUP)}) (ex: color=R,G p>=3 kwa=Trample set=1E,AN) ")
+                    print_slugs_from_args(args)
                 else:
                     print_quick_card_info(sel_action)
             return available_actions[sel_action]
@@ -51,3 +57,9 @@ def print_quick_card_info(requested_slug: str):
                     print(f'{k}: {v}')
                 return
     print(f'slug {requested_slug} not found in database')
+
+def print_slugs_from_args(arg_str: str):
+    cf = CardFilter()
+    matching_cards = cf.from_arg_parse(arg_str)
+    for c in sorted(matching_cards, key=lambda x: x.slug):
+        print(c.slug)

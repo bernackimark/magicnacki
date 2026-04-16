@@ -1,5 +1,6 @@
 import operator
 import re
+from typing import Sequence, Any
 
 from models.card import Card, CardUniverse
 from models.constants import OLD_SCHOOL_SETS
@@ -16,69 +17,101 @@ ARG_LOOKUP = {
 
 NUMERIC_KEYS = {'mv', 'p', 't'}
 
-OPS = {
-    '=': operator.eq,
-    '!=': operator.ne,
-    '>=': operator.ge,
-    '<=': operator.le,
-}
+OPS = {'=': operator.eq, '!=': operator.ne, '>=': operator.ge, '<=': operator.le, '>': operator.gt, '<': operator.lt}
 
+class CardFilter:
+    """Creates a CardUniverse of all Old School cards; uses query chaining methods to successively filter the pool;
+    caller must use .result() at the end of their statement to reset the card pool ...
+    Example usage: CardFilter().mana_value([6, 7], '=').has('Flying').result()"""
+    def __init__(self):
+        self._all_cards: tuple[Card, ...] = tuple(CardUniverse(OLD_SCHOOL_SETS).cards)
+        self._cards: list[Card] = list(self._all_cards)
 
-def get_cards(arg_str: str) -> list[Card]:
-    tokens = arg_str.split()
-    cards = CardUniverse(OLD_SCHOOL_SETS).cards
+    def mana_value(self, values: Sequence[int], op: str):
+        op_func = OPS[op]
+        self._cards = [c for c in self._cards if any(op_func(c.casting_weight, v) for v in values)]
+        return self
 
-    parsed = []
-    for a in tokens:
-        key, op, value = re.split(r'([<=\s=\s>=\s!=]+)', a)
-        if key not in ARG_LOOKUP:
-            raise ValueError(f'key must be one of: {", ".join(ARG_LOOKUP)}')
-        if op not in OPS:
-            raise ValueError(f'operator must be one of {OPS}')
+    def is_creature(self, bool_: bool = True):
+        self._cards = [c for c in self._cards if c.is_creature] if bool_ else \
+            [c for c in self._cards if not c.is_creature]
+        return self
 
-        # handle multiple values
-        values = value.split(',')
+    def color(self, values: Sequence[str]):
+        self._cards = [c for c in self._cards if any(v in c.colors for v in values)]
+        return self
 
-        if key in NUMERIC_KEYS:
-            if not all(v.isdigit() for v in values):
-                raise ValueError('value must be a digit')
-            values = [int(v) for v in values]
+    def has(self, kwa: str, bool_: bool = True):
+        if bool_:
+            self._cards = [c for c in self._cards if kwa in c.keyword_abilities]
+        else:
+            self._cards = [c for c in self._cards if kwa not in c.keyword_abilities]
+        return self
 
-        parsed.append((key, OPS[op], values))
+    def power(self, values: Sequence[int], op: str):
+        op_func = OPS[op]
+        self._cards = [c for c in self._cards if any(op_func(c.power, v) for v in values)]
+        return self
 
-    for key, op_func, values in parsed:
-        if key == 'creature':
-            cards = [c for c in cards if op_func(c.is_creature, True)]
+    def toughness(self, values: Sequence[int], op: str):
+        op_func = OPS[op]
+        self._cards = [c for c in self._cards if any(op_func(c.toughness, v) for v in values)]
+        return self
 
-        elif key == 'color':
-            cards = [c for c in cards if any(v in c.colors for v in values)]
+    def set_(self, values: Sequence[str], bool_: bool = True):
+        if bool_:
+            self._cards = [c for c in self._cards if any(v in c.set_codes for v in values)]
+        else:
+            self._cards = [c for c in self._cards if not any(v in c.set_codes for v in values)]
+        return self
 
-        elif key == 'kwa':
-            cards = [c for c in cards if any(v in c.keyword_abilities for v in values)]
+    def result(self) -> list[Card]:
+        """Must always be called at the end of the query chain;
+        resets the filtered _cards to the original full list for subsequent queries"""
+        cards_to_return = self._cards
+        self._cards = list(self._all_cards)
+        return cards_to_return
 
-        elif key == 'set':
-            cards = [c for c in cards if any(v in c.set_codes for v in values)]
+    def from_arg_parse(self, arg_str: str) -> list[Card]:
+        """Ex use: 'color=R,G p>=3 t<=6 kwa=Trample set=1E,AN creature=True mv>=2' returns:
+         two-headed-giant-of-foriys & war-mammoth"""
+        parsed: list[tuple[str, operator, list[Any]]] = self._arg_parse(arg_str)
+        for key, op_func, values in parsed:
+            if key == 'creature':
+                self._cards = [c for c in self._cards if op_func(c.is_creature, True)]
+            elif key == 'color':
+                self._cards = [c for c in self._cards if any(v in c.colors for v in values)]
+            elif key == 'kwa':
+                self._cards = [c for c in self._cards if any(v in c.keyword_abilities for v in values)]
+            elif key == 'set':
+                self._cards = [c for c in self._cards if any(v in c.set_codes for v in values)]
+            elif key == 'mv':
+                self._cards = [c for c in self._cards if any(op_func(c.casting_weight, v) for v in values)]
+            elif key == 'p':
+                self._cards = [c for c in self._cards if c.is_creature and any(op_func(c.power, v) for v in values)]
+            elif key == 't':
+                self._cards = [c for c in self._cards if c.is_creature and any(op_func(c.toughness, v) for v in values)]
+        return self.result()
 
-        elif key == 'mv':
-            cards = [c for c in cards if any(op_func(c.casting_weight, v) for v in values)]
+    @staticmethod
+    def _arg_parse(arg_str: str) -> list[tuple[str, operator, list[Any]]]:
+        tokens = arg_str.split()
+        parsed = []
+        for t in tokens:
+            key, op, value = re.split(r'([<=\s=\s>=\s!=\s<\s>]+)', t)
+            if key not in ARG_LOOKUP:
+                raise ValueError(f'key must be one of: {", ".join(ARG_LOOKUP)}')
+            if op not in OPS:
+                raise ValueError(f'operator must be one of {OPS}')
 
-        elif key == 'p':
-            cards = [c for c in cards if c.is_creature and any(op_func(c.power, v) for v in values)]
+            # handle multiple values
+            values = value.split(',')
 
-        elif key == 't':
-            cards = [c for c in cards if c.is_creature and any(op_func(c.toughness, v) for v in values)]
-    return cards
+            if key in NUMERIC_KEYS:
+                if not all(v.isdigit() for v in values):
+                    raise ValueError('value must be a digit')
+                values = [int(v) for v in values]
 
-def format_card_text(card: Card) -> str:
-    return (f"{card.slug}: {card.name}: {card.casting_cost}: {card.card_types}: {card.card_sub_types}: "
-            f"({card.power}/{card.toughness}): {card.keyword_abilities}: {card.oracle_rules_text}")
+            parsed.append((key, OPS[op], values))
 
-def filter_cards():
-    args = input(f"Enter args: ({', '.join(ARG_LOOKUP)}) (ex: color=R,G p>=3 kwa=Trample set=1E,AN) ")
-    filtered = get_cards(args)
-    for c in filtered:
-        print(format_card_text(c))
-
-
-if __name__ == '__main__':
-    filter_cards()
+        return parsed
