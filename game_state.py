@@ -1,21 +1,19 @@
 from __future__ import annotations
-import random
 from copy import copy
+import random
 from typing import Callable, Any, Sequence, TYPE_CHECKING
-
-from models.modifiers import RegenerationMod
 
 if TYPE_CHECKING:
     from models.card import Card
 
 from models.action_stack import ActionStack
+from models.actions.stack_accept_counter import AcceptAction
 from models.event_manager import EventManager
-from models.game_card_filter import CardFilter
 from models.actions.activate_ability import ActivateAbility, BeginAbilityActivationAction
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
-from models.actions.stack_accept_counter import AcceptAction
+from models.combat import Combat
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
@@ -23,18 +21,18 @@ from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCa
 from models.events_all import (TapCardEvent, UntapCardEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                DiesEvent, ZoneChangeEvent, DrawCardEvent, RandomEvent, DiscardEvent)
 from models.game_card import GameCard
-from models.combat import Combat
+from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool
+from models.modifiers import RegenerationMod
 from models.mulligan import MulliganChoice
 from models.score_manager import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
+from models.utils import flip
 from models.zone import Zone
 from phase_fsm import PhaseManager
-from models.utils import flip
-
 
 class GameState:
     """All-knowing class responsible for everything after a new game is created;
@@ -116,13 +114,13 @@ class GameState:
     def can_attack(self, card: GameCard) -> bool:
         return self._query_effects_by_event('can_attack', card)
 
-    def can_block(self, blocker: GameCard, attacker: GameCard):
+    def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
         return self._query_effects_by_event('can_block', blocker, attacker=attacker)
 
-    def can_damage(self, target: GameCard, source: GameCard):
+    def can_damage(self, target: GameCard, source: GameCard) -> bool:
         return self._query_effects_by_event('can_damage', target, source=source)
 
-    def can_target(self, target: GameCard | int, source: GameCard):
+    def can_target(self, target: GameCard | int, source: GameCard) -> bool:
         if isinstance(target, int):
             return True
         result = self._query_effects_by_event('can_target', target, source=source)
@@ -546,15 +544,10 @@ class GameState:
 #  - When deciding which mana to tap, as a strategy, tap colorless mana where possible
 
 # TODO:
-#  Build a CardUniverseFilter (modeled after CardFilter)
-#  - helpful when I'm trying to figure out what are good cards to test
-#  - would be helpful to the User when Building a Deck
-
-# TODO:
 #  can_cast() must take into account multi-mana-color producers (dual lands, etc)
 
-# TODO: currently, Destroy() is being placed on the stack, but there is no option to respond to that, only 'Accept'
-# ChatGPT is saying this:
+# TODO: proper stack resolution (according to ChatGPT)
+#
 #   while True:
 #     player = self.current_priority_player()
 #
