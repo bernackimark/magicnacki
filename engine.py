@@ -1,4 +1,9 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card import GameCard
 
 from data.user_data import get_user
 from models.deck import CardUniverse, Deck
@@ -36,18 +41,22 @@ class Engine:
                 self.gs.game_history.append_action(action, self.gs)
             self.match_manager.create_game_state()
 
-def deflate_casting_costs(the_decks: list[Deck]) -> None:
-    """For speed of testing, reduce all cards' casting costs"""
-    for d in the_decks:
-        for c in d.main:
-            if not c.casting_cost:
-                continue
-            if c.casting_cost[-1] not in ('B', 'U', 'G', 'R', 'W'):
-                c.casting_cost = '1'
-            else:
-                c.casting_cost = c.casting_cost[-1] if 'X' not in c.casting_cost else f'X{c.casting_cost[-1]}'
+def deflate_costs(game_card_decks: list[list[GameCard]]) -> None:
+    """For speed of testing, reduce all cards' casting & activated ability costs"""
+    def _deflate(cost: str):
+        if cost[-1] not in ('B', 'U', 'G', 'R', 'W'):
+            return '1'
+        return cost[-1] if 'X' not in cost else f'X{cost[-1]}'
 
-def create_engine_from_json(file_path_str: str, settings_key: str, deflate_c_costs: bool = False) -> Engine:
+    for d in game_card_decks:
+        for c in d:
+            if c.casting_cost:
+                c.casting_cost = _deflate(c.casting_cost)
+            for aa in c.activated_abilities:
+                if aa.eff_spec.cost:
+                    aa.eff_spec.cost = _deflate(aa.eff_spec.cost)
+
+def create_engine_from_json(file_path_str: str, settings_key: str, test_mode: bool = False) -> Engine:
     """From provided path string & key, pull JSON; create CardUniverse; create decks;
     deflate casting costs, if applicable; set rules; create & return a fresh Engine oboject
     """
@@ -58,7 +67,7 @@ def create_engine_from_json(file_path_str: str, settings_key: str, deflate_c_cos
 
     universe = CardUniverse(data['universe'])
 
-    decks = [Deck.from_json(str(i), str(i)) for i in (0, 1)]
+    decks = [Deck.from_json(deck_id, str(i)) for i, deck_id in enumerate((data['deck_0'], data['deck_1']))]
 
     # if deflate_c_costs:
     #     deflate_casting_costs(decks)
@@ -76,6 +85,8 @@ def create_engine_from_json(file_path_str: str, settings_key: str, deflate_c_cos
     eng = Engine(players=players, renderer=ConsoleRenderer(),
                  match_manager=MatchManager(len(players), rules, decks, universe.token_cards,
                                             first_to_act=data['starting_deck']))
+    if test_mode:
+        deflate_costs(eng.match_manager.deck_game_cards)
     return eng
 
 
