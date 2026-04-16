@@ -67,12 +67,6 @@ class CastToBoard(Action):
                     self.gs.pending_choice = MultiTargetChoice(self.card.owner_id, self.gs, self.card, eff_spec)
                     print(f"Activated the ability on cast for {self.card.props.name}")
 
-        # --- if card has activated abilities, add them to the board
-        for eff_spec in INVOCATIONS.get(self.card.props.slug, []):
-            if eff_spec.activation_type == 'activated':
-                ability = ActivatedAbility(self.card, eff_spec)
-                self.card.activated_abilities.append(ability)
-
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
         self.gs.event_mgr.emit(CastResolvedEvent(self.card, self.card.orig_owner_id, None), self.gs)
 
