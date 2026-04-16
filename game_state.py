@@ -446,8 +446,7 @@ class GameState:
         actions: list[ActivateAbility] = []
         for card in self.boards[self.action_on_idx]:
             actions.extend(self.get_available_activated_abilities(card))
-            for aura in card.auras:
-                actions.extend(self.get_available_activated_abilities(aura))
+            # TODO: auras should be added to board
         return actions
 
     def available_actions_from_hand(self) -> list[Action]:
