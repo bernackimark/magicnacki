@@ -178,7 +178,7 @@ class SkipDrawPhaseGainLife(Action):
 
     def play(self):
         self.gs.phase_mgr.phase = Phase.CAST
-        self.gs.score.mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
+        self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
         self.gs.action_stack.pop()
 
 # --- CARD-SPECIFIC ---
