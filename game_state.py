@@ -338,7 +338,7 @@ class GameState:
         detach all attached GameCard auras; call GameCard.clear_all_mods()"""
         self.event_mgr.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'), self)
         self.event_mgr.unregister_effects(card)
-        # TODO: GameCard needs to also know which cards enchant it; not just in the reverse
+
         for aura in list(card.auras):
             self.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self)
             self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
@@ -366,14 +366,14 @@ class GameState:
                     return
 
     def tap_card(self, c: GameCard):
-        """If card is already tapped, skip; emit TapCardEvent, tap card, tap all attached auras"""
+        """If card is already tapped, skip; emit TapCardEvent & tap card"""
         if c.is_tapped:
             return
         self.event_mgr.emit(TapCardEvent(card=c), self)
         c.is_tapped = True
 
     def untap_card(self, c: GameCard):
-        """If card is already untapped, skip; emit UntapCardEvent, tap card, tap all attached auras"""
+        """If card is already untapped, skip; emit UntapCardEvent & untap card"""
         if not c.is_tapped:
             return
         self.event_mgr.emit(UntapCardEvent(card=c), self)
@@ -446,7 +446,7 @@ class GameState:
         actions: list[ActivateAbility] = []
         for card in self.boards[self.action_on_idx]:
             actions.extend(self.get_available_activated_abilities(card))
-            # TODO: auras should be added to board
+
         return actions
 
     def available_actions_from_hand(self) -> list[Action]:
@@ -458,7 +458,7 @@ class GameState:
                 continue
 
             # Short-cutting these directly to the board for testing expedience
-            if c.props.is_permanent and not c.props.is_aura:
+            if c.props.is_permanent:
                 actions.append(CastToBoard(p_id, self, c))
                 continue
 
