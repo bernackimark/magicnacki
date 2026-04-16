@@ -1,9 +1,6 @@
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
 from uuid import uuid4
-
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -14,6 +11,7 @@ from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec, Effect
 from models.card_attributes.card_effect_specs import INVOCATIONS
 from models.modifiers import Modifiers, KWAMod, ModType
+from models.zone import Zone
 
 
 def attach_invocations(card: GameCard):
