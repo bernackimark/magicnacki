@@ -13,7 +13,7 @@ class MoveToEndStep(Action):
         return "Move to End Step"
 
     def play(self) -> None:
-        self.gs.phase_mgr.phase = Phase.END_STEP
+        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
 
 
 @dataclass
@@ -28,4 +28,4 @@ class PassTheTurn(Action):
         self.gs.action_on_idx = self.gs.player_turn_idx
         self.gs.turn = Turn(self.gs.player_turn_idx, flip(self.gs.player_turn_idx))
         self.gs.turn_number += 1
-        self.gs.phase_mgr.phase = Phase.UNTAP
+        self.gs.phase_mgr.set_phase(Phase.UNTAP, self.gs)

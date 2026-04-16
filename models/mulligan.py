@@ -126,7 +126,7 @@ class KeepHand(Action):
         self.gs.pending_choice = None
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
-        self.gs.phase_mgr.phase = Phase.CAST
+        self.gs.phase_mgr.set_phase(Phase.CAST, self.gs)
 
 @dataclass
 class FinishBottoming(Action):
@@ -138,8 +138,8 @@ class FinishBottoming(Action):
     def play(self):
         for card in self.choice.selected:
             self.gs.hands[self.player_idx].cards.remove(card)
-            self.gs.libraries[self.player_idx].cards.append(card)
+            self.gs.libraries[self.player_idx].append(card)
         self.gs.pending_choice = None
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
-        self.gs.phase_mgr.phase = Phase.CAST
+        self.gs.phase_mgr.set_phase(Phase.CAST, self.gs)

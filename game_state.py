@@ -32,7 +32,7 @@ from models.score_manager import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn import Turn
 from models.zone import Zone
-from phase_fsm import Phase, PhaseManager
+from phase_fsm import PhaseManager
 from models.utils import flip
 
 
@@ -55,7 +55,7 @@ class GameState:
         self.action_on_idx: int = self.player_turn_idx
         self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
         self.turn_number = 1
-        self.phase_mgr = PhaseManager(Phase.NEW_GAME)
+        self.phase_mgr = PhaseManager()
 
         # piles, combats, mana pools
         self.libraries: list[list[GameCard]] = cards.copy()
