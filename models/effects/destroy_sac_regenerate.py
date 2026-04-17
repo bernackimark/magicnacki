@@ -73,11 +73,6 @@ class Regenerate(Effect):
             raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.items.append(RegenerationMod(s=source, expires='EOT'))
 
-class RegenerateSelf(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        raise NotImplementedError(f'Please re-write this to use the Regenerate effect')
-        # gs.destroy_replacements.append(RegenerationShield(source))
-
 class SacAll(Effect):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
         self.card_filter_func = card_filter_func
