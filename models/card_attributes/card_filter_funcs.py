@@ -56,6 +56,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'creatures_power_two_or_less': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                   if c.power <= 2],
     'djinns_and_efreets': lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
+    'elephants_in_play': lambda gs, s: gs.card_filter.in_play().by_sub_type('Elephant').result(),
     'enchanted_cards': lambda gs, s: gs.card_filter.is_enchanted().result(),
     'enchanted_creatures': lambda gs, s: gs.card_filter.is_enchanted().creatures().result(),
     'enchants_in_play': lambda gs, s: gs.card_filter.in_play.enchantments().result(),

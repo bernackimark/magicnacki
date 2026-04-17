@@ -35,7 +35,7 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
     ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
-    Blight, DemonicHordesUpkeep, RegenerateSelf, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror, \
+    Blight, DemonicHordesUpkeep, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror, \
     MoldDemonETB, Regenerate
 from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
     VerduranEnchantress, \
@@ -233,6 +233,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'city-of-shadows':
         [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],
         # TODO: needs a way to find a creature to exile in extra_costs
+    'clay-statue': [Activated('2', Regenerate(), T_FUNCS['self'])],
     'cleanse':
         [Triggered(DestroyAll(T_FUNCS['black_creatures_in_play']), None, CastResolvedEvent)],
     'clockwork-avian':
@@ -287,6 +288,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'davenant-archer': [Activated('T', DealDamage(1), T_FUNCS['combatants'])],
     'deadfall': [Static(WalkRuleRemoved('Forestwalk'))],
     'deathlace': [Triggered(SetColor('B'), T_FUNCS['cards_in_play'], CastResolvedEvent)],
+    'death-ward': [Triggered(Regenerate(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'demonic-hordes': [Activated('T', Destroy(), T_FUNCS['lands_in_play']),
                        Triggered(DemonicHordesUpkeep(), None, UpkeepEvent)],
     'demonic-torment':
@@ -294,6 +296,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'desert': [Activated('T', AddMana('C')),
                Activated('T', DealDamage(1), T_FUNCS['attackers'], allowed_phases=[Phase.COMBAT_END])],
     'desert-twister': [Triggered(Destroy(), T_FUNCS['permanents_in_play'], CastResolvedEvent)],
+    'diabolic-machine': [Activated('3', Regenerate(), T_FUNCS['self'])],
     'dingus-egg': [Triggered(DingusEgg(), None, ZoneChangeEvent)],
     'disrupting-scepter': [Activated('3T', Discard(), T_FUNCS['all_players'],
                                      allowed_p_id_turn=0)],  # TODO: p_id_turn needs a solution
@@ -310,7 +313,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                              text=f'{{{combo}}}')
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],
                   # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
-    'drudge-skeletons': [Activated('B', RegenerateSelf())],
+    'drowned': [Activated('B', Regenerate(), T_FUNCS['self'])],
+    'drudge-skeletons': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'dust-to-dust': [Triggered(DustToDust(), TargetSpec(T_FUNCS['artifacts_in_play'], 2, 2), CastResolvedEvent)],
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls_in_play'])],
     'dwarven-song': [Triggered(SetColor('R', 'EOT'), TargetSpec(T_FUNCS['creatures_in_play'], 1, None),
@@ -329,6 +333,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'elder-spawn': [Triggered(ElderSpawnUpkeep(), None, UpkeepEvent), Static(ElderSpawnCanBeBlocked())],
     'electric-eel': [Triggered(DealDamage(1), T_FUNCS['card_owner'], CastResolvedEvent),
                      Activated('RR', ElectricEel())],
+    'elephant-graveyard': [Activated('T', AddMana('C')), Activated('T', Regenerate(), T_FUNCS['elephants_in_play'])],
     'elven-riders': [Static(ElvenRidersCanBeBlocked())],
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
@@ -393,6 +398,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                    allowed_phases=[Phase.UPKEEP], max_activations_per_turn=1,
                                    allowed_p_id_turn=T_FUNCS['card_owner'])],
     'ghazbán-ogre': [Triggered(GhazbanOgre(), None, UpkeepEvent)],
+    'ghost-ship': [Activated('UUU', Regenerate(), T_FUNCS['self'])],
     'ghosts-of-the-damned': [Activated('T', PumpEffect(-1, 0, True), T_FUNCS['creatures_in_play'])],
     'giant-growth':
         [Triggered(PumpEffect(3, 3, True), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
@@ -527,6 +533,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(LivingArtifactUpkeep(), None, UpkeepEvent)],
     'living-lands': [Static(LivingLands())],
     'living-plane': [Static(LivingPlane())],
+    'living-wall': [Activated('1', Regenerate(), T_FUNCS['self'])],
     'livonya-silone': [Static(LivonyaSilone())],
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
     'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
@@ -578,6 +585,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
                          Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments_in_play']))],
+    'niall-silvain': [Activated('GGGGT', Regenerate(), T_FUNCS['creatures_in_play'])],
     'nicol-bolas': [Triggered(PayManaOrSac('UBR'), None, UpkeepEvent),
                     Triggered(NicolBolas(), None, DamageResolvedEvent)],
     'nightmare': [Static(NightmarePT())],
@@ -641,6 +649,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures_in_play'])],
     'rag-man': [Activated('BBBT', RagMan(), T_FUNCS['opponent'], allowed_p_id_turn=T_FUNCS['card_owner'])],
+    'ragnar': [Activated('GWUT', Regenerate(), T_FUNCS['creatures_in_play'])],
     'raise-dead': [Triggered(Bounce(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
     'ramses-overdark': [Activated('T', Destroy(), T_FUNCS['enchanted_creatures'])],
@@ -656,6 +665,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                    max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'red-ward': [Triggered(KWAModEffect('add', 'Protection From Red'),
                            T_FUNCS['creatures_in_play'], CastResolvedEvent)],
+    'regeneration': [Activated('G', Regenerate(), T_FUNCS['host'])],
     'regrowth': [Triggered(Bounce(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'relic-barrier': [Activated('T', TapCardEffect(), T_FUNCS['untapped_artifacts_in_play'])],
     'reset': [Triggered(Reset(), None, CastResolvedEvent, conditions=[])],
@@ -704,6 +714,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'serpent-generator': [Activated('4T', CreateTokenCreature('snake'))],
     'shapeshifter': [Triggered(Shapeshifter(), None, CastResolvedEvent), Triggered(Shapeshifter(), None, UpkeepEvent)],
     'shatter': [Triggered(Destroy(), T_FUNCS['artifacts_in_play'], CastResolvedEvent)],
+    'shatterstorm': [Triggered(DestroyAll(T_FUNCS['artifacts_in_play'], False), None, CastResolvedEvent)],
     'shield-wall': [Triggered(ShieldWall(), None, CastResolvedEvent)],
     'shivan-dragon': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
@@ -794,6 +805,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                    None, CastResolvedEvent)],
     'tuknir-deathlock': [Activated('RGT', PumpEffect(2, 2, True), T_FUNCS['creatures_in_play'])],
     'tundra': dual_land_activated_ability_specs('WU'),
+    'tunnel': [Triggered(Destroy(False), T_FUNCS['walls_in_play'], CastResolvedEvent)],
     'twiddle': [Triggered(Twiddle(), T_FUNCS['artifacts_creatures_lands_in_play'], CastResolvedEvent)],
     'typhoon': [Triggered(Typhoon(), T_FUNCS['opponent'], CastResolvedEvent)],
     'uncle-istvan': [Static(UncleIstvanPrevention())],
@@ -833,6 +845,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Activated('XXT', DealDamage(), T_FUNCS['all_creatures_and_players'],
                    min_x=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2,
                    max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2)],
+    'walking-dead': [Activated('B', Regenerate(), T_FUNCS['self'])],
+    'wall-of-bone': [Activated('B', Regenerate(), T_FUNCS['self'])],
+    'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],
     'wall-of-opposition': [Activated('1', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'wall-of-putrid-flesh': [Static(WallOfPutridFleshPrevention())],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
@@ -856,6 +871,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                              T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'wild-growth': [Triggered(None, T_FUNCS['lands_in_play'], CastResolvedEvent),
                     Triggered(WildGrowth(), None, TapCardEvent)],
+    'will-o-the-wisp': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'willow-satyr': [Activated('T', Steal(), T_FUNCS['opp_legendary_creatures_in_play']),
                      Triggered(OptionalUntap(), None, UntapPhaseEvent),
                      Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],

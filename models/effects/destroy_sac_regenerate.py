@@ -21,20 +21,20 @@ from models.modifiers import RegenerationMod
 
 # --- GENERICS --
 class Destroy(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.destroy(target)
+    def __init__(self, allow_regen: bool = True):
+        self.allow_regen = allow_regen
 
-class DestroyNoRegen(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard | None = None):
-        gs.destroy(target, allow_regeneration=False)
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.destroy(target, allow_regeneration=self.allow_regen)
 
 class DestroyAll(Effect):
-    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
+    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]], allow_regen: bool = True):
         self.card_filter_func = card_filter_func
+        self.allow_regen = allow_regen
 
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         for c in self.card_filter_func(gs, s):
-            gs.destroy(c)
+            gs.destroy(c, allow_regeneration=self.allow_regen)
 
 class DestroyAtCombatEnd(Effect):
     """Destroys target if it is still on the battlefield; unregisters itself"""
