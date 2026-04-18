@@ -13,6 +13,19 @@ if TYPE_CHECKING:
 
 from models.effects.base import Effect
 
+# --- GENERICS ---
+class CantBeTargetedByAuras(Effect):
+    """Card can't host an aura"""
+    event = 'can_target'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_target':
+            return
+        source: GameCard = kwargs.get('source')
+        target: GameCard = kwargs.get('card')
+        if not source or not target or 'Aura' not in source.card_sub_types:
+            return
+        return False
 
 # --- CARD-SPECIFIC ---
 class AkronLegionnaire(Effect):
@@ -617,6 +630,20 @@ class SunkenCity(Effect):
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
         return PTMod(s=source, p_adj=1, t_adj=1)
+
+class ArtifactWardCanBeTargeted(Effect):
+    """Enchanted creature can't be the target of abilities from artifact sources"""
+    event = 'can_target'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_target':
+            return
+        source: GameCard = kwargs.get('source')
+        target: GameCard = kwargs.get('card')
+        if not source or not target or 'artifact-ward' not in {a.props.slug for a in target.auras}:
+            return
+        if 'Artifact' in source.card_types:
+            return False
 
 class WallOfTombstonesPT(Effect):
     """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""

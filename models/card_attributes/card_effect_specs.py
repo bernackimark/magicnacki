@@ -63,7 +63,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
     JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, KoboldTaskmaster, KoboldOverlord, \
-    SedgeTrollPT, ZombieMasterWalk
+    SedgeTrollPT, ZombieMasterWalk, CantBeTargetedByAuras
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -167,6 +167,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ball-lightning': [Triggered(Destroy(), T_FUNCS['self'], EndStepEvent)],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'],
                           max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
+    'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
     'basalt-monolith': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_activated_ability_specs('BG'),
@@ -778,7 +779,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                            allowed_phases=[Phase.DECLARE_COMBAT])],
     'terror': [Triggered(Destroy(False), T_FUNCS['non_artifact_non_black_creatures_in_play'], CastResolvedEvent)],
     'tetravus': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent)],
-    'tetsuo-umezawa': [Activated('UBBRT', Destroy(), T_FUNCS['tapped_or_blocking_creatures'])],  # more to code
+    'tetsuo-umezawa': [Activated('UBBRT', Destroy(), T_FUNCS['tapped_or_blocking_creatures']),
+                       Static(CantBeTargetedByAuras())],
     'the-abyss': [Triggered(TheAbyss(), None, UpkeepEvent)],
     'the-brute': [Triggered(PumpEffect(1, 0), T_FUNCS['creatures_in_play'], CastResolvedEvent),
                   Activated('RRR', Regenerate(), T_FUNCS['host'])],
