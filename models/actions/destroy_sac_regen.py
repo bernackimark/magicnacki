@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
 
 from models.utils import flip
 
@@ -23,18 +23,22 @@ class AllowOpponentToDestroyALand(Action):
         from models.choice_actions_all import OpponentDestroysLandChoice
         self.gs.action_stack.push(OpponentDestroysLandChoice(flip(self.player_idx), self.gs, self.source), self.gs, True)
 
-class Destroy(Action):
-    def __init__(self, p_id, gs, source: GameCard, target: GameCard):
+class DestroyAction(Action):
+    def __init__(self, p_id, gs, source: GameCard, target: GameCard, allow_regen: bool = True):
         super().__init__(p_id, gs)
         self.source = source
         self.target = target
+        self.allow_regen = allow_regen
 
     def __repr__(self):
         return f'Destroy {self.target.props.name}'
 
     def play(self):
-        self.gs.destroy(self.target)
-        self.gs.action_stack.pop()  # remove choice
+        self.gs.destroy(self.target, allow_regeneration=self.allow_regen)
+        if self.gs.action_stack.actions:
+            self.gs.action_stack.pop()
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 class Exile(Action):
     def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
@@ -97,3 +101,16 @@ class SacCards(Action):
             self.gs.pending_choice = None
         elif len(self.gs.action_stack):
             self.gs.action_stack.pop()  # remove choice
+
+# --- Card Specific ---
+class TheAbyssAction(Action):
+    def __init__(self, p_id, gs, source: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+
+    def __repr__(self):
+        return f"{self.source.props.name}: Choose creature to destroy"
+
+    def play(self):
+        from models.choice_actions_all import TheAbyssChoice
+        self.gs.pending_choice = TheAbyssChoice(self.player_idx, self.gs, self.source)

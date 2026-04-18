@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamageToYou, PayLife
-from models.actions.destroy_sac_regen import Sac, Destroy, AllowOpponentToDestroyALand, SacCards, Reanimate
+from models.actions.destroy_sac_regen import Sac, DestroyAction, AllowOpponentToDestroyALand, SacCards, Reanimate
 from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
@@ -142,7 +142,7 @@ class OpponentDestroysLandChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         lands = self.gs.card_filter.on_player_board(self.source.owner_id).lands().result()
-        return [Destroy(flip(self.player_idx), self.gs, self.source, t) for t in lands]
+        return [DestroyAction(flip(self.player_idx), self.gs, self.source, t) for t in lands]
 
 class PayLifeOrDiscardChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, life_amt: int, card_to_be_discarded: GameCard):
@@ -447,6 +447,16 @@ class ShapeshifterChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [VariablePTMod(self.player_idx, self.gs, self.source, self.source, i, 7 - i) for i in range(8)]
+
+class TheAbyssChoice(ChoiceAction):
+    """At each upkeep, destroy target nonartifact creature that player controls of their choice. No regeneration."""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        p_id = self.gs.player_turn_idx
+        your_creatures = [c for c in self.gs.card_filter.on_player_board(p_id).non_artifact_creatures().result()]
+        return [DestroyAction(p_id, self.gs, self.source, c, allow_regen=False) for c in your_creatures]
 
 class TriassicEggChoice(ChoiceAction):
     """Choose one:

@@ -5,7 +5,7 @@ from models.counter_tokens import PLUS_ONE
 from models.effects.counters import AddCounterAtEndStep
 from models.effects.destroy_sac_regenerate import DestroyAtCombatEnd
 from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
-from models.events_all import BlockEvent, CombatEndEvent, AttackEvent, DamageResolvedEvent
+from models.events_all import BlockEvent, CombatEndEvent, AttackEvent, DamageResolvedEvent, DiesEvent, Event
 from models.modifiers import KWAMod, PTMod
 
 if TYPE_CHECKING:
@@ -55,6 +55,17 @@ class Abomination(Effect):
         delayed = DestroyAtCombatEnd(s, other)
         gs.event_mgr.register_effect(delayed, s)
         # this will later get unregistered at combat end
+
+class AbuJafar(Effect):
+    """When this creature dies, destroy all creatures blocking or blocked by it. They can't be regenerated."""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        if event.card is not source:
+            return
+        for com in gs.combats:
+            for other_combatant in com.get_combatants_against(event.card):
+                gs.destroy(other_combatant, allow_regeneration=False)
 
 class CavePeopleAttackPump(Effect):
     """Whenever this creature attacks, it gets +1/-2 until end of turn ..."""

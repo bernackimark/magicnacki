@@ -52,6 +52,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'creatures_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).creatures().result(),
     'creatures_and_enchantments_in_play': lambda gs, s: gs.card_filter.in_play().by_type(['Creature',
                                                                                           'Enchantment']).result(),
+    'creatures_and_lands_in_play': lambda gs, s: [gs.card_filter.in_play().creatures().result() +
+                                                  gs.card_filter.in_play().lands().result()],
     'creatures_and_players': lambda gs, s: gs.card_filter.in_play().creatures().result() + ALL_PLAYER_INDICES,
     'creatures_power_two_or_less': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                   if c.power <= 2],
@@ -81,6 +83,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'lands_in_play': lambda gs, s: gs.card_filter.in_play().lands().result(),
     'legendary_creatures_in_play': lambda gs, s: gs.card_filter.in_play().legendary().creatures().result(),
     'non_artifact_creatures_in_play': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
+    'non_artifact_non_black_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.creatures().in_play().result()
+                                                               if 'B' not in c.colors and 'Artifact' not in c.card_types],
     'non_creature_artifacts_in_play': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'non_token_permanents_in_play': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
     'one_one_creatures_in_play': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
@@ -135,6 +139,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Orc').result()
                        if c is not s],
     'your_permanents_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).permanents().result(),
+    'your_swamps_in_play': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).swamps().result(),
     'your_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).tapped().blue().creatures().result(),
     'your_untapped_creatures':
         lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),

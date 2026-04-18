@@ -29,6 +29,11 @@ class AcceptAction(Action):
             self.gs.action_stack.clear_()
             return
 
+        if not hasattr(last_action, 'card'):
+            action = self.gs.action_stack.actions.pop()
+            action.play()
+            return
+
         card = last_action.card
         if card.props.is_aura:
             card.host = target

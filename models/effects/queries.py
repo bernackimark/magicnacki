@@ -583,6 +583,14 @@ class RohgahhOfKherKeepPump(Effect):
             return None
         return PTMod(s=s, p_adj=2, t_adj=2)
 
+class SedgeTrollPT(Effect):
+    """Gains +1/+1 if you control a swamp"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'pt_mod' or card.props.slug != 'sedge-troll':
+            return None
+        if gs.card_filter.on_player_board(card.owner_id).swamps().result():
+            return PTMod(s=card, p_adj=1, t_adj=1)
+
 class Seeker(Effect):
     """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
@@ -638,3 +646,12 @@ class Weakstone(Effect):
         if card not in gs.card_filter.in_play().attackers().result():
             return None
         return PTMod(s=source, p_adj=-1, expires='EOT')
+
+class ZombieMasterWalk(Effect):
+    """Other Zombie creatures gain Swampwalk"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        source = kwargs.get('source')
+        if event != 'pt_mod':
+            return None
+        if card in gs.card_filter.in_play().creatures().by_sub_type('Zombie').result() and card is not source:
+            return KWAMod(s=source, add_or_remove='add', kwa='Swampwalk')

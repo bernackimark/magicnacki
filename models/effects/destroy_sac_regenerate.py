@@ -1,8 +1,9 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
+from models.actions.destroy_sac_regen import DestroyAction, TheAbyssAction
 from models.events_all import StateBasedEvent, DiesEvent, ZoneChangeEvent, CombatEndEvent, TapCardEvent, UpkeepEvent, \
-    DrawCardEvent, EndStepEvent
+    DrawCardEvent, EndStepEvent, Event
 from models.utils import flip
 from models.zone import Zone
 
@@ -308,6 +309,19 @@ class StanggOnLeave(Effect):
         other_slug = 'stangg-twin' if event.card.props.slug == 'stangg' else 'stangg'
         other_card = gs.card_filter.on_player_board(event.card.owner_id).by_slug(other_slug).result()[0]
         gs.destroy(other_card)
+
+class TheAbyss(Effect):
+    """At each upkeep, destroy target nonartifact creature that player controls of their choice. No regeneration."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        p_id = event.active_player
+        your_non_art_creatures = gs.card_filter.on_player_board(p_id).non_artifact_creatures().result()
+        if not your_non_art_creatures:
+            return
+        if len(your_non_art_creatures) == 1:
+            gs.action_stack.push(DestroyAction(p_id, gs, source, your_non_art_creatures[0], False), gs, False)
+        gs.action_stack.push(TheAbyssAction(p_id, gs, source), gs, False)
 
 class TheTabernacleAtPendrellVale(Effect):
     """All creatures have 'At your upkeep, destroy this creature unless you pay {1}.'"""
