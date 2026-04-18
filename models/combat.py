@@ -99,3 +99,9 @@ class Combat:
         #     print('BBB')
         #     self.gs.destroy(c)
         #     print('CCC')
+
+    def get_combatants_against(self, c: GameCard) -> list[GameCard]:
+        if self.attacker == c:
+            return [b for b in self.blockers]
+        if c in self.blockers:
+            return [self.attacker]
