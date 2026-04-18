@@ -29,9 +29,9 @@ class Card:
     power: str | int | None
     toughness: str | int | None
     set_codes: list[str]
-    data_url: str
-    images: dict[str: str]
-    rulings: list[Ruling]
+    data_url: str = field(repr=False)
+    images: dict[str: str] = field(repr=False)
+    rulings: list[Ruling] = field(repr=False)
     keyword_abilities: list[str] = field(default_factory=list)
 
     def __post_init__(self):
