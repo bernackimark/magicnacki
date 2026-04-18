@@ -3,7 +3,7 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
-from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent, Event
+from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -193,7 +193,7 @@ class FeldonsCane(Effect):
         lib = gs.libraries[s.owner_id]
         lib.extend(gy)
         gy.clear()
-        random.shuffle(lib.cards)
+        random.shuffle(lib)
 
 class FlashFlood(Effect):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
@@ -229,7 +229,7 @@ class GlyphOfDestruction(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.items.append(PTMod(s=s, p_adj=10, expires='EOT'))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
-        gs.end_step_funcs.append(lambda gs, s, t: gs.destroy(s))
+        gs.end_step_funcs.append(lambda gs_, s_, t_: gs.destroy(s))
 
 class HasranOgress(Effect):
     """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
@@ -364,7 +364,7 @@ class RocketLauncherAA(Effect):
     """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
-        gs.end_step_funcs.append(lambda gs, s: gs.destroy(s))
+        gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(s))
 
 class SacrificeOnCast(Effect):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
@@ -393,7 +393,7 @@ class StoneGiant(Effect):
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
-        gs.end_step_funcs.append(lambda gs, s: gs.destroy(t))
+        gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(t))
 
 class SoulNet(Effect):
     """Whenever a creature dies, {1}: Gain 1 life"""
@@ -452,15 +452,33 @@ class Timetwister(Effect):
             gs.hands[p_id].cards.clear()
             graveyard_cards = gs.graveyards[p_id][:]
             gs.graveyards.clear()
-            gs.libraries[p_id].cards.extend(hand_cards)
-            gs.libraries[p_id].cards.extend(graveyard_cards)
-            random.shuffle(gs.libraries[p_id].cards)
+            gs.libraries[p_id].extend(hand_cards)
+            gs.libraries[p_id].extend(graveyard_cards)
+            random.shuffle(gs.libraries[p_id])
             gs.draw(p_id, 7)
             if p_id == s.owner_id:
                 gs.graveyards[p_id].append(time_twister)
 
+class UrzasAvengerFlying(Effect):
+    """This creature gets -1/-1 and gains your choice of FLYING, first strike, or trample until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Flying', expires='EOT'))
+
+class UrzasAvengerFirstStrike(Effect):
+    """This creature gets -1/-1 and gains your choice of flying, FIRST STRIKE, or trample until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
+
+class UrzasAvengerTrample(Effect):
+    """This creature gets -1/-1 and gains your choice of flying, first strike, or TRAMPLE until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+
 class UrzasMiter(Effect):
-    """ Whenever an artifact you control dies, if it wasn't sacrificed [not handling this part], {3}: draw a card"""
+    """Whenever an artifact you control dies, if it wasn't sacrificed [not handling this part], {3}: draw a card"""
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
@@ -510,8 +528,8 @@ class WindsOfChange(Effect):
                 continue
             hand_cards = gs.hands[p_id][:]
             gs.hands[p_id].cards.clear()
-            gs.libraries[p_id].cards.extend(hand_cards)
-            random.shuffle(gs.libraries[p_id].cards)
+            gs.libraries[p_id].extend(hand_cards)
+            random.shuffle(gs.libraries[p_id])
             gs.draw(p_id, len(hand_cards))
 
 class WormwoodTreefolkForestwalk(Effect):

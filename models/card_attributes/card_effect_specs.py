@@ -45,7 +45,7 @@ from models.effects.identity import SetColor, AddCreatureTypePTManaValue, Become
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
 from models.effects.keywords import KWAModEffect, ErhnamDjinn, \
-    AllWalksRemoved, SandalsOfAbdallahIslandWalk, RapidFire
+    AllWalksRemoved, SandalsOfAbdallahIslandWalk, RapidFire, UrborgLoseFirstStrike, UrborgLoseSwampwalk
 from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
     StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
 from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
@@ -71,7 +71,8 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
-    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition, WandOfIth
+    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition, WandOfIth, \
+    UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -831,6 +832,11 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(AddCountersOnHostTurn(MINUS_ONE), T_FUNCS['self'], UpkeepEvent)],
     'unsummon': [Triggered(Bounce(), T_FUNCS['creatures_in_play'], CastResolvedEvent)],
     'ur-drago': [Static(WalkRuleRemoved('Swampwalk'))],
+    'urborg': [Activated('T', AddMana('B')),
+               Activated('T', UrborgLoseFirstStrike(), T_FUNCS['creatures_with_first_strike_in_play']),
+               Activated('T', UrborgLoseSwampwalk(), T_FUNCS['creatures_with_swampwalk_in_play'])],
+    'urzas-avenger': [Activated('', UrzasAvengerFlying()), Activated('', UrzasAvengerFirstStrike()),
+                      Activated('', UrzasAvengerTrample())],
     'urzas-chalice': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('C'))],
     'urzas-mine': [Activated('T', UrzasTrio())],
     'urzas-miter': [Triggered(UrzasMiter(), None, DiesEvent)],

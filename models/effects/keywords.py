@@ -58,3 +58,17 @@ class SandalsOfAbdallahIslandWalk(Effect):
 
         temp_effect = SandalsOfAbdallahIfCreatureDies(target_creature=target)
         gs.register_effect_until_eot((temp_effect, source))
+
+class UrborgLoseFirstStrike(Effect):
+    """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='First Strike', expires='EOT'))
+
+class UrborgLoseSwampwalk(Effect):
+    """{T}: Target creature loses first strike or SWAMPWALK until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='Swampwalk', expires='EOT'))
