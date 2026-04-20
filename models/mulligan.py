@@ -92,7 +92,7 @@ class TakeMulligan(Action):
 
     def play(self):
         self.choice.mulligans_taken += 1
-        self.gs.libraries[self.player_idx].cards.extend(self.gs.hands[self.player_idx].cards)
+        self.gs.libraries[self.player_idx].extend(self.gs.hands[self.player_idx].cards)
         self.gs.hands[self.player_idx].cards.clear()
         self.gs.draw(self.player_idx, self.choice.get_card_cnt_to_be_drawn())
         if self.gs.action_stack.actions:
@@ -106,7 +106,7 @@ class TakeGentlemensMulligan(Action):
         return "Take Gentlemen's Mulligan"
 
     def play(self):
-        self.gs.libraries[self.player_idx].cards.extend(self.gs.hands[self.player_idx].cards)
+        self.gs.libraries[self.player_idx].extend(self.gs.hands[self.player_idx].cards)
         self.gs.hands[self.player_idx].cards.clear()
         self.gs.draw(self.player_idx, self.choice.get_card_cnt_to_be_drawn())
         if self.gs.action_stack.actions:
