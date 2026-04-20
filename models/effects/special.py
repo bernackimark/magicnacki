@@ -544,6 +544,16 @@ class WindsOfChange(Effect):
             random.shuffle(gs.libraries[p_id])
             gs.draw(p_id, len(hand_cards))
 
+class WinterBlast(Effect):
+    """Tap X target creatures. Winter Blast deals 2 damage to each of those creatures with flying."""
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a list of targets')
+        for t in target:
+            gs.tap_card(t)
+            if 'Flying' in t.keyword_abilities:
+                gs.apply_damage(source, 2, t)
+
 class WormwoodTreefolkForestwalk(Effect):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

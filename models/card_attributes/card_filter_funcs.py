@@ -8,10 +8,10 @@ if TYPE_CHECKING:
 from models.constants import Target, ALL_PLAYER_INDICES
 from models.utils import flip
 
+"""Since 90% of lookups seek cards on battlefield, keys that don't specify will only return those on battlfield.
+Ex: 'artifacts' will only return artifact creatures currently on the battlefield.
+Ex: 'artifacts_in_graveyards' explicitly indicates that it's looking somewhere besides the battlefield."""
 T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
-    """Since 90% of lookups seek cards on battlefield, keys that don't specify will only return those on battlfield.
-    Ex: 'artifacts' will only return artifact creatures currently on the battlefield.
-    Ex: 'artifacts_in_graveyards' explicitly indicates that it's looking somewhere besides the battlefield."""
     # --- COMMON TARGET FUNCS ---
     'active_volcano_targets': lambda gs, s: gs.card_filter.in_play().blue().permanents().result() +
                                  gs.card_filter.in_play().islands().result(),

@@ -27,6 +27,12 @@ class DealDamage(Effect):
         amt = self.amt if not variable_amt else variable_amt
         gs.apply_damage(source, amt, target)
 
+class DealOneDamageToTargetList(Effect):
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard | int] = None):
+        for t in target:
+            print(source, 1, target)
+            gs.apply_damage(source, 1, t)
+
 class DealDamageToOwnerOnUpkeep(Effect):
     listens_to = UpkeepEvent
 

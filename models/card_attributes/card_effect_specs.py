@@ -25,7 +25,7 @@ from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArt
     DealDamageToOwnerOnUpkeep, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
     StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
     DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee, RukhEgg, Tracker, CityOfBrassDamageOnTap, \
-    Sandstorm
+    Sandstorm, DealOneDamageToTargetList
 from models.effects.damage_preventions import PreventNextDamageBy, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention, PreventDamageBy, \
@@ -72,7 +72,7 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
     HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition, WandOfIth, \
-    UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, RemoveHostAuras
+    UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, RemoveHostAuras, WinterBlast
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -620,6 +620,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'paralyze': [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
                  Triggered(HostStaysTapped(), T_FUNCS['host'], UntapPhaseEvent),
                  untap_host_for_mana_at_opp_upkeep('4')],
+    'part-water': [Triggered(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'], CastResolvedEvent,
+                   max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XU') // 2)],
     'pavel-maliki': [Activated('BR', PumpEffect(1, 0, True), T_FUNCS['self'])],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['card_owner']),
                     Activated('T', PumpEffect(1, 2, True), T_FUNCS['one_one_creatures'])],
@@ -656,6 +658,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'psychic-venom':
         [Triggered(None, T_FUNCS['lands'], CastResolvedEvent), Triggered(PsychicVenom(), None, TapCardEvent)],
     'purelace': [Triggered(SetColor('W'), T_FUNCS['cards'], CastResolvedEvent)],
+    'pyrotechnics': [Triggered(DealOneDamageToTargetList(),
+                               TargetSpec(T_FUNCS['all_creatures_and_players'], 1, 4,
+                                          allow_duplicate_targets=True), CastResolvedEvent)],
     'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures'])],
@@ -714,7 +719,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                          Activated('', Regenerate(), T_FUNCS['self'], extra_costs=[RemoveCounterCost(CORPSE)])],
     'scrubland': dual_land_activated_ability_specs('BW'),
     'sea-kings-blessing': [Triggered(SetColor('U', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None),
-                               CastResolvedEvent)],
+                           CastResolvedEvent)],
     'season-of-the-witch':
         [Triggered(SeasonOfTheWitchUpkeep(), None, UpkeepEvent),
          Triggered(SeasonOfTheWitchEndStep(), None, EndStepEvent)],
@@ -900,6 +905,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                      Triggered(OptionalUntap(), None, UntapPhaseEvent),
                      Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
     'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
+    'winter-blast': [Triggered(WinterBlast(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None),
+                               CastResolvedEvent, max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XG'))],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures'])],
     'wooden-sphere': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('G'))],
