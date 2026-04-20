@@ -120,10 +120,10 @@ class GameState:
     def can_damage(self, target: GameCard, source: GameCard) -> bool:
         return self._query_effects_by_event('can_damage', target, source=source)
 
-    def can_target(self, target: GameCard | int, source: GameCard) -> bool:
+    def can_target(self, target: GameCard | int, source: GameCard, target_host: GameCard | None = None) -> bool:
         if isinstance(target, int):
             return True
-        result = self._query_effects_by_event('can_target', target, source=source)
+        result = self._query_effects_by_event('can_target', target, source=source, target_host=target_host)
         return False if result is False else True
 
     def can_untap(self, card: GameCard) -> bool:
@@ -431,7 +431,8 @@ class GameState:
             # convert to list
             targets = [targets] if not isinstance(targets, (list, tuple)) else targets
             # remove illegal targets
-            targets = [t for t in targets if self.can_target(t, c)]
+            if isinstance(targets[0], GameCard):
+                targets = [t for t in targets if self.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
             if len(targets) < target_spec.min_cnt:
                 # Not enough legal targets → skip ability entirely
                 continue
@@ -475,7 +476,8 @@ class GameState:
 
                 if eff_spec.target_spec and eff_spec.target_spec.filter_func:
                     candidates = eff_spec.target_spec.filter_func(self, c)
-                    valid_targets = [t for t in candidates if self.can_target(t, c)]
+                    valid_targets = [t for t in candidates if
+                                     self.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
 
                     if len(valid_targets) < eff_spec.target_spec.min_cnt:
                         continue

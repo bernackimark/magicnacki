@@ -27,6 +27,20 @@ class CantBeTargetedByAuras(Effect):
             return
         return False
 
+class HostCantBeTargetedByAuras(Effect):
+    """Host can't host an aura"""
+    event = 'can_target'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_target':
+            return
+        source: GameCard = kwargs.get('source')
+        target: GameCard = kwargs.get('card')
+        host: GameCard = kwargs.get('target_host')
+        if host is not target or 'Aura' not in source.card_sub_types:
+            return
+        return False
+
 # --- CARD-SPECIFIC ---
 class AkronLegionnaire(Effect):
     """Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack"""
@@ -622,6 +636,19 @@ class SirensCallCanCast(Effect):
         if gs.phase_mgr.phase >= Phase.DECLARE_ATTACKERS:
             return False
 
+class SpectralCloak(Effect):
+    """Enchanted creature has shroud as long as it's untapped. (It can't be the target of spells or abilities.)"""
+    event = 'can_target'
+
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_target':
+            return
+        target: GameCard = kwargs.get('card')
+        host: GameCard = kwargs.get('target_host')
+        if host is not target or host.is_tapped:
+            return
+        return False
+
 class SunkenCity(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
@@ -630,20 +657,6 @@ class SunkenCity(Effect):
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
         return PTMod(s=source, p_adj=1, t_adj=1)
-
-class ArtifactWardCanBeTargeted(Effect):
-    """Enchanted creature can't be the target of abilities from artifact sources"""
-    event = 'can_target'
-
-    def on_query(self, gs: GameState, event: str, **kwargs):
-        if event != 'can_target':
-            return
-        source: GameCard = kwargs.get('source')
-        target: GameCard = kwargs.get('card')
-        if not source or not target or 'artifact-ward' not in {a.props.slug for a in target.auras}:
-            return
-        if 'Artifact' in source.card_types:
-            return False
 
 class WallOfTombstonesPT(Effect):
     """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""

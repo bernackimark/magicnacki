@@ -3,8 +3,9 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
-from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent
+from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent, ZoneChangeEvent
 from models.utils import flip
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -20,7 +21,7 @@ from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAMod, PTMod
 
-
+# --- GENERICS ---
 class CreateTokenCreature(Effect):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""
     def __init__(self, slug: str):
@@ -37,6 +38,17 @@ class CreateTokenCreature(Effect):
         game_card.game_state = gs
         gs.boards[source.owner_id].append(game_card)
 
+class RemoveHostAuras(Effect):
+    """Removes target's existing auras"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        for aura in list(target.auras):
+            gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self)
+            gs.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
+            gs.event_mgr.unregister_effects(aura)
+
+# --- CARD-SPECIFIC ---
 class AshnodsTransmogrant(Effect):
     """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.
     That creature becomes an artifact in addition to its other types."""
