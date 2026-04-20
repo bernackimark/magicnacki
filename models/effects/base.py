@@ -20,6 +20,7 @@ class TargetSpec:
     filter_func: Callable
     min_cnt: int = 1
     max_cnt: int | None = 1
+    allow_duplicate_targets: bool = False  # used in pyrotechnics/fireball where we always add 1 damage at a time
 
 class Effect:
     """Base class for all card effects."""

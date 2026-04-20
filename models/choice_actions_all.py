@@ -121,6 +121,7 @@ class MultiTargetChoice(ChoiceAction):
         self.selected_targets = []
 
     def get_actions(self) -> list[Action]:
+        from models.game_card import GameCard
         actions = []
         target_spec = self.eff_spec.target_spec
 
@@ -128,7 +129,8 @@ class MultiTargetChoice(ChoiceAction):
 
         if target_spec.max_cnt is None or len(self.selected_targets) < target_spec.max_cnt:
             for c in candidates:
-                if c not in self.selected_targets and self.gs.can_target(c, self.source, c.host if isinstance(c, GameCard) else None):
+                if ((c not in self.selected_targets or self.eff_spec.target_spec.allow_duplicate_targets)
+                        and self.gs.can_target(c, self.source, c.host if isinstance(c, GameCard) else None)):
                     actions.append(AddTargetAction(self.player_idx, self.gs, self, c))
 
         if len(self.selected_targets) >= target_spec.min_cnt:
