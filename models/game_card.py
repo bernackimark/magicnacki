@@ -85,8 +85,13 @@ class GameCard:
 
     @property
     def has_summoning_sickness(self) -> bool:
+        print(self, self.turn_entered_for_owner, self.game_state.turn_mgr.most_recent_turn_started[self.owner_id])
+        if not self.is_creature:
+            return False
+        if not self.turn_entered_for_owner:
+            return True  # turn_entered_for_owner is getting set AFTER this check
         return self.turn_entered_for_owner >= self.game_state.turn_mgr.most_recent_turn_started[self.owner_id] and \
-            self.is_creature and 'Haste' not in self.props.keyword_abilities
+            'Haste' not in self.props.keyword_abilities
 
     @property
     def orig_owner_id(self) -> int:
