@@ -30,7 +30,7 @@ class CastToBoard(Action):
         else:
             self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
         if self.card.props.is_land:
-            self.gs.turn.has_played_land = True
+            self.gs.turn_mgr.has_played_land = True
 
         # --- AUTO-ACCEPTING CAST TO BOARD FOR SPEED OF TESTING ---
         print(f"Successfully cast {self.card.props.name}")

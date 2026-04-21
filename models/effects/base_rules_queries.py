@@ -80,7 +80,7 @@ class CanCastRule(Effect):
 
         if not gs.mana_pools[p_id].can_pay(card.casting_cost):
             return False
-        if card.props.is_land and gs.turn.has_played_land:
+        if card.props.is_land and gs.turn_mgr.has_played_land:
             return False
         if gs.turn_mgr.player_turn_idx != p_id and 'Instant' not in card.props.card_types:
             return False

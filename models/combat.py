@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from models.modifiers import PTMod
+from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -39,7 +40,7 @@ class Combat:
         # --- No blockers ---
         if not self.blockers:
             if not first_strike:
-                defender = self.gs.turn.out_turn_player_idx
+                defender = flip(self.gs.turn_mgr.player_turn_idx)
                 damage_assignments.append((self.attacker, self.attacker.power, defender))
 
         else:
