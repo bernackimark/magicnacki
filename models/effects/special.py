@@ -111,7 +111,7 @@ class CocoonUpkeep(Effect):
     """At your upkeep, remove a pupa counter from this Aura.
         If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        p_id = gs.player_turn_idx
+        p_id = gs.turn_mgr.player_turn_idx
         host = source.host
         if p_id != source.owner_id:
             return
@@ -134,7 +134,7 @@ class Cyclone(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         source.counters.add_counter(WIND)
         if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
@@ -177,7 +177,7 @@ class FallingStar(Effect):
 
 class Fasting(Effect):
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
@@ -295,7 +295,7 @@ class KryShield(Effect):
 class LivingArtifactUpkeep(Effect):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
     def resolve(self, gs: GameState, s: GameCard, target=None):
-        if gs.player_turn_idx != s.owner_id:
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
         gs.action_stack.push(RemoveCounterForLifeChoice(s.owner_id, gs, s, VITALITY), gs, False)
 
@@ -389,14 +389,14 @@ class SacrificeOnCast(Effect):
 class SerendibDjinn(Effect):
     """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
-        gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
+        gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 class Shapeshifter(Effect):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         gs.action_stack.push(ShapeshifterChoice(source.owner_id, gs, source), gs, False)
 
@@ -436,7 +436,7 @@ class SylvanLibrary(Effect):
     For each of those cards, pay 4 life or put the card on top of your library."""
     # TODO: Once player opts to draw, control needs to be returned back to player to then make subsequent choices.
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.action_stack.push(DrawCardsOrDontChoice(gs.player_turn_idx, gs, source, 2))
+        gs.action_stack.push(DrawCardsOrDontChoice(gs.turn_mgr.player_turn_idx, gs, source, 2))
 
 class SyphonSoul(Effect):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
@@ -571,7 +571,7 @@ class YawgmothDemon(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if source.owner_id != gs.player_turn_idx:
+        if source.owner_id != gs.turn_mgr.player_turn_idx:
             return
         if not gs.card_filter.on_player_board(source.owner_id).artifacts().result():
             gs.tap_card(source)

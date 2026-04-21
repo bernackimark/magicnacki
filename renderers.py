@@ -17,7 +17,7 @@ class Renderer(ABC):
 class ConsoleRenderer(Renderer):
     @staticmethod
     def render(gs: GameState, players: list[Player]):
-        p_idx = gs.player_turn_idx
+        p_idx = gs.turn_mgr.player_turn_idx
         action_idx = gs.action_on_idx
         opp_idx = 1 if gs.action_on_idx == 0 else 0
         print()

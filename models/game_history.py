@@ -18,7 +18,7 @@ class GameHistory:
 
     def append_action(self, item: Action, gs: GameState) -> None:
         d = {'player_idx': item.player_idx,
-             'turn_num': gs.turn_number,
+             'turn_num': gs.turn_mgr.turn_number,
              'type': item.__class__.__name__,
              'ts': datetime.now()}
         if hasattr(item, 'card'):
@@ -28,7 +28,7 @@ class GameHistory:
 
     def append_non_action(self, gs: GameState, **kwargs) -> None:
         d = kwargs
-        d['turn_num'] = gs.turn_number
+        d['turn_num'] = gs.turn_mgr.turn_number
         d['ts'] = datetime.now()
         if d.get('card'):
             d['card_id'] = d['card'].id_

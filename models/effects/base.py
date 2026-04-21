@@ -127,7 +127,7 @@ class ActivatedAbility:
         if self.eff_spec.allowed_phases and gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
             print("C")
             return False
-        if self.eff_spec.allowed_player_turn and gs.player_turn_idx != self.eff_spec.allowed_p_id_turn:
+        if self.eff_spec.allowed_player_turn and gs.turn_mgr.player_turn_idx != self.eff_spec.allowed_p_id_turn:
             print("F")
             return False
         if self.eff_spec.allowed_p_id_turn and self.source.owner_id != self.eff_spec.allowed_p_id_turn:

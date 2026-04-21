@@ -84,7 +84,7 @@ class AngryMobPT(Effect):
         source: GameCard = kwargs.get('source')
         if event != 'pt_mod' or card is not source:
             return None
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return PTMod(s=source, p_adj=2, t_adj=2, expires='EOT')
         opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).swamps().result())
         return PTMod(s=source, p_adj=2 + opp_swamp_cnt, t_adj=2 + opp_swamp_cnt, expires='EOT')
@@ -631,7 +631,7 @@ class Seeker(Effect):
 class SirensCallCanCast(Effect):
     """Cast this spell only during an opponent's turn, before attackers are declared ..."""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        if event != 'can_cast' or gs.player_turn_idx == card.owner_id:
+        if event != 'can_cast' or gs.turn_mgr.player_turn_idx == card.owner_id:
             return None
         if gs.phase_mgr.phase >= Phase.DECLARE_ATTACKERS:
             return False
@@ -663,7 +663,7 @@ class WallOfTombstonesPT(Effect):
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
         """kwarg 'source' is the source that is providing this effect"""
         source: GameCard = kwargs.get('source')
-        if event != 'pt_mod' or card is not source or gs.player_turn_idx != source.owner_id:
+        if event != 'pt_mod' or card is not source or gs.turn_mgr.player_turn_idx != source.owner_id:
             return None
         cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
         return PTMod(s=source, t_adj=1 + cnt)

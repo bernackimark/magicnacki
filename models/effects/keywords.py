@@ -35,7 +35,7 @@ class ErhnamDjinn(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != s.owner_id:
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
         gs.pending_choice = ErhnamDjinnChoice(s.owner_id, gs, s)
 

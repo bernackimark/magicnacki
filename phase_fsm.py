@@ -53,7 +53,7 @@ class UntapPhase(PhaseState):
 
     def on_enter(self, gs: GameState) -> None:
         from models.events_all import UntapPhaseEvent
-        gs.event_mgr.emit(UntapPhaseEvent(gs.player_turn_idx), gs)
+        gs.event_mgr.emit(UntapPhaseEvent(gs.turn_mgr.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.choice_actions_all import ChoiceAction
@@ -80,7 +80,7 @@ class UpkeepPhase(PhaseState):
 
     def on_enter(self, gs: GameState) -> None:
         from models.events_all import UpkeepEvent
-        gs.event_mgr.emit(UpkeepEvent(active_player=gs.player_turn_idx), gs)
+        gs.event_mgr.emit(UpkeepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.draw_discard import MoveToDrawPhase
@@ -100,8 +100,8 @@ class DrawPhase(PhaseState):
 
     def on_enter(self, gs: GameState) -> None:
         from models.events_all import DrawStepEvent
-        gs.event_mgr.emit(DrawStepEvent(active_player=gs.player_turn_idx), gs)
-        gs.draw(gs.player_turn_idx)
+        gs.event_mgr.emit(DrawStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+        gs.draw(gs.turn_mgr.player_turn_idx)
 
     def get_actions(self, p_id: int, gs: GameState):
         return None  # draw is automatic
@@ -227,7 +227,7 @@ class AssignCombatDamagePhase(PhaseState):
                 event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                 gs.event_mgr.emit(event, gs)
             com.handle_damage()
-        gs.event_mgr.emit(CombatEndEvent(active_player=gs.player_turn_idx), gs)
+        gs.event_mgr.emit(CombatEndEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         return None
@@ -240,7 +240,7 @@ class EndStepPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.events_all import EndStepEvent
-        gs.event_mgr.emit(EndStepEvent(active_player=gs.player_turn_idx), gs)
+        gs.event_mgr.emit(EndStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
         for func in gs.end_step_funcs:
             func()
         for c in gs.card_filter.in_play().result():
@@ -257,7 +257,7 @@ class DiscardPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.events_all import DiscardStepEvent
-        gs.event_mgr.emit(DiscardStepEvent(active_player=gs.player_turn_idx), gs)
+        gs.event_mgr.emit(DiscardStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.draw_discard import DiscardCard
@@ -314,7 +314,7 @@ class PassTurnPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.actions.end_step_pass_turn import PassTheTurn
-        PassTheTurn(gs.player_turn_idx, gs).play()
+        PassTheTurn(gs.turn_mgr.player_turn_idx, gs).play()
 
     def get_actions(self, p_id: int, gs: GameState):
         return None
@@ -388,7 +388,7 @@ class PhaseManager:
     #     if phase == Phase.UPKEEP:
     #         from models.actions.draw_discard import MoveToDrawPhase
     #         from models.events_all import UpkeepEvent
-    #         gs.event_mgr.emit(UpkeepEvent(active_player=gs.player_turn_idx), gs)
+    #         gs.event_mgr.emit(UpkeepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
     #         for c in board:
     #             if activated_abilities := gs.get_available_activated_abilities(c):
     #                 return [MoveToDrawPhase(c.owner_id, gs)] + activated_abilities  # type: ignore
@@ -397,7 +397,7 @@ class PhaseManager:
     #
     #     if phase == Phase.DRAW:
     #         from models.events_all import DrawStepEvent
-    #         gs.event_mgr.emit(DrawStepEvent(active_player=gs.player_turn_idx), gs)
+    #         gs.event_mgr.emit(DrawStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
     #         gs.draw(p_id)
     #         self.phase = Phase.CAST
     #         return
@@ -493,13 +493,13 @@ class PhaseManager:
     #                 gs.event_mgr.emit(event, gs)
     #             com.handle_damage()
     #         self.phase = Phase.COMBAT_END
-    #         gs.event_mgr.emit(CombatEndEvent(active_player=gs.player_turn_idx), gs)
+    #         gs.event_mgr.emit(CombatEndEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
     #         self.phase = Phase.END_STEP
     #         return
     #
     #     if phase == Phase.END_STEP:
     #         from models.events_all import EndStepEvent
-    #         gs.event_mgr.emit(EndStepEvent(active_player=gs.player_turn_idx), gs)
+    #         gs.event_mgr.emit(EndStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
     #
     #         # execute all end step funcs
     #         for func in gs.end_step_funcs:
@@ -514,9 +514,9 @@ class PhaseManager:
     #         from models.actions.draw_discard import DiscardCard
     #         from models.events_all import DiscardStepEvent
     #         hand = gs.hands[p_id]
-    #         gs.event_mgr.emit(DiscardStepEvent(active_player=gs.player_turn_idx), gs)
+    #         gs.event_mgr.emit(DiscardStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
     #         if len(hand.cards) > 7:
-    #             return [DiscardCard(gs.player_turn_idx, gs, c) for c in hand.cards]  # type: ignore
+    #             return [DiscardCard(gs.turn_mgr.player_turn_idx, gs, c) for c in hand.cards]  # type: ignore
     #         self.phase = Phase.CREATURES_HEAL
     #         return
     #

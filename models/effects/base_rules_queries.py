@@ -82,7 +82,7 @@ class CanCastRule(Effect):
             return False
         if card.props.is_land and gs.turn.has_played_land:
             return False
-        if gs.player_turn_idx != p_id and 'Instant' not in card.props.card_types:
+        if gs.turn_mgr.player_turn_idx != p_id and 'Instant' not in card.props.card_types:
             return False
 
         return None  # no opinion on whether the cast can be cast

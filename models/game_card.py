@@ -36,6 +36,7 @@ class GameCard:
         self._orig_owner_id: int = orig_owner_id
         self._owner_id: int = orig_owner_id
         self.game_state: GameState | None = None
+        self.turn_entered_for_owner: int | None = None
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self._card_types: list[str] = self.props.card_types.copy()
         self._card_sub_types: list[str] = self.props.card_sub_types.copy()
@@ -43,7 +44,6 @@ class GameCard:
         self.is_token: bool = is_token
         self.is_tapped: bool = False
         self.is_face_up: bool = False
-        self.has_summoning_sickness: bool = self.props.is_creature and 'Haste' not in self.props.keyword_abilities
         self.host: GameCard | None = None
         self.auras: list[GameCard | None] = []
         self.modifiers = Modifiers()
@@ -82,6 +82,11 @@ class GameCard:
         if self.counters:
             text += f'w {self.counters}'
         return text.upper() if not self.is_tapped else text.lower()
+
+    @property
+    def has_summoning_sickness(self) -> bool:
+        return self.turn_entered_for_owner >= self.game_state.turn_mgr.most_recent_turn_started[self.owner_id] and \
+            self.is_creature and 'Haste' not in self.props.keyword_abilities
 
     @property
     def orig_owner_id(self) -> int:

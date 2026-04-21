@@ -58,7 +58,7 @@ class HostStaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         if not source.host:
             raise RuntimeError(f"{source.props.name} needs a host at untap phase")
-        if gs.player_turn_idx != source.host.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
 
@@ -72,7 +72,7 @@ class OptionalUntap(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
         if source.owner_id != event.active_player or not source.is_tapped:
             return
-        gs.action_stack.push(UntapChoice(gs.player_turn_idx, gs, source), gs, False)
+        gs.action_stack.push(UntapChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 class UntapForManaEffect(Effect):
     def __init__(self, mana_cost: str):
@@ -168,7 +168,7 @@ class PsychicVenom(Effect):
 class Reset(Effect):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.phase_mgr.phase == Phase.UPKEEP or gs.player_turn_idx == source.owner_id:
+        if gs.phase_mgr.phase == Phase.UPKEEP or gs.turn_mgr.player_turn_idx == source.owner_id:
             return
         for land in gs.card_filter.on_player_board(source.owner_id).lands().untapped().result():
             land.untap(gs)

@@ -106,7 +106,7 @@ class CosmicHorror(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         if not gs.mana_pools[source.owner_id].can_pay('3BBB'):
             gs.destroy(source)
@@ -128,7 +128,7 @@ class DemonicHordesUpkeep(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
         if not your_lands:
@@ -162,24 +162,24 @@ class EnergyFlux(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        for your_artifact in gs.card_filter.on_player_board(gs.player_turn_idx).artifacts().result():
-            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_artifact, '2'), gs, False)
+        for your_artifact in gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).artifacts().result():
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, your_artifact, '2'), gs, False)
 
 class ErosionUpkeep(Effect):
     """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life."""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.host or gs.player_turn_idx != source.host.owner_id:
+        if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
-        gs.action_stack.push(ErosionUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
+        gs.action_stack.push(ErosionUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 class ForceOfNatureUpkeep(Effect):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != s.owner_id:
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
         gs.action_stack.push(ForceOfNatureUpkeepChoice(s.owner_id, gs, s, 'GGGG', 8), gs, False)
 
@@ -205,8 +205,8 @@ class ManaVortexUpkeep(Effect):
         if len(gs.card_filter.lands().in_play().result()) == 0:
             gs.destroy(source)
             return
-        your_lands = gs.card_filter.on_player_board(gs.player_turn_idx).lands().result()
-        gs.action_stack.push(SacChoice(gs.player_turn_idx, gs, source, your_lands), gs, False)
+        your_lands = gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).lands().result()
+        gs.action_stack.push(SacChoice(gs.turn_mgr.player_turn_idx, gs, source, your_lands), gs, False)
 
 class Millstone(Effect):
     """{2}, {T}: Target player mills two cards"""
@@ -227,7 +227,7 @@ class MoldDemonETB(Effect):
         your_swamps = gs.card_filter.on_player_board(source.owner_id).swamps().result()
         if len(your_swamps) < 2:
             gs.destroy(event.card, False)
-        gs.action_stack.push(MoldDemonChoice(gs.player_turn_idx, gs, source, your_swamps), gs, False)
+        gs.action_stack.push(MoldDemonChoice(gs.turn_mgr.player_turn_idx, gs, source, your_swamps), gs, False)
 
 class PestilenceEndStep(Effect):
     """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""
@@ -242,13 +242,13 @@ class PsychicAllergyUpkeep(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         your_island_cnt = len([i for i in gs.card_filter.on_player_board(source.owner_id).islands().result()])
         if your_island_cnt < 2:
             gs.destroy(source)
             return
-        possible_actions = PsychicAllergyUpkeepChoice(gs.player_turn_idx, gs, source).get_actions()
+        possible_actions = PsychicAllergyUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source).get_actions()
         for action in possible_actions:
             gs.action_stack.push(action, gs, False)
 
@@ -269,7 +269,7 @@ class SeasonOfTheWitchEndStep(Effect):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if gs.player_turn_idx != s.owner_id:
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
         your_untapped_creatures = gs.card_filter.on_player_board(s.owner_id).creatures().untapped().result()
         attackers = gs.card_filter.attackers().result()
@@ -328,8 +328,8 @@ class TheTabernacleAtPendrellVale(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        for your_creature in gs.card_filter.on_player_board(gs.player_turn_idx).creatures().result():
-            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.player_turn_idx, gs, your_creature, '1'))
+        for your_creature in gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).creatures().result():
+            gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, your_creature, '1'))
 
 class UnderworldDreams(Effect):
     """Whenever an opponent draws a card, this enchantment deals 1 damage to that player"""
@@ -345,7 +345,7 @@ class VoodooDollEndStep(Effect):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         if source.is_tapped:
             return

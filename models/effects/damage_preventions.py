@@ -119,7 +119,7 @@ class MarblePriestPrevention(DamagePreventionEffect):
 
 class ScarecrowPrevention(DamagePreventionEffect):
     def applies(self, gs: GameState, event: DamageEvent, card: Optional[GameCard] = None) -> bool:
-        return (event.target == flip(gs.player_turn_idx) and
+        return (event.target == flip(gs.turn_mgr.player_turn_idx) and
                 event.source in gs.card_filter.in_play().creatures().has('Flying').result())
 
 class UncleIstvanPrevention(DamagePreventionEffect):

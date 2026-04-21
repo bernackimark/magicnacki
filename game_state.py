@@ -29,8 +29,7 @@ from models.modifiers import RegenerationMod
 from models.mulligan import MulliganChoice
 from models.score_manager import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
-from models.turn import Turn
-from models.utils import flip
+from models.turn_manager import TurnManager
 from models.zone import Zone
 from phase_fsm import PhaseManager
 
@@ -42,7 +41,6 @@ class GameState:
                  tokens: dict[str, Card]):
         # assign all arguments to attributes
         self.player_cnt = player_cnt
-        self.player_turn_idx = player_turn_idx
         self.rules: dict = rules
         self.tokens = tokens
         self.all_player_cards = cards.copy()
@@ -50,9 +48,9 @@ class GameState:
         self.score_mgr = ScoreManager()  # manages life & poison
 
         # action, turn, phase (game flow) concepts; not sure self.turn is being used
-        self.action_on_idx: int = self.player_turn_idx
-        self.turn = Turn(self.player_turn_idx, flip(self.player_turn_idx))
-        self.turn_number = 1
+        self.turn_mgr: TurnManager = TurnManager(self.player_cnt, player_turn_idx)
+
+        self.action_on_idx: int = self.turn_mgr.player_turn_idx
         self.phase_mgr = PhaseManager()
 
         # piles, combats, mana pools
@@ -97,7 +95,7 @@ class GameState:
             self.draw(i, 7)
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
-        self.pending_choice: ChoiceAction | None = MulliganChoice(self.player_turn_idx, self, self.rules['mulligan'])
+        self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx, self, self.rules['mulligan'])
 
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something, they check the cards in play;
@@ -303,6 +301,7 @@ class GameState:
             case Zone.BATTLEFIELD:
                 card.reveal()
                 self.boards[card.owner_id].append(card)
+                card.turn_entered_for_owner = self.turn_mgr.turn_number
             case Zone.HAND:
                 self.hands[card.orig_owner_id].cards.append(card)
                 self.hands[card.orig_owner_id].sort_cards()
@@ -380,17 +379,12 @@ class GameState:
     def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness;
         if a card has an optional untap, check if player has already decided to leave a card tapped"""
-        for c in self.boards[self.player_turn_idx]:
-
-            for record in self.game_history.items:
-                if record.get('type') == 'CastToBoard' and record.get('card_id') == c.id_ \
-                        and self.turn_number - record['turn_num'] == 2:
-                    c.has_summoning_sickness = False
+        for c in self.boards[self.turn_mgr.player_turn_idx]:
             if not c.is_tapped:
                 continue
 
             for record in self.game_history.items:
-                if (record['turn_num'] == self.turn_number and
+                if (record['turn_num'] == self.turn_mgr.turn_number and
                         (record.get('type') == 'UntapCardStackPop' or record.get('type') == 'LeaveTapped')
                         and record.get('card_id') == c.id_):
                     print("You've already made an untap decision on this card this turn")
@@ -520,7 +514,7 @@ class GameState:
             available_actions.append(AcceptAction(p_id, self))
 
             # Check instants (or other spells allowed to respond)
-            allowed_cards = hand.instants + hand.sorceries if p_id == self.player_turn_idx else hand.sorceries
+            allowed_cards = hand.instants + hand.sorceries if p_id == self.turn_mgr.player_turn_idx else hand.sorceries
             playable_cards: list[GameCard] = [c for c in allowed_cards if self.mana_pools[p_id].can_pay(c.casting_cost)]
 
             for c in playable_cards:

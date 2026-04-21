@@ -35,6 +35,7 @@ class Steal(Effect):
             raise RuntimeError(f'{source.props.name} needs a target')
         original_owner_id = int(target.owner_id)
         target.modifiers.items.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
+        target.turn_entered_for_owner = gs.turn_mgr
         if target.zone == Zone.BATTLEFIELD:
             gs.boards[original_owner_id].remove(target)
             gs.boards[source.owner_id].append(target)
@@ -115,7 +116,7 @@ class GhazbanOgre(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: Event):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         if len(set(gs.score_mgr.life)) == 1:
             return

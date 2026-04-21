@@ -40,7 +40,7 @@ class DealDamageToOwnerOnUpkeep(Effect):
         self.amount = amount
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != source.owner_id:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         gs.apply_damage(source, self.amount, source.owner_id)
 
@@ -51,7 +51,7 @@ class DealDamageOnHostUpkeep(Effect):
         self.amount = amount
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.host or gs.player_turn_idx != source.host.owner_id:
+        if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
         gs.apply_damage(source, self.amount, source.host.owner_id)
 
@@ -160,9 +160,9 @@ class CurseArtifact(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.host or gs.player_turn_idx != source.host.owner_id:
+        if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
-        gs.action_stack.push(CurseArtifactUpkeepChoice(gs.player_turn_idx, gs, source), gs, False)
+        gs.action_stack.push(CurseArtifactUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 class DingusEgg(Effect):
     """Whenever a land is put into a graveyard from battlefield, deal 2 damage to that land's controller."""
@@ -187,16 +187,16 @@ class ElderSpawnUpkeep(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != s.owner_id:
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
-        gs.action_stack.push(ElderSpawnUpkeepChoice(gs.player_turn_idx, gs, s), gs, False)
+        gs.action_stack.push(ElderSpawnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, s), gs, False)
 
 class ErgRaiders(Effect):
     """At YOUR end step, except for summoning sickness, if this creature didn't attack, 2 damage to you"""
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if gs.player_turn_idx != s.owner_id or s.has_summoning_sickness:
+        if gs.turn_mgr.player_turn_idx != s.owner_id or s.has_summoning_sickness:
             return
         if s not in gs.card_filter.attackers().result():
             gs.apply_damage(s, 2, s.owner_id)
@@ -204,9 +204,9 @@ class ErgRaiders(Effect):
 class EternalFlame(Effect):
     """X = # of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        x = len(gs.card_filter.on_player_board(gs.player_turn_idx).mountains().result())
-        gs.apply_damage(source, x, flip(gs.player_turn_idx))
-        gs.apply_damage(source, math.ceil(x/2), gs.player_turn_idx)
+        x = len(gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).mountains().result())
+        gs.apply_damage(source, x, flip(gs.turn_mgr.player_turn_idx))
+        gs.apply_damage(source, math.ceil(x/2), gs.turn_mgr.player_turn_idx)
 
 class EyeForAnEye(Effect):
     """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
@@ -285,7 +285,7 @@ class LordOfThePitUpkeep(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if event.active_player != source.owner_id:
             return
-        choice_obj = LordOfThePitUpkeepChoice(gs.player_turn_idx, gs, source)
+        choice_obj = LordOfThePitUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source)
         if not choice_obj.get_actions():
             gs.apply_damage(source, 7, source.owner_id)
             return
@@ -318,7 +318,7 @@ class PowerSurge(Effect):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         untapped_lands = gs.card_filter.in_play().untapped().lands().result()
         if untapped_lands:
-            gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
+            gs.apply_damage(source, len(untapped_lands), gs.turn_mgr.player_turn_idx)
 
 class RukhEgg(Effect):
     """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""
@@ -351,9 +351,9 @@ class StormWorld(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        card_cnt = len(gs.hands[gs.player_turn_idx].cards)
+        card_cnt = len(gs.hands[gs.turn_mgr.player_turn_idx].cards)
         if card_cnt > 4:
-            gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
+            gs.apply_damage(source, card_cnt - 4, gs.turn_mgr.player_turn_idx)
 
 class TheRack(Effect):
     """At opponent's upkeep, this artifact deals X damage to that player, X = 3 - len(hand) [X can't be negative]"""
@@ -378,7 +378,7 @@ class Tracker(Effect):
 class Typhoon(Effect):
     """Typhoon deals damage to opponent = the number of Islands that player controls"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        opp = flip(gs.player_turn_idx)
+        opp = flip(gs.turn_mgr.player_turn_idx)
         opp_island_cnt = len(gs.card_filter.on_player_board(opp).islands().result())
         if opp_island_cnt:
             gs.apply_damage(s, opp_island_cnt, opp)

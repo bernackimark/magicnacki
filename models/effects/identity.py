@@ -135,7 +135,7 @@ class VesuvanDoppelgangerCast(Effect):
     """You may have this creature enter as a copy of any creature on the battlefield,
     except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        if gs.player_turn_idx != s.owner_id:
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
@@ -148,7 +148,7 @@ class VesuvanDoppelgangerUpkeep(Effect):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != s.owner_id:
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:

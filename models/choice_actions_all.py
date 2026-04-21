@@ -388,7 +388,7 @@ class LordOfThePitUpkeepChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         your_other_creatures = [c for c in self.gs.card_filter.on_player_board(self.player_idx).creatures().result()
                                 if c is not self.source]
-        return [Sac(self.gs.player_turn_idx, self.gs, c) for c in your_other_creatures]
+        return [Sac(self.gs.turn_mgr.player_turn_idx, self.gs, c) for c in your_other_creatures]
 
 class MoldDemonChoice(ChoiceAction):
     """Is called from MoldDemonETB; When this creature ETB, sac it or two Swamps; guaranteed to have >= 2 swamps"""
@@ -423,7 +423,7 @@ class SacrificeCastChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        p_id = self.gs.player_turn_idx
+        p_id = self.gs.turn_mgr.player_turn_idx
         return [SacCreatureAndAddMana(self.player_idx, self.gs, self.source, c, 'B', c.props.casting_weight)
                 for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
 
@@ -433,15 +433,15 @@ class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [PayLife(self.source.host.owner_id, self.gs, self.source, 2),
-                Sac(self.gs.player_turn_idx, self.gs, self.source)]
+                Sac(self.gs.turn_mgr.player_turn_idx, self.gs, self.source)]
 
 class SerendibDjinnUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        return [Sac(self.gs.player_turn_idx, self.gs, land, w_damage_amt=3 if land.props.slug == 'island' else 0)
-                for land in self.gs.card_filter.on_player_board(self.gs.player_turn_idx).lands().result()]
+        return [Sac(self.gs.turn_mgr.player_turn_idx, self.gs, land, w_damage_amt=3 if land.props.slug == 'island' else 0)
+                for land in self.gs.card_filter.on_player_board(self.gs.turn_mgr.player_turn_idx).lands().result()]
 
 class ShapeshifterChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
@@ -456,7 +456,7 @@ class TheAbyssChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        p_id = self.gs.player_turn_idx
+        p_id = self.gs.turn_mgr.player_turn_idx
         your_creatures = [c for c in self.gs.card_filter.on_player_board(p_id).non_artifact_creatures().result()]
         return [DestroyAction(p_id, self.gs, self.source, c, allow_regen=False) for c in your_creatures]
 
