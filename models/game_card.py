@@ -85,7 +85,6 @@ class GameCard:
 
     @property
     def has_summoning_sickness(self) -> bool:
-        print(self, self.turn_entered_for_owner, self.game_state.turn_mgr.most_recent_turn_started[self.owner_id])
         if not self.is_creature:
             return False
         if not self.turn_entered_for_owner:
