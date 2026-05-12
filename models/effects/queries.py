@@ -391,6 +391,18 @@ class IronclawOrcs(Effect):
         if attacker.power >= 2:
             return False
 
+class IvoryGuardians(Effect):
+    """Creatures named Ivory Guardians get +1/+1 as long as an opponent controls a nontoken red permanent; the pumps are
+    cumulative. Ex: if there's two Ivory Guardians & opponent has a nontoken red permanent, each gets +2/+2"""
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'pt_mod' or card.props.slug != 'ivory-guardians':
+            return None
+
+        ivory_guardians_cnt = len(gs.card_filter.in_play().by_slug('ivory-guardians').result())
+
+        if gs.card_filter.on_player_board(flip(card.owner_id)).non_token().red().permanents().result():
+            return PTMod(s=card, p_adj=ivory_guardians_cnt, t_adj=ivory_guardians_cnt)
+
 class JacquesLeVert(Effect):
     """Green creatures you control get +0/+2"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):

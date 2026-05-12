@@ -3,6 +3,7 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
+from models.effects.until_end_of_turn import NoAttacksAllowedEOT
 from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent, ZoneChangeEvent
 from models.utils import flip
 from models.zone import Zone
@@ -14,8 +15,8 @@ if TYPE_CHECKING:
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
     RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage, CycloneChoice, \
-    YawgmothDemonChoice, PayLifeOrDiscardChoice
-from models.actions.special import SacCreatureAndAddMana
+    YawgmothDemonChoice, PayLifeOrDiscardChoice, RogahhOfKherKeepUpkeepChoice
+from models.actions.special import SacCreatureAndAddMana, RogahhOfKherKeepTapAndStealAction
 from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY, WIND
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
@@ -207,6 +208,11 @@ class FeldonsCane(Effect):
         gy.clear()
         random.shuffle(lib)
 
+class Festival(Effect):
+    """... Creatures can't attack this turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.register_effect_until_eot((NoAttacksAllowedEOT(), source))
+
 class FlashFlood(Effect):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
@@ -377,6 +383,21 @@ class RocketLauncherAA(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
         gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(s))
+
+class RogahhOfKherKeepUpkeep(Effect):
+    """... At your upkeep, pay {RRR} or else ..."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if gs.turn_mgr.player_turn_idx != source.owner_id or source.props.slug != 'rogahh-of-kher-keep':
+            return
+        owner = source.owner_id
+        target_cards = [source] + gs.card_filter.on_player_board(owner).by_slug('kobolds-of-kher-keep').result()
+        if gs.mana_pools[source.owner_id].can_pay('RRR'):
+            gs.action_stack.push(RogahhOfKherKeepUpkeepChoice(source.owner_id, gs, source, target_cards), gs, False)
+        else:
+            action = RogahhOfKherKeepTapAndStealAction(source.owner_id, gs, source, targets=target_cards)
+            action.play()
 
 class SacrificeOnCast(Effect):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.

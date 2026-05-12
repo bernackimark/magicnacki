@@ -13,6 +13,12 @@ They must implement and on_query() method;
 They are called from another Effect (ex: UnblockableEOT is called by UnblockableThisTurn(Effect))"""
 
 # --- GENERICS ---
+class NoAttacksAllowedEOT(Effect):
+    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+        if event != 'can_attack':
+            return None
+        return False
+
 class UnblockableEOT(Effect):
     """Stored in GameState & cleared EOT; target creature can't be blocked this turn"""
     def __init__(self, target: GameCard):

@@ -22,7 +22,8 @@ from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
-    HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep, SelectXAction
+    HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep, SelectXAction, \
+    RogahhOfKherKeepTapAndStealAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -416,6 +417,16 @@ class PsychicAllergyUpkeepChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [SacTwoIslands(self.player_idx, self.gs, self.source), Sac(self.player_idx, self.gs, self.source)]
+
+class RogahhOfKherKeepUpkeepChoice(ChoiceAction):
+    """... At your upkeep, pay {RRR}, else tap Rohgahh & all Kobolds of Kher Keep. Opponent gains control of them."""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, target_cards: list[GameCard]):
+        super().__init__(p_id, gs, source)
+        self.target_cards = target_cards
+
+    def get_actions(self) -> list[Action]:
+        return [PayMana(self.player_idx, self.gs, self.source, 'RRR'),
+                RogahhOfKherKeepTapAndStealAction(self.player_idx, self.gs, self.source, self.target_cards)]
 
 class SacrificeCastChoice(ChoiceAction):
     """This is used by the card named 'Sacrifice'; is not a generic class about the concept of sacrifice"""

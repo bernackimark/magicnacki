@@ -7,6 +7,7 @@ from models.actions.cast import CastToTargetAddToStack
 from models.counter_tokens import CounterType, WIND
 from models.damage import PreventNextDamage
 from models.effects.base import ActivatedAbility
+from models.modifiers import OwnershipMod
 from phase_fsm import Phase
 from models.utils import flip
 
@@ -278,6 +279,22 @@ class PrimalClayC(Action):
         self.gs.cast(self.s)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
+
+class RogahhOfKherKeepTapAndStealAction(Action):
+    def __init__(self, p_id, gs, source: GameCard, targets: list[GameCard]):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.targets = targets
+
+    def __repr__(self):
+        return f'Tapping & transferring control of Rogahh Of Kher Keep & all Kobolds Of Kher Keep'
+
+    def play(self):
+        for t in self.targets:
+            self.gs.tap_card(t)
+            t.modifiers.items.append(OwnershipMod(flip(self.source.owner_id), s=self.source))
+        if self.gs.action_stack.actions:
+            self.gs.action_stack.pop()
 
 class YawgmothDemonUnpaidUpkeep(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):

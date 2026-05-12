@@ -63,7 +63,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
     JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, KoboldTaskmaster, KoboldOverlord, \
-    SedgeTrollPT, ZombieMasterWalk, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak
+    SedgeTrollPT, ZombieMasterWalk, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, IvoryGuardians
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -72,7 +72,8 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
     LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
     HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition, WandOfIth, \
-    UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, RemoveHostAuras, WinterBlast
+    UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, RemoveHostAuras, WinterBlast, Festival, \
+    RogahhOfKherKeepUpkeep
 from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
     StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
     HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
@@ -370,6 +371,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                  Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host'], UpkeepEvent)],
     'feint': [Triggered(Feint(), T_FUNCS['attackers'], CastResolvedEvent)],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
+    'festival': [Triggered(Festival(), None, CastResolvedEvent, allowed_phases=[Phase.UPKEEP],
+                           allowed_p_id_turn=T_FUNCS['opponent'])],
     'field-of-dreams': [Triggered(FieldOfDreams(), None, ZoneChangeEvent)],
     'fire-drake': [Activated('R', PumpEffect(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],
@@ -485,6 +488,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'island-fish-jasconius': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
                               untap_for_mana_at_owner_upkeep('UUU')],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
+    'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower(), None, UpkeepEvent)],
     'jacques-le-vert': [Static(JacquesLeVert())],
     'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],
@@ -696,7 +700,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'rocket-launcher': [Triggered(RocketLauncherCast(), None, CastResolvedEvent),
                         Activated('2', RocketLauncherAA(), T_FUNCS['all_creatures_and_players'])],
     'rod-of-ruin': [Activated('3T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
-    'rohgahh-of-kher-keep': [Static(RohgahhOfKherKeepPump())],  # note: there's an upkeep thing too
+    'rohgahh-of-kher-keep': [Static(RohgahhOfKherKeepPump()), Triggered(RogahhOfKherKeepUpkeep(), None, UpkeepEvent)],
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'rubinia-soulsinger': [Activated('T', Steal(), T_FUNCS['opp_creatures']),
                            Triggered(OptionalUntap(), None, UntapPhaseEvent),
