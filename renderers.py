@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from game_state import GameState
+from models.presentation_request import PresentationRequest
 from players import Player
 
 
@@ -10,6 +11,11 @@ class Renderer(ABC):
     @staticmethod
     @abstractmethod
     def render(gs, players):
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def render_presentation_request(request: PresentationRequest):
         raise NotImplementedError
 
 
@@ -37,3 +43,14 @@ class ConsoleRenderer(Renderer):
             reprs.append(repr_)
         print(f"Hand: {reprs}")
         print()
+
+    @staticmethod
+    def render_presentation_request(req: PresentationRequest):
+        if req.type_ == 'view_library':
+            print("Viewing library:")
+            for c in req.payload['cards']:
+                print(c)
+        if req.type_ == 'search_library':
+            print("Choose a card:")
+            for i, c in enumerate(req.payload['cards']):
+                print(i, c)

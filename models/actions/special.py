@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import random
 from typing import TYPE_CHECKING
 
 from models.actions.cast import CastToTargetAddToStack
@@ -8,6 +9,7 @@ from models.counter_tokens import CounterType, WIND
 from models.damage import PreventNextDamage
 from models.effects.base import ActivatedAbility
 from models.modifiers import OwnershipMod
+from models.zone import Zone
 from phase_fsm import Phase
 from models.utils import flip
 
@@ -181,6 +183,21 @@ class SkipDrawPhaseGainLife(Action):
         self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)
         self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
         self.gs.action_stack.pop()
+
+class Tutor(Action):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, tutored_card: GameCard, destination: Zone):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.tutored_card = tutored_card
+        self.destination = destination
+
+    def __repr__(self):
+        return f'{self.source} tudors a card'
+
+    def play(self):
+        self.gs.move_card(self.tutored_card, self.destination)
+        random.shuffle(self.gs.libraries[self.player_idx])
+        self.gs.pending_choice = None
 
 # --- CARD-SPECIFIC ---
 class CyclonePayManaPerCounterDealDamage(Action):

@@ -3,6 +3,8 @@ from copy import copy
 import random
 from typing import Callable, Any, Sequence, TYPE_CHECKING
 
+from models.presentation_request import PresentationRequest
+
 if TYPE_CHECKING:
     from models.card import Card
 
@@ -96,6 +98,12 @@ class GameState:
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx, self, self.rules['mulligan'])
+
+        # objects that carry data to be displayed in UI that aren't common (ex: Show Library)
+        self.presentation_requests: list[PresentationRequest] = []
+
+    def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
+        self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
 
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something, they check the cards in play;

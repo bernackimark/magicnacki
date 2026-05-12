@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Iterable, Optional
 from models.actions.kwa import AddKWA
 from models.actions.piles import HandToBattlefield, Shuffle, BattlefieldToGraveyard
 from models.actions.target import AddTargetAction, FinishTargetsAction
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -23,7 +24,7 @@ from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
     HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep, SelectXAction, \
-    RogahhOfKherKeepTapAndStealAction
+    RogahhOfKherKeepTapAndStealAction, Tutor
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -224,6 +225,16 @@ class SacChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         print('Card Options:', self.card_options)
         return [Sac(self.player_idx, self.gs, c) for c in self.card_options]
+
+class SearchLibraryChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, cards: list[GameCard], destination: Zone):
+        super().__init__(p_id, gs, source)
+        self.cards = cards
+        self.destination = destination
+
+    def get_actions(self) -> list[Action]:
+        self.gs.add_presentation_request(self.player_idx, 'search_library', {'cards': self.cards})
+        return [Tutor(self.player_idx, self.gs, self.source, c, self.destination) for c in self.cards]
 
 class ShuffleOrDontChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, cards: list[GameCard]):

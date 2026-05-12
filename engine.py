@@ -34,6 +34,9 @@ class Engine:
             while not self.gs.is_game_over:
                 actions = self.gs.get_available_actions(self.gs.action_on_idx)
                 self.renderer.render(self.gs, self.players)
+                while self.gs.presentation_requests:
+                    req = self.gs.presentation_requests.pop(0)
+                    self.renderer.render_presentation_request(req)
                 if not actions:
                     continue
                 action = self.players[self.gs.action_on_idx].make_move(self.gs, actions)

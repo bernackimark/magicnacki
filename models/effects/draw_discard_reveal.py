@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from models.choice_actions_all import DrawCardsOrDontChoice, DiscardChoice, ShuffleOrDontChoice
+from models.choice_actions_all import DrawCardsOrDontChoice, DiscardChoice, ShuffleOrDontChoice, SearchLibraryChoice
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -33,6 +33,17 @@ class Discard(Effect):
             raise ValueError(f'{source.props.name} needs a target')
         gs.pending_choice = DiscardChoice(target, gs, source, target)
 
+class RevealLibrary(Effect):
+    def __init__(self, viewer_id: int | None = None, top_x: int | None = None):
+        self.viewer_id = viewer_id
+        self.top_x = top_x
+
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        if self.viewer_id is None:
+            self.viewer_id = source.owner_id
+        cards = gs.libraries[source.owner_id] if not self.top_x else gs.libraries[source.owner_id][:self.top_x]
+        gs.add_presentation_request(self.viewer_id, 'view_library', {'cards': cards})
+
 # --- CARD-SPECIFIC ---
 class BazaarOfBaghdad(Effect):
     """Draw two cards, then discard three cards"""
@@ -59,6 +70,12 @@ class CursedRackEffect(Effect):
         for i in range(len(hand.cards) - 4):
             gs.action_stack.push(DiscardCard(opp_id, gs, hand.cards[0]), gs, False)
 
+class DemonicTutor(Effect):
+    """Search your library for a card, put that card into your hand, then shuffle"""
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        p_id = source.owner_id
+        gs.pending_choice = SearchLibraryChoice(p_id, gs, source, list(gs.libraries[p_id]), Zone.HAND)
+
 class FieldOfDreams(Effect):
     """Players play with the top card of their libraries revealed"""
     listens_to = ZoneChangeEvent
@@ -67,8 +84,8 @@ class FieldOfDreams(Effect):
         if Zone.LIBRARY not in (event.to_zone, event.from_zone):
             return
         player_idx = event.card.owner_id
-        if gs.libraries[player_idx].cards:
-            gs.libraries[player_idx].cards[0].reveal()
+        if gs.libraries[player_idx]:
+            gs.libraries[player_idx][0].reveal()
 
 class GlassesOfUrza(Effect):
     """Look at opponent's hand"""
