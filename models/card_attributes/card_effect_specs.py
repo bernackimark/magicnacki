@@ -40,7 +40,7 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
 from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
     VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
-    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions, RagMan
+    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions, RagMan, DemonicTutor
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -299,6 +299,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                        Triggered(DemonicHordesUpkeep(), None, UpkeepEvent)],
     'demonic-torment':
         [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures'], CastResolvedEvent)],
+    'demonic-tutor': [Triggered(DemonicTutor(), None, CastResolvedEvent)],
     'desert': [Activated('T', AddMana('C')),
                Activated('T', DealDamage(1), T_FUNCS['attackers'], allowed_phases=[Phase.COMBAT_END])],
     'desert-twister': [Triggered(Destroy(), T_FUNCS['permanents'], CastResolvedEvent)],
