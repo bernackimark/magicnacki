@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from models.choice_actions_all import DrawCardsOrDontChoice, DiscardChoice, ShuffleOrDontChoice, SearchLibraryChoice
+from models.choice_actions_all import DrawCardsOrDontChoice, DiscardChoice, ShuffleOrDontChoice, SearchLibraryChoice, \
+    NaturalSelectionChoice, LandTaxChoice
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -14,7 +15,7 @@ from models.effects.base import Effect
 from models.utils import flip
 
 from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent, DiscardEvent, \
-    DiscardStepEvent, Event
+    DiscardStepEvent, Event, UpkeepEvent
 
 
 # --- GENERIC ---
@@ -139,6 +140,20 @@ class JalumTome(Effect):
         gs.draw(source.owner_id)
         gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id)
 
+class LandTax(Effect):
+    """At your upkeep, if an opponent controls more lands than you, you may:
+    search your library for up to 3 basic land cards, reveal them, put them into your hand, then shuffle"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+        your_land_cnt = len(gs.card_filter.on_player_board(source.owner_id).lands().result())
+        opp_land_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).lands().result())
+        if not opp_land_cnt > your_land_cnt:
+            return
+        gs.pending_choice = LandTaxChoice(source.owner_id, gs, source)
+
 class MindTwist(Effect):
     """Target player discards X cards at random"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
@@ -154,6 +169,15 @@ class MindTwist(Effect):
         for _ in range(x):
             random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
             gs.discard(random_card, source)
+
+class NaturalSelection(Effect):
+    """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        top_3_cards = gs.libraries[target][:3]
+        gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
+        gs.pending_choice = NaturalSelectionChoice(source.owner_id, gs, source, target, top_3_cards)
 
 class NicolBolas(Effect):
     """Whenever this creature deals damage to an opponent, that player discards their hand"""

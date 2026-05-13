@@ -40,7 +40,7 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
 from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
     VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
-    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions, RagMan, DemonicTutor
+    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions, RagMan, DemonicTutor, NaturalSelection, LandTax
 from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
@@ -524,6 +524,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures'], CastResolvedEvent)],
     'land-equilibrium': [Static(LandEquilibrium())],
+    'land-tax': [Triggered(LandTax(), None, UpkeepEvent)],
     'lesser-werewolf': [Activated('B', LesserWerewolf(), T_FUNCS['combating_against'],
                                   allowed_phases=[Phase.DECLARE_ATTACKERS])],  # at Declare Attackers, won't know how it's combating
     'leviathan':
@@ -597,6 +598,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'mox-ruby': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'mox-sapphire': [Activated('T', AddMana('U'), T_FUNCS['card_owner'])],
     'murk-dwellers': [Triggered(MurkDwellers(), None, UnblockedAttackerEvent)],
+    'natural-selection': [Triggered(NaturalSelection(), T_FUNCS['all_players'], CastResolvedEvent)],
     'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],
     # TODO: needs an extra cost of "Exile a creature card from your graveyard"
     'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),

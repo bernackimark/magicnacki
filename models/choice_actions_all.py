@@ -5,7 +5,8 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Iterable, Optional
 
 from models.actions.kwa import AddKWA
-from models.actions.piles import HandToBattlefield, Shuffle, BattlefieldToGraveyard
+from models.actions.piles import HandToBattlefield, Shuffle, BattlefieldToGraveyard, ReorderTopOfLibrary, Tutor, \
+    TutorMultipleCards
 from models.actions.target import AddTargetAction, FinishTargetsAction
 from models.zone import Zone
 
@@ -24,7 +25,7 @@ from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
     HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep, SelectXAction, \
-    RogahhOfKherKeepTapAndStealAction, Tutor
+    RogahhOfKherKeepTapAndStealAction
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -383,6 +384,16 @@ class HealingSalveChoice(ChoiceAction):
         return ([HealingSalveA(self.player_idx, self.gs, self.source)] +
                 [HealingSalveB(self.player_idx, self.gs, self.source, t) for t in all_targets])
 
+class LandTaxChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        basic_lands = [c for c in self.gs.libraries[self.player_idx] if c.props.is_basic_land]
+        combo_set = {combo for r in range(1, 4) for combo in combinations(basic_lands, r)}
+        # TODO: combo_set was 833 items -- should have been about 11 combos; it's because each card is unique, but i care about unique slugs
+        return [TutorMultipleCards(self.player_idx, self.gs, list(combo), Zone.HAND) for combo in combo_set]
+
 class LeviathanUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
@@ -412,6 +423,25 @@ class MoldDemonChoice(ChoiceAction):
         two_swamp_combos = list(combinations(self.your_swamps, 2))
         sac_swamps = [SacCards(self.player_idx, self.gs, self.source, two_swamps) for two_swamps in two_swamp_combos]
         return [Sac(self.player_idx, self.gs, self.source)] + sac_swamps
+
+class NaturalSelectionChoice(ChoiceAction):
+    """Called from NaturalSelection effect; re-order top 3 cards of a library or shuffle ...
+    Warning: this will break if the library has fewer than 3 cards"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, library_id: int, top_3_cards: list[GameCard]):
+        super().__init__(p_id, gs, source)
+        self.library_id = library_id
+        self.top_3_cards = top_3_cards
+
+    def get_actions(self) -> list[Action]:
+        a0 = Shuffle(self.player_idx, self.gs, self.gs.libraries[self.library_id])
+        c1, c2, c3 = self.top_3_cards
+        a1 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c1, c2, c3])
+        a2 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c1, c3, c2])
+        a3 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c2, c1, c3])
+        a4 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c2, c3, c1])
+        a5 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c3, c1, c2])
+        a6 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c3, c2, c1])
+        return [a0, a1, a2, a3, a4, a5, a6]
 
 class PrimalClayChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
