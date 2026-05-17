@@ -39,8 +39,8 @@ class EnergyTap(Effect):
         if target is None:
             return
         gs.tap_card(target)
-        gs.mana_pools[source.owner_id].add_floating('C', source.props.casting_weight)
-        print(f"{source} taps to add {source.props.casting_weight} colorless to your mana pool.")
+        gs.mana_pools[source.owner_id].add_floating('C', source.props.mana_value)
+        print(f"{source} taps to add {source.props.mana_value} colorless to your mana pool.")
 
 class ExchangeLifeTotals(Effect):
     def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):

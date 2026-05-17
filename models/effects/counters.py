@@ -114,7 +114,7 @@ class XZeroOneCountersByManaValue(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        target.counters.add_counter(PLUS_ZERO_ONE, target.props.casting_weight)
+        target.counters.add_counter(PLUS_ZERO_ONE, target.props.mana_value)
 
 # --- CARD-SPECIFIC ---
 class CitanulDruid(Effect):

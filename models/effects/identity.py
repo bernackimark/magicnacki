@@ -40,7 +40,7 @@ class AddCreatureTypePTManaValue(Effect):
         if event == 'type_mod':
             return TypeMod(s=source, add_or_remove='add', card_type='Creature')
         if event == 'pt_mod':
-            return PTMod(s=source, p_adj=card.props.casting_weight, t_adj=card.props.casting_weight)
+            return PTMod(s=source, p_adj=card.props.mana_value, t_adj=card.props.mana_value)
 
 class BecomeCreature(Effect):
     def __init__(self, power: int, toughness: int, sub_type: str = None, until_eot: bool = False):

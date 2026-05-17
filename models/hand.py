@@ -22,4 +22,4 @@ class Hand:
         return [c for c in self.cards if 'Sorcery' in c.props.card_types]
 
     def sort_cards(self):
-        self.cards.sort(key=lambda x: x.props.casting_weight, reverse=self.sort_pref.value)
+        self.cards.sort(key=lambda x: x.props.mana_value, reverse=self.sort_pref.value)

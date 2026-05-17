@@ -4,7 +4,7 @@ from typing import Iterable, Literal, Self
 from data.deck_data import DeckData, get_deck, get_decks
 from models.card import Card, CardUniverse
 from models.constants import (BASIC_LANDS, OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS, X_POINTS,
-                              GENTLEMENS_RULES_BANNED_SLUGS, OLD_SCHOOL_SETS)
+                              GENTLEMENS_RULES_BANNED_SLUGS, OLD_SCHOOL_SETS, OS_SCRYFALL_SETS)
 
 @dataclass
 class DeckBuilderRuleSet:
@@ -18,7 +18,7 @@ class DeckBuilderRuleSet:
     max_side_cnt: int = 15
 
 
-OS_CARD_UNIV = CardUniverse(OLD_SCHOOL_SETS)
+OS_CARD_UNIV = CardUniverse(OS_SCRYFALL_SETS)
 OLD_SCHOOL_DB_RULE_SET = DeckBuilderRuleSet(OS_CARD_UNIV)  # all defaults
 GENTLEMENS_DB_RULE_SET = DeckBuilderRuleSet(OS_CARD_UNIV,
                                             banned_slugs=OLD_SCHOOL_BANNED_SLUGS + GENTLEMENS_RULES_BANNED_SLUGS)

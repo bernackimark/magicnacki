@@ -476,7 +476,7 @@ class SacrificeCastChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         p_id = self.gs.turn_mgr.player_turn_idx
-        return [SacCreatureAndAddMana(self.player_idx, self.gs, self.source, c, 'B', c.props.casting_weight)
+        return [SacCreatureAndAddMana(self.player_idx, self.gs, self.source, c, 'B', c.props.mana_value)
                 for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
 
 class SeasonOfTheWitchUpkeepChoice(ChoiceAction):

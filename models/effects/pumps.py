@@ -80,7 +80,7 @@ class GreatDefender(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         """Target creature gets +0/+X until end of turn, where X is its mana value."""
         if target:
-            target.modifiers.items.append(PTMod(s=source, t_adj=target.props.casting_weight, expires='EOT'))
+            target.modifiers.items.append(PTMod(s=source, t_adj=target.props.mana_value, expires='EOT'))
 
 class HellSwarm(Effect):
     """All creatures get -1/-0 until end of turn"""

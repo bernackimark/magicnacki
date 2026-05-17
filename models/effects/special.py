@@ -127,7 +127,7 @@ class Crumble(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
             gs.destroy(target, allow_regeneration=False)
-            gs.score_mgr.increment_life(target.owner_id, target.props.casting_weight, source, gs)
+            gs.score_mgr.increment_life(target.owner_id, target.props.mana_value, source, gs)
 
 class Cyclone(Effect):
     """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
@@ -147,7 +147,7 @@ class DivineOffering(Effect):
         if not target:
             raise ValueError(f"{source.props.name} needs a target")
         gs.destroy(target)
-        gs.score_mgr.increment_life(source.owner_id, target.props.casting_weight, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, target.props.mana_value, source, gs)
 
 class Earthbind(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -296,7 +296,7 @@ class KryShield(Effect):
     That creature gets +0/+X until end of turn, where X is its mana value"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
-        t.modifiers.items.append(PTMod(s=s, t_adj=t.props.casting_weight, expires='EOT'))
+        t.modifiers.items.append(PTMod(s=s, t_adj=t.props.mana_value, expires='EOT'))
 
 class LivingArtifactUpkeep(Effect):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
@@ -405,7 +405,7 @@ class SacrificeOnCast(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         if not t:
             raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
-        gs.action_stack.push(SacCreatureAndAddMana(s.owner_id, gs, s, t, 'B', t.props.casting_weight), gs, False)
+        gs.action_stack.push(SacCreatureAndAddMana(s.owner_id, gs, s, t, 'B', t.props.mana_value), gs, False)
 
 class SerendibDjinn(Effect):
     """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
@@ -443,7 +443,7 @@ class Subdue(Effect):
     That creature gets +0/+X until end of turn, where X is its mana value."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.damage_preventions.append(PreventNextDamage(s, None, source_card=t, combat_only=True))
-        t.modifiers.items.append(PTMod(s=s, p_adj=0, t_adj=t.props.casting_weight))
+        t.modifiers.items.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
 
 class SwordsToPlowshares(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
@@ -544,7 +544,7 @@ class WandOfIth(Effect):
         if not opp_cards:
             return
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
-        life_payment_amt = the_card.props.casting_weight if 'Land' not in the_card.card_types else 1
+        life_payment_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
         gs.pending_choice = PayLifeOrDiscardChoice(opp, gs, source, life_payment_amt, the_card)
 
 class Web(Effect):

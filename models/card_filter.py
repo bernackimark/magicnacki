@@ -3,7 +3,7 @@ import re
 from typing import Sequence, Any
 
 from models.card import Card, CardUniverse
-from models.constants import OLD_SCHOOL_SETS
+from models.constants import OLD_SCHOOL_SETS, OS_SCRYFALL_SETS
 
 ARG_LOOKUP = {
     'mv': 'casting_weight',
@@ -24,12 +24,12 @@ class CardFilter:
     caller must use .result() at the end of their statement to reset the card pool ...
     Example usage: CardFilter().mana_value([6, 7], '=').has('Flying').result()"""
     def __init__(self):
-        self._all_cards: tuple[Card, ...] = tuple(CardUniverse(OLD_SCHOOL_SETS).cards)
+        self._all_cards: tuple[Card, ...] = tuple(CardUniverse(OS_SCRYFALL_SETS).cards)
         self._cards: list[Card] = list(self._all_cards)
 
     def mana_value(self, values: Sequence[int], op: str):
         op_func = OPS[op]
-        self._cards = [c for c in self._cards if any(op_func(c.casting_weight, v) for v in values)]
+        self._cards = [c for c in self._cards if any(op_func(c.mana_value, v) for v in values)]
         return self
 
     def is_creature(self, bool_: bool = True):
@@ -86,7 +86,7 @@ class CardFilter:
             elif key == 'set':
                 self._cards = [c for c in self._cards if any(v in c.set_codes for v in values)]
             elif key == 'mv':
-                self._cards = [c for c in self._cards if any(op_func(c.casting_weight, v) for v in values)]
+                self._cards = [c for c in self._cards if any(op_func(c.mana_value, v) for v in values)]
             elif key == 'p':
                 self._cards = [c for c in self._cards if c.is_creature and any(op_func(c.power, v) for v in values)]
             elif key == 't':

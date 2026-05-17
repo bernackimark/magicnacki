@@ -11,6 +11,7 @@ COLOR_LETTER_SLUG = {letter: slug for letter, slug in zip(COLOR_LETTERS, BASIC_L
 BASIC_LAND_MANA_PRODUCED = {slug: color_letter for slug, color_letter in zip(BASIC_LANDS, COLOR_LETTERS)}
 
 GENTLEMENS_RULES_BANNED_SLUGS = ('library-of-alexandria', 'mind-twist')
+OS_SCRYFALL_SETS = ("lea", "leb", "2ed", "arn", "atq", "3ed", "leg", "drk")
 OLD_SCHOOL_SETS = ('1E', '2E', '2U', '3E', 'AN', 'AQ', 'DK', 'LE')
 OLD_SCHOOL_RESTRICTED_SLUGS = ('ancestral-recall', 'black-lotus', 'braingeyser', 'brainstorm', 'candelabra-of-tawnos',
                                'chaos-orb', 'copy-artifact', 'demonic-tutor', 'ivory-tower', 'library-of-alexandria',
