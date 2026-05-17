@@ -34,9 +34,9 @@ def read_json_file(file_path: str | Path) -> dict:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
-def write_json_to_file(file_path: str | Path, new_dict: dict):
+def write_json_to_file(file_path: str | Path, new_data: dict | list):
     with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(new_dict, f, indent=2, ensure_ascii=False)
+        json.dump(new_data, f, indent=2, ensure_ascii=False)
 
 def write_to_json_file_one_line_per_key(path: str | Path, data: dict, mode: str = 'w'):
     with open(path, mode, encoding="utf-8") as f:
