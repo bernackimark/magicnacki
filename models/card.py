@@ -1,12 +1,11 @@
 from dataclasses import dataclass, field, InitVar
 from functools import cached_property
-import re
 from pathlib import Path
 from typing import Iterator, Any
 
 from models.card_attributes.kwa_abilities import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
-from models.constants import COLOR_LETTERS, BASIC_LANDS, OS_SCRYFALL_SETS
+from models.constants import BASIC_LANDS
 from models.utils import str_to_int
 
 
@@ -26,7 +25,7 @@ class Card:
     card_sub_types: list
     card_super_types: list
     rarity: str
-    oracle_text: str  # more modern & logical than rules_text, ex. '{X}, {T}' instead of 'oX, ocT'
+    oracle_text: str
     power: str | int | None
     toughness: str | int | None
     set_data: dict = field(repr=False)
@@ -110,6 +109,26 @@ class CardUniverse:
     def all_card_super_types(self) -> list[str]:
         return sorted({ct for c in self.cards for ct in c.card_super_types})
 
+    @staticmethod
+    def _update_protection_kwa(keywords: list[str | None], oracle_text: str) -> list[str | None]:
+        """Leverages oracle text to: ['First Strike', 'Protection'] -> ['First Strike', 'Protection From White']"""
+        if 'Protection' not in keywords:
+            return keywords
+        _, text_after_protection_from = oracle_text.split('Protection from ')
+        color = text_after_protection_from.split()[0].replace(';', '').capitalize()
+        new_kwa = f'Protection From {color}'
+        keywords.remove('Protection')
+        keywords.append(new_kwa)
+        return keywords
+
+    @staticmethod
+    def _capitalize_first_strike(keywords: list[str | None]) -> list[str | None]:
+        if 'First strike' not in keywords:
+            return keywords
+        keywords.remove('First strike')
+        keywords.append('First Strike')
+        return keywords
+
     def create_card_universe_from_json(self) -> list[Card]:
         self.all_cards_dict: dict = read_json_file(self.file_path)
 
@@ -124,7 +143,9 @@ class CardUniverse:
             card_dict['slug'] = slug
             card_dict['keyword_abilities'] = card_dict['keywords']
             card_dict['mana_value'] = card_dict['mana_value'] if card_dict['mana_value'] else 0  # convert None to 0
-            del card_dict['card_type']  # string, replaced by three separate attributes
+            del card_dict['card_type']  # single string, replaced by three separate attributes
+            card_dict['keywords'] = self._update_protection_kwa(card_dict['keywords'], card_dict['oracle_text'])
+            card_dict['keywords'] = self._capitalize_first_strike(card_dict['keywords'])
             card = Card(**card_dict)
             cards.append(card)
 
