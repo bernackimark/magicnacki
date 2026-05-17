@@ -29,7 +29,7 @@ def update_json_file_with_dict(file_path: str | Path, new_dict: dict) -> None:
     file_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def read_json_file(file_path: str | Path) -> dict:
+def read_json_file(file_path: str | Path) -> dict | list:
     path = Path(file_path)
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
