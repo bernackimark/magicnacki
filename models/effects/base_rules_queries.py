@@ -57,12 +57,22 @@ class CanAttackRule(Effect):
         card: GameCard = kwargs.get('card')
 
         if (not card.is_creature or (card.has_summoning_sickness and 'Haste' not in card.keyword_abilities)
-                or card.is_tapped or 'Attack' not in card.keyword_abilities):
+                or card.is_tapped):
             return False
 
         if 'Islandhome' in card.keyword_abilities:
             if not gs.card_filter.on_player_board(flip(card.owner_id)).islands().result():
                 return False
+
+        adds, removes = card.modifiers.kwa_delta
+
+        # explicit prohibition
+        if 'Attack' in removes and 'Attack' not in adds:
+            return False
+
+        # defender (considers animate-wall)
+        if 'Defender' in card.keyword_abilities and 'Attack' not in adds:
+            return False
 
         return None  # no opinion on whether the card can attack
 

@@ -102,7 +102,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'opp_creatures_who_could_have_but_didnt_attack':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result()
                        if c not in gs.card_filter.attackers().result()
-                       and not c.has_summoning_sickness and 'Attack' in c.keyword_abilities],
+                       and not c.has_summoning_sickness and 'Defender' not in c.keyword_abilities],
     'opp_legendary_creatures': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).legendary().creatures().result(),
     'opp_non_token_perms':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(flip(s.owner_id)).permanents.result()

@@ -94,14 +94,13 @@ class CockatriceAndThicketBasilisk(Effect):
         # this will later get unregistered at combat end
 
 class ElderLandWurm(Effect):
-    """When this creature blocks, it loses defender"""
+    """When this creature blocks for the first time, it loses defender"""
     listens_to = BlockEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
         if event.blocker is not s:
             return
         s.modifiers.items.append(KWAMod(s=s, add_or_remove='remove', kwa='Defender'))
-        s.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Attack'))
 
 class GiantShark(Effect):
     """Whenever this creature blocks/is blocked by a creature that's been dealt damage this turn,

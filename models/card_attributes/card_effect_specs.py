@@ -63,7 +63,8 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
     JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, KoboldTaskmaster, KoboldOverlord, \
-    SedgeTrollPT, ZombieMasterWalk, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, IvoryGuardians
+    SedgeTrollPT, ZombieMasterWalk, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, IvoryGuardians, \
+    HostCantAttack
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
@@ -204,7 +205,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'braingeyser': [Triggered(Braingeyser(), T_FUNCS['all_players'], CastResolvedEvent)],
     'brainwash':
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
-        [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures'], CastResolvedEvent),
+        [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(HostCantAttack()),
          Activated('3', KWAModEffect('add', 'Attack', True), T_FUNCS['host'])],
     'brass-man': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('1')],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
@@ -298,7 +299,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'demonic-hordes': [Activated('T', Destroy(), T_FUNCS['lands']),
                        Triggered(DemonicHordesUpkeep(), None, UpkeepEvent)],
     'demonic-torment':
-        [Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['creatures'], CastResolvedEvent)],
+        [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(HostCantAttack())],
     'demonic-tutor': [Triggered(DemonicTutor(), None, CastResolvedEvent)],
     'desert': [Activated('T', AddMana('C')),
                Activated('T', DealDamage(1), T_FUNCS['attackers'], allowed_phases=[Phase.COMBAT_END])],

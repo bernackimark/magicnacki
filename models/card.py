@@ -32,8 +32,8 @@ class Card:
     keywords: list[str | None] = InitVar  # storing, but not yet using the keywords from Scryfall
     keyword_abilities: list[str | None] = field(default_factory=list)  # not yet using the keywords from Scryfall
     mana_produced: list[str] | None = None
-    ids: dict = field(default_factory=dict)
-    uris: dict = field(default_factory=dict)
+    ids: dict = field(default_factory=dict, repr=False)
+    uris: dict = field(default_factory=dict, repr=False)
     rulings: list[Ruling] = field(default_factory=list)
 
     def __post_init__(self):

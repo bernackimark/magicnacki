@@ -42,7 +42,7 @@ class CopyCard(Action):
             self.s.colors = the_copy.props.colors
         self.s.has_summoning_sickness = the_copy.props.is_creature and 'Haste' not in the_copy.props.keyword_abilities
         self.s.base_pt = the_copy.base_pt
-        self.s._base_kwa = self._handle_kwa(the_copy, the_copy.props.keyword_abilities)
+        self.s._base_kwa = the_copy.props.keyword_abilities
         self.s.activated_abilities = the_copy.activated_abilities
         self.s.static_abilities = the_copy.static_abilities
         self.s.triggered_abilities = the_copy.triggered_abilities
@@ -52,14 +52,6 @@ class CopyCard(Action):
             self.gs.pending_choice = None
         else:
             self.gs.action_stack.pop()
-
-    def _handle_kwa(self, copied_card: GameCard, prop_kwas: list[str | None]) -> tuple[str | None]:
-        my_base_kwa = []
-        if copied_card.props.is_creature and 'Defender' not in copied_card.props.keyword_abilities:
-            self.s._base_kwa = my_base_kwa.append('Attack')
-        else:
-            my_base_kwa = prop_kwas
-        return tuple(my_base_kwa)
 
 class DestroyAndForegoCombatDamage(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard):
@@ -275,7 +267,6 @@ class PrimalClayC(Action):
         self.s.base_pt = (1, 6)
         kwa = list(self.s._base_kwa)
         kwa.append('Defender')
-        kwa.remove('Attack')
         self.s._base_kwa = kwa
         self.gs.cast(self.s)
         if self.gs.pending_choice:

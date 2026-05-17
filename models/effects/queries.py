@@ -27,6 +27,15 @@ class CantBeTargetedByAuras(Effect):
             return
         return False
 
+class HostCantAttack(Effect):
+    def on_query(self, gs: GameState, event: str, **kwargs):
+        if event != 'can_attack':
+            return None
+        card = kwargs.get('card')
+        source = kwargs.get('source')
+        if source.attached_to is card:
+            return False
+
 class HostCantBeTargetedByAuras(Effect):
     """Host can't host an aura"""
     event = 'can_target'
@@ -560,12 +569,11 @@ class NightmarePT(Effect):
 class Moat(Effect):
     """Creatures without flying can't attack"""
     def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
-        if event != 'kwa_mod':
+        if event != 'can_attack':
             return None
         if card not in gs.card_filter.in_play().has('Flying', False).creatures().result():
             return None
-        return KWAMod(s=source, add_or_remove='remove', kwa='Attack')
+        return False
 
 class OrcishOriflamme(Effect):
     """Attacking creatures you control get +1/+0"""

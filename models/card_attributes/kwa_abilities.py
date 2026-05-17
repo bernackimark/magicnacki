@@ -170,8 +170,6 @@ CREATURE_KW_ABILITIES = {
 
 def get_creature_base_kwas(slug: str) -> tuple[str]:
     kwas = CREATURE_KW_ABILITIES.get(slug, [])
-    if 'Defender' not in kwas:
-        kwas.append("Attack")
     return tuple(kwas)
 
 

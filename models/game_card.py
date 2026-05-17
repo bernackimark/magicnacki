@@ -147,9 +147,6 @@ class GameCard:
                 continue
             if mod.add_or_remove == 'add':
                 adds.add(mod.card_type)
-                if mod.card_type == 'Creature' and 'Creature' not in self._card_types:
-                    self.modifiers.items.append(KWAMod(s=mod.source, add_or_remove='add',
-                                                       kwa='Attack', expires=mod.expires))
         return list((types | adds) - removes)
 
     @property

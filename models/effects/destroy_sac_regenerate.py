@@ -265,7 +265,7 @@ class SandalsOfAbdallahIfCreatureDies(Effect):
 
 class SeasonOfTheWitchEndStep(Effect):
     """At YOUR end step, destroy all untapped creatures that didn't attack this turn, except those who 'couldn't'.
-    Note: I'm defining 'couldn't' = summoning sickness or has no Attack"""
+    Note: I'm defining 'couldn't' = summoning sickness or has Defender"""
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
@@ -276,7 +276,7 @@ class SeasonOfTheWitchEndStep(Effect):
         for creature in your_untapped_creatures:
             if creature in attackers:
                 continue
-            if creature.has_summoning_sickness or 'Attack' not in creature.keyword_abilities:
+            if creature.has_summoning_sickness or 'Defender' in creature.keyword_abilities:
                 continue
             gs.destroy(creature)
 
