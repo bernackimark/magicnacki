@@ -25,6 +25,7 @@ class Phase(IntEnum):
     FIRST_STRIKE_DAMAGE = auto()  # 1st/double strike assigned; CIAA
     COMBAT_DAMAGE = auto()  # non-1st/double strike deal combat damage; CIAA
     COMBAT_END = auto()  # CIAA
+    SECOND_MAIN = auto()
     END_STEP = auto()  # CIAA
     DISCARD = auto()  # CIAA
     CREATURES_HEAL = auto()  # remove damage from perms
@@ -107,10 +108,13 @@ class DrawPhase(PhaseState):
         return None  # draw is automatic
 
     def next(self, gs: GameState):
-        return CastPhase()
+        return MainPhase()
 
-class CastPhase(PhaseState):
+class MainPhase(PhaseState):
     phase = Phase.MAIN
+
+    def on_enter(self, gs: GameState) -> None:
+        pass
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.combat import BeginCombat
@@ -127,7 +131,7 @@ class CastPhase(PhaseState):
         actions.extend(gs.add_activated_abilities_from_board())
 
         # combat option
-        if any(gs.can_attack(c) for c in gs.boards[p_id]):
+        if any(gs.can_attack(c) for c in gs.boards[gs.turn_mgr.player_turn_idx]):
             actions.append(BeginCombat(p_id, gs))
 
         # auto-advance safety:
@@ -233,6 +237,28 @@ class AssignCombatDamagePhase(PhaseState):
         return None
 
     def next(self, gs: GameState):
+        return SecondMainPhase()
+
+class SecondMainPhase(PhaseState):
+    phase = Phase.SECOND_MAIN
+
+    def get_actions(self, p_id: int, gs: GameState):
+        from models.actions.end_step_pass_turn import MoveToEndStep
+
+        actions: list[Action] = [MoveToEndStep(p_id, gs)]
+
+        # hand actions + abilities
+        actions.extend(gs.available_actions_from_hand())
+        actions.extend(gs.add_activated_abilities_from_board())
+
+        # auto-advance safety:
+        if all(isinstance(a, MoveToEndStep) for a in actions):
+            gs.phase_mgr.set_phase(Phase.END_STEP, gs)
+            return
+
+        return actions
+
+    def next(self, gs: GameState):
         return EndStepPhase()
 
 class EndStepPhase(PhaseState):
@@ -327,12 +353,13 @@ PHASE_MAP = {
     Phase.UNTAP: UntapPhase,
     Phase.UPKEEP: UpkeepPhase,
     Phase.DRAW: DrawPhase,
-    Phase.MAIN: CastPhase,
+    Phase.MAIN: MainPhase,
     # DECLARE_COMBAT: DeclareAttackersPhase  # currently not in use, but there's at least one effect that relies on it
     Phase.DECLARE_ATTACKERS: DeclareAttackersPhase,  # declare who is attacking; tap those w/o vigil
     Phase.DECLARE_BLOCKERS: DeclareBlockersPhase,  # declare who's blocking whom
     Phase.PRE_COMBAT_DAMAGE: PreCombatDamagePhase,  # CIAA
     Phase.ASSIGN_COMBAT_DAMAGE: AssignCombatDamagePhase,
+    Phase.SECOND_MAIN: SecondMainPhase,
     Phase.END_STEP: EndStepPhase,
     Phase.DISCARD: DiscardPhase,
     Phase.CREATURES_HEAL: CreaturesHealPhase,  # remove damage from perms
