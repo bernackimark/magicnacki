@@ -14,7 +14,8 @@ RENDER_SCALE = 2
 @dataclass
 class PGCard:
     card: GameCard
-    surf: pg.Surface
+    full_surf: pg.Surface
+    art_surf: pg.Surface
     index: int
     rect: pg.Rect = None
     hovered: bool = False
@@ -24,36 +25,37 @@ class PGCard:
     def __post_init__(self):
         hi_w = int(CARD_W * RENDER_SCALE)
         hi_h = int(CARD_H * RENDER_SCALE)
-        self.hi_res_surf = pg.transform.smoothscale(self.surf, (hi_w, hi_h))
+        self.hi_res_full_surf = pg.transform.smoothscale(self.full_surf, (hi_w, hi_h))
+        self.hi_res_art_surf = pg.transform.smoothscale(self.art_surf, (hi_w, hi_h))
 
         self.back_surf = self.back_surf.convert_alpha()
         self.back_surf = pg.transform.smoothscale(self.back_surf, (CARD_W, CARD_H))
 
     def draw(self, screen: pg.Surface, x: int, y: int, width=CARD_W, height=CARD_H,
-             face_down=False, rotation_angle=0, crop_ratio=1.0, scale=1.0):
+             face_down=False, rotation_angle=0, crop_ratio=1.0, scale=1.0, full_or_art: str = 'full'):
         """Crop, rotate, scale, draw card, update interaction rectangle"""
-        surf = self.hi_res_surf if not face_down else self.back_surf
+        surf = self.back_surf if face_down else self.art_surf if full_or_art == 'art' else self.full_surf
 
         if self.card.is_tapped:
             rotation_angle = 90
 
-        # STEP 1: crop BEFORE rotation (visual only)
+        # crop BEFORE rotation (visual only)
         if crop_ratio < 1.0:
             w, h = surf.get_size()
             crop_rect = pg.Rect(0, 0, w, int(h * crop_ratio))
             surf = surf.subsurface(crop_rect)
 
-        # STEP 2: rotate
+        # rotate
         rotated = pg.transform.rotate(surf, -rotation_angle)
 
-        # --- 3. Scale (constant, based on original surface) ---
+        # scale (constant, based on original surface)
         base_w, base_h = surf.get_size()
         scale_ratio = (width / base_w) * scale
         new_w = int(rotated.get_width() * scale_ratio)
         new_h = int(rotated.get_height() * scale_ratio)
         final = pg.transform.smoothscale(rotated, (new_w, new_h))
 
-        # ✅ STEP 4: position using FULL card geometry (not cropped!)
+        # position using FULL card geometry (not cropped!)
         full_rect = pg.Rect(0, 0, width, height)
         full_rect.topleft = (int(x), int(y))
 

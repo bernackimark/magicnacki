@@ -4,6 +4,7 @@ from engine import Engine, create_engine_from_json
 from models.card import CardUniverse
 import pygame as pg
 
+from models.constants import OS_SCRYFALL_SETS
 from renderer_pygame.game import Game
 from renderer_pygame.scenes.build_deck_scene import BuildDeckScene
 from renderer_pygame.scenes.menu_scene import MenuScene
@@ -33,6 +34,6 @@ class MyGame(Game):
 
 
 if __name__ == "__main__":
-    cu = CardUniverse(['lea'])
+    cu = CardUniverse(OS_SCRYFALL_SETS)
     engine = create_engine_from_json('testing/game_testing_settings.json', 'pygame_testing_setup_a', True)
     MyGame(cu, engine).run()

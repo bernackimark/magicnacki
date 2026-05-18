@@ -72,9 +72,6 @@ class Game:
 
         print(f"[Info] Loaded images from {folder}")
 
-        for k, v in self.images.items():
-            print(k, v)
-
     # -------------------------------------------------------------------------
     # Lifecycle hooks — override these in subclasses
     # -------------------------------------------------------------------------

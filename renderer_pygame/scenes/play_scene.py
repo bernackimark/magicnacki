@@ -182,10 +182,11 @@ class PlayScene(Scene):
             positions = [(self.cols[col + i], self.rows[row], 0) for i in range(len(cards))]
 
         for i, (card, (x, y, angle)) in enumerate(zip(cards, positions)):
-            first_image_surf = next(iter(self.game.images[card.props.slug].values()))
-            pg_card = PGCard(card, first_image_surf, i)
+            full_surf = next(surf for key, surf in self.game.images[card.props.slug].items() if 'border_crop' in key)
+            art_surf = next(surf for key, surf in self.game.images[card.props.slug].items() if 'art_crop' in key)
+            pg_card = PGCard(card, full_surf, art_surf, i)
             pg_card.draw(self.game.screen, int(x), int(y), face_down=face_down, rotation_angle=angle,
-                         crop_ratio=0.61 if not is_opp else 1.0, scale=1.4 if not is_opp else 1.0)
+                         crop_ratio=0.61 if not is_opp else 1.0, scale=1.4 if not is_opp else 1.0, full_or_art='art')
 
             if not face_down and pg_card.rect.collidepoint(mouse_pos):
                 self.hovered_card = pg_card
@@ -201,8 +202,9 @@ class PlayScene(Scene):
         basic_lands_seen = []
 
         for i, c in enumerate(self.state.boards[p_id]):
-            first_image_surf = next(iter(self.game.images[c.props.slug].values()))
-            pg_card = PGCard(c, first_image_surf, i)
+            full_surf = next(surf for key, surf in self.game.images[c.props.slug].items() if 'border_crop' in key)
+            art_surf = next(surf for key, surf in self.game.images[c.props.slug].items() if 'art_crop' in key)
+            pg_card = PGCard(c, full_surf, art_surf, i)
 
             if c in attackers:
                 x = self.cols[col + seen['attackers']]
@@ -219,7 +221,7 @@ class PlayScene(Scene):
                 x = self.cols[8 - seen['non_basics']]
                 y = self.rows[row]
                 seen['non_basics'] += 1
-            pg_card.draw(self.game.screen, x, y)
+            pg_card.draw(self.game.screen, x, y, full_or_art='art')
 
             if pg_card.rect.collidepoint(mouse_pos):
                 self.hovered_card = pg_card
@@ -231,18 +233,20 @@ class PlayScene(Scene):
             return
 
         top_card = self.state.graveyards[p_idx][-1]
-        first_image_surf = next(iter(self.game.images[top_card.props.slug].values()))
-        pg_card = PGCard(top_card, first_image_surf, 0)
-        pg_card.draw(self.game.screen, x, y)
+        full_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'border_crop' in key)
+        art_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'art_crop' in key)
+        pg_card = PGCard(top_card, full_surf, art_surf, 0)
+        pg_card.draw(self.game.screen, x, y, full_or_art='art')
 
     def draw_exile(self, p_idx: int, x, y):
         if not self.state.exiles[p_idx]:
             return
 
         top_card = self.state.exiles[p_idx][-1]
-        first_image_surf = next(iter(self.game.images[top_card.props.slug].values()))
-        pg_card = PGCard(top_card, first_image_surf, 0)
-        pg_card.draw(self.game.screen, x, y, rotation_angle=-90)
+        full_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'border_crop' in key)
+        art_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'art_crop' in key)
+        pg_card = PGCard(top_card, full_surf, art_surf, 0)
+        pg_card.draw(self.game.screen, x, y, rotation_angle=-90, full_or_art='art')
 
     def draw_library(self, p_id: int, x: int, y: int):
         card_cnt = len(self.state.libraries[p_id])
@@ -318,8 +322,10 @@ class PlayScene(Scene):
         if self.hovered_card is None or getattr(self.hovered_card, "face_down", False):
             return
 
-        first_image_surf = next(iter(self.game.images[self.hovered_card.card.props.slug].values()))
-        preview_surf = pg.transform.smoothscale(first_image_surf, (preview_w, preview_h))
+        # first_image_surf = next(iter(self.game.images[self.hovered_card.card.props.slug].values()))
+        full_surf = next(surf for key, surf in self.game.images[self.hovered_card.card.props.slug].items()
+                         if 'border_crop' in key)
+        preview_surf = pg.transform.smoothscale(full_surf, (preview_w, preview_h))
         self.game.screen.blit(preview_surf, (x + 20, y))
 
     def life_change_animations(self, p_idx: int, life_total: int, is_opp: bool,
