@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 CARD_DATA_FILE_PATH = Path(os.getenv('CARD_DATA_FILE_PATH'))
-SCRYFALL_FILE_PATH = Path('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/gatherer-scryfall/card_data.json')
+SCRYFALL_FILE_PATH = Path('/models/game_card/card_data.json')
 IMAGES_OUTPUT_PATH = Path(os.getenv('IMAGES_OUTPUT_PATH'))
 IMAGES_OUTPUT_PATH2 = Path('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/renderer_pygame/assets/images')
 

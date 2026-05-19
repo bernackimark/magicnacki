@@ -6,7 +6,7 @@ from typing import Callable, Any, Sequence, TYPE_CHECKING
 from models.presentation_request import PresentationRequest
 
 if TYPE_CHECKING:
-    from models.card import Card
+    from models.game_card.card import Card
 
 from models.action_stack import ActionStack
 from models.actions.stack_accept_counter import AcceptAction
@@ -451,6 +451,15 @@ class GameState:
         return actions
 
     def available_actions_from_hand(self) -> list[Action]:
+        """For each card in hand for the in-scope player ...
+            -   If not can_cast(), skip
+            -   If permanent, cast to board directly w/o stack (speed of testing; will need to amend to just lands)
+            -   If card has no cast effects, add BeginSpellCastAction as a valid action
+            -   For each cast effect:
+                -   If X & X can't be paid, skip
+                -   If there are no or fewer targets than the effect requires, skip
+                -   Else add BeginSpellCastAction as a valid action
+            Return list of legal Actions"""
         actions: list[Action] = []
         p_id = self.action_on_idx
 

@@ -8,9 +8,9 @@ if TYPE_CHECKING:
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost, \
     DiscardAtRandomCost, SacCardCost
-from models.card_attributes.card_filter_funcs import T_FUNCS
+from models.game_card.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
-    CHARGE, DREAM, WIND, HATCHLING, CounterType
+    CHARGE, DREAM, HATCHLING, CounterType
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
 from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
     CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, \

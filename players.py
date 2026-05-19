@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.card import Card
+    pass
 
 from common.file_utils import read_json_file
 from game_state import GameState
 from models.actions.base import Action
-from models.card_filter import ARG_LOOKUP, CardFilter
+from models.game_card.card_filter import ARG_LOOKUP, CardFilter
 from models.game_over import Concede
 
 

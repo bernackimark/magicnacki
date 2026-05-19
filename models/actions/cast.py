@@ -6,14 +6,14 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.actions.base import Action
-from models.effects.base import ActivatedAbility, EffSpec
+from models.effects.base import EffSpec
 from models.events_all import StateBasedEvent, CastResolvedEvent
 from models.zone import Zone
 
 
 @dataclass
 class CastToBoard(Action):
-    """Should be deprecated and replaced by CastToTargetAddToStack"""
+    """Lands are special; their cast bypasses the stack"""
     card: GameCard
     x_values_for_variable_cast: int | None = None
 
@@ -37,7 +37,7 @@ class CastToBoard(Action):
         self.gs.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
 
         # --- new event/phase-aware registration
-        from models.card_attributes.card_effect_specs import INVOCATIONS
+        from models.game_card.card_effect_specs import INVOCATIONS
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack

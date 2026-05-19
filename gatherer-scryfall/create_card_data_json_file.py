@@ -8,7 +8,7 @@ from constants import OS_SET_CODES, CARD_TYPES, SUPERTYPES
 # This file contains one entry per card for all old school sets; cards in multiple sets one have one total entry
 OS_CARD_DATA = read_json_file('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/gatherer-scryfall/scryfall_card_data_OS.json')
 
-OUTPUT_PATH = '/Users/Bernacki_Laptop/PycharmProjects/magicnacki/gatherer-scryfall/card_data.json'
+OUTPUT_PATH = '/models/game_card/card_data.json'
 
 
 def name_to_slug(name: str) -> str:

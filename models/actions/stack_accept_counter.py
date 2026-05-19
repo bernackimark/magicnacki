@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from models.actions.activate_ability import ActivateAbility
 from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
-from models.effects.base import ActivatedAbility
 from models.events_all import CastResolvedEvent
 from models.zone import Zone
 from models.utils import flip
@@ -62,7 +61,7 @@ class AcceptAction(Action):
         self.gs.move_card(card, zone, cause='cast')
 
         # --- register triggered effects --- is this the best place to do this?, where are static effect being reg'ed?
-        from models.card_attributes.card_effect_specs import INVOCATIONS
+        from models.game_card.card_effect_specs import INVOCATIONS
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
             if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
                 self.gs.event_mgr.register_effect(eff_spec.effect, card)

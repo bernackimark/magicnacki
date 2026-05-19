@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from engine import Engine, create_engine_from_json
-from models.card import CardUniverse
+from models.game_card.card import CardUniverse
 import pygame as pg
 
 from models.constants import OS_SCRYFALL_SETS

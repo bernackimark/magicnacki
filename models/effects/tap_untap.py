@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from models.game_card import GameCard
 
 from models.effects.base import Effect
-from models.game_card_filter import CardFilter
 from models.choice_actions_all import UntapChoice, UntapWithManaChoice
 from ..actions.tap_untap import LeaveTapped
 from ..counter_tokens import PUPA, SLEEP
@@ -151,7 +150,7 @@ class ManaShort(Effect):
         """target = player_id whose lands should be tapped"""
         if target is None:
             return
-        player_lands = (CardFilter(gs).on_player_board(target).lands().result())
+        player_lands = gs.card_filter.on_player_board(target).lands().result()
         for land in player_lands:
             land.tap(gs)
         print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")

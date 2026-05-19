@@ -5,12 +5,12 @@ from uuid import uuid4
 if TYPE_CHECKING:
     from game_state import GameState
 
-from models.card import Card
-from models.card_attributes.kwa_abilities import get_creature_base_kwas
+from models.game_card.card import Card
+from models.game_card.kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec, Effect
-from models.card_attributes.card_effect_specs import INVOCATIONS
-from models.modifiers import Modifiers, KWAMod, ModType
+from models.game_card.card_effect_specs import INVOCATIONS
+from models.modifiers import Modifiers, ModType
 from models.zone import Zone
 
 

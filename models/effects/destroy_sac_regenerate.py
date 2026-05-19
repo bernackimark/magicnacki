@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card import GameCard
 
-from models.game_card_filter import CardFilter
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, PsychicAllergyUpkeepChoice, SacChoice, \
     DemonicHordesUpkeepChoice, OpponentDestroysLandChoice, MoldDemonChoice, CosmicHorrorUpkeepChoice, PayLifeOrSacChoice
@@ -57,8 +56,8 @@ class DestroyIfItAttacked(Effect):
             gs.destroy(t)
 
 class ExileAllCreatures(Effect):
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-        for c in CardFilter(gs).in_play().creatures().result():
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        for c in gs.card_filter.in_play().creatures().result():
             gs.exile(c)
 
 class PayManaOrSac(Effect):
