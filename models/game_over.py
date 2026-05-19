@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
 from models.utils import flip
-from phase_fsm import Phase
+from models.phase_manager import Phase
 
 
 class GameOverChoice(ChoiceAction):

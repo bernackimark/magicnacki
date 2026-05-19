@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional, TYPE_CHECKING, Callable
 
-from phase_fsm import Phase
+from models.phase_manager import Phase
 from models.utils import flip
 from models.events_all import ZoneChangeEvent, TapCardEvent, UntapPhaseEvent
 from ..zone import Zone

@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from ..game_card import GameCard
 
 from models.actions.base import Action
-from phase_fsm import Phase
+from models.phase_manager import Phase
 
 
 @dataclass

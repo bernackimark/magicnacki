@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from models.constants import Mulligan
-from phase_fsm import Phase
+from models.phase_manager import Phase
 
 if TYPE_CHECKING:
     from models.game_card import GameCard

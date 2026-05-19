@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 
 from models.actions.base import Action
-from phase_fsm import Phase
-from models.utils import flip
+from models.phase_manager import Phase
 
 
 @dataclass

@@ -33,7 +33,7 @@ from models.score_manager import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn_manager import TurnManager
 from models.zone import Zone
-from phase_fsm import PhaseManager
+from models.phase_manager import PhaseManager
 
 class GameState:
     """All-knowing class responsible for everything after a new game is created;

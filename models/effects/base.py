@@ -13,7 +13,7 @@ from models.events_all import Event
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
-    from phase_fsm import Phase
+    from models.phase_manager import Phase
 
 @dataclass
 class TargetSpec:

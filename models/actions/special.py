@@ -8,7 +8,7 @@ from models.counter_tokens import CounterType, WIND
 from models.damage import PreventNextDamage
 from models.effects.base import ActivatedAbility
 from models.modifiers import OwnershipMod
-from phase_fsm import Phase
+from models.phase_manager import Phase
 from models.utils import flip
 
 if TYPE_CHECKING:

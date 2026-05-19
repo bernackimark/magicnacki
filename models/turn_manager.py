@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.utils import flip
-from phase_fsm import Phase
+from models.phase_manager import Phase
 
 class TurnManager:
     def __init__(self, player_cnt: int, starting_player_idx: int):

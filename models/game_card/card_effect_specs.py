@@ -82,7 +82,7 @@ from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect,
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent
-from phase_fsm import Phase
+from models.phase_manager import Phase
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
     return [Activated('T', AddMana(color), T_FUNCS['card_owner'], text=f'Add {{{color}}}') for color in colors]

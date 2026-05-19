@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from models.modifiers import PTMod, KWAMod, TypeMod, SubTypeMod
 from models.utils import flip
-from phase_fsm import Phase
+from models.phase_manager import Phase
 
 if TYPE_CHECKING:
     from game_state import GameState

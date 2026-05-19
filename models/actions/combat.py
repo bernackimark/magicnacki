@@ -4,7 +4,7 @@ from models.actions.base import Action
 from models.combat import Combat
 from models.game_card import GameCard
 from models.utils import flip
-from phase_fsm import Phase
+from models.phase_manager import Phase
 
 @dataclass
 class CreatureAttack(Action):
