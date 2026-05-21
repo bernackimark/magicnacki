@@ -118,31 +118,31 @@ class GameState:
 
     # --- QUERY SYSTEM ---
     def can_attack(self, card: GameCard) -> bool:
-        return self._query_effects_by_event('can_attack', card)
+        return self._query_effects('can_attack', card)
 
     def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
-        return self._query_effects_by_event('can_block', blocker, attacker=attacker)
+        return self._query_effects('can_block', blocker, attacker=attacker)
 
     def can_damage(self, target: GameCard, source: GameCard) -> bool:
-        return self._query_effects_by_event('can_damage', target, source=source)
+        return self._query_effects('can_damage', target, source=source)
 
     def can_target(self, target: GameCard | int, source: GameCard, target_host: GameCard | None = None) -> bool:
         if isinstance(target, int):
             return True
-        result = self._query_effects_by_event('can_target', target, source=source, target_host=target_host)
+        result = self._query_effects('can_target', target, source=source, target_host=target_host)
         return False if result is False else True
 
     def can_untap(self, card: GameCard) -> bool:
-        return self._query_effects_by_event('can_untap', card)
+        return self._query_effects('can_untap', card)
 
     def can_cast(self, card: GameCard, p_id: int) -> bool:
-        return self._query_effects_by_event('can_cast', card, p_id=p_id)
+        return self._query_effects('can_cast', card, p_id=p_id)
 
     def can_be_destroyed(self, card: GameCard) -> bool:
-        result = self._query_effects_by_event('can_be_destroyed', card)
+        result = self._query_effects('can_be_destroyed', card)
         return False if result is False else True
 
-    def _query_effects_by_event(self, query: str, card: GameCard, **kwargs) -> bool:
+    def _query_effects(self, query: str, card: GameCard, **kwargs) -> bool:
         """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
         can be True (which is either hard permission or the lack of a hard-veto) or False (a hard veto);
         hard permission takes precedence over hard veto;

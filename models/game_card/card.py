@@ -3,7 +3,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Iterator, Any
 
-from models.game_card.game_card.kwa_abilities import CREATURE_KW_ABILITIES
+from kwa_abilities import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
 from models.constants import BASIC_LANDS
 from models.utils import str_to_int
