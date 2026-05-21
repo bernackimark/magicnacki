@@ -12,7 +12,7 @@ from models.game_card.game_card.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
     CHARGE, DREAM, HATCHLING, CounterType
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
-from models.effects.combat import WalkRuleRemoved, TowerOfCoireall, UnblockableThisTurn, Abomination, \
+from models.effects.combat import TowerOfCoireall, UnblockableThisTurn, Abomination, \
     CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, \
     ElderLandWurm, Sentinel, GlyphOfDoom, GlyphOfLife, InfernalMedusa, AbuJafar
 from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
@@ -41,7 +41,7 @@ from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRac
     VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
     MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions, RagMan, DemonicTutor, NaturalSelection, LandTax
-from models.effects.identity import SetColor, AddCreatureTypePTManaValue, BecomeCreature, EvilPresence, \
+from models.effects.identity import SetColor, BecomeCreature, EvilPresence, \
     PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
     PrimalClay
 from models.effects.keywords import KWAModEffect, ErhnamDjinn, \
@@ -64,7 +64,7 @@ from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesC
     JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, KoboldTaskmaster, KoboldOverlord, \
     SedgeTrollPT, ZombieMasterWalk, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, IvoryGuardians, \
-    HostCantAttack
+    HostCantAttack, WalkRuleRemoved, AddCreatureTypePTManaValue
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \

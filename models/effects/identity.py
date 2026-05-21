@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.choice_actions_all import CopyCardChoice, PrimalClayChoice
 from models.events_all import BlockEvent, UpkeepEvent
-from models.modifiers import TypeMod, PTMod, SubTypeMod, ColorMod
+from models.modifiers import TypeMod, SubTypeMod, ColorMod
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -13,35 +13,6 @@ if TYPE_CHECKING:
 from models.effects.base import Effect
 
 # --- GENERICS ---
-class AddCreatureType(Effect):
-    """Turns the card into a creature"""
-    def __init__(self, power: int, toughness: int, sub_type: str = None):
-        self.power = power
-        self.toughness = toughness
-        self.sub_type = sub_type
-
-    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
-        if card is not source:
-            return None
-        if event == 'type_mod':
-            return TypeMod(s=source, add_or_remove='add', card_type='Creature')
-        if event == 'sub_type_mod':
-            return SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type)
-        if event == 'pt_mod':
-            return PTMod(s=source, p_adj=self.power, t_adj=self.toughness)
-
-class AddCreatureTypePTManaValue(Effect):
-    """Turns card into a creature with power and toughness each equal to its mana value"""
-    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
-        if card is not source:
-            return None
-        if event == 'type_mod':
-            return TypeMod(s=source, add_or_remove='add', card_type='Creature')
-        if event == 'pt_mod':
-            return PTMod(s=source, p_adj=card.props.mana_value, t_adj=card.props.mana_value)
-
 class BecomeCreature(Effect):
     def __init__(self, power: int, toughness: int, sub_type: str = None, until_eot: bool = False):
         self.power = power

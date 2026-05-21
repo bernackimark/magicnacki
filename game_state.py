@@ -6,7 +6,7 @@ from typing import Callable, Any, Sequence, TYPE_CHECKING
 from models.presentation_request import PresentationRequest
 
 if TYPE_CHECKING:
-    from models.game_card.game_card.card import Card
+    from models.game_card.card import Card
 
 from models.action_stack import ActionStack
 from models.actions.stack_accept_counter import AcceptAction
@@ -23,7 +23,7 @@ from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCa
 from models.events_all import (TapCardEvent, UntapCardEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                DiesEvent, ZoneChangeEvent, DrawCardEvent, RandomEvent, DiscardEvent)
 from models.game_card.game_card import GameCard
-from models.game_card.game_card_filter import CardFilter
+from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool
@@ -142,7 +142,7 @@ class GameState:
         result = self._query_effects_by_event('can_be_destroyed', card)
         return False if result is False else True
 
-    def _query_effects_by_event(self, event_str: str, card: GameCard, **kwargs) -> bool:
+    def _query_effects_by_event(self, query: str, card: GameCard, **kwargs) -> bool:
         """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
         can be True (which is either hard permission or the lack of a hard-veto) or False (a hard veto);
         hard permission takes precedence over hard veto;
@@ -158,7 +158,7 @@ class GameState:
             if not hasattr(eff, 'on_query'):
                 continue
 
-            result = eff.on_query(self, event_str, card=card, **kwargs)
+            result = eff.on_query(self, query, card=card, **kwargs)
 
             if result is True:
                 return True

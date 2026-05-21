@@ -34,7 +34,7 @@ class Effect:
         """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""
         raise NotImplementedError()
 
-    def on_query(self, gs, event: str, card: GameCard, **kwargs):
+    def on_query(self, gs, query: str, card: GameCard, **kwargs):
         """Answer a rules question (ex: can this attack?)"""
         return None  # default: no opinion
 

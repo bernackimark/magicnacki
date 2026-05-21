@@ -5,7 +5,7 @@ from models.counter_tokens import PLUS_ONE
 from models.effects.counters import AddCounterAtEndStep
 from models.effects.destroy_sac_regenerate import DestroyAtCombatEnd
 from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
-from models.events_all import BlockEvent, CombatEndEvent, AttackEvent, DamageResolvedEvent, DiesEvent, Event
+from models.events_all import BlockEvent, CombatEndEvent, AttackEvent, DamageResolvedEvent, DiesEvent
 from models.modifiers import KWAMod, PTMod
 
 if TYPE_CHECKING:
@@ -15,21 +15,6 @@ if TYPE_CHECKING:
 from models.effects.base import Effect
 
 # --- GENERICS ---
-class WalkRuleRemoved(Effect):
-    """Creatures with a landwalk can be blocked as though they didn't have that landwalk."""
-    def __init__(self, walk_type: str):
-        self.walk_type = walk_type
-
-    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
-        if event != 'can_block':
-            return None
-        attacker = kwargs.get('attacker')
-        if not attacker:
-            return None
-        if self.walk_type not in attacker.keyword_abilities:
-            return None
-        return True  # a hard-confirm that the block is allowed
-
 class UnblockableThisTurn(Effect):
     """Target creature can't be blocked this turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
