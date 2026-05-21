@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from models.actions.base import Action
 from models.combat import Combat
-from models.game_card import GameCard
+from models.game_card.game_card import GameCard
 from models.utils import flip
 from models.phase_manager import Phase
 

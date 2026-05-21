@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from models.constants import Target
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
     from models.choice_actions_all import TargetChoiceAction, MultiTargetChoice
 
 from models.actions.base import Action

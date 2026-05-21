@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from data.user_data import get_user
 from models.deck import CardUniverse, Deck

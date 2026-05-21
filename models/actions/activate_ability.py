@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from models.actions.base import Action
 from models.effects.base import ActivatedAbility
 from models.events_all import StateBasedEvent
-from models.game_card import GameCard
+from models.game_card.game_card import GameCard
 
 
 @dataclass

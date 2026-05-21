@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.events_all import LifeLossEvent, LifeGainEvent
-from models.game_card import GameCard
+from models.game_card.game_card import GameCard
 
 if TYPE_CHECKING:
     from game_state import GameState

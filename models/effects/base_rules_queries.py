@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.constants import BASIC_LANDS
 from models.effects.base import Effect

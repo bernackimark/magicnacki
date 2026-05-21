@@ -3,12 +3,12 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost, \
     DiscardAtRandomCost, SacCardCost
-from models.game_card.card_filter_funcs import T_FUNCS
+from models.game_card.game_card.card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
     CHARGE, DREAM, HATCHLING, CounterType
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec

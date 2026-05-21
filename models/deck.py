@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Iterable, Literal, Self
 
 from data.deck_data import DeckData, get_deck, get_decks
-from models.game_card.card import Card, CardUniverse
+from models.game_card.game_card.card import Card, CardUniverse
 from models.constants import (OLD_SCHOOL_BANNED_SLUGS, OLD_SCHOOL_RESTRICTED_SLUGS, GENTLEMENS_RULES_BANNED_SLUGS,
                               OS_SCRYFALL_SETS)
 

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
     from game_state import GameState
     from models.counter_tokens import CounterType
 

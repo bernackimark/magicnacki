@@ -2,7 +2,7 @@ import operator
 import re
 from typing import Sequence, Any
 
-from models.game_card.card import Card, CardUniverse
+from models.game_card.game_card.card import Card, CardUniverse
 from models.constants import OS_SCRYFALL_SETS
 
 ARG_LOOKUP = {

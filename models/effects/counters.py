@@ -7,7 +7,7 @@ from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 
 from models.counter_tokens import STORAGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE, PLUS_ONE, \

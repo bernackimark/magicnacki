@@ -6,7 +6,7 @@ from models.constants import Mulligan
 from models.phase_manager import Phase
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction

@@ -7,7 +7,7 @@ from models.events_all import UpkeepEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.effects.base import Effect
 from models.modifiers import KWAMod

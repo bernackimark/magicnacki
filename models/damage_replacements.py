@@ -5,7 +5,7 @@ from models.damage import DamageReplacement, DamageEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 class MartyrsOfKorlisReplacement(DamageReplacement):
     """As long as this creature is untapped,

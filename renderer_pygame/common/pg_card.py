@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pygame as pg
-from models.game_card import GameCard
+from models.game_card.game_card import GameCard
 
 CARD_W = 100
 CARD_H = 142

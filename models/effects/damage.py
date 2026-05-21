@@ -9,7 +9,7 @@ from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.choice_actions_all import ElderSpawnUpkeepChoice, CurseArtifactUpkeepChoice, LordOfThePitUpkeepChoice
 from models.damage import PreventNextDamage, DamageEvent

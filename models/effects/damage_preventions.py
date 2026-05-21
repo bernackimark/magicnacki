@@ -6,7 +6,7 @@ from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.damage import DamageEvent, PreventNextDamage
 

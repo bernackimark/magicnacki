@@ -4,10 +4,10 @@ import random
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.game_card.card import Card
+    from models.game_card.game_card.card import Card
 
 from models.deck import Deck
-from models.game_card import GameCard
+from models.game_card.game_card import GameCard
 from game_state import GameState
 from models.utils import flip
 

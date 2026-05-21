@@ -10,7 +10,7 @@ from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
     PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
@@ -29,7 +29,7 @@ class CreateTokenCreature(Effect):
         self.slug = slug
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        from models.game_card import GameCard
+        from models.game_card.game_card import GameCard
         from models.zone import Zone
         card = gs.tokens.get(self.slug)
         if not card:

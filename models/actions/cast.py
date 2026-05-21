@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
 from models.effects.base import EffSpec
@@ -37,7 +37,7 @@ class CastToBoard(Action):
         self.gs.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
 
         # --- new event/phase-aware registration
-        from models.game_card.card_effect_specs import INVOCATIONS
+        from models.game_card.game_card.card_effect_specs import INVOCATIONS
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack
@@ -82,7 +82,7 @@ class CastToTargetAddToStack(Action):
     #  if so, the repr shouldn't say "Cast", the class name shouldn't include "Cast", etc.
 
     def __repr__(self) -> str:
-        from models.game_card import GameCard
+        from models.game_card.game_card import GameCard
         target_text, variable_cast_text = '', ''
         if self.card.variable_x is not None:
             variable_cast_text = f", X={self.card.variable_x}"

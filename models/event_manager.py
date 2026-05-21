@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from models.effects.base import Effect
     from models.events_all import Event
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
     from game_state import GameState
 
 

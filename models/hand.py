@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from enum import Enum
 
-from models.game_card import GameCard
+from models.game_card.game_card import GameCard
 
 
 @dataclass

@@ -6,7 +6,7 @@ from typing import Callable, Any, Sequence, TYPE_CHECKING
 from models.presentation_request import PresentationRequest
 
 if TYPE_CHECKING:
-    from models.game_card.card import Card
+    from models.game_card.game_card.card import Card
 
 from models.action_stack import ActionStack
 from models.actions.stack_accept_counter import AcceptAction
@@ -22,8 +22,8 @@ from models.effects.base import Effect
 from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCastRule, CanTargetRule, CanDamageRule
 from models.events_all import (TapCardEvent, UntapCardEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                DiesEvent, ZoneChangeEvent, DrawCardEvent, RandomEvent, DiscardEvent)
-from models.game_card import GameCard
-from models.game_card_filter import CardFilter
+from models.game_card.game_card import GameCard
+from models.game_card.game_card_filter import CardFilter
 from models.game_history import GameHistory
 from models.hand import Hand
 from models.mana import ManaPool

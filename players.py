@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 from common.file_utils import read_json_file
 from game_state import GameState
 from models.actions.base import Action
-from models.game_card.card_filter import ARG_LOOKUP, CardFilter
+from models.game_card.game_card.card_filter import ARG_LOOKUP, CardFilter
 from models.game_over import Concede
 
 

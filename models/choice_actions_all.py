@@ -12,7 +12,7 @@ from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
     from models.effects.base import EffSpec, ActivatedAbility
 
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
@@ -124,7 +124,7 @@ class MultiTargetChoice(ChoiceAction):
         self.selected_targets = []
 
     def get_actions(self) -> list[Action]:
-        from models.game_card import GameCard
+        from models.game_card.game_card import GameCard
         actions = []
         target_spec = self.eff_spec.target_spec
 

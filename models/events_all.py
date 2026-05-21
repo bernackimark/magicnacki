@@ -6,7 +6,7 @@ from models.constants import Target
 from models.zone import Zone
 
 if TYPE_CHECKING:
-    from models.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 
 class Event:
