@@ -127,7 +127,7 @@ class GameCard:
 
     def _get_global_pt_adj(self) -> tuple[int, int]:
         power, toughness = 0, 0
-        for mod in self._get_global_query('pt_mod'):
+        for mod in self._query_for_global_mods('pt_mod'):
             if mod:
                 power += mod.p_adj
                 toughness += mod.t_adj
@@ -139,7 +139,7 @@ class GameCard:
         3) GameState's query system for 'type_mod'"""
         types = set(self._card_types)
         adds, removes = self.modifiers.type_delta
-        for mod in self._get_global_query('type_mod'):
+        for mod in self._query_for_global_mods('type_mod'):
             if mod is None:
                 continue
             if mod.add_or_remove == 'remove':
@@ -155,7 +155,7 @@ class GameCard:
         2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type_mod'"""
         types = set(self._card_sub_types)
         adds, removes = self.modifiers.sub_type_delta
-        for mod in self._get_global_query('sub_type_mod'):
+        for mod in self._query_for_global_mods('sub_type_mod'):
             if not mod:
                 continue
             mods = [mod] if isinstance(mod, ModType) else mod
@@ -171,7 +171,7 @@ class GameCard:
         2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa_mod'"""
         kwa = set(self._base_kwa)
         adds, removes = self.modifiers.kwa_delta
-        for mod in self._get_global_query('kwa_mod'):
+        for mod in self._query_for_global_mods('kwa_mod'):
             if mod is None:
                 continue
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
@@ -182,7 +182,9 @@ class GameCard:
         """Does not currently lookup global queries"""
         return self.modifiers.colors if self.modifiers.colors else self._colors
 
-    def _get_global_query(self, global_type: str) -> list[ModType]:
+    def _query_for_global_mods(self, global_type: str) -> list[ModType]:
+        """Some mods are stored on the card itself locally (attached auras);
+        some mods need to be retrieved from other cards (ex: Crusade returns a PTMod for white creatures)"""
         effects_and_cards: list[tuple[Effect, GameCard]] = []
         # static effects on other permanents (ex: crusade lives in static abilities)
         for c in self.game_state.card_filter.in_play().result():
@@ -195,9 +197,14 @@ class GameCard:
 
         modifiers = []
         for effect, source in effects_and_cards:
-            if not hasattr(effect, 'on_query'):
+            if not hasattr(effect, 'query_mods') or not hasattr(effect, 'query'):
                 continue
-            mod: ModType | list[ModType] = effect.on_query(self.game_state, global_type, card=self, source=source)
+            if isinstance(effect.query, str) and effect.query != global_type:
+                continue
+            if isinstance(effect.query, tuple) and effect.query not in effect.query:
+                continue
+            mod: ModType | list[ModType] | None = effect.query_mods(self.game_state, global_type,
+                                                                    card=self, source=source)
             if mod:
                 modifiers.append(mod) if isinstance(mod, ModType) else modifiers.extend(mod)
         return modifiers
