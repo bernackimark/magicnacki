@@ -182,6 +182,17 @@ class ForceOfNatureUpkeep(Effect):
             return
         gs.action_stack.push(ForceOfNatureUpkeepChoice(s.owner_id, gs, s, 'GGGG', 8), gs, False)
 
+class GoblinsOfTheFlarg(Effect):
+    """When you control a Dwarf, sacrifice this creature"""
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent):
+        if source.props.slug != 'goblins-of-the-flarg':
+            return None
+
+        if gs.card_filter.on_player_board(source.owner_id).by_sub_type('Dwarf').result():
+            gs.destroy(source)
+
 class LandEquilibrium(Effect):
     """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,
     that player instead puts that land onto the battlefield then sacrifices a land of their choice"""
@@ -290,6 +301,8 @@ class SeasonOfTheWitchUpkeep(Effect):
 
 class SerendibDjinnNoLands(Effect):
     """When you control no lands, sacrifice this creature"""
+    listens_to = StateBasedEvent
+
     def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent):
         your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
         if not your_lands:

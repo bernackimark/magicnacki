@@ -221,16 +221,6 @@ class Fear(Effect):
         if card not in artifact_creatures + black_creatures:
             return False
 
-class GoblinsOfTheFlarg(Effect):
-    """When you control a Dwarf, sacrifice this creature"""
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
-        if source.props.slug != 'goblins-of-the-flarg':
-            return None
-
-        if gs.card_filter.on_player_board(card.owner_id).by_sub_type('Dwarf').result():
-            gs.destroy(source)
-
 class Invisibility(Effect):
     """Enchanted creature can't be blocked except by Walls"""
     query = 'can_block'

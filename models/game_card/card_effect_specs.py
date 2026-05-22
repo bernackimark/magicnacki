@@ -36,7 +36,7 @@ from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOr
     SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
     DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
     Blight, DemonicHordesUpkeep, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror, \
-    MoldDemonETB, Regenerate, TheAbyss
+    MoldDemonETB, Regenerate, TheAbyss, GoblinsOfTheFlarg
 from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
     VerduranEnchantress, \
     HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
@@ -57,7 +57,7 @@ from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, Grea
 from models.effects.queries import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     Seeker, Moat, \
-    Meekstone, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, JuggernautUnblockableByWalls, LivonyaSilone, \
+    Meekstone, Invisibility, IronclawOrcs, Fear, JuggernautUnblockableByWalls, LivonyaSilone, \
     CityInABottle, SirensCallCanCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, HostCantAttack, WalkRuleRemoved
 from models.effects.query_card_mods import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
