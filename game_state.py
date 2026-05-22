@@ -20,7 +20,6 @@ from models.combat import Combat
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
-from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCastRule, CanTargetRule, CanDamageRule
 from models.events_all import (TapCardEvent, UntapCardEvent, DamageResolvedEvent, StateBasedEvent, CastResolvedEvent,
                                DiesEvent, ZoneChangeEvent, DrawCardEvent, RandomEvent, DiscardEvent)
 from models.game_card.game_card import GameCard
