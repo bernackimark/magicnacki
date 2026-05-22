@@ -54,17 +54,19 @@ from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate,
 from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
     HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
     Transmutation, MurkDwellers, SingingTree, UntapRemovesPumpFromAnotherCard, LesserWerewolf
-from models.effects.queries import AmrouKithkin, AngelicVoices, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
-    BadMoon, BogRats, Castle, Crusade, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
-    KirdApePT, Seeker, SunkenCity, Mightstone, OrcishOriflamme, ConcordantCrossroads, GravitySphere, HiddenPath, Moat, \
-    RabidWombat, LordOfAtlantisPT, LordOfAtlantisWalk, Meekstone, GoblinCaves, GoblinShrinePump, Weakstone, WaterWurmPT, \
-    AngryMobPT, AspectOfWolfPT, GaeasAvengerPT, GaeasLiegePT, KeldonWarlordPT, NightmarePT, PeopleOfTheWoodsPT, \
-    WallOfTombstonesPT, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, KormusBell, LivingLands, LivingPlane, \
-    Conversion, JuggernautUnblockableByWalls, GiantTortoisePT, ArcadesSabbathAllCreaturePump, DakkonBlackbladePT, \
-    JacquesLeVert, BeastsOfBogardan, LivonyaSilone, RohgahhOfKherKeepPump, CityInABottle, SirensCallCanCast, \
-    ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, KoboldTaskmaster, KoboldOverlord, \
-    SedgeTrollPT, ZombieMasterWalk, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, IvoryGuardians, \
-    HostCantAttack, WalkRuleRemoved, AddCreatureTypePTManaValue
+from models.effects.queries import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
+    BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
+    Seeker, Moat, \
+    Meekstone, GoblinsOfTheFlarg, Invisibility, IronclawOrcs, Fear, JuggernautUnblockableByWalls, LivonyaSilone, \
+    CityInABottle, SirensCallCanCast, \
+    ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, HostCantAttack, WalkRuleRemoved
+from models.effects.query_card_mods import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
+    ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, Crusade, \
+    DakkonBlackbladePT, GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, GoblinShrinePump, GravitySphere, \
+    HiddenPath, IvoryGuardians, JacquesLeVert, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, KormusBell, \
+    LivingLands, LivingPlane, LordOfAtlantisPT, LordOfAtlantisWalk, Mightstone, NightmarePT, OrcishOriflamme, \
+    PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, SunkenCity, WallOfTombstonesPT, WaterWurmPT, \
+    Weakstone, ZombieMasterWalk, Castle
 from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, CocoonUpkeep, Crumble, DivineOffering, \
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \

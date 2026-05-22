@@ -11,9 +11,9 @@ from models.utils import flip
 
 
 class CanBlockRule(Effect):
-    event = 'can_block'
+    query = 'can_block'
 
-    def on_query(self, gs: GameState, event: str, card: GameCard, **kwargs):
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
         """Query: card = blocker, mandatory kwarg: attacker"""
         attacker: GameCard = kwargs.get("attacker")
         if not attacker or not card:
@@ -48,11 +48,11 @@ class CanBlockRule(Effect):
 
 
 class CanAttackRule(Effect):
-    event = 'can_attack'
+    query = 'can_attack'
 
-    def on_query(self, gs: GameState, event: str, **kwargs):
+    def on_query(self, gs: GameState, **kwargs):
         """kwargs = includes 'card' when checking if a card can attack"""
-        if event != 'can_attack' or not kwargs.get('card'):
+        if not kwargs.get('card'):
             return None
         card: GameCard = kwargs.get('card')
 
@@ -77,11 +77,11 @@ class CanAttackRule(Effect):
         return None  # no opinion on whether the card can attack
 
 class CanCastRule(Effect):
-    event = 'can_cast'
+    query = 'can_cast'
 
-    def on_query(self, gs: GameState, event: str, **kwargs):
+    def on_query(self, gs: GameState, **kwargs):
         """kwargs include 'card' & 'p_id'"""
-        if event != 'can_cast' or not kwargs.get('card'):
+        if not kwargs.get('card'):
             return None
         card: GameCard = kwargs.get('card')
         if kwargs.get('p_id') is None:
@@ -98,11 +98,9 @@ class CanCastRule(Effect):
         return None  # no opinion on whether the cast can be cast
 
 class CanDamageRule(Effect):
-    event = 'can_damage'
+    query = 'can_damage'
 
-    def on_query(self, gs: GameState, event: str, **kwargs):
-        if event != 'can_damage':
-            return
+    def on_query(self, gs: GameState, **kwargs):
         source: GameCard = kwargs.get('source')
         target: GameCard = kwargs.get('card')
         if not source:
@@ -117,11 +115,9 @@ class CanDamageRule(Effect):
                     return False
 
 class CanTargetRule(Effect):
-    event = 'can_target'
+    query = 'can_target'
 
-    def on_query(self, gs: GameState, event: str, **kwargs):
-        if event != 'can_target':
-            return
+    def on_query(self, gs: GameState, **kwargs):
         source: GameCard = kwargs.get('source')
         target: GameCard | int = kwargs.get('card')
         if not source or isinstance(target, int):
