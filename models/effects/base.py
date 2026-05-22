@@ -11,9 +11,10 @@ from models.utils import flip
 from models.events_all import Event
 
 if TYPE_CHECKING:
-    from ..game_card import GameCard
+    from ..game_card.game_card import GameCard
     from game_state import GameState
     from models.phase_manager import Phase
+    from ..modifiers import ModType
 
 @dataclass
 class TargetSpec:
@@ -24,7 +25,8 @@ class TargetSpec:
 
 class Effect:
     """Base class for all card effects."""
-    listens_to: type[Event] | None = None  # new system
+    listens_to: type[Event] | None = None  # used by event listeners
+    query: str | tuple[str] | None = None  # used by queriers
 
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         """Perform an explicit game action (ex: deal 3 damage)"""
@@ -34,9 +36,14 @@ class Effect:
         """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""
         raise NotImplementedError()
 
-    def on_query(self, gs, query: str, card: GameCard, **kwargs):
+    def on_query(self, gs: GameState, card: GameCard, **kwargs) -> bool | None:
         """Answer a rules question (ex: can this attack?)"""
         return None  # default: no opinion
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        """A GameCard asks for any global mods (ex: Crusade would return a PTMOd to a white creature)"""
+        return None
 
 
 @dataclass
