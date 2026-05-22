@@ -47,6 +47,25 @@ class HostCantBeTargetedByAuras(Effect):
             return
         return False
 
+class NoAttacksAllowedEOT(Effect):
+    query = 'can_attack'
+
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
+        return False
+
+class UnblockableEOT(Effect):
+    """Stored in GameState & cleared EOT; target creature can't be blocked this turn"""
+    query = 'can_block'
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
+        attacker: GameCard = kwargs.get('attacker')
+        if attacker is not self.target:
+            return None
+        return False
+
 class WalkRuleRemoved(Effect):
     """Creatures with a landwalk can be blocked as though they didn't have that landwalk."""
     query = 'can_block'
@@ -308,4 +327,17 @@ class SpectralCloak(Effect):
         host: GameCard = kwargs.get('target_host')
         if host is not target or host.is_tapped:
             return
+        return False
+
+class TowerOfCoireallEOT(Effect):
+    """Stored in GameState & cleared EOT; target creature can't be blocked by Walls this turn"""
+    query = 'can_block'
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
+        attacker: GameCard = kwargs.get('attacker')
+        if attacker is not self.target or card not in gs.card_filter.walls().result():
+            return None
         return False

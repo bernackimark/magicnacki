@@ -3,7 +3,7 @@ import random
 from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
-from models.effects.until_end_of_turn import NoAttacksAllowedEOT
+from models.effects.queries import NoAttacksAllowedEOT
 from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent, ZoneChangeEvent
 from models.utils import flip
 from models.zone import Zone

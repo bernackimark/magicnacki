@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, TYPE_CHECKING
 
 from models.counter_tokens import MINUS_ZERO_ONE
-from models.effects.until_end_of_turn import HellSwarmEOT, HolyLightEOT, ArmyOfAllahEOT, BoneFluteEOT, MarshGasEOT, \
+from models.effects.query_card_mods import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.events_all import UnblockedAttackerEvent, UntapCardEvent, EndStepEvent
 

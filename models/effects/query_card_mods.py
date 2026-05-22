@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
-    from models.modifiers import ModType
+    from models.modifiers import ModType, PTMod
 
 from models.effects.base import Effect
 from models.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod
@@ -86,6 +86,18 @@ class ArcadesSabbathAllCreaturePump(Effect):
             if c not in attackers:
                 return PTMod(s=source, t_adj=2)
 
+class ArmyOfAllahEOT(Effect):
+    """This will be called only by ArmyOfAllah(); this effect is stored in GameState and cleared at EOT;
+    Attacking creatures get +2/+0 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().attackers().result():
+            return None
+        return PTMod(s=source, p_adj=2, expires='EOT')
+
 class AspectOfWolfPT(Effect):
     """Enchant creature Enchanted creature gets +X/+Y, where X is half the number of Forests you control, rounded down,
     and Y is half the number of Forests you control, rounded up."""
@@ -119,6 +131,18 @@ class BeastsOfBogardan(Effect):
         opp_non_token_white_perms = gs.card_filter.on_player_board(opp_id).non_token().white().permanents().result()
         if opp_non_token_white_perms:
             return PTMod(s=source, p_adj=1, t_adj=1)
+
+class BoneFluteEOT(Effect):
+    """This will be called only by BoneFlute(); this effect is stored in GameState and cleared at EOT;
+    All creatures get -1/-0 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().creatures().result():
+            return None
+        return PTMod(s=source, p_adj=-1, expires='EOT')
 
 class Castle(Effect):
     query = 'pt_mod'
@@ -231,6 +255,18 @@ class GravitySphere(Effect):
             return None
         return KWAMod(s=source, add_or_remove='remove', kwa='Flying')
 
+class HellSwarmEOT(Effect):
+    """This will be called only by HellSwarm(); this effect is stored in GameState and cleared at EOT;
+    All creatures get -1/-0 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().creatures().result():
+            return None
+        return PTMod(s=source, p_adj=-1, expires='EOT')
+
 class HiddenPath(Effect):
     """Green creatures have forestwalk"""
     query = 'kwa_mod'
@@ -239,6 +275,21 @@ class HiddenPath(Effect):
         if card not in gs.card_filter.in_play().green().creatures().result():
             return None
         return KWAMod(s=source, add_or_remove='add', kwa='Forestwalk')
+
+class HolyLightEOT(Effect):
+    """This will be called only by HolyLight(); this effect is stored in GameState and cleared at EOT
+    Nonwhite creatures get -1/-1 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        creatures = gs.card_filter.in_play().creatures().result()
+        white_creatures = gs.card_filter.in_play().creatures().white().result()
+        non_white_creatures = [c for c in creatures if c not in white_creatures]
+        if card not in non_white_creatures:
+            return None
+        return PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT')
 
 class IvoryGuardians(Effect):
     """Creatures named Ivory Guardians get +1/+1 as long as an opponent controls a nontoken red permanent; the pumps are
@@ -359,6 +410,18 @@ class LordOfAtlantisWalk(Effect):
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
             return KWAMod(s=source, add_or_remove='add', kwa='Islandwalk')
 
+class MarshGasEOT(Effect):
+    """This will be called only by MarshGas(); this effect is stored in GameState and cleared at EOT;
+    All creatures get -2/-0 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().creatures().result():
+            return None
+        return PTMod(s=source, p_adj=-2, expires='EOT')
+
 class Mightstone(Effect):
     """Attacking creatures get +1/+0"""
     query = 'pt_mod'
@@ -367,6 +430,18 @@ class Mightstone(Effect):
         if card not in gs.card_filter.attackers().result():
             return None
         return PTMod(s=source, p_adj=1, expires='EOT')
+
+class MoraleEOT(Effect):
+    """This will be called only by Morale(); this effect is stored in GameState and cleared at EOT;
+    Attacking creatures get +1/+1 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().attackers().result():
+            return None
+        return PTMod(s=source, p_adj=1, t_adj=1, expires='EOT')
 
 class NightmarePT(Effect):
     """Nightmare's power and toughness are each equal to the number of Swamps you control"""
@@ -399,6 +474,18 @@ class PeopleOfTheWoodsPT(Effect):
             return None
         your_forest_cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
         return PTMod(s=source, t_adj=your_forest_cnt)
+
+class PietyEOT(Effect):
+    """This will be called only by Piety(); this effect is stored in GameState and cleared at EOT;
+    Blocking creatures get 0/+3 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().blockers().result():
+            return None
+        return PTMod(s=source, t_adj=3, expires='EOT')
 
 class PlagueRatsPT(Effect):
     """Plague Rats' power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
@@ -443,6 +530,18 @@ class SedgeTrollPT(Effect):
         if gs.card_filter.on_player_board(card.owner_id).swamps().result():
             return PTMod(s=card, p_adj=1, t_adj=1)
 
+class ShieldWallEOT(Effect):
+    """This will be called only by ShieldWall(); this effect is stored in GameState and cleared at EOT;
+    Creatures you control get +0/+2 until end of turn"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        if card not in gs.card_filter.in_play().on_player_board(source.owner_id).creatures().result():
+            return None
+        return PTMod(s=source, t_adj=2, expires='EOT')
+
 class SunkenCity(Effect):
     query = 'pt_mod'
 
@@ -450,6 +549,17 @@ class SunkenCity(Effect):
         if card not in gs.card_filter.in_play().blue().creatures().result():
             return None
         return PTMod(s=source, p_adj=1, t_adj=1)
+
+class TransmutationEOT(Effect):
+    """Stored in GameState & cleared EOT; how does this class know who the target is?"""
+    query = 'pt_mod'
+
+    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+            ModType | list[ModType] | None):
+        source: GameCard = kwargs.get('source')
+        power_delta = card.toughness - card.power
+        toughness_delta = card.power - card.toughness
+        return PTMod(s=source, p_adj=power_delta, t_adj=toughness_delta, expires='EOT')
 
 class WallOfTombstonesPT(Effect):
     """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""

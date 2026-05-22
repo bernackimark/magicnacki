@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 from models.counter_tokens import PLUS_ONE
 from models.effects.counters import AddCounterAtEndStep
 from models.effects.destroy_sac_regenerate import DestroyAtCombatEnd
-from models.effects.until_end_of_turn import TowerOfCoireallEOT, UnblockableEOT
+from models.effects.queries import TowerOfCoireallEOT, UnblockableEOT
 from models.events_all import BlockEvent, CombatEndEvent, AttackEvent, DamageResolvedEvent, DiesEvent
 from models.modifiers import KWAMod, PTMod
 
