@@ -4,6 +4,7 @@ import random
 from typing import Callable, Any, Sequence, TYPE_CHECKING
 
 from models.presentation_request import PresentationRequest
+from models.query_manager import QueryManager
 
 if TYPE_CHECKING:
     from models.game_card.card import Card
@@ -92,12 +93,16 @@ class GameState:
         # emits, registers, unregisters Effect that implement on_event()
         self.event_mgr = EventManager()
 
+        # returns booleans whether something is acceptable (ex: can_attack(card))
+        self.query_mgr = QueryManager(self)
+
         for i in range(self.player_cnt):
             random.shuffle(self.libraries[i])
             self.draw(i, 7)
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
-        self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx, self, self.rules['mulligan'])
+        self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx,
+                                                                  self, self.rules['mulligan'])
 
         # objects that carry data to be displayed in UI that aren't common (ex: Show Library)
         self.presentation_requests: list[PresentationRequest] = []
@@ -115,56 +120,6 @@ class GameState:
         (ex: creatures w 0 toughness or unattached auras must die, etc.)"""
         for rule in self.state_based_rules:
             rule.apply(self)
-
-    # --- QUERY SYSTEM ---
-    def can_attack(self, card: GameCard) -> bool:
-        return self._query_effects('can_attack', card)
-
-    def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
-        return self._query_effects('can_block', blocker, attacker=attacker)
-
-    def can_damage(self, target: GameCard, source: GameCard) -> bool:
-        return self._query_effects('can_damage', target, source=source)
-
-    def can_target(self, target: GameCard | int, source: GameCard, target_host: GameCard | None = None) -> bool:
-        if isinstance(target, int):
-            return True
-        result = self._query_effects('can_target', target, source=source, target_host=target_host)
-        return False if result is False else True
-
-    def can_untap(self, card: GameCard) -> bool:
-        return self._query_effects('can_untap', card)
-
-    def can_cast(self, card: GameCard, p_id: int) -> bool:
-        return self._query_effects('can_cast', card, p_id=p_id)
-
-    def can_be_destroyed(self, card: GameCard) -> bool:
-        result = self._query_effects('can_be_destroyed', card)
-        return False if result is False else True
-
-    def _query_effects(self, query: str, card: GameCard, **kwargs) -> bool:
-        """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
-        can be True (which is either hard permission or the lack of a hard-veto) or False (a hard veto);
-        hard permission takes precedence over hard veto;
-        hard permission ex: undertow & islandwalkers can be blocked;
-        hard veto ex: meekstone preventing some untaps"""
-        effects = (self.query_effects +
-                   [a.effect for c in self.card_filter.in_play().result()
-                    for a in c.static_abilities + c.triggered_abilities] +
-                   [eff for eff, _ in self.until_eot_effects_and_cards])
-
-        explicit_forbids = False
-        for eff in effects:
-            if not hasattr(eff, 'on_query'):
-                continue
-
-            result = eff.on_query(self, query, card=card, **kwargs)
-
-            if result is True:
-                return True
-            if result is False:
-                explicit_forbids = True
-        return False if explicit_forbids else True
 
     # Pile Helpers & card movement
     @property
@@ -398,7 +353,7 @@ class GameState:
                     print("You've already made an untap decision on this card this turn")
                     break
             else:
-                if self.can_untap(c):
+                if self.query_mgr.can_untap(c):
                     self.event_mgr.emit(UntapCardEvent(c), self)
                     self.untap_card(c)
 
@@ -434,7 +389,8 @@ class GameState:
             targets = [targets] if not isinstance(targets, (list, tuple)) else targets
             # remove illegal targets
             if isinstance(targets[0], GameCard):
-                targets = [t for t in targets if self.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
+                targets = [t for t in targets
+                           if self.query_mgr.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
             if len(targets) < target_spec.min_cnt:
                 # Not enough legal targets → skip ability entirely
                 continue
@@ -464,7 +420,7 @@ class GameState:
         p_id = self.action_on_idx
 
         for c in self.hands[self.action_on_idx].cards:
-            if not self.can_cast(c, p_id):
+            if not self.query_mgr.can_cast(c, p_id):
                 continue
 
             # Short-cutting these directly to the board for testing expedience
@@ -488,7 +444,7 @@ class GameState:
                 if eff_spec.target_spec and eff_spec.target_spec.filter_func:
                     candidates = eff_spec.target_spec.filter_func(self, c)
                     valid_targets = [t for t in candidates if
-                                     self.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
+                                     self.query_mgr.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
 
                     if len(valid_targets) < eff_spec.target_spec.min_cnt:
                         continue

@@ -55,13 +55,13 @@ class Combat:
                     )
 
                 target = self.blockers[0]
-                if self.gs.can_damage(target, a):
+                if self.gs.query_mgr.can_damage(target, a):
                     damage_assignments.append((a, a.power, target))
 
             # --- Blockers → attacker ---
             for blocker in self.blockers:
                 if self._phase_applicable(blocker, first_strike):
-                    if self.gs.can_damage(self.attacker, blocker):
+                    if self.gs.query_mgr.can_damage(self.attacker, blocker):
                         damage_assignments.append((blocker, blocker.power, self.attacker))
 
         # --- apply damage ---
