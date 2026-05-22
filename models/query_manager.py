@@ -56,7 +56,7 @@ class QueryManager:
             if not hasattr(eff, 'on_query') or not hasattr(eff, 'query') or eff.query != query:
                 continue
 
-            result = eff.on_query(self, card=card, **kwargs)
+            result = eff.on_query(self._gs, card=card, **kwargs)
 
             if result is True:
                 return True

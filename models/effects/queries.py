@@ -20,9 +20,9 @@ class CantBeTargetedByAuras(Effect):
     """Card can't host an aura"""
     query = 'can_target'
 
-    def on_query(self, gs: GameState, **kwargs):
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
-        target: GameCard = kwargs.get('card')
+        target = card
         if not source or not target or 'Aura' not in source.card_sub_types:
             return
         return False
@@ -30,8 +30,7 @@ class CantBeTargetedByAuras(Effect):
 class HostCantAttack(Effect):
     query = 'can_attack'
 
-    def on_query(self, gs: GameState, **kwargs):
-        card = kwargs.get('card')
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
         source = kwargs.get('source')
         if source.attached_to is card:
             return False
@@ -40,9 +39,9 @@ class HostCantBeTargetedByAuras(Effect):
     """Host can't host an aura"""
     query = 'can_target'
 
-    def on_query(self, gs: GameState, **kwargs):
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
-        target: GameCard = kwargs.get('card')
+        target = card
         host: GameCard = kwargs.get('target_host')
         if host is not target or 'Aura' not in source.card_sub_types:
             return
@@ -105,9 +104,9 @@ class ArtifactWardCanBeTargeted(Effect):
     """Enchanted creature can't be the target of abilities from artifact sources"""
     query = 'can_target'
 
-    def on_query(self, gs: GameState, **kwargs):
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
         source: GameCard = kwargs.get('source')
-        target: GameCard = kwargs.get('card')
+        target = card
         if not source or not target or 'artifact-ward' not in {a.props.slug for a in target.auras}:
             return
         if 'Artifact' in source.card_types:
@@ -242,7 +241,7 @@ class JuggernautUnblockableByWalls(Effect):
 
     def on_query(self, gs: GameState, card: GameCard, **kwargs):
         """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get("attacker")
+        attacker: GameCard = kwargs.get('attacker')
         if attacker.props.slug != 'juggernaut':
             return None
         if card in gs.card_filter.walls().result():
@@ -304,8 +303,8 @@ class SpectralCloak(Effect):
     """Enchanted creature has shroud as long as it's untapped. (It can't be the target of spells or abilities.)"""
     query = 'can_target'
 
-    def on_query(self, gs: GameState, **kwargs):
-        target: GameCard = kwargs.get('card')
+    def on_query(self, gs: GameState, card: GameCard, **kwargs):
+        target = card
         host: GameCard = kwargs.get('target_host')
         if host is not target or host.is_tapped:
             return
