@@ -79,8 +79,6 @@ class GameState:
         self.is_game_over: bool = False
         self.winner: int | None = None
 
-        self.query_effects: list[Effect] = [CanAttackRule(), CanBlockRule(), CanCastRule(),
-                                            CanDamageRule(), CanTargetRule()]
         self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
