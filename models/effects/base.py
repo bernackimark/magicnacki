@@ -27,6 +27,7 @@ class Effect:
     """Base class for all card effects."""
     listens_to: type[Event] | None = None  # used by event listeners
     query: str | tuple[str] | None = None  # used by queriers
+    modifies: str | tuple[str] | None = None  # used by Modifier queries
 
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         """Perform an explicit game action (ex: deal 3 damage)"""
@@ -40,7 +41,7 @@ class Effect:
         """Answer a rules question (ex: can this attack?)"""
         return None  # default: no opinion
 
-    def query_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
+    def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
         """A GameCard asks for any global mods (ex: Crusade would return a PTMOd to a white creature)"""
         return None
