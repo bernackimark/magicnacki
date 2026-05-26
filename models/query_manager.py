@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.effects.base import Effect
     from models.game_card.game_card import GameCard
+    from models.modifiers import ModType
 
 
 class QueryManager:
@@ -40,19 +41,20 @@ class QueryManager:
     def can_untap(self, card: GameCard) -> bool:
         return self._query_effects('can_untap', card)
 
+    def _get_effects(self) -> list[Effect]:
+        return (self._base_queries +
+                   [a.effect for c in self._gs.card_filter.in_play().result()
+                    for a in c.static_abilities + c.triggered_abilities] +
+                   [eff for eff, _ in self._gs.until_eot_effects_and_cards])
+
     def _query_effects(self, query: str, card: GameCard, **kwargs) -> bool:
         """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
         can be True (which is either hard permission or the lack of a hard-veto) or False (a hard veto);
         hard permission takes precedence over hard veto;
         hard permission ex: undertow & islandwalkers can be blocked;
         hard veto ex: meekstone preventing some untaps"""
-        effects = (self._base_queries +
-                   [a.effect for c in self._gs.card_filter.in_play().result()
-                    for a in c.static_abilities + c.triggered_abilities] +
-                   [eff for eff, _ in self._gs.until_eot_effects_and_cards])
-
         explicit_forbids = False
-        for eff in effects:
+        for eff in self._get_effects():
             if not hasattr(eff, 'on_query') or not hasattr(eff, 'query') or eff.query != query:
                 continue
 
@@ -63,3 +65,30 @@ class QueryManager:
             if result is False:
                 explicit_forbids = True
         return False if explicit_forbids else True
+
+    def query_for_card_modifiers(self, global_type: str, card: GameCard) -> list[ModType]:
+        """Some mods are stored on the card itself locally (attached auras);
+        some mods need to be retrieved from other cards (ex: Crusade returns a PTMod for white creatures)"""
+        effects_and_cards: list[tuple[Effect, GameCard]] = []
+        # static effects on other permanents (ex: crusade lives in static abilities)
+        for c in self._gs.card_filter.in_play().result():
+            for a in c.static_abilities:
+                effects_and_cards.append((a.effect, c))
+            for a in c.triggered_abilities:
+                effects_and_cards.append((a.effect, c))
+        for eff, card in self._gs.until_eot_effects_and_cards:
+            effects_and_cards.append((eff, card))
+
+        modifiers = []
+        for effect, source in effects_and_cards:
+            if not hasattr(effect, 'query_mods') or not hasattr(effect, 'query'):
+                continue
+            if isinstance(effect.query, str) and effect.query != global_type:
+                continue
+            if isinstance(effect.query, tuple) and global_type not in effect.query:
+                continue
+            mod: ModType | list[ModType] | None = effect.get_mods(self._gs, global_type,
+                                                                  card=card, source=source)
+            if mod:
+                modifiers.append(mod) if isinstance(mod, ModType) else modifiers.extend(mod)
+        return modifiers
