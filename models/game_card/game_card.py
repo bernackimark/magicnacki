@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from card import Card
 from kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
-from models.effects.base import ActivatedAbility, EffSpec, Effect
+from models.effects.base import ActivatedAbility, EffSpec
 from card_effect_specs import INVOCATIONS
 from models.modifiers import Modifiers, ModType
 from models.zone import Zone
@@ -109,7 +109,7 @@ class GameCard:
     @property
     def power(self) -> int:
         """Anytime this property is requested, it calls: 1) its own base_power,
-        2) GameState's query system for 'pt_mod', 3) self.modifiers.power_delta, 4) self.counters.power_delta"""
+        2) GameState's query system for 'pt', 3) self.modifiers.power_delta, 4) self.counters.power_delta"""
         return self._pt[0]
 
     @property
@@ -119,27 +119,23 @@ class GameCard:
 
     @property
     def _pt(self) -> tuple[int, int]:
-        global_power_adj, global_toughness_adj = self._get_global_pt_adj()
         base_power, base_t = self.base_pt[0] or 0, self.base_pt[1] or 0
-        power = base_power + global_power_adj + self.modifiers.power_delta + self.counters.power_delta
-        toughness = base_t + global_toughness_adj + self.modifiers.toughness_delta + self.counters.toughness_delta
-        return power, toughness
-
-    def _get_global_pt_adj(self) -> tuple[int, int]:
-        power, toughness = 0, 0
-        for mod in self.game_state.query_mgr.query_for_card_modifiers('pt_mod', self):
-            if mod:
-                power += mod.p_adj
-                toughness += mod.t_adj
+        power = base_power + self.modifiers.power_delta + self.counters.power_delta
+        toughness = base_t + self.modifiers.toughness_delta + self.counters.toughness_delta
+        for mod in self.game_state.query_mgr.get_global_modifiers('pt', self):
+            if not mod:
+                continue
+            power += mod.p_adj
+            toughness += mod.t_adj
         return power, toughness
 
     @property
     def card_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_types, 2) self.modifiers.type_delta,
-        3) GameState's query system for 'type_mod'"""
+        3) GameState's query system for 'type'"""
         types = set(self._card_types)
         adds, removes = self.modifiers.type_delta
-        for mod in self.game_state.query_mgr.query_for_card_modifiers('type_mod', self):
+        for mod in self.game_state.query_mgr.get_global_modifiers('type', self):
             if mod is None:
                 continue
             if mod.add_or_remove == 'remove':
@@ -152,10 +148,10 @@ class GameCard:
     @property
     def card_sub_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_sub_types,
-        2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type_mod'"""
+        2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type'"""
         types = set(self._card_sub_types)
         adds, removes = self.modifiers.sub_type_delta
-        for mod in self.game_state.query_mgr.query_for_card_modifiers('sub_type_mod', self):
+        for mod in self.game_state.query_mgr.get_global_modifiers('sub_type', self):
             mods = [mod] if isinstance(mod, ModType) else mod
             for m in mods:
                 adds.add(m.card_sub_type) if m.add_or_remove == 'add' else removes.add(m.card_sub_type)
@@ -166,10 +162,10 @@ class GameCard:
         """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, global removes = {'Reach', 'First Strike'}
         returns ['Flying', 'Trample'] ...
         Anytime this prioerty is requested, it calls: 1) its own base _base_kwa,
-        2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa_mod'"""
+        2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa'"""
         kwa = set(self._base_kwa)
         adds, removes = self.modifiers.kwa_delta
-        for mod in self.game_state.query_mgr.query_for_card_modifiers('kwa_mod', self):
+        for mod in self.game_state.query_mgr.get_global_modifiers('kwa', self):
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
         return list((kwa | adds) - removes)
 

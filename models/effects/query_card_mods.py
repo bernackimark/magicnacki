@@ -20,7 +20,7 @@ They exist because not all modifications are stored on the GameCard itself (ex: 
 # --- GENERICS ---
 class AddCreatureType(Effect):
     """Turns the card into a creature"""
-    modifies = ('type_mod', 'sub_type_mod', 'pt_mod')
+    modifies = ('type', 'sub_type', 'pt')
 
     def __init__(self, power: int, toughness: int, sub_type: str = None):
         self.power = power
@@ -30,30 +30,30 @@ class AddCreatureType(Effect):
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card is not source:
             return None
-        if 'type_mod' in AddCreatureType.query:
+        if 'type' in AddCreatureType.modifies:
             return TypeMod(s=source, add_or_remove='add', card_type='Creature')
-        if 'sub_type_mod' in AddCreatureType.query:
+        if 'sub_type' in AddCreatureType.modifies:
             return SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type)
-        if 'pt_mod' in AddCreatureType.query:
+        if 'pt' in AddCreatureType.modifies:
             return PTMod(s=source, p_adj=self.power, t_adj=self.toughness)
 
 class AddCreatureTypePTManaValue(Effect):
     """Turns card into a creature with power and toughness each equal to its mana value"""
-    modifies = ('type_mod', 'pt_mod')
+    modifies = ('type', 'pt')
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card is not source:
             return None
-        if query == 'type_mod':
+        if query == 'type':
             return TypeMod(s=source, add_or_remove='add', card_type='Creature')
-        if query == 'pt_mod':
+        if query == 'pt':
             return PTMod(s=source, p_adj=card.props.mana_value, t_adj=card.props.mana_value)
 
 
 # --- CARD-SPECIFIC ---
 class AngelicVoices(Effect):
     """Creatures you control get +1/+1 as long as you control no nonartifact, nonwhite creatures."""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         for my_creature in gs.card_filter.creatures().on_player_board(card.owner_id).result():
@@ -64,7 +64,7 @@ class AngelicVoices(Effect):
 class AngryMobPT(Effect):
     """During your turn, Angry Mob's power & toughness are each = 2 plus the number of Swamps your opponents control.
     During turns other than yours, Angry Mob's power and toughness are each 2."""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -77,7 +77,7 @@ class AngryMobPT(Effect):
 
 class ArcadesSabbathAllCreaturePump(Effect):
     """... Each untapped creature you control gets +0/+2 as long as it's not attacking ..."""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         attackers = gs.card_filter.attackers().result()
@@ -89,7 +89,7 @@ class ArcadesSabbathAllCreaturePump(Effect):
 class ArmyOfAllahEOT(Effect):
     """This will be called only by ArmyOfAllah(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +2/+0 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -101,7 +101,7 @@ class ArmyOfAllahEOT(Effect):
 class AspectOfWolfPT(Effect):
     """Enchant creature Enchanted creature gets +X/+Y, where X is half the number of Forests you control, rounded down,
     and Y is half the number of Forests you control, rounded up."""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -113,7 +113,7 @@ class AspectOfWolfPT(Effect):
         return PTMod(s=source, p_adj=p_adj, t_adj=t_adj)
 
 class BadMoon(Effect):
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().black().creatures().result():
@@ -122,7 +122,7 @@ class BadMoon(Effect):
 
 class BeastsOfBogardan(Effect):
     """This creature gets +1/+1 as long as an opponent controls a nontoken white permanent"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card.props.slug != 'beasts-of-bogardan':
@@ -135,7 +135,7 @@ class BeastsOfBogardan(Effect):
 class BoneFluteEOT(Effect):
     """This will be called only by BoneFlute(); this effect is stored in GameState and cleared at EOT;
     All creatures get -1/-0 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -145,7 +145,7 @@ class BoneFluteEOT(Effect):
         return PTMod(s=source, p_adj=-1, expires='EOT')
 
 class Castle(Effect):
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.creatures().on_player_board(card.owner_id).tapped(False).white().result():
@@ -154,7 +154,7 @@ class Castle(Effect):
 
 class ConcordantCrossroads(Effect):
     """All creatures have haste"""
-    modifies = 'kwa_mod'
+    modifies = 'kwa'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().creatures().result():
@@ -163,7 +163,7 @@ class ConcordantCrossroads(Effect):
 
 class Conversion(Effect):
     """All Mountains are Plains"""
-    modifies = 'sub_type_mod'
+    modifies = 'sub_type'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         return [SubTypeMod(s=source, add_or_remove='add', card_sub_type='Plains'),
@@ -171,7 +171,7 @@ class Conversion(Effect):
 
 class Crusade(Effect):
     """All white creatures get +1/+1"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().white().creatures().result():
@@ -180,7 +180,7 @@ class Crusade(Effect):
 
 class DakkonBlackbladePT(Effect):
     """Dakkon Blackblade's power and toughness are each equal to the number of lands you control"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -191,7 +191,7 @@ class DakkonBlackbladePT(Effect):
 
 class GaeasAvengerPT(Effect):
     """Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -203,7 +203,7 @@ class GaeasAvengerPT(Effect):
 class GaeasLiegePT(Effect):
     """As long as Gaea's Liege isn't attacking, its power & toughness are each = the number of Forests you control.
     If Gaea's Liege is attacking, its power & toughness are each = the # of Forests defending player controls."""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -218,7 +218,7 @@ class GaeasLiegePT(Effect):
 
 class GiantTortoisePT(Effect):
     """This creature gets +0/+3 as long as it's untapped"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -229,7 +229,7 @@ class GiantTortoisePT(Effect):
 
 class GoblinCaves(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         basic_lands = gs.card_filter.basic_lands().in_play().result()
@@ -239,7 +239,7 @@ class GoblinCaves(Effect):
 
 class GoblinShrinePump(Effect):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0 ..."""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         basic_lands = gs.card_filter.basic_lands().in_play().result()
@@ -249,7 +249,7 @@ class GoblinShrinePump(Effect):
 
 class GravitySphere(Effect):
     """All creatures lose flying"""
-    modifies = 'kwa_mod'
+    modifies = 'kwa'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().creatures().result():
@@ -259,7 +259,7 @@ class GravitySphere(Effect):
 class HellSwarmEOT(Effect):
     """This will be called only by HellSwarm(); this effect is stored in GameState and cleared at EOT;
     All creatures get -1/-0 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -270,7 +270,7 @@ class HellSwarmEOT(Effect):
 
 class HiddenPath(Effect):
     """Green creatures have forestwalk"""
-    modifies = 'kwa_mod'
+    modifies = 'kwa'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().green().creatures().result():
@@ -280,7 +280,7 @@ class HiddenPath(Effect):
 class HolyLightEOT(Effect):
     """This will be called only by HolyLight(); this effect is stored in GameState and cleared at EOT
     Nonwhite creatures get -1/-1 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -295,7 +295,7 @@ class HolyLightEOT(Effect):
 class IvoryGuardians(Effect):
     """Creatures named Ivory Guardians get +1/+1 as long as an opponent controls a nontoken red permanent; the pumps are
     cumulative. Ex: if there's two Ivory Guardians & opponent has a nontoken red permanent, each gets +2/+2"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card.props.slug != 'ivory-guardians':
@@ -308,7 +308,7 @@ class IvoryGuardians(Effect):
 
 class JacquesLeVert(Effect):
     """Green creatures you control get +0/+2"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.on_player_board(source.owner_id).green().creatures().result():
@@ -317,7 +317,7 @@ class JacquesLeVert(Effect):
 
 class KeldonWarlordPT(Effect):
     """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -327,7 +327,7 @@ class KeldonWarlordPT(Effect):
         return PTMod(s=source, p_adj=your_non_wall_creature_cnt, t_adj=your_non_wall_creature_cnt)
 
 class KirdApePT(Effect):
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card.props.slug != 'kird-ape':
@@ -338,7 +338,7 @@ class KirdApePT(Effect):
 
 class KoboldOverlord(Effect):
     """Other Kobold creatures you control have first strike"""
-    modifies = 'kwa_mod'
+    modifies = 'kwa'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if source.props.slug != 'kobold-overlord' or card is source:
@@ -348,7 +348,7 @@ class KoboldOverlord(Effect):
 
 class KoboldTaskmaster(Effect):
     """Other Kobold creatures you control get +1/+0"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if source.props.slug != 'kobold-taskmaster' or card is source:
@@ -358,46 +358,46 @@ class KoboldTaskmaster(Effect):
 
 class KormusBell(Effect):
     """All Swamps are 1/1 creatures that are still lands"""
-    modifies = ('type_mod', 'pt_mod')
+    modifies = ('type', 'pt')
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().by_sub_type('Swamp').result():
             return None
-        if query == 'type_mod':
+        if query == 'type':
             return TypeMod(s=source, add_or_remove='add', card_type='Creature')
-        if query == 'pt_mod':
+        if query == 'pt':
             return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
 class LivingLands(Effect):
     """All Forests are 1/1 creatures that are still lands"""
-    modifies = ('type_mod', 'pt_mod')
+    modifies = ('type', 'pt')
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().by_sub_type('Forest').result():
             return None
-        if query == 'type_mod':
+        if query == 'type':
             return TypeMod(s=source, add_or_remove='add', card_type='Creature')
-        if query == 'pt_mod':
+        if query == 'pt':
             return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
 class LivingPlane(Effect):
     """All lands are 1/1 creatures that are still lands"""
-    modifies = ('type_mod', 'pt_mod')
+    modifies = ('type', 'pt')
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().by_sub_type('Land').result():
             return None
-        if query == 'type_mod':
+        if query == 'type':
             return TypeMod(s=source, add_or_remove='add', card_type='Creature')
-        if query == 'pt_mod':
+        if query == 'pt':
             return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
 class LordOfAtlantisPT(Effect):
     """All other Merfolk gain +1/+1 and Islandwalk (presuming that Islandwalk is being handled elsewhere)"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
@@ -405,7 +405,7 @@ class LordOfAtlantisPT(Effect):
 
 class LordOfAtlantisWalk(Effect):
     """All other Merfolk gain +1/+1 and Islandwalk"""
-    modifies = 'kwa_mod'
+    modifies = 'kwa'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
@@ -414,7 +414,7 @@ class LordOfAtlantisWalk(Effect):
 class MarshGasEOT(Effect):
     """This will be called only by MarshGas(); this effect is stored in GameState and cleared at EOT;
     All creatures get -2/-0 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -425,7 +425,7 @@ class MarshGasEOT(Effect):
 
 class Mightstone(Effect):
     """Attacking creatures get +1/+0"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.attackers().result():
@@ -435,7 +435,7 @@ class Mightstone(Effect):
 class MoraleEOT(Effect):
     """This will be called only by Morale(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +1/+1 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -446,7 +446,7 @@ class MoraleEOT(Effect):
 
 class NightmarePT(Effect):
     """Nightmare's power and toughness are each equal to the number of Swamps you control"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -457,7 +457,7 @@ class NightmarePT(Effect):
 
 class OrcishOriflamme(Effect):
     """Attacking creatures you control get +1/+0"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -467,7 +467,7 @@ class OrcishOriflamme(Effect):
 
 class PeopleOfTheWoodsPT(Effect):
     """People of the Woods's toughness is equal to the number of Forests you control"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -479,7 +479,7 @@ class PeopleOfTheWoodsPT(Effect):
 class PietyEOT(Effect):
     """This will be called only by Piety(); this effect is stored in GameState and cleared at EOT;
     Blocking creatures get 0/+3 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -490,7 +490,7 @@ class PietyEOT(Effect):
 
 class PlagueRatsPT(Effect):
     """Plague Rats' power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -501,7 +501,7 @@ class PlagueRatsPT(Effect):
 
 class RabidWombat(Effect):
     """This creature gets +2/+2 for each Aura attached to it"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -514,7 +514,7 @@ class RabidWombat(Effect):
 
 class RohgahhOfKherKeepPump(Effect):
     """Creatures you control named Kobolds of Kher Keep get +2/+2"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.on_player_board(source.owner_id).by_slug('kobolds-of-kher-keep').result():
@@ -523,7 +523,7 @@ class RohgahhOfKherKeepPump(Effect):
 
 class SedgeTrollPT(Effect):
     """Gains +1/+1 if you control a swamp"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card.props.slug != 'sedge-troll':
@@ -534,7 +534,7 @@ class SedgeTrollPT(Effect):
 class ShieldWallEOT(Effect):
     """This will be called only by ShieldWall(); this effect is stored in GameState and cleared at EOT;
     Creatures you control get +0/+2 until end of turn"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -544,7 +544,7 @@ class ShieldWallEOT(Effect):
         return PTMod(s=source, t_adj=2, expires='EOT')
 
 class SunkenCity(Effect):
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().blue().creatures().result():
@@ -553,7 +553,7 @@ class SunkenCity(Effect):
 
 class TransmutationEOT(Effect):
     """Stored in GameState & cleared EOT; how does this class know who the target is?"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
@@ -564,7 +564,7 @@ class TransmutationEOT(Effect):
 
 class WallOfTombstonesPT(Effect):
     """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         """kwarg 'source' is the source that is providing this effect"""
@@ -575,7 +575,7 @@ class WallOfTombstonesPT(Effect):
 
 class WaterWurmPT(Effect):
     """This creature gets +0/+1 as long as an opponent controls an Island"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card.props.slug != 'water-wurm':
@@ -586,7 +586,7 @@ class WaterWurmPT(Effect):
 
 class Weakstone(Effect):
     """Attacking creatures get -1/-0"""
-    modifies = 'pt_mod'
+    modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card not in gs.card_filter.in_play().attackers().result():
@@ -595,7 +595,7 @@ class Weakstone(Effect):
 
 class ZombieMasterWalk(Effect):
     """Other Zombie creatures gain Swampwalk"""
-    modifies = 'kwa_mod'
+    modifies = 'kwa'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
         if card in gs.card_filter.in_play().creatures().by_sub_type('Zombie').result() and card is not source:

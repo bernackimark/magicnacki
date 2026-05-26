@@ -66,7 +66,7 @@ class QueryManager:
                 explicit_forbids = True
         return False if explicit_forbids else True
 
-    def query_for_card_modifiers(self, global_type: str, card: GameCard) -> list[ModType]:
+    def get_global_modifiers(self, global_type: str, card: GameCard) -> list[ModType]:
         """Some mods are stored on the card itself locally (attached auras);
         some mods need to be retrieved from other cards (ex: Crusade returns a PTMod for white creatures)"""
         effects_and_cards: list[tuple[Effect, GameCard]] = []
@@ -81,7 +81,7 @@ class QueryManager:
 
         modifiers = []
         for effect, source in effects_and_cards:
-            if not hasattr(effect, 'query_mods') or not hasattr(effect, 'query'):
+            if not hasattr(effect, 'get_mods') or not hasattr(effect, 'modifies'):
                 continue
             if isinstance(effect.query, str) and effect.query != global_type:
                 continue
