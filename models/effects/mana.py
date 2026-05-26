@@ -1,8 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
-from models.events_all import DiesEvent, TapCardEvent
-
 if TYPE_CHECKING:
     from ..game_card import GameCard
     from game_state import GameState
@@ -48,15 +46,6 @@ class ExchangeLifeTotals(Effect):
         opp_life = gs.score_mgr.life[flip(s.owner_id)]
         gs.score_mgr.life[s.owner_id], gs.score_mgr.life[flip(s.owner_id)] = opp_life, your_life
 
-class SuChi(Effect):
-    """When this creature dies, add {CCCC}"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or event.card != source:
-            return
-        gs.mana_pools[source.owner_id].add_floating('C', 4)
-
 class UrzasTrio(Effect):
     """{T}: Add {C}.
     urzas-mine: If you control an Urza's Power-Plant and an Urza's Tower, add {CC} instead.
@@ -72,12 +61,3 @@ class UrzasTrio(Effect):
             gs.mana_pools[s.owner_id].add_floating('CCC')
         else:
             gs.mana_pools[s.owner_id].add_floating('CC')
-
-class WildGrowth(Effect):
-    """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
-        if source.host is not event.card:
-            return
-        gs.mana_pools[event.card.owner_id].add_floating('G')

@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 
 from models.damage import DamageEvent, PreventNextDamage
 
+"""
+THIS FILE NEEDS WORK, AS EFFECT DOES NOT SUPPORT .apply(); needs overhaul
+"""
 
 # --- GENERICS ---
 class DamagePreventionEffect:

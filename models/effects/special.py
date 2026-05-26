@@ -4,7 +4,7 @@ from typing import Optional, TYPE_CHECKING
 
 from models.effects.damage_preventions import PreventAllDamage
 from models.effects.queries import NoAttacksAllowedEOT
-from models.events_all import DiesEvent, UnblockedAttackerEvent, AttackEvent, BlockEvent, UpkeepEvent, ZoneChangeEvent
+from models.events_all import ZoneChangeEvent
 from models.utils import flip
 from models.zone import Zone
 
@@ -13,11 +13,10 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from models.choice_actions_all import SerendibDjinnUpkeepChoice, ShapeshifterChoice, \
-    PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice, FastingChoice, DrawCardsOrDontChoice, \
-    RemoveCounterForLifeChoice, FloralSpuzzemChoice, HealingSalveChoice, PayManaOrTakeDamage, CycloneChoice, \
-    YawgmothDemonChoice, PayLifeOrDiscardChoice, RogahhOfKherKeepUpkeepChoice
-from models.actions.special import SacCreatureAndAddMana, RogahhOfKherKeepTapAndStealAction
-from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY, WIND
+    FastingChoice, DrawCardsOrDontChoice, \
+    RemoveCounterForLifeChoice, HealingSalveChoice, PayLifeOrDiscardChoice
+from models.actions.special import SacCreatureAndAddMana
+from models.counter_tokens import PUPA, PLUS_ONE, SLEEP, HUNGER, VITALITY
 from models.damage import PreventNextDamage
 from models.effects.base import Effect
 from models.modifiers import KWAMod, PTMod
@@ -129,19 +128,6 @@ class Crumble(Effect):
             gs.destroy(target, allow_regeneration=False)
             gs.score_mgr.increment_life(target.owner_id, target.props.mana_value, source, gs)
 
-class Cyclone(Effect):
-    """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
-    If you pay, Cyclone deals damage = its wind counters to each creature and each player."""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
-            return
-        source.counters.add_counter(WIND)
-        if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
-            gs.destroy(source, False)
-        gs.action_stack.push(CycloneChoice(source.owner_id, gs, source), gs, False)
-
 class DivineOffering(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if not target:
@@ -218,15 +204,6 @@ class FlashFlood(Effect):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         gs.bounce(t) if t.props.slug == 'mountain' else gs.destroy(t)
 
-class FloralSpuzzem(Effect):
-    """Whenever this creature walks, you may destroy target opp artifact instead of dealing the combat damage."""
-    listens_to = UnblockedAttackerEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
-        if event.attacker != s or not gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result():
-            return
-        gs.action_stack.push(FloralSpuzzemChoice(s.owner_id, gs, s), gs, False)
-
 class GoblinKing(Effect):
     """All of your other Goblins gain +1+/+1 and Mountainwalk"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -248,15 +225,6 @@ class GlyphOfDestruction(Effect):
         t.modifiers.items.append(PTMod(s=s, p_adj=10, expires='EOT'))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         gs.end_step_funcs.append(lambda gs_, s_, t_: gs.destroy(s))
-
-class HasranOgress(Effect):
-    """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
-    listens_to = AttackEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
-        if event.attacker is not s:
-            return
-        gs.action_stack.push(PayManaOrTakeDamage(s.owner_id, gs, s, '2', 3), gs, False)
 
 class HealingSalve(Effect):
     """Choose one - * You gain 3 life. * Prevent the next 3 damage that would be dealt to any target this turn."""
@@ -339,19 +307,6 @@ class MazeOfIth(Effect):
             gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
         t.untap(gs)
 
-class MijaeDjinn(Effect):
-    """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
-    listens_to = AttackEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
-        if event.attacker is not s:
-            return
-        result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
-        print(f'The result of the random event was: {result}')
-        if result == 'tails':
-            gs.remove_from_combat(s)
-            gs.tap_card(s)
-
 class Rakalite(Effect):
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
         """target is the card dealing damage"""
@@ -384,21 +339,6 @@ class RocketLauncherAA(Effect):
         gs.apply_damage(s, 1, t)
         gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(s))
 
-class RogahhOfKherKeepUpkeep(Effect):
-    """... At your upkeep, pay {RRR} or else ..."""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id or source.props.slug != 'rogahh-of-kher-keep':
-            return
-        owner = source.owner_id
-        target_cards = [source] + gs.card_filter.on_player_board(owner).by_slug('kobolds-of-kher-keep').result()
-        if gs.mana_pools[source.owner_id].can_pay('RRR'):
-            gs.action_stack.push(RogahhOfKherKeepUpkeepChoice(source.owner_id, gs, source, target_cards), gs, False)
-        else:
-            action = RogahhOfKherKeepTapAndStealAction(source.owner_id, gs, source, targets=target_cards)
-            action.play()
-
 class SacrificeOnCast(Effect):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
     Note "sacrifice" refers to the card called sacrifice, not the game action of sacrifice"""
@@ -428,16 +368,6 @@ class StoneGiant(Effect):
         t.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
         gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(t))
 
-class SoulNet(Effect):
-    """Whenever a creature dies, {1}: Gain 1 life"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or not event.card.is_creature:
-            return
-
-        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
-
 class Subdue(Effect):
     """Prevent all combat damage that would be dealt by target creature this turn.
     That creature gets +0/+X until end of turn, where X is its mana value."""
@@ -464,16 +394,6 @@ class SyphonSoul(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, target)
         gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
-
-class TabletOfEpityr(Effect):
-    """Whenever an artifact you control dies, {1}: Gain 1 life"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
-                or event.card.owner_id != source.owner_id:
-            return
-        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
 
 class Timetwister(Effect):
     """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
@@ -509,16 +429,6 @@ class UrzasAvengerTrample(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         source.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
         source.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
-
-class UrzasMiter(Effect):
-    """Whenever an artifact you control dies, if it wasn't sacrificed [not handling this part], {3}: draw a card"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
-                or event.card.owner_id != source.owner_id:
-            return
-        gs.action_stack.push(PayManaToDrawCardsChoice(source.owner_id, gs, source), gs, False)
 
 class VenarianGoldCast(Effect):
     """When this Aura enters, tap enchanted creature and put X sleep counters on it ..."""
@@ -586,30 +496,3 @@ class WormwoodTreefolkSwampwalk(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Swampwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
-
-class YawgmothDemon(Effect):
-    """At your upkeep, Sac an artifact, or tap this creature and it deals 2 damage to you"""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if source.owner_id != gs.turn_mgr.player_turn_idx:
-            return
-        if not gs.card_filter.on_player_board(source.owner_id).artifacts().result():
-            gs.tap_card(source)
-            gs.apply_damage(source, 2, source.owner_id)
-            return
-        gs.action_stack.push(YawgmothDemonChoice(source.owner_id, gs, source), gs, False)
-
-
-class YdwenEfreet(Effect):
-    """Whenever Ydwen Efreet blocks, flip a coin.
-    If you lose, remove Ydwen Efreet from combat who can't block this turn."""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.blocker is not s:
-            return
-        result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
-        print(f'The result of the random event was: {result}')
-        if result == 'tails':
-            gs.remove_from_combat(s)

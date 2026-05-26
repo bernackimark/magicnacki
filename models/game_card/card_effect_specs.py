@@ -12,48 +12,59 @@ from card_filter_funcs import T_FUNCS
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
     CHARGE, DREAM, HATCHLING, CounterType
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
-from models.effects.combat import TowerOfCoireall, UnblockableThisTurn, Abomination, \
-    CockatriceAndThicketBasilisk, Venom, TimeElementalAttackedOrBlocked, GiantShark, CavePeopleAttackPump, \
-    ElderLandWurm, Sentinel, GlyphOfDoom, GlyphOfLife, InfernalMedusa, AbuJafar
-from models.effects.counters import CityOfShadowsAA1, CityOfShadowsAA2, RemovePlusOneZeroFromCombatant, \
-    AddCountersYourTurnOnly, CocoonCast, XZeroOneCountersByManaValue, AddCountersIfAnyCreatureDied, \
-    RockHydraCast, AddCounterPerCreatureDeath, AddCountersOnHostTurn, RemoveCountersOnHostTurn, \
-    CitanulDruid, ManaBatteriesAddMana, AddCounter, SpiritShackle
-from models.effects.damage import DealDamage, DealDamageToTargetAndYou, CurseArtifact, DealDamageOnHostUpkeep, \
-    PreventAllCombatDamageThisTurn, Earthquake, ElderSpawnUpkeep, ErgRaiders, EternalFlame, EyeForAnEye, \
-    FungusaurOnDamage, GaseousForm, PreventNextDamageToCardEffect, DealDamageToAllCreaturesAndPlayers, JovialEvil, \
-    DealDamageToOwnerOnUpkeep, Karma, LivingArtifactOnDamage, LordOfThePitUpkeep, PowerSurge, DealDamageToTargetAndSelf, \
-    StormSeeker, StormWorld, Typhoon, PersonalIncarnation, CreatureBond, Backfire, TheRack, AnkhOfMishra, BlackVise, \
-    DingusEgg, GoblinShrineOnLeave, ManaVaultDamageIfTapped, Banshee, RukhEgg, Tracker, CityOfBrassDamageOnTap, \
-    Sandstorm, DealOneDamageToTargetList
+from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, TowerOfCoireall, CityOfShadowsAA1, \
+    CityOfShadowsAA2, CocoonCast, RockHydraCast, Banshee, Earthquake, EternalFlame, EyeForAnEye, GaseousForm, \
+    JovialEvil, Sandstorm, StormSeeker, Tracker, Typhoon, AshesToAshes, DustToDust, EaterOfTheDead, Millstone, \
+    BazaarOfBaghdad, Braingeyser, DemonicTutor, GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, \
+    RagMan, Visions, WheelOfFortune, Clone, CopyArtifact, EvilPresence, PhantasmalTerrain, PrimalClay, \
+    VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, UrborgLoseFirstStrike, UrborgLoseSwampwalk, \
+    StreamOfLife
+from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
+    ManaBatteriesAddMana, RemoveCountersOnHostTurn, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
+    AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
+    DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, \
+    PreventAllCombatDamageThisTurn, PreventNextDamageToCardEffect, Destroy, DestroyAll, DestroyIfItAttacked, \
+    ExileAllCreatures, PayManaOrSac, Regenerate, SacAll, DrawCards, Discard, BecomeCreature, SetColor, AllWalksRemoved, \
+    KWAModEffect, GainLife
+from models.effects.listens_for_attack import CavePeopleAttackPump, HasranOgress, MijaeDjinn
+from models.effects.listens_for_combat_end import TimeElementalAttackedOrBlocked
+from models.effects.listens_for_block import Abomination, CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, \
+    InfernalMedusa, Sentinel, Venom, AislingLeprechaun, YdwenEfreet
+from models.effects.listens_for_end_step import ErgRaiders, PestilenceEndStep, SeasonOfTheWitchEndStep, \
+    VoodooDollEndStep, DragonWhelpEndStep
 from models.effects.damage_preventions import PreventNextDamageBy, ArgothianPixiesPrevention, \
     ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
     Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention, PreventDamageBy, \
     WallOfPutridFleshPrevention
 from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDamageReplacement
-from models.effects.destroy_sac_regenerate import DestroyAll, Destroy, PayManaOrSac, EaterOfTheDead, \
-    ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PestilenceEndStep, SeasonOfTheWitchUpkeep, \
-    SeasonOfTheWitchEndStep, SerendibDjinnNoLands, VoodooDollEndStep, ExileAllCreatures, CyclopeanMummy, \
-    DestroyIfItAttacked, PsychicAllergyUpkeep, LandEquilibrium, Millstone, EnergyFlux, TheTabernacleAtPendrellVale, \
-    Blight, DemonicHordesUpkeep, StanggOnLeave, SacAll, AshesToAshes, DustToDust, CosmicHorror, \
-    MoldDemonETB, Regenerate, TheAbyss, GoblinsOfTheFlarg
-from models.effects.draw_discard_reveal import DrawCards, Braingeyser, CursedRackEffect, WheelOfFortune, \
-    VerduranEnchantress, \
-    HypnoticSpecter, JalumTome, BazaarOfBaghdad, Discard, GwendlynDiCorci, NicolBolas, HowlingMine, PsychicPurgeDiscard, \
-    MindTwist, GlassesOfUrza, Revelation, FieldOfDreams, Visions, RagMan, DemonicTutor, NaturalSelection, LandTax
-from models.effects.identity import SetColor, BecomeCreature, EvilPresence, \
-    PhantasmalTerrain, AislingLeprechaun, Clone, CopyArtifact, VesuvanDoppelgangerCast, VesuvanDoppelgangerUpkeep, \
-    PrimalClay
-from models.effects.keywords import KWAModEffect, ErhnamDjinn, \
-    AllWalksRemoved, SandalsOfAbdallahIslandWalk, RapidFire, UrborgLoseFirstStrike, UrborgLoseSwampwalk
-from models.effects.life import ElHajjaj, GainLife, IvoryTower, AddPoisonCounter, SpiritLink, SpiritualSanctuary, \
-    StreamOfLife, Onulet, OnColorSpellPayOneColorlessForOneLifeChoice, AliFromCairo, MerchantShip, OnColorSpellGainLife
-from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, SuChi, UrzasTrio, WildGrowth
+from models.effects.listens_for_state_change import GoblinsOfTheFlarg, SerendibDjinnNoLands
+from models.effects.listens_for_tap import Blight, WildGrowth, SpiritShackle, CityOfBrassDamageOnTap, Lifeblood, \
+    Lifetap, PsychicVenom
+from models.effects.listens_for_draw_step import HowlingMine, ManaVaultDamageIfTapped
+from models.effects.listens_for_discard import PsychicPurgeDiscard
+from models.effects.listens_for_discard_step import CursedRackEffect
+from models.effects.listens_for_upkeep import ErhnamDjinn, DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, BlackVise, \
+    CurseArtifact, ElderSpawnUpkeep, Karma, LordOfThePitUpkeep, PowerSurge, StormWorld, TheRack, CosmicHorror, \
+    DemonicHordesUpkeep, EnergyFlux, ErosionUpkeep, ForceOfNatureUpkeep, ManaVortexUpkeep, PsychicAllergyUpkeep, \
+    SeasonOfTheWitchUpkeep, TheAbyss, TheTabernacleAtPendrellVale, LandTax, IvoryTower, SpiritualSanctuary, \
+    VesuvanDoppelgangerUpkeep, Cyclone, RogahhOfKherKeepUpkeep, YawgmothDemon, GhazbanOgre
+from models.effects.listens_for_death import Onulet, AbuJafar, CreatureBond, PersonalIncarnation, RukhEgg, \
+    CyclopeanMummy, SuChi, SoulNet, TabletOfEpityr, UrzasMiter
+from models.effects.listens_for_unblocked import MerchantShip, MurkDwellers, FloralSpuzzem
+from models.effects.listens_for_life_loss import AliFromCairo
+from models.effects.listens_for_cast import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice
+from models.effects.listens_for_damage import AddPoisonCounter, ElHajjaj, HypnoticSpecter, NicolBolas, SpiritLink, \
+    Backfire, FungusaurOnDamage, LivingArtifactOnDamage
+from models.effects.mana import AddMana, DrainPower, EnergyTap, ExchangeLifeTotals, UrzasTrio
 from models.effects.piles import Bounce, HandToBoard, GraveRobbersAA, Reanimate, GraveyardToExileInItsEntirety, Steal, \
-    GhazbanOgre, TimeElementalBounce, ReturnToOwnerOnUntap, ReturnToOwnerOnLTB, TriassicEgg
-from models.effects.pumps import PumpEffect, BloodLust, DragonWhelpEndStep, GreatDefender, HowlFromBeyond, \
+    TimeElementalBounce, TriassicEgg
+from models.effects.listens_for_zone import ReturnToOwnerOnLTB, CitanulDruid, AnkhOfMishra, DingusEgg, \
+    GoblinShrineOnLeave, FieldOfDreams, Revelation, VerduranEnchantress, LandEquilibrium, MoldDemonETB, StanggOnLeave, \
+    Kismet
+from models.effects.pumps import PumpEffect, BloodLust, GreatDefender, HowlFromBeyond, \
     HellSwarm, HolyLight, ArmyOfAllah, BoneFlute, MarshGas, Morale, Piety, ShieldWall, BerserkPump, \
-    Transmutation, MurkDwellers, SingingTree, UntapRemovesPumpFromAnotherCard, LesserWerewolf
+    Transmutation, SingingTree, LesserWerewolf
+from models.effects.listens_for_untap_card import UntapRemovesPumpFromAnotherCard, ReturnToOwnerOnUntap
 from models.effects.queries import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     Seeker, Moat, \
@@ -71,16 +82,14 @@ from models.effects.special import ActiveVolcano, AnimateDead, BookOfRass, Cocoo
     Earthbind, ElectricEel, ElvesOfTheDeepShadow, Feint, FlashFlood, GlyphOfDestruction, GoblinKing, Greed, \
     KoboldDrillSergeant, KryShield, MartyrsCry, MazeOfIth, Rakalite, ReverseDamage, RocketLauncherCast, \
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
-    Web, TabletOfEpityr, SoulNet, UrzasMiter, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
+    Web, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Fasting, \
     FeldonsCane, Timetwister, WindsOfChange, HurkylsRecall, AshnodsTransmogrant, CreateTokenCreature, \
-    LivingArtifactUpkeep, FloralSpuzzem, MijaeDjinn, YdwenEfreet, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
-    HealingSalve, HasranOgress, Cyclone, YawgmothDemon, WallOfWonder, Amnesia, Inquisition, WandOfIth, \
-    UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, RemoveHostAuras, WinterBlast, Festival, \
-    RogahhOfKherKeepUpkeep
-from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, OptionalUntap, \
-    StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
-    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Kismet, Lifetap, Lifeblood, PsychicVenom, \
-    ArenaOfTheAncientsCast, CardsDontUntapAtUntapPhase, UntapCardsEffect, TapCardsEffect
+    LivingArtifactUpkeep, ManaClash, BottleOfSuleiman, ChaosOrb, FallingStar, \
+    HealingSalve, WallOfWonder, Amnesia, Inquisition, WandOfIth, \
+    UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, RemoveHostAuras, WinterBlast, Festival
+from models.effects.tap_untap import UntapForManaEffect, UntapHostForManaEffect, TapCardEffect, StaysTapped, CocoonHostStaysTapped, UntapCardEffect, ManaShort, \
+    HostStaysTapped, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, ArenaOfTheAncientsCast, UntapCardsEffect, TapCardsEffect
+from models.effects.listens_for_untap_phase import CardsDontUntapAtUntapPhase, OptionalUntap
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent

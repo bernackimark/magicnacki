@@ -1,32 +1,19 @@
 from __future__ import annotations
-from typing import Optional, TYPE_CHECKING, Callable
+from typing import Optional, TYPE_CHECKING
 
 from models.phase_manager import Phase
-from models.utils import flip
-from models.events_all import ZoneChangeEvent, TapCardEvent, UntapPhaseEvent
-from ..zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
 from models.effects.base import Effect
-from models.choice_actions_all import UntapChoice, UntapWithManaChoice
+from models.choice_actions_all import UntapWithManaChoice
 from ..actions.tap_untap import LeaveTapped
 from ..counter_tokens import PUPA, SLEEP
 
 
 # --- GENERICS ---
-class CardsDontUntapAtUntapPhase(Effect):
-    """Cards [from card_filter_func] don't untap during their controllers' untap steps"""
-    listens_to = UntapPhaseEvent
-
-    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard | None]]):
-        self.card_filter_func = card_filter_func
-
-    def on_event(self, gs: GameState, s: GameCard, event: UntapPhaseEvent):
-        for c in self.card_filter_func(gs, s):
-            gs.action_stack.push(LeaveTapped(event.active_player, gs, c), gs, False)
 
 class TapCardEffect(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -65,13 +52,6 @@ class StaysTapped(Effect):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         gs.action_stack.push(LeaveTapped(source.owner_id, gs, source), gs, False)
 
-class OptionalUntap(Effect):
-    listens_to = UntapPhaseEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
-        if source.owner_id != event.active_player or not source.is_tapped:
-            return
-        gs.action_stack.push(UntapChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 class UntapForManaEffect(Effect):
     def __init__(self, mana_cost: str):
@@ -101,50 +81,6 @@ class CocoonHostStaysTapped(Effect):
         if source.host.counters.get_count(PUPA):
             gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
 
-class Kismet(Effect):
-    """Artifacts, creatures, and lands your opponents control enter tapped"""
-    listens_to = ZoneChangeEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: ZoneChangeEvent):
-        if event.card.owner_id != flip(s.owner_id) or event.to_zone != Zone.BATTLEFIELD:
-            return
-        artifacts = gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result()
-        creatures = gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result()
-        lands = gs.card_filter.on_player_board(flip(s.owner_id)).lands().result()
-        if event.card not in artifacts + creatures + lands:
-            return
-        gs.tap_card(event.card)
-
-class Lifeblood(Effect):
-    """Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card.owner_id == s.owner_id:
-            return
-        if 'Mountain' in event.card.card_sub_types:
-            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
-
-class Lifetap(Effect):
-    """Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card.owner_id == s.owner_id:
-            return
-        if 'Forest' in event.card.card_sub_types:
-            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
-
-class MagneticMountainOnUntapStep(Effect):
-    """Blue creatures don't untap during their controllers' untap steps"""
-    listens_to = UntapPhaseEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UntapPhaseEvent):
-        if event.active_player != s.owner_id:
-            return
-        if s in gs.card_filter.on_player_board(event.active_player).blue().creatures().result():
-            gs.action_stack.push(LeaveTapped(s.owner_id, gs, s), gs, False)
-
 class ManaShort(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
         """target = player_id whose lands should be tapped"""
@@ -154,15 +90,6 @@ class ManaShort(Effect):
         for land in player_lands:
             land.tap(gs)
         print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
-
-class PsychicVenom(Effect):
-    """Whenever enchanted land becomes tapped, this Aura deals 2 damage to that land's controller"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card is not s.host:
-            return
-        gs.apply_damage(s, 2, event.card.owner_id)
 
 class Reset(Effect):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""

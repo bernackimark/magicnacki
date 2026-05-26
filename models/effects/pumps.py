@@ -4,7 +4,6 @@ from typing import Optional, TYPE_CHECKING
 from models.counter_tokens import MINUS_ZERO_ONE
 from models.effects.query_card_mods import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
-from models.events_all import UnblockedAttackerEvent, UntapCardEvent, EndStepEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -26,17 +25,6 @@ class PumpEffect(Effect):
             raise ValueError(f'{s.props.name} needs a target')
         target.modifiers.items.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj,
                                             expires='EOT' if self.eot else None))
-
-class UntapRemovesPumpFromAnotherCard(Effect):
-    """If an effect targeted another card and its duration was for as long as the source is tapped,
-    we untap here by polling all cards in play and seeing if they were given a Pump by this source"""
-    listens_to = UntapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UntapCardEvent):
-        for c in gs.card_filter.in_play().result():
-            for mod in list(c.modifiers):
-                if mod.source is s and isinstance(mod, PTMod):
-                    event.card.modifiers.items.remove(mod)
 
 # --- CARD-SPECIFIC ---
 class ArmyOfAllah(Effect):
@@ -67,14 +55,6 @@ class BoneFlute(Effect):
     """All creatures get -1/-0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.register_effect_until_eot((BoneFluteEOT(), source))
-
-class DragonWhelpEndStep(Effect):
-    """If this [pump] ability has been activated 4+ times this turn, sac at end step."""
-    listens_to = EndStepEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if len([temp for temp in s.modifiers.items if temp.source is s]) >= 4:
-            gs.destroy(s, allow_regeneration=False)
 
 class GreatDefender(Effect):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
@@ -117,15 +97,6 @@ class Morale(Effect):
     """Attacking creatures get +1/+1 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.register_effect_until_eot((MoraleEOT(), source))
-
-class MurkDwellers(Effect):
-    """Whenever this creature attacks and isn't blocked, it gets +2/+0 until end of combat"""
-    listens_to = UnblockedAttackerEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
-        if event.attacker != s:
-            return
-        s.modifiers.items.append(PTMod(s=s, p_adj=2, expires='EOT'))
 
 class Piety(Effect):
     """Blocking creatures get 0/+3 until end of turn"""
