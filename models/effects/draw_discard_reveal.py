@@ -14,9 +14,8 @@ from models.actions.draw_discard import DiscardCard
 from models.effects.base import Effect
 from models.utils import flip
 
-from models.events_all import EndStepEvent, ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent, DiscardEvent, \
-    DiscardStepEvent, Event, UpkeepEvent
-
+from models.events_all import (ZoneChangeEvent, DamageResolvedEvent, DrawStepEvent, DiscardEvent, DiscardStepEvent,
+                               UpkeepEvent)
 
 # --- GENERIC ---
 class DrawCards(Effect):
@@ -242,9 +241,9 @@ class Visions(Effect):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target player')
-        for c in gs.libraries[target].cards[:5]:
+        for c in gs.libraries[target][:5]:
             print('Showing you', c)
-        gs.pending_choice = ShuffleOrDontChoice(target, gs, source, gs.libraries[target].cards)
+        gs.pending_choice = ShuffleOrDontChoice(target, gs, source, gs.libraries[target])
 
 class WheelOfFortune(Effect):
     """Each player discards their hand, then draws seven cards"""
