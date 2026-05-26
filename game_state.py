@@ -206,7 +206,7 @@ class GameState:
         # ask replacement system if destruction is prevented
         # as of now, this destruction replacement & damage are handled separately but could be unified later
         if allow_regeneration:
-            shield = next((m for m in card.modifiers.items if isinstance(m, RegenerationMod)), None)
+            shield = next(card.modifiers.iter_type(RegenerationMod), None)
             if shield:
                 card.modifiers.items.remove(shield)
                 card.tapped = True

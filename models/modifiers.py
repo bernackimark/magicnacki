@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Literal, Union, Callable
+from typing import TYPE_CHECKING, Literal, Union, Callable, Iterator, TypeVar
 
 if TYPE_CHECKING:
-    from game_card import GameCard
+    from .game_card.game_card import GameCard
 
 from dataclasses import dataclass, field
 
@@ -66,6 +66,10 @@ class SubTypeMod(Modifier):
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type}"
 
+
+T = TypeVar('T', bound=Modifier)
+ModType = Union[PTMod | KWAMod | TypeMod | SubTypeMod | OwnershipMod | RegenerationMod]
+
 @dataclass
 class Modifiers:
     """Contains general auras (ex Creature Bond), PTModifiers (ex Holy Strength), and KWA Modifiers (ex Flight)"""
@@ -78,51 +82,52 @@ class Modifiers:
         """True if any modifiers else False"""
         return bool(self.items)
 
+    def iter_type(self, mod_type: type[T]) -> Iterator[T]:
+        yield from (m for m in self.items if isinstance(m, mod_type))
+
+    def iter_type_reverse(self, mod_type: type[T]) -> Iterator[T]:
+        yield from (m for m in reversed(self.items) if isinstance(m, mod_type))
+
     @property
     def new_owner_id(self) -> int | None:
-        for mod in self.items[::-1]:
-            if isinstance(mod, OwnershipMod):
-                return mod.new_owner_id
+        for m in self.iter_type_reverse(OwnershipMod):
+            return m.new_owner_id
 
     @property
     def power_delta(self) -> int:
-        return sum(a.p_adj for a in self.items if isinstance(a, PTMod))
+        return sum(m.p_adj for m in self.iter_type(PTMod))
 
     @property
     def toughness_delta(self) -> int:
-        return sum(a.t_adj for a in self.items if isinstance(a, PTMod))
+        return sum(m.t_adj for m in self.iter_type(PTMod))
 
     @property
     def kwa_delta(self) -> tuple[set[str], set[str]]:
         """KWAMod('add', 'Flying'), KWAMod('add', 'Trample'), KWA('remove', 'Trample') returns ({'Flying'}, {})"""
         adds, removes = set(), set()
-        for m in self.items:
-            if isinstance(m, KWAMod):
-                adds.add(m.kwa) if m.add_or_remove == 'add' else removes.add(m.kwa)
+        for m in self.iter_type(KWAMod):
+            adds.add(m.kwa) if m.add_or_remove == 'add' else removes.add(m.kwa)
         return adds - removes, removes - adds
 
     @property
     def type_delta(self) -> tuple[set[str], set[str]]:
         adds, removes = set(), set()
-        for m in self.items:
-            if isinstance(m, TypeMod):
-                adds.add(m.card_type) if m.add_or_remove == 'add' else removes.add(m.card_type)
+        for m in self.iter_type(TypeMod):
+            adds.add(m.card_type) if m.add_or_remove == 'add' else removes.add(m.card_type)
         return adds - removes, removes - adds
 
     @property
     def sub_type_delta(self) -> tuple[set[str], set[str]]:
         adds, removes = set(), set()
-        for m in self.items:
-            if isinstance(m, SubTypeMod):
-                adds.add(m.card_sub_type) if m.add_or_remove == 'add' else removes.add(m.card_sub_type)
+        for m in self.iter_type(SubTypeMod):
+            adds.add(m.card_sub_type) if m.add_or_remove == 'add' else removes.add(m.card_sub_type)
         return adds - removes, removes - adds
 
     @property
     def colors(self) -> str:
         """Returns the last color(s) assigned; does not currently support adding/subtracting multiple color layers"""
-        for m in self.items[::-1]:
-            if isinstance(m, ColorMod):
-                return m.new_colors
+        for m in self.iter_type_reverse(ColorMod):
+            return m.new_colors
 
     def clear_eots(self) -> None:
         self.items = [m for m in self.items if m.expires != 'EOT']
@@ -130,5 +135,3 @@ class Modifiers:
     def clear_all(self) -> None:
         self.items.clear()
 
-
-ModType = Union[PTMod | KWAMod | TypeMod | SubTypeMod | OwnershipMod | RegenerationMod]
