@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from functools import partial
@@ -23,29 +23,38 @@ class TargetSpec:
     max_cnt: int | None = 1
     allow_duplicate_targets: bool = False  # used in pyrotechnics/fireball where we always add 1 damage at a time
 
-class Effect:
+class Effect(ABC):
     """Base class for all card effects."""
-    listens_to: type[Event] | None = None  # used by event listeners
-    query: str | tuple[str] | None = None  # used by queriers
-    modifies: str | tuple[str] | None = None  # used by Modifier queries
+    pass
 
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+class Resolver(Effect):
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None) -> None:
         """Perform an explicit game action (ex: deal 3 damage)"""
         raise NotImplementedError()
 
-    def on_event(self, gs: GameState, source: GameCard, event: Event):
+class Listener(Effect):
+    listens_to: type[Event] | None = None  # used by event listeners
+
+    def on_event(self, gs: GameState, source: GameCard, event: Event) -> None:
         """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""
         raise NotImplementedError()
 
+class Querier(Effect):
+    query: str | tuple[str] | None = None  # used by queriers
+
+    @abstractmethod
     def on_query(self, gs: GameState, card: GameCard, **kwargs) -> bool | None:
         """Answer a rules question (ex: can this attack?)"""
         return None  # default: no opinion
 
+class ModRetriever(Effect):
+    modifies: str | tuple[str] | None = None  # used by Modifier queries
+
+    @abstractmethod
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
             ModType | list[ModType] | None):
         """A GameCard asks for any global mods (ex: Crusade would return a PTMOd to a white creature)"""
         return None
-
 
 @dataclass
 class EffSpec:

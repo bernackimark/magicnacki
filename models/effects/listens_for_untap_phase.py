@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Callable
 
 from models.actions.tap_untap import LeaveTapped
 from models.choice_actions_all import UntapChoice
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import UntapPhaseEvent
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class CardsDontUntapAtUntapPhase(Effect):
+class CardsDontUntapAtUntapPhase(Listener):
     """Cards [from card_filter_func] don't untap during their controllers' untap steps"""
     listens_to = UntapPhaseEvent
 
@@ -23,7 +23,7 @@ class CardsDontUntapAtUntapPhase(Effect):
             gs.action_stack.push(LeaveTapped(event.active_player, gs, c), gs, False)
 
 
-class OptionalUntap(Effect):
+class OptionalUntap(Listener):
     listens_to = UntapPhaseEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
@@ -32,7 +32,7 @@ class OptionalUntap(Effect):
         gs.action_stack.push(UntapChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 
-class MagneticMountainOnUntapStep(Effect):
+class MagneticMountainOnUntapStep(Listener):
     """Blue creatures don't untap during their controllers' untap steps"""
     listens_to = UntapPhaseEvent
 

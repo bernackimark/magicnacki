@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import UntapCardEvent
 from models.modifiers import PTMod, OwnershipMod
 from models.utils import flip
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class UntapRemovesPumpFromAnotherCard(Effect):
+class UntapRemovesPumpFromAnotherCard(Listener):
     """If an effect targeted another card and its duration was for as long as the source is tapped,
     we untap here by polling all cards in play and seeing if they were given a Pump by this source"""
     listens_to = UntapCardEvent
@@ -23,7 +23,7 @@ class UntapRemovesPumpFromAnotherCard(Effect):
                     event.card.modifiers.items.remove(mod)
 
 
-class ReturnToOwnerOnUntap(Effect):
+class ReturnToOwnerOnUntap(Listener):
     """Ownership by virtue of an aura or the source being on the battlefield will auto-remove the mod upon LTB;
     This effect removes an ownership mod on any card the source was placed & xfers the stolen GameCard across boards"""
     listens_to = UntapCardEvent

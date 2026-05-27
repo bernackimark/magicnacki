@@ -3,9 +3,6 @@ from copy import copy
 import random
 from typing import Callable, Any, Sequence, TYPE_CHECKING
 
-from models.presentation_request import PresentationRequest
-from models.query_manager import QueryManager
-
 if TYPE_CHECKING:
     from models.game_card.card import Card
 
@@ -29,6 +26,8 @@ from models.hand import Hand
 from models.mana import ManaPool
 from models.modifiers import RegenerationMod
 from models.mulligan import MulliganChoice
+from models.presentation_request import PresentationRequest
+from models.query_manager import QueryManager
 from models.score_manager import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn_manager import TurnManager

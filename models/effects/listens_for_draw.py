@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import DrawCardEvent
 
 if TYPE_CHECKING:
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class UnderworldDreams(Effect):
+class UnderworldDreams(Listener):
     """Whenever an opponent draws a card, this enchantment deals 1 damage to that player"""
     listens_to = DrawCardEvent
 

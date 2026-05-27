@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import PLUS_ONE
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.effects.listens_for_end_step import AddCounterAtEndStep
 from models.effects.listens_for_combat_end import DestroyAtCombatEnd
 from models.events_all import BlockEvent
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class Abomination(Effect):
+class Abomination(Listener):
     """Whenever this creature blocks or becomes blocked by a G or W creature, destroy that creature at combat end"""
     listens_to = BlockEvent
 
@@ -31,7 +31,7 @@ class Abomination(Effect):
         # this will later get unregistered at combat end
 
 
-class CockatriceAndThicketBasilisk(Effect):
+class CockatriceAndThicketBasilisk(Listener):
     """Whenever this creature blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
     listens_to = BlockEvent
 
@@ -49,7 +49,7 @@ class CockatriceAndThicketBasilisk(Effect):
         # this will later get unregistered at combat end
 
 
-class ElderLandWurm(Effect):
+class ElderLandWurm(Listener):
     """When this creature blocks for the first time, it loses defender"""
     listens_to = BlockEvent
 
@@ -59,7 +59,7 @@ class ElderLandWurm(Effect):
         s.modifiers.items.append(KWAMod(s=s, add_or_remove='remove', kwa='Defender'))
 
 
-class GiantShark(Effect):
+class GiantShark(Listener):
     """Whenever this creature blocks/is blocked by a creature that's been dealt damage this turn,
     this creature gets +2/+0 and gains trample until end of turn"""
     listens_to = BlockEvent
@@ -76,7 +76,7 @@ class GiantShark(Effect):
             s.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Trample', expires='EOT'))
 
 
-class GlyphOfDoomListener(Effect):
+class GlyphOfDoomListener(Listener):
     """Registered by GlyphOfDoom. At this turn's combat end, destroy creature blocked by that wall this turn."""
     listens_to = BlockEvent
 
@@ -91,7 +91,7 @@ class GlyphOfDoomListener(Effect):
         # this will later get unregistered at combat end
 
 
-class InfernalMedusa(Effect):
+class InfernalMedusa(Listener):
     """Whenever this creature blocks, destroy attacker at combat end.
     Whenever this creature becomes blocked by a non-Wall creature, destroy blocker at combat end."""
     listens_to = BlockEvent
@@ -108,7 +108,7 @@ class InfernalMedusa(Effect):
         # this will later get unregistered at combat end
 
 
-class InfiniteAuthority(Effect):
+class InfiniteAuthority(Listener):
     """Whenever host blocks/is blocked by a creature with toughness <= 3, destroy the other creature at end of combat.
     At end step, if that creature was destroyed this way, put a +1/+1 counter on host"""
     listens_to = BlockEvent
@@ -131,7 +131,7 @@ class InfiniteAuthority(Effect):
         # this will later get unregistered at end step
 
 
-class Sentinel(Effect):
+class Sentinel(Listener):
     """Indefinitely change Sentinel's base T to 1 + power of target creature blocking or blocked by this creature"""
     listens_to = BlockEvent
 
@@ -146,7 +146,7 @@ class Sentinel(Effect):
         s.modifiers.items.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
 
 
-class Venom(Effect):
+class Venom(Listener):
     """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
     listens_to = BlockEvent
 
@@ -164,7 +164,7 @@ class Venom(Effect):
         # this will later get unregistered at combat end
 
 
-class AislingLeprechaun(Effect):
+class AislingLeprechaun(Listener):
     """Whenever this creature blocks or becomes blocked, that creature becomes green indefinitely;
     from Google: causes the creature to become green, which removes its existing colors & replaces with green only"""
     listens_to = BlockEvent
@@ -179,7 +179,7 @@ class AislingLeprechaun(Effect):
         other.colors = 'G'
 
 
-class YdwenEfreet(Effect):
+class YdwenEfreet(Listener):
     """Whenever Ydwen Efreet blocks, flip a coin.
     If you lose, remove Ydwen Efreet from combat who can't block this turn."""
     listens_to = BlockEvent

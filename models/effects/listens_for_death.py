@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import DiesEvent
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class Onulet(Effect):
+class Onulet(Listener):
     """When this creature dies, you gain 2 life"""
     listens_to = DiesEvent
 
@@ -22,7 +22,7 @@ class Onulet(Effect):
         gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
 
-class AbuJafar(Effect):
+class AbuJafar(Listener):
     """When this creature dies, destroy all creatures blocking or blocked by it. They can't be regenerated."""
     listens_to = DiesEvent
 
@@ -34,7 +34,7 @@ class AbuJafar(Effect):
                 gs.destroy(other_combatant, allow_regeneration=False)
 
 
-class CreatureBond(Effect):
+class CreatureBond(Listener):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""
     listens_to = DiesEvent
 
@@ -44,7 +44,7 @@ class CreatureBond(Effect):
         gs.apply_damage(source, source.host.toughness, source.host.owner_id)
 
 
-class PersonalIncarnation(Effect):
+class PersonalIncarnation(Listener):
     """... When this creature dies, its owner loses half their life, rounding up the loss amount"""
     listens_to = DiesEvent
 
@@ -55,20 +55,20 @@ class PersonalIncarnation(Effect):
         gs.apply_damage(source, reduce_life_by, source.owner_id)
 
 
-class RukhEgg(Effect):
+class RukhEgg(Listener):
     """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        from special import CreateTokenCreature
+        from models.effects.resolvers_generic import CreateTokenCreature
         obj = CreateTokenCreature('rukh')
         obj.resolve(gs, source)
         # gs.create_token_creature(source.owner_id, 'Bird', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
 
 
-class CyclopeanMummy(Effect):
+class CyclopeanMummy(Listener):
     """When this creature dies, exile it"""
     listens_to = DiesEvent
 
@@ -78,7 +78,7 @@ class CyclopeanMummy(Effect):
         gs.exile(source)
 
 
-class SuChi(Effect):
+class SuChi(Listener):
     """When this creature dies, add {CCCC}"""
     listens_to = DiesEvent
 
@@ -88,7 +88,7 @@ class SuChi(Effect):
         gs.mana_pools[source.owner_id].add_floating('C', 4)
 
 
-class SoulNet(Effect):
+class SoulNet(Listener):
     """Whenever a creature dies, {1}: Gain 1 life"""
     listens_to = DiesEvent
 
@@ -99,7 +99,7 @@ class SoulNet(Effect):
         gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
 
 
-class TabletOfEpityr(Effect):
+class TabletOfEpityr(Listener):
     """Whenever an artifact you control dies, {1}: Gain 1 life"""
     listens_to = DiesEvent
 
@@ -110,7 +110,7 @@ class TabletOfEpityr(Effect):
         gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
 
 
-class UrzasMiter(Effect):
+class UrzasMiter(Listener):
     """Whenever an artifact you control dies, if it wasn't sacrificed [not handling this part], {3}: draw a card"""
     listens_to = DiesEvent
 
@@ -121,7 +121,7 @@ class UrzasMiter(Effect):
         gs.action_stack.push(PayManaToDrawCardsChoice(source.owner_id, gs, source), gs, False)
 
 
-class SandalsOfAbdallahIfCreatureDies(Effect):
+class SandalsOfAbdallahIfCreatureDies(Listener):
     """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact"""
     listens_to = DiesEvent
 

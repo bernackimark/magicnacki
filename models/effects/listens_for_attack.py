@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import PayManaOrTakeDamage
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import AttackEvent, BlockEvent
 from models.modifiers import PTMod
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class CavePeopleAttackPump(Effect):
+class CavePeopleAttackPump(Listener):
     """Whenever this creature attacks, it gets +1/-2 until end of turn ..."""
     listens_to = AttackEvent
 
@@ -21,7 +21,7 @@ class CavePeopleAttackPump(Effect):
         event.attacker.modifiers.items.append(PTMod(s=s, p_adj=1, t_adj=-2, expires='EOT'))
 
 
-class HasranOgress(Effect):
+class HasranOgress(Listener):
     """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
     listens_to = AttackEvent
 
@@ -31,7 +31,7 @@ class HasranOgress(Effect):
         gs.action_stack.push(PayManaOrTakeDamage(s.owner_id, gs, s, '2', 3), gs, False)
 
 
-class MijaeDjinn(Effect):
+class MijaeDjinn(Listener):
     """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
     listens_to = AttackEvent
 

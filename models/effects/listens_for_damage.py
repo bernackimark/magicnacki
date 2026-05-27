@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import PLUS_ONE, VITALITY
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import DamageResolvedEvent
 from models.utils import flip
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class AddPoisonCounter(Effect):
+class AddPoisonCounter(Listener):
     """Whenever creature deals damage to a player, that player gets poison counter(s)"""
     listens_to = DamageResolvedEvent
 
@@ -26,7 +26,7 @@ class AddPoisonCounter(Effect):
             gs.score_mgr.add_poison_counter(opp, self.cnt)
 
 
-class ElHajjaj(Effect):
+class ElHajjaj(Listener):
     """Whenever this creature deals damage, you gain that much life"""
     listens_to = DamageResolvedEvent
 
@@ -35,7 +35,7 @@ class ElHajjaj(Effect):
             gs.score_mgr.increment_life(source.owner_id, event.amt, source, gs)
 
 
-class HypnoticSpecter(Effect):
+class HypnoticSpecter(Listener):
     """Whenever this creature deals damage to an opponent, that player discards a card at random"""
     listens_to = DamageResolvedEvent
 
@@ -53,7 +53,7 @@ class HypnoticSpecter(Effect):
         gs.discard(random_card, source)
 
 
-class NicolBolas(Effect):
+class NicolBolas(Listener):
     """Whenever this creature deals damage to an opponent, that player discards their hand"""
     listens_to = DamageResolvedEvent
 
@@ -68,7 +68,7 @@ class NicolBolas(Effect):
             gs.discard(c, source)
 
 
-class SpiritLink(Effect):
+class SpiritLink(Listener):
     """Enchant creature  Whenever enchanted creature deals damage, you gain that much life"""
     listens_to = DamageResolvedEvent
 
@@ -77,7 +77,7 @@ class SpiritLink(Effect):
             gs.score_mgr.increment_life(source.owner_id, event.amt, source, gs)
 
 
-class GlyphOfLifeListener(Effect):
+class GlyphOfLifeListener(Listener):
     """Registered by GlyphOfLife. Whenever that wall is dealt damage by an attacker this turn, gain that much life."""
     listens_to = DamageResolvedEvent
 
@@ -90,7 +90,7 @@ class GlyphOfLifeListener(Effect):
         gs.score_mgr.increment_life(s.owner_id, event.amt, s, gs)
 
 
-class Backfire(Effect):
+class Backfire(Listener):
     """Whenever host deals damage to you, this Aura deals that much damage to that creature's controller"""
     listens_to = DamageResolvedEvent
 
@@ -99,7 +99,7 @@ class Backfire(Effect):
             gs.apply_damage(source, event.amt, source.host.owner_id)
 
 
-class FungusaurOnDamage(Effect):
+class FungusaurOnDamage(Listener):
     """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
     listens_to = DamageResolvedEvent
 
@@ -109,7 +109,7 @@ class FungusaurOnDamage(Effect):
         source.counters.add_counter(PLUS_ONE)
 
 
-class LivingArtifactOnDamage(Effect):
+class LivingArtifactOnDamage(Listener):
     """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ...
     You can target opponent artifacts. The controller of the Aura controls the Living Artifact ability"""
     listens_to = DamageResolvedEvent

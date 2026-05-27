@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from models.modifiers import ModType, PTMod
 
-from models.effects.base import Effect
+from models.effects.base import ModRetriever
 from models.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod
 from models.utils import flip
 
@@ -18,7 +18,7 @@ They exist because not all modifications are stored on the GameCard itself (ex: 
 """
 
 # --- GENERICS ---
-class AddCreatureType(Effect):
+class AddCreatureType(ModRetriever):
     """Turns the card into a creature"""
     modifies = ('type', 'sub_type', 'pt')
 
@@ -37,7 +37,7 @@ class AddCreatureType(Effect):
         if 'pt' in AddCreatureType.modifies:
             return PTMod(s=source, p_adj=self.power, t_adj=self.toughness)
 
-class AddCreatureTypePTManaValue(Effect):
+class AddCreatureTypePTManaValue(ModRetriever):
     """Turns card into a creature with power and toughness each equal to its mana value"""
     modifies = ('type', 'pt')
 
@@ -51,7 +51,7 @@ class AddCreatureTypePTManaValue(Effect):
 
 
 # --- CARD-SPECIFIC ---
-class AngelicVoices(Effect):
+class AngelicVoices(ModRetriever):
     """Creatures you control get +1/+1 as long as you control no nonartifact, nonwhite creatures."""
     modifies = 'pt'
 
@@ -61,7 +61,7 @@ class AngelicVoices(Effect):
                 return None
         return PTMod(s=source, p_adj=1, t_adj=1)
 
-class AngryMobPT(Effect):
+class AngryMobPT(ModRetriever):
     """During your turn, Angry Mob's power & toughness are each = 2 plus the number of Swamps your opponents control.
     During turns other than yours, Angry Mob's power and toughness are each 2."""
     modifies = 'pt'
@@ -75,7 +75,7 @@ class AngryMobPT(Effect):
         opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).swamps().result())
         return PTMod(s=source, p_adj=2 + opp_swamp_cnt, t_adj=2 + opp_swamp_cnt, expires='EOT')
 
-class ArcadesSabbathAllCreaturePump(Effect):
+class ArcadesSabbathAllCreaturePump(ModRetriever):
     """... Each untapped creature you control gets +0/+2 as long as it's not attacking ..."""
     modifies = 'pt'
 
@@ -86,7 +86,7 @@ class ArcadesSabbathAllCreaturePump(Effect):
             if c not in attackers:
                 return PTMod(s=source, t_adj=2)
 
-class ArmyOfAllahEOT(Effect):
+class ArmyOfAllahEOT(ModRetriever):
     """This will be called only by ArmyOfAllah(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +2/+0 until end of turn"""
     modifies = 'pt'
@@ -98,7 +98,7 @@ class ArmyOfAllahEOT(Effect):
             return None
         return PTMod(s=source, p_adj=2, expires='EOT')
 
-class AspectOfWolfPT(Effect):
+class AspectOfWolfPT(ModRetriever):
     """Enchant creature Enchanted creature gets +X/+Y, where X is half the number of Forests you control, rounded down,
     and Y is half the number of Forests you control, rounded up."""
     modifies = 'pt'
@@ -112,7 +112,7 @@ class AspectOfWolfPT(Effect):
         t_adj = math.ceil(your_forest_cnt / 2)
         return PTMod(s=source, p_adj=p_adj, t_adj=t_adj)
 
-class BadMoon(Effect):
+class BadMoon(ModRetriever):
     modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
@@ -120,7 +120,7 @@ class BadMoon(Effect):
             return None
         return PTMod(s=source, p_adj=1, t_adj=1)
 
-class BeastsOfBogardan(Effect):
+class BeastsOfBogardan(ModRetriever):
     """This creature gets +1/+1 as long as an opponent controls a nontoken white permanent"""
     modifies = 'pt'
 
@@ -132,7 +132,7 @@ class BeastsOfBogardan(Effect):
         if opp_non_token_white_perms:
             return PTMod(s=source, p_adj=1, t_adj=1)
 
-class BoneFluteEOT(Effect):
+class BoneFluteEOT(ModRetriever):
     """This will be called only by BoneFlute(); this effect is stored in GameState and cleared at EOT;
     All creatures get -1/-0 until end of turn"""
     modifies = 'pt'
@@ -144,7 +144,7 @@ class BoneFluteEOT(Effect):
             return None
         return PTMod(s=source, p_adj=-1, expires='EOT')
 
-class Castle(Effect):
+class Castle(ModRetriever):
     modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
@@ -152,7 +152,7 @@ class Castle(Effect):
             return None
         return PTMod(s=source, t_adj=2)
 
-class ConcordantCrossroads(Effect):
+class ConcordantCrossroads(ModRetriever):
     """All creatures have haste"""
     modifies = 'kwa'
 
@@ -161,7 +161,7 @@ class ConcordantCrossroads(Effect):
             return None
         return KWAMod(s=source, add_or_remove='add', kwa='Haste')
 
-class Conversion(Effect):
+class Conversion(ModRetriever):
     """All Mountains are Plains"""
     modifies = 'sub_type'
 
@@ -169,7 +169,7 @@ class Conversion(Effect):
         return [SubTypeMod(s=source, add_or_remove='add', card_sub_type='Plains'),
                 SubTypeMod(s=source, add_or_remove='remove', card_sub_type='Mountain')]
 
-class Crusade(Effect):
+class Crusade(ModRetriever):
     """All white creatures get +1/+1"""
     modifies = 'pt'
 
@@ -178,7 +178,7 @@ class Crusade(Effect):
             return None
         return PTMod(s=source, p_adj=1, t_adj=1)
 
-class DakkonBlackbladePT(Effect):
+class DakkonBlackbladePT(ModRetriever):
     """Dakkon Blackblade's power and toughness are each equal to the number of lands you control"""
     modifies = 'pt'
 
@@ -189,7 +189,7 @@ class DakkonBlackbladePT(Effect):
         your_land_cnt = len(gs.card_filter.on_player_board(source.owner_id).lands().result())
         return PTMod(s=source, p_adj=your_land_cnt, t_adj=your_land_cnt)
 
-class GaeasAvengerPT(Effect):
+class GaeasAvengerPT(ModRetriever):
     """Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control"""
     modifies = 'pt'
 
@@ -200,7 +200,7 @@ class GaeasAvengerPT(Effect):
         opp_artifact_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).artifacts().result())
         return PTMod(s=source, p_adj=opp_artifact_cnt + 1, t_adj=opp_artifact_cnt + 1)
 
-class GaeasLiegePT(Effect):
+class GaeasLiegePT(ModRetriever):
     """As long as Gaea's Liege isn't attacking, its power & toughness are each = the number of Forests you control.
     If Gaea's Liege is attacking, its power & toughness are each = the # of Forests defending player controls."""
     modifies = 'pt'
@@ -216,7 +216,7 @@ class GaeasLiegePT(Effect):
             cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
         return PTMod(s=source, p_adj=cnt, t_adj=cnt)
 
-class GiantTortoisePT(Effect):
+class GiantTortoisePT(ModRetriever):
     """This creature gets +0/+3 as long as it's untapped"""
     modifies = 'pt'
 
@@ -227,7 +227,7 @@ class GiantTortoisePT(Effect):
         if not card.is_tapped:
             return PTMod(s=source, t_adj=3)
 
-class GoblinCaves(Effect):
+class GoblinCaves(ModRetriever):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
     modifies = 'pt'
 
@@ -237,7 +237,7 @@ class GoblinCaves(Effect):
             if card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
                 return PTMod(s=source, t_adj=2)
 
-class GoblinShrinePump(Effect):
+class GoblinShrinePump(ModRetriever):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0 ..."""
     modifies = 'pt'
 
@@ -247,7 +247,7 @@ class GoblinShrinePump(Effect):
             if card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
                 return PTMod(s=source, p_adj=1)
 
-class GravitySphere(Effect):
+class GravitySphere(ModRetriever):
     """All creatures lose flying"""
     modifies = 'kwa'
 
@@ -256,7 +256,7 @@ class GravitySphere(Effect):
             return None
         return KWAMod(s=source, add_or_remove='remove', kwa='Flying')
 
-class HellSwarmEOT(Effect):
+class HellSwarmEOT(ModRetriever):
     """This will be called only by HellSwarm(); this effect is stored in GameState and cleared at EOT;
     All creatures get -1/-0 until end of turn"""
     modifies = 'pt'
@@ -268,7 +268,7 @@ class HellSwarmEOT(Effect):
             return None
         return PTMod(s=source, p_adj=-1, expires='EOT')
 
-class HiddenPath(Effect):
+class HiddenPath(ModRetriever):
     """Green creatures have forestwalk"""
     modifies = 'kwa'
 
@@ -277,7 +277,7 @@ class HiddenPath(Effect):
             return None
         return KWAMod(s=source, add_or_remove='add', kwa='Forestwalk')
 
-class HolyLightEOT(Effect):
+class HolyLightEOT(ModRetriever):
     """This will be called only by HolyLight(); this effect is stored in GameState and cleared at EOT
     Nonwhite creatures get -1/-1 until end of turn"""
     modifies = 'pt'
@@ -292,7 +292,7 @@ class HolyLightEOT(Effect):
             return None
         return PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT')
 
-class IvoryGuardians(Effect):
+class IvoryGuardians(ModRetriever):
     """Creatures named Ivory Guardians get +1/+1 as long as an opponent controls a nontoken red permanent; the pumps are
     cumulative. Ex: if there's two Ivory Guardians & opponent has a nontoken red permanent, each gets +2/+2"""
     modifies = 'pt'
@@ -306,7 +306,7 @@ class IvoryGuardians(Effect):
         if gs.card_filter.on_player_board(flip(card.owner_id)).non_token().red().permanents().result():
             return PTMod(s=card, p_adj=ivory_guardians_cnt, t_adj=ivory_guardians_cnt)
 
-class JacquesLeVert(Effect):
+class JacquesLeVert(ModRetriever):
     """Green creatures you control get +0/+2"""
     modifies = 'pt'
 
@@ -315,7 +315,7 @@ class JacquesLeVert(Effect):
             return None
         return PTMod(s=source, t_adj=2)
 
-class KeldonWarlordPT(Effect):
+class KeldonWarlordPT(ModRetriever):
     """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control"""
     modifies = 'pt'
 
@@ -326,7 +326,7 @@ class KeldonWarlordPT(Effect):
         your_non_wall_creature_cnt = len(gs.card_filter.on_player_board(card.owner_id).non_wall_creatures().result())
         return PTMod(s=source, p_adj=your_non_wall_creature_cnt, t_adj=your_non_wall_creature_cnt)
 
-class KirdApePT(Effect):
+class KirdApePT(ModRetriever):
     modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
@@ -336,7 +336,7 @@ class KirdApePT(Effect):
         if gs.card_filter.on_player_board(card.owner_id).forests().result():
             return PTMod(s=card, p_adj=1, t_adj=2)
 
-class KoboldOverlord(Effect):
+class KoboldOverlord(ModRetriever):
     """Other Kobold creatures you control have first strike"""
     modifies = 'kwa'
 
@@ -346,7 +346,7 @@ class KoboldOverlord(Effect):
         if card in gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result():
             return KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT')
 
-class KoboldTaskmaster(Effect):
+class KoboldTaskmaster(ModRetriever):
     """Other Kobold creatures you control get +1/+0"""
     modifies = 'pt'
 
@@ -356,7 +356,7 @@ class KoboldTaskmaster(Effect):
         if card in gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result():
             return PTMod(s=source, p_adj=1)
 
-class KormusBell(Effect):
+class KormusBell(ModRetriever):
     """All Swamps are 1/1 creatures that are still lands"""
     modifies = ('type', 'pt')
 
@@ -369,7 +369,7 @@ class KormusBell(Effect):
             return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
-class LivingLands(Effect):
+class LivingLands(ModRetriever):
     """All Forests are 1/1 creatures that are still lands"""
     modifies = ('type', 'pt')
 
@@ -382,7 +382,7 @@ class LivingLands(Effect):
             return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
-class LivingPlane(Effect):
+class LivingPlane(ModRetriever):
     """All lands are 1/1 creatures that are still lands"""
     modifies = ('type', 'pt')
 
@@ -395,7 +395,7 @@ class LivingPlane(Effect):
             return PTMod(s=source, p_adj=1, t_adj=1)
         return None
 
-class LordOfAtlantisPT(Effect):
+class LordOfAtlantisPT(ModRetriever):
     """All other Merfolk gain +1/+1 and Islandwalk (presuming that Islandwalk is being handled elsewhere)"""
     modifies = 'pt'
 
@@ -403,7 +403,7 @@ class LordOfAtlantisPT(Effect):
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
             return PTMod(s=source, p_adj=1, t_adj=1)
 
-class LordOfAtlantisWalk(Effect):
+class LordOfAtlantisWalk(ModRetriever):
     """All other Merfolk gain +1/+1 and Islandwalk"""
     modifies = 'kwa'
 
@@ -411,7 +411,7 @@ class LordOfAtlantisWalk(Effect):
         if card in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result() and card is not source:
             return KWAMod(s=source, add_or_remove='add', kwa='Islandwalk')
 
-class MarshGasEOT(Effect):
+class MarshGasEOT(ModRetriever):
     """This will be called only by MarshGas(); this effect is stored in GameState and cleared at EOT;
     All creatures get -2/-0 until end of turn"""
     modifies = 'pt'
@@ -423,7 +423,7 @@ class MarshGasEOT(Effect):
             return None
         return PTMod(s=source, p_adj=-2, expires='EOT')
 
-class Mightstone(Effect):
+class Mightstone(ModRetriever):
     """Attacking creatures get +1/+0"""
     modifies = 'pt'
 
@@ -432,7 +432,7 @@ class Mightstone(Effect):
             return None
         return PTMod(s=source, p_adj=1, expires='EOT')
 
-class MoraleEOT(Effect):
+class MoraleEOT(ModRetriever):
     """This will be called only by Morale(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +1/+1 until end of turn"""
     modifies = 'pt'
@@ -444,7 +444,7 @@ class MoraleEOT(Effect):
             return None
         return PTMod(s=source, p_adj=1, t_adj=1, expires='EOT')
 
-class NightmarePT(Effect):
+class NightmarePT(ModRetriever):
     """Nightmare's power and toughness are each equal to the number of Swamps you control"""
     modifies = 'pt'
 
@@ -455,7 +455,7 @@ class NightmarePT(Effect):
         your_swamp_cnt = len(gs.card_filter.on_player_board(card.owner_id).swamps().result())
         return PTMod(s=source, p_adj=your_swamp_cnt, t_adj=your_swamp_cnt)
 
-class OrcishOriflamme(Effect):
+class OrcishOriflamme(ModRetriever):
     """Attacking creatures you control get +1/+0"""
     modifies = 'pt'
 
@@ -465,7 +465,7 @@ class OrcishOriflamme(Effect):
             return None
         return PTMod(s=source, p_adj=1, expires='EOT')
 
-class PeopleOfTheWoodsPT(Effect):
+class PeopleOfTheWoodsPT(ModRetriever):
     """People of the Woods's toughness is equal to the number of Forests you control"""
     modifies = 'pt'
 
@@ -476,7 +476,7 @@ class PeopleOfTheWoodsPT(Effect):
         your_forest_cnt = len(gs.card_filter.on_player_board(card.owner_id).forests().result())
         return PTMod(s=source, t_adj=your_forest_cnt)
 
-class PietyEOT(Effect):
+class PietyEOT(ModRetriever):
     """This will be called only by Piety(); this effect is stored in GameState and cleared at EOT;
     Blocking creatures get 0/+3 until end of turn"""
     modifies = 'pt'
@@ -488,7 +488,7 @@ class PietyEOT(Effect):
             return None
         return PTMod(s=source, t_adj=3, expires='EOT')
 
-class PlagueRatsPT(Effect):
+class PlagueRatsPT(ModRetriever):
     """Plague Rats' power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
     modifies = 'pt'
 
@@ -499,7 +499,7 @@ class PlagueRatsPT(Effect):
         cnt = len(gs.card_filter.in_play().by_slug('plague-rats').result())
         return PTMod(s=source, p_adj=cnt, t_adj=cnt)
 
-class RabidWombat(Effect):
+class RabidWombat(ModRetriever):
     """This creature gets +2/+2 for each Aura attached to it"""
     modifies = 'pt'
 
@@ -512,7 +512,7 @@ class RabidWombat(Effect):
             return None
         return PTMod(s=source, p_adj=2 * aura_cnt, t_adj=2 * aura_cnt, expires='EOT')
 
-class RohgahhOfKherKeepPump(Effect):
+class RohgahhOfKherKeepPump(ModRetriever):
     """Creatures you control named Kobolds of Kher Keep get +2/+2"""
     modifies = 'pt'
 
@@ -521,7 +521,7 @@ class RohgahhOfKherKeepPump(Effect):
             return None
         return PTMod(s=source, p_adj=2, t_adj=2)
 
-class SedgeTrollPT(Effect):
+class SedgeTrollPT(ModRetriever):
     """Gains +1/+1 if you control a swamp"""
     modifies = 'pt'
 
@@ -531,7 +531,7 @@ class SedgeTrollPT(Effect):
         if gs.card_filter.on_player_board(card.owner_id).swamps().result():
             return PTMod(s=card, p_adj=1, t_adj=1)
 
-class ShieldWallEOT(Effect):
+class ShieldWallEOT(ModRetriever):
     """This will be called only by ShieldWall(); this effect is stored in GameState and cleared at EOT;
     Creatures you control get +0/+2 until end of turn"""
     modifies = 'pt'
@@ -543,7 +543,7 @@ class ShieldWallEOT(Effect):
             return None
         return PTMod(s=source, t_adj=2, expires='EOT')
 
-class SunkenCity(Effect):
+class SunkenCity(ModRetriever):
     modifies = 'pt'
 
     def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
@@ -551,7 +551,7 @@ class SunkenCity(Effect):
             return None
         return PTMod(s=source, p_adj=1, t_adj=1)
 
-class TransmutationEOT(Effect):
+class TransmutationEOT(ModRetriever):
     """Stored in GameState & cleared EOT; how does this class know who the target is?"""
     modifies = 'pt'
 
@@ -562,7 +562,7 @@ class TransmutationEOT(Effect):
         toughness_delta = card.power - card.toughness
         return PTMod(s=source, p_adj=power_delta, t_adj=toughness_delta, expires='EOT')
 
-class WallOfTombstonesPT(Effect):
+class WallOfTombstonesPT(ModRetriever):
     """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""
     modifies = 'pt'
 
@@ -573,7 +573,7 @@ class WallOfTombstonesPT(Effect):
         cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
         return PTMod(s=source, t_adj=1 + cnt)
 
-class WaterWurmPT(Effect):
+class WaterWurmPT(ModRetriever):
     """This creature gets +0/+1 as long as an opponent controls an Island"""
     modifies = 'pt'
 
@@ -584,7 +584,7 @@ class WaterWurmPT(Effect):
         if gs.card_filter.on_player_board(flip(card.owner_id)).islands().result():
             return PTMod(s=card, t_adj=1)
 
-class Weakstone(Effect):
+class Weakstone(ModRetriever):
     """Attacking creatures get -1/-0"""
     modifies = 'pt'
 
@@ -593,7 +593,7 @@ class Weakstone(Effect):
             return None
         return PTMod(s=source, p_adj=-1, expires='EOT')
 
-class ZombieMasterWalk(Effect):
+class ZombieMasterWalk(ModRetriever):
     """Other Zombie creatures gain Swampwalk"""
     modifies = 'kwa'
 

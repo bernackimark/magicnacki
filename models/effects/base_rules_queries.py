@@ -6,11 +6,11 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from models.constants import BASIC_LANDS
-from models.effects.base import Effect
+from models.effects.base import Effect, Querier
 from models.utils import flip
 
 
-class CanBlockRule(Effect):
+class CanBlockRule(Querier):
     query = 'can_block'
 
     def on_query(self, gs: GameState, card: GameCard, **kwargs):
@@ -47,7 +47,7 @@ class CanBlockRule(Effect):
         return None  # no opinion if can_block
 
 
-class CanAttackRule(Effect):
+class CanAttackRule(Querier):
     query = 'can_attack'
 
     def on_query(self, gs: GameState, **kwargs):
@@ -76,7 +76,7 @@ class CanAttackRule(Effect):
 
         return None  # no opinion on whether the card can attack
 
-class CanCastRule(Effect):
+class CanCastRule(Querier):
     query = 'can_cast'
 
     def on_query(self, gs: GameState, **kwargs):
@@ -97,7 +97,7 @@ class CanCastRule(Effect):
 
         return None  # no opinion on whether the cast can be cast
 
-class CanDamageRule(Effect):
+class CanDamageRule(Querier):
     query = 'can_damage'
 
     def on_query(self, gs: GameState, **kwargs):
@@ -114,7 +114,7 @@ class CanDamageRule(Effect):
                 if color_map[color_full_word] in source.colors:
                     return False
 
-class CanTargetRule(Effect):
+class CanTargetRule(Querier):
     query = 'can_target'
 
     def on_query(self, gs: GameState, **kwargs):

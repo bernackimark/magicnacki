@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import LifeLossEvent
 
 if TYPE_CHECKING:
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class AliFromCairo(Effect):
+class AliFromCairo(Listener):
     """Damage that would reduce your life total to less than 1 reduces it to 1 instead"""
     listens_to = LifeLossEvent
 

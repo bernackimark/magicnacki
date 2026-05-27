@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import MINUS_ZERO_TWO
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import TapCardEvent
 
 if TYPE_CHECKING:
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class Blight(Effect):
+class Blight(Listener):
     """Enchant land; When enchanted land becomes tapped, destroy it."""
     listens_to = TapCardEvent
 
@@ -20,7 +20,7 @@ class Blight(Effect):
         gs.destroy(source.host)
 
 
-class WildGrowth(Effect):
+class WildGrowth(Listener):
     """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""
     listens_to = TapCardEvent
 
@@ -30,7 +30,7 @@ class WildGrowth(Effect):
         gs.mana_pools[event.card.owner_id].add_floating('G')
 
 
-class SpiritShackle(Effect):
+class SpiritShackle(Listener):
     """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it"""
     listens_to = TapCardEvent
 
@@ -40,7 +40,7 @@ class SpiritShackle(Effect):
         s.host.counters.add_counter(MINUS_ZERO_TWO)
 
 
-class CityOfBrassDamageOnTap(Effect):
+class CityOfBrassDamageOnTap(Listener):
     """Whenever this land becomes tapped, it deals 1 damage to you"""
     listens_to = TapCardEvent
 
@@ -50,7 +50,7 @@ class CityOfBrassDamageOnTap(Effect):
         gs.apply_damage(source, 1, source.owner_id)
 
 
-class Lifeblood(Effect):
+class Lifeblood(Listener):
     """Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
     listens_to = TapCardEvent
 
@@ -61,7 +61,7 @@ class Lifeblood(Effect):
             gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
 
 
-class Lifetap(Effect):
+class Lifetap(Listener):
     """Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
     listens_to = TapCardEvent
 
@@ -72,7 +72,7 @@ class Lifetap(Effect):
             gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
 
 
-class PsychicVenom(Effect):
+class PsychicVenom(Listener):
     """Whenever enchanted land becomes tapped, this Aura deals 2 damage to that land's controller"""
     listens_to = TapCardEvent
 

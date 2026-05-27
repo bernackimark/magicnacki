@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import DrawStepEvent
 
 if TYPE_CHECKING:
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class HowlingMine(Effect):
+class HowlingMine(Listener):
     """At each player's draw step, if this artifact is untapped, that player draws an additional card"""
     listens_to = DrawStepEvent
 
@@ -19,7 +19,7 @@ class HowlingMine(Effect):
         gs.draw(event.active_player)
 
 
-class ManaVaultDamageIfTapped(Effect):
+class ManaVaultDamageIfTapped(Listener):
     """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
     listens_to = DrawStepEvent
 

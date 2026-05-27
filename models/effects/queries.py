@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-from models.effects.base import Effect
+from models.effects.base import Querier
 from models.utils import flip
 from models.phase_manager import Phase
 
@@ -16,7 +16,7 @@ These all ask for permission to do something.
 
 
 # --- GENERICS ---
-class CantBeTargetedByAuras(Effect):
+class CantBeTargetedByAuras(Querier):
     """Card can't host an aura"""
     query = 'can_target'
 
@@ -27,7 +27,7 @@ class CantBeTargetedByAuras(Effect):
             return
         return False
 
-class HostCantAttack(Effect):
+class HostCantAttack(Querier):
     query = 'can_attack'
 
     def on_query(self, gs: GameState, card: GameCard, **kwargs):
@@ -35,7 +35,7 @@ class HostCantAttack(Effect):
         if source.attached_to is card:
             return False
 
-class HostCantBeTargetedByAuras(Effect):
+class HostCantBeTargetedByAuras(Querier):
     """Host can't host an aura"""
     query = 'can_target'
 
@@ -47,13 +47,13 @@ class HostCantBeTargetedByAuras(Effect):
             return
         return False
 
-class NoAttacksAllowedEOT(Effect):
+class NoAttacksAllowedEOT(Querier):
     query = 'can_attack'
 
     def on_query(self, gs: GameState, card: GameCard, **kwargs):
         return False
 
-class UnblockableEOT(Effect):
+class UnblockableEOT(Querier):
     """Stored in GameState & cleared EOT; target creature can't be blocked this turn"""
     query = 'can_block'
 
@@ -66,7 +66,7 @@ class UnblockableEOT(Effect):
             return None
         return False
 
-class WalkRuleRemoved(Effect):
+class WalkRuleRemoved(Querier):
     """Creatures with a landwalk can be blocked as though they didn't have that landwalk."""
     query = 'can_block'
 
@@ -82,7 +82,7 @@ class WalkRuleRemoved(Effect):
         return True  # a hard-confirm that the block is allowed
 
 # --- CARD-SPECIFIC ---
-class AkronLegionnaire(Effect):
+class AkronLegionnaire(Querier):
     """Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack"""
     query = 'can_attack'
 
@@ -95,7 +95,7 @@ class AkronLegionnaire(Effect):
         if card not in artifact_creatures + akron_legionnaires:
             return False
 
-class AmrouKithkin(Effect):
+class AmrouKithkin(Querier):
     """This creature can't be blocked by creatures with power 3 or greater"""
     query = 'can_block'
 
@@ -107,7 +107,7 @@ class AmrouKithkin(Effect):
         if card.power >= 3:
             return False
 
-class ArtifactWardCanBeBlocked(Effect):
+class ArtifactWardCanBeBlocked(Querier):
     """This creature can't be blocked by artifact creatures"""
     query = 'can_block'
 
@@ -119,7 +119,7 @@ class ArtifactWardCanBeBlocked(Effect):
         if 'Artifact' in card.card_types:
             return False
 
-class ArtifactWardCanBeTargeted(Effect):
+class ArtifactWardCanBeTargeted(Querier):
     """Enchanted creature can't be the target of abilities from artifact sources"""
     query = 'can_target'
 
@@ -131,7 +131,7 @@ class ArtifactWardCanBeTargeted(Effect):
         if 'Artifact' in source.card_types:
             return False
 
-class ArgothianPixiesCanBeBlocked(Effect):
+class ArgothianPixiesCanBeBlocked(Querier):
     """This creature can't be blocked by artifact creatures"""
     query = 'can_block'
 
@@ -143,7 +143,7 @@ class ArgothianPixiesCanBeBlocked(Effect):
         if 'Artifact' in card.props.card_types:
             return False
 
-class BogRats(Effect):
+class BogRats(Querier):
     """This creature can't be blocked by Walls"""
     query = 'can_block'
 
@@ -155,7 +155,7 @@ class BogRats(Effect):
         if 'Wall' in card.card_sub_types:
             return False
 
-class CityInABottle(Effect):
+class CityInABottle(Querier):
     """Players can't cast spells or play lands with a name originally printed in the Arabian Nights expansion"""
     query = 'can_cast'
 
@@ -163,7 +163,7 @@ class CityInABottle(Effect):
         if card in gs.card_filter.by_set_code('AN').result():
             return False
 
-class ElderSpawnCanBeBlocked(Effect):
+class ElderSpawnCanBeBlocked(Querier):
     """This creature can't be blocked by red creatures"""
     query = 'can_block'
 
@@ -175,7 +175,7 @@ class ElderSpawnCanBeBlocked(Effect):
         if 'R' in card.props.colors:
             return False
 
-class ElvenRidersCanBeBlocked(Effect):
+class ElvenRidersCanBeBlocked(Querier):
     """This creature can't be blocked except by Walls and/or creatures with flying"""
     query = 'can_block'
 
@@ -187,7 +187,7 @@ class ElvenRidersCanBeBlocked(Effect):
         if 'Wall' not in card.card_sub_types or 'Flying' not in card.keyword_abilities:
             return False
 
-class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
+class EvilEyeOfOrmsByGoreCanBeBlocked(Querier):
     """Can only be blocked by walls"""
     query = 'can_block'
 
@@ -199,7 +199,7 @@ class EvilEyeOfOrmsByGoreCanBeBlocked(Effect):
         if 'Wall' not in card.card_sub_types:
             return False
 
-class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Effect):
+class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Querier):
     """Non-Eye creatures you control can't attack."""
     query = 'can_attack'
 
@@ -207,7 +207,7 @@ class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Effect):
         if card not in gs.card_filter.on_player_board(card.owner_id).creatures().by_sub_type('Eye').result():
             return False
 
-class Fear(Effect):
+class Fear(Querier):
     """Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)"""
     query = 'can_block'
 
@@ -221,7 +221,7 @@ class Fear(Effect):
         if card not in artifact_creatures + black_creatures:
             return False
 
-class Invisibility(Effect):
+class Invisibility(Querier):
     """Enchanted creature can't be blocked except by Walls"""
     query = 'can_block'
 
@@ -233,7 +233,7 @@ class Invisibility(Effect):
         if 'Wall' not in card.card_sub_types:
             return False
 
-class IronclawOrcs(Effect):
+class IronclawOrcs(Querier):
     """This creature can't block creatures with power 2 or greater"""
     query = 'can_block'
 
@@ -245,7 +245,7 @@ class IronclawOrcs(Effect):
         if attacker.power >= 2:
             return False
 
-class JuggernautUnblockableByWalls(Effect):
+class JuggernautUnblockableByWalls(Querier):
     query = 'can_block'
 
     def on_query(self, gs: GameState, card: GameCard, **kwargs):
@@ -256,7 +256,7 @@ class JuggernautUnblockableByWalls(Effect):
         if card in gs.card_filter.walls().result():
             return False
 
-class LivonyaSilone(Effect):
+class LivonyaSilone(Querier):
     """Legendary landwalk (This creature can't be blocked as long as defending player controls a legendary land.)"""
     query = 'can_block'
 
@@ -268,7 +268,7 @@ class LivonyaSilone(Effect):
         if gs.card_filter.on_player_board(card.owner_id).legendary().lands().result():
             return False
 
-class Meekstone(Effect):
+class Meekstone(Querier):
     """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
     query = 'can_untap'
 
@@ -277,7 +277,7 @@ class Meekstone(Effect):
             return False
         return None
 
-class Moat(Effect):
+class Moat(Querier):
     """Creatures without flying can't attack"""
     query = 'can_attack'
 
@@ -286,7 +286,7 @@ class Moat(Effect):
             return None
         return False
 
-class Seeker(Effect):
+class Seeker(Querier):
     """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
     query = 'can_block'
 
@@ -298,7 +298,7 @@ class Seeker(Effect):
         if 'Artifact' not in card.card_types or 'U' not in card.colors:
             return False
 
-class SirensCallCanCast(Effect):
+class SirensCallCanCast(Querier):
     """Cast this spell only during an opponent's turn, before attackers are declared ..."""
     query = 'can_cast'
 
@@ -308,7 +308,7 @@ class SirensCallCanCast(Effect):
         if gs.phase_mgr.phase >= Phase.DECLARE_ATTACKERS:
             return False
 
-class SpectralCloak(Effect):
+class SpectralCloak(Querier):
     """Enchanted creature has shroud as long as it's untapped. (It can't be the target of spells or abilities.)"""
     query = 'can_target'
 
@@ -319,7 +319,7 @@ class SpectralCloak(Effect):
             return
         return False
 
-class TowerOfCoireallEOT(Effect):
+class TowerOfCoireallEOT(Querier):
     """Stored in GameState & cleared EOT; target creature can't be blocked by Walls this turn"""
     query = 'can_block'
 

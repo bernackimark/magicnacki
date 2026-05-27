@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import CounterType, PIN
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import EndStepEvent
 from models.zone import Zone
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class AddCounterAtEndStep(Effect):
+class AddCounterAtEndStep(Listener):
     """Add counter to target if it is still on the battlefield"""
     listens_to = EndStepEvent
 
@@ -28,7 +28,7 @@ class AddCounterAtEndStep(Effect):
         gs.event_mgr.unregister_specific_effect(self)
 
 
-class ErgRaiders(Effect):
+class ErgRaiders(Listener):
     """At YOUR end step, except for summoning sickness, if this creature didn't attack, 2 damage to you"""
     listens_to = EndStepEvent
 
@@ -39,7 +39,7 @@ class ErgRaiders(Effect):
             gs.apply_damage(s, 2, s.owner_id)
 
 
-class PestilenceEndStep(Effect):
+class PestilenceEndStep(Listener):
     """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""
     listens_to = EndStepEvent
 
@@ -48,7 +48,7 @@ class PestilenceEndStep(Effect):
             gs.destroy(source)
 
 
-class SeasonOfTheWitchEndStep(Effect):
+class SeasonOfTheWitchEndStep(Listener):
     """At YOUR end step, destroy all untapped creatures that didn't attack this turn, except those who 'couldn't'.
     Note: I'm defining 'couldn't' = summoning sickness or has Defender"""
     listens_to = EndStepEvent
@@ -66,7 +66,7 @@ class SeasonOfTheWitchEndStep(Effect):
             gs.destroy(creature)
 
 
-class VoodooDollEndStep(Effect):
+class VoodooDollEndStep(Listener):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
     listens_to = EndStepEvent
 
@@ -80,7 +80,7 @@ class VoodooDollEndStep(Effect):
         gs.destroy(source)
 
 
-class DragonWhelpEndStep(Effect):
+class DragonWhelpEndStep(Listener):
     """If this [pump] ability has been activated 4+ times this turn, sac at end step."""
     listens_to = EndStepEvent
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import StateBasedEvent
 
 if TYPE_CHECKING:
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class GoblinsOfTheFlarg(Effect):
+class GoblinsOfTheFlarg(Listener):
     """When you control a Dwarf, sacrifice this creature"""
     listens_to = StateBasedEvent
 
@@ -21,7 +21,7 @@ class GoblinsOfTheFlarg(Effect):
             gs.destroy(source)
 
 
-class SerendibDjinnNoLands(Effect):
+class SerendibDjinnNoLands(Listener):
     """When you control no lands, sacrifice this creature"""
     listens_to = StateBasedEvent
 

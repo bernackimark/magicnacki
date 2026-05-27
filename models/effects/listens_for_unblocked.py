@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import FloralSpuzzemChoice
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import UnblockedAttackerEvent
 from models.modifiers import PTMod
 from models.utils import flip
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class MerchantShip(Effect):
+class MerchantShip(Listener):
     """Whenever this creature attacks and isn't blocked, you gain 2 life"""
     listens_to = UnblockedAttackerEvent
 
@@ -22,7 +22,7 @@ class MerchantShip(Effect):
         gs.score_mgr.increment_life(s.owner_id, 2, s, gs)
 
 
-class MurkDwellers(Effect):
+class MurkDwellers(Listener):
     """Whenever this creature attacks and isn't blocked, it gets +2/+0 until end of combat"""
     listens_to = UnblockedAttackerEvent
 
@@ -32,7 +32,7 @@ class MurkDwellers(Effect):
         s.modifiers.items.append(PTMod(s=s, p_adj=2, expires='EOT'))
 
 
-class FloralSpuzzem(Effect):
+class FloralSpuzzem(Listener):
     """Whenever this creature walks, you may destroy target opp artifact instead of dealing the combat damage."""
     listens_to = UnblockedAttackerEvent
 

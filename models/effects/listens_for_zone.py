@@ -9,14 +9,14 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-from models.effects.base import Effect
-from models.effects.piles import Steal
+from models.effects.base import Listener
+from models.effects.resolvers_generic import Steal
 from models.events_all import ZoneChangeEvent
 from models.utils import flip
 from models.zone import Zone
 
 
-class StealCardLeaves(Effect):
+class StealCardLeaves(Listener):
     """You control enchanted creature; must return if Control Magic leaves board"""
     listens_to = ZoneChangeEvent
 
@@ -29,7 +29,7 @@ class StealCardLeaves(Effect):
         print('I think I returned control to', flip(host.owner_id))
 
 
-class ReturnToOwnerOnLTB(Effect):
+class ReturnToOwnerOnLTB(Listener):
     """Although the OnwershipMod will be removed upon LTB; need to transfer the stolen GameCard across boards"""
     listens_to = ZoneChangeEvent
 
@@ -46,7 +46,7 @@ class ReturnToOwnerOnLTB(Effect):
                     gs.boards[flip(source.owner_id)].append(c)
 
 
-class CitanulDruid(Effect):
+class CitanulDruid(Listener):
     """Whenever an opponent casts an artifact spell, put a +1/+1 counter on this creature"""
     listens_to = ZoneChangeEvent
 
@@ -56,7 +56,7 @@ class CitanulDruid(Effect):
         source.counters.add_counter(PLUS_ONE)
 
 
-class AnkhOfMishra(Effect):
+class AnkhOfMishra(Listener):
     """Whenever a land enters, this artifact deals 2 damage to that land's controller"""
     listens_to = ZoneChangeEvent
 
@@ -66,7 +66,7 @@ class AnkhOfMishra(Effect):
         gs.apply_damage(source, 2, event.card.owner_id)
 
 
-class DingusEgg(Effect):
+class DingusEgg(Listener):
     """Whenever a land is put into a graveyard from battlefield, deal 2 damage to that land's controller."""
     listens_to = ZoneChangeEvent
 
@@ -76,7 +76,7 @@ class DingusEgg(Effect):
         gs.apply_damage(source, 2, event.card.owner_id)
 
 
-class GoblinShrineOnLeave(Effect):
+class GoblinShrineOnLeave(Listener):
     """... When this Aura leaves the battlefield, it deals 1 damage to each Goblin creature"""
     listens_to = ZoneChangeEvent
 
@@ -87,7 +87,7 @@ class GoblinShrineOnLeave(Effect):
             gs.apply_damage(event.card, 1, goblin)
 
 
-class FieldOfDreams(Effect):
+class FieldOfDreams(Listener):
     """Players play with the top card of their libraries revealed"""
     listens_to = ZoneChangeEvent
 
@@ -99,7 +99,7 @@ class FieldOfDreams(Effect):
             gs.libraries[player_idx][0].reveal()
 
 
-class Revelation(Effect):
+class Revelation(Listener):
     """Players play with their hands revealed"""
     listens_to = ZoneChangeEvent
 
@@ -109,7 +109,7 @@ class Revelation(Effect):
         event.card.reveal()
 
 
-class VerduranEnchantress(Effect):
+class VerduranEnchantress(Listener):
     """Whenever you cast an enchantment spell, you may draw a card"""
     listens_to = ZoneChangeEvent
 
@@ -119,7 +119,7 @@ class VerduranEnchantress(Effect):
         gs.action_stack.push(DrawCardsOrDontChoice(source.owner_id, gs, source), gs, False)
 
 
-class LandEquilibrium(Effect):
+class LandEquilibrium(Listener):
     """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,
     that player instead puts that land onto the battlefield then sacrifices a land of their choice"""
     listens_to = ZoneChangeEvent
@@ -134,7 +134,7 @@ class LandEquilibrium(Effect):
         gs.action_stack.push(SacChoice(event.card.owner_id, gs, source, opp_lands), gs, False)
 
 
-class MoldDemonETB(Effect):
+class MoldDemonETB(Listener):
     """When this creature enters, sacrifice this creature unless you sacrifice two Swamps"""
     listens_to = ZoneChangeEvent
 
@@ -147,7 +147,7 @@ class MoldDemonETB(Effect):
         gs.action_stack.push(MoldDemonChoice(gs.turn_mgr.player_turn_idx, gs, source, your_swamps), gs, False)
 
 
-class StanggOnLeave(Effect):
+class StanggOnLeave(Listener):
     """Exile that Stangg Twin token when Stangg leaves the battlefield; sacrific Stangg when Stangg Twin LTB"""
     listens_to = ZoneChangeEvent
 
@@ -161,7 +161,7 @@ class StanggOnLeave(Effect):
         gs.destroy(other_card)
 
 
-class Kismet(Effect):
+class Kismet(Listener):
     """Artifacts, creatures, and lands your opponents control enter tapped"""
     listens_to = ZoneChangeEvent
 

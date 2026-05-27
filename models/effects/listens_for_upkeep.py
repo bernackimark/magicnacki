@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from models.actions.destroy_sac_regen import DestroyAction, TheAbyssAction
 from models.actions.special import RogahhOfKherKeepTapAndStealAction
 from models.counter_tokens import WIND
-from models.effects.piles import Steal
+from models.effects.resolvers_generic import Steal
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -15,11 +15,11 @@ from models.choice_actions_all import ErhnamDjinnChoice, CurseArtifactUpkeepChoi
     LordOfThePitUpkeepChoice, CosmicHorrorUpkeepChoice, OpponentDestroysLandChoice, DemonicHordesUpkeepChoice, \
     PayManaOrSacUpkeepChoice, ErosionUpkeepChoice, ForceOfNatureUpkeepChoice, SacChoice, PsychicAllergyUpkeepChoice, \
     PayLifeOrSacChoice, LandTaxChoice, CopyCardChoice, CycloneChoice, RogahhOfKherKeepUpkeepChoice, YawgmothDemonChoice
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import UpkeepEvent, Event
 
 
-class ErhnamDjinn(Effect):
+class ErhnamDjinn(Listener):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
     listens_to = UpkeepEvent
 
@@ -29,7 +29,7 @@ class ErhnamDjinn(Effect):
         gs.pending_choice = ErhnamDjinnChoice(s.owner_id, gs, s)
 
 
-class DealDamageToOwnerOnUpkeep(Effect):
+class DealDamageToOwnerOnUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def __init__(self, amount: int):
@@ -41,7 +41,7 @@ class DealDamageToOwnerOnUpkeep(Effect):
         gs.apply_damage(source, self.amount, source.owner_id)
 
 
-class DealDamageOnHostUpkeep(Effect):
+class DealDamageOnHostUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def __init__(self, amount: int):
@@ -53,7 +53,7 @@ class DealDamageOnHostUpkeep(Effect):
         gs.apply_damage(source, self.amount, source.host.owner_id)
 
 
-class BlackVise(Effect):
+class BlackVise(Listener):
     """As opponent's upkeep, this artifact deals X damage to that player, X is = cards in their hand minus 4"""
     listens_to = UpkeepEvent
 
@@ -66,7 +66,7 @@ class BlackVise(Effect):
             gs.apply_damage(s, opp_hand_len - 4, opp_id)
 
 
-class CurseArtifact(Effect):
+class CurseArtifact(Listener):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
     listens_to = UpkeepEvent
 
@@ -76,7 +76,7 @@ class CurseArtifact(Effect):
         gs.action_stack.push(CurseArtifactUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 
-class ElderSpawnUpkeep(Effect):
+class ElderSpawnUpkeep(Listener):
     """At YOUR upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
     listens_to = UpkeepEvent
 
@@ -86,7 +86,7 @@ class ElderSpawnUpkeep(Effect):
         gs.action_stack.push(ElderSpawnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, s), gs, False)
 
 
-class Karma(Effect):
+class Karma(Listener):
     """At each player's upkeep, this enchantment deals damage to that player = number of Swamps they control."""
     listens_to = UpkeepEvent
 
@@ -96,7 +96,7 @@ class Karma(Effect):
             gs.apply_damage(source, swamp_cnt, event.active_player)
 
 
-class LordOfThePitUpkeep(Effect):
+class LordOfThePitUpkeep(Listener):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
     listens_to = UpkeepEvent
 
@@ -110,7 +110,7 @@ class LordOfThePitUpkeep(Effect):
         gs.action_stack.push(choice_obj, gs, False)
 
 
-class PowerSurge(Effect):
+class PowerSurge(Listener):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
         where X is the number of untapped lands they controlled at the beginning of this turn"""
     listens_to = UpkeepEvent
@@ -121,7 +121,7 @@ class PowerSurge(Effect):
             gs.apply_damage(source, len(untapped_lands), gs.turn_mgr.player_turn_idx)
 
 
-class StormWorld(Effect):
+class StormWorld(Listener):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
         where X is 4 minus the number of cards in their hand"""
     listens_to = UpkeepEvent
@@ -132,7 +132,7 @@ class StormWorld(Effect):
             gs.apply_damage(source, card_cnt - 4, gs.turn_mgr.player_turn_idx)
 
 
-class TheRack(Effect):
+class TheRack(Listener):
     """At opponent's upkeep, this artifact deals X damage to that player, X = 3 - len(hand) [X can't be negative]"""
     listens_to = UpkeepEvent
 
@@ -145,7 +145,7 @@ class TheRack(Effect):
             gs.apply_damage(s, 3 - opp_hand_len, opp_id)
 
 
-class CosmicHorror(Effect):
+class CosmicHorror(Listener):
     """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
     listens_to = UpkeepEvent
 
@@ -159,7 +159,7 @@ class CosmicHorror(Effect):
         gs.action_stack.push(CosmicHorrorUpkeepChoice(source.owner_id, gs, source), gs, False)
 
 
-class DemonicHordesUpkeep(Effect):
+class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
     listens_to = UpkeepEvent
 
@@ -178,7 +178,7 @@ class DemonicHordesUpkeep(Effect):
             gs.action_stack.push(DemonicHordesUpkeepChoice(source.owner_id, gs, source), gs, False)
 
 
-class EnergyFlux(Effect):
+class EnergyFlux(Listener):
     """All artifacts have 'At your [the owner's] upkeep, sacrifice this artifact unless you pay {2}'"""
     listens_to = UpkeepEvent
 
@@ -187,7 +187,7 @@ class EnergyFlux(Effect):
             gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, your_artifact, '2'), gs, False)
 
 
-class ErosionUpkeep(Effect):
+class ErosionUpkeep(Listener):
     """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life."""
     listens_to = UpkeepEvent
 
@@ -197,7 +197,7 @@ class ErosionUpkeep(Effect):
         gs.action_stack.push(ErosionUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
 
-class ForceOfNatureUpkeep(Effect):
+class ForceOfNatureUpkeep(Listener):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
     listens_to = UpkeepEvent
 
@@ -207,7 +207,7 @@ class ForceOfNatureUpkeep(Effect):
         gs.action_stack.push(ForceOfNatureUpkeepChoice(s.owner_id, gs, s, 'GGGG', 8), gs, False)
 
 
-class ManaVortexUpkeep(Effect):
+class ManaVortexUpkeep(Listener):
     """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
     listens_to = UpkeepEvent
 
@@ -219,7 +219,7 @@ class ManaVortexUpkeep(Effect):
         gs.action_stack.push(SacChoice(gs.turn_mgr.player_turn_idx, gs, source, your_lands), gs, False)
 
 
-class PsychicAllergyUpkeep(Effect):
+class PsychicAllergyUpkeep(Listener):
     """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
     listens_to = UpkeepEvent
 
@@ -235,7 +235,7 @@ class PsychicAllergyUpkeep(Effect):
             gs.action_stack.push(action, gs, False)
 
 
-class SeasonOfTheWitchUpkeep(Effect):
+class SeasonOfTheWitchUpkeep(Listener):
     """At your upkeep, sacrifice this enchantment unless you pay 2 life"""
     listens_to = UpkeepEvent
 
@@ -245,7 +245,7 @@ class SeasonOfTheWitchUpkeep(Effect):
         gs.action_stack.push(PayLifeOrSacChoice(source.owner_id, gs, source, 2), gs, False)
 
 
-class TheAbyss(Effect):
+class TheAbyss(Listener):
     """At each upkeep, destroy target nonartifact creature that player controls of their choice. No regeneration."""
     listens_to = UpkeepEvent
 
@@ -259,7 +259,7 @@ class TheAbyss(Effect):
         gs.action_stack.push(TheAbyssAction(p_id, gs, source), gs, False)
 
 
-class TheTabernacleAtPendrellVale(Effect):
+class TheTabernacleAtPendrellVale(Listener):
     """All creatures have 'At your upkeep, destroy this creature unless you pay {1}.'"""
     listens_to = UpkeepEvent
 
@@ -268,7 +268,7 @@ class TheTabernacleAtPendrellVale(Effect):
             gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, your_creature, '1'))
 
 
-class LandTax(Effect):
+class LandTax(Listener):
     """At your upkeep, if an opponent controls more lands than you, you may:
     search your library for up to 3 basic land cards, reveal them, put them into your hand, then shuffle"""
     listens_to = UpkeepEvent
@@ -283,7 +283,7 @@ class LandTax(Effect):
         gs.pending_choice = LandTaxChoice(source.owner_id, gs, source)
 
 
-class IvoryTower(Effect):
+class IvoryTower(Listener):
     """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
     listens_to = UpkeepEvent
 
@@ -295,7 +295,7 @@ class IvoryTower(Effect):
             gs.score_mgr.increment_life(p_id, hand_size - 4, source, gs)
 
 
-class SpiritualSanctuary(Effect):
+class SpiritualSanctuary(Listener):
     """At each player's upkeep, if that player controls a Plains, they gain 1 life"""
     listens_to = UpkeepEvent
 
@@ -304,7 +304,7 @@ class SpiritualSanctuary(Effect):
             gs.score_mgr.increment_life(event.active_player, 1, source, gs)
 
 
-class VesuvanDoppelgangerUpkeep(Effect):
+class VesuvanDoppelgangerUpkeep(Listener):
     """You may have this creature enter as a copy of any creature on the battlefield,
     except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
     listens_to = UpkeepEvent
@@ -318,7 +318,7 @@ class VesuvanDoppelgangerUpkeep(Effect):
         gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False)
 
 
-class Cyclone(Effect):
+class Cyclone(Listener):
     """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
     If you pay, Cyclone deals damage = its wind counters to each creature and each player."""
     listens_to = UpkeepEvent
@@ -332,7 +332,7 @@ class Cyclone(Effect):
         gs.action_stack.push(CycloneChoice(source.owner_id, gs, source), gs, False)
 
 
-class RogahhOfKherKeepUpkeep(Effect):
+class RogahhOfKherKeepUpkeep(Listener):
     """... At your upkeep, pay {RRR} or else ..."""
     listens_to = UpkeepEvent
 
@@ -348,7 +348,7 @@ class RogahhOfKherKeepUpkeep(Effect):
             action.play()
 
 
-class YawgmothDemon(Effect):
+class YawgmothDemon(Listener):
     """At your upkeep, Sac an artifact, or tap this creature and it deals 2 damage to you"""
     listens_to = UpkeepEvent
 
@@ -362,7 +362,7 @@ class YawgmothDemon(Effect):
         gs.action_stack.push(YawgmothDemonChoice(source.owner_id, gs, source), gs, False)
 
 
-class GhazbanOgre(Effect):
+class GhazbanOgre(Listener):
     """At your upkeep, if a player has more life than each other player,
     the player with the most life gains control of this creature (assuming "your" = the current controller)"""
     listens_to = UpkeepEvent

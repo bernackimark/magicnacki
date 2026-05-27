@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.actions.draw_discard import DiscardCard
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import DiscardStepEvent, DiscardEvent
 from models.utils import flip
 
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class CursedRackEffect(Effect):
+class CursedRackEffect(Listener):
     """Opponent's maximum hand size is four [at their discard phase]"""
     listens_to = DiscardStepEvent
 

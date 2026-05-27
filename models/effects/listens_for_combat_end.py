@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.base import Effect
+from models.effects.base import Listener
 from models.events_all import CombatEndEvent, BlockEvent
 from models.zone import Zone
 
@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class TimeElementalAttackedOrBlocked(Effect):
+class TimeElementalAttackedOrBlocked(Listener):
     """When this creature attacks or blocks, at end of combat, sacrifice it & it deals 5 damage to you"""
     listens_to = CombatEndEvent
 
@@ -21,7 +21,7 @@ class TimeElementalAttackedOrBlocked(Effect):
         gs.destroy(s)
 
 
-class DestroyAtCombatEnd(Effect):
+class DestroyAtCombatEnd(Listener):
     """Destroys target if it is still on the battlefield; unregisters itself"""
     listens_to = CombatEndEvent
 
