@@ -207,7 +207,7 @@ class GameState:
         if allow_regeneration:
             shield = next(card.modifiers.iter_type(RegenerationMod), None)
             if shield:
-                card.modifiers.items.remove(shield)
+                card.modifiers.remove(shield)
                 card.tapped = True
                 card.damage_received_this_turn = 0
                 self.remove_from_combat(card)

@@ -227,7 +227,7 @@ class Regenerate(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(RegenerationMod(s=source, expires='EOT'))
+        target.modifiers.append(RegenerationMod(s=source, expires='EOT'))
 
 
 class SacAll(Resolver):
@@ -278,10 +278,10 @@ class BecomeCreature(Resolver):
     def resolve(self, gs, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(TypeMod(s=source, add_or_remove='add', card_type='Creature',
+        target.modifiers.append(TypeMod(s=source, add_or_remove='add', card_type='Creature',
                                               expires='EOT' if self.until_eot else None))
         if self.sub_type:
-            target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type,
+            target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type,
                                                      expires='EOT' if self.until_eot else None))
 
 
@@ -293,14 +293,14 @@ class SetColor(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(ColorMod(s=source, expires=self.expires, new_colors=self.color))
+        target.modifiers.append(ColorMod(s=source, expires=self.expires, new_colors=self.color))
 
 
 class AllWalksRemoved(Resolver):
     """Target creature loses all landwalk abilities until end of turn"""
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         for land in ('Island', 'Forest', 'Mountain', 'Swamps', 'Plains'):
-            target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa=f'{land}walk', expires='EOT'))
+            target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa=f'{land}walk', expires='EOT'))
 
 
 class KWAModEffect(Resolver):
@@ -310,7 +310,7 @@ class KWAModEffect(Resolver):
         self.eot = eot
 
     def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
-        target.modifiers.items.append(KWAMod(s=s, add_or_remove=self.add_or_remove, kwa=self.kwa,
+        target.modifiers.append(KWAMod(s=s, add_or_remove=self.add_or_remove, kwa=self.kwa,
                                              expires='EOT' if self.eot else None))
 
 
@@ -359,7 +359,7 @@ class Steal(Resolver):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         original_owner_id = int(target.owner_id)
-        target.modifiers.items.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
+        target.modifiers.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
         target.turn_entered_for_owner = gs.turn_mgr
         if target.zone == Zone.BATTLEFIELD:
             gs.boards[original_owner_id].remove(target)
@@ -401,7 +401,7 @@ class Pump(Resolver):
     def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{s.props.name} needs a target')
-        target.modifiers.items.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj,
+        target.modifiers.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj,
                                             expires='EOT' if self.eot else None))
 
 

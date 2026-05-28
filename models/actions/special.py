@@ -284,7 +284,7 @@ class RogahhOfKherKeepTapAndStealAction(Action):
     def play(self):
         for t in self.targets:
             self.gs.tap_card(t)
-            t.modifiers.items.append(OwnershipMod(flip(self.source.owner_id), s=self.source))
+            t.modifiers.append(OwnershipMod(flip(self.source.owner_id), s=self.source))
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
 

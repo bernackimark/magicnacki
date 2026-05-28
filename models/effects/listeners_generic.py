@@ -122,7 +122,7 @@ class UntapRemovesPumpFromAnotherCard(Listener):
         for c in gs.card_filter.in_play().result():
             for mod in list(c.modifiers):
                 if mod.source is s and isinstance(mod, PTMod):
-                    event.card.modifiers.items.remove(mod)
+                    event.card.modifiers.remove(mod)
 
 
 # --- UNTAP PHASE ---

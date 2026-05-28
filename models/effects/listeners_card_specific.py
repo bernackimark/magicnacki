@@ -35,7 +35,7 @@ class CavePeopleAttackPump(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
         if event.attacker is not s:
             return
-        event.attacker.modifiers.items.append(PTMod(s=s, p_adj=1, t_adj=-2, expires='EOT'))
+        event.attacker.modifiers.append(PTMod(s=s, p_adj=1, t_adj=-2, expires='EOT'))
 
 
 class HasranOgress(Listener):
@@ -106,7 +106,7 @@ class ElderLandWurm(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
         if event.blocker is not s:
             return
-        s.modifiers.items.append(KWAMod(s=s, add_or_remove='remove', kwa='Defender'))
+        s.modifiers.append(KWAMod(s=s, add_or_remove='remove', kwa='Defender'))
 
 
 class GiantShark(Listener):
@@ -122,8 +122,8 @@ class GiantShark(Listener):
         else:
             return
         if other.damage_received_this_turn:
-            s.modifiers.items.append(PTMod(s=s, p_adj=2, expires='EOT'))
-            s.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Trample', expires='EOT'))
+            s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
+            s.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Trample', expires='EOT'))
 
 
 class GlyphOfDoomListener(Listener):
@@ -193,7 +193,7 @@ class Sentinel(Listener):
         else:
             return
         new_t = other.power + 1
-        s.modifiers.items.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
+        s.modifiers.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
 
 
 class Venom(Listener):
@@ -733,7 +733,7 @@ class MurkDwellers(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
         if event.attacker != s:
             return
-        s.modifiers.items.append(PTMod(s=s, p_adj=2, expires='EOT'))
+        s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
 
 
 # --- UNTAP PHASE ---

@@ -82,6 +82,12 @@ class Modifiers:
         """True if any modifiers else False"""
         return bool(self.items)
 
+    def append(self, modifier: Modifier) -> None:
+        self.items.append(modifier)
+
+    def remove(self, modifier: Modifier) -> None:
+        self.items.remove(modifier)
+
     def iter_type(self, mod_type: type[T]) -> Iterator[T]:
         yield from (m for m in self.items if isinstance(m, mod_type))
 

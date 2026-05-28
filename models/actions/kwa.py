@@ -21,7 +21,7 @@ class AddKWA(Action):
         return f'Give {self.ability} to {self.target.props.name}'
 
     def play(self):
-        self.target.modifiers.items.append(KWAMod(s=self.source, add_or_remove='add', kwa=self.ability,
+        self.target.modifiers.append(KWAMod(s=self.source, add_or_remove='add', kwa=self.ability,
                                                   expires='EOT' if self.until_eot else None))
         if self.gs.pending_choice:
             self.gs.pending_choice = None

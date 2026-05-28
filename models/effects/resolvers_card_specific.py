@@ -359,9 +359,9 @@ class EvilPresence(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         sub_types = target.card_sub_types.copy()
-        target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Swamp'))
+        target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Swamp'))
         for sub_type in sub_types:
-            target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
+            target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
 
 
 class PhantasmalTerrain(Resolver):
@@ -373,9 +373,9 @@ class PhantasmalTerrain(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         sub_types = target.card_sub_types.copy()
-        target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.land_type))
+        target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.land_type))
         for sub_type in sub_types:
-            target.modifiers.items.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
+            target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
 
 
 class PrimalClay(Resolver):
@@ -403,9 +403,9 @@ class RapidFire(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
         if not target.rampage_amt:
-            target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Rampage 2', expires='EOT'))
+            target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Rampage 2', expires='EOT'))
 
 
 class SandalsOfAbdallahIslandWalk(Resolver):
@@ -413,7 +413,7 @@ class SandalsOfAbdallahIslandWalk(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Islandwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Islandwalk', expires='EOT'))
 
         temp_effect = SandalsOfAbdallahIfCreatureDies(target_creature=target)
         gs.register_effect_until_eot((temp_effect, source))
@@ -424,7 +424,7 @@ class UrborgLoseFirstStrike(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='First Strike', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='First Strike', expires='EOT'))
 
 
 class UrborgLoseSwampwalk(Resolver):
@@ -432,7 +432,7 @@ class UrborgLoseSwampwalk(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='Swampwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Swampwalk', expires='EOT'))
 
 
 class StreamOfLife(Resolver):
@@ -521,8 +521,8 @@ class BerserkPump(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(PTMod(s=source, p_adj=int(target.power) * 2, expires='EOT'))
-        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+        target.modifiers.append(PTMod(s=source, p_adj=int(target.power) * 2, expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
 
 
 class BloodLust(Resolver):
@@ -532,7 +532,7 @@ class BloodLust(Resolver):
             raise RuntimeError(f'{source.props.name} needs a target')
         new_toughness = max(1, target.toughness - 4)
         toughness_mod = new_toughness - target.toughness
-        target.modifiers.items.append(PTMod(s=source, p_adj=4, t_adj=toughness_mod, expires='EOT'))
+        target.modifiers.append(PTMod(s=source, p_adj=4, t_adj=toughness_mod, expires='EOT'))
 
 
 class BoneFlute(Resolver):
@@ -545,7 +545,7 @@ class GreatDefender(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         """Target creature gets +0/+X until end of turn, where X is its mana value."""
         if target:
-            target.modifiers.items.append(PTMod(s=source, t_adj=target.props.mana_value, expires='EOT'))
+            target.modifiers.append(PTMod(s=source, t_adj=target.props.mana_value, expires='EOT'))
 
 
 class HellSwarm(Resolver):
@@ -565,7 +565,7 @@ class HowlFromBeyond(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if target is not None:
             x = getattr(source, 'variable_x', 0)  # read X chosen when casting
-            target.modifiers.items.append(PTMod(s=source, p_adj=x, expires='EOT'))
+            target.modifiers.append(PTMod(s=source, p_adj=x, expires='EOT'))
 
 
 class LesserWerewolf(Resolver):
@@ -574,7 +574,7 @@ class LesserWerewolf(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if source.power < 1:
             return
-        source.modifiers.items.append(PTMod(s=source, p_adj=-1, expires='EOT'))
+        source.modifiers.append(PTMod(s=source, p_adj=-1, expires='EOT'))
         target.counters.add_counter(MINUS_ZERO_ONE)
 
 
@@ -607,7 +607,7 @@ class SingingTree(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.items.append(PTMod(s=source, p_adj=-target.base_pt[0], expires='EOT'))
+        target.modifiers.append(PTMod(s=source, p_adj=-target.base_pt[0], expires='EOT'))
 
 
 class Transmutation(Resolver):
@@ -650,7 +650,7 @@ class AnimateDead(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         gs.reanimate(target)
-        target.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=0))
+        target.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=0))
 
 
 class BookOfRass(Resolver):
@@ -694,7 +694,7 @@ class CocoonUpkeep(Resolver):
         if not host.counters.get_count(PUPA):
             gs.destroy(source)
             host.counters.add_counter(PLUS_ONE)
-            host.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
+            host.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
             return
         host.counters.remove_counter(PUPA)
 
@@ -717,14 +717,14 @@ class DivineOffering(Resolver):
 class Earthbind(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            target.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='Flying'))
+            target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Flying'))
         if 'Flying' in target.keyword_abilities:
             gs.apply_damage(source, 2, target.owner_id)
 
 
 class ElectricEel(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.items.append(PTMod(s=source, p_adj=2, expires='EOT'))
+        source.modifiers.append(PTMod(s=source, p_adj=2, expires='EOT'))
         gs.apply_damage(source, 1, source.owner_id)
 
 
@@ -797,8 +797,8 @@ class GoblinKing(Resolver):
         targets = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Goblin').result()
         for t in targets:
             if source != t:
-                t.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Mountainwalk'))
-                t.modifiers.items.append(PTMod(s=source, p_adj=1, t_adj=1))
+                t.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Mountainwalk'))
+                t.modifiers.append(PTMod(s=source, p_adj=1, t_adj=1))
 
 
 class Greed(Resolver):
@@ -811,7 +811,7 @@ class GlyphOfDestruction(Resolver):
     """Target blocking Wall you control gets +10/+0 until end of combat.
     Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        t.modifiers.items.append(PTMod(s=s, p_adj=10, expires='EOT'))
+        t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         gs.end_step_funcs.append(lambda gs_, s_, t_: gs.destroy(s))
 
@@ -849,8 +849,8 @@ class KoboldDrillSergeant(Resolver):
         kobolds = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result()
         for k in kobolds:
             if source != k:
-                k.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Trample'))
-                k.modifiers.items.append(PTMod(s=source, p_adj=0, t_adj=1))
+                k.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample'))
+                k.modifiers.append(PTMod(s=source, p_adj=0, t_adj=1))
 
 
 class KryShield(Resolver):
@@ -858,7 +858,7 @@ class KryShield(Resolver):
     That creature gets +0/+X until end of turn, where X is its mana value"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
-        t.modifiers.items.append(PTMod(s=s, t_adj=t.props.mana_value, expires='EOT'))
+        t.modifiers.append(PTMod(s=s, t_adj=t.props.mana_value, expires='EOT'))
 
 
 class LivingArtifactUpkeep(Resolver):
@@ -971,7 +971,7 @@ class StoneGiant(Resolver):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        t.modifiers.items.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
+        t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
         gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(t))
 
 
@@ -980,7 +980,7 @@ class Subdue(Resolver):
     That creature gets +0/+X until end of turn, where X is its mana value."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.damage_preventions.append(PreventNextDamage(s, None, source_card=t, combat_only=True))
-        t.modifiers.items.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
+        t.modifiers.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
 
 
 class SwordsToPlowshares(Resolver):
@@ -1027,22 +1027,22 @@ class Timetwister(Resolver):
 class UrzasAvengerFlying(Resolver):
     """This creature gets -1/-1 and gains your choice of FLYING, first strike, or trample until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Flying', expires='EOT'))
+        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying', expires='EOT'))
 
 
 class UrzasAvengerFirstStrike(Resolver):
     """This creature gets -1/-1 and gains your choice of flying, FIRST STRIKE, or trample until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
+        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
 
 
 class UrzasAvengerTrample(Resolver):
     """This creature gets -1/-1 and gains your choice of flying, first strike, or TRAMPLE until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.items.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
 
 
 class VenarianGoldCast(Resolver):
@@ -1058,8 +1058,8 @@ class VenarianGoldCast(Resolver):
 class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
-        source.modifiers.items.append(PTMod(s=source, p_adj=4, t_adj=-4, expires='EOT'))
-        source.modifiers.items.append(KWAMod(s=source, add_or_remove='remove', kwa='Defender', expires='EOT'))
+        source.modifiers.append(PTMod(s=source, p_adj=4, t_adj=-4, expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Defender', expires='EOT'))
 
 
 class WandOfIth(Resolver):
@@ -1078,8 +1078,8 @@ class WandOfIth(Resolver):
 class Web(Resolver):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            target.modifiers.items.append(PTMod(s=source, p_adj=0, t_adj=2))
-            target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Reach'))
+            target.modifiers.append(PTMod(s=source, p_adj=0, t_adj=2))
+            target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Reach'))
 
 
 class WindsOfChange(Resolver):
@@ -1109,14 +1109,14 @@ class WinterBlast(Resolver):
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Forestwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Forestwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
 
 
 class WormwoodTreefolkSwampwalk(Resolver):
     """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.modifiers.items.append(KWAMod(s=source, add_or_remove='add', kwa='Swampwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Swampwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
 
 

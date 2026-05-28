@@ -49,7 +49,7 @@ class Combat:
             if self._phase_applicable(a, first_strike):
                 if len(self.blockers) > 1 and a.rampage_amt:
                     multiplier = len(self.blockers) - 1
-                    a.modifiers.items.append(
+                    a.modifiers.append(
                         PTMod(s=a, p_adj=a.rampage_amt * multiplier,
                               t_adj=a.rampage_amt * multiplier, expires='EOT')
                     )
