@@ -3,12 +3,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from game_state import GameState
+    from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
 from models.effects.base import ActivatedAbility
 from models.events_all import StateBasedEvent
-from models.game_card.game_card import GameCard
 
 
 @dataclass
@@ -18,20 +17,24 @@ class ActivateAbility(Action):
     x_value: int | None = None
 
     def __repr__(self) -> str:
-        target_text = ''
-        if isinstance(self.target, list):
-            if len(self.target) > 1 and isinstance(self.target[0], GameCard):
-                target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
-            if len(self.target) == 1 and isinstance(self.target[0], GameCard):
-                target_text = ', targeting ' + self.target[0].props.name
-        elif self.target and isinstance(self.target, (list, tuple)) and isinstance(self.target[0], int):
-            target_text = ', targeting Player #' + '& '.join([_ for _ in self.target])
-        elif isinstance(self.target, int):
-            target_text = f', targeting Player #{self.target}'
+        target_text = self._parse_target_text()
         if self.x_value is not None:
             target_text += f", X={self.x_value}"
         return (f"{self.ability.source}: {{{self.x_value or ''}{self.ability.eff_spec.cost}}}: "
                 f"{self.ability.eff_spec.text}{target_text}")
+
+    def _parse_target_text(self) -> str:
+        # handled this way to avoid circular import with game_card.py
+        from models.game_card.game_card import GameCard
+        if isinstance(self.target, list):
+            if len(self.target) > 1 and isinstance(self.target[0], GameCard):
+                return f", targeting {', '.join([c.props.name for c in self.target])}"
+            if len(self.target) == 1 and isinstance(self.target[0], GameCard):
+                return ', targeting ' + self.target[0].props.name
+        elif self.target and isinstance(self.target, (list, tuple)) and isinstance(self.target[0], int):
+            return ', targeting Player #' + '& '.join([_ for _ in self.target])
+        elif isinstance(self.target, int):
+            return f', targeting Player #{self.target}'
 
     def play(self) -> None:
         if self.x_value is not None:

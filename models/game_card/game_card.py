@@ -4,12 +4,12 @@ from uuid import uuid4
 
 if TYPE_CHECKING:
     from game_state import GameState
+    from .card import Card
 
-from card import Card
-from kwa_abilities import get_creature_base_kwas
+from .card_effect_specs import INVOCATIONS
+from .kwa_abilities import get_creature_base_kwas
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec
-from card_effect_specs import INVOCATIONS
 from models.modifiers import Modifiers, ModType
 from models.zone import Zone
 
