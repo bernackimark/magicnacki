@@ -19,7 +19,7 @@ class BattlefieldToGraveyard(Action):
         return f'Move {self.target} to graveyard'
 
     def play(self) -> None:
-        self.gs.move_card(self.target, Zone.GRAVEYARD, cause='legendary_rule')
+        self.gs.pile_mgr.move_card(self.target, Zone.GRAVEYARD, cause='legendary_rule')
         self.gs.pending_choice = None
 
 class HandToBattlefield(Action):
@@ -31,7 +31,7 @@ class HandToBattlefield(Action):
         return f'Move {self.target.props.name} from hand to battlefiend'
 
     def play(self):
-        self.gs.move_card(self.target, Zone.BATTLEFIELD, cause='hand_to_battlefield')
+        self.gs.pile_mgr.move_card(self.target, Zone.BATTLEFIELD, cause='hand_to_battlefield')
         self.gs.action_stack.pop()  # remove choice
 
 class ReorderTopOfLibrary(Action):
@@ -80,7 +80,7 @@ class Tutor(Action):
         return f'Tutor {self.tutored_card.props.name}'
 
     def play(self):
-        self.gs.move_card(self.tutored_card, self.destination)
+        self.gs.pile_mgr.move_card(self.tutored_card, self.destination)
         random.shuffle(self.gs.libraries[self.player_idx])
         self.gs.pending_choice = None
 
@@ -97,7 +97,7 @@ class TutorMultipleCards(Action):
     def play(self):
         print('Library Count Before:', len(self.gs.libraries[self.player_idx]))
         for c in self.tutored_cards:
-            self.gs.move_card(c, self.destination)
+            self.gs.pile_mgr.move_card(c, self.destination)
         random.shuffle(self.gs.libraries[self.player_idx])
         self.gs.pending_choice = None
         print('Library Count After:', len(self.gs.libraries[self.player_idx]))

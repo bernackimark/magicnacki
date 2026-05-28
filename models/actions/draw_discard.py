@@ -15,7 +15,7 @@ class DrawCard(Action):
         return 'Draw a Card'
 
     def play(self) -> None:
-        self.gs.draw(self.player_idx)
+        self.gs.pile_mgr.draw(self.player_idx)
         if len(self.gs.action_stack):
             self.gs.action_stack.pop()
 
@@ -35,7 +35,7 @@ class DiscardCard(Action):
             self.cards = [self.cards]
         for c in self.cards:
             print(f"Discarding {c} from player {self.player_idx}'s hand")
-            self.gs.discard(c)
+            self.gs.pile_mgr.discard(c)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         elif len(self.gs.action_stack):

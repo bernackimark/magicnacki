@@ -58,7 +58,7 @@ class AcceptAction(Action):
 
         # --- if permanent, add card to board, else graveyard ---
         zone = Zone.BATTLEFIELD if card.props.is_permanent else Zone.GRAVEYARD
-        self.gs.move_card(card, zone, cause='cast')
+        self.gs.pile_mgr.move_card(card, zone, cause='cast')
 
         # --- register triggered effects --- is this the best place to do this?, where are static effect being reg'ed?
         from models.game_card.card_effect_specs import INVOCATIONS

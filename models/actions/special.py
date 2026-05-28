@@ -47,7 +47,7 @@ class CopyCard(Action):
         self.s.static_abilities = the_copy.static_abilities
         self.s.triggered_abilities = the_copy.triggered_abilities
         if self.gs.phase_mgr.phase != Phase.UPKEEP:  # hack. Vesuvan Doppel =only card that calls this during upkeep
-            self.gs.cast(self.s)
+            self.gs.pile_mgr.cast(self.s)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         else:
@@ -63,7 +63,7 @@ class DestroyAndForegoCombatDamage(Action):
         return f'Destroy {self.target} & forego combat damage assigned by {self.source.props.name}'
 
     def play(self):
-        self.gs.destroy(self.target)
+        self.gs.pile_mgr.destroy(self.target)
         pnd = PreventNextDamage(self.source, target_player=flip(self.source.owner_id), combat_only=True)
         self.gs.damage_preventions.append(pnd)
         self.gs.action_stack.pop()
@@ -87,7 +87,7 @@ class PayManaToDrawCards(Action):
 
     def play(self):
         self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
-        self.gs.draw(self.player_idx, self.card_cnt)
+        self.gs.pile_mgr.draw(self.player_idx, self.card_cnt)
         self.gs.action_stack.pop()
 
 class RemoveCounterGainLife(Action):
@@ -114,7 +114,7 @@ class SacCreatureAndAddMana(Action):
 
     def play(self):
         # Sacrifice then later apply effect that depends on the creature sacrificed
-        self.gs.destroy(self.creature)
+        self.gs.pile_mgr.destroy(self.creature)
         self.gs.mana_pools[self.gs.turn_mgr.player_turn_idx].add_floating(self.color, self.amt)
         self.gs.action_stack.pop()
 
@@ -126,7 +126,7 @@ class SacTwoIslands(Action):
     def play(self):
         your_islands = self.gs.card_filter.on_player_board(self.s.owner_id).islands().result()
         for island in your_islands[:2]:
-            self.gs.destroy(island)
+            self.gs.pile_mgr.destroy(island)
         self.gs.action_stack.pop()
 
 class SelectXAction(Action):
@@ -188,7 +188,7 @@ class CyclonePayManaPerCounterDealDamage(Action):
     def play(self) -> None:
         self.gs.mana_pools[self.s.owner_id].pay('G' * self.wind_counters)
         for creature in list(self.gs.card_filter.in_play().creatures().result()):
-            self.gs.destroy(creature)
+            self.gs.pile_mgr.destroy(creature)
         for p_id in range(2):
             self.gs.apply_damage(self.s, self.wind_counters, p_id)
         self.gs.action_stack.pop()
@@ -233,7 +233,7 @@ class PrimalClayA(Action):
 
     def play(self) -> None:
         self.s.base_pt = (3, 3)
-        self.gs.cast(self.s)
+        self.gs.pile_mgr.cast(self.s)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
 
@@ -251,7 +251,7 @@ class PrimalClayB(Action):
         kwa = list(self.s._base_kwa)
         kwa.append('Flying')
         self.s._base_kwa = kwa
-        self.gs.cast(self.s)
+        self.gs.pile_mgr.cast(self.s)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
 
@@ -268,7 +268,7 @@ class PrimalClayC(Action):
         kwa = list(self.s._base_kwa)
         kwa.append('Defender')
         self.s._base_kwa = kwa
-        self.gs.cast(self.s)
+        self.gs.pile_mgr.cast(self.s)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
 

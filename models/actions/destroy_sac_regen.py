@@ -34,7 +34,7 @@ class DestroyAction(Action):
         return f'Destroy {self.target.props.name}'
 
     def play(self):
-        self.gs.destroy(self.target, allow_regeneration=self.allow_regen)
+        self.gs.pile_mgr.destroy(self.target, allow_regeneration=self.allow_regen)
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
         if self.gs.pending_choice:
@@ -52,7 +52,7 @@ class Exile(Action):
     def play(self):
         if self.w_damage_amt:
             self.gs.apply_damage(self.source, self.w_damage_amt, self.source.owner_id)
-        self.gs.exile(self.source)
+        self.gs.pile_mgr.exile(self.source)
         self.gs.action_stack.pop()  # remove choice
 
 class Reanimate(Action):
@@ -64,7 +64,7 @@ class Reanimate(Action):
         return f'Reanimate {self.source.props.name}'
 
     def play(self):
-        self.gs.reanimate(self.source)
+        self.gs.pile_mgr.reanimate(self.source)
         self.gs.action_stack.pop()  # remove choice
 
 class Sac(Action):
@@ -79,7 +79,7 @@ class Sac(Action):
     def play(self):
         if self.w_damage_amt:
             self.gs.apply_damage(self.source, self.w_damage_amt, self.source.owner_id)
-        self.gs.destroy(self.source, False)
+        self.gs.pile_mgr.destroy(self.source, False)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         elif len(self.gs.action_stack):
@@ -96,7 +96,7 @@ class SacCards(Action):
 
     def play(self):
         for c in self.cards:
-            self.gs.destroy(c, False)
+            self.gs.pile_mgr.destroy(c, False)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         elif len(self.gs.action_stack):

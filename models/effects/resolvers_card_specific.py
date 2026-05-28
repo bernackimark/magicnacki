@@ -187,7 +187,7 @@ class AshesToAshes(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         for t in target:
-            gs.exile(t)
+            gs.pile_mgr.exile(t)
         gs.apply_damage(source, 5, source.owner_id)
 
 
@@ -197,7 +197,7 @@ class DustToDust(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         for t in target:
-            gs.exile(t)
+            gs.pile_mgr.exile(t)
 
 
 class EaterOfTheDead(Resolver):
@@ -216,13 +216,13 @@ class Millstone(Resolver):
             raise ValueError(f'{source.props.name} needs a player to target')
         for _ in range(2):
             top_card = gs.libraries[target][0]  # Warning: if no cards, this pukes
-            gs.move_card(top_card, Zone.GRAVEYARD, cause='mill')
+            gs.pile_mgr.move_card(top_card, Zone.GRAVEYARD, cause='mill')
 
 
 class BazaarOfBaghdad(Resolver):
     """Draw two cards, then discard three cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.draw(source.owner_id, 2)
+        gs.pile_mgr.draw(source.owner_id, 2)
         gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id, 3, 3)
 
 
@@ -230,7 +230,7 @@ class Braingeyser(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is not None:
             x = getattr(source, 'variable_x', 0)  # read X chosen when casting
-            gs.draw(target, x)
+            gs.pile_mgr.draw(target, x)
 
 
 class DemonicTutor(Resolver):
@@ -256,16 +256,16 @@ class GwendlynDiCorci(Resolver):
         if not cards:
             return
         if len(cards) == 1:
-            gs.discard(cards[0], source)
+            gs.pile_mgr.discard(cards[0], source)
             return
         random_card: GameCard = gs.randomize_event(target, cards)
-        gs.discard(random_card, source)
+        gs.pile_mgr.discard(random_card, source)
 
 
 class JalumTome(Resolver):
     """Draw a card, then discard a card"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.draw(source.owner_id)
+        gs.pile_mgr.draw(source.owner_id)
         gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id)
 
 
@@ -279,11 +279,11 @@ class MindTwist(Resolver):
             return
         if len(opp_cards) <= x:
             for c in opp_cards:
-                gs.discard(c, source)
+                gs.pile_mgr.discard(c, source)
             return
         for _ in range(x):
             random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
-            gs.discard(random_card, source)
+            gs.pile_mgr.discard(random_card, source)
 
 
 class NaturalSelection(Resolver):
@@ -308,10 +308,10 @@ class RagMan(Resolver):
         if not opp_creatures:
             return
         if len(opp_creatures) == 1:
-            gs.discard(opp_creatures[0], source)
+            gs.pile_mgr.discard(opp_creatures[0], source)
             return
         random_card: GameCard = gs.randomize_event(target, opp_creatures)
-        gs.discard(random_card, source)
+        gs.pile_mgr.discard(random_card, source)
 
 
 class Visions(Resolver):
@@ -329,7 +329,7 @@ class WheelOfFortune(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for i in (0, 1):
             [DiscardCard(i, gs, card).play() for card in gs.hands[i].cards]
-            gs.draw(i, 7)
+            gs.pile_mgr.draw(i, 7)
 
 
 class Clone(Resolver):
@@ -497,7 +497,7 @@ class GraveRobbersAA(Resolver):
 class TimeElementalBounce(Resolver):
     """... {2UU}, {T}: Return target unenchanted permanent to its owner's hand"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.bounce(target)
+        gs.pile_mgr.bounce(target)
 
 
 class TriassicEgg(Resolver):
@@ -631,7 +631,7 @@ class AshnodsTransmogrant(Resolver):
 class ActiveVolcano(Resolver):
     """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        gs.bounce(t) if t.props.slug == 'island' else gs.destroy(t)
+        gs.pile_mgr.bounce(t) if t.props.slug == 'island' else gs.pile_mgr.destroy(t)
 
 
 class Amnesia(Resolver):
@@ -642,21 +642,21 @@ class Amnesia(Resolver):
         for c in gs.hands[target].cards[:]:
             c.reveal()
             if 'Land' not in c.card_types:
-                gs.discard(c, source)
+                gs.pile_mgr.discard(c, source)
 
 
 class AnimateDead(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.reanimate(target)
+        gs.pile_mgr.reanimate(target)
         target.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=0))
 
 
 class BookOfRass(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.apply_damage(source, 2, source.owner_id)
-        gs.draw(source.owner_id)
+        gs.pile_mgr.draw(source.owner_id)
 
 
 class BottleOfSuleiman(Resolver):
@@ -680,7 +680,7 @@ class ChaosOrb(Resolver):
             raise ValueError(f'{s.props.name} needs a target')
         result: int = gs.randomize_event(s.owner_id, [1, 2, 3, 4, 5, 6])
         if result <= 4:
-            gs.destroy(t)
+            gs.pile_mgr.destroy(t)
 
 
 class CocoonUpkeep(Resolver):
@@ -692,7 +692,7 @@ class CocoonUpkeep(Resolver):
         if p_id != source.owner_id:
             return
         if not host.counters.get_count(PUPA):
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
             host.counters.add_counter(PLUS_ONE)
             host.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
             return
@@ -702,7 +702,7 @@ class CocoonUpkeep(Resolver):
 class Crumble(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            gs.destroy(target, allow_regeneration=False)
+            gs.pile_mgr.destroy(target, allow_regeneration=False)
             gs.score_mgr.increment_life(target.owner_id, target.props.mana_value, source, gs)
 
 
@@ -710,7 +710,7 @@ class DivineOffering(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f"{source.props.name} needs a target")
-        gs.destroy(target)
+        gs.pile_mgr.destroy(target)
         gs.score_mgr.increment_life(source.owner_id, target.props.mana_value, source, gs)
 
 
@@ -751,7 +751,7 @@ class Fasting(Resolver):
             return
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
         gs.action_stack.push(FastingChoice(source.owner_id, gs, source), gs, False)
 
 
@@ -788,7 +788,7 @@ class Festival(Resolver):
 class FlashFlood(Resolver):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        gs.bounce(t) if t.props.slug == 'mountain' else gs.destroy(t)
+        gs.pile_mgr.bounce(t) if t.props.slug == 'mountain' else gs.pile_mgr.destroy(t)
 
 
 class GoblinKing(Resolver):
@@ -804,7 +804,7 @@ class GoblinKing(Resolver):
 class Greed(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, source.owner_id)
-        gs.draw(source.owner_id)
+        gs.pile_mgr.draw(source.owner_id)
 
 
 class GlyphOfDestruction(Resolver):
@@ -813,7 +813,7 @@ class GlyphOfDestruction(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
         gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
-        gs.end_step_funcs.append(lambda gs_, s_, t_: gs.destroy(s))
+        gs.end_step_funcs.append(lambda gs_, s_, t_: gs.pile_mgr.destroy(s))
 
 
 class HealingSalve(Resolver):
@@ -828,7 +828,7 @@ class HurkylsRecall(Resolver):
         if not target:
             raise ValueError(f"{source.props.name} needs a target player")
         for artifact in gs.card_filter.on_player_board(target).artifacts().result():
-            gs.bounce(artifact)
+            gs.pile_mgr.bounce(artifact)
 
 
 class Inquisition(Resolver):
@@ -891,8 +891,8 @@ class MartyrsCry(Resolver):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for white_creature in gs.card_filter.in_play().white().creatures().result():
-            gs.exile(white_creature)
-            gs.draw(white_creature.owner_id)
+            gs.pile_mgr.exile(white_creature)
+            gs.pile_mgr.draw(white_creature.owner_id)
 
 
 class MazeOfIth(Resolver):
@@ -913,7 +913,7 @@ class Rakalite(Resolver):
             raise RuntimeError(f'{s.props.name} needs a target')
         prevention = PreventNextDamage(s, None, source_card=target)
         gs.damage_preventions.append(prevention)
-        gs.bounce(s)
+        gs.pile_mgr.bounce(s)
 
 
 class ReverseDamage(Resolver):
@@ -939,7 +939,7 @@ class RocketLauncherAA(Resolver):
     """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
-        gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(s))
+        gs.end_step_funcs.append(lambda gs_, s_: gs.pile_mgr.destroy(s))
 
 
 class SacrificeOnCast(Resolver):
@@ -972,7 +972,7 @@ class StoneGiant(Resolver):
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
-        gs.end_step_funcs.append(lambda gs_, s_: gs.destroy(t))
+        gs.end_step_funcs.append(lambda gs_, s_: gs.pile_mgr.destroy(t))
 
 
 class Subdue(Resolver):
@@ -986,7 +986,7 @@ class Subdue(Resolver):
 class SwordsToPlowshares(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            gs.exile(target)  # which is correct?  exile_from_play() or exile()
+            gs.pile_mgr.exile(target)  # which is correct?  exile_from_play() or exile()
             gs.score_mgr.increment_life(target.owner_id, target.power, source, gs)
 
 
@@ -1019,7 +1019,7 @@ class Timetwister(Resolver):
             gs.libraries[p_id].extend(hand_cards)
             gs.libraries[p_id].extend(graveyard_cards)
             random.shuffle(gs.libraries[p_id])
-            gs.draw(p_id, 7)
+            gs.pile_mgr.draw(p_id, 7)
             if p_id == s.owner_id:
                 gs.graveyards[p_id].append(time_twister)
 
@@ -1092,7 +1092,7 @@ class WindsOfChange(Resolver):
             gs.hands[p_id].cards.clear()
             gs.libraries[p_id].extend(hand_cards)
             random.shuffle(gs.libraries[p_id])
-            gs.draw(p_id, len(hand_cards))
+            gs.pile_mgr.draw(p_id, len(hand_cards))
 
 
 class WinterBlast(Resolver):

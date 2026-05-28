@@ -58,7 +58,7 @@ class DestroyAtCombatEnd(Listener):
 
     def on_event(self, gs: GameState, s: GameCard, event: CombatEndEvent):
         if self.target.zone == Zone.BATTLEFIELD:
-            gs.destroy(self.target)
+            gs.pile_mgr.destroy(self.target)
         gs.event_mgr.unregister_specific_effect(self)
 
 

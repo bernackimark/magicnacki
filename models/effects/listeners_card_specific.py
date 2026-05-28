@@ -252,7 +252,7 @@ class TimeElementalAttackedOrBlocked(Listener):
         if s not in gs.card_filter.combatants().result():
             return
         gs.apply_damage(s, 5, s.owner_id)
-        gs.destroy(s)
+        gs.pile_mgr.destroy(s)
 
 
 # --- DAMAGE EVENT ---
@@ -309,10 +309,10 @@ class HypnoticSpecter(Listener):
         if not opp_cards:
             return
         if len(opp_cards) == 1:
-            gs.discard(opp_cards[0], source)
+            gs.pile_mgr.discard(opp_cards[0], source)
             return
         random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
-        gs.discard(random_card, source)
+        gs.pile_mgr.discard(random_card, source)
 
 
 class LivingArtifactOnDamage(Listener):
@@ -338,7 +338,7 @@ class NicolBolas(Listener):
         if not opp_cards:
             return
         for c in opp_cards:
-            gs.discard(c, source)
+            gs.pile_mgr.discard(c, source)
 
 
 class SpiritLink(Listener):
@@ -360,7 +360,7 @@ class AbuJafar(Listener):
             return
         for com in gs.combats:
             for other_combatant in com.get_combatants_against(event.card):
-                gs.destroy(other_combatant, allow_regeneration=False)
+                gs.pile_mgr.destroy(other_combatant, allow_regeneration=False)
 
 
 class CreatureBond(Listener):
@@ -380,7 +380,7 @@ class CyclopeanMummy(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != source:
             return
-        gs.exile(source)
+        gs.pile_mgr.exile(source)
 
 
 class Onulet(Listener):
@@ -427,7 +427,7 @@ class SandalsOfAbdallahIfCreatureDies(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not isinstance(event, DiesEvent) or event.card != self.target_creature:
             return
-        gs.destroy(source)
+        gs.pile_mgr.destroy(source)
 
 
 class SuChi(Listener):
@@ -518,7 +518,7 @@ class HowlingMine(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent):
         if source.is_tapped:
             return
-        gs.draw(event.active_player)
+        gs.pile_mgr.draw(event.active_player)
 
 
 class ManaVaultDamageIfTapped(Listener):
@@ -538,7 +538,7 @@ class DragonWhelpEndStep(Listener):
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
         if len([temp for temp in s.modifiers.items if temp.source is s]) >= 4:
-            gs.destroy(s, allow_regeneration=False)
+            gs.pile_mgr.destroy(s, allow_regeneration=False)
 
 
 class ErgRaiders(Listener):
@@ -558,7 +558,7 @@ class PestilenceEndStep(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
         if not gs.card_filter.creatures().in_play().result():
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
 
 
 class SeasonOfTheWitchEndStep(Listener):
@@ -576,7 +576,7 @@ class SeasonOfTheWitchEndStep(Listener):
                 continue
             if creature.has_summoning_sickness or 'Defender' in creature.keyword_abilities:
                 continue
-            gs.destroy(creature)
+            gs.pile_mgr.destroy(creature)
 
 
 class VoodooDollEndStep(Listener):
@@ -590,7 +590,7 @@ class VoodooDollEndStep(Listener):
             return
         if pin_cnt := source.counters.get_count(PIN) > 0:
             gs.apply_damage(source, pin_cnt, source.owner_id)
-        gs.destroy(source)
+        gs.pile_mgr.destroy(source)
 
 
 # --- LIFE LOSS ---
@@ -618,7 +618,7 @@ class GoblinsOfTheFlarg(Listener):
             return None
 
         if gs.card_filter.on_player_board(source.owner_id).by_sub_type('Dwarf').result():
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
 
 
 class SerendibDjinnNoLands(Listener):
@@ -629,7 +629,7 @@ class SerendibDjinnNoLands(Listener):
         your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
         if not your_lands:
             print(f'Player #{source.owner_id} has no lands, so Serendib Djinn is destroyed')
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
 
 
 # --- TAP EVENT ---
@@ -640,7 +640,7 @@ class Blight(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
         if not source.host or source.props.slug != 'blight' or event.card is not source.host:
             return
-        gs.destroy(source.host)
+        gs.pile_mgr.destroy(source.host)
 
 
 class CityOfBrassDamageOnTap(Listener):
@@ -770,7 +770,7 @@ class CosmicHorror(Listener):
         if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         if not gs.mana_pools[source.owner_id].can_pay('3BBB'):
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
             gs.apply_damage(source, 7, source.owner_id)
             return
         gs.action_stack.push(CosmicHorrorUpkeepChoice(source.owner_id, gs, source), gs, False)
@@ -796,7 +796,7 @@ class Cyclone(Listener):
             return
         source.counters.add_counter(WIND)
         if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
-            gs.destroy(source, False)
+            gs.pile_mgr.destroy(source, False)
         gs.action_stack.push(CycloneChoice(source.owner_id, gs, source), gs, False)
 
 
@@ -812,7 +812,7 @@ class DemonicHordesUpkeep(Listener):
             gs.tap_card(source)
         elif len(your_lands) == 1:
             gs.tap_card(source)
-            gs.destroy(your_lands[0])
+            gs.pile_mgr.destroy(your_lands[0])
         elif not gs.mana_pools[source.owner_id].can_pay('BBB'):
             gs.action_stack.push(OpponentDestroysLandChoice(flip(source.owner_id), gs, source))
         else:
@@ -940,7 +940,7 @@ class ManaVortexUpkeep(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if len(gs.card_filter.lands().in_play().result()) == 0:
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
             return
         your_lands = gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).lands().result()
         gs.action_stack.push(SacChoice(gs.turn_mgr.player_turn_idx, gs, source, your_lands), gs, False)
@@ -966,7 +966,7 @@ class PsychicAllergyUpkeep(Listener):
             return
         your_island_cnt = len([i for i in gs.card_filter.on_player_board(source.owner_id).islands().result()])
         if your_island_cnt < 2:
-            gs.destroy(source)
+            gs.pile_mgr.destroy(source)
             return
         possible_actions = PsychicAllergyUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source).get_actions()
         for action in possible_actions:
@@ -1176,7 +1176,7 @@ class MoldDemonETB(Listener):
             return
         your_swamps = gs.card_filter.on_player_board(source.owner_id).swamps().result()
         if len(your_swamps) < 2:
-            gs.destroy(event.card, False)
+            gs.pile_mgr.destroy(event.card, False)
         gs.action_stack.push(MoldDemonChoice(gs.turn_mgr.player_turn_idx, gs, source, your_swamps), gs, False)
 
 
@@ -1201,7 +1201,7 @@ class StanggOnLeave(Listener):
             return
         other_slug = 'stangg-twin' if event.card.props.slug == 'stangg' else 'stangg'
         other_card = gs.card_filter.on_player_board(event.card.owner_id).by_slug(other_slug).result()[0]
-        gs.destroy(other_card)
+        gs.pile_mgr.destroy(other_card)
 
 
 class VerduranEnchantress(Listener):

@@ -26,17 +26,17 @@ class DiscardAtRandomCost(Cost):
         if not cards:
             return
         if len(cards) == 1:
-            gs.discard(cards[0])
+            gs.pile_mgr.discard(cards[0])
             return
         random_card: GameCard = gs.randomize_event(source.owner_id, cards)
-        gs.discard(random_card)
+        gs.pile_mgr.discard(random_card)
 
 class ExileSelfCost(Cost):
     def can_pay(self, gs, source):
         return source in gs.card_filter.in_play().result()
 
     def pay(self, gs, source):
-        gs.exile(source)
+        gs.pile_mgr.exile(source)
 
 class ManaCost(Cost):
     def __init__(self, cost: str):
@@ -89,7 +89,7 @@ class SacSelfCost(Cost):
         return source in gs.card_filter.in_play().result()
 
     def pay(self, gs, source):
-        gs.destroy(source)
+        gs.pile_mgr.destroy(source)
 
 class SacTwoIslandsCost(Cost):
     def can_pay(self, gs: GameState, source: GameCard):
@@ -98,7 +98,7 @@ class SacTwoIslandsCost(Cost):
     def pay(self, gs, source):
         your_islands = gs.card_filter.on_player_board(source.owner_id).islands().result()
         for island in your_islands[:2]:
-            gs.destroy(island)
+            gs.pile_mgr.destroy(island)
 
 class TapCost(Cost):
     def can_pay(self, gs, source):

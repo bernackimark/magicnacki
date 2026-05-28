@@ -34,7 +34,7 @@ class CastToBoard(Action):
 
         # --- AUTO-ACCEPTING CAST TO BOARD FOR SPEED OF TESTING ---
         print(f"Successfully cast {self.card.props.name}")
-        self.gs.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
+        self.gs.pile_mgr.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
 
         # --- new event/phase-aware registration
         from models.game_card.card_effect_specs import INVOCATIONS

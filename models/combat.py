@@ -98,7 +98,7 @@ class Combat:
         # # Send killed creatures to graveyard
         # for c in self.killed_creatures:
         #     print('BBB')
-        #     self.gs.destroy(c)
+        #     self.gs.pile_mgr.destroy(c)
         #     print('CCC')
 
     def get_combatants_against(self, c: GameCard) -> list[GameCard]:

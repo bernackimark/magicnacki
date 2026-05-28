@@ -47,7 +47,7 @@ class IslandhomeSBR(StateBasedRule):
     def apply(gs: GameState) -> None:
         for creature in gs.card_filter.in_play().has('Islandhome').result():
             if not gs.card_filter.on_player_board(creature.owner_id).islands().result():
-                gs.destroy(creature)
+                gs.pile_mgr.destroy(creature)
 
 class LegendarySBR(StateBasedRule):
     """A state-based action that immediately forces you to choose one and put the other into its owner's graveyard;
@@ -69,8 +69,8 @@ class ZeroToughnessSBR(StateBasedRule):
     def apply(gs: GameState) -> None:
         for creature in gs.card_filter.in_play().creatures().result():
             if creature.damage_received_this_turn >= creature.toughness:
-                print(f'ZeroToughnessSBR calls gs.destroy() for {creature}')
-                gs.destroy(creature)
+                print(f'ZeroToughnessSBR calls gs.pile_mgr.destroy() for {creature}')
+                gs.pile_mgr.destroy(creature)
 
 
 STATE_BASED_RULES = (GameOverSBR, IslandhomeSBR, LegendarySBR, ZeroToughnessSBR)

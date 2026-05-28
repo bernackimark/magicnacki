@@ -102,7 +102,7 @@ class DrawPhase(PhaseState):
     def on_enter(self, gs: GameState) -> None:
         from models.events_all import DrawStepEvent
         gs.event_mgr.emit(DrawStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
-        gs.draw(gs.turn_mgr.player_turn_idx)
+        gs.pile_mgr.draw(gs.turn_mgr.player_turn_idx)
 
     def get_actions(self, p_id: int, gs: GameState):
         return None  # draw is automatic

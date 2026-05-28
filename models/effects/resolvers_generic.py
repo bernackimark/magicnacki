@@ -189,7 +189,7 @@ class Destroy(Resolver):
         self.allow_regen = allow_regen
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.destroy(target, allow_regeneration=self.allow_regen)
+        gs.pile_mgr.destroy(target, allow_regeneration=self.allow_regen)
 
 
 class DestroyAll(Resolver):
@@ -199,20 +199,20 @@ class DestroyAll(Resolver):
 
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         for c in self.card_filter_func(gs, s):
-            gs.destroy(c, allow_regeneration=self.allow_regen)
+            gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
 
 
 class DestroyIfItAttacked(Resolver):
     """Destroy creature if it attacked this turn."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         for t in gs.card_filter.attackers().result():
-            gs.destroy(t)
+            gs.pile_mgr.destroy(t)
 
 
 class ExileAllCreatures(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for c in gs.card_filter.in_play().creatures().result():
-            gs.exile(c)
+            gs.pile_mgr.exile(c)
 
 
 class PayManaOrSac(Resolver):
@@ -236,7 +236,7 @@ class SacAll(Resolver):
 
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         for c in self.card_filter_func(gs, s):
-            gs.destroy(c, allow_regeneration=False)
+            gs.pile_mgr.destroy(c, allow_regeneration=False)
 
 
 class DrawCards(Resolver):
@@ -246,7 +246,7 @@ class DrawCards(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
         if target is None:
             return
-        gs.draw(target, self.card_cnt)
+        gs.pile_mgr.draw(target, self.card_cnt)
 
 
 class Discard(Resolver):
@@ -340,14 +340,14 @@ class Bounce(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gs.bounce(target)
+        gs.pile_mgr.bounce(target)
 
 
 class Reanimate(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gs.reanimate(target)
+        gs.pile_mgr.reanimate(target)
 
 
 class Steal(Resolver):
@@ -365,7 +365,7 @@ class Steal(Resolver):
             gs.boards[original_owner_id].remove(target)
             gs.boards[source.owner_id].append(target)
         else:
-            gs.move_card(target, self.new_zone, cause='steal')
+            gs.pile_mgr.move_card(target, self.new_zone, cause='steal')
         gs.event_mgr.emit(StateBasedEvent(), gs)
 
 
@@ -373,7 +373,7 @@ class GraveyardToExile(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gs.exile(target)
+        gs.pile_mgr.exile(target)
 
 
 class GraveyardToExileInItsEntirety(Resolver):
@@ -384,12 +384,12 @@ class GraveyardToExileInItsEntirety(Resolver):
         gy = gs.graveyards[target][:]
         gs.graveyards[target].clear()
         for card in gy:
-            gs.exile(card)
+            gs.pile_mgr.exile(card)
 
 
 class HandToBoard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.cast(source)
+        gs.pile_mgr.cast(source)
 
 
 class Pump(Resolver):
@@ -429,7 +429,7 @@ class RemoveHostAuras(Resolver):
             raise RuntimeError(f'{source.props.name} needs a target')
         for aura in list(target.auras):
             gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self)
-            gs.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
+            gs.pile_mgr.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
             gs.event_mgr.unregister_effects(aura)
 
 
