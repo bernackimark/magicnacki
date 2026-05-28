@@ -3,7 +3,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import Iterator, Any
 
-from kwa_abilities import CREATURE_KW_ABILITIES
+from .kwa_abilities import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
 from models.constants import BASIC_LANDS
 from models.utils import str_to_int
@@ -81,10 +81,10 @@ class Card:
 @dataclass
 class CardUniverse:
     set_codes: list[str]
-    file_path: str = Path(__file__).resolve().parents[1] / "gatherer-scryfall" / "card_data.json"
+    file_path: str = Path(__file__).resolve().parent / "card_data.json"
     cards: list[Card] = field(default_factory=list)
     all_cards_dict: dict = field(default=dict)  # bypasses set_codes and always pulls entire card_data.json file
-    token_file_path: str = Path(__file__).resolve().parents[1] / "gatherer" / "tokens.json"
+    token_file_path: str = Path(__file__).resolve().parent / "tokens.json"
     token_cards: dict[str: Card] = field(default_factory=list)
 
     def __post_init__(self):
@@ -129,6 +129,16 @@ class CardUniverse:
         keywords.append('First Strike')
         return keywords
 
+    @staticmethod
+    def _update_rampage_amt(keywords: list[str | None], oracle_text: str) -> list[str | None]:
+        if 'Rampage' not in keywords:
+            return keywords
+        rampage_amt_str_idx = oracle_text.index('Rampage ') + 8
+        rampage_amt = oracle_text[rampage_amt_str_idx:rampage_amt_str_idx + 1]
+        keywords.remove('Rampage')
+        keywords.append(f'Rampage {rampage_amt}')
+        return keywords
+
     def create_card_universe_from_json(self) -> list[Card]:
         self.all_cards_dict: dict = read_json_file(self.file_path)
 
@@ -146,6 +156,7 @@ class CardUniverse:
             del card_dict['card_type']  # single string, replaced by three separate attributes
             card_dict['keywords'] = self._update_protection_kwa(card_dict['keywords'], card_dict['oracle_text'])
             card_dict['keywords'] = self._capitalize_first_strike(card_dict['keywords'])
+            card_dict['keywords'] = self._update_rampage_amt(card_dict['keywords'], card_dict['oracle_text'])
             card = Card(**card_dict)
             cards.append(card)
 
