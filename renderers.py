@@ -28,12 +28,12 @@ class ConsoleRenderer(Renderer):
         opp_idx = 1 if gs.action_on_idx == 0 else 0
         print()
         print(f"{players[p_idx].name}'s turn; {players[action_idx].name}'s action; current phase: {gs.phase_mgr.phase.name}; current life: {gs.score_mgr.life}")
-        print(f"Their hand: {['*' if not c.is_face_up else c for c in gs.hands[opp_idx].cards]}")
-        print(f"Their board: {[c for c in gs.boards[opp_idx] if not c.props.is_aura]}")
+        print(f"Their hand: {['*' if not c.is_face_up else c for c in gs.pile_mgr.hands[opp_idx].cards]}")
+        print(f"Their board: {[c for c in gs.pile_mgr.boards[opp_idx] if not c.props.is_aura]}")
         print(f"Combats: {gs.combats}")
-        print(f"Board: {[c for c in gs.boards[action_idx] if not c.props.is_aura]}")
+        print(f"Board: {[c for c in gs.pile_mgr.boards[action_idx] if not c.props.is_aura]}")
         reprs = []
-        for c in gs.hands[action_idx].cards:
+        for c in gs.pile_mgr.hands[action_idx].cards:
             if c.props.is_creature:
                 repr_ = f"{c.props.name} ({c.casting_cost}) ({c.base_pt[0]}/{c.base_pt[1]})"
             elif c.casting_cost:

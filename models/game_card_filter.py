@@ -19,23 +19,23 @@ class CardFilter:
 
     # --- in what pile, card is located ---
     def in_player_hand(self, p_id: int):
-        self._cards = self._gs.hands[p_id].cards
+        self._cards = self._gs.pile_mgr.hands[p_id].cards
         return self
 
     def in_play(self):
-        self._cards = [c for b in self._gs.boards for c in b]
+        self._cards = [c for b in self._gs.pile_mgr.boards for c in b]
         return self
 
     def on_player_board(self, p_id: int):
-        self._cards = [c for c in self._gs.boards[p_id]]
+        self._cards = [c for c in self._gs.pile_mgr.boards[p_id]]
         return self
 
     def in_graveyards(self):
-        self._cards = [c for g in self._gs.graveyards for c in g]
+        self._cards = [c for g in self._gs.pile_mgr.graveyards for c in g]
         return self
 
     def in_player_graveyard(self, p_id: int):
-        self._cards = [_ for _ in self._gs.graveyards[p_id]]
+        self._cards = [_ for _ in self._gs.pile_mgr.graveyards[p_id]]
         return self
 
     # --- by slug ---

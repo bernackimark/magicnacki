@@ -41,7 +41,7 @@ class MulliganChoice(ChoiceAction):
             return 7
 
     def is_all_or_no_lands(self) -> bool:
-        hand = self.gs.hands[self.player_idx].cards
+        hand = self.gs.pile_mgr.hands[self.player_idx].cards
         lands = [c for c in hand if c.props.is_land]
         return len(lands) in (0, len(hand))
 
@@ -69,7 +69,7 @@ class BottomChoice(ChoiceAction):
         if len(self.selected) == self.bottom_cnt:
             return [FinishBottoming(self.player_idx, self.gs, self)]
 
-        hand_cards = self.gs.hands[self.player_idx].cards
+        hand_cards = self.gs.pile_mgr.hands[self.player_idx].cards
         return [BottomFromHand(self.player_idx, self.gs, self, c) for c in hand_cards if c not in self.selected]
 
 @dataclass
@@ -92,8 +92,8 @@ class TakeMulligan(Action):
 
     def play(self):
         self.choice.mulligans_taken += 1
-        self.gs.libraries[self.player_idx].extend(self.gs.hands[self.player_idx].cards)
-        self.gs.hands[self.player_idx].cards.clear()
+        self.gs.pile_mgr.libraries[self.player_idx].extend(self.gs.pile_mgr.hands[self.player_idx].cards)
+        self.gs.pile_mgr.hands[self.player_idx].cards.clear()
         self.gs.pile_mgr.draw(self.player_idx, self.choice.get_card_cnt_to_be_drawn())
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
@@ -106,8 +106,8 @@ class TakeGentlemensMulligan(Action):
         return "Take Gentlemen's Mulligan"
 
     def play(self):
-        self.gs.libraries[self.player_idx].extend(self.gs.hands[self.player_idx].cards)
-        self.gs.hands[self.player_idx].cards.clear()
+        self.gs.pile_mgr.libraries[self.player_idx].extend(self.gs.pile_mgr.hands[self.player_idx].cards)
+        self.gs.pile_mgr.hands[self.player_idx].cards.clear()
         self.gs.pile_mgr.draw(self.player_idx, self.choice.get_card_cnt_to_be_drawn())
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
@@ -137,8 +137,8 @@ class FinishBottoming(Action):
 
     def play(self):
         for card in self.choice.selected:
-            self.gs.hands[self.player_idx].cards.remove(card)
-            self.gs.libraries[self.player_idx].append(card)
+            self.gs.pile_mgr.hands[self.player_idx].cards.remove(card)
+            self.gs.pile_mgr.libraries[self.player_idx].append(card)
         self.gs.pending_choice = None
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()

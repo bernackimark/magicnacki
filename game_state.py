@@ -20,7 +20,6 @@ from models.events_all import TapCardEvent, UntapCardEvent, DamageResolvedEvent,
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
-from models.hand import Hand
 from models.mana import ManaPool
 from models.mulligan import MulliganChoice
 from models.pile_manager import PileManager
@@ -33,8 +32,8 @@ from models.phase_manager import PhaseManager
 
 class GameState:
     """All-knowing class responsible for everything after a new game is created;
-    registers effects, emits events, runs queries;
-    stores card piles & moves cards; contains stack & pending choice"""
+    delegates like logic to helper classes (PhaseManager, PileManager, etc.);
+    contains stack & pending choice; gets available actions"""
     def __init__(self, player_cnt: int, player_turn_idx: int, rules: dict, cards: list[list[GameCard]],
                  tokens: dict[str, Card]):
         # assign all arguments to attributes
@@ -43,27 +42,18 @@ class GameState:
         self.tokens = tokens
         self.all_player_cards = cards.copy()
 
+        self.event_mgr = EventManager()  # houses, emits, registers, unregisters Listener(Effect)
+        self.phase_mgr = PhaseManager()
+        self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
+        self.query_mgr = QueryManager(self)  # handles effects that are Querier(Effect)
         self.score_mgr = ScoreManager()  # manages life & poison
 
         # action, turn, phase (game flow) concepts; not sure self.turn is being used
-        self.turn_mgr: TurnManager = TurnManager(self.player_cnt, player_turn_idx)
-
+        self.turn_mgr = TurnManager(self.player_cnt, player_turn_idx)
         self.action_on_idx: int = self.turn_mgr.player_turn_idx
-        self.phase_mgr = PhaseManager()
 
-        # piles, combats, mana pools
-        self.libraries: list[list[GameCard]] = cards.copy()
-        self.boards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
-        self.graveyards: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
-        self.exiles: list[list[GameCard]] = [[] for _ in range(self.player_cnt)]
-        self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self.player_cnt)]
         self.combats: list[Combat] = []
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
-
-        # GameCard getting reference to GameState is a ChatGPT suggestion
-        for lib in self.libraries:
-            for c in lib:
-                c.game_state = self
 
         self.action_stack = ActionStack()
 
@@ -82,19 +72,6 @@ class GameState:
         self.damage_preventions: list[PreventNextDamage] = []
         self.end_step_funcs: list[Callable] = []
         self.cards_that_died_this_turn: list[GameCard] = []
-
-        # emits, registers, unregisters Effect that implement on_event()
-        self.event_mgr = EventManager()
-
-        # returns booleans whether something is acceptable (ex: can_attack(card))
-        self.query_mgr = QueryManager(self)
-
-        # handles pile movements (destroy, bounce, etc)
-        self.pile_mgr = PileManager(self)
-
-        for i in range(self.player_cnt):
-            random.shuffle(self.libraries[i])
-            self.pile_mgr.draw(i, 7)
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx,
@@ -121,9 +98,9 @@ class GameState:
     @property
     def all_cards(self) -> list[GameCard]:
         """Returns all cards, including tokens"""
-        return ([c for lib in self.libraries for c in lib] + [c for h in self.hands for c in h.cards] +
-                [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
-                [c for b in self.boards for c in b])
+        return ([c for lib in self.pile_mgr.libraries for c in lib] + [c for h in self.pile_mgr.hands for c in h.cards] +
+                [c for g in self.pile_mgr.graveyards for c in g] + [c for e in self.pile_mgr.exiles for c in e] +
+                [c for b in self.pile_mgr.boards for c in b])
 
     # --- DAMAGE ---
     def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
@@ -216,7 +193,7 @@ class GameState:
     def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness;
         if a card has an optional untap, check if player has already decided to leave a card tapped"""
-        for c in self.boards[self.turn_mgr.player_turn_idx]:
+        for c in self.pile_mgr.boards[self.turn_mgr.player_turn_idx]:
             if not c.is_tapped:
                 continue
 
@@ -275,7 +252,7 @@ class GameState:
 
     def add_activated_abilities_from_board(self) -> list[ActivateAbility] | list[None]:
         actions: list[ActivateAbility] = []
-        for card in self.boards[self.action_on_idx]:
+        for card in self.pile_mgr.boards[self.action_on_idx]:
             actions.extend(self.get_available_activated_abilities(card))
 
         return actions
@@ -293,7 +270,7 @@ class GameState:
         actions: list[Action] = []
         p_id = self.action_on_idx
 
-        for c in self.hands[self.action_on_idx].cards:
+        for c in self.pile_mgr.hands[self.action_on_idx].cards:
             if not self.query_mgr.can_cast(c, p_id):
                 continue
 
@@ -354,7 +331,7 @@ class GameState:
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
             available_actions: list[Action] = []
-            hand = self.hands[p_id]
+            hand = self.pile_mgr.hands[p_id]
             if isinstance(self.action_stack.last_action, ChoiceAction):
                 return self.action_stack.last_action.get_actions()
 

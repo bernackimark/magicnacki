@@ -264,7 +264,7 @@ class RevealLibrary(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         if self.viewer_id is None:
             self.viewer_id = source.owner_id
-        cards = gs.libraries[source.owner_id] if not self.top_x else gs.libraries[source.owner_id][:self.top_x]
+        cards = gs.pile_mgr.libraries[source.owner_id] if not self.top_x else gs.pile_mgr.libraries[source.owner_id][:self.top_x]
         gs.add_presentation_request(self.viewer_id, 'view_library', {'cards': cards})
 
 
@@ -362,8 +362,8 @@ class Steal(Resolver):
         target.modifiers.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
         target.turn_entered_for_owner = gs.turn_mgr
         if target.zone == Zone.BATTLEFIELD:
-            gs.boards[original_owner_id].remove(target)
-            gs.boards[source.owner_id].append(target)
+            gs.pile_mgr.boards[original_owner_id].remove(target)
+            gs.pile_mgr.boards[source.owner_id].append(target)
         else:
             gs.pile_mgr.move_card(target, self.new_zone, cause='steal')
         gs.event_mgr.emit(StateBasedEvent(), gs)
@@ -381,8 +381,8 @@ class GraveyardToExileInItsEntirety(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gy = gs.graveyards[target][:]
-        gs.graveyards[target].clear()
+        gy = gs.pile_mgr.graveyards[target][:]
+        gs.pile_mgr.graveyards[target].clear()
         for card in gy:
             gs.pile_mgr.exile(card)
 
@@ -419,7 +419,7 @@ class CreateTokenCreature(Resolver):
         game_card = GameCard(card, source.owner_id, is_token=True)
         game_card.zone = Zone.BATTLEFIELD
         game_card.game_state = gs
-        gs.boards[source.owner_id].append(game_card)
+        gs.pile_mgr.boards[source.owner_id].append(game_card)
 
 
 class RemoveHostAuras(Resolver):

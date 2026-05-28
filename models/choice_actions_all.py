@@ -88,7 +88,7 @@ class DiscardChoice(ChoiceAction):
         """Discard entire hand if hand size is <= the minimum discard count requirement;
         else, if there are options, present every combination of cards back to the user"""
         print('BB')
-        cards = self.gs.hands[self.discarding_p_id].cards
+        cards = self.gs.pile_mgr.hands[self.discarding_p_id].cards
         if len(cards) <= self.min_cnt:
             for c in cards[:]:
                 cards.remove(c)
@@ -389,7 +389,7 @@ class LandTaxChoice(ChoiceAction):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        basic_lands = [c for c in self.gs.libraries[self.player_idx] if c.props.is_basic_land]
+        basic_lands = [c for c in self.gs.pile_mgr.libraries[self.player_idx] if c.props.is_basic_land]
         combo_set = {combo for r in range(1, 4) for combo in combinations(basic_lands, r)}
         # TODO: combo_set was 833 items -- should have been about 11 combos; it's because each card is unique, but i care about unique slugs
         return [TutorMultipleCards(self.player_idx, self.gs, list(combo), Zone.HAND) for combo in combo_set]
@@ -433,7 +433,7 @@ class NaturalSelectionChoice(ChoiceAction):
         self.top_3_cards = top_3_cards
 
     def get_actions(self) -> list[Action]:
-        a0 = Shuffle(self.player_idx, self.gs, self.gs.libraries[self.library_id])
+        a0 = Shuffle(self.player_idx, self.gs, self.gs.pile_mgr.libraries[self.library_id])
         c1, c2, c3 = self.top_3_cards
         a1 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c1, c2, c3])
         a2 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c1, c3, c2])
@@ -521,10 +521,10 @@ class TriassicEggChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         actions = []
-        for card_in_hand in self.gs.hands[self.source.owner_id].cards:
+        for card_in_hand in self.gs.pile_mgr.hands[self.source.owner_id].cards:
             if card_in_hand.is_creature:
                 actions.append(HandToBattlefield(self.player_idx, self.gs, card_in_hand))
-        for card_in_graveyard in self.gs.graveyards[self.source.owner_id]:
+        for card_in_graveyard in self.gs.pile_mgr.graveyards[self.source.owner_id]:
             if card_in_graveyard.is_creature:
                 actions.append(Reanimate(self.player_idx, self.gs, card_in_graveyard))
         return actions

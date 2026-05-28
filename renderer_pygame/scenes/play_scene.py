@@ -167,7 +167,7 @@ class PlayScene(Scene):
     def draw_hand(self, p_idx: int, col: int, row: int, face_down: bool, is_opp: bool):
         """Opponent hand is a straight line atop screen; player hand is fanned along an invisible arc"""
         mouse_pos = pg.mouse.get_pos()
-        cards = self.state.hands[p_idx].cards
+        cards = self.state.pile_mgr.hands[p_idx].cards
         if not len(cards):
             return
 
@@ -201,7 +201,7 @@ class PlayScene(Scene):
         seen = self.seen_on_battlefield.copy()
         basic_lands_seen = []
 
-        for i, c in enumerate(self.state.boards[p_id]):
+        for i, c in enumerate(self.state.pile_mgr.boards[p_id]):
             full_surf = next(surf for key, surf in self.game.images[c.props.slug].items() if 'border_crop' in key)
             art_surf = next(surf for key, surf in self.game.images[c.props.slug].items() if 'art_crop' in key)
             pg_card = PGCard(c, full_surf, art_surf, i)
@@ -227,29 +227,29 @@ class PlayScene(Scene):
                 self.hovered_card = pg_card
 
     def draw_graveyard(self, p_idx: int, x: int, y: int):
-        if not self.state.graveyards[p_idx]:
+        if not self.state.pile_mgr.graveyards[p_idx]:
             rect = pg.Rect(x, y, CARD_W, CARD_H)
             pg.draw.rect(self.game.screen, (120, 120, 120), rect)
             return
 
-        top_card = self.state.graveyards[p_idx][-1]
+        top_card = self.state.pile_mgr.graveyards[p_idx][-1]
         full_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'border_crop' in key)
         art_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'art_crop' in key)
         pg_card = PGCard(top_card, full_surf, art_surf, 0)
         pg_card.draw(self.game.screen, x, y, full_or_art='art')
 
     def draw_exile(self, p_idx: int, x, y):
-        if not self.state.exiles[p_idx]:
+        if not self.state.pile_mgr.exiles[p_idx]:
             return
 
-        top_card = self.state.exiles[p_idx][-1]
+        top_card = self.state.pile_mgr.exiles[p_idx][-1]
         full_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'border_crop' in key)
         art_surf = next(surf for key, surf in self.game.images[top_card.props.slug].items() if 'art_crop' in key)
         pg_card = PGCard(top_card, full_surf, art_surf, 0)
         pg_card.draw(self.game.screen, x, y, rotation_angle=-90, full_or_art='art')
 
     def draw_library(self, p_id: int, x: int, y: int):
-        card_cnt = len(self.state.libraries[p_id])
+        card_cnt = len(self.state.pile_mgr.libraries[p_id])
         if not card_cnt:
             return
         card_back_surf = pg.transform.smoothscale(CARD_BACK_IMG, (CARD_W, CARD_H))

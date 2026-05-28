@@ -19,10 +19,10 @@ class Cost(ABC):
 
 class DiscardAtRandomCost(Cost):
     def can_pay(self, gs: GameState, source: GameCard):
-        return len(gs.hands[source.owner_id].cards) > 0
+        return len(gs.pile_mgr.hands[source.owner_id].cards) > 0
 
     def pay(self, gs: GameState, source: GameCard):
-        cards = gs.hands[source.owner_id].cards
+        cards = gs.pile_mgr.hands[source.owner_id].cards
         if not cards:
             return
         if len(cards) == 1:

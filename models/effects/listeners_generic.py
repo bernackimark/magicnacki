@@ -105,12 +105,12 @@ class ReturnToOwnerOnUntap(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapCardEvent):
         if source is not event.card:
             return
-        for c in gs.boards[source.owner_id]:
+        for c in gs.pile_mgr.boards[source.owner_id]:
             for mod in c.auras:
                 if isinstance(mod, OwnershipMod):
                     c.modifiers.remove(mod)
-                    gs.boards[source.owner_id].remove(c)
-                    gs.boards[flip(source.owner_id)].append(c)
+                    gs.pile_mgr.boards[source.owner_id].remove(c)
+                    gs.pile_mgr.boards[flip(source.owner_id)].append(c)
                     break
 
 class UntapRemovesPumpFromAnotherCard(Listener):
@@ -183,11 +183,11 @@ class ReturnToOwnerOnLTB(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
         if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
             return
-        for c in gs.boards[source.owner_id]:
+        for c in gs.pile_mgr.boards[source.owner_id]:
             for mod in c.auras:
                 if isinstance(mod, OwnershipMod):
-                    gs.boards[source.owner_id].remove(c)
-                    gs.boards[flip(source.owner_id)].append(c)
+                    gs.pile_mgr.boards[source.owner_id].remove(c)
+                    gs.pile_mgr.boards[flip(source.owner_id)].append(c)
 
 
 class StealCardLeaves(Listener):

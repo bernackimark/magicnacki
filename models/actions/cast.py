@@ -122,7 +122,7 @@ class CastCounter(Action):
 
     def play(self) -> None:
         self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
-        hand = self.gs.hands[self.player_idx]
+        hand = self.gs.pile_mgr.hands[self.player_idx]
         hand.cards.remove(self.card)
         self.gs.action_stack.push(self, self.gs)
 

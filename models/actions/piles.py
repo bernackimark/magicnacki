@@ -45,7 +45,7 @@ class ReorderTopOfLibrary(Action):
 
     def play(self) -> None:
         """Delete the top x cards; iterate over cards_in_order back to front, placing each at position 0"""
-        lib = self.gs.libraries[self.library_id]
+        lib = self.gs.pile_mgr.libraries[self.library_id]
         del lib[:len(self.cards_in_order)]
         for c in self.cards_in_order[::-1]:
             lib.insert(0, c)
@@ -81,7 +81,7 @@ class Tutor(Action):
 
     def play(self):
         self.gs.pile_mgr.move_card(self.tutored_card, self.destination)
-        random.shuffle(self.gs.libraries[self.player_idx])
+        random.shuffle(self.gs.pile_mgr.libraries[self.player_idx])
         self.gs.pending_choice = None
 
 class TutorMultipleCards(Action):
@@ -95,9 +95,9 @@ class TutorMultipleCards(Action):
                 f'from your library to your {self.destination.name}')
 
     def play(self):
-        print('Library Count Before:', len(self.gs.libraries[self.player_idx]))
+        print('Library Count Before:', len(self.gs.pile_mgr.libraries[self.player_idx]))
         for c in self.tutored_cards:
             self.gs.pile_mgr.move_card(c, self.destination)
-        random.shuffle(self.gs.libraries[self.player_idx])
+        random.shuffle(self.gs.pile_mgr.libraries[self.player_idx])
         self.gs.pending_choice = None
-        print('Library Count After:', len(self.gs.libraries[self.player_idx]))
+        print('Library Count After:', len(self.gs.pile_mgr.libraries[self.player_idx]))

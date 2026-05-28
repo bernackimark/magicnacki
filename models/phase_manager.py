@@ -86,7 +86,7 @@ class UpkeepPhase(PhaseState):
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.draw_discard import MoveToDrawPhase
         # allow upkeep-triggered activations
-        for c in gs.boards[p_id]:
+        for c in gs.pile_mgr.boards[p_id]:
             abilities = gs.get_available_activated_abilities(c)
             if abilities:
                 return [MoveToDrawPhase(p_id, gs)] + abilities
@@ -131,7 +131,7 @@ class MainPhase(PhaseState):
         actions.extend(gs.add_activated_abilities_from_board())
 
         # combat option
-        if any(gs.query_mgr.can_attack(c) for c in gs.boards[gs.turn_mgr.player_turn_idx]):
+        if any(gs.query_mgr.can_attack(c) for c in gs.pile_mgr.boards[gs.turn_mgr.player_turn_idx]):
             actions.append(BeginCombat(p_id, gs))
 
         # auto-advance safety:
@@ -154,7 +154,7 @@ class DeclareAttackersPhase(PhaseState):
         if gs.combats and not gs.phase_mgr.any_remaining_required_attackers(p_id, gs):
             actions.append(FinishDeclaringAttackers(p_id, gs))
 
-        for c in gs.boards[p_id]:
+        for c in gs.pile_mgr.boards[p_id]:
             if c in gs.card_filter.attackers().result():
                 continue
             if gs.query_mgr.can_attack(c):
@@ -287,7 +287,7 @@ class DiscardPhase(PhaseState):
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.draw_discard import DiscardCard
-        hand = gs.hands[p_id]
+        hand = gs.pile_mgr.hands[p_id]
         return [DiscardCard(p_id, gs, c) for c in hand.cards] if len(hand.cards) > 7 else None
 
     def next(self, gs: GameState):
@@ -394,6 +394,6 @@ class PhaseManager:
 
     @staticmethod
     def any_remaining_required_attackers(p_id: int, gs: GameState):
-        return any(c for c in gs.boards[p_id] if 'Goad' in c.keyword_abilities and gs.query_mgr.can_attack(c) and
+        return any(c for c in gs.pile_mgr.boards[p_id] if 'Goad' in c.keyword_abilities and gs.query_mgr.can_attack(c) and
                    c not in gs.card_filter.attackers().result())
 

@@ -160,7 +160,7 @@ class StormSeeker(Resolver):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
         opp_idx = flip(source.owner_id)
-        gs.apply_damage(source, len(gs.hands[opp_idx].cards), opp_idx)
+        gs.apply_damage(source, len(gs.pile_mgr.hands[opp_idx].cards), opp_idx)
 
 
 class Tracker(Resolver):
@@ -215,7 +215,7 @@ class Millstone(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a player to target')
         for _ in range(2):
-            top_card = gs.libraries[target][0]  # Warning: if no cards, this pukes
+            top_card = gs.pile_mgr.libraries[target][0]  # Warning: if no cards, this pukes
             gs.pile_mgr.move_card(top_card, Zone.GRAVEYARD, cause='mill')
 
 
@@ -237,13 +237,13 @@ class DemonicTutor(Resolver):
     """Search your library for a card, put that card into your hand, then shuffle"""
     def resolve(self, gs: GameState, source: GameCard, target=None):
         p_id = source.owner_id
-        gs.pending_choice = SearchLibraryChoice(p_id, gs, source, list(gs.libraries[p_id]), Zone.HAND)
+        gs.pending_choice = SearchLibraryChoice(p_id, gs, source, list(gs.pile_mgr.libraries[p_id]), Zone.HAND)
 
 
 class GlassesOfUrza(Resolver):
     """Look at opponent's hand"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        for c in gs.hands[flip(source.owner_id)].cards:
+        for c in gs.pile_mgr.hands[flip(source.owner_id)].cards:
             c.reveal()
 
 
@@ -252,7 +252,7 @@ class GwendlynDiCorci(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        cards = gs.hands[target].cards
+        cards = gs.pile_mgr.hands[target].cards
         if not cards:
             return
         if len(cards) == 1:
@@ -274,7 +274,7 @@ class MindTwist(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         x = getattr(source, 'variable_x', 0)  # read X chosen when casting
         opp_id = flip(source.owner_id)
-        opp_cards = gs.hands[opp_id].cards
+        opp_cards = gs.pile_mgr.hands[opp_id].cards
         if not opp_cards:
             return
         if len(opp_cards) <= x:
@@ -291,7 +291,7 @@ class NaturalSelection(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        top_3_cards = gs.libraries[target][:3]
+        top_3_cards = gs.pile_mgr.libraries[target][:3]
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
         gs.pending_choice = NaturalSelectionChoice(source.owner_id, gs, source, target, top_3_cards)
 
@@ -301,7 +301,7 @@ class RagMan(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target player')
-        opp_cards = gs.hands[target].cards
+        opp_cards = gs.pile_mgr.hands[target].cards
         for c in opp_cards:
             c.reveal()
         opp_creatures = [c for c in opp_cards if c.is_creature]
@@ -319,16 +319,16 @@ class Visions(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target player')
-        for c in gs.libraries[target][:5]:
+        for c in gs.pile_mgr.libraries[target][:5]:
             print('Showing you', c)
-        gs.pending_choice = ShuffleOrDontChoice(target, gs, source, gs.libraries[target])
+        gs.pending_choice = ShuffleOrDontChoice(target, gs, source, gs.pile_mgr.libraries[target])
 
 
 class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for i in (0, 1):
-            [DiscardCard(i, gs, card).play() for card in gs.hands[i].cards]
+            [DiscardCard(i, gs, card).play() for card in gs.pile_mgr.hands[i].cards]
             gs.pile_mgr.draw(i, 7)
 
 
@@ -639,7 +639,7 @@ class Amnesia(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        for c in gs.hands[target].cards[:]:
+        for c in gs.pile_mgr.hands[target].cards[:]:
             c.reveal()
             if 'Land' not in c.card_types:
                 gs.pile_mgr.discard(c, source)
@@ -772,8 +772,8 @@ class Feint(Resolver):
 class FeldonsCane(Resolver):
     """{T}, Exile this artifact: Shuffle your graveyard into your library."""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        gy = gs.graveyards[s.owner_id]
-        lib = gs.libraries[s.owner_id]
+        gy = gs.pile_mgr.graveyards[s.owner_id]
+        lib = gs.pile_mgr.libraries[s.owner_id]
         lib.extend(gy)
         gy.clear()
         random.shuffle(lib)
@@ -836,7 +836,7 @@ class Inquisition(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f"{source.props.name} needs a target player")
-        opp_cards = gs.hands[flip(source.owner_id)].cards
+        opp_cards = gs.pile_mgr.hands[flip(source.owner_id)].cards
         for c in opp_cards:
             c.reveal()
         if white_cnt := len([c for c in opp_cards if c.is_white]):
@@ -1010,18 +1010,18 @@ class Timetwister(Resolver):
     """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
     (Timetwister to its owner's graveyard.)"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        time_twister = next(c for c in gs.graveyards[s.owner_id] if c is s)
+        time_twister = next(c for c in gs.pile_mgr.graveyards[s.owner_id] if c is s)
         for p_id in range(2):
-            hand_cards = gs.hands[p_id][:]
-            gs.hands[p_id].cards.clear()
-            graveyard_cards = gs.graveyards[p_id][:]
-            gs.graveyards.clear()
-            gs.libraries[p_id].extend(hand_cards)
-            gs.libraries[p_id].extend(graveyard_cards)
-            random.shuffle(gs.libraries[p_id])
+            hand_cards = gs.pile_mgr.hands[p_id][:]
+            gs.pile_mgr.hands[p_id].cards.clear()
+            graveyard_cards = gs.pile_mgr.graveyards[p_id][:]
+            gs.pile_mgr.graveyards.clear()
+            gs.pile_mgr.libraries[p_id].extend(hand_cards)
+            gs.pile_mgr.libraries[p_id].extend(graveyard_cards)
+            random.shuffle(gs.pile_mgr.libraries[p_id])
             gs.pile_mgr.draw(p_id, 7)
             if p_id == s.owner_id:
-                gs.graveyards[p_id].append(time_twister)
+                gs.pile_mgr.graveyards[p_id].append(time_twister)
 
 
 class UrzasAvengerFlying(Resolver):
@@ -1067,7 +1067,7 @@ class WandOfIth(Resolver):
     If a non-land, the player pays life = to its mana value else discards it.  Activate only during your turn."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         opp = flip(source.owner_id)
-        opp_cards = gs.hands[opp].cards
+        opp_cards = gs.pile_mgr.hands[opp].cards
         if not opp_cards:
             return
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
@@ -1086,12 +1086,12 @@ class WindsOfChange(Resolver):
     """Each player shuffles the cards from their hand into their library, then draws that many cards"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         for p_id in range(2):
-            if not gs.hands[p_id].cards:
+            if not gs.pile_mgr.hands[p_id].cards:
                 continue
-            hand_cards = gs.hands[p_id][:]
-            gs.hands[p_id].cards.clear()
-            gs.libraries[p_id].extend(hand_cards)
-            random.shuffle(gs.libraries[p_id])
+            hand_cards = gs.pile_mgr.hands[p_id][:]
+            gs.pile_mgr.hands[p_id].cards.clear()
+            gs.pile_mgr.libraries[p_id].extend(hand_cards)
+            random.shuffle(gs.pile_mgr.libraries[p_id])
             gs.pile_mgr.draw(p_id, len(hand_cards))
 
 
