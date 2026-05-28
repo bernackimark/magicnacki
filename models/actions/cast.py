@@ -37,11 +37,13 @@ class CastToBoard(Action):
         self.gs.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
 
         # --- new event/phase-aware registration
-        from models.game_card.game_card.card_effect_specs import INVOCATIONS
+        from models.game_card.card_effect_specs import INVOCATIONS
+        from models.effects.base import Listener
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack
-                self.gs.event_mgr.register_effect(eff_spec.effect, self.card)
+                if isinstance(eff_spec.effect, Listener):
+                    self.gs.event_mgr.register_effect(eff_spec.effect, self.card)
                 if eff_spec.activation_type != 'triggered':
                     continue
 
