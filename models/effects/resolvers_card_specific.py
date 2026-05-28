@@ -21,9 +21,8 @@ from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, Natura
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE, MINUS_ZERO_ONE, HUNGER, VITALITY, SLEEP
 from models.damage import PreventNextDamage
 from models.effects.base import Resolver
-from models.effects.listens_for_block import GlyphOfDoomListener
-from models.effects.listens_for_damage import GlyphOfLifeListener
-from models.effects.listens_for_death import SandalsOfAbdallahIfCreatureDies
+from models.effects.listeners_card_specific import GlyphOfDoomListener, GlyphOfLifeListener, \
+    SandalsOfAbdallahIfCreatureDies
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.effects.queries import TowerOfCoireallEOT, NoAttacksAllowedEOT
 from models.modifiers import SubTypeMod, KWAMod, PTMod
