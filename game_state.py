@@ -16,7 +16,8 @@ from models.combat import Combat
 from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
 from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
-from models.events_all import TapCardEvent, UntapCardEvent, DamageResolvedEvent, CastResolvedEvent, RandomEvent
+from models.events_all import TapCardEvent, UntapCardEvent, DamageResolvedEvent, CastResolvedEvent, RandomEvent, \
+    DamageProposedEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
@@ -80,6 +81,10 @@ class GameState:
         # objects that carry data to be displayed in UI that aren't common (ex: Show Library)
         self.presentation_requests: list[PresentationRequest] = []
 
+        for i in range(self.player_cnt):
+            random.shuffle(self.pile_mgr.libraries[i])
+            self.pile_mgr.draw(i, 7)
+
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
 
@@ -106,10 +111,12 @@ class GameState:
     def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
         """Creates DamageEvent, triggers damage preventions, adds .combat_damage_received to card,
         decrements life to player, handles Trample combat damage"""
-        event = DamageEvent(source, amount, target, is_combat)
+        # event = DamageEvent(source, amount, target, is_combat)  # now replaced w the DamageProposedEvent approach
+        event = DamageProposedEvent(source, target, amount, is_combat)
+        self.event_mgr.emit(event, self)
 
         # 1. Give all effects a chance to prevent/redirect
-        self.trigger_damage_prevention(event)
+        self.trigger_damage_prevention(event)  # <--- I think this is still needed for registered one-shots like COP
 
         # 2. Apply remaining damage
         if event.remaining <= 0:

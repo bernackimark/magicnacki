@@ -11,7 +11,7 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent
+    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -62,7 +62,19 @@ class DestroyAtCombatEnd(Listener):
         gs.event_mgr.unregister_specific_effect(self)
 
 
-# --- DAMAGE EVENT ---
+# --- DAMAGE PROPOSED EVENT ---
+class PreventCombatDamageFromEnchantedCreatures(Listener):
+    """Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source.host or not event.is_combat or not event.source.is_enchanted:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+
+# --- DAMAGE RESOLVED EVENT ---
 class AddPoisonCounter(Listener):
     """Whenever creature deals damage to a player, that player gets poison counter(s)"""
     listens_to = DamageResolvedEvent
@@ -201,3 +213,4 @@ class StealCardLeaves(Listener):
         host = event.card.host
         Steal().resolve(gs, source, host)
         print('I think I returned control to', flip(host.owner_id))
+

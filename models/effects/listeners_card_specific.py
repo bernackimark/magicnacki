@@ -22,7 +22,7 @@ from models.effects.listeners_generic import DestroyAtCombatEnd, AddCounterAtEnd
 from models.effects.resolvers_generic import Steal
 from models.events_all import AttackEvent, BlockEvent, CombatEndEvent, DamageResolvedEvent, DiesEvent, DiscardEvent, \
     DiscardStepEvent, DrawCardEvent, DrawStepEvent, EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
-    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent
+    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, DamageProposedEvent
 from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
@@ -255,7 +255,67 @@ class TimeElementalAttackedOrBlocked(Listener):
         gs.pile_mgr.destroy(s)
 
 
-# --- DAMAGE EVENT ---
+# --- DAMAGE PROPOSED EVENT ---
+class ArgothianPixies(Listener):
+    """Prevent all damage that would be dealt to this creature by artifact creatures"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source:
+            return
+        if 'Artifact' not in event.source.card_types or 'Creature' not in event.source.props.card_types:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+
+class ArgothianTreefolkPrevention(Listener):
+    """Prevent all damage that would be dealt to this creature by artifact sources"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source:
+            return
+        if 'Artifact' not in event.source.card_types:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+
+class ArtifactWardPrevention(Listener):
+    """Prevent all damage that would be dealt to enchanted creature by artifact sources"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source.host:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+
+class MarblePriestPrevention(Listener):
+    """Prevent all combat damage that would be dealt to this creature by Walls"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source or not event.is_combat or 'Wall' not in event.source.card_sub_types:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+
+class UncleIstvanPrevention(Listener):
+    """Prevent all damage that would be dealt to this creature by creatures"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source or 'Creature' not in event.source.card_types:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+
+# --- DAMAGE RESOLVED EVENT ---
 class Backfire(Listener):
     """Whenever host deals damage to you, this Aura deals that much damage to that creature's controller"""
     listens_to = DamageResolvedEvent

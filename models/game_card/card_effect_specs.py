@@ -51,15 +51,13 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     PsychicAllergyUpkeep, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, AnkhOfMishra, CitanulDruid, \
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
-    VerduranEnchantress
-from models.effects.damage_preventions import PreventNextDamageBy, ArgothianPixiesPrevention, \
-    ArgothianTreefolkPrevention, ArtifactWardPrevention, PreventNextDamageToSourceOwner, EnchantedBeingPrevention, \
-    Forcefield, MarblePriestPrevention, ScarecrowPrevention, UncleIstvanPrevention, PreventDamageBy, \
-    WallOfPutridFleshPrevention
-from models.effects.damage_replacements import JadeMonolith, MartyrsOfKorlisDamageReplacement
+    VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
+    UncleIstvanPrevention
+from models.effects.one_shot_damage_modifiers import PreventNextDamageBy, PreventNextDamageToSourceOwner, \
+    Forcefield, ScarecrowPrevention, PreventDamageBy, JadeMonolith, MartyrsOfKorlisDamageReplacement
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
-    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB
+    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures
 from models.effects.queries import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     Seeker, Moat, \
@@ -75,7 +73,7 @@ from models.effects.query_card_mods import AddCreatureTypePTManaValue, AngelicVo
     Weakstone, ZombieMasterWalk, Castle
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
-    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent
+    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent, DamageProposedEvent
 from models.phase_manager import Phase
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
@@ -141,7 +139,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                         None, UntapPhaseEvent)],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures'])],
-    'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked()), Static(ArgothianPixiesPrevention())],
+    'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked()), Static(ArgothianPixies())],
     'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
     'armageddon': [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Land').result()),
                    None, CastResolvedEvent)],
@@ -339,7 +337,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'elven-riders': [Static(ElvenRidersCanBeBlocked())],
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
-    'enchanted-being': [Static(EnchantedBeingPrevention())],
+    'enchanted-being': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'], DamageProposedEvent)],
     'energy-flux': [Triggered(EnergyFlux(), None, UpkeepEvent)],
     'energy-tap': [Triggered(EnergyTap(), T_FUNCS['your_untapped_creatures'], CastResolvedEvent)],
     'erg-raiders': [Triggered(ErgRaiders(), None, EndStepEvent)],
@@ -880,7 +878,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wall-of-bone': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],
     'wall-of-opposition': [Activated('1', Pump(1, 0, True), T_FUNCS['self'])],
-    'wall-of-putrid-flesh': [Static(WallOfPutridFleshPrevention())],
+    'wall-of-putrid-flesh': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'], DamageProposedEvent)],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-water': [Activated('U', Pump(1, 0, True), T_FUNCS['self'])],
     'wall-of-wonder': [Activated('2UU', WallOfWonder())],

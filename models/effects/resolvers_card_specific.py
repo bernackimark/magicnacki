@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
-from models.effects.damage_preventions import PreventAllDamage
+from models.effects.one_shot_damage_modifiers import PreventAllDamage
 from models.effects.query_card_mods import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
