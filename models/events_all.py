@@ -32,6 +32,17 @@ class CastResolvedEvent(Event):
 class CombatEndEvent(Event):
     active_player: int
 
+@dataclass
+class DamageProposedEvent(Event):
+    """This event is mutable, as damage preventers/limiters/replacers may modify it"""
+    source: GameCard
+    target: GameCard | int
+    amount: int
+    remaining: int
+    prevented: int = 0
+    is_combat: bool = False
+
+
 @dataclass(frozen=True)
 class DamageResolvedEvent(Event):
     source: GameCard
