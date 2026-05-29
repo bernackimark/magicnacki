@@ -27,10 +27,6 @@ class PileManager:
             for c in lib:
                 c.game_state = self
 
-        for i in range(self._gs.player_cnt):
-            random.shuffle(self.libraries[i])
-            self.draw(i, 7)
-
     def move_card(self, card: GameCard, to_zone: Zone, *, cause: str | None = None, emit_zone_event: bool = True):
         if card.zone == to_zone:
             return
@@ -68,40 +64,40 @@ class PileManager:
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
         self._gs.cards_that_died_this_turn.append(card)
         print(f'{card} is destroyed')
-        self._gs.game_history.append_non_action(self, card=card, text=f'{card} is destroyed')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is destroyed')
 
     def exile(self, card: GameCard):
         self.move_card(card, Zone.EXILE, cause="exile")
         print(f'{card} is exiled')
-        self._gs.game_history.append_non_action(self, card=card, text=f'{card} is exiled')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is exiled')
 
     def bounce(self, card: GameCard):
         self.move_card(card, Zone.HAND, cause="bounce")
         print(f'{card} is bounced')
-        self._gs.game_history.append_non_action(self, card=card, text=f'{card} is bounced')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is bounced')
 
     def discard(self, card: GameCard, source: GameCard | None = None):
         self._gs.event_mgr.emit(DiscardEvent(card.orig_owner_id, card, source), self)
         self.move_card(card, Zone.GRAVEYARD, cause="discard")
         print(f'{card} is discarded')
-        self._gs.game_history.append_non_action(self, card=card, text=f'{card} is bounced')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is bounced')
 
     def reanimate(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='reanimate')
         print(f'{card} is reanimated')
-        self._gs.game_history.append_non_action(self, card=card, text=f'{card} is renimated')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is renimated')
 
     def cast(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='cast')
         print(f'{card} is cast')
-        self._gs.game_history.append_non_action(self, card=card, text=f'{card} is cast')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is cast')
 
     def draw(self, p_id: int, cnt: int = 1):
         for _ in range(cnt):
             self.move_card(self._gs.pile_mgr.libraries[p_id][0], Zone.HAND, cause='draw')
             self._gs.event_mgr.emit(DrawCardEvent(p_id), self)
             print(f'Player #{p_id} draws')
-            self._gs.game_history.append_non_action(self, text=f'Player #{p_id} draws')
+            self._gs.game_history.append_non_action(self._gs, text=f'Player #{p_id} draws')
 
     def _add_to_zone(self, card: GameCard, zone: Zone):
         if card.is_token and zone != Zone.BATTLEFIELD:
