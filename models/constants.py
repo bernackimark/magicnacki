@@ -37,6 +37,7 @@ class Mulligan(Enum):
     LONDON_WITH_GENTLEMENS = auto()
     PARIS_WITH_GENTLEMENS = auto()
 
+
 X_POINTS = {
     'ancestral-recall': 5, 'mind-twist': 4, 'black-lotus': 3, 'demonic-tutor': 3, 'library-of-alexandria': 3,
     'balance': 2, 'braingeyser': 2, 'land-tax': 2,

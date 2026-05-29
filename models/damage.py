@@ -6,6 +6,7 @@ if TYPE_CHECKING:
     from game_card import GameCard
     from game_state import GameState
 
+"""Replace all usages w DamageProposedEvent in events_all.py"""
 @dataclass
 class DamageEvent:
     source: GameCard | None  # card or None (for combat)
