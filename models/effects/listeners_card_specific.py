@@ -136,10 +136,8 @@ class GlyphOfDoomListener(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
         if event.blocker is not self.the_wall:
             return
-        delayed = DestroyAtCombatEnd(self.the_wall, event.attacker)
-        gs.event_mgr.register_effect(delayed, self.the_wall)
-        # this will later get unregistered at combat end
-
+        effect = DestroyAtCombatEnd(self.the_wall, event.attacker)
+        gs.event_mgr.register_effect(effect, self.the_wall)
 
 class InfernalMedusa(Listener):
     """Whenever this creature blocks, destroy attacker at combat end.
@@ -298,10 +296,9 @@ class ForcefieldPrevention(Listener):
     def __init__(self, creature: GameCard, protected_player: int):
         self.creature = creature
         self.protected_player = protected_player
-        self.used = False
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent):
-        if self.used:
+        if self.is_expired:
             return
         if event.target != self.protected_player or event.source is not self.creature or not event.is_combat:
             return
@@ -310,7 +307,7 @@ class ForcefieldPrevention(Listener):
             event.prevented += event.remaining - 1
             event.remaining = 1
 
-        self.used = True
+        self.is_expired = True
 
 class MarblePriestPrevention(Listener):
     """Prevent all combat damage that would be dealt to this creature by Walls"""
@@ -334,6 +331,7 @@ class MartyrsOfKorlis(Listener):
 
 class ScarecrowPrevention(Listener):
     listens_to = DamageProposedEvent
+    expires = 'EOT'
 
     def __init__(self, protected_player: int):
         self.protected_player = protected_player
@@ -520,6 +518,7 @@ class RukhEgg(Listener):
 class SandalsOfAbdallahIfCreatureDies(Listener):
     """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact"""
     listens_to = DiesEvent
+    expires = 'EOT'
 
     def __init__(self, target_creature: GameCard):
         self.target_creature = target_creature
@@ -528,6 +527,7 @@ class SandalsOfAbdallahIfCreatureDies(Listener):
         if not isinstance(event, DiesEvent) or event.card != self.target_creature:
             return
         gs.pile_mgr.destroy(source)
+        self.is_expired = True
 
 
 class SuChi(Listener):

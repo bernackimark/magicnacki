@@ -44,8 +44,7 @@ class QueryManager:
     def _get_effects(self) -> list[Effect]:
         return (self._base_queries +
                    [a.effect for c in self._gs.card_filter.in_play().result()
-                    for a in c.static_abilities + c.triggered_abilities] +
-                   [eff for eff, _ in self._gs.until_eot_effects_and_cards])
+                    for a in c.static_abilities + c.triggered_abilities])
 
     def _query_effects(self, query: str, card: GameCard, **kwargs) -> bool:
         """Ask all query-style effects (base, card, and until_eots) if they have an opinion;
@@ -76,8 +75,6 @@ class QueryManager:
                 effects_and_cards.append((a.effect, c))
             for a in c.triggered_abilities:
                 effects_and_cards.append((a.effect, c))
-        for eff, card in self._gs.until_eot_effects_and_cards:
-            effects_and_cards.append((eff, card))
 
         modifiers = []
         for effect, source in effects_and_cards:

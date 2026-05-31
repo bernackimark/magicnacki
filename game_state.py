@@ -65,10 +65,10 @@ class GameState:
         self.is_game_over: bool = False
         self.winner: int | None = None
 
-        self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
-        self.destroy_replacements: list[RegenerationShield] = []
+        # candidates for replacement via Listeners!
+        self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.damage_preventions: list[PreventNextDamage] = []
         self.cards_that_died_this_turn: list[GameCard] = []
 
@@ -89,6 +89,8 @@ class GameState:
     def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
         """When GameCards look if they are effected by something, they check the cards in play;
         however, some card effects (such as instants cast & placed in graveyard) last throughout the turn"""
+        # TODO: Listeners no longer rely on this; they are registered, expired, iterated over correctly
+        #  must do the same for other types of effects
         self.until_eot_effects_and_cards.append(eff_and_card)
 
     def check_state_based_actions(self):
@@ -112,14 +114,6 @@ class GameState:
         # event = DamageEvent(source, amount, target, is_combat)  # now replaced w the DamageProposedEvent approach
         event = DamageProposedEvent(source, target, amount, is_combat)
         self.event_mgr.emit(event, self)
-
-        for eff, source_card in self.until_eot_effects_and_cards:
-            if hasattr(eff, 'on_event'):
-                eff.on_event(self, source_card, event)
-
-        # TODO: the new approach is creating DamageProposedEvent Listeners, but some are stored in until_eot_effects,
-        #  which is not be iterated over ...
-        #  must iterate and then determine if they should be removed as in self.trigger_damage_prevention()
 
         # 2. Apply remaining damage
         if event.remaining <= 0:

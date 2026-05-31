@@ -35,17 +35,14 @@ class GlyphOfDoom(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        temp_effect = GlyphOfDoomListener(target)
-        gs.event_mgr.register_effect_until_eot((temp_effect, source))
-
+        gs.event_mgr.register_effect(GlyphOfDoomListener(target), source)
 
 class GlyphOfLife(Resolver):
     """On cast, select a wall.  Register GlyphOfLifeListener."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        temp_effect = GlyphOfLifeListener(target)
-        gs.event_mgr.register_effect_until_eot((temp_effect, source))
+        gs.event_mgr.register_effect(GlyphOfLifeListener(target), source)
 
 
 class TowerOfCoireall(Resolver):
@@ -54,7 +51,7 @@ class TowerOfCoireall(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         temp_effect = TowerOfCoireallEOT(target)
-        gs.event_mgr.register_effect_until_eot((temp_effect, source))
+        gs.register_effect_until_eot((temp_effect, source))
 
 
 class CityOfShadowsAA1(Resolver):
@@ -414,10 +411,7 @@ class SandalsOfAbdallahIslandWalk(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Islandwalk', expires='EOT'))
-
-        temp_effect = SandalsOfAbdallahIfCreatureDies(target_creature=target)
-        gs.register_effect_until_eot((temp_effect, source))
-
+        gs.event_mgr.register_effect(SandalsOfAbdallahIfCreatureDies(target_creature=target), source)
 
 class UrborgLoseFirstStrike(Resolver):
     """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
@@ -1177,11 +1171,10 @@ class Scarecrow(Resolver):
     """(Activated Ability): Prevent all damage that would be dealt to you this turn by creatures with flying"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.effects.listeners_card_specific import ScarecrowPrevention
-        gs.until_eot_effects_and_cards.append((ScarecrowPrevention(protected_player=source.owner_id), source))
-
+        gs.event_mgr.register_effect(ScarecrowPrevention(protected_player=source.owner_id), source)
 
 class Forcefield(Resolver):
     """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""
-    def resolve(self, gs, s: GameCard, t: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         from models.effects.listeners_card_specific import ForcefieldPrevention
-        gs.until_eot_effects_and_cards.append((ForcefieldPrevention(creature=t, protected_player=s.owner_id), s))
+        gs.event_mgr.register_effect(ForcefieldPrevention(creature=t, protected_player=s.owner_id), s)

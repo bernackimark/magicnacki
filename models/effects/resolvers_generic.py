@@ -23,7 +23,7 @@ class UnblockableThisTurn(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         temp_effect = UnblockableEOT(target)
-        gs.event_mgr.register_effect_until_eot((temp_effect, source))
+        gs.register_effect_until_eot((temp_effect, source))
 
 
 class AddCounter(Resolver):
@@ -173,10 +173,8 @@ class DealDamageToTargetAndYou(Resolver):
 
 class PreventAllCombatDamageThisTurn(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        prevention = PreventNextDamage(source, combat_only=True)
-        gs.damage_preventions.append(prevention)
-        gs.register_effect_until_eot(prevention)
-
+        from models.effects.listeners_generic import PreventAllDamageEOT
+        gs.event_mgr.register_effect(PreventAllDamageEOT(combat_only=True), source)
 
 class PreventNextDamageToCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -498,8 +496,7 @@ class PreventNextDamageToSourceOwner(Resolver):
 
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
         from models.effects.listeners_generic import PreventNextDamageToSourceOwnerEOT
-        gs.until_eot_effects_and_cards.append((PreventNextDamageToSourceOwnerEOT(self.amt, self.combat_only), s))
-
+        gs.event_mgr.register_effect(PreventNextDamageToSourceOwnerEOT(self.amt, self.combat_only), s)
 
 class PreventAllDamageBy(Resolver):
     # lady-evangela is the sole implementer of this:
@@ -511,7 +508,7 @@ class PreventAllDamageBy(Resolver):
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
         """target is the card dealing damage"""
         from listeners_generic import PreventAllDamageByEOT
-        gs.until_eot_effects_and_cards.append((PreventAllDamageByEOT(target, True), s))
+        gs.event_mgr.register_effect(PreventAllDamageByEOT(target, combat_only=True), s)
 
 
 class PreventNextDamageBy(Resolver):
@@ -523,4 +520,4 @@ class PreventNextDamageBy(Resolver):
         if not target:
             raise RuntimeError(f'{s.props.name} needs a target')
         from listeners_generic import PreventNextDamageByEOT
-        gs.until_eot_effects_and_cards.append((PreventNextDamageByEOT(target), s))
+        gs.event_mgr.register_effect(PreventNextDamageByEOT(target), s)

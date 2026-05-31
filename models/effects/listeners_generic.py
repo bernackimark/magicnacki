@@ -63,6 +63,19 @@ class DestroyAtCombatEnd(Listener):
 
 
 # --- DAMAGE PROPOSED EVENT ---
+class PreventAllDamageEOT(Listener):
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, combat_only: bool = False):
+        self.combat_only = combat_only
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if self.combat_only and not event.is_combat:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
 class PreventCombatDamageFromEnchantedCreatures(Listener):
     """Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
     listens_to = DamageProposedEvent
@@ -75,6 +88,7 @@ class PreventCombatDamageFromEnchantedCreatures(Listener):
 
 class PreventAllDamageByEOT(Listener):
     listens_to = DamageProposedEvent
+    expires = 'EOT'
 
     def __init__(self, damage_dealer: GameCard, combat_only: bool = False):
         self.damage_dealer = damage_dealer
@@ -92,17 +106,17 @@ class PreventNextDamageByEOT(Listener):
     def __init__(self, damage_dealer: GameCard, combat_only: bool = False):
         self.damage_dealer = damage_dealer
         self.combat_only = combat_only
-        self.used = False
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if event.source is not self.damage_dealer or (self.combat_only and not event.is_combat):
             return
         event.prevented += event.remaining
         event.remaining = 0
-        self.used = True
+        self.is_expired = True
 
 class PreventNextDamageToSourceOwnerEOT(Listener):
     listens_to = DamageProposedEvent
+    expires = 'EOT'
 
     def __init__(self, preventable_amt: int | None = None, combat_only: bool = False):
         self.preventable_amt = preventable_amt
@@ -113,6 +127,7 @@ class PreventNextDamageToSourceOwnerEOT(Listener):
             return
         event.prevented += min(self.preventable_amt, event.remaining)
         event.remaining = event.amt - event.prevented
+        self.is_expired = True
 
 
 # --- DAMAGE RESOLVED EVENT ---
