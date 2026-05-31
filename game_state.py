@@ -13,7 +13,7 @@ from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import Combat
-from models.damage import PreventNextDamage, DamageEvent, DamageReplacement
+from models.damage import PreventNextDamage
 from models.destroy_replacements import RegenerationShield
 from models.effects.base import Effect
 from models.events_all import TapCardEvent, UntapCardEvent, DamageResolvedEvent, CastResolvedEvent, RandomEvent, \
@@ -69,7 +69,6 @@ class GameState:
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
         self.destroy_replacements: list[RegenerationShield] = []
-        self.damage_replacements: list[DamageReplacement] = []
         self.damage_preventions: list[PreventNextDamage] = []
         self.end_step_funcs: list[Callable] = []
         self.cards_that_died_this_turn: list[GameCard] = []
@@ -115,8 +114,13 @@ class GameState:
         event = DamageProposedEvent(source, target, amount, is_combat)
         self.event_mgr.emit(event, self)
 
-        # 1. Give all effects a chance to prevent/redirect
-        self.trigger_damage_prevention(event)  # <--- I think this is still needed for registered one-shots like COP
+        for eff, source_card in self.until_eot_effects_and_cards:
+            if hasattr(eff, 'on_event'):
+                eff.on_event(self, source_card, event)
+
+        # TODO: the new approach is creating DamageProposedEvent Listeners, but some are stored in until_eot_effects,
+        #  which is not be iterated over ...
+        #  must iterate and then determine if they should be removed as in self.trigger_damage_prevention()
 
         # 2. Apply remaining damage
         if event.remaining <= 0:
@@ -148,21 +152,6 @@ class GameState:
 
         # 5. Check SBAs
         self.check_state_based_actions()  # checks if damage_received_this_turn >= creature.toughness
-
-    def trigger_damage_prevention(self, event: DamageEvent):
-        # Replacement effects (statics + globals)
-        for r in list(self.damage_replacements):
-            if r.applies(self, event):
-                r.replace(self, event)
-
-        # One-shot prevention shields (ex: fog, COPs)
-        for p in list(self.damage_preventions):
-            if event.remaining <= 0:
-                break
-            prevented = p.apply(event)
-            event.prevented += prevented
-            if p.remaining == 0:
-                self.damage_preventions.remove(p)
 
     @staticmethod
     def randomize_event(p_id: int, sequence: Sequence[Any]) -> Any:

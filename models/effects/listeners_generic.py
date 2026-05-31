@@ -11,7 +11,7 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent
+    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -72,6 +72,47 @@ class PreventCombatDamageFromEnchantedCreatures(Listener):
             return
         event.prevented += event.remaining
         event.remaining = 0
+
+class PreventAllDamageByEOT(Listener):
+    listens_to = DamageProposedEvent
+
+    def __init__(self, damage_dealer: GameCard, combat_only: bool = False):
+        self.damage_dealer = damage_dealer
+        self.combat_only = combat_only
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.source is not self.damage_dealer or (self.combat_only and not event.is_combat):
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+class PreventNextDamageByEOT(Listener):
+    listens_to = DamageProposedEvent
+
+    def __init__(self, damage_dealer: GameCard, combat_only: bool = False):
+        self.damage_dealer = damage_dealer
+        self.combat_only = combat_only
+        self.used = False
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.source is not self.damage_dealer or (self.combat_only and not event.is_combat):
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+        self.used = True
+
+class PreventNextDamageToSourceOwnerEOT(Listener):
+    listens_to = DamageProposedEvent
+
+    def __init__(self, preventable_amt: int | None = None, combat_only: bool = False):
+        self.preventable_amt = preventable_amt
+        self.combat_only = combat_only
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source.owner_id or (self.combat_only and not event.is_combat):
+            return
+        event.prevented += min(self.preventable_amt, event.remaining)
+        event.remaining = event.amt - event.prevented
 
 
 # --- DAMAGE RESOLVED EVENT ---
@@ -213,4 +254,3 @@ class StealCardLeaves(Listener):
         host = event.card.host
         Steal().resolve(gs, source, host)
         print('I think I returned control to', flip(host.owner_id))
-

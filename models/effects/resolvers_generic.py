@@ -489,3 +489,38 @@ class UntapHostForManaEffect(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         gs.action_stack.push(UntapWithManaChoice(source.host.owner_id, gs, source, self.mana_cost))
+
+
+class PreventNextDamageToSourceOwner(Resolver):
+    def __init__(self, amt: int = None, combat_only: bool = False):
+        self.amt = amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        from models.effects.listeners_generic import PreventNextDamageToSourceOwnerEOT
+        gs.until_eot_effects_and_cards.append((PreventNextDamageToSourceOwnerEOT(self.amt, self.combat_only), s))
+
+
+class PreventAllDamageBy(Resolver):
+    # lady-evangela is the sole implementer of this:
+    # Activated Ability: "Prevent all combat damage that would be dealt by target creature this turn"
+    def __init__(self, amt: int = None, combat_only: bool = False):
+        self.amt = amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        from listeners_generic import PreventAllDamageByEOT
+        gs.until_eot_effects_and_cards.append((PreventAllDamageByEOT(target, True), s))
+
+
+class PreventNextDamageBy(Resolver):
+    def __init__(self, amt: int = None):
+        self.amt = amt
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        if not target:
+            raise RuntimeError(f'{s.props.name} needs a target')
+        from listeners_generic import PreventNextDamageByEOT
+        gs.until_eot_effects_and_cards.append((PreventNextDamageByEOT(target), s))

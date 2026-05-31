@@ -34,6 +34,8 @@ class Resolver(Effect):
 
 class Listener(Effect):
     listens_to: type[Event] | None = None  # used by event listeners
+    expires: str | None = None
+    is_expired: bool = False
 
     def on_event(self, gs: GameState, source: GameCard, event: Event) -> None:
         """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""

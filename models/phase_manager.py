@@ -315,6 +315,7 @@ class EndTurnEffectsPhase(PhaseState):
         # clean up effects
         gs.until_eot_effects_and_cards.clear()
         gs.damage_preventions.clear()
+        gs.event_mgr.cleanup_eot()
 
         for player_cards in gs.all_player_cards:
             for c in player_cards:

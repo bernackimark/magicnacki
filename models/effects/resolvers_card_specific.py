@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
-from models.effects.one_shot_damage_modifiers import PreventAllDamage
 from models.effects.query_card_mods import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
@@ -812,7 +811,8 @@ class GlyphOfDestruction(Resolver):
     Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
-        gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
+        # gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
+        # TODO: the above line needs to be updated, since I remove PreventAllDamage
         gs.end_step_funcs.append(lambda gs_, s_, t_: gs.pile_mgr.destroy(s))
 
 
@@ -1172,3 +1172,17 @@ class VenarianGoldHostStaysTapped(Resolver):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         if source.host.counters.get_count(SLEEP):
             gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
+
+
+class Scarecrow(Resolver):
+    """(Activated Ability): Prevent all damage that would be dealt to you this turn by creatures with flying"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.effects.listeners_card_specific import ScarecrowPrevention
+        gs.until_eot_effects_and_cards.append((ScarecrowPrevention(protected_player=source.owner_id), source))
+
+
+class Forcefield(Resolver):
+    """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""
+    def resolve(self, gs, s: GameCard, t: Optional[GameCard] = None):
+        from models.effects.listeners_card_specific import ForcefieldPrevention
+        gs.until_eot_effects_and_cards.append((ForcefieldPrevention(creature=t, protected_player=s.owner_id), s))

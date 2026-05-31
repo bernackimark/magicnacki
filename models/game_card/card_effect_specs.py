@@ -28,7 +28,7 @@ from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, Tow
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, ArenaOfTheAncientsCast, \
-    CocoonHostStaysTapped, ManaShort, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped
+    CocoonHostStaysTapped, ManaShort, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Forcefield
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
@@ -37,7 +37,8 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     ExileAllCreatures, PayManaOrSac, Regenerate, SacAll, DrawCards, Discard, BecomeCreature, SetColor, AllWalksRemoved, \
     KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, HandToBoard, Pump, \
     CreateTokenCreature, RemoveHostAuras, TapCardEffect, TapCardsEffect, UntapCardEffect, UntapCardsEffect, \
-    HostStaysTapped, StaysTapped, UntapForManaEffect, UntapHostForManaEffect
+    HostStaysTapped, StaysTapped, UntapForManaEffect, UntapHostForManaEffect, PreventNextDamageToSourceOwner, \
+    PreventAllDamageBy, PreventNextDamageBy
 from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
     YdwenEfreet, TimeElementalAttackedOrBlocked, Backfire, ElHajjaj, FungusaurOnDamage, HypnoticSpecter, \
@@ -52,9 +53,8 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, AnkhOfMishra, CitanulDruid, \
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
-    UncleIstvanPrevention
-from models.effects.one_shot_damage_modifiers import PreventNextDamageBy, PreventNextDamageToSourceOwner, \
-    Forcefield, ScarecrowPrevention, PreventDamageBy, JadeMonolith, MartyrsOfKorlisDamageReplacement
+    UncleIstvanPrevention, MartyrsOfKorlis
+from models.effects.one_shot_damage_modifiers import MartyrsOfKorlisDamageReplacement
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures
@@ -485,7 +485,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower(), None, UpkeepEvent)],
     'jacques-le-vert': [Static(JacquesLeVert())],
-    'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],
+    # 'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],  # needs a multi-step target selection for source & target
     'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), T_FUNCS['self'],
                               allowed_phases=[Phase.MAIN])],
     'jalum-tome': [Activated('2T', JalumTome(), text='Draw one card; discard one card')],
@@ -512,7 +512,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'kormus-bell': [Static(KormusBell())],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures'])],
     'lady-caleria': [Activated('T', DealDamage(3), T_FUNCS['combatants'])],
-    'lady-evangela': [Activated('WBT', PreventDamageBy(combat_only=True), T_FUNCS['creatures'],
+    'lady-evangela': [Activated('WBT', PreventAllDamageBy(combat_only=True), T_FUNCS['creatures'],
                                 CastResolvedEvent)],
     'lance':
         [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures'], CastResolvedEvent)],
@@ -566,7 +566,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'marsh-gas': [Triggered(MarshGas(), None, CastResolvedEvent)],
     'marsh-viper': [Triggered(AddPoisonCounter(2), None, DamageResolvedEvent)],
     'martyrs-cry': [Triggered(MartyrsCry(), None, CastResolvedEvent)],
-    'martyrs-of-korlis': [Static(MartyrsOfKorlisDamageReplacement())],  # note: no way this works
+    'martyrs-of-korlis': [Static(MartyrsOfKorlis())],
     'maze-of-ith': [Activated('T', MazeOfIth(), T_FUNCS['attackers'])],
     'meekstone': [Static(Meekstone())],
     'merchant-ship': [Triggered(MerchantShip(), None, UnblockedAttackerEvent)],
@@ -710,7 +710,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'sandstorm': [Triggered(Sandstorm(), None, CastResolvedEvent)],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],
     'savannah': dual_land_activated_ability_specs('GW'),
-    'scarecrow': [Activated('6T', ScarecrowPrevention())],
+    'scarecrow': [Activated('6T', Scarecrow())],
     'scarwood-hag':
         [Activated('GGGGT', KWAModEffect('add', 'Forestwalk', True), T_FUNCS['creatures_wo_forestwalk']),
          Activated('GGGGT', KWAModEffect('remove', 'Forestwalk', True), T_FUNCS['forestwalkers'])],

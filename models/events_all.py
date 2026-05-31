@@ -37,7 +37,7 @@ class DamageProposedEvent(Event):
     """This event is mutable, as damage preventers/limiters/replacers may modify it"""
     source: GameCard
     target: GameCard | int
-    amount: int
+    amt: int
     remaining: int
     prevented: int = 0
     is_combat: bool = False

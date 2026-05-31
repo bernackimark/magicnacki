@@ -2,30 +2,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, TYPE_CHECKING, Optional
 
+from models.events_all import DamageProposedEvent
+
 if TYPE_CHECKING:
-    from game_card import GameCard
+    from game_card.game_card import GameCard
     from game_state import GameState
-
-"""Replace all usages w DamageProposedEvent in events_all.py"""
-@dataclass
-class DamageEvent:
-    source: GameCard | None  # card or None (for combat)
-    amt: int
-    target: GameCard | int  # creature or player index
-    is_combat: bool = False
-    prevented: int = 0
-
-    @property
-    def remaining(self) -> int:
-        return max(0, self.amt - self.prevented)
-
-
-class DamageReplacement:
-    def applies(self, gs: GameState, event: DamageEvent) -> bool:
-        return False
-
-    def replace(self, gs: GameState, event: DamageEvent) -> None:
-        pass
 
 
 @dataclass
@@ -43,36 +24,34 @@ class PreventNextDamage:
     def __post_init__(self):
         print(self)
 
-    def apply(self, event: DamageEvent) -> int:
+    def apply(self, event: DamageProposedEvent) -> None:
         """Returns amt of damage prevented or 0"""
         if self.remaining and self.remaining <= 0:
-            return 0
+            return
 
         if self.source_filter and event.source and not self.source_filter(event.source):
-            return 0
+            return
 
         if self.target_player is not None:
             if not isinstance(event.target, int) or event.target != self.target_player:
-                return 0
+                return
 
         if self.target_card:
             if event.target is not self.target_card:
-                return 0
+                return
 
         if self.target_filter and not self.target_filter(event.target):
-            return 0
+            return
 
         if self.combat_only and not event.is_combat:
-            return 0
+            return
 
         # uncapped prevention
         if self.remaining is None:
-            return event.amt
+            return
 
-        prevented = min(self.remaining, event.remaining)
-        self.remaining -= prevented
+        event.prevented = min(self.remaining, event.remaining)
+        self.remaining -= event.prevented
 
         if self.on_prevent:
-            self.on_prevent(prevented)
-
-        return prevented
+            self.on_prevent(event.prevented)

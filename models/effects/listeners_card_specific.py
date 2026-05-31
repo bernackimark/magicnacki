@@ -292,6 +292,25 @@ class ArtifactWardPrevention(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class ForcefieldPrevention(Listener):
+    listens_to = DamageProposedEvent
+
+    def __init__(self, creature: GameCard, protected_player: int):
+        self.creature = creature
+        self.protected_player = protected_player
+        self.used = False
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent):
+        if self.used:
+            return
+        if event.target != self.protected_player or event.source is not self.creature or not event.is_combat:
+            return
+
+        if event.remaining > 1:
+            event.prevented += event.remaining - 1
+            event.remaining = 1
+
+        self.used = True
 
 class MarblePriestPrevention(Listener):
     """Prevent all combat damage that would be dealt to this creature by Walls"""
@@ -303,6 +322,27 @@ class MarblePriestPrevention(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class MartyrsOfKorlis(Listener):
+    """As long as this creature is untapped, redirect all damage dealt to you by artifacts to this creature instead"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source.owner_id or source.is_tapped or 'Artifact' not in event.source.card_types:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
+class ScarecrowPrevention(Listener):
+    listens_to = DamageProposedEvent
+
+    def __init__(self, protected_player: int):
+        self.protected_player = protected_player
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target != self.protected_player or 'Flying' not in event.source.keyword_abilities:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
 
 class UncleIstvanPrevention(Listener):
     """Prevent all damage that would be dealt to this creature by creatures"""
