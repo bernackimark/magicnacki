@@ -77,7 +77,7 @@ class Abomination(Listener):
         if not any(c in other.colors for c in ('G', 'W')):
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register_effect(delayed, s)
+        gs.event_mgr.register(delayed, s)
         # this will later get unregistered at combat end
 
 
@@ -95,7 +95,7 @@ class CockatriceAndThicketBasilisk(Listener):
         if 'Wall' in other.card_sub_types:
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register_effect(delayed, s)
+        gs.event_mgr.register(delayed, s)
         # this will later get unregistered at combat end
 
 
@@ -137,7 +137,7 @@ class GlyphOfDoomListener(Listener):
         if event.blocker is not self.the_wall:
             return
         effect = DestroyAtCombatEnd(self.the_wall, event.attacker)
-        gs.event_mgr.register_effect(effect, self.the_wall)
+        gs.event_mgr.register(effect, self.the_wall)
 
 class InfernalMedusa(Listener):
     """Whenever this creature blocks, destroy attacker at combat end.
@@ -152,7 +152,7 @@ class InfernalMedusa(Listener):
         else:
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register_effect(delayed, s)
+        gs.event_mgr.register(delayed, s)
         # this will later get unregistered at combat end
 
 
@@ -171,11 +171,11 @@ class InfiniteAuthority(Listener):
         if other.toughness > 3:
             return
         delayed_destroy = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register_effect(delayed_destroy, s)
+        gs.event_mgr.register(delayed_destroy, s)
         # this will later get unregistered at combat end
 
         delayed_pump = AddCounterAtEndStep(s, s.host, PLUS_ONE)
-        gs.event_mgr.register_effect(delayed_pump, s)
+        gs.event_mgr.register(delayed_pump, s)
         # this will later get unregistered at end step
 
 
@@ -208,7 +208,7 @@ class Venom(Listener):
         if 'Wall' in other.card_sub_types:
             return
         delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register_effect(delayed, s)
+        gs.event_mgr.register(delayed, s)
         # this will later get unregistered at combat end
 
 

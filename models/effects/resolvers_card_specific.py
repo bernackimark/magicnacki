@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
 from models.effects.listeners_generic import DestroyAtEndStep
-from models.effects.query_card_mods import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
+from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
 
@@ -35,14 +35,14 @@ class GlyphOfDoom(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register_effect(GlyphOfDoomListener(target), source)
+        gs.event_mgr.register(GlyphOfDoomListener(target), source)
 
 class GlyphOfLife(Resolver):
     """On cast, select a wall.  Register GlyphOfLifeListener."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register_effect(GlyphOfLifeListener(target), source)
+        gs.event_mgr.register(GlyphOfLifeListener(target), source)
 
 
 class TowerOfCoireall(Resolver):
@@ -50,8 +50,7 @@ class TowerOfCoireall(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        temp_effect = TowerOfCoireallEOT(target)
-        gs.register_effect_until_eot((temp_effect, source))
+        gs.event_mgr.register(TowerOfCoireallEOT(target), source)
 
 
 class CityOfShadowsAA1(Resolver):
@@ -411,7 +410,7 @@ class SandalsOfAbdallahIslandWalk(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Islandwalk', expires='EOT'))
-        gs.event_mgr.register_effect(SandalsOfAbdallahIfCreatureDies(target_creature=target), source)
+        gs.event_mgr.register(SandalsOfAbdallahIfCreatureDies(target_creature=target), source)
 
 class UrborgLoseFirstStrike(Resolver):
     """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
@@ -505,7 +504,7 @@ class TriassicEgg(Resolver):
 class ArmyOfAllah(Resolver):
     """Attacking creatures get +2/0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(ArmyOfAllahEOT(), source)
+        gs.event_mgr.register(ArmyOfAllahEOT(), source)
 
 
 class BerserkPump(Resolver):
@@ -532,7 +531,7 @@ class BloodLust(Resolver):
 class BoneFlute(Resolver):
     """All creatures get -1/-0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(BoneFluteEOT(), source)
+        gs.event_mgr.register(BoneFluteEOT(), source)
 
 
 class GreatDefender(Resolver):
@@ -545,13 +544,13 @@ class GreatDefender(Resolver):
 class HellSwarm(Resolver):
     """All creatures get -1/-0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(HellSwarmEOT(), source)
+        gs.event_mgr.register(HellSwarmEOT(), source)
 
 
 class HolyLight(Resolver):
     """Nonwhite creatures get -1/-1 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(HolyLightEOT(), source)
+        gs.event_mgr.register(HolyLightEOT(), source)
 
 
 class HowlFromBeyond(Resolver):
@@ -575,25 +574,25 @@ class LesserWerewolf(Resolver):
 class MarshGas(Resolver):
     """All creatures get -2/-0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(MarshGasEOT(), source)
+        gs.event_mgr.register(MarshGasEOT(), source)
 
 
 class Morale(Resolver):
     """Attacking creatures get +1/+1 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(MoraleEOT(), source)
+        gs.event_mgr.register(MoraleEOT(), source)
 
 
 class Piety(Resolver):
     """Blocking creatures get 0/+3 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(PietyEOT(), source)
+        gs.event_mgr.register(PietyEOT(), source)
 
 
 class ShieldWall(Resolver):
     """Creatures you control get +0/+2 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register_effect(ShieldWallEOT(), source)
+        gs.event_mgr.register(ShieldWallEOT(), source)
 
 
 class SingingTree(Resolver):
@@ -609,7 +608,7 @@ class Transmutation(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register_effect(TransmutationEOT(target), source)
+        gs.event_mgr.register(TransmutationEOT(target), source)
 
 
 class AshnodsTransmogrant(Resolver):
@@ -776,7 +775,7 @@ class FeldonsCane(Resolver):
 class Festival(Resolver):
     """... Creatures can't attack this turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((NoAttacksAllowedEOT(), source))
+        gs.event_mgr.register(NoAttacksAllowedEOT(), source)
 
 
 class FlashFlood(Resolver):
@@ -808,7 +807,7 @@ class GlyphOfDestruction(Resolver):
         t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
         # gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         # TODO: the above line needs to be updated, since I remove PreventAllDamage
-        gs.event_mgr.register_effect(DestroyAtEndStep(), s)
+        gs.event_mgr.register(DestroyAtEndStep(), s)
 
 
 class HealingSalve(Resolver):
@@ -934,7 +933,7 @@ class RocketLauncherAA(Resolver):
     """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
-        gs.event_mgr.register_effect(DestroyAtEndStep(), s)
+        gs.event_mgr.register(DestroyAtEndStep(), s)
 
 class SacrificeOnCast(Resolver):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
@@ -966,7 +965,7 @@ class StoneGiant(Resolver):
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
-        gs.event_mgr.register_effect(DestroyAtEndStep(), s)
+        gs.event_mgr.register(DestroyAtEndStep(), s)
 
 class Subdue(Resolver):
     """Prevent all combat damage that would be dealt by target creature this turn.
@@ -1171,10 +1170,10 @@ class Scarecrow(Resolver):
     """(Activated Ability): Prevent all damage that would be dealt to you this turn by creatures with flying"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.effects.listeners_card_specific import ScarecrowPrevention
-        gs.event_mgr.register_effect(ScarecrowPrevention(protected_player=source.owner_id), source)
+        gs.event_mgr.register(ScarecrowPrevention(protected_player=source.owner_id), source)
 
 class Forcefield(Resolver):
     """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         from models.effects.listeners_card_specific import ForcefieldPrevention
-        gs.event_mgr.register_effect(ForcefieldPrevention(creature=t, protected_player=s.owner_id), s)
+        gs.event_mgr.register(ForcefieldPrevention(creature=t, protected_player=s.owner_id), s)

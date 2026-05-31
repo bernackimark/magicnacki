@@ -906,7 +906,6 @@ class SunkenCity(Listener):
 
 class TransmutationEOT(Listener):
     """Stored in GameState & cleared EOT; how does this class know who the target is?"""
-    # TODO: what is going on here?
     listens_to = ModQueryEvent
     modifies = 'pt'
     expires = 'EOT'

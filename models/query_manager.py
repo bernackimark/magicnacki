@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCastRule, CanDamageRule, CanTargetRule
+from models.events_all import CanBlockQueryEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -22,6 +23,11 @@ class QueryManager:
     def can_be_destroyed(self, card: GameCard) -> bool:
         result = self._query_effects('can_be_destroyed', card)
         return False if result is False else True
+
+    def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
+        event = CanBlockQueryEvent(blocker=blocker, attacker=attacker)
+        self._gs.event_mgr.emit(event, self)
+        return event.permission is not False
 
     def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
         return self._query_effects('can_block', blocker, attacker=attacker)

@@ -63,7 +63,7 @@ from models.effects.queries import AmrouKithkin, ArgothianPixiesCanBeBlocked, Ar
     Meekstone, Invisibility, IronclawOrcs, Fear, JuggernautUnblockableByWalls, LivonyaSilone, \
     CityInABottle, SirensCallCanCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantBeTargetedByAuras, SpectralCloak, HostCantAttack, WalkRuleRemoved
-from models.effects.query_card_mods import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
+from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, Crusade, \
     DakkonBlackbladePT, GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, GoblinShrinePump, GravitySphere, \
     HiddenPath, IvoryGuardians, JacquesLeVert, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, KormusBell, \

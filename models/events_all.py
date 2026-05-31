@@ -22,6 +22,17 @@ class BlockEvent(Event):
     attacker: GameCard
     blocker: GameCard
 
+@dataclass
+class CanAttackQueryEvent(Event):
+    attacker: GameCard
+    permission: bool | None = None
+
+@dataclass
+class CanBlockQueryEvent(Event):
+    blocker: GameCard
+    attacker: GameCard
+    permission: bool | None = None
+
 @dataclass(frozen=True)
 class CastResolvedEvent(Event):
     card: GameCard

@@ -64,7 +64,7 @@ class AcceptAction(Action):
         from models.game_card.card_effect_specs import INVOCATIONS
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
             if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
-                self.gs.event_mgr.register_effect(eff_spec.effect, card)
+                self.gs.event_mgr.register(eff_spec.effect, card)
                 print(f"Registered triggered effect for {card.props.name} on {eff_spec.trigger_event.__name__}")
 
         # --- reset action stack and current actor ---
