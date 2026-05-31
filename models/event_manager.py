@@ -4,11 +4,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.effects.base import Effect, Listener
+    from models.effects.base import Effect
     from models.events_all import Event
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
+from models.effects.base import Listener
+from models.events_all import ModQueryEvent
 
 @dataclass
 class ListenerEntry:
@@ -23,10 +25,22 @@ class EventManager:
 
     def emit(self, event: Event, gs: GameState):
         """Call all effects listening to a certain type of event (ex: EndStepEvent)"""
-        entries = list(self._event_listeners[type[event]])
-        for e in entries:
-            e.effect.on_event(gs, e.source, event)
-        self.cleanup_expired()
+        gs._query_depth += 1  # temp solution while getting all event system unified
+        try:
+            entries = list(self._event_listeners[type(event)])
+            for e in entries:
+
+                if isinstance(event, ModQueryEvent):
+                    # enforce type contract
+                    if hasattr(e.effect, "modifies"):
+                        if e.effect.modifies != event.query:
+                            continue
+
+                e.effect.on_event(gs, e.source, event)
+
+            self.cleanup_expired()
+        finally:
+            gs._query_depth -= 1
 
     def register_effect(self, effect: Listener, source_card: GameCard):
         """Store the effect + source card tuple for later event emission."""

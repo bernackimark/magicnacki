@@ -65,27 +65,27 @@ class QueryManager:
                 explicit_forbids = True
         return False if explicit_forbids else True
 
-    def get_global_modifiers(self, global_type: str, card: GameCard) -> list[ModType]:
-        """Some mods are stored on the card itself locally (attached auras);
-        some mods need to be retrieved from other cards (ex: Crusade returns a PTMod for white creatures)"""
-        effects_and_cards: list[tuple[Effect, GameCard]] = []
-        # static effects on other permanents (ex: crusade lives in static abilities)
-        for c in self._gs.card_filter.in_play().result():
-            for a in c.static_abilities:
-                effects_and_cards.append((a.effect, c))
-            for a in c.triggered_abilities:
-                effects_and_cards.append((a.effect, c))
-
-        modifiers = []
-        for effect, source in effects_and_cards:
-            if not hasattr(effect, 'get_mods') or not hasattr(effect, 'modifies'):
-                continue
-            if isinstance(effect.query, str) and effect.query != global_type:
-                continue
-            if isinstance(effect.query, tuple) and global_type not in effect.query:
-                continue
-            mod: ModType | list[ModType] | None = effect.get_mods(self._gs, global_type,
-                                                                  card=card, source=source)
-            if mod:
-                modifiers.append(mod) if isinstance(mod, ModType) else modifiers.extend(mod)
-        return modifiers
+    # def get_global_modifiers(self, global_type: str, card: GameCard) -> list[ModType]:
+    #     """Some mods are stored on the card itself locally (attached auras);
+    #     some mods need to be retrieved from other cards (ex: Crusade returns a PTMod for white creatures)"""
+    #     effects_and_cards: list[tuple[Effect, GameCard]] = []
+    #     # static effects on other permanents (ex: crusade lives in static abilities)
+    #     for c in self._gs.card_filter.in_play().result():
+    #         for a in c.static_abilities:
+    #             effects_and_cards.append((a.effect, c))
+    #         for a in c.triggered_abilities:
+    #             effects_and_cards.append((a.effect, c))
+    #
+    #     modifiers = []
+    #     for effect, source in effects_and_cards:
+    #         if not hasattr(effect, 'get_mods') or not hasattr(effect, 'modifies'):
+    #             continue
+    #         if isinstance(effect.query, str) and effect.query != global_type:
+    #             continue
+    #         if isinstance(effect.query, tuple) and global_type not in effect.query:
+    #             continue
+    #         mod: ModType | list[ModType] | None = effect.get_mods(self._gs, global_type,
+    #                                                               card=card, source=source)
+    #         if mod:
+    #             modifiers.append(mod) if isinstance(mod, ModType) else modifiers.extend(mod)
+    #     return modifiers

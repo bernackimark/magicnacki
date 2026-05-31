@@ -1,6 +1,10 @@
 from __future__ import annotations
+
+from copy import copy
 from typing import TYPE_CHECKING
 from uuid import uuid4
+
+from ..events_all import ModQueryEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -122,9 +126,13 @@ class GameCard:
         base_power, base_t = self.base_pt[0] or 0, self.base_pt[1] or 0
         power = base_power + self.modifiers.power_delta + self.counters.power_delta
         toughness = base_t + self.modifiers.toughness_delta + self.counters.toughness_delta
-        for mod in self.game_state.query_mgr.get_global_modifiers('pt', self):
-            if not mod:
-                continue
+
+        if self.game_state._query_depth > 0:  # temp solution while unifying event system
+            return power, toughness
+
+        event = ModQueryEvent(query='pt', card=self)
+        self.game_state.event_mgr.emit(event, self.game_state)
+        for mod in event.mods:
             power += mod.p_adj
             toughness += mod.t_adj
         return power, toughness
@@ -133,29 +141,33 @@ class GameCard:
     def card_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_types, 2) self.modifiers.type_delta,
         3) GameState's query system for 'type'"""
-        types = set(self._card_types)
-        adds, removes = self.modifiers.type_delta
-        for mod in self.game_state.query_mgr.get_global_modifiers('type', self):
-            if mod is None:
-                continue
-            if mod.add_or_remove == 'remove':
-                removes.add(mod.card_type)
-                continue
-            if mod.add_or_remove == 'add':
-                adds.add(mod.card_type)
-        return list((types | adds) - removes)
+        if self.game_state._query_depth > 0:  # temp solution while unifying event system
+            # SAFE PATH: no event emission
+            return list(self._card_types)
+
+        event = ModQueryEvent(query='type', card=self)
+        self.game_state.event_mgr.emit(event, self.game_state)
+        adds, removes = set(), set()
+        for mod in event.mods:
+            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
+
+        return list((set(self._card_types) | adds) - removes)
 
     @property
     def card_sub_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_sub_types,
         2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type'"""
-        types = set(self._card_sub_types)
-        adds, removes = self.modifiers.sub_type_delta
-        for mod in self.game_state.query_mgr.get_global_modifiers('sub_type', self):
-            mods = [mod] if isinstance(mod, ModType) else mod
-            for m in mods:
-                adds.add(m.card_sub_type) if m.add_or_remove == 'add' else removes.add(m.card_sub_type)
-        return list((types | adds) - removes)
+        if self.game_state._query_depth > 0:  # temp solution while unifying event system
+            # SAFE PATH: no event emission
+            return list(self._card_sub_types)
+
+        event = ModQueryEvent(query='sub_type', card=self)
+        self.game_state.event_mgr.emit(event, self.game_state)
+        adds, removes = set(), set()
+        for mod in event.mods:
+            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
+
+        return list((set(self._card_sub_types) | adds) - removes)
 
     @property
     def keyword_abilities(self) -> list[str]:
@@ -163,16 +175,23 @@ class GameCard:
         returns ['Flying', 'Trample'] ...
         Anytime this prioerty is requested, it calls: 1) its own base _base_kwa,
         2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa'"""
-        kwa = set(self._base_kwa)
-        adds, removes = self.modifiers.kwa_delta
-        for mod in self.game_state.query_mgr.get_global_modifiers('kwa', self):
+        if self.game_state._query_depth > 0:  # temp solution while unifying event system
+            # SAFE PATH: no event emission
+            return list(self._base_kwa)
+
+        event = ModQueryEvent(query='kwa', card=self)
+        self.game_state.event_mgr.emit(event, self.game_state)
+        adds, removes = set(), set()
+        for mod in event.mods:
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
-        return list((kwa | adds) - removes)
+
+        return list((set(self._base_kwa) | adds) - removes)
 
     @property
     def colors(self) -> str:
         """Does not currently lookup global queries"""
-        return self.modifiers.colors if self.modifiers.colors else self._colors
+        # TODO: the previous code was producing a RecursionError, so I'm no longer checking Modifiers
+        return self._colors
 
     def clear_all_mods(self) -> None:
         """set attached_to = None for all auras and host; all modifiers are emptied"""

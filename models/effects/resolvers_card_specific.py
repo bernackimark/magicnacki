@@ -505,7 +505,7 @@ class TriassicEgg(Resolver):
 class ArmyOfAllah(Resolver):
     """Attacking creatures get +2/0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((ArmyOfAllahEOT(), source))
+        gs.event_mgr.register_effect(ArmyOfAllahEOT(), source)
 
 
 class BerserkPump(Resolver):
@@ -532,7 +532,7 @@ class BloodLust(Resolver):
 class BoneFlute(Resolver):
     """All creatures get -1/-0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((BoneFluteEOT(), source))
+        gs.event_mgr.register_effect(BoneFluteEOT(), source)
 
 
 class GreatDefender(Resolver):
@@ -545,13 +545,13 @@ class GreatDefender(Resolver):
 class HellSwarm(Resolver):
     """All creatures get -1/-0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((HellSwarmEOT(), source))
+        gs.event_mgr.register_effect(HellSwarmEOT(), source)
 
 
 class HolyLight(Resolver):
     """Nonwhite creatures get -1/-1 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((HolyLightEOT(), source))
+        gs.event_mgr.register_effect(HolyLightEOT(), source)
 
 
 class HowlFromBeyond(Resolver):
@@ -575,25 +575,25 @@ class LesserWerewolf(Resolver):
 class MarshGas(Resolver):
     """All creatures get -2/-0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((MarshGasEOT(), source))
+        gs.event_mgr.register_effect(MarshGasEOT(), source)
 
 
 class Morale(Resolver):
     """Attacking creatures get +1/+1 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((MoraleEOT(), source))
+        gs.event_mgr.register_effect(MoraleEOT(), source)
 
 
 class Piety(Resolver):
     """Blocking creatures get 0/+3 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((PietyEOT(), source))
+        gs.event_mgr.register_effect(PietyEOT(), source)
 
 
 class ShieldWall(Resolver):
     """Creatures you control get +0/+2 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.register_effect_until_eot((ShieldWallEOT(), source))
+        gs.event_mgr.register_effect(ShieldWallEOT(), source)
 
 
 class SingingTree(Resolver):
@@ -609,7 +609,7 @@ class Transmutation(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.register_effect_until_eot((TransmutationEOT(), source))
+        gs.event_mgr.register_effect(TransmutationEOT(target), source)
 
 
 class AshnodsTransmogrant(Resolver):
