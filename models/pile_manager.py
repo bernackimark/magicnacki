@@ -25,7 +25,7 @@ class PileManager:
         # GameCard getting reference to GameState is a ChatGPT suggestion
         for lib in self.libraries:
             for c in lib:
-                c.game_state = self
+                c.game_state = self._gs
 
     def move_card(self, card: GameCard, to_zone: Zone, *, cause: str | None = None, emit_zone_event: bool = True):
         if card.zone == to_zone:
