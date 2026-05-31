@@ -70,7 +70,6 @@ class GameState:
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
         # candidates for replacement via Listeners!
-        self.until_eot_effects_and_cards: list[tuple[Effect, GameCard]] = []
         self.damage_preventions: list[PreventNextDamage] = []
         self.cards_that_died_this_turn: list[GameCard] = []
 
@@ -87,13 +86,6 @@ class GameState:
 
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
-
-    def register_effect_until_eot(self, eff_and_card: tuple[Effect, GameCard]):
-        """When GameCards look if they are effected by something, they check the cards in play;
-        however, some card effects (such as instants cast & placed in graveyard) last throughout the turn"""
-        # TODO: Listeners no longer rely on this; they are registered, expired, iterated over correctly
-        #  must do the same for other types of effects
-        self.until_eot_effects_and_cards.append(eff_and_card)
 
     def check_state_based_actions(self):
         """state_based_rules are invariant; they must repeat until stable; there is no player choice, no stack, etc.;
