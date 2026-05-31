@@ -267,8 +267,6 @@ class EndStepPhase(PhaseState):
     def on_enter(self, gs: GameState):
         from models.events_all import EndStepEvent
         gs.event_mgr.emit(EndStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
-        for func in gs.end_step_funcs:
-            func()
         for c in gs.card_filter.in_play().result():
             c.modifiers.clear_eots()
 

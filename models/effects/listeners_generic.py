@@ -148,6 +148,15 @@ class AddCounterAtEndStep(Listener):
         self.target.counters.add_counter(self.counter_type, self.cnt)
         gs.event_mgr.unregister_specific_effect(self)
 
+class DestroyAtEndStep(Listener):
+    """Destroys target if it is still on the battlefield; unregisters itself"""
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, card: GameCard, event: EndStepEvent):
+        if card not in gs.card_filter.in_play().result():
+            return
+        gs.pile_mgr.destroy(card)
+        self.is_expired = True
 
 # --- UNTAP CARD EVENT ---
 class ReturnToOwnerOnUntap(Listener):

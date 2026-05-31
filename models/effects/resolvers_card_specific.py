@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
+from models.effects.listeners_generic import DestroyAtEndStep
 from models.effects.query_card_mods import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
@@ -813,7 +814,7 @@ class GlyphOfDestruction(Resolver):
         t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
         # gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
         # TODO: the above line needs to be updated, since I remove PreventAllDamage
-        gs.end_step_funcs.append(lambda gs_, s_, t_: gs.pile_mgr.destroy(s))
+        gs.event_mgr.register_effect(DestroyAtEndStep(), s)
 
 
 class HealingSalve(Resolver):
@@ -939,8 +940,7 @@ class RocketLauncherAA(Resolver):
     """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
-        gs.end_step_funcs.append(lambda gs_, s_: gs.pile_mgr.destroy(s))
-
+        gs.event_mgr.register_effect(DestroyAtEndStep(), s)
 
 class SacrificeOnCast(Resolver):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
@@ -972,8 +972,7 @@ class StoneGiant(Resolver):
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
-        gs.end_step_funcs.append(lambda gs_, s_: gs.pile_mgr.destroy(t))
-
+        gs.event_mgr.register_effect(DestroyAtEndStep(), s)
 
 class Subdue(Resolver):
     """Prevent all combat damage that would be dealt by target creature this turn.

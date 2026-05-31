@@ -70,7 +70,6 @@ class GameState:
 
         self.destroy_replacements: list[RegenerationShield] = []
         self.damage_preventions: list[PreventNextDamage] = []
-        self.end_step_funcs: list[Callable] = []
         self.cards_that_died_this_turn: list[GameCard] = []
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
