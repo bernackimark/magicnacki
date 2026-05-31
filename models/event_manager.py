@@ -42,7 +42,7 @@ class EventManager:
         finally:
             gs._query_depth -= 1
 
-    def register_effect(self, effect: Listener, source_card: GameCard):
+    def register(self, effect: Listener, source_card: GameCard):
         """Store the effect + source card tuple for later event emission."""
         if not isinstance(effect, Listener):
             raise TypeError(f"You are registering {effect} with EventManager that only accepts Listener Effects")
