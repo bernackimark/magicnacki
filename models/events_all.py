@@ -1,12 +1,12 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterable, Any
 
-from models.constants import Target
-from models.zone import Zone
-
 if TYPE_CHECKING:
+    from models.constants import Target
     from models.game_card.game_card import GameCard
+    from models.modifiers import ModType
+    from models.zone import Zone
 
 
 class Event:
@@ -99,6 +99,16 @@ class LifeLossEvent(Event):
     p_id_taking_damage: int
     amt: int
     source: GameCard
+
+@dataclass
+class QueryEvent(Event):
+    query: str
+    card: GameCard
+
+@dataclass
+class ModQueryEvent(QueryEvent):
+    """Mutable structure because various effects will append to mods"""
+    mods: list[ModType] = field(default_factory=list)
 
 @dataclass
 class RandomEvent(Event):
