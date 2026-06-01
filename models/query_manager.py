@@ -1,18 +1,14 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.effects.base_rules_queries import CanAttackRule, CanBlockRule, CanCastRule, CanDamageRule, CanTargetRule
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card.game_card import GameCard
+
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanTargetQueryEvent, \
     CanUntapQueryEvent, CanDamageQueryEvent
 
-if TYPE_CHECKING:
-    from game_state import GameState
-    from models.effects.base import Effect
-    from models.game_card.game_card import GameCard
-    from models.modifiers import ModType
-
-
-class QueryManager:
+class PermissionQuerier:
     def __init__(self, gs: GameState):
         self._gs = gs
 
@@ -38,7 +34,7 @@ class QueryManager:
         self._gs.event_mgr.emit(event, self._gs)
         return event.permission
 
-    def can_target(self, target: GameCard | int, source: GameCard, target_host: GameCard | None = None) -> bool:
+    def can_target(self, target: GameCard | int, source: GameCard) -> bool:
         if isinstance(target, int):
             return True
         event = CanTargetQueryEvent(source=source, target=target)

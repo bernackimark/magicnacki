@@ -131,7 +131,7 @@ class MainPhase(PhaseState):
         actions.extend(gs.add_activated_abilities_from_board())
 
         # combat option
-        if any(gs.query_mgr.can_attack(c) for c in gs.pile_mgr.boards[gs.turn_mgr.player_turn_idx]):
+        if any(gs.perm_querier.can_attack(c) for c in gs.pile_mgr.boards[gs.turn_mgr.player_turn_idx]):
             actions.append(BeginCombat(p_id, gs))
 
         # auto-advance safety:
@@ -157,7 +157,7 @@ class DeclareAttackersPhase(PhaseState):
         for c in gs.pile_mgr.boards[p_id]:
             if c in gs.card_filter.attackers().result():
                 continue
-            if gs.query_mgr.can_attack(c):
+            if gs.perm_querier.can_attack(c):
                 actions.append(CreatureAttack(p_id, gs, c))
 
         return actions
@@ -183,7 +183,7 @@ class DeclareBlockersPhase(PhaseState):
 
         for blocker in gs.card_filter.on_player_board(gs.action_on_idx).creatures().result():
             for com in gs.combats:
-                if gs.query_mgr.can_block(blocker, com.attacker):
+                if gs.perm_querier.can_block(blocker, com.attacker):
                     actions.append(AssignBlocker(gs.action_on_idx, gs, blocker, com.attacker))
 
         actions.extend(gs.available_actions_from_hand())
@@ -392,6 +392,6 @@ class PhaseManager:
 
     @staticmethod
     def any_remaining_required_attackers(p_id: int, gs: GameState):
-        return any(c for c in gs.pile_mgr.boards[p_id] if 'Goad' in c.keyword_abilities and gs.query_mgr.can_attack(c) and
+        return any(c for c in gs.pile_mgr.boards[p_id] if 'Goad' in c.keyword_abilities and gs.perm_querier.can_attack(c) and
                    c not in gs.card_filter.attackers().result())
 

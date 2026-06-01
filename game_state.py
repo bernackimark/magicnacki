@@ -25,7 +25,7 @@ from models.mana import ManaPool
 from models.mulligan import MulliganChoice
 from models.pile_manager import PileManager
 from models.presentation_request import PresentationRequest
-from models.query_manager import QueryManager
+from models.query_manager import PermissionQuerier
 from models.score_manager import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.turn_manager import TurnManager
@@ -48,7 +48,7 @@ class GameState:
         self.event_mgr = EventManager()  # houses, emits, registers, unregisters Listener(Effect)
         self.phase_mgr = PhaseManager()
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
-        self.query_mgr = QueryManager(self)  # handles effects that are Querier(Effect)
+        self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
         self.score_mgr = ScoreManager()  # manages life & poison
 
         # action, turn, phase (game flow) concepts; not sure self.turn is being used
@@ -187,7 +187,7 @@ class GameState:
                     print("You've already made an untap decision on this card this turn")
                     break
             else:
-                if self.query_mgr.can_untap(c):
+                if self.perm_querier.can_untap(c):
                     self.event_mgr.emit(UntapCardEvent(c), self)
                     self.untap_card(c)
 
@@ -224,7 +224,7 @@ class GameState:
             # remove illegal targets
             if isinstance(targets[0], GameCard):
                 targets = [t for t in targets
-                           if self.query_mgr.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
+                           if self.perm_querier.can_target(t, c)]
             if len(targets) < target_spec.min_cnt:
                 # Not enough legal targets → skip ability entirely
                 continue
@@ -254,7 +254,7 @@ class GameState:
         p_id = self.action_on_idx
 
         for c in self.pile_mgr.hands[self.action_on_idx].cards:
-            if not self.query_mgr.can_cast(c, p_id):
+            if not self.perm_querier.can_cast(c, p_id):
                 continue
 
             # Short-cutting these directly to the board for testing expedience
@@ -278,7 +278,7 @@ class GameState:
                 if eff_spec.target_spec and eff_spec.target_spec.filter_func:
                     candidates = eff_spec.target_spec.filter_func(self, c)
                     valid_targets = [t for t in candidates if
-                                     self.query_mgr.can_target(t, c, t.host if isinstance(t, GameCard) else None)]
+                                     self.perm_querier.can_target(t, c)]
 
                     if len(valid_targets) < eff_spec.target_spec.min_cnt:
                         continue
