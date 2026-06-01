@@ -98,7 +98,7 @@ class AddCountersIfAnyCreatureDied(Resolver):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        if gs.cards_that_died_this_turn:
+        if gs.turn_mgr.cards_that_died:
             s.counters.add_counter(self.counter_type, self.cnt)
 
 
@@ -107,7 +107,7 @@ class AddCounterPerCreatureDeath(Resolver):
         self.counter_type = counter_type
 
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        if death_cnt := len(gs.cards_that_died_this_turn) > 0:
+        if death_cnt := len(gs.turn_mgr.cards_that_died) > 0:
             s.counters.add_counter(self.counter_type, death_cnt)
 
 

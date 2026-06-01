@@ -62,7 +62,7 @@ class PileManager:
 
         self._gs.event_mgr.emit(DiesEvent(card), self._gs)
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
-        self._gs.cards_that_died_this_turn.append(card)
+        self._gs.turn_mgr.cards_that_died.append(card)
         print(f'{card} is destroyed')
         self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is destroyed')
 

@@ -22,5 +22,4 @@ class PassTheTurn(Action):
         return "Pass the Turn"
 
     def play(self) -> None:
-        self.gs.cards_that_died_this_turn.clear()
         self.gs.turn_mgr.create_new_turn(self.gs, self.pass_turn_to_opp)

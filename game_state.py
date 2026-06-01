@@ -67,7 +67,7 @@ class GameState:
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
         # candidates for replacement via Listeners!
-        self.cards_that_died_this_turn: list[GameCard] = []
+
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx,
