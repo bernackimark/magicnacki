@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 
 from models.actions.cast import CastToTargetAddToStack
 from models.counter_tokens import CounterType, WIND
-from models.damage import PreventNextDamage
 from models.effects.base import ActivatedAbility
 from models.modifiers import OwnershipMod
 from models.phase_manager import Phase

@@ -20,7 +20,6 @@ from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, Natura
     CopyCardChoice, PrimalClayChoice, TriassicEggChoice, FastingChoice, HealingSalveChoice, RemoveCounterForLifeChoice, \
     SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE, MINUS_ZERO_ONE, HUNGER, VITALITY, SLEEP
-from models.damage import PreventNextDamage
 from models.effects.base import Resolver
 from models.effects.listeners_card_specific import GlyphOfDoomListener, GlyphOfLifeListener, \
     SandalsOfAbdallahIfCreatureDies

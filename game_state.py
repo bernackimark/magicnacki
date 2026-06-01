@@ -13,7 +13,6 @@ from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import Combat
-from models.damage import PreventNextDamage
 from models.events_all import TapCardEvent, UntapCardEvent, DamageResolvedEvent, CastResolvedEvent, RandomEvent, \
     DamageProposedEvent
 from models.game_card.game_card import GameCard
