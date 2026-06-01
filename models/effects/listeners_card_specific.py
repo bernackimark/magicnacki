@@ -59,7 +59,7 @@ class MijaeDjinn(Listener):
         print(f'The result of the random event was: {result}')
         if result == 'tails':
             gs.remove_from_combat(s)
-            gs.tap_card(s)
+            s.tap()
 
 
 # --- BLOCK EVENT ---
@@ -948,9 +948,9 @@ class DemonicHordesUpkeep(Listener):
             return
         your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
         if not your_lands:
-            gs.tap_card(source)
+            source.tap()
         elif len(your_lands) == 1:
-            gs.tap_card(source)
+            source.tap()
             gs.pile_mgr.destroy(your_lands[0])
         elif not gs.mana_pools[source.owner_id].can_pay('BBB'):
             gs.action_stack.push(OpponentDestroysLandChoice(flip(source.owner_id), gs, source))
@@ -1216,7 +1216,7 @@ class YawgmothDemon(Listener):
         if source.owner_id != gs.turn_mgr.player_turn_idx:
             return
         if not gs.card_filter.on_player_board(source.owner_id).artifacts().result():
-            gs.tap_card(source)
+            source.tap()
             gs.apply_damage(source, 2, source.owner_id)
             return
         gs.action_stack.push(YawgmothDemonChoice(source.owner_id, gs, source), gs, False)
@@ -1288,8 +1288,7 @@ class Kismet(Listener):
         lands = gs.card_filter.on_player_board(flip(s.owner_id)).lands().result()
         if event.card not in artifacts + creatures + lands:
             return
-        gs.tap_card(event.card)
-
+        event.card.tap()
 
 class LandEquilibrium(Listener):
     """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,
@@ -1304,7 +1303,6 @@ class LandEquilibrium(Listener):
         if len(opp_lands) < your_land_cnt:
             return
         gs.action_stack.push(SacChoice(event.card.owner_id, gs, source, opp_lands), gs, False)
-
 
 class MoldDemonETB(Listener):
     """When this creature enters, sacrifice this creature unless you sacrifice two Swamps"""

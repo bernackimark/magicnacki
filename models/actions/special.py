@@ -279,7 +279,7 @@ class RogahhOfKherKeepTapAndStealAction(Action):
 
     def play(self):
         for t in self.targets:
-            self.gs.tap_card(t)
+            t.tap()
             t.modifiers.append(OwnershipMod(flip(self.source.owner_id), s=self.source))
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
@@ -293,6 +293,6 @@ class YawgmothDemonUnpaidUpkeep(Action):
         return f'{self.s.props.name} taps and deals 2 damage to you'
 
     def play(self) -> None:
-        self.gs.tap_card(self.s)
+        self.s.tap()
         self.gs.apply_damage(self.s, 2, self.s.owner_id)
         self.gs.action_stack.pop()

@@ -442,8 +442,7 @@ class RemoveHostAuras(Resolver):
 
 class TapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.tap_card(target)
-
+        target.tap()
 
 class TapCardsEffect(Resolver):
     """Accepts a list of targets and taps each"""
@@ -451,13 +450,11 @@ class TapCardsEffect(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a list of targets')
         for t in target:
-            gs.tap_card(t)
-
+            t.tap()
 
 class UntapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.untap_card(target)
-
+        target.untap()
 
 class UntapCardsEffect(Resolver):
     """Accepts a list of targets and untaps each"""
@@ -465,8 +462,7 @@ class UntapCardsEffect(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a list of targets')
         for t in target:
-            gs.untap_card(t)
-
+            t.untap()
 
 class HostStaysTapped(Resolver):
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):

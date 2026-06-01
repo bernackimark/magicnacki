@@ -136,27 +136,13 @@ class GameState:
         """If attacker, delete that combat object, untap attacker; if blocker, remove blocker from the combat object"""
         for com in self.combats:
             if com.attacker is c:
-                self.untap_card(com.attacker)
+                com.attacker.untap()
                 self.combats.remove(com)
                 return
             for blocker in com.blockers:
                 if blocker is c:
                     com.blockers.remove(blocker)
                     return
-
-    def tap_card(self, c: GameCard):
-        """If card is already tapped, skip; emit TapCardEvent & tap card"""
-        if c.is_tapped:
-            return
-        self.event_mgr.emit(TapCardEvent(card=c), self)
-        c.is_tapped = True
-
-    def untap_card(self, c: GameCard):
-        """If card is already untapped, skip; emit UntapCardEvent & untap card"""
-        if not c.is_tapped:
-            return
-        self.event_mgr.emit(UntapCardEvent(card=c), self)
-        c.is_tapped = False
 
     def handle_untap_phase(self):
         """Untap all cards on in-turn player's board; remove summoning sickness;
@@ -174,7 +160,7 @@ class GameState:
             else:
                 if self.perm_querier.can_untap(c):
                     self.event_mgr.emit(UntapCardEvent(c), self)
-                    self.untap_card(c)
+                    c.untap()
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility | BeginAbilityActivationAction] = []

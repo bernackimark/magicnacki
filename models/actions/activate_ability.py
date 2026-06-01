@@ -47,7 +47,7 @@ class ActivateAbility(Action):
                 for extra_cost in self.ability.eff_spec.extra_costs:
                     extra_cost.pay(self.gs, self.ability.source)
         if 'T' in self.ability.eff_spec.cost:
-            self.gs.tap_card(self.ability.source)
+            self.ability.source.tap()
         self.gs.action_stack.push(self, self.gs)
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 

@@ -4,7 +4,7 @@ from copy import copy
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from ..events_all import ModQueryEvent
+from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -203,11 +203,19 @@ class GameCard:
         self.host = None
         self.modifiers.clear_all()
 
-    def tap(self, gs: GameState) -> None:
-        gs.tap_card(self)
+    def tap(self) -> None:
+        """If already tapped, skip; emit TapCardEvent & tap card"""
+        if self.is_tapped:
+            return
+        self.game_state.event_mgr.emit(TapCardEvent(card=self), self.game_state)
+        self.is_tapped = True
 
-    def untap(self, gs: GameState) -> None:
-        gs.untap_card(self)
+    def untap(self) -> None:
+        """If already untapped, skip; emit UntapCardEvent & untap card"""
+        if not self.is_tapped:
+            return
+        self.game_state.event_mgr.emit(UntapCardEvent(card=self), self.game_state)
+        self.is_tapped = False
 
     def reveal(self) -> None:
         if not self.is_face_up:

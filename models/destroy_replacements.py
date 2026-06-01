@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from .game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 class RegenerationShield:
     def __init__(self, protected_card: GameCard):
@@ -14,7 +14,7 @@ class RegenerationShield:
 
     @staticmethod
     def apply(gs: GameState, card: GameCard):
-        gs.tap_card(card)
+        card.tap()
         card.damage = 0
         gs.remove_from_combat(card)
         print(f'{card} has been regenerated')

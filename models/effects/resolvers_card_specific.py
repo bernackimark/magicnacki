@@ -175,15 +175,13 @@ class DustToDust(Resolver):
         for t in target:
             gs.pile_mgr.exile(t)
 
-
 class EaterOfTheDead(Resolver):
     """Exile target creature card from a graveyard and untap this creature"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         GraveyardToExile().resolve(gs, source, target)
-        gs.untap_card(source)
-
+        source.untap()
 
 class Millstone(Resolver):
     """{2}, {T}: Target player mills two cards"""
@@ -194,13 +192,11 @@ class Millstone(Resolver):
             top_card = gs.pile_mgr.libraries[target][0]  # Warning: if no cards, this pukes
             gs.pile_mgr.move_card(top_card, Zone.GRAVEYARD, cause='mill')
 
-
 class BazaarOfBaghdad(Resolver):
     """Draw two cards, then discard three cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.pile_mgr.draw(source.owner_id, 2)
         gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id, 3, 3)
-
 
 class Braingeyser(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
@@ -208,20 +204,17 @@ class Braingeyser(Resolver):
             x = getattr(source, 'variable_x', 0)  # read X chosen when casting
             gs.pile_mgr.draw(target, x)
 
-
 class DemonicTutor(Resolver):
     """Search your library for a card, put that card into your hand, then shuffle"""
     def resolve(self, gs: GameState, source: GameCard, target=None):
         p_id = source.owner_id
         gs.pending_choice = SearchLibraryChoice(p_id, gs, source, list(gs.pile_mgr.libraries[p_id]), Zone.HAND)
 
-
 class GlassesOfUrza(Resolver):
     """Look at opponent's hand"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         for c in gs.pile_mgr.hands[flip(source.owner_id)].cards:
             c.reveal()
-
 
 class GwendlynDiCorci(Resolver):
     """{T}: Target player discards a card at random. Activate only during your turn"""
@@ -237,13 +230,11 @@ class GwendlynDiCorci(Resolver):
         random_card: GameCard = gs.randomize_event(target, cards)
         gs.pile_mgr.discard(random_card, source)
 
-
 class JalumTome(Resolver):
     """Draw a card, then discard a card"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.pile_mgr.draw(source.owner_id)
         gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id)
-
 
 class MindTwist(Resolver):
     """Target player discards X cards at random"""
@@ -261,7 +252,6 @@ class MindTwist(Resolver):
             random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
             gs.pile_mgr.discard(random_card, source)
 
-
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
@@ -270,7 +260,6 @@ class NaturalSelection(Resolver):
         top_3_cards = gs.pile_mgr.libraries[target][:3]
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
         gs.pending_choice = NaturalSelectionChoice(source.owner_id, gs, source, target, top_3_cards)
-
 
 class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
@@ -289,7 +278,6 @@ class RagMan(Resolver):
         random_card: GameCard = gs.randomize_event(target, opp_creatures)
         gs.pile_mgr.discard(random_card, source)
 
-
 class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
@@ -299,14 +287,12 @@ class Visions(Resolver):
             print('Showing you', c)
         gs.pending_choice = ShuffleOrDontChoice(target, gs, source, gs.pile_mgr.libraries[target])
 
-
 class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for i in (0, 1):
             [DiscardCard(i, gs, card).play() for card in gs.pile_mgr.hands[i].cards]
             gs.pile_mgr.draw(i, 7)
-
 
 class Clone(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield;
@@ -317,7 +303,6 @@ class Clone(Resolver):
             return
         gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
 
-
 class CopyArtifact(Resolver):
     """You may have this enchantment enter as a copy of any artifact on the battlefield,
     except it's an enchantment in addition to its other types"""
@@ -326,7 +311,6 @@ class CopyArtifact(Resolver):
         if not card_options:
             return
         gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
-
 
 class EvilPresence(Resolver):
     """Enchant land Enchanted land is a Swamp"""
@@ -338,7 +322,6 @@ class EvilPresence(Resolver):
         target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Swamp'))
         for sub_type in sub_types:
             target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
-
 
 class PhantasmalTerrain(Resolver):
     """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type"""
@@ -353,13 +336,11 @@ class PhantasmalTerrain(Resolver):
         for sub_type in sub_types:
             target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
 
-
 class PrimalClay(Resolver):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,
     or a 1/6 Wall artifact creature with defender in addition to its other types."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         gs.pending_choice = PrimalClayChoice(s.owner_id, gs, s)
-
 
 class VesuvanDoppelgangerCast(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield,
@@ -372,7 +353,6 @@ class VesuvanDoppelgangerCast(Resolver):
             return
         gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False)
 
-
 class RapidFire(Resolver):
     """Cast this spell only before blockers are declared. Target creature gains first strike until end of turn.
     If it doesn't have rampage, that creature gains rampage 2 until end of turn."""
@@ -382,7 +362,6 @@ class RapidFire(Resolver):
         target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
         if not target.rampage_amt:
             target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Rampage 2', expires='EOT'))
-
 
 class SandalsOfAbdallahIslandWalk(Resolver):
     """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
@@ -431,7 +410,7 @@ class EnergyTap(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target is None:
             return
-        gs.tap_card(target)
+        target.tap()
         gs.mana_pools[source.owner_id].add_floating('C', source.props.mana_value)
         print(f"{source} taps to add {source.props.mana_value} colorless to your mana pool.")
 
@@ -1016,7 +995,7 @@ class VenarianGoldCast(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f"{source.props.name} needs a casting target")
-        gs.tap_card(target)
+        target.tap()
         if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
             source.counters.add_counter(SLEEP, x)
 
@@ -1067,7 +1046,7 @@ class WinterBlast(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a list of targets')
         for t in target:
-            gs.tap_card(t)
+            t.tap()
             if 'Flying' in t.keyword_abilities:
                 gs.apply_damage(source, 2, t)
 
