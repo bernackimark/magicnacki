@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Listener
-from models.effects.base_rules_queries import BASE_RULES
+from models.effects.listeners_base_rule_queries import BASE_RULES
 from models.events_all import ModQueryEvent
 
 @dataclass
