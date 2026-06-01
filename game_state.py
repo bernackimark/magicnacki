@@ -90,14 +90,13 @@ class GameState:
     def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
         """Creates DamageEvent, triggers damage preventions, adds .combat_damage_received to card,
         decrements life to player, handles Trample combat damage"""
-        # event = DamageEvent(source, amount, target, is_combat)  # now replaced w the DamageProposedEvent approach
+        # 1. Create & emit a DamageProposedEvent, allowing listeners to modify the amount; exit if no remaining damage
         event = DamageProposedEvent(source, target, amount, is_combat)
         self.event_mgr.emit(event, self)
-
-        # 2. Apply remaining damage
         if event.remaining <= 0:
             return
 
+        # 2. Damage amount is now resolved; handle trample; create DamageResolvedEvent
         resolved_events: list[DamageResolvedEvent] = []
 
         # 3. Apply damage
@@ -118,12 +117,12 @@ class GameState:
 
             resolved_events.append(DamageResolvedEvent(source, event.remaining, target, is_combat))
 
-        # 4. Emit resolved events
+        # 4. Emit resolved events, allowing listeners to react
         for e in resolved_events:
             self.event_mgr.emit(e, self)
 
-        # 5. Check SBAs
-        self.check_state_based_actions()  # checks if damage_received_this_turn >= creature.toughness
+        # 5. Check SBAs (ex: damage_received_this_turn >= creature.toughness)
+        self.check_state_based_actions()
 
     @staticmethod
     def randomize_event(p_id: int, sequence: Sequence[Any]) -> Any:
@@ -143,24 +142,6 @@ class GameState:
                 if blocker is c:
                     com.blockers.remove(blocker)
                     return
-
-    def handle_untap_phase(self):
-        """Untap all cards on in-turn player's board; remove summoning sickness;
-        if a card has an optional untap, check if player has already decided to leave a card tapped"""
-        for c in self.pile_mgr.boards[self.turn_mgr.player_turn_idx]:
-            if not c.is_tapped:
-                continue
-
-            for record in self.game_history.items:
-                if (record['turn_num'] == self.turn_mgr.turn_number and
-                        (record.get('type') == 'UntapCardStackPop' or record.get('type') == 'LeaveTapped')
-                        and record.get('card_id') == c.id_):
-                    print("You've already made an untap decision on this card this turn")
-                    break
-            else:
-                if self.perm_querier.can_untap(c):
-                    self.event_mgr.emit(UntapCardEvent(c), self)
-                    c.untap()
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility | BeginAbilityActivationAction] = []

@@ -18,6 +18,7 @@ class TurnManager:
         self._turn_number: int = 1
         self.has_played_land: bool = False
         self.cards_that_died: list[GameCard] = []
+        self.untap_decisions_made: set[str] = set()
 
     @property
     def turn_number(self) -> int:
@@ -33,5 +34,6 @@ class TurnManager:
         self.most_recent_turn_started[self.player_turn_idx] = self._turn_number
         self.has_played_land = False
         self.cards_that_died.clear()
+        self.untap_decisions_made.clear()
         gs.phase_mgr.set_phase(Phase.UNTAP, gs)
 

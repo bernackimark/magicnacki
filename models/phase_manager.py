@@ -3,6 +3,8 @@ from abc import ABC
 from enum import auto, IntEnum
 from typing import TYPE_CHECKING
 
+from models.events_all import UntapCardEvent
+
 if TYPE_CHECKING:
     from models.actions.base import Action
     from game_state import GameState
@@ -53,8 +55,17 @@ class UntapPhase(PhaseState):
         self.started = False
 
     def on_enter(self, gs: GameState) -> None:
+        """Signal the start of the Untap phase;
+        If optional untap, check if player has already decided to leave card tapped;
+        If compelled to stay tapped, skip; else untap all cards on in-turn player's board;"""
         from models.events_all import UntapPhaseEvent
         gs.event_mgr.emit(UntapPhaseEvent(gs.turn_mgr.player_turn_idx), gs)
+        for c in gs.pile_mgr.boards[gs.turn_mgr.player_turn_idx]:
+            if not c.is_tapped or c.id_ in gs.turn_mgr.untap_decisions_made:
+                continue
+            if gs.perm_querier.can_untap(c):
+                gs.event_mgr.emit(UntapCardEvent(c), self)
+                c.untap()
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.choice_actions_all import ChoiceAction
@@ -68,8 +79,6 @@ class UntapPhase(PhaseState):
             if isinstance(gs.action_stack.last_action, ChoiceAction):
                 return gs.action_stack.last_action.get_actions()
 
-        # resolve untap immediately
-        gs.handle_untap_phase()
         self.started = False
         return None  # no player decision
 

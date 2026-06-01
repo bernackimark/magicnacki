@@ -16,7 +16,7 @@ class TapCard(Action):
         return f"Tap {self.card.__repr__()}"
 
     def play(self) -> None:
-        self.card.tap(self.gs)
+        self.card.tap()
 
 
 @dataclass
@@ -27,7 +27,7 @@ class UntapCard(Action):
         return f"Untap {self.card.__repr__()}"
 
     def play(self) -> None:
-        self.card.untap(self.gs)
+        self.card.untap()
 
 
 class UntapCardStackPop(Action):
@@ -39,8 +39,8 @@ class UntapCardStackPop(Action):
         return f'Untap {self.source}'
 
     def play(self):
-        # self.gs.apply_untap_effects(self.source)  # not clear why this wasn't working
-        self.source.untap(self.gs)
+        self.source.untap()
+        self.gs.turn_mgr.untap_decisions_made.add(self.source.id_)
         self.gs.action_stack.pop()
 
 class UntapWithManaAction(Action):
@@ -54,7 +54,7 @@ class UntapWithManaAction(Action):
 
     def play(self):
         self.gs.mana_pools[self.source.owner_id].pay(self.mana_cost)
-        self.source.untap(self.gs)
+        self.source.untap()
         self.gs.action_stack.pop()
 
 class LeaveTapped(Action):
@@ -66,4 +66,5 @@ class LeaveTapped(Action):
         return f'Leave {self.card} tapped'
 
     def play(self):
+        self.gs.turn_mgr.untap_decisions_made.add(self.card.id_)
         self.gs.action_stack.pop()
