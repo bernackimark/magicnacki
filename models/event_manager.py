@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Listener
+from models.effects.base_rules_queries import BASE_RULES
 from models.events_all import ModQueryEvent
 
 @dataclass
@@ -18,13 +19,19 @@ class ListenerEntry:
     source: GameCard
 
 class EventManager:
-    """Handles all effects who method is 'on_event'"""
+    """Handles all Listener effects who method is 'on_event' -- both base rules & card-based effects"""
     def __init__(self):
         # key = Event subclass, value = list of (effect, source_card) tuples
+        self._base_rule_listeners: dict[type[Event], list[Listener]] = defaultdict(list)
         self._event_listeners: dict[type[Event], list[ListenerEntry]] = defaultdict(list)
+
+        self._register_base_rules()
 
     def emit(self, event: Event, gs: GameState):
         """Call all effects listening to a certain type of event (ex: EndStepEvent)"""
+        for base_rule in self._base_rule_listeners[type(event)]:
+            base_rule.on_event(gs, None, event)  # rare case where the 'source' argument is not supplied
+
         entries = list(self._event_listeners[type(event)])
         for e in entries:
             print(f'Event Listener Entry for {type(event)}:', e)
@@ -65,3 +72,7 @@ class EventManager:
     def cleanup_expired(self):
         for event_type, entries in self._event_listeners.items():
             self._event_listeners[event_type] = [e for e in entries if not e.effect.is_expired]
+
+    def _register_base_rules(self) -> None:
+        for base_rule in BASE_RULES:
+            self._base_rule_listeners[base_rule.listens_to].append(base_rule)

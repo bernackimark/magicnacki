@@ -36,12 +36,19 @@ class CanBlockQueryEvent(Event):
 @dataclass
 class CanCastQueryEvent(Event):
     card: GameCard
+    p_id: int
+    permission: bool | None = None
+
+@dataclass
+class CanDamageQueryEvent(Event):
+    source: GameCard
+    target: GameCard
     permission: bool | None = None
 
 @dataclass
 class CanTargetQueryEvent(Event):
     source: GameCard
-    target: GameCard
+    target: GameCard | int
     permission: bool | None = None
 
 @dataclass

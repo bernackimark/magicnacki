@@ -6,128 +6,117 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from models.constants import BASIC_LANDS
-from models.effects.base import Effect, Querier
+from models.effects.base import Listener
+from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanDamageQueryEvent, \
+    CanTargetQueryEvent
 from models.utils import flip
 
 
-class CanBlockRule(Querier):
-    query = 'can_block'
+class CanBlockRule(Listener):
+    listens_to = CanBlockQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: card = blocker, mandatory kwarg: attacker"""
-        attacker: GameCard = kwargs.get("attacker")
-        if not attacker or not card:
-            return None
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        a = event.attacker
+        b = event.blocker
 
-        if card.is_tapped:
-            return False
+        if b.is_tapped:
+            event.permission = False
+            return
 
-        if card in {blocker for com in gs.combats for blocker in com.blockers}:
-            return False
+        # blocker cannot already be blocking in another combat
+        if b in {blocker for com in gs.combats for blocker in com.blockers}:
+            event.permission = False
+            return
 
         # Global land walk rule
-        defender_idx = card.owner_id
         for walk, basic_land in zip([land.capitalize() + 'walk' for land in BASIC_LANDS], BASIC_LANDS):
-            if walk in attacker.keyword_abilities and gs.card_filter.on_player_board(defender_idx).by_slug(basic_land).result():
-                return False
+            if walk in a.keyword_abilities and gs.card_filter.on_player_board(b.owner_id).by_slug(basic_land).result():
+                event.permission = False
+                return
 
         # Global Flying/Reach rule
-        if ('Flying' in attacker.keyword_abilities and
-                not any(kwa for kwa in card.keyword_abilities if kwa in ('Flying', 'Reach'))):
-            return False
+        if ('Flying' in a.keyword_abilities and
+                not any(kwa for kwa in b.keyword_abilities if kwa in ('Flying', 'Reach'))):
+            event.permission = False
+            return
 
         # Protection from color rule
-        for kwa in attacker.keyword_abilities:
+        for kwa in a.keyword_abilities:
             if 'Protection From' in kwa:
                 *_, color_full_word = kwa.split()
                 color_map = {'Black': 'B', 'Blue': 'U', 'Green': 'G', 'Red': 'R', 'White': 'W'}
-                if color_map[color_full_word] in card.colors:
-                    return False
+                if color_map[color_full_word] in b.colors:
+                    event.permission = False
+                    return
 
-        return None  # no opinion if can_block
 
+class CanAttackRule(Listener):
+    listens_to = CanAttackQueryEvent
 
-class CanAttackRule(Querier):
-    query = 'can_attack'
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        a = event.attacker
+        if (not a.is_creature or (a.has_summoning_sickness and 'Haste' not in a.keyword_abilities)
+                or a.is_tapped):
+            event.permission = False
+            return
 
-    def on_query(self, gs: GameState, **kwargs):
-        """kwargs = includes 'card' when checking if a card can attack"""
-        if not kwargs.get('card'):
-            return None
-        card: GameCard = kwargs.get('card')
+        if 'Islandhome' in a.keyword_abilities:
+            if not gs.card_filter.on_player_board(flip(a.owner_id)).islands().result():
+                event.permission = False
+                return
 
-        if (not card.is_creature or (card.has_summoning_sickness and 'Haste' not in card.keyword_abilities)
-                or card.is_tapped):
-            return False
-
-        if 'Islandhome' in card.keyword_abilities:
-            if not gs.card_filter.on_player_board(flip(card.owner_id)).islands().result():
-                return False
-
-        adds, removes = card.modifiers.kwa_delta
+        adds, removes = a.modifiers.kwa_delta
 
         # explicit prohibition
         if 'Attack' in removes and 'Attack' not in adds:
-            return False
+            event.permission = False
+            return
 
         # defender (considers animate-wall)
-        if 'Defender' in card.keyword_abilities and 'Attack' not in adds:
-            return False
-
-        return None  # no opinion on whether the card can attack
-
-class CanCastRule(Querier):
-    query = 'can_cast'
-
-    def on_query(self, gs: GameState, **kwargs):
-        """kwargs include 'card' & 'p_id'"""
-        if not kwargs.get('card'):
-            return None
-        card: GameCard = kwargs.get('card')
-        if kwargs.get('p_id') is None:
-            raise ValueError(f"I can't determine if {card.props.name} can be cast, as no player ID was supplied")
-        p_id: int = kwargs.get('p_id')
-
-        if not gs.mana_pools[p_id].can_pay(card.casting_cost):
-            return False
-        if card.props.is_land and gs.turn_mgr.has_played_land:
-            return False
-        if gs.turn_mgr.player_turn_idx != p_id and 'Instant' not in card.props.card_types:
-            return False
-
-        return None  # no opinion on whether the cast can be cast
-
-class CanDamageRule(Querier):
-    query = 'can_damage'
-
-    def on_query(self, gs: GameState, **kwargs):
-        source: GameCard = kwargs.get('source')
-        target: GameCard = kwargs.get('card')
-        if not source:
+        if 'Defender' in a.keyword_abilities and 'Attack' not in adds:
+            event.permission = False
             return
 
+class CanCastRule(Listener):
+    listens_to = CanCastQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
+        c = event.card
+        if not gs.mana_pools[event.p_id].can_pay(c.casting_cost):
+            event.permission = False
+        elif c.props.is_land and gs.turn_mgr.has_played_land:
+            event.permission = False
+        elif gs.turn_mgr.player_turn_idx != event.p_id and 'Instant' not in c.props.card_types:
+            event.permission = False
+
+class CanDamageRule(Listener):
+    listens_to = CanDamageQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanDamageQueryEvent) -> None:
         # Protection from color rule
-        for kwa in target.keyword_abilities:
+        for kwa in event.target.keyword_abilities:
             if 'Protection From' in kwa:
                 *_, color_full_word = kwa.split()
                 color_map = {'Black': 'B', 'Blue': 'U', 'Green': 'G', 'Red': 'R', 'White': 'W'}
                 if color_map[color_full_word] in source.colors:
-                    return False
+                    event.permission = False
+                    return
 
-class CanTargetRule(Querier):
-    query = 'can_target'
+class CanTargetRule(Listener):
+    listens_to = CanTargetQueryEvent
 
-    def on_query(self, gs: GameState, **kwargs):
-        source: GameCard = kwargs.get('source')
-        target: GameCard | int = kwargs.get('card')
-        if not source or isinstance(target, int):
+    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
+        if isinstance(event.target, int):
             return
 
         # Protection from color rule
-        for kwa in target.keyword_abilities:
+        for kwa in event.target.keyword_abilities:
             if 'Protection From' in kwa:
                 *_, color_full_word = kwa.split()
                 color_map = {'Black': 'B', 'Blue': 'U', 'Green': 'G', 'Red': 'R', 'White': 'W'}
                 if color_map[color_full_word] in source.colors:
-                    return False
+                    event.permission = False
+                    return
 
+
+BASE_RULES = [CanAttackRule(), CanBlockRule(), CanCastRule(), CanDamageRule(), CanTargetRule()]
