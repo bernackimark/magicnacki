@@ -76,6 +76,9 @@ class DamageProposedEvent(Event):
     prevented: int = 0
     is_combat: bool = False
 
+    def __post_init__(self):
+        self.remaining = self.amt
+
 
 @dataclass(frozen=True)
 class DamageResolvedEvent(Event):
