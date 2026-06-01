@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
-from models.effects.listeners_generic import DestroyAtEndStep
+from models.effects.listeners_generic import DestroyAtEndStep, PreventNextDamageByEOT, PreventNextDamageToCardEOT
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
@@ -121,20 +121,6 @@ class EyeForAnEye(Resolver):
 
         gs.damage_preventions.append(
             PreventNextDamage(s, None, target_player=s.owner_id, source_card=t, on_prevent=deal_damage))
-
-
-class GaseousForm(Resolver):
-    """Prevent all combat damage that would be dealt this turn by enchanted creature and each creature blocking it."""
-    # TODO: THIS IS ALL DAMAGE ALWAYS.  DO I HANDLE THIS SOMEWHERE IN DAMAGE PREVENTION?
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        """target = the enchanted attacker"""
-        the_combat = [com for com in gs.combats if com.attacker == target]
-        if not the_combat:
-            return
-        gs.damage_preventions.append(PreventNextDamage(s, None, target_card=target, combat_only=True))
-        for b in the_combat[0].blockers:
-            gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
-
 
 class JovialEvil(Resolver):
     """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
@@ -756,9 +742,10 @@ class Feint(Resolver):
         the_combat = [com for com in gs.combats if com.attacker == target]
         if not the_combat:
             return
-        gs.damage_preventions.append(PreventNextDamage(s, None, target_card=target, combat_only=True))
-        for b in the_combat[0].blockers:
-            gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
+        the_combat = the_combat[0]
+        gs.event_mgr.register(PreventNextDamageByEOT(s, combat_only=True))
+        for b in the_combat.blockers:
+            gs.event_mgr.register(PreventNextDamageToCardEOT(b, combat_only=True))
             b.tap(gs)
 
 
@@ -846,14 +833,12 @@ class KoboldDrillSergeant(Resolver):
                 k.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample'))
                 k.modifiers.append(PTMod(s=source, p_adj=0, t_adj=1))
 
-
 class KryShield(Resolver):
     """Prevent all damage that would be dealt this turn by target creature you control.
     That creature gets +0/+X until end of turn, where X is its mana value"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        gs.damage_preventions.append(PreventNextDamage(s, source_card=t))
+        gs.event_mgr.register(PreventNextDamageByEOT(t), s)
         t.modifiers.append(PTMod(s=s, t_adj=t.props.mana_value, expires='EOT'))
-
 
 class LivingArtifactUpkeep(Resolver):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
@@ -861,7 +846,6 @@ class LivingArtifactUpkeep(Resolver):
         if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
         gs.action_stack.push(RemoveCounterForLifeChoice(s.owner_id, gs, s, VITALITY), gs, False)
-
 
 class ManaClash(Resolver):
     """You and target opponent each flip a coin. Mana Clash deals 1 damage to each player whose coin comes up tails.
@@ -894,19 +878,21 @@ class MazeOfIth(Resolver):
         the_combat = next((com for com in gs.combats if com.attacker is t), None)
         if not the_combat:
             return
-        gs.damage_preventions.append(PreventNextDamage(s, None, target_card=t, combat_only=True))
+        gs.event_mgr.register(PreventNextDamageByEOT(the_combat.attacker, combat_only=True))
         for b in the_combat.blockers:
-            gs.damage_preventions.append(PreventNextDamage(s, None, target_card=b, combat_only=True))
+            gs.event_mgr.register(PreventNextDamageToCardEOT(b, combat_only=True))
         t.untap(gs)
 
 
 class Rakalite(Resolver):
+    """{2}: Prevent the next 1 damage that would be dealt to any target this turn.
+    Return this artifact to its owner's hand at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
         """target is the card dealing damage"""
         if not target:
-            raise RuntimeError(f'{s.props.name} needs a target')
-        prevention = PreventNextDamage(s, None, source_card=target)
-        gs.damage_preventions.append(prevention)
+            raise ValueError(f'{s.props.name} needs a target')
+        gs.event_mgr.register(PreventNextDamageToCardEOT(target, 1), s)
+        # TODO: this bounce is supposed to occur at End Step; need to create a listener
         gs.pile_mgr.bounce(s)
 
 
@@ -971,7 +957,7 @@ class Subdue(Resolver):
     """Prevent all combat damage that would be dealt by target creature this turn.
     That creature gets +0/+X until end of turn, where X is its mana value."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        gs.damage_preventions.append(PreventNextDamage(s, None, source_card=t, combat_only=True))
+        gs.event_mgr.register(PreventNextDamageByEOT(t, combat_only=True), s)
         t.modifiers.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
 
 

@@ -309,6 +309,16 @@ class ForcefieldPrevention(Listener):
 
         self.is_expired = True
 
+class GaseousForm(Listener):
+    """Prevent all combat damage that would be dealt this turn by enchanted creature and each creature blocking it."""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if source.host not in (event.source, event.target) or not event.is_combat:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
 class MarblePriestPrevention(Listener):
     """Prevent all combat damage that would be dealt to this creature by Walls"""
     listens_to = DamageProposedEvent

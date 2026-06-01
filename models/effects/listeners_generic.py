@@ -100,6 +100,20 @@ class PreventAllDamageByEOT(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class PreventAllDamageToEOT(Listener):
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, damage_receiver: GameCard, combat_only: bool = False):
+        self.damage_receiver = damage_receiver
+        self.combat_only = combat_only
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not self.damage_receiver or (self.combat_only and not event.is_combat):
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
 class PreventNextDamageByEOT(Listener):
     listens_to = DamageProposedEvent
 
@@ -113,6 +127,23 @@ class PreventNextDamageByEOT(Listener):
         event.prevented += event.remaining
         event.remaining = 0
         self.is_expired = True
+
+class PreventNextDamageToCardEOT(Listener):
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, damage_receiver: GameCard, prevented_amt: int = None, combat_only: bool = False):
+        self.damage_receiver = damage_receiver
+        self.prevented_amt = prevented_amt
+        self.combat_only = combat_only
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not self.damage_receiver or (self.combat_only and not event.is_combat):
+            return
+        if self.prevented_amt is None:
+            self.prevented_amt = event.amt
+        event.prevented += self.prevented_amt
+        event.remaining = event.amt - self.prevented_amt
 
 class PreventNextDamageToSourceOwnerEOT(Listener):
     listens_to = DamageProposedEvent

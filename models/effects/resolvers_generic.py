@@ -5,7 +5,6 @@ from models.actions.tap_untap import LeaveTapped
 from models.choice_actions_all import PayManaOrSacUpkeepChoice, DiscardChoice, UntapWithManaChoice
 from models.constants import COLOR_LETTERS_W_COLORLESS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE
-from models.damage import PreventNextDamage
 from models.effects.base import Resolver
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
@@ -175,11 +174,22 @@ class PreventAllCombatDamageThisTurn(Resolver):
         from models.effects.listeners_generic import PreventAllDamageEOT
         gs.event_mgr.register(PreventAllDamageEOT(combat_only=True), source)
 
+class PreventAllDamageToThisTurn(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
+        from models.effects.listeners_generic import PreventAllDamageToEOT
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.event_mgr.register(PreventAllDamageToEOT(target), source)
+
 class PreventNextDamageToCardEffect(Resolver):
+    def __init__(self, prevent_amt: int = None, combat_only: bool = False):
+        self.prevent_amt = prevent_amt
+        self.combat_only = combat_only
+
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         """target = the GameCard being protected"""
-        gs.damage_preventions.append(PreventNextDamage(source, target_card=target))
-
+        from models.effects.listeners_generic import PreventNextDamageToCardEOT
+        gs.event_mgr.register(PreventNextDamageToCardEOT(target, self.prevent_amt, self.combat_only), source)
 
 class Destroy(Resolver):
     def __init__(self, allow_regen: bool = True):

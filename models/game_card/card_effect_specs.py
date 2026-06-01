@@ -13,7 +13,7 @@ from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINU
     CHARGE, DREAM, HATCHLING, CounterType
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
 from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, TowerOfCoireall, CityOfShadowsAA1, \
-    CityOfShadowsAA2, CocoonCast, RockHydraCast, Banshee, Earthquake, EternalFlame, EyeForAnEye, GaseousForm, \
+    CityOfShadowsAA2, CocoonCast, RockHydraCast, Banshee, Earthquake, EternalFlame, EyeForAnEye, \
     JovialEvil, Sandstorm, StormSeeker, Tracker, Typhoon, AshesToAshes, DustToDust, EaterOfTheDead, Millstone, \
     BazaarOfBaghdad, Braingeyser, DemonicTutor, GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, \
     RagMan, Visions, WheelOfFortune, Clone, CopyArtifact, EvilPresence, PhantasmalTerrain, PrimalClay, \
@@ -38,7 +38,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, HandToBoard, Pump, \
     CreateTokenCreature, RemoveHostAuras, TapCardEffect, TapCardsEffect, UntapCardEffect, UntapCardsEffect, \
     HostStaysTapped, StaysTapped, UntapForManaEffect, UntapHostForManaEffect, PreventNextDamageToSourceOwner, \
-    PreventAllDamageBy, PreventNextDamageBy
+    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn
 from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
     YdwenEfreet, TimeElementalAttackedOrBlocked, Backfire, ElHajjaj, FungusaurOnDamage, HypnoticSpecter, \
@@ -53,10 +53,11 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, AnkhOfMishra, CitanulDruid, \
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
-    UncleIstvanPrevention, MartyrsOfKorlis
+    UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
-    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures
+    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
+    PreventNextDamageToCardEOT
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     Seeker, Moat, \
@@ -467,7 +468,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ice-storm': [Triggered(Destroy(), T_FUNCS['lands'], CastResolvedEvent)],
     'immolation': [Triggered(Pump(2, -2), T_FUNCS['creatures'], CastResolvedEvent)],
     'indestructible-aura':
-        [Triggered(PreventNextDamageToCardEffect(), T_FUNCS['creatures'], CastResolvedEvent)],
+        [Triggered(PreventAllDamageToThisTurn(), T_FUNCS['creatures'], CastResolvedEvent)],
     'infernal-medusa': [Triggered(InfernalMedusa(), None, BlockEvent)],
     'inferno': [Triggered(DealDamageToAllCreaturesAndPlayers(6), None, CastResolvedEvent)],
     'instill-energy':
@@ -672,7 +673,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                              allowed_phases=[p for p in Phase if p < Phase.DECLARE_BLOCKERS])],
     'rasputin-dreamweaver': [Triggered(AddCounter(DREAM, 7), None, CastResolvedEvent),
                              Activated('', AddMana('C'), extra_costs=[RemoveCounterCost(DREAM)]),
-                             Activated('', PreventNextDamageToCardEffect(), T_FUNCS['self'],
+                             Activated('', PreventNextDamageToCardEffect(1), T_FUNCS['self'],
                                        extra_costs=[RemoveCounterCost(DREAM)])],  # more to code
     'reconstruction': [Triggered(Bounce(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE,
