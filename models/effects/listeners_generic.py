@@ -160,6 +160,21 @@ class PreventNextDamageToSourceOwnerEOT(Listener):
         event.remaining = event.amt - event.prevented
         self.is_expired = True
 
+class PreventNextDamageToEOT(Listener):
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, protected_target: GameCard | int, preventable_amt: int | None = None, combat_only: bool = False):
+        self.protected_target = protected_target
+        self.preventable_amt = preventable_amt
+        self.combat_only = combat_only
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not self.protected_target or (self.combat_only and not event.is_combat):
+            return
+        event.prevented += min(self.preventable_amt, event.remaining)
+        event.remaining = event.amt - event.prevented
+        self.is_expired = True
 
 # --- DAMAGE RESOLVED EVENT ---
 class AddPoisonCounter(Listener):
@@ -195,13 +210,17 @@ class AddCounterAtEndStep(Listener):
         gs.event_mgr.unregister_specific_effect(self)
 
 class DestroyAtEndStep(Listener):
-    """Destroys target if it is still on the battlefield; unregisters itself"""
+    """Destroys target if it is still on the battlefield at end step"""
     listens_to = EndStepEvent
+    expires = 'EOT'
 
-    def on_event(self, gs: GameState, card: GameCard, event: EndStepEvent):
-        if card not in gs.card_filter.in_play().result():
+    def __init__(self, card_to_be_destroyed: GameCard):
+        self.card_to_be_destroyed = card_to_be_destroyed
+
+    def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
+        if self.card_to_be_destroyed not in gs.card_filter.in_play().result():
             return
-        gs.pile_mgr.destroy(card)
+        gs.pile_mgr.destroy(self.card_to_be_destroyed)
         self.is_expired = True
 
 # --- UNTAP CARD EVENT ---

@@ -5,7 +5,8 @@ from typing import TYPE_CHECKING, Optional, Literal
 
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
-from models.effects.listeners_generic import DestroyAtEndStep, PreventNextDamageByEOT, PreventNextDamageToCardEOT
+from models.effects.listeners_generic import DestroyAtEndStep, PreventNextDamageByEOT, PreventNextDamageToCardEOT, \
+    PreventAllDamageToEOT
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
     MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
@@ -111,16 +112,10 @@ class EternalFlame(Resolver):
 
 class EyeForAnEye(Resolver):
     """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
-    # Handling this in an interesting way to work within current framework:
-    # Prevent all damage via gs.damage_preventions, then apply the damage here via the callback
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         """target = the GameCard doing the original damage"""
-        def deal_damage(prevented: int):
-            gs.apply_damage(t, prevented, s.owner_id)
-            gs.apply_damage(s, prevented, t.owner_id)
-
-        gs.damage_preventions.append(
-            PreventNextDamage(s, None, target_player=s.owner_id, source_card=t, on_prevent=deal_damage))
+        from .listeners_card_specific import EyeForAnEyeEOT
+        gs.event_mgr.register_effect(EyeForAnEyeEOT(watched_source=t, player_id=s.owner_id), s)
 
 class JovialEvil(Resolver):
     """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
@@ -792,9 +787,8 @@ class GlyphOfDestruction(Resolver):
     Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
-        # gs.damage_preventions.append(PreventAllDamage())  # Will this prevent all damage to everyone?
-        # TODO: the above line needs to be updated, since I remove PreventAllDamage
-        gs.event_mgr.register(DestroyAtEndStep(), s)
+        gs.event_mgr.register(PreventAllDamageToEOT(t), s)
+        gs.event_mgr.register(DestroyAtEndStep(t), s)
 
 
 class HealingSalve(Resolver):
@@ -898,16 +892,11 @@ class Rakalite(Resolver):
 
 class ReverseDamage(Resolver):
     """The next time a source of your choice would deal damage to you this turn, prevent that damage.
-    You gain life equal to the damage prevented this way.
-    Since amount prevented isn't known upon cast, use PreventNextDamage.on_prevent() callback to later call gain_life"""
+    You gain life equal to the damage prevented this way."""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         """target = the GameCard doing the damage"""
-        def gain_life(prevented: int):
-            gs.score_mgr.increment_life(s.owner_id, prevented, s, gs)
-
-        gs.damage_preventions.append(
-            PreventNextDamage(s, None, target_player=s.owner_id, source_card=target, on_prevent=gain_life))
-
+        from .listeners_card_specific import ReverseDamageEOT
+        gs.event_mgr.register(ReverseDamageEOT(damage_dealer=target), s)
 
 class RocketLauncherCast(Resolver):
     """To support 'Activate only if you've controlled continuously since the beginning of your most recent turn."""
@@ -919,7 +908,7 @@ class RocketLauncherAA(Resolver):
     """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
-        gs.event_mgr.register(DestroyAtEndStep(), s)
+        gs.event_mgr.register(DestroyAtEndStep(s), s)
 
 class SacrificeOnCast(Resolver):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
@@ -951,7 +940,7 @@ class StoneGiant(Resolver):
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
-        gs.event_mgr.register(DestroyAtEndStep(), s)
+        gs.event_mgr.register(DestroyAtEndStep(t), s)
 
 class Subdue(Resolver):
     """Prevent all combat damage that would be dealt by target creature this turn.

@@ -339,6 +339,24 @@ class MartyrsOfKorlis(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class ReverseDamageEOT(Listener):
+    """The next time a source of your choice would deal damage to you this turn, prevent that damage.
+    You gain life equal to the damage prevented this way."""
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, damage_dealer: GameCard):
+        self.damage_dealer = damage_dealer
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.source is not self.damage_dealer:
+            return
+        the_damage_amt = event.remaining
+        event.prevented += event.remaining
+        event.remaining = 0
+        self.is_expired = True
+        gs.score_mgr.increment_life(source.owner_id, the_damage_amt, source, gs)
+
 class ScarecrowPrevention(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
@@ -372,7 +390,6 @@ class Backfire(Listener):
         if event.source is source.host and event.target == source.owner_id:
             gs.apply_damage(source, event.amt, source.host.owner_id)
 
-
 class ElHajjaj(Listener):
     """Whenever this creature deals damage, you gain that much life"""
     listens_to = DamageResolvedEvent
@@ -381,6 +398,20 @@ class ElHajjaj(Listener):
         if event.source is source and event.amt > 0:
             gs.score_mgr.increment_life(source.owner_id, event.amt, source, gs)
 
+class EyeForAnEyeEOT(Listener):
+    """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
+    listens_to = DamageResolvedEvent
+    expires = 'EOT'
+
+    def __init__(self, damage_dealer: GameCard, damage_receiving_player: int):
+        self.damage_dealer = damage_dealer
+        self.damage_receiving_player = damage_receiving_player
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> None:
+        if self.is_expired or event.source is not self.damage_dealer or event.target != self.damage_receiving_player:
+            return
+        self.is_expired = True
+        gs.apply_damage(source, event.amt, self.damage_dealer.owner_id)
 
 class FungusaurOnDamage(Listener):
     """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
@@ -433,7 +464,6 @@ class LivingArtifactOnDamage(Listener):
             return
         source.counters.add_counter(VITALITY)
 
-
 class NicolBolas(Listener):
     """Whenever this creature deals damage to an opponent, that player discards their hand"""
     listens_to = DamageResolvedEvent
@@ -447,7 +477,6 @@ class NicolBolas(Listener):
             return
         for c in opp_cards:
             gs.pile_mgr.discard(c, source)
-
 
 class SpiritLink(Listener):
     """Enchant creature  Whenever enchanted creature deals damage, you gain that much life"""

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import random
-from typing import Callable, Any, Sequence, TYPE_CHECKING
+from typing import Any, Sequence, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.game_card.card import Card
@@ -14,8 +14,6 @@ from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import Combat
 from models.damage import PreventNextDamage
-from models.destroy_replacements import RegenerationShield
-from models.effects.base import Effect
 from models.events_all import TapCardEvent, UntapCardEvent, DamageResolvedEvent, CastResolvedEvent, RandomEvent, \
     DamageProposedEvent
 from models.game_card.game_card import GameCard
@@ -70,7 +68,6 @@ class GameState:
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
         # candidates for replacement via Listeners!
-        self.damage_preventions: list[PreventNextDamage] = []
         self.cards_that_died_this_turn: list[GameCard] = []
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)

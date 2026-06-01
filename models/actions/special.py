@@ -63,9 +63,9 @@ class DestroyAndForegoCombatDamage(Action):
         return f'Destroy {self.target} & forego combat damage assigned by {self.source.props.name}'
 
     def play(self):
+        from models.effects.listeners_generic import PreventNextDamageByEOT
         self.gs.pile_mgr.destroy(self.target)
-        pnd = PreventNextDamage(self.source, target_player=flip(self.source.owner_id), combat_only=True)
-        self.gs.damage_preventions.append(pnd)
+        self.gs.event_mgr.register(PreventNextDamageByEOT(self.source, combat_only=True))
         self.gs.action_stack.pop()
 
 class PayManaForLife(Action):
@@ -216,11 +216,8 @@ class HealingSalveB(Action):
         return 'Prevent the next 3 damage that would be dealt to any target this turn'
 
     def play(self) -> None:
-        if isinstance(self.target, int):
-            pnd = PreventNextDamage(self.s, 3, target_player=self.target)
-        else:
-            pnd = PreventNextDamage(self.s, 3, target_card=self.target)
-        self.gs.damage_preventions.append(pnd)
+        from models.effects.listeners_generic import PreventNextDamageToEOT
+        self.gs.event_mgr.register(PreventNextDamageToEOT(self.target, 3))
         self.gs.action_stack.pop()
 
 class PrimalClayA(Action):
