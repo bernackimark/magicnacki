@@ -66,9 +66,6 @@ class GameState:
 
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
-        # candidates for replacement via Listeners!
-
-
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx,
                                                                   self, self.rules['mulligan'])
@@ -88,14 +85,6 @@ class GameState:
         (ex: creatures w 0 toughness or unattached auras must die, etc.)"""
         for rule in self.state_based_rules:
             rule.apply(self)
-
-    # Pile Helpers & card movement
-    @property
-    def all_cards(self) -> list[GameCard]:
-        """Returns all cards, including tokens"""
-        return ([c for lib in self.pile_mgr.libraries for c in lib] + [c for h in self.pile_mgr.hands for c in h.cards] +
-                [c for g in self.pile_mgr.graveyards for c in g] + [c for e in self.pile_mgr.exiles for c in e] +
-                [c for b in self.pile_mgr.boards for c in b])
 
     # --- DAMAGE ---
     def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):

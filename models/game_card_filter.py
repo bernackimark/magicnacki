@@ -15,7 +15,7 @@ class CardFilter:
     tapped(is_tapped: bool = True), has(kwa: str, bool_: bool = True)"""
     def __init__(self, gs: GameState):
         self._gs = gs
-        self._cards = self._gs.all_cards
+        self._cards = self._gs.pile_mgr.all_cards
 
     # --- in what pile, card is located ---
     def in_player_hand(self, p_id: int):
@@ -220,5 +220,5 @@ class CardFilter:
 
     def result(self) -> list[GameCard]:
         cards_to_return = self._cards
-        self._cards = self._gs.all_cards  # since self._cards continuously filters, must reset it for subsequent use
+        self._cards = self._gs.pile_mgr.all_cards  # since self._cards continuously filters, must reset for next use
         return cards_to_return

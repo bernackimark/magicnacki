@@ -16,7 +16,7 @@ class PileManager:
     """Handles card location & movement across piles"""
     def __init__(self, gs: GameState):
         self._gs = gs
-        self.libraries: list[list[GameCard]] = self._gs.all_player_cards.copy()
+        self.libraries: list[list[GameCard]] = list(self._gs.all_player_cards)
         self.boards: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
@@ -26,6 +26,13 @@ class PileManager:
         for lib in self.libraries:
             for c in lib:
                 c.game_state = self._gs
+
+    @property
+    def all_cards(self) -> list[GameCard]:
+        """Returns all cards, including tokens"""
+        return ([c for lib in self.libraries for c in lib] + [c for h in self.hands for c in h.cards] +
+                [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
+                [c for b in self.boards for c in b])
 
     def move_card(self, card: GameCard, to_zone: Zone, *, cause: str | None = None, emit_zone_event: bool = True):
         if card.zone == to_zone:
