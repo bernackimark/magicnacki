@@ -41,7 +41,7 @@ class ConsolePlayer(Player):
                 elif sel_action.lower() == 'c':
                     return Concede(self.idx, gs)
                 elif sel_action.lower() == 'cf':
-                    args = input(f"Enter args: ({', '.join(ARG_LOOKUP)}) (ex: color=R,G p>=3 kwa=Trample set=1E,AN) ")
+                    args = input(f"Enter args: ({', '.join(ARG_LOOKUP)}) (ex: color=R,G p>=3 kwa=Trample set=lea) ")
                     print_slugs_from_args(args)
                 else:
                     print_quick_card_info(sel_action)
