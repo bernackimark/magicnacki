@@ -24,7 +24,7 @@ from models.effects.base import Resolver
 from models.effects.listeners_card_specific import GlyphOfDoomListener, GlyphOfLifeListener, \
     SandalsOfAbdallahIfCreatureDies
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
-from models.effects.queries import TowerOfCoireallEOT, NoAttacksAllowedEOT
+from models.effects.listeners_permission import TowerOfCoireallEOT, NoAttacksAllowedEOT
 from models.modifiers import SubTypeMod, KWAMod, PTMod
 from models.utils import flip
 from models.zone import Zone

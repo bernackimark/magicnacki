@@ -26,11 +26,13 @@ class QueryManager:
 
     def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
         event = CanBlockQueryEvent(blocker=blocker, attacker=attacker)
-        self._gs.event_mgr.emit(event, self)
+        print(f'Checking if {blocker} can block {attacker}')
+        self._gs.event_mgr.emit(event, self._gs)
+        print(f'The event permission is {event.permission}')
         return event.permission is not False
 
-    def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
-        return self._query_effects('can_block', blocker, attacker=attacker)
+    # def can_block(self, blocker: GameCard, attacker: GameCard) -> bool:
+    #     return self._query_effects('can_block', blocker, attacker=attacker)
 
     def can_cast(self, card: GameCard, p_id: int) -> bool:
         return self._query_effects('can_cast', card, p_id=p_id)

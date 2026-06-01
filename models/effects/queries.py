@@ -10,8 +10,8 @@ from models.utils import flip
 from models.phase_manager import Phase
 
 """
-These query-style effects must have a class-level attribute 'query', implement on_query(), and return a bool.
-These all ask for permission to do something.
+This file is scheduled for deletion.  It should have been replaced in full by listeners_permission.py.
+Retain until the Listener listens_to = QueryEvent approach has been validated
 """
 
 

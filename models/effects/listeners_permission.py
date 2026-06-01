@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.events_all import Event, CanBlockQueryEvent, CanAttackQueryEvent
+from models.events_all import Event, CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
+    CanUntapQueryEvent
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -18,36 +19,30 @@ These all ask for permission to do something.
 
 
 # --- GENERICS ---
-class CantBeTargetedByAuras(Querier):
+class CantBeTargetedByAuras(Listener):
     """Card can't host an aura"""
-    query = 'can_target'
+    listens_to = CanTargetQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
-        target = card
-        if not source or not target or 'Aura' not in source.card_sub_types:
+    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
+        if event.target is not source or 'Aura' not in event.source.card_sub_types:
             return
-        return False
+        event.permission = False
 
-class HostCantAttack(Querier):
-    query = 'can_attack'
+class HostCantAttack(Listener):
+    listens_to = CanAttackQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        source = kwargs.get('source')
-        if source.attached_to is card:
-            return False
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if source.host is event.attacker:
+            event.permission = False
 
-class HostCantBeTargetedByAuras(Querier):
+class HostCantBeTargetedByAuras(Listener):
     """Host can't host an aura"""
-    query = 'can_target'
+    listens_to = CanTargetQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
-        target = card
-        host: GameCard = kwargs.get('target_host')
-        if host is not target or 'Aura' not in source.card_sub_types:
+    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
+        if event.target is not source.host or 'Aura' not in event.source.card_sub_types:
             return
-        return False
+        event.permission = False
 
 class NoAttacksAllowedEOT(Listener):
     """No attacks are allowed this turn"""
@@ -69,258 +64,224 @@ class UnblockableEOT(Listener):
         if event.attacker is self.target:
             event.permission = False
 
-class WalkRuleRemoved(Querier):
+class WalkRuleRemoved(Listener):
     """Creatures with a landwalk can be blocked as though they didn't have that landwalk."""
-    query = 'can_block'
+    listens_to = CanBlockQueryEvent
 
     def __init__(self, walk_type: str):
         self.walk_type = walk_type
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        attacker = kwargs.get('attacker')
-        if not attacker:
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if self.walk_type not in event.attacker.keyword_abilities:
             return None
-        if self.walk_type not in attacker.keyword_abilities:
-            return None
-        return True  # a hard-confirm that the block is allowed
+        event.permission = True  # a hard-confirm that the block is allowed
 
 # --- CARD-SPECIFIC ---
-class AkronLegionnaire(Querier):
+class AkronLegionnaire(Listener):
     """Except for creatures named Akron Legionnaire and artifact creatures, creatures you control can't attack"""
-    query = 'can_attack'
+    listens_to = CanAttackQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_attack, card = the subject card"""
-        if card not in gs.card_filter.creatures().on_player_board(card.owner_id).result():
-            return None
-        artifact_creatures = gs.card_filter.on_player_board(card.owner_id).creatures().artifacts().result()
-        akron_legionnaires = gs.card_filter.on_player_board(card.owner_id).by_slug('akron-legionnaire').result()
-        if card not in artifact_creatures + akron_legionnaires:
-            return False
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        a = event.attacker
+        if a not in gs.card_filter.creatures().on_player_board(source.owner_id).result():
+            return
+        artifact_creatures = gs.card_filter.on_player_board(a.owner_id).creatures().artifacts().result()
+        akron_legionnaires = gs.card_filter.on_player_board(a.owner_id).by_slug('akron-legionnaire').result()
+        if a not in artifact_creatures + akron_legionnaires:
+            event.permission = False
 
-class AmrouKithkin(Querier):
+class AmrouKithkin(Listener):
     """This creature can't be blocked by creatures with power 3 or greater"""
-    query = 'can_block'
+    listens_to = CanBlockQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'amrou-kithkin':
-            return None
-        if card.power >= 3:
-            return False
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source:
+            return
+        if event.blocker.power >= 3:
+            event.permission = False
 
-class ArtifactWardCanBeBlocked(Querier):
-    """This creature can't be blocked by artifact creatures"""
-    query = 'can_block'
+class ArtifactWardCanBeBlocked(Listener):
+    """Enchanted creature can't be blocked by artifact creatures"""
+    listens_to = CanBlockQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if 'artifact-ward' not in {a.props.slug for a in attacker.auras}:
-            return None
-        if 'Artifact' in card.card_types:
-            return False
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source.host:
+            return
+        event.permission = False
 
-class ArtifactWardCanBeTargeted(Querier):
+class ArtifactWardCanBeTargeted(Listener):
     """Enchanted creature can't be the target of abilities from artifact sources"""
-    query = 'can_target'
+    listens_to = CanTargetQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        source: GameCard = kwargs.get('source')
-        target = card
-        if not source or not target or 'artifact-ward' not in {a.props.slug for a in target.auras}:
+    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
+        if event.target is not source.host or 'Artifact' not in source.card_types:
             return
-        if 'Artifact' in source.card_types:
-            return False
+        event.permission = False
 
-class ArgothianPixiesCanBeBlocked(Querier):
+class ArgothianPixiesCanBeBlocked(Listener):
     """This creature can't be blocked by artifact creatures"""
-    query = 'can_block'
+    listens_to = CanBlockQueryEvent
 
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'argothian-pixies':
-            return None
-        if 'Artifact' in card.props.card_types:
-            return False
-
-class BogRats(Querier):
-    """This creature can't be blocked by Walls"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'bog-rats':
-            return None
-        if 'Wall' in card.card_sub_types:
-            return False
-
-class CityInABottle(Querier):
-    """Players can't cast spells or play lands with a name originally printed in the Arabian Nights expansion"""
-    query = 'can_cast'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        if card in gs.card_filter.by_set_code('AN').result():
-            return False
-
-class ElderSpawnCanBeBlocked(Querier):
-    """This creature can't be blocked by red creatures"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'elder-spawn':
-            return None
-        if 'R' in card.props.colors:
-            return False
-
-class ElvenRidersCanBeBlocked(Querier):
-    """This creature can't be blocked except by Walls and/or creatures with flying"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'elven-riders':
-            return None
-        if 'Wall' not in card.card_sub_types or 'Flying' not in card.keyword_abilities:
-            return False
-
-class EvilEyeOfOrmsByGoreCanBeBlocked(Querier):
-    """Can only be blocked by walls"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'evil-eye-of-orms-by-gore':
-            return None
-        if 'Wall' not in card.card_sub_types:
-            return False
-
-class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Querier):
-    """Non-Eye creatures you control can't attack."""
-    query = 'can_attack'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        if card not in gs.card_filter.on_player_board(card.owner_id).creatures().by_sub_type('Eye').result():
-            return False
-
-class Fear(Querier):
-    """Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if not card or not attacker.host or attacker.host.props.slug != 'fear':
-            return None
-        artifact_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).artifacts().creatures().result()
-        black_creatures = gs.card_filter.on_player_board(flip(card.owner_id)).black().creatures().result()
-        if card not in artifact_creatures + black_creatures:
-            return False
-
-class Invisibility(Querier):
-    """Enchanted creature can't be blocked except by Walls"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if not attacker.host or attacker.host.props.slug != 'invisibility' or not card:
-            return None
-        if 'Wall' not in card.card_sub_types:
-            return False
-
-class IronclawOrcs(Querier):
-    """This creature can't block creatures with power 2 or greater"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = 'ironclaw-orcs', mandatory kwargs: blocker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if card.props.slug != 'ironclaw-orcs' or not attacker:
-            return None
-        if attacker.power >= 2:
-            return False
-
-class JuggernautUnblockableByWalls(Querier):
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'juggernaut':
-            return None
-        if card in gs.card_filter.walls().result():
-            return False
-
-class LivonyaSilone(Querier):
-    """Legendary landwalk (This creature can't be blocked as long as defending player controls a legendary land.)"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if attacker.props.slug != 'livonya-silone':
-            return None
-        if gs.card_filter.on_player_board(card.owner_id).legendary().lands().result():
-            return False
-
-class Meekstone(Querier):
-    """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
-    query = 'can_untap'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        if card.props.is_creature and card.power >= 3:
-            return False
-        return None
-
-class Moat(Querier):
-    """Creatures without flying can't attack"""
-    query = 'can_attack'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        if card not in gs.card_filter.in_play().has('Flying', False).creatures().result():
-            return None
-        return False
-
-class Seeker(Querier):
-    """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
-    query = 'can_block'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        """Query: can_block, card = blocker, mandatory kwargs: attacker"""
-        attacker: GameCard = kwargs.get('attacker')
-        if not attacker.host or attacker.host.props.slug != 'seeker':
-            return None
-        if 'Artifact' not in card.card_types or 'U' not in card.colors:
-            return False
-
-class SirensCallCanCast(Querier):
-    """Cast this spell only during an opponent's turn, before attackers are declared ..."""
-    query = 'can_cast'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        if gs.turn_mgr.player_turn_idx == card.owner_id:
-            return None
-        if gs.phase_mgr.phase >= Phase.DECLARE_ATTACKERS:
-            return False
-
-class SpectralCloak(Querier):
-    """Enchanted creature has shroud as long as it's untapped. (It can't be the target of spells or abilities.)"""
-    query = 'can_target'
-
-    def on_query(self, gs: GameState, card: GameCard, **kwargs):
-        target = card
-        host: GameCard = kwargs.get('target_host')
-        if host is not target or host.is_tapped:
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source or 'Artifact' not in event.blocker.card_types:
             return
-        return False
+        event.permission = False
+
+class BogRats(Listener):
+    """This creature can't be blocked by Walls"""
+    listens_to = CanBlockQueryEvent
+    query = 'can_block'
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source or 'Wall' not in event.blocker.card_types:
+            return
+        event.permission = False
+
+class CityInABottle(Listener):
+    """Players can't cast spells or play lands with a name originally printed in the Arabian Nights expansion"""
+    listens_to = CanCastQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
+        if event.card in gs.card_filter.by_set_code('AN').result():
+            event.permission = False
+
+class ElderSpawnCanBeBlocked(Listener):
+    """This creature can't be blocked by red creatures"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source or 'R' not in event.blocker.colors:
+            return
+        event.permission = False
+
+class ElvenRidersCanBeBlocked(Listener):
+    """This creature can't be blocked except by Walls and/or creatures with flying"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source:
+            return
+        if 'Wall' not in event.blocker.card_sub_types or 'Flying' not in event.blocker.keyword_abilities:
+            event.permission = False
+
+class EvilEyeOfOrmsByGoreCanBeBlocked(Listener):
+    """Can only be blocked by walls"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source or 'Wall' not in event.blocker.card_sub_types:
+            return
+        event.permission = False
+
+class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Listener):
+    """Non-Eye creatures you control can't attack."""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        a = event.attacker
+        if source.owner_id != a.owner_id:
+            return
+        if a not in gs.card_filter.on_player_board(a.owner_id).creatures().by_sub_type('Eye').result():
+            event.permission = False
+
+class Fear(Listener):
+    """Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        a = event.attacker
+        if a.host is not source:
+            return
+        artifact_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).artifacts().creatures().result()
+        black_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).black().creatures().result()
+        if event.blocker not in artifact_creatures + black_creatures:
+            event.permission = False
+
+class Invisibility(Listener):
+    """Enchanted creature can't be blocked except by Walls"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker.host is not source or 'Wall' in event.blocker.card_sub_types:
+            return
+        event.permission = False
+
+class IronclawOrcs(Listener):
+    """This creature can't block creatures with power 2 or greater"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.blocker is not source or event.attacker.power < 2:
+            return
+        event.permission = False
+
+class JuggernautUnblockableByWalls(Listener):
+    """... This creature can't be blocked by Walls"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source or 'Wall' not in event.blocker.card_sub_types:
+            return
+        event.permission = False
+
+class LivonyaSilone(Listener):
+    """Legendary landwalk (This creature can't be blocked as long as defending player controls a legendary land.)"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source:
+            return
+        if gs.card_filter.on_player_board(event.blocker.owner_id).legendary().lands().result():
+            event.permission = False
+
+class Meekstone(Listener):
+    """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if event.card.is_creature and event.card.power >= 3:
+            event.permission = False
+
+class Moat(Listener):
+    """Creatures without flying can't attack"""
+    listens_to = CanAttackQueryEvent
+    query = 'can_attack'
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if event.attacker in gs.card_filter.in_play().has('Flying').creatures().result():
+            event.permission = False
+
+class Seeker(Listener):
+    """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        a = event.attacker
+        if a.host is not source:
+            return
+        artifact_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).artifacts().creatures().result()
+        white_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).white().creatures().result()
+        if event.blocker not in artifact_creatures + white_creatures:
+            event.permission = False
+
+class SirensCallCanCast(Listener):
+    """Cast this spell only during an opponent's turn, before attackers are declared ..."""
+    listens_to = CanCastQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
+        if gs.turn_mgr.player_turn_idx == event.card.owner_id:
+            return
+        if gs.phase_mgr.phase >= Phase.DECLARE_ATTACKERS:
+            event.permission = False
+
+class SpectralCloak(Listener):
+    """Enchanted creature has shroud as long as it's untapped. (It can't be the target of spells or abilities.)"""
+    listens_to = CanTargetQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
+        if event.target is not source.host:
+            return
+        event.permission = False
 
 class TowerOfCoireallEOT(Listener):
     """Target creature can't be blocked by Walls this turn"""

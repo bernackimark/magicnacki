@@ -25,22 +25,19 @@ class EventManager:
 
     def emit(self, event: Event, gs: GameState):
         """Call all effects listening to a certain type of event (ex: EndStepEvent)"""
-        gs._query_depth += 1  # temp solution while getting all event system unified
-        try:
-            entries = list(self._event_listeners[type(event)])
-            for e in entries:
+        entries = list(self._event_listeners[type(event)])
+        for e in entries:
+            print(f'Event Listener Entry for {type(event)}:', e)
 
-                if isinstance(event, ModQueryEvent):
-                    # enforce type contract
-                    if hasattr(e.effect, "modifies"):
-                        if e.effect.modifies != event.query:
-                            continue
+            if isinstance(event, ModQueryEvent):
+                # enforce type contract
+                if hasattr(e.effect, "modifies"):
+                    if e.effect.modifies != event.query:
+                        continue
 
-                e.effect.on_event(gs, e.source, event)
+            e.effect.on_event(gs, e.source, event)
 
-            self.cleanup_expired()
-        finally:
-            gs._query_depth -= 1
+        self.cleanup_expired()
 
     def register(self, effect: Listener, source_card: GameCard):
         """Store the effect + source card tuple for later event emission."""

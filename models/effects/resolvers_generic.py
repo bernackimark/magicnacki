@@ -7,7 +7,6 @@ from models.constants import COLOR_LETTERS_W_COLORLESS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE
 from models.damage import PreventNextDamage
 from models.effects.base import Resolver
-from models.effects.queries import UnblockableEOT
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
 from models.zone import Zone
@@ -20,6 +19,7 @@ if TYPE_CHECKING:
 class UnblockableThisTurn(Resolver):
     """Target creature can't be blocked this turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        from models.effects.listeners_permission import UnblockableEOT
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(UnblockableEOT(target), source)

@@ -33,6 +33,22 @@ class CanBlockQueryEvent(Event):
     attacker: GameCard
     permission: bool | None = None
 
+@dataclass
+class CanCastQueryEvent(Event):
+    card: GameCard
+    permission: bool | None = None
+
+@dataclass
+class CanTargetQueryEvent(Event):
+    source: GameCard
+    target: GameCard
+    permission: bool | None = None
+
+@dataclass
+class CanUntapQueryEvent(Event):
+    card: GameCard
+    permission: bool | None = None
+
 @dataclass(frozen=True)
 class CastResolvedEvent(Event):
     card: GameCard
