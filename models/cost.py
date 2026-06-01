@@ -105,5 +105,5 @@ class TapCost(Cost):
         return not source.is_tapped
 
     def pay(self, gs, source):
-        source.tap(gs)
+        source.tap()
 

@@ -151,7 +151,7 @@ class ManaPool:
         if len(lands) < amount:
             raise RuntimeError("Not enough untapped lands")
         for land in lands[:amount]:
-            land.tap(self.gs)
+            land.tap()
 
     def _tap_lands_for_colorless(self, amount: int):
         # currently unused, but may be helpful if functionality is added?
@@ -159,7 +159,7 @@ class ManaPool:
         if len(lands) < amount:
             raise RuntimeError("Not enough untapped lands")
         for land in lands[:amount]:
-            land.tap(self.gs)
+            land.tap()
 
 
 # TODO:

@@ -68,7 +68,7 @@ class CityOfShadowsAA2(Resolver):
 
 class CocoonCast(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        target.tap(gs)
+        target.tap()
         source.counters.add_counter(PUPA, 3)
 
 
@@ -1069,7 +1069,7 @@ class ArenaOfTheAncientsCast(Resolver):
     """When this artifact enters, tap all legendary creatures"""
     def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
         for c in gs.card_filter.in_play().creatures().untapped().legendary().result():
-            c.tap(gs)
+            c.tap()
 
 
 class CocoonHostStaysTapped(Resolver):
@@ -1086,7 +1086,7 @@ class ManaShort(Resolver):
             return
         player_lands = gs.card_filter.on_player_board(target).lands().result()
         for land in player_lands:
-            land.tap(gs)
+            land.tap()
         print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
 
 
@@ -1096,20 +1096,20 @@ class Reset(Resolver):
         if gs.phase_mgr.phase == Phase.UPKEEP or gs.turn_mgr.player_turn_idx == source.owner_id:
             return
         for land in gs.card_filter.on_player_board(source.owner_id).lands().untapped().result():
-            land.untap(gs)
+            land.untap()
 
 
 class Riptide(Resolver):
     """Tap all blue creatures"""
     def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
         for c in gs.card_filter.in_play().creatures().untapped().blue().result():
-            c.tap(gs)
+            c.tap()
 
 
 class Twiddle(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            target.untap(gs) if target.is_tapped else target.tap(gs)
+            target.untap() if target.is_tapped else target.tap()
 
 
 class VenarianGoldHostStaysTapped(Resolver):

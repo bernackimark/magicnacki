@@ -13,8 +13,7 @@ from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import Combat
-from models.events_all import TapCardEvent, UntapCardEvent, DamageResolvedEvent, CastResolvedEvent, RandomEvent, \
-    DamageProposedEvent
+from models.events_all import DamageResolvedEvent, CastResolvedEvent, RandomEvent, DamageProposedEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
@@ -96,6 +95,7 @@ class GameState:
         if event.remaining <= 0:
             return
 
+        print('Damage Proposed Event', event)
         # 2. Damage amount is now resolved; handle trample; create DamageResolvedEvent
         resolved_events: list[DamageResolvedEvent] = []
 
@@ -119,6 +119,7 @@ class GameState:
 
         # 4. Emit resolved events, allowing listeners to react
         for e in resolved_events:
+            print('Damage Resolved Event', e)
             self.event_mgr.emit(e, self)
 
         # 5. Check SBAs (ex: damage_received_this_turn >= creature.toughness)
