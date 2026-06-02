@@ -8,6 +8,57 @@ if TYPE_CHECKING:
 
 from models.constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTER_SLUG, BASIC_LAND_MANA_PRODUCED, COLOR_LETTERS
 
+@dataclass
+class ManaCost:
+    cost: str
+
+    def __add__(self, other: ManaCost) -> str:
+        """Sums ManaCost objects; ex ManaCost('2U') + ManaCost('1GG') -> '3UGG'"""
+        decoded = [self._decode(cost) for cost in (self.cost, other.cost)]
+        combined = {k: sum(d[k] for d in decoded) for k in decoded[0]}
+        return self._encode(combined)
+
+    def __sub__(self, other: ManaCost) -> str:
+        """Subtracts ManaCost objects; ex ManaCost('2GB') - ManaCost('1BU') -> '1G'; only validated for two objects"""
+        decoded = [self._decode(cost) for cost in (self.cost, other.cost)]
+        combined = {k: decoded[0][k] - sum(d[k] for d in decoded[1:]) for k in decoded[0]}
+        return self._encode(combined)
+
+    @property
+    def decoded(self) -> dict[str, int]:
+        return self._decode(self.cost)
+
+    @staticmethod
+    def _decode(cost_str: str) -> dict[str, int]:
+        """ex '2U' returns {'U': 1, 'G': 0, ... 'C': 2} where C = colorless; 'C' is guaranteed to be the last key"""
+        result = {c: 0 for c in COLOR_LETTERS_W_COLORLESS}
+
+        if not cost_str:
+            return result
+
+        if 'X' in cost_str:
+            result['X'] = 0
+
+        # convert numbers to colorless & letters to colors
+        for num in re.findall(r'\d+', cost_str):
+            result['C'] += int(num)
+        for letter in re.findall(r'[A-Za-z]', cost_str):
+            if letter == 'T':
+                continue
+            result[letter] += 1
+        return result
+
+    @staticmethod
+    def _encode(cost_dict: dict[str, int]) -> str:
+        """Ex {'U': 1, 'G': 0, ... 'C': 2} returns '2U';
+        iterate backward since 'C' is the last key; and colorless is expressed first in a cost string"""
+        values = []
+        for color, amt in reversed(cost_dict.items()):
+            if amt < 1:
+                continue
+            values.append(str(amt)) if color == 'C' else values.append(color * amt)
+        return ''.join(values)
+
 
 def parse_casting_cost(casting_cost: str) -> dict[str, int]:
     """ex '2U' returns {'U': 1, 'G': 0, ... 'C': 2} where C = colorless; 'C' is guaranteed to be the last key"""
@@ -41,19 +92,6 @@ def _encode_casting_cost(cost_dict: dict[str, int]) -> str:
             values.append('0')
     return ''.join(values)
 
-def add_casting_costs(costs: list[str]) -> str:
-    """Sums casting costs strings; ex ['2U', '1GG'] -> '3UGG'"""
-    decoded = [parse_casting_cost(cost) for cost in costs]
-    combined = {k: sum(d[k] for d in decoded) for k in decoded[0]}
-    return _encode_casting_cost(combined)
-
-def subtract_casting_costs(costs: list[str]) -> str:
-    # TODO: think through this ... must consider an argument for minimum ex: can't reduce the mana to less than one mana
-    raise NotImplementedError
-
-def casting_weight(casting_cost: str) -> int:
-    return sum(parse_casting_cost(casting_cost).values())
-
 @dataclass
 class ManaPool:
     gs: GameState
@@ -67,12 +105,10 @@ class ManaPool:
         for c in COLOR_LETTERS_W_COLORLESS:
             self._floating_mana[c] = 0
 
-    def can_pay(self, cost: dict[str, int] | str | None) -> bool:
+    def can_pay(self, cost: str) -> bool:
         if cost is None:
             return True
-        if isinstance(cost, str):
-            cost: dict[str, int] = parse_casting_cost(cost)
-
+        cost = ManaCost(cost).decoded
         available = self.available_mana.copy()
 
         # Pay colored first
@@ -84,16 +120,17 @@ class ManaPool:
         # Can/Can't Pay colorless
         return sum(available.values()) >= cost['C']
 
-    def pay(self, cost: dict[str, int] | str | None):
+    def pay(self, cost: str):
         """Payment order: pay color cost w floating, pay color w basic land,
         pay colorless w floating, pay colorless w random basic land.
         Other land sources (ex: colorless producers) are not yet considered."""
-        if cost is None:
+        if cost in (None, ''):
             return
-        if isinstance(cost, str):
-            cost = parse_casting_cost(cost)
+
         if not self.can_pay(cost):
             raise ValueError("Cannot pay mana cost")
+
+        cost = ManaCost(cost).decoded
 
         # 1. Pay colored costs (everything except 'C')
         for c in cost:

@@ -259,33 +259,33 @@ class Gloom(Listener):
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import add_casting_costs
+        from models.mana import ManaCost
         if (not (event.query == 'cast' and 'W' in event.card.colors) and not
            ('W' in event.card.colors and 'Enchantment' in event.card.card_types)):
             return
-        event.cost = add_casting_costs([event.cost, '3'])
+        event.cost = ManaCost(event.cost) + ManaCost('3')
 
 class ManaMatrix(Listener):
     """Instant and enchantment spells you cast cost {2} less to cast"""
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import subtract_casting_costs
+        from models.mana import ManaCost
         if event.query != 'cast' or event.player_id != s.owner_id:
             return
         if 'Instant' not in event.card.card_types and 'Enchantment' not in event.card.card_types:
             return
-        event.cost = subtract_casting_costs([event.cost, '3'])
+        event.cost = ManaCost(event.cost) - ManaCost('3')
 
 class PlanarGate(Listener):
     """Creature spells you cast cost {2} less to cast"""
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import subtract_casting_costs
+        from models.mana import ManaCost
         if event.query != 'cast' or event.player_id != s.owner_id or not event.card.is_creature:
             return
-        event.cost = subtract_casting_costs([event.cost, '2'])
+        event.cost = ManaCost(event.cost) - ManaCost('2')
 
 class PowerArtifact(Listener):
     """Enchant artifact Enchanted artifact's activated abilities cost {2} less to activate.
@@ -293,20 +293,20 @@ class PowerArtifact(Listener):
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import subtract_casting_costs
+        from models.mana import ManaCost
         if event.query != 'activate' or event.card.host is not s:
             return
-        event.cost = subtract_casting_costs([event.cost, '2'])  # TODO: minimum '1' or a colored equivalent
+        event.cost = ManaCost(event.cost) - ManaCost('2')  # TODO: minimum '1' or a colored equivalent
 
 class StoneCalendar(Listener):
     """Spells you cast cost {1} less to cast"""
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import subtract_casting_costs
+        from models.mana import ManaCost
         if event.query != 'cast' or event.player_id != s.owner_id:
             return
-        event.cost = subtract_casting_costs([event.cost, '1'])
+        event.cost = ManaCost(event.cost) - ManaCost('1')
 
 # --- DAMAGE PROPOSED EVENT ---
 class AlAbarasCarpetPrevention(Listener):
