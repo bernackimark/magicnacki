@@ -22,7 +22,7 @@ from models.effects.listeners_generic import DestroyAtCombatEnd, AddCounterAtEnd
 from models.effects.resolvers_generic import Steal
 from models.events_all import AttackEvent, BlockEvent, CombatEndEvent, DamageResolvedEvent, DiesEvent, DiscardEvent, \
     DiscardStepEvent, DrawCardEvent, DrawStepEvent, EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
-    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, DamageProposedEvent
+    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, DamageProposedEvent, CostQueryEvent
 from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
@@ -253,7 +253,75 @@ class TimeElementalAttackedOrBlocked(Listener):
         gs.pile_mgr.destroy(s)
 
 
+# --- COST QUERY EVENT ---
+class Gloom(Listener):
+    """White spells cost {3} more to cast. Activated abilities of white enchantments cost {3} more to activate."""
+    listens_to = CostQueryEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
+        from models.mana import add_casting_costs
+        if (not (event.query == 'cast' and 'W' in event.card.colors) and not
+           ('W' in event.card.colors and 'Enchantment' in event.card.card_types)):
+            return
+        event.cost = add_casting_costs([event.cost, '3'])
+
+class ManaMatrix(Listener):
+    """Instant and enchantment spells you cast cost {2} less to cast"""
+    listens_to = CostQueryEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
+        from models.mana import subtract_casting_costs
+        if event.query != 'cast' or event.player_id != s.owner_id:
+            return
+        if 'Instant' not in event.card.card_types and 'Enchantment' not in event.card.card_types:
+            return
+        event.cost = subtract_casting_costs([event.cost, '3'])
+
+class PlanarGate(Listener):
+    """Creature spells you cast cost {2} less to cast"""
+    listens_to = CostQueryEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
+        from models.mana import subtract_casting_costs
+        if event.query != 'cast' or event.player_id != s.owner_id or not event.card.is_creature:
+            return
+        event.cost = subtract_casting_costs([event.cost, '2'])
+
+class PowerArtifact(Listener):
+    """Enchant artifact Enchanted artifact's activated abilities cost {2} less to activate.
+    This effect can't reduce the mana in that cost to less than one mana."""
+    listens_to = CostQueryEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
+        from models.mana import subtract_casting_costs
+        if event.query != 'activate' or event.card.host is not s:
+            return
+        event.cost = subtract_casting_costs([event.cost, '2'])  # TODO: minimum '1' or a colored equivalent
+
+class StoneCalendar(Listener):
+    """Spells you cast cost {1} less to cast"""
+    listens_to = CostQueryEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
+        from models.mana import subtract_casting_costs
+        if event.query != 'cast' or event.player_id != s.owner_id:
+            return
+        event.cost = subtract_casting_costs([event.cost, '1'])
+
 # --- DAMAGE PROPOSED EVENT ---
+class AlAbarasCarpetPrevention(Listener):
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, protected_player: int):
+        self.protected_player = protected_player
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target != self.protected_player or 'Flying' in event.source.keyword_abilities:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
 class ArgothianPixies(Listener):
     """Prevent all damage that would be dealt to this creature by artifact creatures"""
     listens_to = DamageProposedEvent
@@ -265,7 +333,6 @@ class ArgothianPixies(Listener):
             return
         event.prevented += event.remaining
         event.remaining = 0
-
 
 class ArgothianTreefolkPrevention(Listener):
     """Prevent all damage that would be dealt to this creature by artifact sources"""

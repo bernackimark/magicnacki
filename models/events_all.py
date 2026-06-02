@@ -67,6 +67,15 @@ class CombatEndEvent(Event):
     active_player: int
 
 @dataclass
+class CostQueryEvent(Event):
+    """Query is either 'cast' or 'activate';
+    cost (a string ex '2U') will be mutated by listeners before GameState presents the costs to the user"""
+    player_id: int
+    query: str
+    card: GameCard
+    cost: str
+
+@dataclass
 class DamageProposedEvent(Event):
     """This event is mutable, as damage preventers/limiters/replacers may modify it"""
     source: GameCard

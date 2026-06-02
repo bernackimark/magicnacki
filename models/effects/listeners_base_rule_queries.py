@@ -82,7 +82,8 @@ class CanCastRule(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
         c = event.card
-        if not gs.mana_pools[event.p_id].can_pay(c.casting_cost):
+        cost = gs.get_casting_cost(event.p_id, event.card)
+        if not gs.mana_pools[event.p_id].can_pay(cost):
             event.permission = False
         elif c.props.is_land and gs.turn_mgr.has_played_land:
             event.permission = False

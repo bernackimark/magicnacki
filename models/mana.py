@@ -10,7 +10,7 @@ from models.constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTER_SLUG, BASIC
 
 
 def parse_casting_cost(casting_cost: str) -> dict[str, int]:
-    """ex '2U' returns {'C': 2, 'U': 1, 'G': 0, ...} where C = colorless."""
+    """ex '2U' returns {'U': 1, 'G': 0, ... 'C': 2} where C = colorless; 'C' is guaranteed to be the last key"""
     result = {c: 0 for c in COLOR_LETTERS_W_COLORLESS}
 
     if not casting_cost:
@@ -27,6 +27,29 @@ def parse_casting_cost(casting_cost: str) -> dict[str, int]:
             continue
         result[letter] += 1
     return result
+
+def _encode_casting_cost(cost_dict: dict[str, int]) -> str:
+    """Ex {'U': 1, 'G': 0, ... 'C': 2} returns '2U';
+    iterate backward since 'C' is the last key; and colorless is expressed first in a cost string"""
+    values = []
+    for color, amt in reversed(cost_dict.items()):
+        if color == 'C':
+            values.append(str(amt)) if amt > 0 else '0'
+        elif amt > 0:
+            values.append(color * amt)
+        else:
+            values.append('0')
+    return ''.join(values)
+
+def add_casting_costs(costs: list[str]) -> str:
+    """Sums casting costs strings; ex ['2U', '1GG'] -> '3UGG'"""
+    decoded = [parse_casting_cost(cost) for cost in costs]
+    combined = {k: sum(d[k] for d in decoded) for k in decoded[0]}
+    return _encode_casting_cost(combined)
+
+def subtract_casting_costs(costs: list[str]) -> str:
+    # TODO: think through this ... must consider an argument for minimum ex: can't reduce the mana to less than one mana
+    raise NotImplementedError
 
 def casting_weight(casting_cost: str) -> int:
     return sum(parse_casting_cost(casting_cost).values())

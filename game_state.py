@@ -2,6 +2,8 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence, TYPE_CHECKING
 
+from models.effects.base import Activated
+
 if TYPE_CHECKING:
     from models.game_card.card import Card
 
@@ -13,7 +15,7 @@ from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import Combat
-from models.events_all import DamageResolvedEvent, CastResolvedEvent, RandomEvent, DamageProposedEvent
+from models.events_all import DamageResolvedEvent, CastResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
@@ -143,6 +145,17 @@ class GameState:
                 if blocker is c:
                     com.blockers.remove(blocker)
                     return
+
+    # --- CASTING & ACTIVATION COSTS ---
+    def get_casting_cost(self, p_id: int, card: GameCard) -> str:
+        event = CostQueryEvent(p_id, 'cast', card, card.casting_cost[:])
+        self.event_mgr.emit(event, self)
+        return event.cost
+
+    def get_activation_cost(self, p_id: int, source: GameCard, ability: Activated) -> str:
+        event = CostQueryEvent(p_id, 'activate', source, ability.eff_spec.cost)
+        self.event_mgr.emit(event, self)
+        return event.cost
 
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility | BeginAbilityActivationAction] = []

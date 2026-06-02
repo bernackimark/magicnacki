@@ -53,7 +53,7 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, AnkhOfMishra, CitanulDruid, \
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
-    UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm
+    UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
@@ -410,6 +410,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(Pump(2, 2), T_FUNCS['creatures'], CastResolvedEvent)],
     'giant-tortoise': [Static(GiantTortoisePT())],
     'glasses-of-urza': [Activated('T', GlassesOfUrza())],
+    'gloom': [Static(Gloom())],
     'glyph-of-destruction': [Triggered(GlyphOfDestruction(), T_FUNCS['your_walls'], CastResolvedEvent)],
     'glyph-of-doom': [Triggered(GlyphOfDoom(), T_FUNCS['walls'], CastResolvedEvent)],
     'glyph-of-life': [Triggered(GlyphOfLife(), T_FUNCS['walls'], CastResolvedEvent)],
@@ -555,6 +556,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                     allowed_phases=[Phase.UPKEEP],
                                     allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER)],  # not correct
     'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
+    'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
     'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
@@ -639,7 +641,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter(), None, DamageResolvedEvent)],
     'pixie-queen': [Activated('GGGT', KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
+    'planar-gate': [Static(PlanarGate())],
     'plateau': dual_land_activated_ability_specs('RW'),
+    'power-artifact': [Triggered(None, T_FUNCS['artifacts'], CastResolvedEvent), Static(PowerArtifact())],
     'power-surge': [Triggered(PowerSurge(), None, UpkeepEvent)],
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), T_FUNCS['creatures'])],
     'preacher': [Activated('T', Steal(), T_FUNCS['opp_creatures']),
@@ -759,6 +763,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                Triggered(StanggOnLeave(), None, ZoneChangeEvent)],
     'steal-artifact': [Triggered(Steal(), T_FUNCS['opp_artifacts'], CastResolvedEvent),
                        Triggered(ReturnToOwnerOnLTB(), None, ZoneChangeEvent)],
+    'stone-calendar': [Static(StoneCalendar())],
     'stone-giant': [Activated('T', StoneGiant(), T_FUNCS['stone_giant'])],
     'stone-rain': [Triggered(Destroy(), T_FUNCS['lands'], CastResolvedEvent)],
     'storm-seeker': [Triggered(StormSeeker(), T_FUNCS['all_players'], CastResolvedEvent)],

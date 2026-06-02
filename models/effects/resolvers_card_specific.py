@@ -585,6 +585,11 @@ class ActiveVolcano(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         gs.pile_mgr.bounce(t) if t.props.slug == 'island' else gs.pile_mgr.destroy(t)
 
+class AlAbarasCarpet(Resolver):
+    """(Activated Ability): Prevent all damage you would be dealt this turn by attacking creatures without flying"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.effects.listeners_card_specific import AlAbarasCarpetPrevention
+        gs.event_mgr.register(AlAbarasCarpetPrevention(protected_player=source.owner_id), source)
 
 class Amnesia(Resolver):
     """Target player reveals their hand and discards all nonland cards"""
@@ -719,7 +724,7 @@ class Feint(Resolver):
         gs.event_mgr.register(PreventNextDamageByEOT(s, combat_only=True))
         for b in the_combat.blockers:
             gs.event_mgr.register(PreventNextDamageToCardEOT(b, combat_only=True))
-            b.tap(gs)
+            b.tap()
 
 
 class FeldonsCane(Resolver):
