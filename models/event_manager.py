@@ -28,7 +28,9 @@ class EventManager:
         self._register_base_rules()
 
     def emit(self, event: Event, gs: GameState):
-        """Call all effects listening to a certain type of event (ex: EndStepEvent)"""
+        """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr"""
+        gs.turn_mgr.events.append(event)
+
         for base_rule in self._base_rule_listeners[type(event)]:
             base_rule.on_event(gs, None, event)  # rare case where the 'source' argument is not supplied
 
