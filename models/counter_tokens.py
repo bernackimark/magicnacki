@@ -4,12 +4,12 @@ from collections import defaultdict
 @dataclass(frozen=True)
 class CounterType:
     name: str
-    power_delta: int = 0
-    toughness_delta: int = 0
+    p_delta: int = 0
+    t_delta: int = 0
 
     def __repr__(self):
-        if self.power_delta or self.toughness_delta:
-            return f'{self.name} ({self.power_delta}/{self.toughness_delta})'
+        if self.p_delta or self.t_delta:
+            return f'{self.name} ({self.p_delta}/{self.t_delta})'
         return f'{self.name}'
 
 
@@ -59,11 +59,11 @@ class Counters:
 
     @property
     def power_delta(self) -> int:
-        return sum(ct.p_adj * n for ct, n in self._counters.items())
+        return sum(ct.p_delta * n for ct, n in self._counters.items())
 
     @property
     def toughness_delta(self) -> int:
-        return sum(ct.t_adj * n for ct, n in self._counters.items())
+        return sum(ct.t_delta * n for ct, n in self._counters.items())
 
     def __repr__(self):
         return ', '.join(f"{cnt}×{ctr_type}" for ctr_type, cnt in self._counters.items())
