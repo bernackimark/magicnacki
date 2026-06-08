@@ -92,7 +92,7 @@ class GameState:
         """Creates DamageEvent, triggers damage preventions, adds .combat_damage_received to card,
         decrements life to player, handles Trample combat damage"""
         # 1. Create & emit a DamageProposedEvent, allowing listeners to modify the amount; exit if no remaining damage
-        event = DamageProposedEvent(source, target, amount, is_combat)
+        event = DamageProposedEvent(source, target, amount, amount, is_combat=is_combat)
         self.event_mgr.emit(event, self)
         if event.remaining <= 0:
             return
@@ -148,7 +148,7 @@ class GameState:
 
     # --- CASTING & ACTIVATION COSTS ---
     def get_casting_cost(self, p_id: int, card: GameCard) -> str:
-        event = CostQueryEvent(p_id, 'cast', card, card.casting_cost[:])
+        event = CostQueryEvent(p_id, 'cast', card, card.casting_cost[:] if card.casting_cost else '')
         self.event_mgr.emit(event, self)
         return event.cost
 
