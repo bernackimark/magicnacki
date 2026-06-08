@@ -424,6 +424,21 @@ class ReverseDamageEOT(Listener):
         self.is_expired = True
         gs.score_mgr.increment_life(source.owner_id, the_damage_amt, source, gs)
 
+class RockHydraAutoDamagePrevent(Listener):
+    """For each 1 damage that would be dealt to this creature, if it has a +1/+1 counter on it,
+    remove a +1/+1 counter from it and prevent that 1 damage."""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source:
+            return
+        counter_cnt = source.counters.get_count(PLUS_ONE)
+        if not counter_cnt:
+            return
+        source.counters.remove_counter(PLUS_ONE, counter_cnt)
+        event.prevented += counter_cnt
+        event.amt -= counter_cnt
+
 class ScarecrowPrevention(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
@@ -566,6 +581,19 @@ class AbuJafar(Listener):
             for other_combatant in com.get_combatants_against(event.card):
                 gs.pile_mgr.destroy(other_combatant, allow_regeneration=False)
 
+class AxelrodGunnarson(Listener):
+    """Whenever a creature dealt damage by AG this turn dies, you gain 1 life & AG deals 1 damage to [opponent]"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        for e in gs.turn_mgr.events:
+            if not isinstance(e, DamageResolvedEvent):
+                continue
+            if e.source is not source or e.target is not event.card:
+                continue
+            gs.score_mgr.increment_life(source.owner_id, 1, source, gs)
+            gs.apply_damage(source, 1, event.card.owner_id)
+            return
 
 class CreatureBond(Listener):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""
@@ -635,6 +663,18 @@ class SandalsOfAbdallahIfCreatureDies(Listener):
         gs.pile_mgr.destroy(source)
         self.is_expired = True
 
+class SengirVampire(Listener):
+    """Whenever a creature dealt damage by this creature this turn dies, put a +1/+1 counter on this creature"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
+        for e in gs.turn_mgr.events:
+            if not isinstance(e, DamageResolvedEvent):
+                continue
+            if e.source is not source or e.target is not event.card:
+                continue
+            source.counters.add_counter(PLUS_ONE)
+            return
 
 class SuChi(Listener):
     """When this creature dies, add {CCCC}"""
@@ -1276,7 +1316,7 @@ class VesuvanDoppelgangerUpkeep(Listener):
 
 
 class YawgmothDemon(Listener):
-    """At your upkeep, Sac an artifact, or tap this creature and it deals 2 damage to you"""
+    """At your upkeep, Sac an artifact, or tap this creature, and it deals 2 damage to you"""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):

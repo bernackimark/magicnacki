@@ -53,7 +53,8 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, AnkhOfMishra, CitanulDruid, \
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
-    UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar
+    UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar, \
+    RockHydraAutoDamagePrevent, SengirVampire, AxelrodGunnarson
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
@@ -155,6 +156,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ashnods-transmogrant': [Activated('T', AshnodsTransmogrant(), T_FUNCS['non_artifact_creatures'],
                                        extra_costs=[SacSelfCost()])],
     'aspect-of-wolf': [Static(AspectOfWolfPT())],
+    'axelrod-gunnarson': [Triggered(AxelrodGunnarson())],
     'backfire': [Triggered(Backfire(), None, DamageResolvedEvent)],
     'bad-moon': [Static(BadMoon())],
     'badlands': dual_land_activated_ability_specs('BR'),
@@ -696,7 +698,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'righteousness': [Triggered(Pump(7, 7, True), T_FUNCS['blockers'], CastResolvedEvent)],
     'riptide': [Triggered(Riptide(), None, CastResolvedEvent)],
     'riven-turnbull': [Activated('T', AddMana('B'))],
-    'rock-hydra': [Triggered(RockHydraCast(), T_FUNCS['self'], CastResolvedEvent)],  # more to code
+    'rock-hydra': [Triggered(RockHydraCast(), T_FUNCS['self'], CastResolvedEvent),
+                   Triggered(RockHydraAutoDamagePrevent(), None, DamageProposedEvent),
+                   Activated('R', PreventNextDamageToCardEOT(T_FUNCS['self'])), Activated('RRR', AddCounter(PLUS_ONE))],
     'rocket-launcher': [Triggered(RocketLauncherCast(), None, CastResolvedEvent),
                         Activated('2', RocketLauncherAA(), T_FUNCS['all_creatures_and_players'])],
     'rod-of-ruin': [Activated('3T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
@@ -729,6 +733,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
          Triggered(SeasonOfTheWitchEndStep(), None, EndStepEvent)],
     'sedge-troll': [Static(SedgeTrollPT()), Activated('B', Regenerate(), T_FUNCS['self'])],
     'seeker': [Static(Seeker())],
+    'sengir-vampire': [Triggered(SengirVampire())],
     'sentinel': [Activated('', Sentinel(), None, BlockEvent)],
     'serendib-djinn':
         [Triggered(SerendibDjinn(), None, UpkeepEvent), Triggered(SerendibDjinnNoLands(), None, StateBasedEvent)],
