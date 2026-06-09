@@ -113,6 +113,7 @@ class DiesEvent(Event):
 @dataclass(frozen=True)
 class DrawCardEvent(Event):
     player_id: int
+    card: GameCard
 
 @dataclass(frozen=True)
 class DrawStepEvent(Event):
