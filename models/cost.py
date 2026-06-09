@@ -31,6 +31,23 @@ class DiscardAtRandomCost(Cost):
         random_card: GameCard = gs.randomize_event(source.owner_id, cards)
         gs.pile_mgr.discard(random_card)
 
+class DiscardLastCardDrawnThisTurn(Cost):
+    def can_pay(self, gs: GameState, source: GameCard) -> bool:
+        from models.events_all import DrawCardEvent
+        last_drawn = next((e.card for e in gs.turn_mgr.events[::-1]
+                           if isinstance(e, DrawCardEvent) and e.player_id == source.owner_id), None)
+        if last_drawn and last_drawn in gs.pile_mgr.hands[source.owner_id].cards:
+            return True
+        return False
+
+    def pay(self, gs: GameState, source: GameCard) -> None:
+        from models.events_all import DrawCardEvent
+        last_drawn = next((e.card for e in gs.turn_mgr.events[::-1]
+                           if isinstance(e, DrawCardEvent) and e.player_id == source.owner_id), None)
+        if not last_drawn:
+            return
+        gs.pile_mgr.discard(last_drawn, source)
+
 class ExileSelfCost(Cost):
     def can_pay(self, gs, source):
         return source in gs.card_filter.in_play().result()
