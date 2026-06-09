@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, PayLifeCost, RemoveCounterCost, \
-    DiscardAtRandomCost, SacCardCost
+    DiscardAtRandomCost, SacCardCost, DiscardLastCardDrawnThisTurn
 from models.counter_tokens import PLUS_ONE_ZERO, CARRION, PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, \
     CHARGE, DREAM, HATCHLING, CounterType
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
@@ -56,7 +56,7 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
     UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar, \
     RockHydraAutoDamagePrevent, SengirVampire, AxelrodGunnarson, DropOfHoney, TheWretchedSteal, TheWretchedUnsteal, \
-    VeteranBodyguard, WhirlingDervish
+    VeteranBodyguard, WhirlingDervish, InfiniteAuthorityCombatEnd, InfiniteAuthorityEndStep
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
@@ -477,6 +477,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
         [Triggered(PreventAllDamageToThisTurn(), T_FUNCS['creatures'], CastResolvedEvent)],
     'infernal-medusa': [Triggered(InfernalMedusa(), None, BlockEvent)],
     'inferno': [Triggered(DealDamageToAllCreaturesAndPlayers(6), None, CastResolvedEvent)],
+    'infinte-authority': [Triggered(InfiniteAuthorityCombatEnd(), None, CombatEndEvent),
+                          Triggered(InfiniteAuthorityEndStep(), None, EndStepEvent)],
     'instill-energy':
         [Triggered(KWAModEffect('add', 'Haste'), T_FUNCS['creatures'], CastResolvedEvent),
          Activated('', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'],
@@ -495,6 +497,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), T_FUNCS['self'],
                               allowed_phases=[Phase.MAIN])],
     'jalum-tome': [Activated('2T', JalumTome(), text='Draw one card; discard one card')],
+    'jandors-ring': [Activated('2T', DrawCards(), T_FUNCS['card_owner'], extra_costs=[DiscardLastCardDrawnThisTurn()])],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],

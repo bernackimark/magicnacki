@@ -155,30 +155,6 @@ class InfernalMedusa(Listener):
         gs.event_mgr.register(delayed, s)
         # this will later get unregistered at combat end
 
-
-class InfiniteAuthority(Listener):
-    """Whenever host blocks/is blocked by a creature with toughness <= 3, destroy the other creature at end of combat.
-    At end step, if that creature was destroyed this way, put a +1/+1 counter on host"""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if s.host is event.attacker:
-            other = event.blocker
-        elif s.host is event.blocker:
-            other = event.attacker
-        else:
-            return
-        if other.toughness > 3:
-            return
-        delayed_destroy = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register(delayed_destroy, s)
-        # this will later get unregistered at combat end
-
-        delayed_pump = AddCounterAtEndStep(s, s.host, PLUS_ONE)
-        gs.event_mgr.register(delayed_pump, s)
-        # this will later get unregistered at end step
-
-
 class Sentinel(Listener):
     """Indefinitely change Sentinel's base T to 1 + power of target creature blocking or blocked by this creature"""
     listens_to = BlockEvent
@@ -192,7 +168,6 @@ class Sentinel(Listener):
             return
         new_t = other.power + 1
         s.modifiers.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
-
 
 class Venom(Listener):
     """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
@@ -242,6 +217,17 @@ class YdwenEfreet(Listener):
 
 
 # --- COMBAT END ---
+class InfiniteAuthorityCombatEnd(Listener):
+    """At combat end, if host is in combat with a creature with toughness <= 3, destroy the other creature ..."""
+    listens_to = CombatEndEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
+        if not source.host or source.host not in gs.card_filter.combatants().result():
+            return
+        for other_creature in gs.card_filter.combating_against(source.host).result():
+            if other_creature.toughness <= 3:
+                gs.pile_mgr.destroy(other_creature)
+
 class TimeElementalAttackedOrBlocked(Listener):
     """When this creature attacks or blocks, at end of combat, sacrifice it & it deals 5 damage to you"""
     listens_to = CombatEndEvent
@@ -616,6 +602,21 @@ class AxelrodGunnarson(Listener):
             gs.apply_damage(source, 1, event.card.owner_id)
             return
 
+class BlazingEffigy(Listener):
+    """When this creature dies, it deals X damage to target creature.
+    X is 3 plus the amount of damage dealt to this creature this turn by other sources named Blazing Effigy."""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if source is not event.card:
+            return
+        all_creatures = gs.card_filter.creatures().in_play().result()
+        if not all_creatures:
+            return
+        total_damage = 3 + sum([e.amt for e in gs.turn_mgr.events if isinstance(e, DamageResolvedEvent)
+                                and e.target is source and e.source.props.slug == 'blazing-effigy'])
+        # TODO: How do I get the target creature from the user?
+
 class CreatureBond(Listener):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""
     listens_to = DiesEvent
@@ -807,7 +808,6 @@ class DragonWhelpEndStep(Listener):
         if len([temp for temp in s.modifiers.items if temp.source is s]) >= 4:
             gs.pile_mgr.destroy(s, allow_regeneration=False)
 
-
 class ErgRaiders(Listener):
     """At YOUR end step, except for summoning sickness, if this creature didn't attack, 2 damage to you"""
     listens_to = EndStepEvent
@@ -818,6 +818,18 @@ class ErgRaiders(Listener):
         if s not in gs.card_filter.attackers().result():
             gs.apply_damage(s, 2, s.owner_id)
 
+class InfiniteAuthorityEndStep(Listener):
+    """At end step, if [that other] creature was destroyed [this] way, put a +1/+1 counter on host."""
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
+        from models.events_all import DiesEvent
+        if not source.host:
+            return
+        other_combatants = gs.card_filter.combating_against(source.host).result()
+        for e in gs.turn_mgr.events:
+            if isinstance(e, DiesEvent) and e.card in other_combatants:
+                source.host.counters.add_counter(PLUS_ONE)
 
 class PestilenceEndStep(Listener):
     """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""
