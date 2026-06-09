@@ -531,6 +531,15 @@ class TheAbyssChoice(ChoiceAction):
         your_creatures = [c for c in self.gs.card_filter.on_player_board(p_id).non_artifact_creatures().result()]
         return [DestroyAction(p_id, self.gs, self.source, c, allow_regen=False) for c in your_creatures]
 
+class TimeVaultChoice(ChoiceAction):
+    """... You may skip your turn & untap this artifact ... """
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        from models.actions.special import TimeVaultSkipTurnAction
+        return [TimeVaultSkipTurnAction(self.player_idx, self.gs, self.source), DoNothing(self.player_idx, self.gs)]
+
 class TriassicEggChoice(ChoiceAction):
     """Choose one:
     * You may put a creature card from your hand onto the battlefield.

@@ -439,6 +439,12 @@ class RemoveHostAuras(Resolver):
             gs.pile_mgr.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
             gs.event_mgr.unregister_effects(aura)
 
+class TakeAnotherTurn(Resolver):
+    """Take another turn after this one;
+    register a PassTheTurnEvent listener that plays a PassTheTurn(next turn is opponent's = False) action"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.effects.listeners_generic import TakingAnotherTurnEOT
+        gs.event_mgr.register(TakingAnotherTurnEOT(), source)
 
 class TapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

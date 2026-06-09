@@ -346,6 +346,8 @@ class PassTurnPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.actions.end_step_pass_turn import PassTheTurn
+        from models.events_all import PassTheTurnEvent
+        gs.event_mgr.emit(PassTheTurnEvent, gs)
         PassTheTurn(gs.turn_mgr.player_turn_idx, gs).play()
 
     def get_actions(self, p_id: int, gs: GameState):

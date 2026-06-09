@@ -1034,6 +1034,15 @@ class MagneticMountainOnUntapStep(Listener):
         if s in gs.card_filter.on_player_board(event.active_player).blue().creatures().result():
             gs.action_stack.push(LeaveTapped(s.owner_id, gs, s), gs, False)
 
+class TimeVaultOption(Listener):
+    """If you would begin your turn while this artifact is tapped, you may skip that turn instead."""
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        if source.owner_id != event.active_player or not source.is_tapped:
+            return
+        from models.choice_actions_all import TimeVaultChoice
+        gs.action_stack.push(TimeVaultChoice(source.owner_id, gs, source), False)
 
 # --- UPKEEP ---
 class BlackVise(Listener):

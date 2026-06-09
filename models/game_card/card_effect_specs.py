@@ -39,7 +39,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, HandToBoard, Pump, \
     CreateTokenCreature, RemoveHostAuras, TapCardEffect, TapCardsEffect, UntapCardEffect, UntapCardsEffect, \
     HostStaysTapped, StaysTapped, UntapForManaEffect, UntapHostForManaEffect, PreventNextDamageToSourceOwner, \
-    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn
+    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, TakeAnotherTurn
 from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
     YdwenEfreet, TimeElementalAttackedOrBlocked, Backfire, ElHajjaj, FungusaurOnDamage, HypnoticSpecter, \
@@ -56,7 +56,7 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
     UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar, \
     RockHydraAutoDamagePrevent, SengirVampire, AxelrodGunnarson, DropOfHoney, TheWretchedSteal, TheWretchedUnsteal, \
-    VeteranBodyguard, WhirlingDervish, InfiniteAuthorityCombatEnd, InfiniteAuthorityEndStep
+    VeteranBodyguard, WhirlingDervish, InfiniteAuthorityCombatEnd, InfiniteAuthorityEndStep, TimeVaultOption
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
@@ -821,7 +821,10 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                        Activated('2UUT', TimeElementalBounce(), T_FUNCS['unenchanted_perms'])],
     'time-vault':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
-         Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent)],  # more to code
+         Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+         Triggered(TimeVaultOption(), None, UntapPhaseEvent),
+         Activated('T', TakeAnotherTurn())],
+    'time-walk': [Triggered(TakeAnotherTurn(), None, CastResolvedEvent)],
     'timetwister': [Triggered(Timetwister(), None, CastResolvedEvent)],
     'tivadars-crusade':
         [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result()),

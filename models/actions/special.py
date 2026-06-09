@@ -173,7 +173,6 @@ class SkipDrawPhaseGainLife(Action):
         self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
         self.gs.action_stack.pop()
 
-
 # --- CARD-SPECIFIC ---
 class CyclonePayManaPerCounterDealDamage(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -283,6 +282,18 @@ class RogahhOfKherKeepTapAndStealAction(Action):
             t.modifiers.append(OwnershipMod(flip(self.source.owner_id), s=self.source))
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
+
+class TimeVaultSkipTurnAction(Action):
+    def __init__(self, p_id, gs, source: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+
+    def __repr__(self):
+        return f'Skip turn and untap {self.source.props.name}'
+
+    def play(self) -> None:
+        self.source.untap()
+        self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN, self.gs)
 
 class YawgmothDemonUnpaidUpkeep(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):

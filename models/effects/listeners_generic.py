@@ -11,7 +11,7 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event
+    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event, PassTheTurnEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -222,6 +222,15 @@ class DestroyAtEndStep(Listener):
             return
         gs.pile_mgr.destroy(self.card_to_be_destroyed)
         self.is_expired = True
+
+# --- PASS THE TURN EVENT ---
+class TakingAnotherTurnEOT(Listener):
+    listens_to = PassTheTurnEvent
+    expires = 'EOT'
+
+    def on_event(self, gs: GameState, source: GameCard, event: PassTheTurnEvent) -> None:
+        from models.actions.end_step_pass_turn import PassTheTurn
+        PassTheTurn(source.owner_id, gs, pass_turn_to_opp=False).play()
 
 # --- UNTAP CARD EVENT ---
 class ReturnToOwnerOnUntap(Listener):

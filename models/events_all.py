@@ -158,6 +158,10 @@ class ModQueryEvent(QueryEvent):
     mods: list[ModType] = field(default_factory=list)
 
 @dataclass
+class PassTheTurnEvent(Event):
+    active_player: int
+
+@dataclass
 class RandomEvent(Event):
     player_id: int
     iterable: Iterable
