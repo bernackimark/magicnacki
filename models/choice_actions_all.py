@@ -75,6 +75,25 @@ class CopyCardChoice(ChoiceAction):
         return [CopyCard(self.player_idx, self.gs, self.source, t,
                          self.additional_types, self.copy_color) for t in self.card_options]
 
+class DealDamageToChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, amt: int, options: list[GameCard]):
+        super().__init__(p_id, gs, source)
+        self.amt = amt
+        self.options = options
+
+    def get_actions(self) -> list[Action]:
+        from models.actions.damage import DealDamageTo
+        return [DealDamageTo(self.player_idx, self.gs, self.source, self.amt, c) for c in self.options]
+
+class DestroyChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, options: list[GameCard], allow_regen: bool = True):
+        super().__init__(p_id, gs, source)
+        self.options = options
+        self.allow_regen = allow_regen
+
+    def get_actions(self) -> list[Action]:
+        return [DestroyAction(self.player_idx, self.gs, self.source, c, self.allow_regen) for c in self.options]
+
 class DiscardChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, discarding_p_id: int,
                  min_cnt: int = 1, max_cnt: int = 1):

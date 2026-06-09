@@ -252,6 +252,18 @@ class TimeElementalAttackedOrBlocked(Listener):
         gs.apply_damage(s, 5, s.owner_id)
         gs.pile_mgr.destroy(s)
 
+class TheWretchedSteal(Listener):
+    """At combat end, gain control of all creatures blocking this creature for as long as you control this creature"""
+    listens_to = CombatEndEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
+        # TODO: are the blockers already in the graveyard?
+        wretched_blockers = [b for com in gs.combats for b in com.blockers if com.attacker is source]
+        if not wretched_blockers:
+            return
+        from .resolvers_generic import Steal
+        for blocker in wretched_blockers:
+            Steal(Zone.BATTLEFIELD).resolve(gs, source, blocker)
 
 # --- COST QUERY EVENT ---
 class Gloom(Listener):
@@ -462,6 +474,15 @@ class UncleIstvanPrevention(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class VeteranBodyguard(Listener):
+    """As long as VB is untapped, redirect all damage by unblocked creatures to VB instead"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if source.is_tapped or event.target != source.owner_id or not event.is_combat:
+            return
+        if event.source in gs.card_filter.unblocked_attackers().result():
+            event.target = source
 
 # --- DAMAGE RESOLVED EVENT ---
 class Backfire(Listener):
@@ -806,7 +827,6 @@ class PestilenceEndStep(Listener):
         if not gs.card_filter.creatures().in_play().result():
             gs.pile_mgr.destroy(source)
 
-
 class SeasonOfTheWitchEndStep(Listener):
     """At YOUR end step, destroy all untapped creatures that didn't attack this turn, except those who 'couldn't'.
     Note: I'm defining 'couldn't' = summoning sickness or has Defender"""
@@ -824,7 +844,6 @@ class SeasonOfTheWitchEndStep(Listener):
                 continue
             gs.pile_mgr.destroy(creature)
 
-
 class VoodooDollEndStep(Listener):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
     listens_to = EndStepEvent
@@ -838,6 +857,16 @@ class VoodooDollEndStep(Listener):
             gs.apply_damage(source, pin_cnt, source.owner_id)
         gs.pile_mgr.destroy(source)
 
+class WhirlingDervish(Listener):
+    """At each end step, if this creature dealt damage to an opponent this turn, put a +1/+1 counter on it"""
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
+        from models.events_all import DamageResolvedEvent
+        for e in gs.turn_mgr.events:
+            if isinstance(e, DamageResolvedEvent) and e.source is source and e.target == flip(source.owner_id):
+                source.counters.add_counter(PLUS_ONE)
+                return
 
 # --- LIFE LOSS ---
 class AliFromCairo(Listener):
@@ -1064,6 +1093,29 @@ class DemonicHordesUpkeep(Listener):
         else:
             gs.action_stack.push(DemonicHordesUpkeepChoice(source.owner_id, gs, source), gs, False)
 
+class DropOfHoney(Listener):
+    """At your upkeep, destroy the creature with the least power. It can't be regenerated.
+    If two or more creatures are tied for least power, you choose one. When there are no creatures on the battlefield,
+    sac Drop of Honey."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+        creatures = gs.card_filter.creatures().in_play().result()
+        if not creatures:
+            gs.pile_mgr.destroy(source, allow_regeneration=False)
+            return
+
+        min_power = min([c.power for c in creatures])
+        creatures_w_min_power = [c for c in creatures if c.power == min_power]
+
+        if len(creatures_w_min_power) == 1:
+            gs.pile_mgr.destroy(creatures_w_min_power[0], allow_regeneration=False)
+            return
+
+        from models.choice_actions_all import DestroyChoice
+        gs.pending_choice = DestroyChoice(source.owner_id, gs, source, creatures_w_min_power, allow_regen=False)
 
 class ElderSpawnUpkeep(Listener):
     """At YOUR upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
@@ -1447,6 +1499,24 @@ class StanggOnLeave(Listener):
         other_card = gs.card_filter.on_player_board(event.card.owner_id).by_slug(other_slug).result()[0]
         gs.pile_mgr.destroy(other_card)
 
+class TheWretchedUnsteal(Listener):
+    """... gain control of creatures UNTIL Wretched LTB or you don't control Wretched."""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent) -> None:
+        # TODO: Since a ZoneChangeEvent doesn't capture steals ...
+        #  if The Wretched itself is stolen, I still need to return the stolen creatures
+        if event.card is not source or event.from_zone is not Zone.BATTLEFIELD:
+            return
+
+        from models.modifiers import OwnershipMod
+        for c in gs.pile_mgr.boards[source.owner_id]:
+            for mod in c.auras:
+                if isinstance(mod, OwnershipMod) and mod.s is source:
+                    c.modifiers.remove(mod)
+                    gs.pile_mgr.boards[source.owner_id].remove(c)
+                    gs.pile_mgr.boards[flip(source.owner_id)].append(c)
+                    break
 
 class VerduranEnchantress(Listener):
     """Whenever you cast an enchantment spell, you may draw a card"""

@@ -28,7 +28,8 @@ from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, Tow
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, ArenaOfTheAncientsCast, \
-    CocoonHostStaysTapped, ManaShort, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Forcefield
+    CocoonHostStaysTapped, ManaShort, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Forcefield, \
+    ReversePolarity, Simulacrum
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
@@ -54,7 +55,8 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
     UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar, \
-    RockHydraAutoDamagePrevent, SengirVampire, AxelrodGunnarson
+    RockHydraAutoDamagePrevent, SengirVampire, AxelrodGunnarson, DropOfHoney, TheWretchedSteal, TheWretchedUnsteal, \
+    VeteranBodyguard, WhirlingDervish
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
@@ -315,6 +317,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                              text=f'{{{combo}}}')
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],
                   # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
+    'drop-of-honey': [Triggered(DropOfHoney(), None, UpkeepEvent)],
     'drowned': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'drudge-skeletons': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'dust-to-dust': [Triggered(DustToDust(), TargetSpec(T_FUNCS['artifacts'], 2, 2), CastResolvedEvent)],
@@ -695,6 +698,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'resurrection': [Triggered(Reanimate(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'revelation': [Triggered(Revelation(), None, ZoneChangeEvent)],
     'reverse-damage': [Triggered(ReverseDamage(), T_FUNCS['cards'], CastResolvedEvent)],
+    'reverse-polarity': [Triggered(ReversePolarity(), None, CastResolvedEvent)],
     'righteousness': [Triggered(Pump(7, 7, True), T_FUNCS['blockers'], CastResolvedEvent)],
     'riptide': [Triggered(Riptide(), None, CastResolvedEvent)],
     'riven-turnbull': [Activated('T', AddMana('B'))],
@@ -744,6 +748,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'shatterstorm': [Triggered(DestroyAll(T_FUNCS['artifacts'], False), None, CastResolvedEvent)],
     'shield-wall': [Triggered(ShieldWall(), None, CastResolvedEvent)],
     'shivan-dragon': [Activated('R', Pump(1, 0, True), T_FUNCS['self'])],
+    'simulacrum': [Triggered(Simulacrum(), None, CastResolvedEvent)],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
     'sinkhole': [Triggered(Destroy(), T_FUNCS['lands'], CastResolvedEvent)],
     'sirens-call': [Static(SirensCallCanCast()), # this doesn't feel right
@@ -804,6 +809,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'the-hive': [Activated('5T', CreateTokenCreature('wasp'))],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale(), None, UpkeepEvent)],
+    'the-wretched': [Triggered(TheWretchedSteal(), None, CombatEndEvent),
+                     Triggered(TheWretchedUnsteal(), None, ZoneChangeEvent)],
     'thicket-basilisk': [Triggered(CockatriceAndThicketBasilisk(), None, BlockEvent)],
     'thoughtlace': [Triggered(SetColor('U'), T_FUNCS['cards'], CastResolvedEvent)],
     'throne-of-bone': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('B'))],
@@ -876,6 +883,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     # TODO: despite being the same code, VesuvanDoppelgangerUpkeep doesn't trigger;
     #  the card goes to the graveyard during cast as well but gets pulled out somehow;
     #  the SBA looking at 0 toughness may be the culprit
+    'veteran-bodyguard': [Triggered(VeteranBodyguard(), None, DamageProposedEvent)],
     'visions': [Triggered(Visions(), T_FUNCS['all_players'], CastResolvedEvent)],
     'volcanic-island': dual_land_activated_ability_specs('RU'),
     'voodoo-doll':
@@ -902,6 +910,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'weakstone': [Static(Weakstone())],
     'web': [Triggered(Web(), T_FUNCS['creatures'], CastResolvedEvent)],
     'wheel-of-fortune': [Triggered(WheelOfFortune(), None, CastResolvedEvent)],
+    'whirling-dervish': [Triggered(WhirlingDervish(), None, EndStepEvent)],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                            Activated('T', ManaBatteriesAddMana('W'), extra_costs=[RemoveCounterCost(CHARGE)],
                                      max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],

@@ -44,6 +44,33 @@ class GlyphOfLife(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(GlyphOfLifeListener(target), source)
 
+class ReversePolarity(Resolver):
+    """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.events_all import DamageResolvedEvent
+        damage_by_artifacts = sum([e.amt for e in gs.turn_mgr.events
+                                   if isinstance(e, DamageResolvedEvent) and e.target == source.owner_id])
+        if not damage_by_artifacts:
+            return
+        gs.score_mgr.increment_life(source.owner_id, 2 * damage_by_artifacts, source, gs)
+
+class Simulacrum(Resolver):
+    """You gain life equal to the damage already dealt to you this turn. If you control a creature,
+    Simulacrum deals damage to target creature you control equal to the damage dealt to you this turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.events_all import DamageResolvedEvent
+        damage_taken_this_turn = sum([e for e in gs.turn_mgr.events
+                                      if isinstance(e, DamageResolvedEvent) and e.target == source.owner_id])
+        if not damage_taken_this_turn:
+            return
+
+        gs.score_mgr.increment_life(source.owner_id, damage_taken_this_turn, source, gs)
+
+        your_creatures = gs.card_filter.creatures().on_player_board(source.owner_id).result()
+        if your_creatures:
+            from models.choice_actions_all import DealDamageToChoice
+            gs.pending_choice = DealDamageToChoice(source.owner_id, gs, source, damage_taken_this_turn, your_creatures)
+
 
 class TowerOfCoireall(Resolver):
     """{T}: Target creature can't be blocked by Walls this turn"""
