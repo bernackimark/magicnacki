@@ -6,6 +6,7 @@ from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
 from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, Event
 from models.modifiers import PTMod, KWAMod
+from models.utils import flip
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -203,6 +204,14 @@ class YdwenEfreet(Listener):
 
 
 # --- CAN ATTACK QUERY EVENT ---
+class GoblinRockSledCanAttack(Listener):
+    """This creature can't attack unless defending player controls a Mountain"""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if not gs.card_filter.in_play().mountains().on_player_board(flip(source.owner_id)).result():
+            event.permission = False
+
 class WallOfDustAttackerCantAttackNextTurn(Listener):
     """... can't attack during its controller's next turn"""
     listens_to = CanAttackQueryEvent

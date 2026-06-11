@@ -17,11 +17,24 @@ from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
-    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent
+    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, CanUntapQueryEvent, AttackEvent
 from models.modifiers import PTMod
 from models.utils import flip
 from models.zone import Zone
 
+# --- CAN UNTAP QUERY EVENT ---
+class GoblinRockSledUntap(Listener):
+    """This creature doesn't untap during your untap step if it attacked during your last turn"""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if source is not event.card:
+            return
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
+        for e, turn_num in gs.event_mgr.events[::-1]:
+            if turn_num == p_last_turn_num:
+                if isinstance(e, AttackEvent) and e.attacker is source:
+                    event.permission = False
 
 # --- END STEP ---
 class DragonWhelpEndStep(Listener):

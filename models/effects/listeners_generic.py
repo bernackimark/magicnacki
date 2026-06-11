@@ -11,12 +11,27 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event, PassTheTurnEvent, CanUntapQueryEvent
+    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event, PassTheTurnEvent, CanUntapQueryEvent, \
+    CanAttackQueryEvent, AttackEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
 
-# --- CAN UNTAP EVENT --
+# --- CAN ATTACK QUERY EVENT ---
+class CantAttackIfAttackedLastTurn(Listener):
+    """This creature can't attack if it attacked during your last turn"""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if source is not event.attacker:
+            return
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
+        for e, turn_num in gs.event_mgr.events[::-1]:
+            if turn_num == p_last_turn_num:
+                if isinstance(e, AttackEvent) and e.attacker is source:
+                    event.permission = False
+
+# --- CAN UNTAP QUERY EVENT --
 class SkipNextUntap(Listener):
     """Card doesn't untap during its controller's NEXT untap step;
     set the event's permission to false & remove this listener from the registry"""

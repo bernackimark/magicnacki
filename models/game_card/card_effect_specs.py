@@ -40,7 +40,8 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     CreateTokenCreature, RemoveHostAuras, TapCardEffect, TapCardsEffect, UntapCardEffect, UntapCardsEffect, \
     HostStaysTapped, StaysTapped, UntapForManaEffect, UntapHostForManaEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, TakeAnotherTurn, RemoveFromCombat
-from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, PestilenceEndStep, SeasonOfTheWitchEndStep, \
+from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, PestilenceEndStep, \
+    SeasonOfTheWitchEndStep, \
     VoodooDollEndStep, AliFromCairo, GoblinsOfTheFlarg, SerendibDjinnNoLands, Blight, CityOfBrassDamageOnTap, Lifeblood, \
     Lifetap, PsychicVenom, SpiritShackle, WildGrowth, FloralSpuzzem, MerchantShip, MurkDwellers, BlackVise, \
     CosmicHorror, CurseArtifact, Cyclone, DemonicHordesUpkeep, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep, \
@@ -50,7 +51,7 @@ from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, Pe
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
     VerduranEnchantress, DropOfHoney, TheWretchedUnsteal, \
     WhirlingDervish, InfiniteAuthorityEndStep, TimeVaultOption, \
-    GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB
+    GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, GoblinRockSledUntap
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, CursedRackEffect, HowlingMine, ManaVaultDamageIfTapped
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, Onulet, \
     PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, UrzasMiter
@@ -62,11 +63,11 @@ from ..effects.listeners_cost import Gloom, ManaMatrix, PlanarGate, PowerArtifac
 from ..effects.listeners_combat import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
     WallOfDust, YdwenEfreet, InfiniteAuthorityCombatEnd, TimeElementalAttackedOrBlocked, TheWretchedSteal, Lure, \
-    MarblePriestForcesBlock
+    MarblePriestForcesBlock, GoblinRockSledCanAttack
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
-    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers
+    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers, CantAttackIfAttackedLastTurn
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     Seeker, Moat, \
@@ -83,7 +84,7 @@ from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, Ang
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
     DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent, DamageProposedEvent, \
-    CanBlockQueryEvent
+    CanBlockQueryEvent, CanAttackQueryEvent
 from models.phase_manager import Phase
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
@@ -429,6 +430,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'giant-strength':
         [Triggered(Pump(2, 2), T_FUNCS['creatures'], CastResolvedEvent)],
     'giant-tortoise': [Static(GiantTortoisePT())],
+    'giant-turtle': [Triggered(CantAttackIfAttackedLastTurn(), None, CanAttackQueryEvent)],
     'glasses-of-urza': [Activated('T', GlassesOfUrza())],
     'gloom': [Static(Gloom())],
     'glyph-of-destruction': [Triggered(GlyphOfDestruction(), T_FUNCS['your_walls'], CastResolvedEvent)],
@@ -438,6 +440,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'goblin-caves': [Static(GoblinCaves())],
     'goblin-digging-team': [Activated('T', Destroy(), T_FUNCS['walls'], extra_costs=[SacSelfCost()])],
     'goblin-king': [Triggered(GoblinKing(), None, CastResolvedEvent)],
+    'goblin-rock-sled': [Static(GoblinRockSledUntap()), Static(GoblinRockSledCanAttack())],
     'goblin-shrine': [Static(GoblinShrinePump()), Triggered(GoblinShrineOnLeave(), None, ZoneChangeEvent)],
     'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand']),
                       Activated('T', KWAModEffect('add', 'Protection From White', True), T_FUNCS['goblins'])],
