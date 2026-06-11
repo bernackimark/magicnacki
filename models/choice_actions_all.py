@@ -1,5 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from dataclasses import dataclass
 from itertools import combinations
 from typing import TYPE_CHECKING, Iterable, Optional
@@ -429,13 +430,17 @@ class HealingSalveChoice(ChoiceAction):
                 [HealingSalveB(self.player_idx, self.gs, self.source, t) for t in all_targets])
 
 class LandTaxChoice(ChoiceAction):
+    """... Search your library for & tudor up to three basic land cards"""
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
 
     def get_actions(self) -> list[Action]:
-        basic_lands = [c for c in self.gs.pile_mgr.libraries[self.player_idx] if c.props.is_basic_land]
+        basic_slug_lands = defaultdict(list)
+        for c in self.gs.pile_mgr.libraries[self.player_idx]:
+            if c.props.is_basic_land and len(basic_slug_lands.get(c.props.slug)) < 3:
+                basic_slug_lands[c.props.slug].append(c)
+        basic_lands = [c for slug, cards in basic_slug_lands.items() for c in cards]
         combo_set = {combo for r in range(1, 4) for combo in combinations(basic_lands, r)}
-        # TODO: combo_set was 833 items -- should have been about 11 combos; it's because each card is unique, but i care about unique slugs
         return [TutorMultipleCards(self.player_idx, self.gs, list(combo), Zone.HAND) for combo in combo_set]
 
 class LeviathanUpkeepChoice(ChoiceAction):
