@@ -51,7 +51,7 @@ class InfiniteAuthorityEndStep(Listener):
         if not source.host:
             return
         other_combatants = gs.card_filter.combating_against(source.host).result()
-        for e in gs.turn_mgr.events:
+        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
             if isinstance(e, DiesEvent) and e.card in other_combatants:
                 source.host.counters.add_counter(PLUS_ONE)
 
@@ -99,7 +99,7 @@ class WhirlingDervish(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
         from models.events_all import DamageResolvedEvent
-        for e in gs.turn_mgr.events:
+        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
             if isinstance(e, DamageResolvedEvent) and e.source is source and e.target == flip(source.owner_id):
                 source.counters.add_counter(PLUS_ONE)
                 return

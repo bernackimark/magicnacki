@@ -1,9 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING:
-    from models.events_all import Event
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
@@ -20,7 +18,6 @@ class TurnManager:
         self.has_played_land: bool = False
         self.cards_that_died: list[GameCard] = []
         self.untap_decisions_made: set[str] = set()
-        self.events: list[Event] = []  # since I'm now tracking events, do I need a separate cards_that_died?
 
     @property
     def turn_number(self) -> int:
@@ -37,6 +34,5 @@ class TurnManager:
         self.has_played_land = False
         self.cards_that_died.clear()
         self.untap_decisions_made.clear()
-        self.events.clear()
         gs.phase_mgr.set_phase(Phase.UNTAP, gs)
 

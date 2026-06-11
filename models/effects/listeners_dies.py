@@ -28,7 +28,7 @@ class AxelrodGunnarson(Listener):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        for e in gs.turn_mgr.events:
+        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
             if not isinstance(e, DamageResolvedEvent):
                 continue
             if e.source is not source or e.target is not event.card:
@@ -49,7 +49,8 @@ class BlazingEffigy(Listener):
         all_creatures = gs.card_filter.creatures().in_play().result()
         if not all_creatures:
             return
-        total_damage = 3 + sum([e.amt for e in gs.turn_mgr.events if isinstance(e, DamageResolvedEvent)
+        total_damage = 3 + sum([e.amt for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
+                                if isinstance(e, DamageResolvedEvent)
                                 and e.target is source and e.source.props.slug == 'blazing-effigy'])
         # TODO: How do I get the target creature from the user?
 
@@ -128,7 +129,7 @@ class SengirVampire(Listener):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        for e in gs.turn_mgr.events:
+        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
             if not isinstance(e, DamageResolvedEvent):
                 continue
             if e.source is not source or e.target is not event.card:

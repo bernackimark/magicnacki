@@ -21,15 +21,23 @@ class ListenerEntry:
 class EventManager:
     """Handles all Listener effects who method is 'on_event' -- both base rules & card-based effects"""
     def __init__(self):
+        self._events: list[tuple[Event, int]] = []
+
         # key = Event subclass, value = list of (effect, source_card) tuples
         self._base_rule_listeners: dict[type[Event], list[Listener]] = defaultdict(list)
         self._event_listeners: dict[type[Event], list[ListenerEntry]] = defaultdict(list)
-
         self._register_base_rules()
+
+    @property
+    def events(self) -> list[Event | None]:
+        return [event for event, _ in self._events]
+
+    def get_turn_events(self, turn_number: int) -> list[Event | None]:
+        return [event for event, turn_num in self.events if turn_num == turn_number]
 
     def emit(self, event: Event, gs: GameState):
         """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr"""
-        gs.turn_mgr.events.append(event)
+        self._events.append((event, gs.turn_mgr.turn_number))
 
         for base_rule in self._base_rule_listeners[type(event)]:
             base_rule.on_event(gs, None, event)  # rare case where the 'source' argument is not supplied
