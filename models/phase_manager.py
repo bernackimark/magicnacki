@@ -362,7 +362,7 @@ PHASE_MAP = {
     Phase.UPKEEP: UpkeepPhase,
     Phase.DRAW: DrawPhase,
     Phase.MAIN: MainPhase,
-    # DECLARE_COMBAT: DeclareAttackersPhase  # currently not in use, but there's at least one effect that relies on it
+    Phase.DECLARE_COMBAT: DeclareAttackersPhase,  # currently not in use, but there's >= 1 effect that relies on it
     Phase.DECLARE_ATTACKERS: DeclareAttackersPhase,  # declare who is attacking; tap those w/o vigil
     Phase.DECLARE_BLOCKERS: DeclareBlockersPhase,  # declare who's blocking whom
     Phase.PRE_COMBAT_DAMAGE: PreCombatDamagePhase,  # CIAA

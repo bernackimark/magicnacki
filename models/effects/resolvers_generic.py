@@ -73,6 +73,11 @@ class RemoveCountersOnHostTurn(Resolver):
             return
         source.host.counters.remove_counter(self.counter_type, self.cnt)
 
+class RemoveFromCombat(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.remove_from_combat(target)
 
 class RemovePlusOneZeroFromCombatant(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

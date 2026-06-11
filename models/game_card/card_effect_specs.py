@@ -29,7 +29,7 @@ from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, Tow
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, ArenaOfTheAncientsCast, \
     CocoonHostStaysTapped, ManaShort, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Forcefield, \
-    ReversePolarity, Simulacrum, BarlsCage, HazezonTamar
+    ReversePolarity, Simulacrum, BarlsCage, HazezonTamar, Disharmony, FalseOrders
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
@@ -39,7 +39,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, HandToBoard, Pump, \
     CreateTokenCreature, RemoveHostAuras, TapCardEffect, TapCardsEffect, UntapCardEffect, UntapCardsEffect, \
     HostStaysTapped, StaysTapped, UntapForManaEffect, UntapHostForManaEffect, PreventNextDamageToSourceOwner, \
-    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, TakeAnotherTurn
+    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, TakeAnotherTurn, RemoveFromCombat
 from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, PestilenceEndStep, SeasonOfTheWitchEndStep, \
     VoodooDollEndStep, AliFromCairo, GoblinsOfTheFlarg, SerendibDjinnNoLands, Blight, CityOfBrassDamageOnTap, Lifeblood, \
     Lifetap, PsychicVenom, SpiritShackle, WildGrowth, FloralSpuzzem, MerchantShip, MurkDwellers, BlackVise, \
@@ -61,11 +61,12 @@ from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevent
 from ..effects.listeners_cost import Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
-    WallOfDust, YdwenEfreet, InfiniteAuthorityCombatEnd, TimeElementalAttackedOrBlocked, TheWretchedSteal
+    WallOfDust, YdwenEfreet, InfiniteAuthorityCombatEnd, TimeElementalAttackedOrBlocked, TheWretchedSteal, Lure, \
+    MarblePriestForcesBlock
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
-    PreventNextDamageToCardEOT
+    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, \
     Seeker, Moat, \
@@ -81,7 +82,8 @@ from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, Ang
     Weakstone, ZombieMasterWalk, Castle
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
-    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent, DamageProposedEvent
+    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, DiscardEvent, DamageProposedEvent, \
+    CanBlockQueryEvent
 from models.phase_manager import Phase
 
 def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
@@ -308,6 +310,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'desert-twister': [Triggered(Destroy(), T_FUNCS['permanents'], CastResolvedEvent)],
     'diabolic-machine': [Activated('3', Regenerate(), T_FUNCS['self'])],
     'dingus-egg': [Triggered(DingusEgg(), None, ZoneChangeEvent)],
+    'disharmony': [Triggered(Disharmony(), T_FUNCS['attackers'], CastResolvedEvent,
+                             allowed_phases=[Phase.DECLARE_COMBAT, Phase.DECLARE_ATTACKERS])],
     'disrupting-scepter': [Activated('3T', Discard(), T_FUNCS['all_players'],
                                      allowed_p_id_turn=0)],  # TODO: p_id_turn needs a solution
     'disenchant':
@@ -339,6 +343,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
     'eater-of-the-dead':
         [Activated('', EaterOfTheDead(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
+    'ebony-horse': [Activated('2T', RemoveFromCombat(), T_FUNCS['attackers'])],
     'el-hajjâj': [Triggered(ElHajjaj(), T_FUNCS['self'], DamageResolvedEvent)],
     'elder-land-wurm': [Triggered(ElderLandWurm(), None, BlockEvent)],
     'elder-spawn': [Triggered(ElderSpawnUpkeep(), None, UpkeepEvent), Static(ElderSpawnCanBeBlocked())],
@@ -366,6 +371,8 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
                                extra_costs=[SacCardCost(T_FUNCS['your_other_creatures'])])],
     'falling-star': [Triggered(FallingStar(), T_FUNCS['opp_creatures'], CastResolvedEvent,
                                text='If a di roll is 1-5, deal 3 damage to it')],
+    'false-orders': [Triggered(FalseOrders(), T_FUNCS['blockers'], CastResolvedEvent,
+                               allowed_phases=[Phase.DECLARE_BLOCKERS])],
     'farmstead': [Triggered(None, T_FUNCS['lands'], CastResolvedEvent),
                   Activated('WW', GainLife(), T_FUNCS['host_owner'], allowed_phases=[Phase.UPKEEP],
                             allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
@@ -569,6 +576,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
     'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
+    'lure': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Triggered(Lure(), None, CanBlockQueryEvent)],
     'magnetic-mountain': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['in_turn_player_tapped_blue_creatures']),
                                     None, UntapPhaseEvent),
                           Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
@@ -583,7 +591,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'mana-vortex':
         [Triggered(Destroy(), T_FUNCS['your_lands'], CastResolvedEvent),
          Triggered(ManaVortexUpkeep(), None, UpkeepEvent)],
-    'marble-priest': [Static(MarblePriestPrevention())],  # there is some part of Marble Priest that's not yet coded !!!
+    'marble-priest': [Static(MarblePriestPrevention()), Static(MarblePriestForcesBlock())],
     'marsh-gas': [Triggered(MarshGas(), None, CastResolvedEvent)],
     'marsh-viper': [Triggered(AddPoisonCounter(2), None, DamageResolvedEvent)],
     'martyrs-cry': [Triggered(MartyrsCry(), None, CastResolvedEvent)],
@@ -916,6 +924,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'wall-of-opposition': [Activated('1', Pump(1, 0, True), T_FUNCS['self'])],
     'wall-of-putrid-flesh': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'], DamageProposedEvent)],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
+    'wall-of-vapor': [PreventCombatDamageFromItsAttackers(), None, DamageProposedEvent],
     'wall-of-water': [Activated('U', Pump(1, 0, True), T_FUNCS['self'])],
     'wall-of-wonder': [Activated('2UU', WallOfWonder())],
     'wand-of-ith': [Activated('3T', WandOfIth(), allowed_p_id_turn=T_FUNCS['card_owner'])],

@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 from models.actions.draw_discard import DiscardCard
 from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, NaturalSelectionChoice, ShuffleOrDontChoice, \
     CopyCardChoice, PrimalClayChoice, TriassicEggChoice, FastingChoice, HealingSalveChoice, RemoveCounterForLifeChoice, \
-    SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice
+    SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice, FalseOrdersChoice
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE, MINUS_ZERO_ONE, HUNGER, VITALITY, SLEEP
 from models.effects.base import Resolver
 from models.effects.listeners_card_specific import HazezonTamarTokenCreation
@@ -27,7 +27,7 @@ from models.effects.listeners_damage import GlyphOfLifeListener
 from models.effects.listeners_combat import GlyphOfDoomListener
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.effects.listeners_permission import TowerOfCoireallEOT, NoAttacksAllowedEOT
-from models.modifiers import SubTypeMod, KWAMod, PTMod
+from models.modifiers import SubTypeMod, KWAMod, PTMod, OwnershipMod
 from models.utils import flip
 from models.zone import Zone
 
@@ -37,6 +37,26 @@ class BarlsCage(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(SkipNextUntap(target), source)
+
+class Disharmony(Resolver):
+    """Cast this spell only during combat before blockers are declared.
+    Untap target attacking creature and remove it from combat. Gain control of that creature until end of turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.untap()
+        gs.remove_from_combat(target)
+        target.modifiers.append(OwnershipMod(source.owner_id, s=source, expires='EOT'))
+
+class FalseOrders(Resolver):
+    """... Remove target blocker from a combat. You may have it block in a different legal combat."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        other_combats = [com for com in gs.combats if target not in com.blockers]
+        gs.remove_from_combat(target)
+        if other_combats:
+            gs.pending_choice = FalseOrdersChoice(source.owner_id, gs, source)
 
 class GlyphOfDoom(Resolver):
     """On cast, select a wall.  Register GlyphOfDoomListener."""

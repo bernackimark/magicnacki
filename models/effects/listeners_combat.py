@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from models.choice_actions_all import PayManaOrTakeDamage
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
-from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent
+from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, Event
 from models.modifiers import PTMod, KWAMod
 from models.zone import Zone
 
@@ -215,6 +215,28 @@ class WallOfDustAttackerCantAttackNextTurn(Listener):
             return
         event.permission = False
         gs.event_mgr.unregister_specific_effect(self)
+
+
+# --- CAN BLOCK QUERY EVENT ---
+class Lure(Listener):
+    """All creatures able to block host do so"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source.host:
+            return
+        if gs.perm_querier.can_block(event.blocker, event.attacker):
+            event.permission = True
+
+class MarblePriestForcesBlock(Listener):
+    """All Walls able to block this creature do so ..."""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source or 'Wall' not in event.blocker.card_sub_types:
+            return
+        if gs.perm_querier.can_block(event.blocker, event.attacker):
+            event.permission = True
 
 
 # --- COMBAT END EVENT ---

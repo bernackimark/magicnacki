@@ -90,6 +90,15 @@ class PreventAllDamageEOT(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class PreventCombatDamageFromItsAttackers(Listener):
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if not event.is_combat or source is not event.target:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
 class PreventCombatDamageFromEnchantedCreatures(Listener):
     """Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
     listens_to = DamageProposedEvent

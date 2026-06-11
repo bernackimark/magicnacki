@@ -364,6 +364,15 @@ class ErosionUpkeepChoice(ChoiceAction):
         actions.append(Sac(self.player_idx, self.gs, self.source.host))
         return actions
 
+class FalseOrdersChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        from models.actions.combat import AssignBlocker
+        return [AssignBlocker(self.source.owner_id, self.gs, self.source, com.attacker) for com in self.gs.combats] + \
+            [DoNothing(self.player_idx, self.gs)]
+
 class FastingChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)
