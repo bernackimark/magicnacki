@@ -32,19 +32,38 @@ class CantAttackIfAttackedLastTurn(Listener):
                     event.permission = False
 
 # --- CAN UNTAP QUERY EVENT --
-class SkipNextUntap(Listener):
-    """Card doesn't untap during its controller's NEXT untap step;
-    set the event's permission to false & remove this listener from the registry"""
+class DoesntUntapIfItAttackedLastTurn(Listener):
     listens_to = CanUntapQueryEvent
 
     def __init__(self, target: GameCard):
         self.target = target
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if self.target is not event.card:
+            return
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(self.target.owner_id)
+        for e, turn_num in gs.event_mgr.events[::-1]:
+            if turn_num == p_last_turn_num:
+                if isinstance(e, AttackEvent) and e.attacker is self.target:
+                    event.permission = False
+
+class SkipUntaps(Listener):
+    """Card doesn't untap during its controller's next X untap steps;
+    set the event's permission to false & expire this listener"""
+    listens_to = CanUntapQueryEvent
+
+    def __init__(self, target: GameCard, next_x_turns: int = 1):
+        self.target = target
+        self.next_x_turns = next_x_turns
+        self.skips_used = 0
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
         if event.card is not self.target or gs.turn_mgr.player_turn_idx != self.target.owner_id:
             return
         event.permission = False
-        gs.event_mgr.unregister_specific_effect(self)
+        self.skips_used += 1
+        if self.skips_used == self.next_x_turns:
+            self.is_expired = True
 
 # --- CAST EVENT ---
 class OnColorSpellGainLife(Listener):

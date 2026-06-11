@@ -4,7 +4,8 @@ from typing import TYPE_CHECKING
 from models.choice_actions_all import PayManaOrTakeDamage
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
-from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, Event
+from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, Event, \
+    CastResolvedEvent, ZoneChangeEvent
 from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
@@ -204,6 +205,21 @@ class YdwenEfreet(Listener):
 
 
 # --- CAN ATTACK QUERY EVENT ---
+class Arboria(Listener):
+    """Creatures can only attack a player who, in their last turn,
+    cast a spell or put a nontoken permanent onto the battlefield"""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        events_on_players_last_turn = gs.event_mgr.get_turn_events(gs.turn_mgr.player_turn_idx)
+        for e in events_on_players_last_turn:
+            if isinstance(e, CastResolvedEvent) and e.owner_id == flip(event.attacker.owner_id):
+                return
+            if (isinstance(e, ZoneChangeEvent) and e.card.owner_id == flip(event.attacker.owner_id)
+                    and not e.card.is_token and e.to_zone == Zone.BATTLEFIELD):
+                return
+        event.permission = False
+
 class GoblinRockSledCanAttack(Listener):
     """This creature can't attack unless defending player controls a Mountain"""
     listens_to = CanAttackQueryEvent

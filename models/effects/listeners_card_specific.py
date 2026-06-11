@@ -17,7 +17,8 @@ from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
-    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, CanUntapQueryEvent, AttackEvent
+    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, CanUntapQueryEvent, AttackEvent, \
+    CastResolvedEvent
 from models.modifiers import PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -35,6 +36,19 @@ class GoblinRockSledUntap(Listener):
             if turn_num == p_last_turn_num:
                 if isinstance(e, AttackEvent) and e.attacker is source:
                     event.permission = False
+
+# --- CAST RESOLVED EVENT ---
+class IchneumonDruid(Listener):
+    """Whenever an opponent casts their non-first instant spell that turn, ID deals 4 damage to that player."""
+    listens_to = CastResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> None:
+        opp = flip(source.owner_id)
+        instants_cast_in_turn = len([e for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
+                                    if isinstance(e, CastResolvedEvent) and e.owner_id == opp
+                                    and 'Instant' in e.card.card_types])
+        if instants_cast_in_turn > 1:
+            gs.apply_damage(source, 4, opp)
 
 # --- END STEP ---
 class DragonWhelpEndStep(Listener):
@@ -613,6 +627,18 @@ class TheAbyss(Listener):
             gs.action_stack.push(DestroyAction(p_id, gs, source, your_non_art_creatures[0], False), gs, False)
         gs.action_stack.push(TheAbyssAction(p_id, gs, source), gs, False)
 
+class TheFallen(Listener):
+    """At your upkeep, this creature deals 1 damage to your opponent if it has previously damaged him/her this game"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+
+        from .listeners_damage import DamageResolvedEvent
+        for e in gs.event_mgr.events:
+            if isinstance(e, DamageResolvedEvent) and e.source is source and e.target == flip(source.owner_id):
+                gs.apply_damage(source, 1, flip(source.owner_id))
 
 class TheRack(Listener):
     """At opponent's upkeep, this artifact deals X damage to that player, X = 3 - len(hand) [X can't be negative]"""

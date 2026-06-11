@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Optional, Literal
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
 from models.effects.listeners_generic import DestroyAtEndStep, PreventNextDamageByEOT, PreventNextDamageToCardEOT, \
-    PreventAllDamageToEOT, SkipNextUntap
+    PreventAllDamageToEOT, SkipUntaps, PreventAllDamageByEOT
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, \
     MarshGasEOT, MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
@@ -36,7 +36,7 @@ class BarlsCage(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(SkipNextUntap(target), source)
+        gs.event_mgr.register(SkipUntaps(target), source)
 
 class Disharmony(Resolver):
     """Cast this spell only during combat before blockers are declared.
@@ -104,6 +104,25 @@ class Simulacrum(Resolver):
         if your_creatures:
             from models.choice_actions_all import DealDamageToChoice
             gs.pending_choice = DealDamageToChoice(source.owner_id, gs, source, damage_taken_this_turn, your_creatures)
+
+class TangleKelp(Resolver):
+    """Tap host. Host doesn't untap during its controller's untap step if it attacked their last turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.tap()
+        from .listeners_generic import DoesntUntapIfItAttackedLastTurn
+        gs.event_mgr.register(DoesntUntapIfItAttackedLastTurn(target), source)
+
+class Telekinesis(Resolver):
+    """Tap target creature. Prevent all combat damage that would be dealt by that creature this turn.
+    It doesn't untap during its controller's next two untap steps."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.tap()
+        gs.event_mgr.register(PreventAllDamageByEOT(target, combat_only=True), source)
+        gs.event_mgr.register(SkipUntaps(target, next_x_turns=2))
 
 class TowerOfCoireall(Resolver):
     """{T}: Target creature can't be blocked by Walls this turn"""

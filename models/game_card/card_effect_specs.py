@@ -29,7 +29,7 @@ from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, Tow
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, ArenaOfTheAncientsCast, \
     CocoonHostStaysTapped, ManaShort, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Forcefield, \
-    ReversePolarity, Simulacrum, BarlsCage, HazezonTamar, Disharmony, FalseOrders
+    ReversePolarity, Simulacrum, BarlsCage, HazezonTamar, Disharmony, FalseOrders, Telekinesis, TangleKelp
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
@@ -51,7 +51,8 @@ from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, Pe
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
     VerduranEnchantress, DropOfHoney, TheWretchedUnsteal, \
     WhirlingDervish, InfiniteAuthorityEndStep, TimeVaultOption, \
-    GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, GoblinRockSledUntap
+    GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, GoblinRockSledUntap, TheFallen, \
+    IchneumonDruid
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, CursedRackEffect, HowlingMine, ManaVaultDamageIfTapped
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, Onulet, \
     PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, UrzasMiter
@@ -63,7 +64,7 @@ from ..effects.listeners_cost import Gloom, ManaMatrix, PlanarGate, PowerArtifac
 from ..effects.listeners_combat import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
     WallOfDust, YdwenEfreet, InfiniteAuthorityCombatEnd, TimeElementalAttackedOrBlocked, TheWretchedSteal, Lure, \
-    MarblePriestForcesBlock, GoblinRockSledCanAttack
+    MarblePriestForcesBlock, GoblinRockSledCanAttack, Arboria
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
@@ -143,6 +144,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'anti-magic-aura': [Triggered(RemoveHostAuras(), T_FUNCS['creatures'], CastResolvedEvent),
                         Static(HostCantBeTargetedByAuras())],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
+    'arboria': [Static(Arboria())],
     'arcades-sabboth': [Triggered(PayManaOrSac('GWU'), None, UpkeepEvent), Static(ArcadesSabbathAllCreaturePump()),
                         Activated('W', Pump(0, 1, True), T_FUNCS['self'])],
     'arena-of-the-ancients': [Triggered(ArenaOfTheAncientsCast(), None, CastResolvedEvent),
@@ -491,6 +493,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'hyperion-blacksmith': [Activated('T', TapCardEffect(), T_FUNCS['opp_untapped_artifacts']),
                             Activated('T', UntapCardEffect(), T_FUNCS['opp_tapped_artifacts'])],
     'hypnotic-specter': [Triggered(HypnoticSpecter(), None, DamageResolvedEvent)],
+    'ichneumon-druid': [Triggered(IchneumonDruid(), None, CastResolvedEvent)],
     'icy-manipulator': [Activated('1T', TapCardEffect(), T_FUNCS['untapped_artifacts_creatures_lands'])],
     'ice-storm': [Triggered(Destroy(), T_FUNCS['lands'], CastResolvedEvent)],
     'immolation': [Triggered(Pump(2, -2), T_FUNCS['creatures'], CastResolvedEvent)],
@@ -817,11 +820,13 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'syphon-soul': [Triggered(SyphonSoul(), T_FUNCS['opponent'], CastResolvedEvent)],
     'tablet-of-epityr': [Triggered(TabletOfEpityr(), None, DiesEvent)],
     'taiga': dual_land_activated_ability_specs('RG'),
+    'tangle-kelp': [Triggered(TangleKelp(), T_FUNCS['creatures'], CastResolvedEvent)],
     'tawnoss-coffin': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
     'tawnoss-wand': [Activated('2T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
     'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent),
                          Activated('2T', Pump(1, 1, True), T_FUNCS['creatures']),
                          (Triggered(UntapRemovesPumpFromAnotherCard(), None, UntapCardEffect))],
+    'telekinesis': [Triggered(Telekinesis(), T_FUNCS['creatures'], CastResolvedEvent)],
     'teleport': [Triggered(UnblockableThisTurn(), T_FUNCS['creatures'], CastResolvedEvent,
                            allowed_phases=[Phase.DECLARE_COMBAT])],
     'terror': [Triggered(Destroy(False), T_FUNCS['non_artifact_non_black_creatures'], CastResolvedEvent)],
@@ -831,6 +836,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'the-abyss': [Triggered(TheAbyss(), None, UpkeepEvent)],
     'the-brute': [Triggered(Pump(1, 0), T_FUNCS['creatures'], CastResolvedEvent),
                   Activated('RRR', Regenerate(), T_FUNCS['host'])],
+    'the-fallen': [Static(TheFallen())],
     'the-hive': [Activated('5T', CreateTokenCreature('wasp'))],
     'the-rack': [Triggered(TheRack(), None, UpkeepEvent)],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale(), None, UpkeepEvent)],
