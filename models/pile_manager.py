@@ -63,7 +63,7 @@ class PileManager:
                 card.modifiers.remove(shield)
                 card.tapped = True
                 card.damage_received_this_turn = 0
-                self._gs.remove_from_combat(card)
+                self._gs.combat_mgr.remove_from_combat(card)
                 print(f'{card} is regenerated')
                 return
 

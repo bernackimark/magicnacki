@@ -16,5 +16,5 @@ class RegenerationShield:
     def apply(gs: GameState, card: GameCard):
         card.tap()
         card.damage = 0
-        gs.remove_from_combat(card)
+        gs.combat_mgr.remove_from_combat(card)
         print(f'{card} has been regenerated')

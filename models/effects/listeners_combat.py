@@ -41,7 +41,7 @@ class MijaeDjinn(Listener):
         result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
         print(f'The result of the random event was: {result}')
         if result == 'tails':
-            gs.remove_from_combat(s)
+            gs.combat_mgr.remove_from_combat(s)
             s.tap()
 
 
@@ -199,7 +199,7 @@ class YdwenEfreet(Listener):
         result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
         print(f'The result of the random event was: {result}')
         if result == 'tails':
-            gs.remove_from_combat(s)
+            gs.combat_mgr.remove_from_combat(s)
 
 
 # --- CAN ATTACK QUERY EVENT ---
@@ -267,7 +267,7 @@ class TheWretchedSteal(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
         # TODO: are the blockers already in the graveyard?
-        wretched_blockers = [b for com in gs.combats for b in com.blockers if com.attacker is source]
+        wretched_blockers = [b for com in gs.combat_mgr.combats for b in com.blockers if com.attacker is source]
         if not wretched_blockers:
             return
         from .resolvers_generic import Steal

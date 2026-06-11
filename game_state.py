@@ -14,7 +14,7 @@ from models.actions.activate_ability import ActivateAbility, BeginAbilityActivat
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
-from models.combat import Combat
+from models.combat import Combat, CombatManager
 from models.events_all import DamageResolvedEvent, CastResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
@@ -48,12 +48,12 @@ class GameState:
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
         self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
         self.score_mgr = ScoreManager()  # manages life & poison
+        self.combat_mgr = CombatManager()
 
-        # action, turn, phase (game flow) concepts; not sure self.turn is being used
+        # action, turn, phase (game flow) concepts
         self.turn_mgr = TurnManager(self.player_cnt, player_turn_idx)
         self.action_on_idx: int = self.turn_mgr.player_turn_idx
 
-        self.combats: list[Combat] = []
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
 
         self.action_stack = ActionStack()
@@ -133,18 +133,6 @@ class GameState:
         event = RandomEvent(p_id, sequence)
         event.result = random.choice(sequence)
         return event.result
-
-    def remove_from_combat(self, c: GameCard):
-        """If attacker, delete that combat object, untap attacker; if blocker, remove blocker from the combat object"""
-        for com in self.combats:
-            if com.attacker is c:
-                com.attacker.untap()
-                self.combats.remove(com)
-                return
-            for blocker in com.blockers:
-                if blocker is c:
-                    com.blockers.remove(blocker)
-                    return
 
     # --- CASTING & ACTIVATION COSTS ---
     def get_casting_cost(self, p_id: int, card: GameCard) -> str:

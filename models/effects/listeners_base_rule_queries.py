@@ -24,7 +24,7 @@ class CanBlockRule(Listener):
             return
 
         # blocker cannot already be blocking in another combat
-        if b in {blocker for com in gs.combats for blocker in com.blockers}:
+        if b in {blocker for com in gs.combat_mgr.combats for blocker in com.blockers}:
             event.permission = False
             return
 

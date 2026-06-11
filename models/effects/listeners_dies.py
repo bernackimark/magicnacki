@@ -20,10 +20,8 @@ class AbuJafar(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if event.card is not source:
             return
-        for com in gs.combats:
-            for other_combatant in com.get_combatants_against(event.card):
-                gs.pile_mgr.destroy(other_combatant, allow_regeneration=False)
-
+        for combatant in gs.combat_mgr.get_combatants_against(event.card):
+            gs.pile_mgr.destroy(combatant, allow_regeneration=False)
 
 class AxelrodGunnarson(Listener):
     """Whenever a creature dealt damage by AG this turn dies, you gain 1 life & AG deals 1 damage to [opponent]"""

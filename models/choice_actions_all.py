@@ -370,7 +370,7 @@ class FalseOrdersChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         from models.actions.combat import AssignBlocker
-        return [AssignBlocker(self.source.owner_id, self.gs, self.source, com.attacker) for com in self.gs.combats] + \
+        return [AssignBlocker(self.source.owner_id, self.gs, self.source, com.attacker) for com in self.gs.combat_mgr.combats] + \
             [DoNothing(self.player_idx, self.gs)]
 
 class FastingChoice(ChoiceAction):

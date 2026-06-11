@@ -15,7 +15,6 @@ class Combat:
     gs: GameState
     attacker: GameCard
     blockers: list[GameCard] = field(default_factory=list)
-    killed_creatures: list[GameCard] = field(default_factory=list)
 
     def __repr__(self):
         return f"{self.attacker} attacking {self.blockers}"
@@ -29,9 +28,6 @@ class Combat:
 
         # Normal damage phase (skip first strike creatures that already dealt damage)
         self._combat_phase(first_strike=False)
-
-        # Clean up combat, move dead creatures to graveyard
-        self._end_combat()
 
     def _combat_phase(self, first_strike: bool):
         """Resolves damage for a phase (first strike or normal)"""
@@ -81,28 +77,33 @@ class Combat:
     def _has_first_strike(creature: "GameCard") -> bool:
         return 'First Strike' in creature.props.keyword_abilities
 
-    def _end_combat(self):
-        """Moves all creatures with lethal damage to the graveyard"""
-        pass
-        # # I don't think having "killed_creatures" is the best design; and cards dying happens upstream
-        # # Attacker
-        # if self.attacker.toughness - self.attacker.damage_received_this_turn <= 0:
-        #     self.killed_creatures.append(self.attacker)
-        #
-        # # Blockers
-        # for b in self.blockers:
-        #     if b.toughness - b.damage_received_this_turn <= 0:
-        #         if b not in self.killed_creatures:
-        #             self.killed_creatures.append(b)
-        #
-        # # Send killed creatures to graveyard
-        # for c in self.killed_creatures:
-        #     print('BBB')
-        #     self.gs.pile_mgr.destroy(c)
-        #     print('CCC')
 
-    def get_combatants_against(self, c: GameCard) -> list[GameCard]:
-        if self.attacker == c:
-            return [b for b in self.blockers]
-        if c in self.blockers:
-            return [self.attacker]
+class CombatManager:
+    def __init__(self):
+        self.combats: list[Combat] = []
+
+    def remove_from_combat(self, c: GameCard):
+        """If attacker, delete that combat object, untap attacker; if blocker, remove blocker from the combat object"""
+        for com in self.combats:
+            if com.attacker is c:
+                com.attacker.untap()
+                self.combats.remove(com)
+                return
+            for blocker in com.blockers:
+                if blocker is c:
+                    com.blockers.remove(blocker)
+                    return
+
+    def get_combat(self, c: GameCard) -> Combat | None:
+        for com in self.combats:
+            if c is com.attacker or c in com.blockers:
+                return com
+
+    def get_combatants_against(self, c: GameCard) -> list[GameCard | None]:
+        com = self.get_combat(c)
+        if not com:
+            return []
+        if com.attacker is c:
+            return [b for b in com.blockers]
+        if c in com.blockers:
+            return [com.attacker]

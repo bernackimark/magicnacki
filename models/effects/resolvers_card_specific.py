@@ -45,7 +45,7 @@ class Disharmony(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         target.untap()
-        gs.remove_from_combat(target)
+        gs.combat_mgr.remove_from_combat(target)
         target.modifiers.append(OwnershipMod(source.owner_id, s=source, expires='EOT'))
 
 class FalseOrders(Resolver):
@@ -53,8 +53,8 @@ class FalseOrders(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
-        other_combats = [com for com in gs.combats if target not in com.blockers]
-        gs.remove_from_combat(target)
+        other_combats = [com for com in gs.combat_mgr.combats if target not in com.blockers]
+        gs.combat_mgr.remove_from_combat(target)
         if other_combats:
             gs.pending_choice = FalseOrdersChoice(source.owner_id, gs, source)
 
@@ -777,7 +777,7 @@ class Feint(Resolver):
         Prevent all combat damage that would be dealt this turn by that creature and each creature blocking it."""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         """target = the attacker"""
-        the_combat = [com for com in gs.combats if com.attacker == target]
+        the_combat = [com for com in gs.combat_mgr.combats if com.attacker == target]
         if not the_combat:
             return
         the_combat = the_combat[0]
@@ -912,7 +912,7 @@ class MartyrsCry(Resolver):
 
 class MazeOfIth(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        the_combat = next((com for com in gs.combats if com.attacker is t), None)
+        the_combat = next((com for com in gs.combat_mgr.combats if com.attacker is t), None)
         if not the_combat:
             return
         gs.event_mgr.register(PreventNextDamageByEOT(the_combat.attacker, combat_only=True))

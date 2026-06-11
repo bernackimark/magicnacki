@@ -160,7 +160,7 @@ class DeclareAttackersPhase(PhaseState):
         from models.actions.combat import FinishDeclaringAttackers, CreatureAttack
         actions: list[Action] = []
 
-        if gs.combats and not gs.phase_mgr.any_remaining_required_attackers(p_id, gs):
+        if gs.combat_mgr.combats and not gs.phase_mgr.any_remaining_required_attackers(p_id, gs):
             actions.append(FinishDeclaringAttackers(p_id, gs))
 
         for c in gs.pile_mgr.boards[p_id]:
@@ -179,19 +179,19 @@ class DeclareBlockersPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.events_all import AttackEvent
-        for com in gs.combats:
+        for com in gs.combat_mgr.combats:
             gs.event_mgr.emit(AttackEvent(com.attacker), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.combat import FinishBlocking, AssignBlocker
 
-        if not gs.combats:
+        if not gs.combat_mgr.combats:
             return None
 
         actions: list[Action] = [FinishBlocking(gs.action_on_idx, gs)]
 
         for blocker in gs.card_filter.on_player_board(gs.action_on_idx).creatures().result():
-            for com in gs.combats:
+            for com in gs.combat_mgr.combats:
                 if gs.perm_querier.can_block(blocker, com.attacker):
                     actions.append(AssignBlocker(gs.action_on_idx, gs, blocker, com.attacker))
 
@@ -205,14 +205,14 @@ class DeclareBlockersPhase(PhaseState):
         return actions
 
     def next(self, gs: GameState):
-        return PreCombatDamagePhase() if gs.combats else EndStepPhase()
+        return PreCombatDamagePhase() if gs.combat_mgr.combats else EndStepPhase()
 
 class PreCombatDamagePhase(PhaseState):
     phase = Phase.PRE_COMBAT_DAMAGE
 
     def on_enter(self, gs: GameState):
         from models.events_all import BlockEvent
-        for com in gs.combats:
+        for com in gs.combat_mgr.combats:
             for blocker in com.blockers:
                 gs.event_mgr.emit(BlockEvent(com.attacker, blocker), gs)
 
@@ -235,7 +235,7 @@ class AssignCombatDamagePhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.events_all import UnblockedAttackerEvent, CombatEndEvent
-        for com in gs.combats:
+        for com in gs.combat_mgr.combats:
             if not com.blockers:
                 event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                 gs.event_mgr.emit(event, gs)
@@ -333,7 +333,7 @@ class EndTurnEffectsPhase(PhaseState):
             for aa in c.activated_abilities:
                 aa.eff_spec.activated_cnt_this_turn = 0
 
-        gs.combats.clear()
+        gs.combat_mgr.combats.clear()
 
     def get_actions(self, p_id: int, gs: GameState):
         return None

@@ -16,7 +16,7 @@ class CreatureAttack(Action):
     def play(self) -> None:
         if 'Vigilance' not in self.card.keyword_abilities:
             self.card.tap()
-        self.gs.combats.append(Combat(self.gs, self.card))
+        self.gs.combat_mgr.combats.append(Combat(self.gs, self.card))
 
 @dataclass
 class BeginCombat(Action):
@@ -46,7 +46,7 @@ class AssignBlocker(Action):
         return f"Block {self.attacker} with {self.blocker}"
 
     def play(self) -> None:
-        for com in self.gs.combats:
+        for com in self.gs.combat_mgr.combats:
             if com.attacker == self.attacker:
                 com.blockers.append(self.blocker)
 

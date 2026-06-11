@@ -176,25 +176,25 @@ class CardFilter:
 
     # --- Attackers/Blockers ---
     def attackers(self):
-        self._cards = [combat.attacker for combat in self._gs.combats]
+        self._cards = [combat.attacker for combat in self._gs.combat_mgr.combats]
         return self
 
     def blockers(self):
-        self._cards = [b for combat in self._gs.combats for b in combat.blockers]
+        self._cards = [b for combat in self._gs.combat_mgr.combats for b in combat.blockers]
         return self
 
     def unblocked_attackers(self):
-        self._cards = [com.attacker for com in self._gs.combats if not com.blockers]
+        self._cards = [com.attacker for com in self._gs.combat_mgr.combats if not com.blockers]
         return self
 
     def combatants(self):
-        self._cards = ([combat.attacker for combat in self._gs.combats] +
-                       [b for combat in self._gs.combats for b in combat.blockers])
+        self._cards = ([combat.attacker for combat in self._gs.combat_mgr.combats] +
+                       [b for combat in self._gs.combat_mgr.combats for b in combat.blockers])
         return self
 
     def combating_against(self, c: GameCard):
-        self._cards = [b for com in self._gs.combats for b in com.blockers if com.attacker is c] + \
-                      [com.attacker for com in self._gs.combats for b in com.blockers if b is c]
+        self._cards = [b for com in self._gs.combat_mgr.combats for b in com.blockers if com.attacker is c] + \
+                      [com.attacker for com in self._gs.combat_mgr.combats for b in com.blockers if b is c]
         return self
 
     # --- is enchanted ---

@@ -30,7 +30,7 @@ class ConsoleRenderer(Renderer):
         print(f"{players[p_idx].name}'s turn; {players[action_idx].name}'s action; current phase: {gs.phase_mgr.phase.name}; current life: {gs.score_mgr.life}")
         print(f"Their hand: {['*' if not c.is_face_up else c for c in gs.pile_mgr.hands[opp_idx].cards]}")
         print(f"Their board: {[c for c in gs.pile_mgr.boards[opp_idx] if not c.props.is_aura]}")
-        print(f"Combats: {gs.combats}")
+        print(f"Combats: {gs.combat_mgr.combats}")
         print(f"Board: {[c for c in gs.pile_mgr.boards[action_idx] if not c.props.is_aura]}")
         reprs = []
         for c in gs.pile_mgr.hands[action_idx].cards:
