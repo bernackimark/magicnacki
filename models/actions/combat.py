@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from models.actions.base import Action
-from models.combat import Combat
 from models.game_card.game_card import GameCard
 from models.utils import flip
 from models.phase_manager import Phase
@@ -16,7 +15,7 @@ class CreatureAttack(Action):
     def play(self) -> None:
         if 'Vigilance' not in self.card.keyword_abilities:
             self.card.tap()
-        self.gs.combat_mgr.combats.append(Combat(self.gs, self.card))
+        self.gs.combat_mgr.create_combat(self.gs, self.card)
 
 @dataclass
 class BeginCombat(Action):
@@ -46,9 +45,8 @@ class AssignBlocker(Action):
         return f"Block {self.attacker} with {self.blocker}"
 
     def play(self) -> None:
-        for com in self.gs.combat_mgr.combats:
-            if com.attacker == self.attacker:
-                com.blockers.append(self.blocker)
+        com = self.gs.combat_mgr.get_combat(self.attacker)
+        com.blockers.append(self.blocker)
 
 @dataclass
 class FinishBlocking(Action):

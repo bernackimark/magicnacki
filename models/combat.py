@@ -82,17 +82,16 @@ class CombatManager:
     def __init__(self):
         self.combats: list[Combat] = []
 
-    def remove_from_combat(self, c: GameCard):
-        """If attacker, delete that combat object, untap attacker; if blocker, remove blocker from the combat object"""
-        for com in self.combats:
-            if com.attacker is c:
-                com.attacker.untap()
-                self.combats.remove(com)
-                return
-            for blocker in com.blockers:
-                if blocker is c:
-                    com.blockers.remove(blocker)
-                    return
+    @property
+    def attackers(self) -> list[GameCard | None]:
+        return [com.attacker for com in self.combats]
+
+    @property
+    def blockers(self) -> list[GameCard | None]:
+        return [b for com in self.combats for b in com.blockers]
+
+    def create_combat(self, gs: GameState, c: GameCard) -> None:
+        self.combats.append(Combat(gs, c))
 
     def get_combat(self, c: GameCard) -> Combat | None:
         for com in self.combats:
@@ -107,3 +106,15 @@ class CombatManager:
             return [b for b in com.blockers]
         if c in com.blockers:
             return [com.attacker]
+
+    def remove_from_combat(self, c: GameCard):
+        """If attacker, delete that combat object, untap attacker; if blocker, remove blocker from the combat object"""
+        for com in self.combats:
+            if com.attacker is c:
+                com.attacker.untap()
+                self.combats.remove(com)
+                return
+            for blocker in com.blockers:
+                if blocker is c:
+                    com.blockers.remove(blocker)
+                    return

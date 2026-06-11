@@ -14,7 +14,7 @@ from models.actions.activate_ability import ActivateAbility, BeginAbilityActivat
 from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
-from models.combat import Combat, CombatManager
+from models.combat import CombatManager
 from models.events_all import DamageResolvedEvent, CastResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
