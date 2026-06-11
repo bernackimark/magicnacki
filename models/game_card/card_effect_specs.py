@@ -40,12 +40,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     CreateTokenCreature, RemoveHostAuras, TapCardEffect, TapCardsEffect, UntapCardEffect, UntapCardsEffect, \
     HostStaysTapped, StaysTapped, UntapForManaEffect, UntapHostForManaEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, TakeAnotherTurn
-from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
-    CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
-    YdwenEfreet, TimeElementalAttackedOrBlocked, Backfire, ElHajjaj, FungusaurOnDamage, HypnoticSpecter, \
-    LivingArtifactOnDamage, NicolBolas, SpiritLink, AbuJafar, CreatureBond, CyclopeanMummy, Onulet, PersonalIncarnation, \
-    RukhEgg, SuChi, SoulNet, TabletOfEpityr, UrzasMiter, PsychicPurgeDiscard, CursedRackEffect, HowlingMine, \
-    ManaVaultDamageIfTapped, DragonWhelpEndStep, ErgRaiders, PestilenceEndStep, SeasonOfTheWitchEndStep, \
+from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, PestilenceEndStep, SeasonOfTheWitchEndStep, \
     VoodooDollEndStep, AliFromCairo, GoblinsOfTheFlarg, SerendibDjinnNoLands, Blight, CityOfBrassDamageOnTap, Lifeblood, \
     Lifetap, PsychicVenom, SpiritShackle, WildGrowth, FloralSpuzzem, MerchantShip, MurkDwellers, BlackVise, \
     CosmicHorror, CurseArtifact, Cyclone, DemonicHordesUpkeep, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep, \
@@ -53,11 +48,20 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     PsychicAllergyUpkeep, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, AnkhOfMishra, CitanulDruid, \
     DingusEgg, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, Revelation, StanggOnLeave, \
-    VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
-    UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar, \
-    RockHydraAutoDamagePrevent, SengirVampire, AxelrodGunnarson, DropOfHoney, TheWretchedSteal, TheWretchedUnsteal, \
-    VeteranBodyguard, WhirlingDervish, InfiniteAuthorityCombatEnd, InfiniteAuthorityEndStep, TimeVaultOption, \
-    GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, WallOfDust
+    VerduranEnchantress, DropOfHoney, TheWretchedUnsteal, \
+    WhirlingDervish, InfiniteAuthorityEndStep, TimeVaultOption, \
+    GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB
+from ..effects.listeners_draw_discard import PsychicPurgeDiscard, CursedRackEffect, HowlingMine, ManaVaultDamageIfTapped
+from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, Onulet, \
+    PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, UrzasMiter
+from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, \
+    GaseousForm, MarblePriestPrevention, MartyrsOfKorlis, RockHydraAutoDamagePrevent, UncleIstvanPrevention, \
+    VeteranBodyguard, Backfire, ElHajjaj, FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, \
+    SpiritLink
+from ..effects.listeners_cost import Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar
+from ..effects.listeners_combat import CavePeopleAttackPump, HasranOgress, MijaeDjinn, Abomination, \
+    CockatriceAndThicketBasilisk, ElderLandWurm, GiantShark, InfernalMedusa, Sentinel, Venom, AislingLeprechaun, \
+    WallOfDust, YdwenEfreet, InfiniteAuthorityCombatEnd, TimeElementalAttackedOrBlocked, TheWretchedSteal
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \

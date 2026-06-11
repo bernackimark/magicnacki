@@ -21,8 +21,10 @@ from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, Natura
     SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE, MINUS_ZERO_ONE, HUNGER, VITALITY, SLEEP
 from models.effects.base import Resolver
-from models.effects.listeners_card_specific import GlyphOfDoomListener, GlyphOfLifeListener, \
-    SandalsOfAbdallahIfCreatureDies, HazezonTamarTokenCreation
+from models.effects.listeners_card_specific import HazezonTamarTokenCreation
+from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
+from models.effects.listeners_damage import GlyphOfLifeListener
+from models.effects.listeners_combat import GlyphOfDoomListener
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.effects.listeners_permission import TowerOfCoireallEOT, NoAttacksAllowedEOT
 from models.modifiers import SubTypeMod, KWAMod, PTMod
@@ -151,7 +153,7 @@ class EyeForAnEye(Resolver):
     """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         """target = the GameCard doing the original damage"""
-        from .listeners_card_specific import EyeForAnEyeEOT
+        from models.effects.listeners_damage import EyeForAnEyeEOT
         gs.event_mgr.register_effect(EyeForAnEyeEOT(watched_source=t, player_id=s.owner_id), s)
 
 class JovialEvil(Resolver):
@@ -626,7 +628,7 @@ class ActiveVolcano(Resolver):
 class AlAbarasCarpet(Resolver):
     """(Activated Ability): Prevent all damage you would be dealt this turn by attacking creatures without flying"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        from models.effects.listeners_card_specific import AlAbarasCarpetPrevention
+        from models.effects.listeners_damage import AlAbarasCarpetPrevention
         gs.event_mgr.register(AlAbarasCarpetPrevention(protected_player=source.owner_id), source)
 
 class Amnesia(Resolver):
@@ -916,7 +918,7 @@ class ReverseDamage(Resolver):
     You gain life equal to the damage prevented this way."""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         """target = the GameCard doing the damage"""
-        from .listeners_card_specific import ReverseDamageEOT
+        from models.effects.listeners_damage import ReverseDamageEOT
         gs.event_mgr.register(ReverseDamageEOT(damage_dealer=target), s)
 
 class RocketLauncherCast(Resolver):
@@ -1165,11 +1167,11 @@ class VenarianGoldHostStaysTapped(Resolver):
 class Scarecrow(Resolver):
     """(Activated Ability): Prevent all damage that would be dealt to you this turn by creatures with flying"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        from models.effects.listeners_card_specific import ScarecrowPrevention
+        from models.effects.listeners_damage import ScarecrowPrevention
         gs.event_mgr.register(ScarecrowPrevention(protected_player=source.owner_id), source)
 
 class Forcefield(Resolver):
     """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        from models.effects.listeners_card_specific import ForcefieldPrevention
+        from models.effects.listeners_damage import ForcefieldPrevention
         gs.event_mgr.register(ForcefieldPrevention(creature=t, protected_player=s.owner_id), s)

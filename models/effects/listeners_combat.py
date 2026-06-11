@@ -1,0 +1,253 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from models.choice_actions_all import PayManaOrTakeDamage
+from models.effects.base import Listener
+from models.effects.listeners_generic import DestroyAtCombatEnd
+from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent
+from models.modifiers import PTMod, KWAMod
+from models.zone import Zone
+
+if TYPE_CHECKING:
+    from models.game_card.game_card import GameCard
+    from game_state import GameState
+
+# --- ATTACK EVENT ---
+class CavePeopleAttackPump(Listener):
+    """Whenever this creature attacks, it gets +1/-2 until end of turn ..."""
+    listens_to = AttackEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker is not s:
+            return
+        event.attacker.modifiers.append(PTMod(s=s, p_adj=1, t_adj=-2, expires='EOT'))
+
+class HasranOgress(Listener):
+    """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
+    listens_to = AttackEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
+        if event.attacker is not s:
+            return
+        gs.action_stack.push(PayManaOrTakeDamage(s.owner_id, gs, s, '2', 3), gs, False)
+
+class MijaeDjinn(Listener):
+    """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
+    listens_to = AttackEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
+        if event.attacker is not s:
+            return
+        result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
+        print(f'The result of the random event was: {result}')
+        if result == 'tails':
+            gs.remove_from_combat(s)
+            s.tap()
+
+
+# --- BLOCK EVENT ---
+class Abomination(Listener):
+    """Whenever this creature blocks or becomes blocked by a G or W creature, destroy that creature at combat end"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker == s:
+            other = event.blocker
+        elif event.blocker == s:
+            other = event.attacker
+        else:
+            return
+        if not any(c in other.colors for c in ('G', 'W')):
+            return
+        delayed = DestroyAtCombatEnd(s, other)
+        gs.event_mgr.register(delayed, s)
+        # this will later get unregistered at combat end
+
+class CockatriceAndThicketBasilisk(Listener):
+    """Whenever this creature blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker == s:
+            other = event.blocker
+        elif event.blocker == s:
+            other = event.attacker
+        else:
+            return
+        if 'Wall' in other.card_sub_types:
+            return
+        delayed = DestroyAtCombatEnd(s, other)
+        gs.event_mgr.register(delayed, s)
+        # this will later get unregistered at combat end
+
+class ElderLandWurm(Listener):
+    """When this creature blocks for the first time, it loses defender"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.blocker is not s:
+            return
+        s.modifiers.append(KWAMod(s=s, add_or_remove='remove', kwa='Defender'))
+
+class GiantShark(Listener):
+    """Whenever this creature blocks/is blocked by a creature that's been dealt damage this turn,
+    this creature gets +2/+0 and gains trample until end of turn"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker == s:
+            other = event.blocker
+        elif event.blocker == s:
+            other = event.attacker
+        else:
+            return
+        if other.damage_received_this_turn:
+            s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
+            s.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Trample', expires='EOT'))
+
+class GlyphOfDoomListener(Listener):
+    """Registered by GlyphOfDoom. At this turn's combat end, destroy creature blocked by that wall this turn."""
+    listens_to = BlockEvent
+
+    def __init__(self, the_wall: GameCard):
+        self.the_wall = the_wall
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.blocker is not self.the_wall:
+            return
+        effect = DestroyAtCombatEnd(self.the_wall, event.attacker)
+        gs.event_mgr.register(effect, self.the_wall)
+
+class InfernalMedusa(Listener):
+    """Whenever this creature blocks, destroy attacker at combat end.
+    Whenever this creature becomes blocked by a non-Wall creature, destroy blocker at combat end."""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker is s and 'Wall' not in event.blocker.card_sub_types:
+            other = event.blocker
+        elif event.blocker is s:
+            other = event.attacker
+        else:
+            return
+        delayed = DestroyAtCombatEnd(s, other)
+        gs.event_mgr.register(delayed, s)
+        # this will later get unregistered at combat end
+
+class Sentinel(Listener):
+    """Indefinitely change Sentinel's base T to 1 + power of target creature blocking or blocked by this creature"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker is s:
+            other = event.blocker
+        elif event.blocker is s:
+            other = event.attacker
+        else:
+            return
+        new_t = other.power + 1
+        s.modifiers.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
+
+class Venom(Listener):
+    """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker is s.host:
+            other = event.blocker
+        elif event.blocker is s.host:
+            other = event.attacker
+        else:
+            return
+        if 'Wall' in other.card_sub_types:
+            return
+        delayed = DestroyAtCombatEnd(s, other)
+        gs.event_mgr.register(delayed, s)
+        # this will later get unregistered at combat end
+
+class AislingLeprechaun(Listener):
+    """Whenever this creature blocks or becomes blocked, that creature becomes green indefinitely;
+    from Google: causes the creature to become green, which removes its existing colors & replaces with green only"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.attacker == s:
+            other = event.blocker
+        elif event.blocker == s:
+            other = event.attacker
+        else:
+            return
+        other.colors = 'G'
+
+class WallOfDust(Listener):
+    """Whenever this creature blocks, the attacker can't attack during its controller's next turn"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: BlockEvent) -> None:
+        if event.blocker is not source:
+            return
+        gs.event_mgr.register(WallOfDustAttackerCantAttackNextTurn(event.attacker), source)
+
+class YdwenEfreet(Listener):
+    """Whenever Ydwen Efreet blocks, flip a coin.
+    If you lose, remove Ydwen Efreet from combat who can't block this turn."""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if event.blocker is not s:
+            return
+        result = gs.randomize_event(s.owner_id, ['heads', 'tails'])
+        print(f'The result of the random event was: {result}')
+        if result == 'tails':
+            gs.remove_from_combat(s)
+
+
+# --- CAN ATTACK QUERY EVENT ---
+class WallOfDustAttackerCantAttackNextTurn(Listener):
+    """... can't attack during its controller's next turn"""
+    listens_to = CanAttackQueryEvent
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if event.attacker is not self.target:
+            return
+        event.permission = False
+        gs.event_mgr.unregister_specific_effect(self)
+
+
+# --- COMBAT END EVENT ---
+class InfiniteAuthorityCombatEnd(Listener):
+    """At combat end, if host is in combat with a creature with toughness <= 3, destroy the other creature ..."""
+    listens_to = CombatEndEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
+        if not source.host or source.host not in gs.card_filter.combatants().result():
+            return
+        for other_creature in gs.card_filter.combating_against(source.host).result():
+            if other_creature.toughness <= 3:
+                gs.pile_mgr.destroy(other_creature)
+
+class TimeElementalAttackedOrBlocked(Listener):
+    """When this creature attacks or blocks, at end of combat, sacrifice it & it deals 5 damage to you"""
+    listens_to = CombatEndEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        if s not in gs.card_filter.combatants().result():
+            return
+        gs.apply_damage(s, 5, s.owner_id)
+        gs.pile_mgr.destroy(s)
+
+class TheWretchedSteal(Listener):
+    """At combat end, gain control of all creatures blocking this creature for as long as you control this creature"""
+    listens_to = CombatEndEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
+        # TODO: are the blockers already in the graveyard?
+        wretched_blockers = [b for com in gs.combats for b in com.blockers if com.attacker is source]
+        if not wretched_blockers:
+            return
+        from .resolvers_generic import Steal
+        for blocker in wretched_blockers:
+            Steal(Zone.BATTLEFIELD).resolve(gs, source, blocker)
