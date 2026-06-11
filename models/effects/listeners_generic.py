@@ -11,11 +11,25 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event, PassTheTurnEvent
+    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event, PassTheTurnEvent, CanUntapQueryEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
 
+# --- CAN UNTAP EVENT --
+class SkipNextUntap(Listener):
+    """Card doesn't untap during its controller's NEXT untap step;
+    set the event's permission to false & remove this listener from the registry"""
+    listens_to = CanUntapQueryEvent
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if event.card is not self.target or gs.turn_mgr.player_turn_idx != self.target.owner_id:
+            return
+        event.permission = False
+        gs.event_mgr.unregister_specific_effect(self)
 
 # --- CAST EVENT ---
 class OnColorSpellGainLife(Listener):

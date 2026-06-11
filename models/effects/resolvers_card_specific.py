@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, Optional, Literal
 from models.actions.special import SacCreatureAndAddMana
 from models.actions.tap_untap import LeaveTapped
 from models.effects.listeners_generic import DestroyAtEndStep, PreventNextDamageByEOT, PreventNextDamageToCardEOT, \
-    PreventAllDamageToEOT
-from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, MarshGasEOT, \
-    MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
+    PreventAllDamageToEOT, SkipNextUntap
+from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT, HellSwarmEOT, HolyLightEOT, \
+    MarshGasEOT, MoraleEOT, PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.phase_manager import Phase
 
 if TYPE_CHECKING:
@@ -22,13 +22,19 @@ from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, Natura
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE, MINUS_ZERO_ONE, HUNGER, VITALITY, SLEEP
 from models.effects.base import Resolver
 from models.effects.listeners_card_specific import GlyphOfDoomListener, GlyphOfLifeListener, \
-    SandalsOfAbdallahIfCreatureDies
+    SandalsOfAbdallahIfCreatureDies, HazezonTamarTokenCreation
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.effects.listeners_permission import TowerOfCoireallEOT, NoAttacksAllowedEOT
 from models.modifiers import SubTypeMod, KWAMod, PTMod
 from models.utils import flip
 from models.zone import Zone
 
+class BarlsCage(Resolver):
+    """Target creature doesn't untap during its controller's NEXT untap step; registers a listener"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.event_mgr.register(SkipNextUntap(target), source)
 
 class GlyphOfDoom(Resolver):
     """On cast, select a wall.  Register GlyphOfDoomListener."""
@@ -43,6 +49,12 @@ class GlyphOfLife(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(GlyphOfLifeListener(target), source)
+
+class HazezonTamar(Resolver):
+    """When HT enters, create X 1/1 Sand Warrior RGW creature tokens at your NEXT upkeep;
+    (from online rulings) whoever owns HT when cast will own the tokens, even if HT dies or transfers owners"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        gs.event_mgr.register(HazezonTamarTokenCreation(source.owner_id), source)
 
 class ReversePolarity(Resolver):
     """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts"""
@@ -70,7 +82,6 @@ class Simulacrum(Resolver):
         if your_creatures:
             from models.choice_actions_all import DealDamageToChoice
             gs.pending_choice = DealDamageToChoice(source.owner_id, gs, source, damage_taken_this_turn, your_creatures)
-
 
 class TowerOfCoireall(Resolver):
     """{T}: Target creature can't be blocked by Walls this turn"""

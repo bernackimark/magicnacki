@@ -394,6 +394,22 @@ class ForceOfNatureUpkeepChoice(ChoiceAction):
         actions.append(DealDamageToYou(self.player_idx, self.gs, self.source, self.damage_amt))
         return actions
 
+class GabrielAngelfireChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        kwa_options = ('Flying', 'First Strike', 'Trample', 'Rampage 3')
+        return [AddKWA(self.source.owner_id, self.gs, self.source, self.source, kwa) for kwa in kwa_options]
+
+class GiantSlugChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        kwa_options = ('Forestwalk', 'Islandwalk', 'Mountainwalk', 'Plainswalk', 'Swampwalk')
+        return [AddKWA(self.source.owner_id, self.gs, self.source, self.source, kwa) for kwa in kwa_options]
+
 class HealingSalveChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
         super().__init__(p_id, gs, source)

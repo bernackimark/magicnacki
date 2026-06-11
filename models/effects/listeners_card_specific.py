@@ -15,14 +15,15 @@ from models.choice_actions_all import PayManaOrTakeDamage, PayOneColorlessForOne
     DemonicHordesUpkeepChoice, ElderSpawnUpkeepChoice, PayManaOrSacUpkeepChoice, ErhnamDjinnChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, LandTaxChoice, LordOfThePitUpkeepChoice, SacChoice, PsychicAllergyUpkeepChoice, \
     RogahhOfKherKeepUpkeepChoice, PayLifeOrSacChoice, CopyCardChoice, YawgmothDemonChoice, MoldDemonChoice, \
-    DrawCardsOrDontChoice
+    DrawCardsOrDontChoice, GabrielAngelfireChoice, GiantSlugChoice
 from models.counter_tokens import PLUS_ONE, VITALITY, PIN, MINUS_ZERO_TWO, WIND
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd, AddCounterAtEndStep
 from models.effects.resolvers_generic import Steal
 from models.events_all import AttackEvent, BlockEvent, CombatEndEvent, DamageResolvedEvent, DiesEvent, DiscardEvent, \
     DiscardStepEvent, DrawCardEvent, DrawStepEvent, EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
-    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, DamageProposedEvent, CostQueryEvent
+    UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, DamageProposedEvent, CostQueryEvent, \
+    CanAttackQueryEvent
 from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
@@ -201,6 +202,14 @@ class AislingLeprechaun(Listener):
             return
         other.colors = 'G'
 
+class WallOfDust(Listener):
+    """Whenever this creature blocks, the attacker can't attack during its controller's next turn"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: BlockEvent) -> None:
+        if event.blocker is not source:
+            return
+        gs.event_mgr.register(WallOfDustAttackerCantAttackNextTurn(event.attacker), source)
 
 class YdwenEfreet(Listener):
     """Whenever Ydwen Efreet blocks, flip a coin.
@@ -215,6 +224,18 @@ class YdwenEfreet(Listener):
         if result == 'tails':
             gs.remove_from_combat(s)
 
+class WallOfDustAttackerCantAttackNextTurn(Listener):
+    """... can't attack during its controller's next turn"""
+    listens_to = CanAttackQueryEvent
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if event.attacker is not self.target:
+            return
+        event.permission = False
+        gs.event_mgr.unregister_specific_effect(self)
 
 # --- COMBAT END ---
 class InfiniteAuthorityCombatEnd(Listener):
@@ -1057,7 +1078,6 @@ class BlackVise(Listener):
         if opp_hand_len > 4:
             gs.apply_damage(s, opp_hand_len - 4, opp_id)
 
-
 class CosmicHorror(Listener):
     """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
     listens_to = UpkeepEvent
@@ -1071,7 +1091,6 @@ class CosmicHorror(Listener):
             return
         gs.action_stack.push(CosmicHorrorUpkeepChoice(source.owner_id, gs, source), gs, False)
 
-
 class CurseArtifact(Listener):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
     listens_to = UpkeepEvent
@@ -1080,7 +1099,6 @@ class CurseArtifact(Listener):
         if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(CurseArtifactUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
-
 
 class Cyclone(Listener):
     """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
@@ -1094,7 +1112,6 @@ class Cyclone(Listener):
         if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
             gs.pile_mgr.destroy(source, False)
         gs.action_stack.push(CycloneChoice(source.owner_id, gs, source), gs, False)
-
 
 class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
@@ -1147,7 +1164,6 @@ class ElderSpawnUpkeep(Listener):
             return
         gs.action_stack.push(ElderSpawnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, s), gs, False)
 
-
 class EnergyFlux(Listener):
     """All artifacts have 'At your [the owner's] upkeep, sacrifice this artifact unless you pay {2}'"""
     listens_to = UpkeepEvent
@@ -1155,7 +1171,6 @@ class EnergyFlux(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         for your_artifact in gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).artifacts().result():
             gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, your_artifact, '2'), gs, False)
-
 
 class ErhnamDjinn(Listener):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
@@ -1166,7 +1181,6 @@ class ErhnamDjinn(Listener):
             return
         gs.pending_choice = ErhnamDjinnChoice(s.owner_id, gs, s)
 
-
 class ErosionUpkeep(Listener):
     """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life."""
     listens_to = UpkeepEvent
@@ -1175,7 +1189,6 @@ class ErosionUpkeep(Listener):
         if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(ErosionUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
-
 
 class ForceOfNatureUpkeep(Listener):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
@@ -1186,6 +1199,14 @@ class ForceOfNatureUpkeep(Listener):
             return
         gs.action_stack.push(ForceOfNatureUpkeepChoice(s.owner_id, gs, s, 'GGGG', 8), gs, False)
 
+class GabrielAngelfire(Listener):
+    """At your upkeep, choose flying, first strike, trample, rampage 3. GA gains that ability until your next upkeep."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
+            return
+        gs.pending_choice = GabrielAngelfireChoice(s.owner_id, gs, s)
 
 class GhazbanOgre(Listener):
     """At your upkeep, if a player has more life than each other player,
@@ -1201,6 +1222,31 @@ class GhazbanOgre(Listener):
         if most_life_player_idx != source.owner_id:
             Steal().resolve(gs, source, source)
 
+class GiantSlug(Listener):
+    """At your next upkeep, this creature gains landwalk of your choice until the end of that turn."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
+        if gs.turn_mgr.player_turn_idx != s.owner_id:
+            return
+        gs.pending_choice = GiantSlugChoice(s.owner_id, gs, s)
+
+class HazezonTamarTokenCreation(Listener):
+    """Create X 1/1 Sand Warrior tokens at your next upkeep; X is the number of lands you control at that time"""
+    listens_to = UpkeepEvent
+
+    def __init__(self, owner_id: int):
+        self.owner_id = owner_id
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+
+        from .resolvers_generic import CreateTokenCreature
+        for _ in gs.card_filter.lands().on_player_board(self.owner_id).result():
+            CreateTokenCreature('sand-warrior').resolve(gs, source)
+
+        gs.event_mgr.unregister_specific_effect(self)
 
 class IvoryTower(Listener):
     """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
@@ -1422,7 +1468,6 @@ class CitanulDruid(Listener):
             return
         source.counters.add_counter(PLUS_ONE)
 
-
 class DingusEgg(Listener):
     """Whenever a land is put into a graveyard from battlefield, deal 2 damage to that land's controller."""
     listens_to = ZoneChangeEvent
@@ -1431,7 +1476,6 @@ class DingusEgg(Listener):
         if event.to_zone != Zone.GRAVEYARD or event.from_zone != Zone.BATTLEFIELD or not event.card.props.is_land:
             return
         gs.apply_damage(source, 2, event.card.owner_id)
-
 
 class FieldOfDreams(Listener):
     """Players play with the top card of their libraries revealed"""
@@ -1444,7 +1488,6 @@ class FieldOfDreams(Listener):
         if gs.pile_mgr.libraries[player_idx]:
             gs.pile_mgr.libraries[player_idx][0].reveal()
 
-
 class GoblinShrineOnLeave(Listener):
     """... When this Aura leaves the battlefield, it deals 1 damage to each Goblin creature"""
     listens_to = ZoneChangeEvent
@@ -1455,6 +1498,15 @@ class GoblinShrineOnLeave(Listener):
         for goblin in gs.card_filter.in_play().by_sub_type('Goblin').creatures().result():
             gs.apply_damage(event.card, 1, goblin)
 
+class HazezonTamarLTB(Listener):
+    """When HT LTB, ALL permanents with BOTH the Sand AND Warrior types are exiled, not just those it created"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent) -> None:
+        if event.from_zone != Zone.BATTLEFIELD or event.card is not source:
+            return
+        for sand_warrior in gs.card_filter.in_play().by_sub_type('Sand').by_sub_type('Warrior').result():
+            gs.pile_mgr.destroy(sand_warrior, allow_regeneration=False)
 
 class Kismet(Listener):
     """Artifacts, creatures, and lands your opponents control enter tapped"""

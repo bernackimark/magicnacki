@@ -29,7 +29,7 @@ from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, Tow
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, ArenaOfTheAncientsCast, \
     CocoonHostStaysTapped, ManaShort, Reset, Riptide, Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Forcefield, \
-    ReversePolarity, Simulacrum
+    ReversePolarity, Simulacrum, BarlsCage, HazezonTamar
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
@@ -56,7 +56,8 @@ from ..effects.listeners_card_specific import CavePeopleAttackPump, HasranOgress
     VerduranEnchantress, ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, MarblePriestPrevention, \
     UncleIstvanPrevention, MartyrsOfKorlis, GaseousForm, Gloom, ManaMatrix, PlanarGate, PowerArtifact, StoneCalendar, \
     RockHydraAutoDamagePrevent, SengirVampire, AxelrodGunnarson, DropOfHoney, TheWretchedSteal, TheWretchedUnsteal, \
-    VeteranBodyguard, WhirlingDervish, InfiniteAuthorityCombatEnd, InfiniteAuthorityEndStep, TimeVaultOption
+    VeteranBodyguard, WhirlingDervish, InfiniteAuthorityCombatEnd, InfiniteAuthorityEndStep, TimeVaultOption, \
+    GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, WallOfDust
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
@@ -165,6 +166,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'ball-lightning': [Triggered(Destroy(), T_FUNCS['self'], EndStepEvent)],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'],
                           max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
+    'barls-cage': [Activated('3', BarlsCage(), T_FUNCS['creatures'])],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
     'basalt-monolith': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
@@ -393,6 +395,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
     'frozen-shade': [Activated('B', Pump(1, 1, True), T_FUNCS['self'])],
     'fungusaur': [Triggered(FungusaurOnDamage(), None, DamageResolvedEvent)],
+    'gabriel-angelfire': [Triggered(GabrielAngelfire(), None, UpkeepEvent)],
     'gaeas-avenger': [Static(GaeasAvengerPT())],
     'gaeas-liege': [Static(GaeasLiegePT())],
     'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()],
@@ -411,6 +414,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'giant-growth':
         [Triggered(Pump(3, 3, True), T_FUNCS['creatures'], CastResolvedEvent)],
     'giant-shark': [Triggered(GiantShark(), None, BlockEvent)],
+    'giant-slug': [Triggered(GiantSlug(), None, UpkeepEvent)],
     'giant-strength':
         [Triggered(Pump(2, 2), T_FUNCS['creatures'], CastResolvedEvent)],
     'giant-tortoise': [Static(GiantTortoisePT())],
@@ -447,6 +451,9 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures'])],
     'hasran-ogress': [Triggered(HasranOgress(), None, AttackEvent)],
+    'hazezon-tamar': [Triggered(HazezonTamar(), None, CastResolvedEvent),
+                      Triggered(HazezonTamarTokenCreation(T_FUNCS['card_owner']), None, UpkeepEvent),
+                      Triggered(HazezonTamarLTB(), None, ZoneChangeEvent)],
     'healing-salve': [Triggered(HealingSalve(), None, CastResolvedEvent)],
     'heavens-gate': [Triggered(SetColor('W', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None),
                                CastResolvedEvent)],
@@ -901,6 +908,7 @@ INVOCATIONS: dict[str, list[EffSpec]] = {
     'walking-dead': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-bone': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],
+    'wall-of-dust': [Triggered(WallOfDust(), None, BlockEvent)],
     'wall-of-opposition': [Activated('1', Pump(1, 0, True), T_FUNCS['self'])],
     'wall-of-putrid-flesh': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'], DamageProposedEvent)],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],

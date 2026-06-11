@@ -408,9 +408,7 @@ class Pump(Resolver):
     def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{s.props.name} needs a target')
-        target.modifiers.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj,
-                                            expires='EOT' if self.eot else None))
-
+        target.modifiers.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT' if self.eot else None))
 
 class CreateTokenCreature(Resolver):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""
