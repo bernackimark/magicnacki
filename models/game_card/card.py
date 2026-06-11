@@ -1,9 +1,8 @@
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field
 from functools import cached_property
 from pathlib import Path
 from typing import Iterator, Any
 
-from .kwa_abilities import CREATURE_KW_ABILITIES
 from common.file_utils import read_json_file
 from models.constants import BASIC_LANDS
 from models.utils import str_to_int
@@ -29,7 +28,7 @@ class Card:
     power: str | int | None
     toughness: str | int | None
     set_data: dict = field(repr=False)
-    keywords: list[str | None] = InitVar  # storing, but not yet using the keywords from Scryfall
+    # keywords: list[str | None] = InitVar  # storing, but not yet using the keywords from Scryfall
     keyword_abilities: list[str | None] = field(default_factory=list)  # not yet using the keywords from Scryfall
     mana_produced: list[str] | None = None
     ids: dict = field(default_factory=dict, repr=False)
@@ -37,8 +36,6 @@ class Card:
     rulings: list[Ruling] = field(default_factory=list)
 
     def __post_init__(self):
-        if not self.keyword_abilities:  # token creatures may arrive w keyword_abilities declared at construction
-            object.__setattr__(self, 'keyword_abilities', CREATURE_KW_ABILITIES.get(self.slug, []).copy())
         object.__setattr__(self, 'power', str_to_int(self.power) if self.power is not None else None)
         object.__setattr__(self, 'toughness', str_to_int(self.toughness) if self.toughness is not None else None)
 
@@ -141,6 +138,7 @@ class CardUniverse:
 
     def create_card_universe_from_json(self) -> list[Card]:
         self.all_cards_dict: dict = read_json_file(self.file_path)
+        convenience_kwas = read_json_file(Path(__file__).resolve().parent / 'convenience_kwas.json')
 
         in_scope_sets = set(self.set_codes)
         cards = []
@@ -157,6 +155,10 @@ class CardUniverse:
             card_dict['keywords'] = self._update_protection_kwa(card_dict['keywords'], card_dict['oracle_text'])
             card_dict['keywords'] = self._capitalize_first_strike(card_dict['keywords'])
             card_dict['keywords'] = self._update_rampage_amt(card_dict['keywords'], card_dict['oracle_text'])
+            card_dict['keyword_abilities'] = card_dict['keywords']  # "keyword_abilities" has been used everywhere
+            del card_dict['keywords']
+            if convenience_kwas.get(slug):
+                card_dict['keyword_abilities'].extend(convenience_kwas[slug])
             card = Card(**card_dict)
             cards.append(card)
 
@@ -170,7 +172,7 @@ class CardUniverse:
                         mana_value=0,
                         card_types=card_data['card_types'], card_sub_types=card_data['card_sub_types'],
                         card_super_types=card_data['card_super_types'], rarity='', oracle_text='',
-                        power=card_data['power'], toughness=card_data['toughness'], set_data={}, keywords=[],
+                        power=card_data['power'], toughness=card_data['toughness'], set_data={},
                         keyword_abilities=card_data['kwa'])
             cards[slug] = card
         return cards
