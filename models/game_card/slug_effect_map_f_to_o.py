@@ -1,0 +1,330 @@
+from __future__ import annotations
+
+from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCounterCost, \
+    SacCardCost, DiscardLastCardDrawnThisTurn
+from models.counter_tokens import CARRION, PLUS_ONE, CHARGE
+from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
+from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, \
+    GoblinShrinePump, GravitySphere, \
+    HiddenPath, IvoryGuardians, JacquesLeVert, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, \
+    KormusBell, LivingLands, LivingPlane, LordOfAtlantisPT, LordOfAtlantisWalk, Mightstone, NightmarePT, OrcishOriflamme
+from models.effects.listeners_permission import Moat, Meekstone, Invisibility, IronclawOrcs, Fear, \
+    JuggernautUnblockableByWalls, LivonyaSilone, WalkRuleRemoved
+from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, JovialEvil, Millstone, \
+    GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, \
+    ExchangeLifeTotals, GraveRobbersAA, GreatDefender, HellSwarm, HolyLight, HowlFromBeyond, \
+    LesserWerewolf, MarshGas, Morale, FallingStar, Fasting, Feint, FeldonsCane, Festival, FlashFlood, GoblinKing, \
+    Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, KryShield, \
+    LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, ManaShort, Forcefield, HazezonTamar, FalseOrders
+from models.effects.resolvers_generic import ManaBatteriesAddMana, \
+    AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
+    DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
+    PreventAllCombatDamageThisTurn, Destroy, DestroyAll, PayManaOrSac, Regenerate, SacAll, DrawCards, \
+    BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
+    Pump, TapCardEffect, UntapCardEffect, StaysTapped, PreventNextDamageToSourceOwner, \
+    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn
+from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
+    DamageResolvedEvent, TapCardEvent, UntapCardEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
+    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, CanBlockQueryEvent, CanAttackQueryEvent
+from models.phase_manager import Phase
+from .card_filter_funcs import T_FUNCS
+from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE
+from ..effects.listeners_card_specific import GoblinsOfTheFlarg, Lifeblood, \
+    Lifetap, FloralSpuzzem, MerchantShip, MurkDwellers, ForceOfNatureUpkeep, GhazbanOgre, IvoryTower, Karma, LandTax, \
+    LordOfThePitUpkeep, ManaVortexUpkeep, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, \
+    InfiniteAuthorityEndStep, GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, \
+    GoblinRockSledUntap, IchneumonDruid
+from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
+    InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack
+from ..effects.listeners_cost import Gloom, ManaMatrix
+from ..effects.listeners_damage import GaseousForm, MarblePriestPrevention, MartyrsOfKorlis, \
+    FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas
+from ..effects.listeners_dies import Onulet
+from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped
+from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
+    AddPoisonCounter, ReturnToOwnerOnUntap, CardsDontUntapAtUntapPhase, OptionalUntap, \
+    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn
+
+MAP: dict[str: list[EffSpec]] = {
+    'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
+                     extra_costs=[SacCardCost(T_FUNCS['your_other_creatures'])])],
+    'falling-star': [Triggered(FallingStar(), T_FUNCS['opp_creatures'], CastResolvedEvent,
+                               text='If a di roll is 1-5, deal 3 damage to it')],
+    'false-orders': [Triggered(FalseOrders(), T_FUNCS['blockers'], CastResolvedEvent,
+                               allowed_phases=[Phase.DECLARE_BLOCKERS])],
+    'farmstead': [Triggered(None, T_FUNCS['lands'], CastResolvedEvent),
+                  Activated('WW', GainLife(), T_FUNCS['host_owner'], allowed_phases=[Phase.UPKEEP],
+                            allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
+    'fasting': [Triggered(Fasting(), T_FUNCS['self'], UpkeepEvent),
+                Triggered(Destroy(), T_FUNCS['self'], DrawCardEvent)],
+    'fear': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(Fear())],
+    'feedback': [Triggered(None, T_FUNCS['enchants'], CastResolvedEvent),
+                 Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host'], UpkeepEvent)],
+    'feint': [Triggered(Feint(), T_FUNCS['attackers'], CastResolvedEvent)],
+    'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
+    'festival': [Triggered(Festival(), None, CastResolvedEvent, allowed_phases=[Phase.UPKEEP],
+                           allowed_p_id_turn=T_FUNCS['opponent'])],
+    'field-of-dreams': [Triggered(FieldOfDreams(), None, ZoneChangeEvent)],
+    'fire-drake': [Activated('R', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
+    'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],
+    'firebreathing': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent),
+                      Activated('R', Pump(1, 0, True), T_FUNCS['self'])],
+    'fishliver-oil': [Triggered(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures'], CastResolvedEvent)],
+    'fissure': [Triggered(Destroy(False), T_FUNCS['creatures_and_lands'], CastResolvedEvent)],
+    'flash-flood': [Triggered(FlashFlood(), T_FUNCS['flash_flood'], CastResolvedEvent)],
+    'flashfires': [Triggered(DestroyAll(lambda gs, s: gs.card_filter.in_play().plains().result()),
+                             None, CastResolvedEvent)],
+    'flight': [Triggered(KWAModEffect('add', 'Flying'), T_FUNCS['creatures'], CastResolvedEvent)],
+    'flood': [Activated('UU', TapCardEffect(), T_FUNCS['untapped_creatures_without_flying'])],
+    'floral-spuzzem': [Triggered(FloralSpuzzem(), None, UnblockedAttackerEvent)],
+    'flying-carpet': [Activated('2T', KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'])],
+    'fog': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
+    'force-of-nature': [Triggered(ForceOfNatureUpkeep(), None, UpkeepEvent)],
+    'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
+    'forethought-amulet': [Triggered(PayManaOrSac('3'), None, UpkeepEvent)],  # more to code
+    'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
+    'frozen-shade': [Activated('B', Pump(1, 1, True), T_FUNCS['self'])],
+    'fungusaur': [Triggered(FungusaurOnDamage(), None, DamageResolvedEvent)],
+    'gabriel-angelfire': [Triggered(GabrielAngelfire(), None, UpkeepEvent)],
+    'gaeas-avenger': [Static(GaeasAvengerPT())],
+    'gaeas-liege': [Static(GaeasLiegePT())],
+    'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()],
+                              text='Exile for {GG}'),
+                    Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
+                              allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],
+    # TODO: activated_cnt_this_turn needs to increment
+    'gaseous-form': [Triggered(GaseousForm(), T_FUNCS['creatures'], CastResolvedEvent)],
+    'gate-to-phyrexia': [Activated('', Destroy(), T_FUNCS['artifacts'],
+                                   extra_costs=[SacCardCost(T_FUNCS['your_creatures'])],
+                                   allowed_phases=[Phase.UPKEEP], max_activations_per_turn=1,
+                                   allowed_p_id_turn=T_FUNCS['card_owner'])],
+    'ghazbán-ogre': [Triggered(GhazbanOgre(), None, UpkeepEvent)],
+    'ghost-ship': [Activated('UUU', Regenerate(), T_FUNCS['self'])],
+    'ghosts-of-the-damned': [Activated('T', Pump(-1, 0, True), T_FUNCS['creatures'])],
+    'giant-growth':
+        [Triggered(Pump(3, 3, True), T_FUNCS['creatures'], CastResolvedEvent)],
+    'giant-shark': [Triggered(GiantShark(), None, BlockEvent)],
+    'giant-slug': [Triggered(GiantSlug(), None, UpkeepEvent)],
+    'giant-strength':
+        [Triggered(Pump(2, 2), T_FUNCS['creatures'], CastResolvedEvent)],
+    'giant-tortoise': [Static(GiantTortoisePT())],
+    'giant-turtle': [Triggered(CantAttackIfAttackedLastTurn(), None, CanAttackQueryEvent)],
+    'glasses-of-urza': [Activated('T', GlassesOfUrza())],
+    'gloom': [Static(Gloom())],
+    'glyph-of-destruction': [Triggered(GlyphOfDestruction(), T_FUNCS['your_walls'], CastResolvedEvent)],
+    'glyph-of-doom': [Triggered(GlyphOfDoom(), T_FUNCS['walls'], CastResolvedEvent)],
+    'glyph-of-life': [Triggered(GlyphOfLife(), T_FUNCS['walls'], CastResolvedEvent)],
+    'goblin-balloon-brigade': [Activated('R', KWAModEffect('add', 'Flying', True), T_FUNCS['self'])],
+    'goblin-caves': [Static(GoblinCaves())],
+    'goblin-digging-team': [Activated('T', Destroy(), T_FUNCS['walls'], extra_costs=[SacSelfCost()])],
+    'goblin-king': [Triggered(GoblinKing(), None, CastResolvedEvent)],
+    'goblin-rock-sled': [Static(GoblinRockSledUntap()), Static(GoblinRockSledCanAttack())],
+    'goblin-shrine': [Static(GoblinShrinePump()), Triggered(GoblinShrineOnLeave(), None, ZoneChangeEvent)],
+    'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand']),
+                      Activated('T', KWAModEffect('add', 'Protection From White', True), T_FUNCS['goblins'])],
+    'goblins-of-the-flarg': [Static(GoblinsOfTheFlarg())],
+    'golgothian-sylex': [Activated('1T', SacAll(T_FUNCS['golgothian_sylex']))],
+    'gosta-dirk': [Static(WalkRuleRemoved('Islandwalk'))],
+    'granite-gargoyle': [Activated('R', Pump(0, 1, True), T_FUNCS['self'])],
+    'grapeshot-catapult': [Activated('T', DealDamage(4), T_FUNCS['fliers'])],
+    'grave-robbers': [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
+    'gravity-sphere': [Static(GravitySphere())],
+    'great-defender': [Triggered(GreatDefender(), T_FUNCS['creatures'], CastResolvedEvent)],
+    'great-wall': [Static(WalkRuleRemoved('Plainswalk'))],
+    'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(),
+                                                T_FUNCS['black_and_red'])],
+    'greed': [Activated('B', Greed(), T_FUNCS['card_owner'])],
+    'green-mana-battery': [MANA_BATTERY_ADD_CHARGE,
+                           Activated('T', ManaBatteriesAddMana('G'), extra_costs=[RemoveCounterCost(CHARGE)],
+                                     max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+    'green-ward': [Triggered(KWAModEffect('add', 'Protection From Green'),
+                             T_FUNCS['creatures'], CastResolvedEvent)],
+    'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), T_FUNCS['all_players'])],
+    'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
+                   Activated('T', AllWalksRemoved(), T_FUNCS['creatures'])],
+    'hasran-ogress': [Triggered(HasranOgress(), None, AttackEvent)],
+    'hazezon-tamar': [Triggered(HazezonTamar(), None, CastResolvedEvent),
+                      Triggered(HazezonTamarTokenCreation(T_FUNCS['card_owner']), None, UpkeepEvent),
+                      Triggered(HazezonTamarLTB(), None, ZoneChangeEvent)],
+    'healing-salve': [Triggered(HealingSalve(), None, CastResolvedEvent)],
+    'heavens-gate': [Triggered(SetColor('W', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None),
+                               CastResolvedEvent)],
+    'hell-swarm': [Triggered(HellSwarm(), None, CastResolvedEvent)],
+    'hells-caretaker': [Activated('T', Reanimate(), T_FUNCS['creatures_in_your_graveyard'],
+                                  allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner'],
+                                  extra_costs=SacCardCost(T_FUNCS['your_creatures']))],
+    'hidden-path': [Static(HiddenPath())],
+    'holy-armor': [Triggered(Pump(0, 2), T_FUNCS['creatures'], CastResolvedEvent),
+                   Activated('W', Pump(0, 1, True), T_FUNCS['host'])],
+    'holy-day': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
+    'holy-light': [Triggered(HolyLight(), None, CastResolvedEvent)],
+    'holy-strength': [Triggered(Pump(1, 2), T_FUNCS['creatures'], CastResolvedEvent)],
+    'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True),
+                                    T_FUNCS['creatures'])],
+    'horror-of-horrors': [Activated('', Regenerate(), T_FUNCS['black_creatures'],
+                                    extra_costs=[SacCardCost(T_FUNCS['your_swamps'])])],
+    'howl-from-beyond': [Triggered(HowlFromBeyond(), T_FUNCS['creatures'], CastResolvedEvent)],
+    'howling-mine': [Triggered(HowlingMine(), None, DrawStepEvent)],
+    'hurkyls-recall': [Triggered(HurkylsRecall(), T_FUNCS['all_players'], CastResolvedEvent)],
+    'hyperion-blacksmith': [Activated('T', TapCardEffect(), T_FUNCS['opp_untapped_artifacts']),
+                            Activated('T', UntapCardEffect(), T_FUNCS['opp_tapped_artifacts'])],
+    'hypnotic-specter': [Triggered(HypnoticSpecter(), None, DamageResolvedEvent)],
+    'ichneumon-druid': [Triggered(IchneumonDruid(), None, CastResolvedEvent)],
+    'icy-manipulator': [Activated('1T', TapCardEffect(), T_FUNCS['untapped_artifacts_creatures_lands'])],
+    'ice-storm': [Triggered(Destroy(), T_FUNCS['lands'], CastResolvedEvent)],
+    'immolation': [Triggered(Pump(2, -2), T_FUNCS['creatures'], CastResolvedEvent)],
+    'indestructible-aura':
+        [Triggered(PreventAllDamageToThisTurn(), T_FUNCS['creatures'], CastResolvedEvent)],
+    'infernal-medusa': [Triggered(InfernalMedusa(), None, BlockEvent)],
+    'inferno': [Triggered(DealDamageToAllCreaturesAndPlayers(6), None, CastResolvedEvent)],
+    'infinte-authority': [Triggered(InfiniteAuthorityCombatEnd(), None, CombatEndEvent),
+                          Triggered(InfiniteAuthorityEndStep(), None, EndStepEvent)],
+    'instill-energy':
+        [Triggered(KWAModEffect('add', 'Haste'), T_FUNCS['creatures'], CastResolvedEvent),
+         Activated('', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'],
+                   max_activations_per_turn=1)],
+    'invisibility': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(Invisibility())],
+    'inquisition': [Triggered(Inquisition(), T_FUNCS['all_players'], CastResolvedEvent)],
+    'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
+    'ironclaw-orcs': [Static(IronclawOrcs())],
+    'island-fish-jasconius': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+                              untap_for_mana_at_owner_upkeep('UUU')],
+    'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
+    'ivory-guardians': [Static(IvoryGuardians())],
+    'ivory-tower': [Triggered(IvoryTower(), None, UpkeepEvent)],
+    'jacques-le-vert': [Static(JacquesLeVert())],
+    # 'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],  # needs a multi-step target selection for source & target
+    'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), T_FUNCS['self'],
+                              allowed_phases=[Phase.MAIN])],
+    'jalum-tome': [Activated('2T', JalumTome(), text='Draw one card; discard one card')],
+    'jandors-ring': [Activated('2T', DrawCards(), T_FUNCS['card_owner'], extra_costs=[DiscardLastCardDrawnThisTurn()])],
+    'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
+    'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
+    'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
+    'juggernaut': [Static(JuggernautUnblockableByWalls())],
+    'jump':
+        [Triggered(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'], CastResolvedEvent)],
+    'junún-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
+    'juzám-djinn': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'], UpkeepEvent)],
+    'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures'])],
+    'karma': [Triggered(Karma(), None, UpkeepEvent)],
+    'kei-takahashi': [Activated('T', PreventNextDamageBy(2), T_FUNCS['creatures'])],
+    'keldon-warlord': [Static(KeldonWarlordPT())],
+    'khabál-ghoul': [AddCounterPerCreatureDeath(PLUS_ONE), None, EndStepEvent],
+    'killer-bees': [Activated('G', Pump(1, 1, True), T_FUNCS['self'])],
+    'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
+    'kird-ape': [Static(KirdApePT())],
+    'kismet': [Static(Kismet())],
+    'kobold-drill-sergeant': [Triggered(KoboldDrillSergeant(), None, CastResolvedEvent)],
+    'kobold-overlord': [Static(KoboldOverlord())],
+    'kobold-taskmaster': [Static(KoboldTaskmaster())],
+    'kormus-bell': [Static(KormusBell())],
+    'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures'])],
+    'lady-caleria': [Activated('T', DealDamage(3), T_FUNCS['combatants'])],
+    'lady-evangela': [Activated('WBT', PreventAllDamageBy(combat_only=True), T_FUNCS['creatures'],
+                                CastResolvedEvent)],
+    'lance':
+        [Triggered(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures'], CastResolvedEvent)],
+    'land-equilibrium': [Static(LandEquilibrium())],
+    'land-tax': [Triggered(LandTax(), None, UpkeepEvent)],
+    'lesser-werewolf': [Activated('B', LesserWerewolf(), T_FUNCS['combating_against'],
+                                  allowed_phases=[Phase.DECLARE_ATTACKERS])],  # at Declare Attackers, won't know how it's combating
+    'leviathan':
+        [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
+         # TODO: StaysTapped() doesn't work because it uses resolve() instead of event() listening for UntapPhaseEvent
+         Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+         # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
+         Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
+                   allowed_phases=[Phase.UPKEEP], allowed_player_turn=T_FUNCS['card_owner']),
+         Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['self'], EndStepEvent),
+         Activated(None, KWAModEffect('add', 'Attack'), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
+                   allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_player_turn=T_FUNCS['card_owner'])],
+    'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
+    'lifeblood': [Triggered(Lifeblood(), None, TapCardEvent)],
+    'lifelace': [Triggered(SetColor('G'), T_FUNCS['cards'], CastResolvedEvent)],
+    'lifetap': [Triggered(Lifetap(), None, TapCardEvent)],
+    'lightning-bolt': [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
+    'living-armor':
+        [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures'], extra_costs=[SacSelfCost()])],
+    'living-artifact':
+        [Triggered(None, T_FUNCS['artifacts'], CastResolvedEvent),
+         Triggered(LivingArtifactOnDamage(), None, DamageResolvedEvent),
+         Triggered(LivingArtifactUpkeep(), None, UpkeepEvent)],
+    'living-lands': [Static(LivingLands())],
+    'living-plane': [Static(LivingPlane())],
+    'living-wall': [Activated('1', Regenerate(), T_FUNCS['self'])],
+    'livonya-silone': [Static(LivonyaSilone())],
+    'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
+    'lord-of-atlantis': [Static(LordOfAtlantisPT()), Static(LordOfAtlantisWalk())],
+    'lord-of-the-pit': [Triggered(LordOfThePitUpkeep(), None, UpkeepEvent)],
+    'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
+    'lure': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Triggered(Lure(), None, CanBlockQueryEvent)],
+    'magnetic-mountain': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['in_turn_player_tapped_blue_creatures']),
+                                    None, UntapPhaseEvent),
+                          Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
+                                    allowed_phases=[Phase.UPKEEP],
+                                    allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER)],  # not correct
+    'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
+    'mana-matrix': [Static(ManaMatrix())],
+    'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
+    'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
+                   Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
+                   Triggered(ManaVaultDamageIfTapped(), None, DrawStepEvent)],
+    'mana-vortex':
+        [Triggered(Destroy(), T_FUNCS['your_lands'], CastResolvedEvent),
+         Triggered(ManaVortexUpkeep(), None, UpkeepEvent)],
+    'marble-priest': [Static(MarblePriestPrevention()), Static(MarblePriestForcesBlock())],
+    'marsh-gas': [Triggered(MarshGas(), None, CastResolvedEvent)],
+    'marsh-viper': [Triggered(AddPoisonCounter(2), None, DamageResolvedEvent)],
+    'martyrs-cry': [Triggered(MartyrsCry(), None, CastResolvedEvent)],
+    'martyrs-of-korlis': [Static(MartyrsOfKorlis())],
+    'maze-of-ith': [Activated('T', MazeOfIth(), T_FUNCS['attackers'])],
+    'meekstone': [Static(Meekstone())],
+    'merchant-ship': [Triggered(MerchantShip(), None, UnblockedAttackerEvent)],
+    'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
+    'mightstone': [Static(Mightstone())],
+    'mijae-djinn': [Triggered(MijaeDjinn(), None, AttackEvent)],
+    'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
+    'mind-twist': [Triggered(MindTwist(), T_FUNCS['all_players'], CastResolvedEvent,
+                             max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XB'))],
+    'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
+    'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
+                                  allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
+    'mishras-factory': [Activated('T', AddMana('C'), T_FUNCS['card_owner'], text='Add {C}'),
+                        Activated('1', BecomeCreature(2, 2, 'Assembly-Worker', True), T_FUNCS['self'], text='Become 2/2'),
+                        Activated('T', Pump(1, 1, True), T_FUNCS['assembly_workers'], text='Pump Assembly-Worker')],
+    'moat': [Static(Moat())],
+    'mold-demon': [Triggered(MoldDemonETB(), None, ZoneChangeEvent)],
+    'morale': [Triggered(Morale(), None, CastResolvedEvent)],
+    'mox-emerald': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
+    'mox-jet': [Activated('T', AddMana('B'), T_FUNCS['card_owner'])],
+    'mox-pearl': [Activated('T', AddMana('W'), T_FUNCS['card_owner'])],
+    'mox-ruby': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
+    'mox-sapphire': [Activated('T', AddMana('U'), T_FUNCS['card_owner'])],
+    'murk-dwellers': [Triggered(MurkDwellers(), None, UnblockedAttackerEvent)],
+    'natural-selection': [Triggered(NaturalSelection(), T_FUNCS['all_players'], CastResolvedEvent)],
+    'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],
+    # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
+                         Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments']))],
+    'niall-silvain': [Activated('GGGGT', Regenerate(), T_FUNCS['creatures'])],
+    'nicol-bolas': [Triggered(PayManaOrSac('UBR'), None, UpkeepEvent),
+                    Triggered(NicolBolas(), None, DamageResolvedEvent)],
+    'nightmare': [Static(NightmarePT())],
+    'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents'])],
+    'oasis': [Activated('T', PreventNextDamageBy(1), T_FUNCS['creatures'])],
+    'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
+    'old-man-of-the-sea': [Activated('T', Steal(), T_FUNCS['opp_creatures_power_not_greater_than_source']),
+                           Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                           Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
+    'onulet': [Triggered(Onulet(), None, DiesEvent)],
+    'orc-general': [Activated('T', Pump(1, 1, True), T_FUNCS['your_other_orcs'],
+                              extra_costs=[SacCardCost(T_FUNCS['another_orc_or_goblin'])])],
+    'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
+    'orcish-mechanics': [Activated('T', DealDamage(2), T_FUNCS['all_creatures_and_players'],
+                                   extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
+    'orcish-oriflamme': [Static(OrcishOriflamme())],
+    'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent),
+                      Activated('', Pump(1, 1, True),
+                                extra_costs=[RemoveCounterCost(CARRION, 2)], text='Remove 2 counters for +1/+1')],
+}

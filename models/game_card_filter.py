@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import models.game_card.effect_spec_helpers
+
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
@@ -167,11 +169,11 @@ class CardFilter:
 
     # --- Tapped/Untapped ---
     def tapped(self, is_tapped: bool = True):
-        self._cards = [c for c in self._cards if c.is_tapped == is_tapped]
+        self._cards = [c for c in self._cards if models.game_card.effect_spec_helpers.is_tapped == is_tapped]
         return self
 
     def untapped(self):
-        self._cards = [c for c in self._cards if not c.is_tapped]
+        self._cards = [c for c in self._cards if not models.game_card.effect_spec_helpers.is_tapped]
         return self
 
     # --- Attackers/Blockers ---

@@ -10,11 +10,10 @@ if TYPE_CHECKING:
     from game_state import GameState
     from .card import Card
 
-from .card_effect_specs import INVOCATIONS
-from .kwa_abilities import get_creature_base_kwas
+from .slug_effect_map import INVOCATIONS
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec
-from models.modifiers import Modifiers, ModType
+from models.modifiers import Modifiers
 from models.zone import Zone
 
 
@@ -59,15 +58,16 @@ class GameCard:
         self.damage_received_this_turn: int = 0
 
         self.base_pt = (self.props.power, self.props.toughness)
+        self._base_kwa = tuple(self.props.keyword_abilities)
         self.variable_x: int | None = None  # for variable casting costs that need to be preserved
 
         # perform look-up to add base keyword abilities, activated abilities, and effects
-        if self.is_token:
-            self._base_kwa: tuple[str, ...] = tuple(self.props.keyword_abilities)
-        elif self.props.is_creature:
-            self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug)
-        else:
-            self._base_kwa = ()
+        # if self.is_token:
+        #     self._base_kwa: tuple[str, ...] = tuple(self.props.keyword_abilities)
+        # elif self.props.is_creature:
+        #     self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug)
+        # else:
+        #     self._base_kwa = ()
         self.activated_abilities: list[ActivatedAbility] = []
         self.static_abilities: list[EffSpec] = []
         self.triggered_abilities: list[EffSpec] = []

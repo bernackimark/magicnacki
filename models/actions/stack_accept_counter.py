@@ -61,7 +61,7 @@ class AcceptAction(Action):
         self.gs.pile_mgr.move_card(card, zone, cause='cast')
 
         # --- register triggered effects --- is this the best place to do this?, where are static effect being reg'ed?
-        from models.game_card.card_effect_specs import INVOCATIONS
+        from models.game_card.slug_effect_map import INVOCATIONS
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
             if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
                 self.gs.event_mgr.register(eff_spec.effect, card)

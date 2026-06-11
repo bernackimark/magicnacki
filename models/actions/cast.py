@@ -37,7 +37,7 @@ class CastToBoard(Action):
         self.gs.pile_mgr.move_card(self.card, Zone.BATTLEFIELD, cause='cast')
 
         # --- new event/phase-aware registration
-        from models.game_card.card_effect_specs import INVOCATIONS
+        from models.game_card.slug_effect_map import INVOCATIONS
         from models.effects.base import Listener
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
