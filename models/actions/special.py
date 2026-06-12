@@ -143,7 +143,7 @@ class SelectXAction(Action):
 
     def play(self):
         self.choice.selected_x = self.x_value
-        self.source.variable_x = self.x_value
+        self.source.extras['x'] = self.x_value
 
         # After selecting X, check if the spell also has targets
         if self.choice.eff_spec.target_spec:

@@ -58,7 +58,7 @@ class ManaBatteriesAddMana(Resolver):
         self.color = color
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        x = getattr(source, 'variable_x', 0)  # read X chosen when activating
+        x = source.extras.get('x', 0)  # read X chosen when activating
         source.counters.remove_counter(CHARGE, x)
         gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x)
 

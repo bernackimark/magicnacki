@@ -1,7 +1,5 @@
 from __future__ import annotations
-
-from copy import copy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
@@ -59,15 +57,9 @@ class GameCard:
 
         self.base_pt = (self.props.power, self.props.toughness)
         self._base_kwa = tuple(self.props.keyword_abilities)
-        self.variable_x: int | None = None  # for variable casting costs that need to be preserved
 
-        # perform look-up to add base keyword abilities, activated abilities, and effects
-        # if self.is_token:
-        #     self._base_kwa: tuple[str, ...] = tuple(self.props.keyword_abilities)
-        # elif self.props.is_creature:
-        #     self._base_kwa: tuple[str] = get_creature_base_kwas(self.props.slug)
-        # else:
-        #     self._base_kwa = ()
+        self.extras: dict[str, Any] = {}  # declarations of X, color upon entry, etc
+
         self.activated_abilities: list[ActivatedAbility] = []
         self.static_abilities: list[EffSpec] = []
         self.triggered_abilities: list[EffSpec] = []

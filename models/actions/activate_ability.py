@@ -40,7 +40,7 @@ class ActivateAbility(Action):
         if self.x_value is not None:
             x_cost = self.ability.eff_spec.cost[:].replace('X', str(self.x_value))
             self.gs.mana_pools[self.player_idx].pay(x_cost)
-            self.ability.source.variable_x = self.x_value
+            self.ability.source.extras['x'] = self.x_value
         else:
             self.gs.mana_pools[self.player_idx].pay(self.ability.eff_spec.cost)
             if self.ability.eff_spec.extra_costs:

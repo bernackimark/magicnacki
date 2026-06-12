@@ -26,7 +26,7 @@ class CastToBoard(Action):
             cast_cost = self.card.casting_cost[:]
             cast_cost = cast_cost.replace('X', str(self.x_values_for_variable_cast))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
-            self.card.variable_x = self.x_values_for_variable_cast
+            self.card.extras['x'] = self.x_values_for_variable_cast
         else:
             self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
         if self.card.props.is_land:
@@ -86,8 +86,8 @@ class CastToTargetAddToStack(Action):
     def __repr__(self) -> str:
         from models.game_card.game_card import GameCard
         target_text, variable_cast_text = '', ''
-        if self.card.variable_x is not None:
-            variable_cast_text = f", X={self.card.variable_x}"
+        if self.card.extras.get('x') is not None:
+            variable_cast_text = f", X={self.card.extras.get('x')}"
         if not self.target:
             return f"Cast {self.card.props.name} {self.text}{variable_cast_text}"
         if isinstance(self.target, list) and self.target:
@@ -102,9 +102,9 @@ class CastToTargetAddToStack(Action):
         return f"Cast {self.card.props.name} {self.text}{target_text}{variable_cast_text}"
 
     def play(self) -> None:
-        if self.card.variable_x is not None:
+        if self.card.extras.get('x') is not None:
             cast_cost = self.card.casting_cost[:]
-            cast_cost = cast_cost.replace('X', str(self.card.variable_x))
+            cast_cost = cast_cost.replace('X', str(self.card.extras.get('x')))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
         else:
             self.gs.mana_pools[self.player_idx].pay(self.card.casting_cost)
@@ -149,7 +149,7 @@ class BeginSpellCastAction(Action):
                 self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, self.eff_spec)
                 return
             else:
-                self.card.variable_x = min_x
+                self.card.extras['x'] = min_x
 
         # --- Targeting ---
         if self.eff_spec and self.eff_spec.target_spec:

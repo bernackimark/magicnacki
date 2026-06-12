@@ -154,7 +154,7 @@ class CocoonCast(Resolver):
 class RockHydraCast(Resolver):
     """This creature enters with X +1/+1 counters on it ..."""
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
+        if x := source.extras.get('x', 0):  # read X chosen when casting
             source.counters.add_counter(PLUS_ONE, x)
 
 
@@ -163,17 +163,18 @@ class Banshee(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         if not t:
             raise ValueError(f'{s.props.name} needs a target')
-        damage_to_target = s.variable_x // 2
-        damage_to_you = s.variable_x - damage_to_target
+        x = s.extras.get('x', 0)
+        damage_to_target = x // 2
+        damage_to_you = x - damage_to_target
         gs.apply_damage(s, damage_to_target, t)
         gs.apply_damage(s, damage_to_you, s.owner_id)
-        s.variable_x = None
+        del s.extras['x']
 
 
 class Earthquake(Resolver):
     """Earthquake deals X damage to each creature without flying and each player"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+        x = source.extras.get('x', 0)  # read X chosen when casting
         for c in gs.card_filter.in_play().has('Flying', False).creatures().result():
             gs.apply_damage(source, x, c)
         for p_id in (0, 1):
@@ -280,7 +281,7 @@ class BazaarOfBaghdad(Resolver):
 class Braingeyser(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is not None:
-            x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+            x = source.extras.get('x', 0)  # read X chosen when casting
             gs.pile_mgr.draw(target, x)
 
 class DemonicTutor(Resolver):
@@ -318,7 +319,7 @@ class JalumTome(Resolver):
 class MindTwist(Resolver):
     """Target player discards X cards at random"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+        x = source.extras.get('x', 0)  # read X chosen when casting
         opp_id = flip(source.owner_id)
         opp_cards = gs.pile_mgr.hands[opp_id].cards
         if not opp_cards:
@@ -468,7 +469,7 @@ class UrborgLoseSwampwalk(Resolver):
 
 class StreamOfLife(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+        x = source.extras.get('x', 0)  # read X chosen when casting
         gs.score_mgr.increment_life(target, x, source, gs)
 
 
@@ -595,7 +596,7 @@ class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if target is not None:
-            x = getattr(source, 'variable_x', 0)  # read X chosen when casting
+            x = source.extras.get('x', 0)  # read X chosen when casting
             target.modifiers.append(PTMod(s=source, p_adj=x, expires='EOT'))
 
 
@@ -1080,7 +1081,7 @@ class VenarianGoldCast(Resolver):
         if not target:
             raise RuntimeError(f"{source.props.name} needs a casting target")
         target.tap()
-        if x := getattr(source, 'variable_x', 0):  # read X chosen when casting
+        if x := source.extras.get('x', 0):  # read X chosen when casting
             source.counters.add_counter(SLEEP, x)
 
 
