@@ -202,8 +202,9 @@ MAP: dict[str: list[EffSpec]] = {
     'jandors-ring': [Activated('2T', DrawCards(), T_FUNCS['card_owner'], extra_costs=[DiscardLastCardDrawnThisTurn()])],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
-    'jihad': [Triggered(DeclareAColor(), None, CastResolvedEvent), Static(JihadPT()),
-              Triggered(JihadSac(), None, StateBasedEvent)],
+    'jihad': [Static(JihadPT()), Triggered(JihadSac(), None, StateBasedEvent),
+              Triggered(DeclareAColor(), None, CastResolvedEvent)],
+    # if Jihad's CastResolvedEvent isn't last, the engine will never register the listeners
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
     'juggernaut': [Static(JuggernautUnblockableByWalls())],
     'jump':
