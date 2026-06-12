@@ -22,12 +22,12 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, PayManaOrSac, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
-    CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, HostStaysTapped, StaysTapped
+    CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, HostStaysTapped, StaysTapped, DeclareAColor
 from ..effects.listeners_card_specific import PestilenceEndStep, SeasonOfTheWitchEndStep, \
     VoodooDollEndStep, SerendibDjinnNoLands, PsychicVenom, SpiritShackle, WildGrowth, PowerSurge, \
-    PsychicAllergyUpkeep, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
+    PsychicAllergySac, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, Revelation, StanggOnLeave, \
-    VerduranEnchantress, TheWretchedUnsteal, WhirlingDervish, TimeVaultOption, TheFallen
+    VerduranEnchantress, TheWretchedUnsteal, WhirlingDervish, TimeVaultOption, TheFallen, PsychicAllergyDamage
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
@@ -88,7 +88,9 @@ MAP: dict[str, list[EffSpec]] = {
     'psionic-blast': [Triggered(DealDamageToTargetAndYou(4, 2),
                                 T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'psionic-entity': [Activated('T', DealDamageToTargetAndSelf(2, 3), T_FUNCS['all_creatures_and_players'])],
-    'psychic-allergy': [Triggered(PsychicAllergyUpkeep(), T_FUNCS['self'], UpkeepEvent)],
+    'psychic-allergy': [Triggered(PsychicAllergySac(), T_FUNCS['self'], UpkeepEvent),
+                        Triggered(PsychicAllergyDamage(), None, UpkeepEvent),
+                        Triggered(DeclareAColor(), None, CastResolvedEvent)],
     'psychic-purge': [Triggered(DealDamage(1), T_FUNCS['all_creatures_and_players'], CastResolvedEvent),
                       Triggered(PsychicPurgeDiscard(), None, DiscardEvent)],
     'psychic-venom':

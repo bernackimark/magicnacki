@@ -559,8 +559,20 @@ class PowerSurge(Listener):
         if untapped_lands:
             gs.apply_damage(source, len(untapped_lands), gs.turn_mgr.player_turn_idx)
 
+class PsychicAllergyDamage(Listener):
+    """At opp's upkeep, deal X damage to that opponent. X is their number of nontoken perms of the chosen color"""
+    listens_to = UpkeepEvent
 
-class PsychicAllergyUpkeep(Listener):
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if gs.turn_mgr.player_turn_idx == source.owner_id:
+            return
+        declared_color = source.extras.get('color_declaration')
+        opp = flip(source.owner_id)
+        cnt = gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result()
+        if cnt:
+            gs.apply_damage(source, cnt, opp)
+
+class PsychicAllergySac(Listener):
     """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
     listens_to = UpkeepEvent
 
