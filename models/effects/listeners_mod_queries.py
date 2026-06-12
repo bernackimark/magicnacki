@@ -510,6 +510,30 @@ class JacquesLeVert(Listener):
             return None
         return PTMod(s=source, t_adj=2)
 
+class JihadPT(Listener):
+    """White creatures get +2/+1 as long as opponent controls a nontoken permanent of Jihad's declared color"""
+    listens_to = ModQueryEvent
+    modifies = 'pt'
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        print('Checking JIHAD ...')
+        if event.card not in gs.card_filter.in_play().white().creatures().result():
+            return None
+        declared_color = source.extras.get('color_declaration')
+        opp = flip(source.owner_id)
+        if gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result():
+            event.mods.append(PTMod(s=source, p_adj=2, t_adj=1))
+            return
+
+    def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> ModType | list[ModType] | None:
+        print('Checking Jihad Mods')
+        if card not in gs.card_filter.in_play().white().creatures().result():
+            return None
+        declared_color = source.extras.get('color_declaration')
+        opp = flip(source.owner_id)
+        if gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result():
+            return PTMod(s=source, p_adj=2, t_adj=1)
+
 class KeldonWarlordPT(Listener):
     """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control"""
     listens_to = ModQueryEvent

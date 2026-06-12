@@ -156,8 +156,17 @@ class GoblinsOfTheFlarg(Listener):
             return None
 
         if gs.card_filter.on_player_board(source.owner_id).by_sub_type('Dwarf').result():
-            gs.pile_mgr.destroy(source)
+            gs.pile_mgr.destroy(source, allow_regeneration=False)
 
+class JihadSac(Listener):
+    """When the chosen player controls no nontoken permanents of the chosen color, sacrifice this enchantment"""
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        declared_color = source.extras.get('color_declaration')
+        opp = flip(source.owner_id)
+        if not gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result():
+            gs.pile_mgr.destroy(source, allow_regeneration=False)
 
 class SerendibDjinnNoLands(Listener):
     """When you control no lands, sacrifice this creature"""
@@ -167,8 +176,7 @@ class SerendibDjinnNoLands(Listener):
         your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
         if not your_lands:
             print(f'Player #{source.owner_id} has no lands, so Serendib Djinn is destroyed')
-            gs.pile_mgr.destroy(source)
-
+            gs.pile_mgr.destroy(source, allow_regeneration=False)
 
 # --- TAP EVENT ---
 class Blight(Listener):

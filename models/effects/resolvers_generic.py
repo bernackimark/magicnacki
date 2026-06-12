@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
 from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import PayManaOrSacUpkeepChoice, DiscardChoice, UntapWithManaChoice
+from models.choice_actions_all import PayManaOrSacUpkeepChoice, DiscardChoice, UntapWithManaChoice, DeclareColorChoice
 from models.constants import COLOR_LETTERS_W_COLORLESS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE
 from models.effects.base import Resolver
@@ -13,15 +13,6 @@ from models.zone import Zone
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
-
-
-class UnblockableThisTurn(Resolver):
-    """Target creature can't be blocked this turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        from models.effects.listeners_permission import UnblockableEOT
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(UnblockableEOT(target), source)
 
 
 class AddCounter(Resolver):
@@ -62,29 +53,6 @@ class ManaBatteriesAddMana(Resolver):
         source.counters.remove_counter(CHARGE, x)
         gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x)
 
-
-class RemoveCountersOnHostTurn(Resolver):
-    def __init__(self, counter_type: CounterType, cnt: int = 1):
-        self.counter_type = counter_type
-        self.cnt = cnt
-
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.turn_mgr.player_turn_idx != source.host.owner_id:
-            return
-        source.host.counters.remove_counter(self.counter_type, self.cnt)
-
-class RemoveFromCombat(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if target is None:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.combat_mgr.remove_from_combat(target)
-
-class RemovePlusOneZeroFromCombatant(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if source in gs.card_filter.combatants().result():
-            source.counters.remove_counter(PLUS_ONE_ZERO)
-
-
 class AddCountersYourTurnOnly(Resolver):
     def __init__(self, counter_type: CounterType, cnt: int = 1):
         self.counter_type = counter_type
@@ -115,14 +83,10 @@ class AddCounterPerCreatureDeath(Resolver):
         if death_cnt := len(gs.turn_mgr.cards_that_died) > 0:
             s.counters.add_counter(self.counter_type, death_cnt)
 
-
-class XZeroOneCountersByManaValue(Resolver):
-    """Put X +0/+1 counters on target creature, where X is that creature's mana value"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        target.counters.add_counter(PLUS_ZERO_ONE, target.props.mana_value)
-
+class DeclareAColor(Resolver):
+    """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        gs.pending_choice = DeclareColorChoice(source.owner_id, gs, source, ['B', 'G', 'R', 'U', 'W'])
 
 class DealDamage(Resolver):
     def __init__(self, amt: int = None):  # None is permitted due to the possibility of variable X
@@ -173,29 +137,6 @@ class DealDamageToTargetAndYou(Resolver):
         gs.apply_damage(source, self.amt_to_target, target)
         gs.apply_damage(source, self.amt_to_you, source.owner_id)
 
-
-class PreventAllCombatDamageThisTurn(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        from models.effects.listeners_generic import PreventAllDamageEOT
-        gs.event_mgr.register(PreventAllDamageEOT(combat_only=True), source)
-
-class PreventAllDamageToThisTurn(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
-        from models.effects.listeners_generic import PreventAllDamageToEOT
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(PreventAllDamageToEOT(target), source)
-
-class PreventNextDamageToCardEffect(Resolver):
-    def __init__(self, prevent_amt: int = None, combat_only: bool = False):
-        self.prevent_amt = prevent_amt
-        self.combat_only = combat_only
-
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        """target = the GameCard being protected"""
-        from models.effects.listeners_generic import PreventNextDamageToCardEOT
-        gs.event_mgr.register(PreventNextDamageToCardEOT(target, self.prevent_amt, self.combat_only), source)
-
 class Destroy(Resolver):
     def __init__(self, allow_regen: bool = True):
         self.allow_regen = allow_regen
@@ -220,12 +161,101 @@ class DestroyIfItAttacked(Resolver):
         for t in gs.card_filter.attackers().result():
             gs.pile_mgr.destroy(t)
 
-
 class ExileAllCreatures(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for c in gs.card_filter.in_play().creatures().result():
             gs.pile_mgr.exile(c)
 
+class PreventAllCombatDamageThisTurn(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        from models.effects.listeners_generic import PreventAllDamageEOT
+        gs.event_mgr.register(PreventAllDamageEOT(combat_only=True), source)
+
+class PreventAllDamageToThisTurn(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
+        from models.effects.listeners_generic import PreventAllDamageToEOT
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.event_mgr.register(PreventAllDamageToEOT(target), source)
+
+class PreventNextDamageToCardEffect(Resolver):
+    def __init__(self, prevent_amt: int = None, combat_only: bool = False):
+        self.prevent_amt = prevent_amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        """target = the GameCard being protected"""
+        from models.effects.listeners_generic import PreventNextDamageToCardEOT
+        gs.event_mgr.register(PreventNextDamageToCardEOT(target, self.prevent_amt, self.combat_only), source)
+
+class PreventNextDamageToSourceOwner(Resolver):
+    def __init__(self, amt: int = None, combat_only: bool = False):
+        self.amt = amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        from models.effects.listeners_generic import PreventNextDamageToSourceOwnerEOT
+        gs.event_mgr.register(PreventNextDamageToSourceOwnerEOT(self.amt, self.combat_only), s)
+
+class PreventAllDamageBy(Resolver):
+    # lady-evangela is the sole implementer of this:
+    # Activated Ability: "Prevent all combat damage that would be dealt by target creature this turn"
+    def __init__(self, amt: int = None, combat_only: bool = False):
+        self.amt = amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        from listeners_generic import PreventAllDamageByEOT
+        gs.event_mgr.register(PreventAllDamageByEOT(target, combat_only=True), s)
+
+
+class PreventNextDamageBy(Resolver):
+    def __init__(self, amt: int = None):
+        self.amt = amt
+
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        if not target:
+            raise RuntimeError(f'{s.props.name} needs a target')
+        from listeners_generic import PreventNextDamageByEOT
+        gs.event_mgr.register(PreventNextDamageByEOT(target), s)
+
+class RemoveCountersOnHostTurn(Resolver):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
+
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        if gs.turn_mgr.player_turn_idx != source.host.owner_id:
+            return
+        source.host.counters.remove_counter(self.counter_type, self.cnt)
+
+class RemoveFromCombat(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.combat_mgr.remove_from_combat(target)
+
+class RemovePlusOneZeroFromCombatant(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if source in gs.card_filter.combatants().result():
+            source.counters.remove_counter(PLUS_ONE_ZERO)
+
+class UnblockableThisTurn(Resolver):
+    """Target creature can't be blocked this turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        from models.effects.listeners_permission import UnblockableEOT
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.event_mgr.register(UnblockableEOT(target), source)
+
+class XZeroOneCountersByManaValue(Resolver):
+    """Put X +0/+1 counters on target creature, where X is that creature's mana value"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        target.counters.add_counter(PLUS_ZERO_ONE, target.props.mana_value)
 
 class PayManaOrSac(Resolver):
     def __init__(self, mana_cost: str):
@@ -501,37 +531,3 @@ class UntapHostForManaEffect(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
         gs.action_stack.push(UntapWithManaChoice(source.host.owner_id, gs, source, self.mana_cost))
-
-
-class PreventNextDamageToSourceOwner(Resolver):
-    def __init__(self, amt: int = None, combat_only: bool = False):
-        self.amt = amt
-        self.combat_only = combat_only
-
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        from models.effects.listeners_generic import PreventNextDamageToSourceOwnerEOT
-        gs.event_mgr.register(PreventNextDamageToSourceOwnerEOT(self.amt, self.combat_only), s)
-
-class PreventAllDamageBy(Resolver):
-    # lady-evangela is the sole implementer of this:
-    # Activated Ability: "Prevent all combat damage that would be dealt by target creature this turn"
-    def __init__(self, amt: int = None, combat_only: bool = False):
-        self.amt = amt
-        self.combat_only = combat_only
-
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        """target is the card dealing damage"""
-        from listeners_generic import PreventAllDamageByEOT
-        gs.event_mgr.register(PreventAllDamageByEOT(target, combat_only=True), s)
-
-
-class PreventNextDamageBy(Resolver):
-    def __init__(self, amt: int = None):
-        self.amt = amt
-
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        """target is the card dealing damage"""
-        if not target:
-            raise RuntimeError(f'{s.props.name} needs a target')
-        from listeners_generic import PreventNextDamageByEOT
-        gs.event_mgr.register(PreventNextDamageByEOT(target), s)

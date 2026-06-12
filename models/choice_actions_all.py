@@ -86,6 +86,15 @@ class DealDamageToChoice(ChoiceAction):
         from models.actions.damage import DealDamageTo
         return [DealDamageTo(self.player_idx, self.gs, self.source, self.amt, c) for c in self.options]
 
+class DeclareColorChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, options: list[str]):
+        super().__init__(p_id, gs, source)
+        self.options = options
+
+    def get_actions(self) -> list[Action]:
+        from models.actions.special import StoreColorOnCard
+        return [StoreColorOnCard(self.player_idx, self.gs, self.source, color) for color in self.options]
+
 class DestroyChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, options: list[GameCard], allow_regen: bool = True):
         super().__init__(p_id, gs, source)

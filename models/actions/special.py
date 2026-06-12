@@ -173,6 +173,20 @@ class SkipDrawPhaseGainLife(Action):
         self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
         self.gs.action_stack.pop()
 
+class StoreColorOnCard(Action):
+    def __init__(self, p_id: int, gs: GameState, card: GameCard, color_letter: str):
+        super().__init__(p_id, gs)
+        self.card = card
+        self.color_letter = color_letter
+
+    def __repr__(self):
+        return f"Declare {self.card.props.name}'s color as {self.color_letter}"
+
+    def play(self) -> None:
+        self.card.extras['color_declaration'] = self.color_letter
+        # TODO: make presentation request, as this selection is public
+        self.gs.pending_choice = None
+
 # --- CARD-SPECIFIC ---
 class CyclonePayManaPerCounterDealDamage(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):

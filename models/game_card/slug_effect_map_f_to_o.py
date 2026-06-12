@@ -7,7 +7,8 @@ from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpe
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, \
     GoblinShrinePump, GravitySphere, \
     HiddenPath, IvoryGuardians, JacquesLeVert, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, \
-    KormusBell, LivingLands, LivingPlane, LordOfAtlantisPT, LordOfAtlantisWalk, Mightstone, NightmarePT, OrcishOriflamme
+    KormusBell, LivingLands, LivingPlane, LordOfAtlantisPT, LordOfAtlantisWalk, Mightstone, NightmarePT, \
+    OrcishOriflamme, JihadPT
 from models.effects.listeners_permission import Moat, Meekstone, Invisibility, IronclawOrcs, Fear, \
     JuggernautUnblockableByWalls, LivonyaSilone, WalkRuleRemoved
 from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, JovialEvil, Millstone, \
@@ -22,10 +23,11 @@ from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     PreventAllCombatDamageThisTurn, Destroy, DestroyAll, PayManaOrSac, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, StaysTapped, PreventNextDamageToSourceOwner, \
-    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn
+    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
-    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, CanBlockQueryEvent, CanAttackQueryEvent
+    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, CanBlockQueryEvent, CanAttackQueryEvent, \
+    StateBasedEvent
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE
@@ -33,7 +35,7 @@ from ..effects.listeners_card_specific import GoblinsOfTheFlarg, Lifeblood, \
     Lifetap, FloralSpuzzem, MerchantShip, MurkDwellers, ForceOfNatureUpkeep, GhazbanOgre, IvoryTower, Karma, LandTax, \
     LordOfThePitUpkeep, ManaVortexUpkeep, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, \
     InfiniteAuthorityEndStep, GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, \
-    GoblinRockSledUntap, IchneumonDruid
+    GoblinRockSledUntap, IchneumonDruid, JihadSac
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack
 from ..effects.listeners_cost import Gloom, ManaMatrix
@@ -200,6 +202,8 @@ MAP: dict[str: list[EffSpec]] = {
     'jandors-ring': [Activated('2T', DrawCards(), T_FUNCS['card_owner'], extra_costs=[DiscardLastCardDrawnThisTurn()])],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
+    'jihad': [Triggered(DeclareAColor(), None, CastResolvedEvent), Static(JihadPT()),
+              Triggered(JihadSac(), None, StateBasedEvent)],
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
     'juggernaut': [Static(JuggernautUnblockableByWalls())],
     'jump':
