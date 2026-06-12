@@ -42,6 +42,8 @@ class CastToBoard(Action):
         if self.card.props.slug in INVOCATIONS:
             for eff_spec in INVOCATIONS[self.card.props.slug]:
                 # I need this because I'm allowing card to go straight to the board w/o hitting the stack
+                # NOTE: for a card like Jihad with a CastResolvedEvent & a listener ... the listener must be listed 1st
+                # in the slug-effects list, else it won't be reached because Jihad's ETB never cedes control back here
                 if isinstance(eff_spec.effect, Listener):
                     self.gs.event_mgr.register(eff_spec.effect, self.card)
                 if eff_spec.activation_type != 'triggered':
