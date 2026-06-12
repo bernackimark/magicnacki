@@ -168,12 +168,12 @@ class CardFilter:
         return self
 
     # --- Tapped/Untapped ---
-    def tapped(self, is_tapped: bool = True):
-        self._cards = [c for c in self._cards if models.game_card.effect_spec_helpers.is_tapped == is_tapped]
+    def tapped(self):
+        self._cards = [c for c in self._cards if c.is_tapped]
         return self
 
     def untapped(self):
-        self._cards = [c for c in self._cards if not models.game_card.effect_spec_helpers.is_tapped]
+        self._cards = [c for c in self._cards if not c.is_tapped]
         return self
 
     # --- Attackers/Blockers ---

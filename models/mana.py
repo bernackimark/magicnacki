@@ -106,7 +106,7 @@ class ManaPool:
             self._floating_mana[c] = 0
 
     def can_pay(self, cost: str) -> bool:
-        if cost is None:
+        if cost in {None, ''}:
             return True
         cost = ManaCost(cost).decoded
         available = self.available_mana.copy()
