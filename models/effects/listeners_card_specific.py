@@ -44,9 +44,8 @@ class IchneumonDruid(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> None:
         opp = flip(source.owner_id)
-        instants_cast_in_turn = len([e for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
-                                    if isinstance(e, CastResolvedEvent) and e.owner_id == opp
-                                    and 'Instant' in e.card.card_types])
+        instants_cast_in_turn = len([e for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, CastResolvedEvent)
+                                    if e.owner_id == opp and 'Instant' in e.card.card_types])
         if instants_cast_in_turn > 1:
             gs.apply_damage(source, 4, opp)
 
@@ -78,8 +77,8 @@ class InfiniteAuthorityEndStep(Listener):
         if not source.host:
             return
         other_combatants = gs.card_filter.combating_against(source.host).result()
-        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
-            if isinstance(e, DiesEvent) and e.card in other_combatants:
+        for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DiesEvent):
+            if e.card in other_combatants:
                 source.host.counters.add_counter(PLUS_ONE)
 
 class PestilenceEndStep(Listener):
@@ -126,8 +125,8 @@ class WhirlingDervish(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
         from models.events_all import DamageResolvedEvent
-        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
-            if isinstance(e, DamageResolvedEvent) and e.source is source and e.target == flip(source.owner_id):
+        for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent):
+            if e.source is source and e.target == flip(source.owner_id):
                 source.counters.add_counter(PLUS_ONE)
                 return
 

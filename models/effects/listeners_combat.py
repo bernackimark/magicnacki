@@ -211,7 +211,7 @@ class Arboria(Listener):
     listens_to = CanAttackQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        events_on_players_last_turn = gs.event_mgr.get_turn_events(gs.turn_mgr.player_turn_idx)
+        events_on_players_last_turn = gs.event_mgr.get_events(gs.turn_mgr.player_turn_idx)
         for e in events_on_players_last_turn:
             if isinstance(e, CastResolvedEvent) and e.owner_id == flip(event.attacker.owner_id):
                 return

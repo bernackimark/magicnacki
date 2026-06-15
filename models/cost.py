@@ -34,16 +34,16 @@ class DiscardAtRandomCost(Cost):
 class DiscardLastCardDrawnThisTurn(Cost):
     def can_pay(self, gs: GameState, source: GameCard) -> bool:
         from models.events_all import DrawCardEvent
-        last_drawn = next((e.card for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)[::-1]
-                           if isinstance(e, DrawCardEvent) and e.player_id == source.owner_id), None)
+        last_drawn = next((e.card for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DrawCardEvent)[::-1]
+                           if e.player_id == source.owner_id), None)
         if last_drawn and last_drawn in gs.pile_mgr.hands[source.owner_id].cards:
             return True
         return False
 
     def pay(self, gs: GameState, source: GameCard) -> None:
         from models.events_all import DrawCardEvent
-        last_drawn = next((e.card for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)[::-1]
-                           if isinstance(e, DrawCardEvent) and e.player_id == source.owner_id), None)
+        last_drawn = next((e.card for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DrawCardEvent)[::-1]
+                           if e.player_id == source.owner_id), None)
         if not last_drawn:
             return
         gs.pile_mgr.discard(last_drawn, source)

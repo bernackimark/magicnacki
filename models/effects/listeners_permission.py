@@ -335,8 +335,8 @@ class DampingField(Listener):
         if not event.card.is_artifact:
             return
         # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
-        if [e for e in events if isinstance(e, UntapCardEvent) and e.card.is_artifact]:
+        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
+        if [e for e in events if e.card.is_artifact]:
             event.permission = False
 
 class Smoke(Listener):
@@ -348,8 +348,8 @@ class Smoke(Listener):
         if not event.card.is_creature:
             return
         # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
-        if [e for e in events if isinstance(e, UntapCardEvent) and e.card.is_creature]:
+        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
+        if [e for e in events if e.card.is_creature]:
             event.permission = False
 
 class WinterOrb(Listener):
@@ -361,6 +361,6 @@ class WinterOrb(Listener):
         if source.is_tapped or 'Land' not in event.card.card_types:
             return
         # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
-        if [e for e in events if isinstance(e, UntapCardEvent) and 'Land' in e.card.card_types]:
+        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
+        if [e for e in events if 'Land' in e.card.card_types]:
             event.permission = False

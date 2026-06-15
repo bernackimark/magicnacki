@@ -28,9 +28,7 @@ class AxelrodGunnarson(Listener):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
-            if not isinstance(e, DamageResolvedEvent):
-                continue
+        for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent):
             if e.source is not source or e.target is not event.card:
                 continue
             gs.score_mgr.increment_life(source.owner_id, 1, source, gs)
@@ -49,9 +47,8 @@ class BlazingEffigy(Listener):
         all_creatures = gs.card_filter.creatures().in_play().result()
         if not all_creatures:
             return
-        total_damage = 3 + sum([e.amt for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
-                                if isinstance(e, DamageResolvedEvent)
-                                and e.target is source and e.source.props.slug == 'blazing-effigy'])
+        total_damage = 3 + sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)
+                                if e.target is source and e.source.props.slug == 'blazing-effigy'])
         # TODO: How do I get the target creature from the user?
 
 
@@ -129,9 +126,7 @@ class SengirVampire(Listener):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number):
-            if not isinstance(e, DamageResolvedEvent):
-                continue
+        for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent):
             if e.source is not source or e.target is not event.card:
                 continue
             source.counters.add_counter(PLUS_ONE)

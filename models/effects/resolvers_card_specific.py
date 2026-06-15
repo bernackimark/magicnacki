@@ -83,7 +83,7 @@ class ReversePolarity(Resolver):
     """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.events_all import DamageResolvedEvent
-        damage_by_artifacts = sum([e.amt for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
+        damage_by_artifacts = sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number)
                                    if isinstance(e, DamageResolvedEvent) and e.target == source.owner_id])
         if not damage_by_artifacts:
             return
@@ -94,7 +94,7 @@ class Simulacrum(Resolver):
     Simulacrum deals damage to target creature you control equal to the damage dealt to you this turn."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.events_all import DamageResolvedEvent
-        damage_taken_this_turn = sum([e.amt for e in gs.event_mgr.get_turn_events(gs.turn_mgr.turn_number)
+        damage_taken_this_turn = sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number)
                                       if isinstance(e, DamageResolvedEvent) and e.target == source.owner_id])
         if not damage_taken_this_turn:
             return
