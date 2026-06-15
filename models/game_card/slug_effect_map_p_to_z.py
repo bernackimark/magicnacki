@@ -15,7 +15,8 @@ from models.effects.resolvers_card_specific import TowerOfCoireall, RockHydraCas
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, Twiddle, \
-    VenarianGoldHostStaysTapped, Scarecrow, ReversePolarity, Simulacrum, Telekinesis, TangleKelp, WoodElemental
+    VenarianGoldHostStaysTapped, Scarecrow, ReversePolarity, Simulacrum, Telekinesis, TangleKelp, WoodElemental, \
+    SafeHaven
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, AddCountersYourTurnOnly, AddCounterPerCreatureDeath, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
@@ -28,7 +29,7 @@ from ..effects.listeners_card_specific import PestilenceEndStep, SeasonOfTheWitc
     PsychicAllergySac, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, Revelation, StanggOnLeave, \
     VerduranEnchantress, TheWretchedUnsteal, WhirlingDervish, TimeVaultOption, TheFallen, PsychicAllergyDamage, \
-    RasputinDreamweaverUntap, RasputinDreamweaverUpkeep
+    RasputinDreamweaverUntap, RasputinDreamweaverUpkeep, SafeHavenUpkeep, TawnossCoffinUntap, TawnossCoffinZoneChange
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
@@ -147,6 +148,8 @@ MAP: dict[str, list[EffSpec]] = {
                            Triggered(ReturnToOwnerOnUntap(), None, UntapCardEvent)],
     'rukh-egg': [Triggered(RukhEgg(), None, DiesEvent)],
     'sacrifice': [Triggered(SacrificeOnCast(), T_FUNCS['your_creatures'], CastResolvedEvent)],
+    'safe-haven': [Activated('2T', SafeHaven(), T_FUNCS['your_creatures']),
+                   Triggered(SafeHavenUpkeep(), None, UpkeepEvent)],
     'sage-of-lat-nam': [Activated('T', DrawCards(), T_FUNCS['card_owner'],
                                   extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
     'samite-healer': [Activated('T', PreventNextDamageBy(1), T_FUNCS['cards'])],
@@ -225,7 +228,9 @@ MAP: dict[str, list[EffSpec]] = {
     'tablet-of-epityr': [Triggered(TabletOfEpityr(), None, DiesEvent)],
     'taiga': dual_land_activated_ability_specs('RG'),
     'tangle-kelp': [Triggered(TangleKelp(), T_FUNCS['creatures'], CastResolvedEvent)],
-    'tawnoss-coffin': [Triggered(OptionalUntap(), None, UntapPhaseEvent)],
+    'tawnoss-coffin': [Triggered(OptionalUntap(), None, UntapPhaseEvent),
+                       Triggered(TawnossCoffinUntap(), None, UntapCardEvent),
+                       Triggered(TawnossCoffinZoneChange(), None, ZoneChangeEvent)],
     'tawnoss-wand': [Activated('2T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
     'tawnoss-weaponry': [Triggered(OptionalUntap(), None, UntapPhaseEvent),
                          Activated('2T', Pump(1, 1, True), T_FUNCS['creatures']),

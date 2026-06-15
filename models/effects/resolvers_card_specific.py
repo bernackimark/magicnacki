@@ -985,6 +985,15 @@ class SacrificeOnCast(Resolver):
             raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
         gs.action_stack.push(SacCreatureAndAddMana(s.owner_id, gs, s, t, 'B', t.props.mana_value), gs, False)
 
+class SafeHaven(Resolver):
+    """{2}, {T}: Exile target creature you control, storing the exiled card's ID for future reference"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if not target:
+            raise ValueError(f"{source.props.name} needs a target")
+        gs.pile_mgr.exile(target)
+        if source.extras.get('cards_exiled') is None:
+            source.extras['cards_exiled'] = set()
+        source.extras['cards_exiled'].add(target)
 
 class SerendibDjinn(Resolver):
     """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
@@ -992,7 +1001,6 @@ class SerendibDjinn(Resolver):
         if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
-
 
 class Shapeshifter(Resolver):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
@@ -1016,13 +1024,11 @@ class Subdue(Resolver):
         gs.event_mgr.register(PreventNextDamageByEOT(t, combat_only=True), s)
         t.modifiers.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
 
-
 class SwordsToPlowshares(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
             gs.pile_mgr.exile(target)  # which is correct?  exile_from_play() or exile()
             gs.score_mgr.increment_life(target.owner_id, target.power, source, gs)
-
 
 class SylvanLibrary(Resolver):
     """At your draw step, you may draw two additional cards.
@@ -1032,13 +1038,22 @@ class SylvanLibrary(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.action_stack.push(DrawCardsOrDontChoice(gs.turn_mgr.player_turn_idx, gs, source, 2))
 
-
 class SyphonSoul(Resolver):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, target)
         gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
+class TawnossCoffin(Resolver):
+    """... Exile target creature & all its auras. Note the number & kind of counters that were on that creature ..."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from copy import deepcopy
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        my_deep_copy = deepcopy(target)
+        source.extras['exiled_card'] = target
+        source.extras['exiled_card_deep_copy'] = my_deep_copy
+        gs.pile_mgr.exile(target)
 
 class Timetwister(Resolver):
     """Each player shuffles their hand & graveyard into their library, then draws 7 cards.

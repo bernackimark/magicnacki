@@ -18,7 +18,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
     UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, CanUntapQueryEvent, AttackEvent, \
-    CastResolvedEvent
+    CastResolvedEvent, UntapCardEvent
 from models.modifiers import PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -281,6 +281,25 @@ class MurkDwellers(Listener):
             return
         s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
 
+
+# --- UNTAP CARD EVENT ---
+class TawnossCoffinUntap(Listener):
+    """When this artifact ... becomes untapped, return its exiled card to the battlefield tapped with the noted number &
+     kind of counters on it and re-attach all auras.
+     Note: all of this code is repeated in TawnossCoffinZoneChange"""
+    listens_to = UntapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapCardEvent) -> None:
+        if event.card is not source:
+            return
+        exiled_card: GameCard = source.extras.get('exiled_card')
+        deep_copy: GameCard = source.extras.get('exiled_card_deep_copy')
+        exiled_card.tap()
+        for ctr in deep_copy.counters:
+            exiled_card.counters.add_counter(ctr)
+        for aura in deep_copy.modifiers.items:
+            if isinstance(aura, GameCard):
+                exiled_card.modifiers.append(aura)
 
 # --- UNTAP PHASE ---
 class MagneticMountainOnUntapStep(Listener):
@@ -620,6 +639,13 @@ class RogahhOfKherKeepUpkeep(Listener):
             action = RogahhOfKherKeepTapAndStealAction(source.owner_id, gs, source, targets=target_cards)
             action.play()
 
+class SafeHavenUpkeep(Listener):
+    """At your upkeep, you may sacrifice SH to return all cards it exiled to the battlefield under owner's control"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        from models.choice_actions_all import SafeHavenChoice
+        gs.pending_choice = SafeHavenChoice(source.owner_id, gs, source)
 
 class SeasonOfTheWitchUpkeep(Listener):
     """At your upkeep, sacrifice this enchantment unless you pay 2 life"""
@@ -827,7 +853,6 @@ class MoldDemonETB(Listener):
             gs.pile_mgr.destroy(event.card, False)
         gs.action_stack.push(MoldDemonChoice(gs.turn_mgr.player_turn_idx, gs, source, your_swamps), gs, False)
 
-
 class Revelation(Listener):
     """Players play with their hands revealed"""
     listens_to = ZoneChangeEvent
@@ -836,7 +861,6 @@ class Revelation(Listener):
         if event.to_zone != Zone.HAND:
             return
         event.card.reveal()
-
 
 class StanggOnLeave(Listener):
     """Exile that Stangg Twin token when Stangg leaves the battlefield; sacrific Stangg when Stangg Twin LTB"""
@@ -850,6 +874,24 @@ class StanggOnLeave(Listener):
         other_slug = 'stangg-twin' if event.card.props.slug == 'stangg' else 'stangg'
         other_card = gs.card_filter.on_player_board(event.card.owner_id).by_slug(other_slug).result()[0]
         gs.pile_mgr.destroy(other_card)
+
+class TawnossCoffinZoneChange(Listener):
+    """When this artifact LTB, return its exiled card to the battlefield tapped with the noted number &
+     kind of counters on it and re-attach all auras.
+     Note: all of this code is repeated in TawnossCoffinUntap"""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent) -> None:
+        if event.card is not source or event.to_zone == Zone.BATTLEFIELD:
+            return
+        exiled_card: GameCard = source.extras.get('exiled_card')
+        deep_copy: GameCard = source.extras.get('exiled_card_deep_copy')
+        exiled_card.tap()
+        for ctr in deep_copy.counters:
+            exiled_card.counters.add_counter(ctr)
+        for aura in deep_copy.modifiers.items:
+            if isinstance(aura, GameCard):
+                exiled_card.modifiers.append(aura)
 
 class TheWretchedUnsteal(Listener):
     """... gain control of creatures UNTIL Wretched LTB or you don't control Wretched."""

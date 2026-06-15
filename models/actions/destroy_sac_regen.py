@@ -67,6 +67,23 @@ class Reanimate(Action):
         self.gs.pile_mgr.reanimate(self.source)
         self.gs.action_stack.pop()  # remove choice
 
+class SacToReturnAllCardsExiledBy(Action):
+    def __init__(self, p_id, gs, source: GameCard, exiler: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.exiler = exiler
+
+    def __repr__(self):
+        return f'Sacrifice {self.exiler.props.name} to return all cards it exiled to the battlefield'
+
+    def play(self) -> None:
+        if self.exiler.extras.get('cards_exiled') is None:
+            return
+        for card in self.exiler.extras.get('cards_exiled'):
+            self.gs.pile_mgr.reanimate(card)
+        del self.exiler.extras['cards_exiled']
+        self.gs.pile_mgr.destroy(self.exiler, allow_regeneration=False)
+
 class Sac(Action):
     def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
         super().__init__(p_id, gs)

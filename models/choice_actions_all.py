@@ -19,7 +19,8 @@ if TYPE_CHECKING:
 from models.constants import COLOR_LETTERS_W_COLORLESS, Target
 from models.actions.base import Action, DoNothing
 from models.actions.damage import DealDamageToYou, PayLife
-from models.actions.destroy_sac_regen import Sac, DestroyAction, AllowOpponentToDestroyALand, SacCards, Reanimate
+from models.actions.destroy_sac_regen import Sac, DestroyAction, AllowOpponentToDestroyALand, SacCards, Reanimate, \
+    SacToReturnAllCardsExiledBy
 from models.actions.draw_discard import DrawCard, DiscardCard
 from models.actions.mana import AddMana, PayMana
 from models.actions.pump import VariablePTMod
@@ -549,6 +550,15 @@ class SacrificeCastChoice(ChoiceAction):
         p_id = self.gs.turn_mgr.player_turn_idx
         return [SacCreatureAndAddMana(self.player_idx, self.gs, self.source, c, 'B', c.props.mana_value)
                 for c in self.gs.card_filter.on_player_board(p_id).creatures().result()]
+
+class SafeHavenChoice(ChoiceAction):
+    """At your upkeep, you may sacrifice SH to return all cards it exiled to the battlefield under owner's control"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        return [SacToReturnAllCardsExiledBy(self.player_idx, self.gs, self.source, self.source),
+                DoNothing(self.player_idx, self.gs)]
 
 class SeasonOfTheWitchUpkeepChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
