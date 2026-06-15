@@ -33,7 +33,7 @@ class EventManager:
         return [event for event, _ in self._events]
 
     def get_turn_events(self, turn_number: int) -> list[Event | None]:
-        return [event for event, turn_num in self.events if turn_num == turn_number]
+        return [event for event, turn_num in self._events if turn_num == turn_number]
 
     def emit(self, event: Event, gs: GameState):
         """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr"""
