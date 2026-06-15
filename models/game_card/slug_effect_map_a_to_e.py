@@ -36,12 +36,13 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottle, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
-    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved
+    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    DamageResolvedEvent, TapCardEvent, DiesEvent, ZoneChangeEvent, BlockEvent, AttackEvent, DamageProposedEvent
+    DamageResolvedEvent, TapCardEvent, DiesEvent, ZoneChangeEvent, BlockEvent, AttackEvent, DamageProposedEvent, \
+    CanUntapQueryEvent
 from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -225,6 +226,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cyclone': [Triggered(Cyclone(), None, UpkeepEvent)],
     'cyclopean-mummy': [Triggered(CyclopeanMummy(), None, DiesEvent)],
     'dakkon-blackblade': [Static(DakkonBlackbladePT())],
+    'damping-field': [Triggered(DampingField(), None, CanUntapQueryEvent)],
     'dance-of-many': [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],  # the rest of the card still needs coding
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests'])])],
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],

@@ -43,12 +43,12 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
     PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers
 from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
-    WalkRuleRemoved
+    WalkRuleRemoved, Smoke, WinterOrb
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, ZoneChangeEvent, \
-    BlockEvent, DiscardEvent, DamageProposedEvent
+    BlockEvent, DiscardEvent, DamageProposedEvent, CanUntapQueryEvent
 from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -190,6 +190,7 @@ MAP: dict[str, list[EffSpec]] = {
                     Triggered(KWAModEffect('add', 'Goad', True), T_FUNCS['opp_creatures'], CastResolvedEvent)],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'skull-of-orm': [Activated('5T', Bounce(), T_FUNCS['enchants_in_your_graveyard'])],
+    'smoke': [Triggered(Smoke(), None, CanUntapQueryEvent)],
     'snake': [Triggered(AddPoisonCounter(), None, DamageResolvedEvent)],  # token creature created by serpent-generator
     'sol-ring': [Activated('T', AddMana('C', 2), T_FUNCS['card_owner'])],
     'solkanar-the-swamp-king': [Triggered(OnColorSpellGainLife('B'), None, CastResolvedEvent)],
@@ -371,6 +372,7 @@ MAP: dict[str, list[EffSpec]] = {
     'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
     'winter-blast': [Triggered(WinterBlast(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None),
                                CastResolvedEvent, max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XG'))],
+    'winter-orb': [Triggered(WinterOrb(), None, CanUntapQueryEvent)],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures'])],
     'wood-elemental': [Triggered(WoodElemental(), None, CastResolvedEvent)],
