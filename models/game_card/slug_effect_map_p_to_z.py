@@ -15,7 +15,7 @@ from models.effects.resolvers_card_specific import TowerOfCoireall, RockHydraCas
     RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, Twiddle, \
-    VenarianGoldHostStaysTapped, Scarecrow, ReversePolarity, Simulacrum, Telekinesis, TangleKelp
+    VenarianGoldHostStaysTapped, Scarecrow, ReversePolarity, Simulacrum, Telekinesis, TangleKelp, WoodElemental
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, AddCountersYourTurnOnly, AddCounterPerCreatureDeath, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
@@ -27,7 +27,8 @@ from ..effects.listeners_card_specific import PestilenceEndStep, SeasonOfTheWitc
     VoodooDollEndStep, SerendibDjinnNoLands, PsychicVenom, SpiritShackle, WildGrowth, PowerSurge, \
     PsychicAllergySac, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, Revelation, StanggOnLeave, \
-    VerduranEnchantress, TheWretchedUnsteal, WhirlingDervish, TimeVaultOption, TheFallen, PsychicAllergyDamage
+    VerduranEnchantress, TheWretchedUnsteal, WhirlingDervish, TimeVaultOption, TheFallen, PsychicAllergyDamage, \
+    RasputinDreamweaverUntap, RasputinDreamweaverUpkeep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
@@ -109,10 +110,12 @@ MAP: dict[str, list[EffSpec]] = {
     'ramses-overdark': [Activated('T', Destroy(), T_FUNCS['enchanted_creatures'])],
     'rapid-fire': [Triggered(RapidFire(), T_FUNCS['creatures'], CastResolvedEvent,
                              allowed_phases=[p for p in Phase if p < Phase.DECLARE_BLOCKERS])],
-    'rasputin-dreamweaver': [Triggered(AddCounter(DREAM, 7), None, CastResolvedEvent),
-                             Activated('', AddMana('C'), extra_costs=[RemoveCounterCost(DREAM)]),
+    'rasputin-dreamweaver': [Activated('', AddMana('C'), extra_costs=[RemoveCounterCost(DREAM)]),
                              Activated('', PreventNextDamageToCardEffect(1), T_FUNCS['self'],
-                                       extra_costs=[RemoveCounterCost(DREAM)])],  # more to code
+                                       extra_costs=[RemoveCounterCost(DREAM)]),
+                             Triggered(RasputinDreamweaverUntap(), None, UntapPhaseEvent),
+                             Triggered(RasputinDreamweaverUpkeep(), None, UpkeepEvent),
+                             Triggered(AddCounter(DREAM, 7), None, CastResolvedEvent)],  # more to code
     'reconstruction': [Triggered(Bounce(), T_FUNCS['artifacts_in_your_graveyard'], CastResolvedEvent)],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                          Activated('T', ManaBatteriesAddMana('R'), extra_costs=[RemoveCounterCost(CHARGE)],
@@ -365,6 +368,7 @@ MAP: dict[str, list[EffSpec]] = {
                                CastResolvedEvent, max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XG'))],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures'])],
+    'wood-elemental': [Triggered(WoodElemental(), None, CastResolvedEvent)],
     'wooden-sphere': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('G'))],
     'word-of-binding': [Triggered(TapCardsEffect(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None), CastResolvedEvent,
                                   max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XBB'))],

@@ -13,7 +13,7 @@ from models.choice_actions_all import FloralSpuzzemChoice, CosmicHorrorUpkeepCho
     ForceOfNatureUpkeepChoice, LandTaxChoice, LordOfThePitUpkeepChoice, SacChoice, PsychicAllergyUpkeepChoice, \
     RogahhOfKherKeepUpkeepChoice, PayLifeOrSacChoice, CopyCardChoice, YawgmothDemonChoice, MoldDemonChoice, \
     DrawCardsOrDontChoice, GabrielAngelfireChoice, GiantSlugChoice
-from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND
+from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND, DREAM
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
@@ -292,6 +292,14 @@ class MagneticMountainOnUntapStep(Listener):
             return
         if s in gs.card_filter.on_player_board(event.active_player).blue().creatures().result():
             gs.action_stack.push(LeaveTapped(s.owner_id, gs, s), gs, False)
+
+class RasputinDreamweaverUntap(Listener):
+    """... At your upkeep, if RD started the turn (as proxied w the UntapPhaseEvent) untapped &
+    w < 7 dream counters on it, put a dream counter on it."""
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        source.extras['started_turn_untapped'] = not source.is_tapped
 
 class TimeVaultOption(Listener):
     """If you would begin your turn while this artifact is tapped, you may skip that turn instead."""
@@ -587,6 +595,15 @@ class PsychicAllergySac(Listener):
         for action in possible_actions:
             gs.action_stack.push(action, gs, False)
 
+class RasputinDreamweaverUpkeep(Listener):
+    """... At your upkeep, if RD STARTED THE TURN untapped w < 7 dream counters on it, put a dream counter on it."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if source.extras.get('started_this_turn_untapped') is None:
+            return
+        if source.extras['started_this_turn_untapped'] and source.counters.get_count(DREAM) < 7:
+            source.counters.add_counter(DREAM)
 
 class RogahhOfKherKeepUpkeep(Listener):
     """... At your upkeep, pay {RRR} or else ..."""

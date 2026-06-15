@@ -16,7 +16,8 @@ from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, Jov
     ExchangeLifeTotals, GraveRobbersAA, GreatDefender, HellSwarm, HolyLight, HowlFromBeyond, \
     LesserWerewolf, MarshGas, Morale, FallingStar, Fasting, Feint, FeldonsCane, Festival, FlashFlood, GoblinKing, \
     Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, KryShield, \
-    LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, ManaShort, Forcefield, HazezonTamar, FalseOrders
+    LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, ManaShort, Forcefield, HazezonTamar, FalseOrders, \
+    NamelessRace
 from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
@@ -307,6 +308,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mox-ruby': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'mox-sapphire': [Activated('T', AddMana('U'), T_FUNCS['card_owner'])],
     'murk-dwellers': [Triggered(MurkDwellers(), None, UnblockedAttackerEvent)],
+    'nameless-race': [Triggered(NamelessRace(), None, CastResolvedEvent)],
     'natural-selection': [Triggered(NaturalSelection(), T_FUNCS['all_players'], CastResolvedEvent)],
     'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],
     # TODO: needs an extra cost of "Exile a creature card from your graveyard"

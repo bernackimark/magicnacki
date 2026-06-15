@@ -482,6 +482,19 @@ class MoldDemonChoice(ChoiceAction):
         sac_swamps = [SacCards(self.player_idx, self.gs, self.source, two_swamps) for two_swamps in two_swamp_combos]
         return [Sac(self.player_idx, self.gs, self.source)] + sac_swamps
 
+class NamelessRaceChoice(ChoiceAction):
+    """Upon ETB, pay any amount of life (max = # of white nontoken permanents your opponents control +
+    the total number of white cards in their graveyards). NR's PT are each = life paid as it entered."""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        from models.actions.special import NamelessRaceETBAction
+        opp = flip(self.source.owner_id)
+        max_amt = len(self.gs.card_filter.on_player_board(opp).non_token().white().permanents().result()) + \
+            len(self.gs.card_filter.in_player_graveyard(opp).white().result())
+        return [NamelessRaceETBAction(self.player_idx, self.gs, self.source, r) for r in range(max_amt + 1)]
+
 class NaturalSelectionChoice(ChoiceAction):
     """Called from NaturalSelection effect; re-order top 3 cards of a library or shuffle ...
     Warning: this will break if the library has fewer than 3 cards"""
@@ -595,6 +608,16 @@ class TriassicEggChoice(ChoiceAction):
             if card_in_graveyard.is_creature:
                 actions.append(Reanimate(self.player_idx, self.gs, card_in_graveyard))
         return actions
+
+class WoodElementalChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs, source)
+
+    def get_actions(self) -> list[Action]:
+        from models.actions.special import WoodElementalETBAction
+        your_untapped_forests = self.gs.card_filter.on_player_board(self.player_idx).forests().untapped().result()
+        return [WoodElementalETBAction(self.player_idx, self.gs, self.source, combo)
+                for r in range(len(your_untapped_forests)) for combo in combinations(your_untapped_forests, r=r)]
 
 class YawgmothDemonChoice(ChoiceAction):
     """At your upkeep, Sac an artifact, or tap this creature & it deals 2 damage to you"""

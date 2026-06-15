@@ -232,6 +232,19 @@ class HealingSalveB(Action):
         self.gs.event_mgr.register(PreventNextDamageToEOT(self.target, 3))
         self.gs.action_stack.pop()
 
+class NamelessRaceETBAction(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, amt: int):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.amt = amt
+
+    def __repr__(self):
+        return f'Pay {self.amt} life to make {self.s.props.name} a {self.amt}/{self.amt} creature'
+
+    def play(self) -> None:
+        self.s.base_pt = (self.amt, self.amt)
+        self.gs.apply_damage(self.s, self.amt, self.s.owner_id)
+
 class PrimalClayA(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
         super().__init__(p_id, gs)
@@ -308,6 +321,24 @@ class TimeVaultSkipTurnAction(Action):
     def play(self) -> None:
         self.source.untap()
         self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN, self.gs)
+
+class WoodElementalETBAction(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, cards_to_sac: list[GameCard]):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.cards_to_sac = cards_to_sac
+
+    def __repr__(self):
+        return f'Sac {self.amt} to make {self.s.props.name} a {self.amt}/{self.amt} creature'
+
+    @property
+    def amt(self) -> int:
+        return len(self.cards_to_sac)
+
+    def play(self) -> None:
+        self.s.base_pt = (self.amt, self.amt)
+        for card in self.cards_to_sac:
+            self.gs.pile_mgr.destroy(card, allow_regeneration=False)
 
 class YawgmothDemonUnpaidUpkeep(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):

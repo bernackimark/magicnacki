@@ -18,7 +18,8 @@ if TYPE_CHECKING:
 from models.actions.draw_discard import DiscardCard
 from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, NaturalSelectionChoice, ShuffleOrDontChoice, \
     CopyCardChoice, PrimalClayChoice, TriassicEggChoice, FastingChoice, HealingSalveChoice, RemoveCounterForLifeChoice, \
-    SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice, FalseOrdersChoice
+    SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice, FalseOrdersChoice, \
+    WoodElementalChoice, NamelessRaceChoice
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE, MINUS_ZERO_ONE, HUNGER, VITALITY, SLEEP
 from models.effects.base import Resolver
 from models.effects.listeners_card_specific import HazezonTamarTokenCreation
@@ -921,14 +922,12 @@ class ManaClash(Resolver):
             if opp_result == 'tails':
                 gs.apply_damage(source, 1, opp_id)
 
-
 class MartyrsCry(Resolver):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for white_creature in gs.card_filter.in_play().white().creatures().result():
             gs.pile_mgr.exile(white_creature)
             gs.pile_mgr.draw(white_creature.owner_id)
-
 
 class MazeOfIth(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
@@ -938,8 +937,13 @@ class MazeOfIth(Resolver):
         gs.event_mgr.register(PreventNextDamageByEOT(the_combat.attacker, combat_only=True))
         for b in the_combat.blockers:
             gs.event_mgr.register(PreventNextDamageToCardEOT(b, combat_only=True))
-        t.untap(gs)
+        t.untap()
 
+class NamelessRace(Resolver):
+    """Upon ETB, pay any amount of life (max = # of white nontoken permanents your opponents control +
+    the total number of white cards in their graveyards). NR's PT are each = life paid as it entered."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.action_stack.push(NamelessRaceChoice(source.owner_id, gs, source), gs, False)
 
 class Rakalite(Resolver):
     """{2}: Prevent the next 1 damage that would be dealt to any target this turn.
@@ -1084,13 +1088,11 @@ class VenarianGoldCast(Resolver):
         if x := source.extras.get('x', 0):  # read X chosen when casting
             source.counters.add_counter(SLEEP, x)
 
-
 class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
         source.modifiers.append(PTMod(s=source, p_adj=4, t_adj=-4, expires='EOT'))
         source.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Defender', expires='EOT'))
-
 
 class WandOfIth(Resolver):
     """Opponent reveals a card at random from their hand. If it's a land, that player pays 1 lift or discards.
@@ -1104,13 +1106,11 @@ class WandOfIth(Resolver):
         life_payment_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
         gs.pending_choice = PayLifeOrDiscardChoice(opp, gs, source, life_payment_amt, the_card)
 
-
 class Web(Resolver):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
             target.modifiers.append(PTMod(s=source, p_adj=0, t_adj=2))
             target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Reach'))
-
 
 class WindsOfChange(Resolver):
     """Each player shuffles the cards from their hand into their library, then draws that many cards"""
@@ -1124,7 +1124,6 @@ class WindsOfChange(Resolver):
             random.shuffle(gs.pile_mgr.libraries[p_id])
             gs.pile_mgr.draw(p_id, len(hand_cards))
 
-
 class WinterBlast(Resolver):
     """Tap X target creatures. Winter Blast deals 2 damage to each of those creatures with flying."""
     def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
@@ -1135,13 +1134,16 @@ class WinterBlast(Resolver):
             if 'Flying' in t.keyword_abilities:
                 gs.apply_damage(source, 2, t)
 
+class WoodElemental(Resolver):
+    """As this creature enters, sac any number of untapped Forests. WE's PT are each = # of Forests sacrificed."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.action_stack.push(WoodElementalChoice(source.owner_id, gs, source), gs, False)
 
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Forestwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
-
 
 class WormwoodTreefolkSwampwalk(Resolver):
     """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
