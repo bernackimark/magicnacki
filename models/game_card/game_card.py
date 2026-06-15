@@ -214,8 +214,28 @@ class GameCard:
             self.is_face_up = True
 
     @property
+    def is_artifact(self) -> bool:
+        return 'Artifact' in self.card_types
+
+    @property
     def is_creature(self) -> bool:
         return 'Creature' in self.card_types
+
+    @property
+    def is_enchantment(self) -> bool:
+        return 'Enchantment' in self.card_types
+
+    @property
+    def is_instant(self) -> bool:
+        return 'Instant' in self.card_types
+
+    @property
+    def is_land(self) -> bool:
+        return 'Land' in self.card_types
+
+    @property
+    def is_sorcery(self) -> bool:
+        return 'Sorcery' in self.card_types
 
     @property
     def is_black(self) -> bool:
