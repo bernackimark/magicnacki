@@ -1,15 +1,17 @@
 import unittest
 
+from models.actions.activate_ability import ActivateAbility
 from models.effects.base import Listener
 from models.effects.listeners_permission import UnblockableEOT
-from models.events_all import CanCastQueryEvent
+from models.effects.resolvers_generic import PreventNextDamageToSourceOwner
+from models.events_all import CanCastQueryEvent, DamageProposedEvent
 from .setup_helpers import (add_to_battlefield, create_engine_and_universe, get_card,
                             put_onto_battlefield_last_turn, put_onto_battlefield_this_turn)
 
 class TestCanAttack(unittest.TestCase):
     def setUp(self):
         self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                    'engine_testing_setup_a', True)
+                                                                'engine_testing_setup_a', True)
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -40,7 +42,7 @@ class TestCanAttack(unittest.TestCase):
 class TestCanBlock(unittest.TestCase):
     def setUp(self):
         self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                    'engine_testing_setup_a', True)
+                                                                'engine_testing_setup_a', True)
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -91,7 +93,7 @@ class TestCanBlock(unittest.TestCase):
 class TestCanCast(unittest.TestCase):
     def setUp(self):
         self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                    'engine_testing_setup_a', True)
+                                                                'engine_testing_setup_a', True)
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -101,8 +103,14 @@ class TestCanCast(unittest.TestCase):
         [add_to_battlefield(land, self.gs) for land in lands]
         self.assertTrue(self.gs.perm_querier.can_cast(creature, p_id=0))
 
-    def test_cannot_cast_creature_without_mana(self):
+    def test_cannot_cast_creature_without_any_mana(self):
         card = get_card(self.gs, 'serendib-efreet', 0)
+        self.assertFalse(self.gs.perm_querier.can_cast(card, p_id=0))
+
+    def test_cannot_cast_creature_without_correct_mana(self):
+        card = get_card(self.gs, 'serendib-efreet', 0)
+        lands = [get_card(self.gs, 'forest', 0), get_card(self.gs, 'mountain', 0)]
+        [add_to_battlefield(land, self.gs) for land in lands]
         self.assertFalse(self.gs.perm_querier.can_cast(card, p_id=0))
 
     def test_cannot_cast_land_if_land_already_played(self):
@@ -137,8 +145,47 @@ class TestCanCast(unittest.TestCase):
                     event.permission = False
 
         self.gs.event_mgr.register(CantCastCreatures(), source_card=card)
-
         self.assertFalse(self.gs.perm_querier.can_cast(card, p_id=0))
+
+
+class TestCanDamage(unittest.TestCase):
+    def setUp(self):
+        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
+                                                                'engine_testing_setup_a', True)
+        self.engine.gs = self.engine.match_manager.create_game_state()
+        self.gs = self.engine.gs
+
+    def test_creature_can_damage_another_creature(self):
+        source = get_card(self.gs, 'grizzly-bears', 0)
+        target = get_card(self.gs, 'hill-giant', 1)
+        self.assertTrue(self.gs.perm_querier.can_damage(target, source))
+
+    def test_creature_can_damage_player(self):
+        source = get_card(self.gs, 'grizzly-bears', 0)
+        self.assertTrue(self.gs.perm_querier.can_damage(1, source))
+
+    def test_black_knight_can_be_damaged_by_black_source(self):
+        source = get_card(self.gs, 'drudge-skeletons', 0)
+        target = get_card(self.gs, 'black-knight', 1)
+        self.assertTrue(self.gs.perm_querier.can_damage(target, source))
+
+    def test_black_knight_cannot_be_damaged_by_white_source(self):
+        source = get_card(self.gs, 'savannah-lions', 0)
+        target = get_card(self.gs, 'black-knight', 1)
+        self.assertFalse(self.gs.perm_querier.can_damage(target, source))
+
+    def test_cop(self):
+        # TODO: COP uses DamageProposedEvent path, not can_damage, so this test needs to move
+        red_source = get_card(self.gs, 'goblin-hero', 0)
+        cop = get_card(self.gs, 'circle-of-protection-red', 1)
+        plains = get_card(self.gs, 'plains', 1)
+        p2 = get_card(self.gs, 'plains', 1)
+        add_to_battlefield(plains, self.gs)
+        add_to_battlefield(p2, self.gs)
+        add_to_battlefield(cop, self.gs)
+        PreventNextDamageToSourceOwner().resolve(self.gs, cop, red_source)
+        self.gs.apply_damage(red_source, 5, 1, True)
+        self.assertEqual(self.gs.score_mgr.life[1], 20)
 
 
 if __name__ == '__main__':

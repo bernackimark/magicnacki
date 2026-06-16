@@ -46,7 +46,8 @@ class EventManager:
         self._events.append((event, gs.turn_mgr.turn_number))
 
         for base_rule in self._base_rule_listeners[type(event)]:
-            base_rule.on_event(gs, None, event)  # rare case where the 'source' argument is not supplied
+            source = event.source if hasattr(event, 'source') else None
+            base_rule.on_event(gs, source, event)  # rare case where the 'source' argument is not supplied
 
         entries = list(self._event_listeners[type(event)])
         for e in entries:

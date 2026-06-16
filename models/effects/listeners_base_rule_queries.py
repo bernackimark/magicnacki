@@ -91,9 +91,13 @@ class CanCastRule(Listener):
             event.permission = False
 
 class CanDamageRule(Listener):
+    """If card has Protection From [color of source], event.permission = False;
+    as of now, players never have Protection"""
     listens_to = CanDamageQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanDamageQueryEvent) -> None:
+        if isinstance(event.target, int):
+            return
         # Protection from color rule
         for kwa in event.target.keyword_abilities:
             if 'Protection From' in kwa:
