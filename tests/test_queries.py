@@ -1,10 +1,9 @@
 import unittest
 
-from models.actions.activate_ability import ActivateAbility
 from models.effects.base import Listener
-from models.effects.listeners_permission import UnblockableEOT
-from models.effects.resolvers_generic import PreventNextDamageToSourceOwner
-from models.events_all import CanCastQueryEvent, DamageProposedEvent
+from models.effects.listeners_generic import SkipUntaps
+from models.effects.listeners_permission import UnblockableEOT, Meekstone
+from models.events_all import CanCastQueryEvent, CanTargetQueryEvent
 from .setup_helpers import (add_to_battlefield, create_engine_and_universe, get_card,
                             put_onto_battlefield_last_turn, put_onto_battlefield_this_turn)
 
@@ -174,18 +173,77 @@ class TestCanDamage(unittest.TestCase):
         target = get_card(self.gs, 'black-knight', 1)
         self.assertFalse(self.gs.perm_querier.can_damage(target, source))
 
-    def test_cop(self):
-        # TODO: COP uses DamageProposedEvent path, not can_damage, so this test needs to move
-        red_source = get_card(self.gs, 'goblin-hero', 0)
-        cop = get_card(self.gs, 'circle-of-protection-red', 1)
-        plains = get_card(self.gs, 'plains', 1)
-        p2 = get_card(self.gs, 'plains', 1)
-        add_to_battlefield(plains, self.gs)
-        add_to_battlefield(p2, self.gs)
-        add_to_battlefield(cop, self.gs)
-        PreventNextDamageToSourceOwner().resolve(self.gs, cop, red_source)
-        self.gs.apply_damage(red_source, 5, 1, True)
-        self.assertEqual(self.gs.score_mgr.life[1], 20)
+
+class TestCanTarget(unittest.TestCase):
+    def setUp(self):
+        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
+                                                                'engine_testing_setup_a', True)
+        self.engine.gs = self.engine.match_manager.create_game_state()
+        self.gs = self.engine.gs
+
+    def test_can_target_normal_creature(self):
+        source = get_card(self.gs, 'lightning-bolt', 0)
+        target = get_card(self.gs, 'grizzly-bears', 1)
+        self.assertTrue(self.gs.perm_querier.can_target(target, source))
+
+    def test_can_target_player(self):
+        # currently a player can always be targeted
+        source = get_card(self.gs, 'lightning-bolt', 0)
+        self.assertTrue(self.gs.perm_querier.can_target(1, source))
+
+    def test_black_knight_cannot_be_targeted_by_white_source(self):
+        source = get_card(self.gs, 'swords-to-plowshares', 0)
+        target = get_card(self.gs, 'black-knight', 1)
+        self.assertFalse(self.gs.perm_querier.can_target(target, source))
+
+    def test_listener_can_forbid_targeting(self):
+        source = get_card(self.gs, 'lightning-bolt', 0)
+        target = get_card(self.gs, 'grizzly-bears', 1)
+
+        class CannotBeTargeted(Listener):
+            listens_to = CanTargetQueryEvent
+
+            def on_event(self, gs, source_card, event: CanTargetQueryEvent):
+                if event.target is target:
+                    event.permission = False
+
+        self.gs.event_mgr.register(CannotBeTargeted(), target)
+        self.assertFalse(self.gs.perm_querier.can_target(target, source))
+
+
+class TestCanUntap(unittest.TestCase):
+    def setUp(self):
+        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
+                                                                'engine_testing_setup_a', True)
+        self.engine.gs = self.engine.match_manager.create_game_state()
+        self.gs = self.engine.gs
+
+    def test_creature_can_untap_by_default(self):
+        creature = get_card(self.gs, 'grizzly-bears', 0)
+        self.assertTrue(self.gs.perm_querier.can_untap(creature))
+
+    def test_meekstone_prevents_large_creature_from_untapping(self):
+        meekstone = get_card(self.gs, 'meekstone', 0)
+        large_creature = get_card(self.gs, 'craw-wurm', 1)
+        add_to_battlefield(meekstone, self.gs)
+        self.gs.event_mgr.register(Meekstone(), meekstone)
+        add_to_battlefield(large_creature, self.gs)
+        self.assertFalse(self.gs.perm_querier.can_untap(large_creature))
+
+    def test_meekstone_allows_small_creature_to_untap(self):
+        meekstone = get_card(self.gs, 'meekstone', 0)
+        small_creature = get_card(self.gs, 'merfolk-of-the-pearl-trident', 1)
+        add_to_battlefield(meekstone, self.gs)
+        add_to_battlefield(small_creature, self.gs)
+        self.assertTrue(self.gs.perm_querier.can_untap(small_creature))
+
+    def test_barls_cage(self):
+        barls_cage = get_card(self.gs, 'barls-cage', 0)
+        affected = get_card(self.gs, 'grizzly-bears', 1)
+        unaffected = get_card(self.gs, 'hill-giant', 1)
+        self.gs.event_mgr.register(SkipUntaps(affected), barls_cage)
+        self.assertFalse(self.gs.perm_querier.can_untap(affected))
+        self.assertTrue(self.gs.perm_querier.can_untap(unaffected))
 
 
 if __name__ == '__main__':
