@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from .slug_effect_map import INVOCATIONS
 from models.counter_tokens import Counters
 from models.effects.base import ActivatedAbility, EffSpec
-from models.modifiers import Modifiers
+from models.modifiers import Modifiers, KWAMod
 from models.zone import Zone
 
 
@@ -175,6 +175,8 @@ class GameCard:
         self.game_state.event_mgr.emit(event, self.game_state)
         adds, removes = set(), set()
         for mod in event.mods:
+            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
+        for mod in self.modifiers.iter_type(KWAMod):
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
 
         return list((set(self._base_kwa) | adds) - removes)
