@@ -212,7 +212,7 @@ class GameState:
                 continue
 
             # Short-cutting these directly to the board for testing expedience
-            if c.props.is_permanent:
+            if c.props.is_permanent and 'Aura' not in c.card_sub_types:
                 actions.append(CastToBoard(p_id, self, c))
                 continue
 
@@ -231,9 +231,7 @@ class GameState:
 
                 if eff_spec.target_spec and eff_spec.target_spec.filter_func:
                     candidates = eff_spec.target_spec.filter_func(self, c)
-                    valid_targets = [t for t in candidates if
-                                     self.perm_querier.can_target(t, c)]
-
+                    valid_targets = [t for t in candidates if self.perm_querier.can_target(t, c)]
                     if len(valid_targets) < eff_spec.target_spec.min_cnt:
                         continue
 
