@@ -45,10 +45,8 @@ class Combat:
             if self._phase_applicable(a, first_strike):
                 if len(self.blockers) > 1 and a.rampage_amt:
                     multiplier = len(self.blockers) - 1
-                    a.modifiers.append(
-                        PTMod(s=a, p_adj=a.rampage_amt * multiplier,
-                              t_adj=a.rampage_amt * multiplier, expires='EOT')
-                    )
+                    a.modifiers.append(PTMod(s=a, p_adj=a.rampage_amt * multiplier,
+                                             t_adj=a.rampage_amt * multiplier, expires='EOT'))
 
                 target = self.blockers[0]
                 if self.gs.perm_querier.can_damage(target, a):
@@ -67,11 +65,9 @@ class Combat:
         # --- run SBAs ---
         self.gs.check_state_based_actions()
 
-    @staticmethod
-    def _phase_applicable(creature: GameCard, first_strike: bool) -> bool:
+    def _phase_applicable(self, creature: GameCard, first_strike: bool) -> bool:
         """Returns True if this creature should deal damage in the current phase."""
-        has_fs = 'First Strike' in creature.props.keyword_abilities
-        return first_strike == has_fs or not first_strike  # normal phase includes non-first strike
+        return first_strike is self._has_first_strike(creature)
 
     @staticmethod
     def _has_first_strike(creature: "GameCard") -> bool:

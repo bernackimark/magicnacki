@@ -73,6 +73,17 @@ class TestCombat(unittest.TestCase):
         creature = get_card(self.gs, 'grizzly-bears', 0)
         self.assertIsNone(self.gs.combat_mgr.get_combat(creature))
 
+    def test_first_strike_only_deals_damage_once(self):
+        attacker = get_card(self.gs, 'white-knight', 0)  # 2/2 First Strike
+        blocker = get_card(self.gs, 'phantom-monster', 1)  # 3/3
+        add_to_battlefield(attacker, self.gs)
+        add_to_battlefield(blocker, self.gs)
+        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        combat = self.gs.combat_mgr.get_combat(attacker)
+        combat.blockers.append(blocker)
+        combat.handle_damage()
+        self.assertIn(blocker, self.gs.pile_mgr.boards[1], 'First Striker appears to have dealt damage 2x')
+
 
 if __name__ == '__main__':
     unittest.main()
