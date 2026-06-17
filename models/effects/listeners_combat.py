@@ -211,11 +211,13 @@ class Arboria(Listener):
     listens_to = CanAttackQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        events_on_players_last_turn = gs.event_mgr.get_events(gs.turn_mgr.player_turn_idx)
+        opp = flip(event.attacker.owner_id)
+        p_most_recent_turn = gs.turn_mgr.most_recent_turn_started[opp]
+        events_on_players_last_turn = gs.event_mgr.get_events(p_most_recent_turn)
         for e in events_on_players_last_turn:
-            if isinstance(e, CastResolvedEvent) and e.owner_id == flip(event.attacker.owner_id):
+            if isinstance(e, CastResolvedEvent) and e.owner_id == opp and not e.card.is_land:
                 return
-            if (isinstance(e, ZoneChangeEvent) and e.card.owner_id == flip(event.attacker.owner_id)
+            if (isinstance(e, ZoneChangeEvent) and e.card.owner_id == opp and not e.card.is_land
                     and not e.card.is_token and e.to_zone == Zone.BATTLEFIELD):
                 return
         event.permission = False
