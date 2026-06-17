@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.zone import Zone
+
 if TYPE_CHECKING:
     from game_state import GameState
 
@@ -52,10 +54,11 @@ def get_card(gs: GameState, slug: str, player_id: int = 0) -> GameCard:
     cu = CardUniverse(["lea", "leb", "2ed", "arn", "atq", "3ed", "leg", "drk"])
     game_card = GameCard(cu[slug], player_id)
     game_card.game_state = gs
+    gs.pile_mgr.libraries[player_id].append(game_card)
     return game_card
 
 def add_to_battlefield(card: GameCard, gs: GameState):
-    gs.pile_mgr.boards[card.owner_id].append(card)
+    gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, cause='cast')
 
 def put_onto_battlefield_this_turn(card: GameCard, gs: GameState):
     gs.pile_mgr.boards[card.owner_id].append(card)
