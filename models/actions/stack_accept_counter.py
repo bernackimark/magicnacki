@@ -62,8 +62,9 @@ class AcceptAction(Action):
 
         # --- register triggered effects --- is this the best place to do this?, where are static effect being reg'ed?
         from models.game_card.slug_effect_map import INVOCATIONS
+        from models.effects.base import Listener
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
-            if eff_spec.activation_type == 'triggered' and eff_spec.trigger_event:
+            if isinstance(eff_spec.effect, Listener):
                 self.gs.event_mgr.register(eff_spec.effect, card)
                 print(f"Registered triggered effect for {card.props.name} on {eff_spec.trigger_event.__name__}")
 
