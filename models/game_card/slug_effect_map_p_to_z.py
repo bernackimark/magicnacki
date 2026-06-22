@@ -16,7 +16,7 @@ from models.effects.resolvers_card_specific import TowerOfCoireall, RockHydraCas
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, Twiddle, \
     VenarianGoldHostStaysTapped, Scarecrow, ReversePolarity, Simulacrum, Telekinesis, TangleKelp, WoodElemental, \
-    SafeHaven
+    SafeHaven, UntamedWilds
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, AddCountersYourTurnOnly, AddCounterPerCreatureDeath, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
@@ -305,6 +305,7 @@ MAP: dict[str, list[EffSpec]] = {
     'urborg': [Activated('T', AddMana('B')),
                Activated('T', UrborgLoseFirstStrike(), T_FUNCS['creatures_with_first_strike']),
                Activated('T', UrborgLoseSwampwalk(), T_FUNCS['creatures_with_swampwalk'])],
+    'untamed-wilds': [Triggered(UntamedWilds(), None, CastResolvedEvent)],
     'urzas-avenger': [Activated('', UrzasAvengerFlying()), Activated('', UrzasAvengerFirstStrike()),
                       Activated('', UrzasAvengerTrample())],
     'urzas-chalice': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('C'))],

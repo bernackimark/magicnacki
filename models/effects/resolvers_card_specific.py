@@ -359,6 +359,13 @@ class RagMan(Resolver):
         random_card: GameCard = gs.randomize_event(target, opp_creatures)
         gs.pile_mgr.discard(random_card, source)
 
+class UntamedWilds(Resolver):
+    """Search your library for a basic land card, put that card onto the battlefield, then shuffle"""
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        p_id = source.owner_id
+        basic_lands = [c for c in gs.pile_mgr.libraries[p_id] if c.props.is_basic_land]
+        gs.pending_choice = SearchLibraryChoice(p_id, gs, source, basic_lands, Zone.BATTLEFIELD)
+
 class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
