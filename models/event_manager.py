@@ -32,14 +32,14 @@ class EventManager:
     def events(self) -> list[Event | None]:
         return [event for event, _ in self._events]
 
-    def get_events(self, turn_number: int | None = None, event_type: Event | None = None) -> list[Event | None]:
-        if not turn_number and not event_type:
+    def get_events(self, turn_number: int | None = None, event: Event | None = None) -> list[Event | None]:
+        if not turn_number and not event:
             return self.events
-        if turn_number and not event_type:
+        if turn_number and not event:
             return [event for event, turn_num in self._events if turn_num == turn_number]
-        if event_type and not turn_number:
-            return [e for e in self.events if isinstance(e, type(event_type))]
-        return [e for e, turn_num in self._events if turn_num == turn_number and isinstance(e, type(event_type))]
+        if event and not turn_number:
+            return [e for e in self.events if isinstance(e, event)]  # type: ignore
+        return [e for e, turn_num in self._events if turn_num == turn_number and isinstance(e, event)]  # type: ignore
 
     def emit(self, event: Event, gs: GameState):
         """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr"""
