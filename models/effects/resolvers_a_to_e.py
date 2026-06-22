@@ -1,0 +1,376 @@
+from __future__ import annotations
+
+import math
+from typing import TYPE_CHECKING, Optional
+
+from models.actions.tap_untap import LeaveTapped
+from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, CopyCardChoice
+from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
+from models.effects.base import Resolver
+from models.effects.listeners_generic import SkipUntaps
+from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT
+from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
+from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
+from models.utils import flip
+from models.zone import Zone
+
+if TYPE_CHECKING:
+    from game_state import GameState
+    from models.game_card.game_card import GameCard
+
+
+class BarlsCage(Resolver):
+    """Target creature doesn't untap during its controller's NEXT untap step; registers a listener"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.event_mgr.register(SkipUntaps(target), source)
+
+
+class Disharmony(Resolver):
+    """Cast this spell only during combat before blockers are declared.
+    Untap target attacking creature and remove it from combat. Gain control of that creature until end of turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.untap()
+        gs.combat_mgr.remove_from_combat(target)
+        target.modifiers.append(OwnershipMod(source.owner_id, s=source, expires='EOT'))
+
+
+class CityOfShadowsAA1(Resolver):
+    """{T}, Exile a creature you control: Put a storage counter on this land"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        source.counters.add_counter(STORAGE)
+
+
+class CityOfShadowsAA2(Resolver):
+    """{T}: Add {C} for each storage counter on this land"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        cnt = len(source.counters.get_count(STORAGE))
+        gs.mana_pools[source.owner_id].add_floating('C', cnt)
+
+
+class CocoonCast(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        target.tap()
+        source.counters.add_counter(PUPA, 3)
+
+
+class Banshee(Resolver):
+    """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        if not t:
+            raise ValueError(f'{s.props.name} needs a target')
+        x = s.extras.get('x', 0)
+        damage_to_target = x // 2
+        damage_to_you = x - damage_to_target
+        gs.apply_damage(s, damage_to_target, t)
+        gs.apply_damage(s, damage_to_you, s.owner_id)
+        del s.extras['x']
+
+
+class Earthquake(Resolver):
+    """Earthquake deals X damage to each creature without flying and each player"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        x = source.extras.get('x', 0)  # read X chosen when casting
+        for c in gs.card_filter.in_play().has('Flying', False).creatures().result():
+            gs.apply_damage(source, x, c)
+        for p_id in (0, 1):
+            gs.apply_damage(source, x, p_id)
+
+
+class EternalFlame(Resolver):
+    """X = # of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        x = len(gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).mountains().result())
+        gs.apply_damage(source, x, flip(gs.turn_mgr.player_turn_idx))
+        gs.apply_damage(source, math.ceil(x/2), gs.turn_mgr.player_turn_idx)
+
+
+class EyeForAnEye(Resolver):
+    """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        """target = the GameCard doing the original damage"""
+        from models.effects.listeners_damage import EyeForAnEyeEOT
+        gs.event_mgr.register_effect(EyeForAnEyeEOT(watched_source=t, player_id=s.owner_id), s)
+
+
+class AshesToAshes(Resolver):
+    """Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you."""
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        for t in target:
+            gs.pile_mgr.exile(t)
+        gs.apply_damage(source, 5, source.owner_id)
+
+
+class DustToDust(Resolver):
+    """Exile two target artifacts"""
+    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        for t in target:
+            gs.pile_mgr.exile(t)
+
+
+class EaterOfTheDead(Resolver):
+    """Exile target creature card from a graveyard and untap this creature"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        GraveyardToExile().resolve(gs, source, target)
+        source.untap()
+
+
+class BazaarOfBaghdad(Resolver):
+    """Draw two cards, then discard three cards"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.pile_mgr.draw(source.owner_id, 2)
+        gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id, 3, 3)
+
+
+class Braingeyser(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if target is not None:
+            x = source.extras.get('x', 0)  # read X chosen when casting
+            gs.pile_mgr.draw(target, x)
+
+
+class DemonicTutor(Resolver):
+    """Search your library for a card, put that card into your hand, then shuffle"""
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        p_id = source.owner_id
+        gs.pending_choice = SearchLibraryChoice(p_id, gs, source, list(gs.pile_mgr.libraries[p_id]), Zone.HAND)
+
+
+class Clone(Resolver):
+    """You may have this creature enter as a copy of any creature on the battlefield;
+    pushes valid targets to the stack for user selection, which then calls an Action that copies select target attrs"""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
+        if not card_options:
+            return
+        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
+
+
+class CopyArtifact(Resolver):
+    """You may have this enchantment enter as a copy of any artifact on the battlefield,
+    except it's an enchantment in addition to its other types"""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
+        if not card_options:
+            return
+        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
+
+
+class EvilPresence(Resolver):
+    """Enchant land Enchanted land is a Swamp"""
+
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        sub_types = target.card_sub_types.copy()
+        target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Swamp'))
+        for sub_type in sub_types:
+            target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
+
+
+class DrainPower(Resolver):
+    """Target player activates a mana ability of each land they control.
+    Then that player loses all unspent mana & you add the mana lost this way."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
+        """target = player_id whose available mana will be targeted & given to the other player"""
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        land_giver_mana = gs.mana_pools[target].available_mana.copy()
+        for color, amt in land_giver_mana.items():
+            gs.mana_pools[source.owner_id].add_floating(color, amt)
+
+
+class EnergyTap(Resolver):
+    """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if target is None:
+            return
+        target.tap()
+        gs.mana_pools[source.owner_id].add_floating('C', source.props.mana_value)
+        print(f"{source} taps to add {source.props.mana_value} colorless to your mana pool.")
+
+
+class ExchangeLifeTotals(Resolver):
+    def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):
+        your_life = gs.score_mgr.life[s.owner_id]
+        opp_life = gs.score_mgr.life[flip(s.owner_id)]
+        gs.score_mgr.life[s.owner_id], gs.score_mgr.life[flip(s.owner_id)] = opp_life, your_life
+
+
+class ArmyOfAllah(Resolver):
+    """Attacking creatures get +2/0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.event_mgr.register(ArmyOfAllahEOT(), source)
+
+
+class BerserkPump(Resolver):
+    """Cast this spell only before the combat damage step.
+    Target creature gains trample and gets +X/+0 until end of turn, where X is its power.
+    At the beginning of the next end step, destroy that creature if it attacked this turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        target.modifiers.append(PTMod(s=source, p_adj=int(target.power) * 2, expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+
+
+class BloodLust(Resolver):
+    """Target creature gains +4/-4 until end of turn. If this reduces creature's toughness < 1, toughness = 1."""
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise RuntimeError(f'{source.props.name} needs a target')
+        new_toughness = max(1, target.toughness - 4)
+        toughness_mod = new_toughness - target.toughness
+        target.modifiers.append(PTMod(s=source, p_adj=4, t_adj=toughness_mod, expires='EOT'))
+
+
+class BoneFlute(Resolver):
+    """All creatures get -1/-0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.event_mgr.register(BoneFluteEOT(), source)
+
+
+class AshnodsTransmogrant(Resolver):
+    """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.
+    That creature becomes an artifact in addition to its other types."""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        if not t:
+            raise RuntimeError(f'{s.props.name} needs a target')
+        t.counters.add_counter(PLUS_ONE)
+        t.card_types.append('Artifact')
+
+
+class ActiveVolcano(Resolver):
+    """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        gs.pile_mgr.bounce(t) if t.props.slug == 'island' else gs.pile_mgr.destroy(t)
+
+
+class AlAbarasCarpet(Resolver):
+    """(Activated Ability): Prevent all damage you would be dealt this turn by attacking creatures without flying"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.effects.listeners_damage import AlAbarasCarpetPrevention
+        gs.event_mgr.register(AlAbarasCarpetPrevention(protected_player=source.owner_id), source)
+
+
+class Amnesia(Resolver):
+    """Target player reveals their hand and discards all nonland cards"""
+    def resolve(self, gs: GameState, source: GameCard, target: int = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        for c in gs.pile_mgr.hands[target].cards[:]:
+            c.reveal()
+            if 'Land' not in c.card_types:
+                gs.pile_mgr.discard(c, source)
+
+
+class AnimateDead(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.pile_mgr.reanimate(target)
+        target.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=0))
+
+
+class BookOfRass(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        gs.apply_damage(source, 2, source.owner_id)
+        gs.pile_mgr.draw(source.owner_id)
+
+
+class BottleOfSuleiman(Resolver):
+    """{1}, Sac: Flip a coin. If you win the flip, create a 5/5 colorless Djinn artifact creature token with flying.
+    If you lose the flip, this artifact deals 5 damage to you."""
+    def resolve(self, gs: GameState, s: GameCard, _: GameCard = None):
+        result: str = gs.randomize_event(s.owner_id, ['heads', 'tails'])
+        if result == 'heads':
+            obj = CreateTokenCreature('djinn')
+            obj.resolve(gs, s)
+            # gs.create_token_creature(s.owner_id, 'Djinn', 5, 5, ['Flying', 'Attack'],
+            #                          other_types=[], sub_types=['Djinn'], colors='C')
+        else:
+            gs.apply_damage(s, 5, s.owner_id)
+
+
+class ChaosOrb(Resolver):
+    """{1}, {T}, Sac: Choose an opponent's non-token permanent. If random di roll is 1-4, destroy target."""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        if not t:
+            raise ValueError(f'{s.props.name} needs a target')
+        result: int = gs.randomize_event(s.owner_id, [1, 2, 3, 4, 5, 6])
+        if result <= 4:
+            gs.pile_mgr.destroy(t)
+
+
+class CocoonUpkeep(Resolver):
+    """At your upkeep, remove a pupa counter from this Aura.
+        If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        p_id = gs.turn_mgr.player_turn_idx
+        host = source.host
+        if p_id != source.owner_id:
+            return
+        if not host.counters.get_count(PUPA):
+            gs.pile_mgr.destroy(source)
+            host.counters.add_counter(PLUS_ONE)
+            host.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
+            return
+        host.counters.remove_counter(PUPA)
+
+
+class Crumble(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if target:
+            gs.pile_mgr.destroy(target, allow_regeneration=False)
+            gs.score_mgr.increment_life(target.owner_id, target.props.mana_value, source, gs)
+
+
+class DivineOffering(Resolver):
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f"{source.props.name} needs a target")
+        gs.pile_mgr.destroy(target)
+        gs.score_mgr.increment_life(source.owner_id, target.props.mana_value, source, gs)
+
+
+class Earthbind(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if target:
+            target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Flying'))
+        if 'Flying' in target.keyword_abilities:
+            gs.apply_damage(source, 2, target.owner_id)
+
+
+class ElectricEel(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.append(PTMod(s=source, p_adj=2, expires='EOT'))
+        gs.apply_damage(source, 1, source.owner_id)
+
+
+class ElvesOfTheDeepShadow(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.mana_pools[source.owner_id].add_floating('B')
+        gs.apply_damage(source, 1, source.owner_id)
+
+
+class ArenaOfTheAncientsCast(Resolver):
+    """When this artifact enters, tap all legendary creatures"""
+    def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
+        for c in gs.card_filter.in_play().creatures().untapped().legendary().result():
+            c.tap()
+
+
+class CocoonHostStaysTapped(Resolver):
+    """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        if source.host.counters.get_count(PUPA):
+            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)

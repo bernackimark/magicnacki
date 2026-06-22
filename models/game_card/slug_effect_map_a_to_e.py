@@ -6,12 +6,12 @@ from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, RemoveCounterCost, DiscardAtRandomCost, SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, CHARGE
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
-from models.effects.resolvers_card_specific import CityOfShadowsAA1, CityOfShadowsAA2, CocoonCast, Banshee, \
+from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, CityOfShadowsAA2, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, BerserkPump, BloodLust, \
-    BoneFlute, AshnodsTransmogrant, ActiveVolcano,  Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
+    BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     CocoonUpkeep, Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    CocoonHostStaysTapped, BarlsCage, Disharmony
+    CocoonHostStaysTapped
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     ManaBatteriesAddMana, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, DestroyIfItAttacked, \

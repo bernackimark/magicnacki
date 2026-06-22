@@ -1,6 +1,6 @@
 import unittest
 
-from models.effects.resolvers_card_specific import BloodLust
+from models.effects.resolvers_a_to_e import BloodLust
 from tests.setup_helpers import create_engine_and_universe, get_card, add_to_battlefield
 
 

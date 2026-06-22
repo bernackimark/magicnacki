@@ -11,13 +11,12 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, G
     OrcishOriflamme, JihadPT
 from models.effects.listeners_permission import Moat, Meekstone, Invisibility, IronclawOrcs, Fear, \
     JuggernautUnblockableByWalls, LivonyaSilone, WalkRuleRemoved
-from models.effects.resolvers_card_specific import GlyphOfDoom, GlyphOfLife, JovialEvil, Millstone, \
-    GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, \
-    ExchangeLifeTotals, GraveRobbersAA, GreatDefender, HellSwarm, HolyLight, HowlFromBeyond, \
-    LesserWerewolf, MarshGas, Morale, FallingStar, Fasting, Feint, FeldonsCane, Festival, FlashFlood, GoblinKing, \
-    Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, KryShield, \
-    LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, ManaShort, Forcefield, HazezonTamar, FalseOrders, \
-    NamelessRace
+from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
+    GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HellSwarm, \
+    HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Fasting, Feint, FeldonsCane, Festival, \
+    FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
+    KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield
+from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \

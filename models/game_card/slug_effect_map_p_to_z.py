@@ -7,16 +7,15 @@ from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, CHARGE, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
-from models.effects.resolvers_card_specific import TowerOfCoireall, RockHydraCast, Sandstorm, StormSeeker, Tracker, \
-    Typhoon, RagMan, Visions, WheelOfFortune, PhantasmalTerrain, PrimalClay, \
-    VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, UrborgLoseFirstStrike, UrborgLoseSwampwalk, \
-    StreamOfLife, UrzasTrio, TimeElementalBounce, SyphonSoul, \
-    TriassicEgg, Piety, ShieldWall, SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncherCast, \
-    RocketLauncherAA, SacrificeOnCast, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, \
+from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
+    RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
+    PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
+    UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEgg, Piety, \
+    ShieldWall, SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncherCast, RocketLauncherAA, \
+    SacrificeOnCast, SafeHaven, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
-    WindsOfChange, WinterBlast, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, Twiddle, \
-    VenarianGoldHostStaysTapped, Scarecrow, ReversePolarity, Simulacrum, Telekinesis, TangleKelp, WoodElemental, \
-    SafeHaven, UntamedWilds
+    WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
+    Twiddle, VenarianGoldHostStaysTapped, Scarecrow
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, AddCountersYourTurnOnly, AddCounterPerCreatureDeath, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
