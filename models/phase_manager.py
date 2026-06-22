@@ -64,7 +64,6 @@ class UntapPhase(PhaseState):
             if not c.is_tapped or c.id_ in gs.turn_mgr.untap_decisions_made:
                 continue
             if gs.perm_querier.can_untap(c):
-                gs.event_mgr.emit(UntapCardEvent(c), gs)
                 c.untap()
 
     def get_actions(self, p_id: int, gs: GameState):
