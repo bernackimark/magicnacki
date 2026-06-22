@@ -28,7 +28,8 @@ from ..effects.listeners_card_specific import PestilenceEndStep, SeasonOfTheWitc
     PsychicAllergySac, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, Revelation, StanggOnLeave, \
     VerduranEnchantress, TheWretchedUnsteal, WhirlingDervish, TimeVaultOption, TheFallen, PsychicAllergyDamage, \
-    RasputinDreamweaverUntap, RasputinDreamweaverUpkeep, SafeHavenUpkeep, TawnossCoffinUntap, TawnossCoffinZoneChange
+    RasputinDreamweaverUntap, RasputinDreamweaverUpkeep, SafeHavenUpkeep, TawnossCoffinUntap, TawnossCoffinZoneChange, \
+    Stasis, XenicPoltergeistRelease
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
@@ -44,7 +45,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
 from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
-    SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk
+    SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, ZoneChangeEvent, \
     BlockEvent, DiscardEvent, DamageProposedEvent, CanUntapQueryEvent
@@ -206,6 +207,7 @@ MAP: dict[str, list[EffSpec]] = {
                         for c in COLOR_LETTERS],
     'stangg': [Triggered(CreateTokenCreature('stangg-twin'), None, CastResolvedEvent),
                Triggered(StanggOnLeave(), None, ZoneChangeEvent)],
+    'stasis': [Triggered(PayManaOrSac('U'), None, UpkeepEvent), Triggered(Stasis(), None, UntapPhaseEvent)],
     'steal-artifact': [Triggered(Steal(), T_FUNCS['opp_artifacts'], CastResolvedEvent),
                        Triggered(ReturnToOwnerOnLTB(), None, ZoneChangeEvent)],
     'stone-calendar': [Static(StoneCalendar())],
@@ -372,7 +374,7 @@ MAP: dict[str, list[EffSpec]] = {
     'winds-of-change': [Triggered(WindsOfChange(), None, CastResolvedEvent)],
     'winter-blast': [Triggered(WinterBlast(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None),
                                CastResolvedEvent, max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XG'))],
-    'winter-orb': [Triggered(WinterOrb(), None, CanUntapQueryEvent)],
+    'winter-orb': [Static(WinterOrb())],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures'])],
     'wood-elemental': [Triggered(WoodElemental(), None, CastResolvedEvent)],
@@ -386,5 +388,7 @@ MAP: dict[str, list[EffSpec]] = {
     'xira-arien': [Activated('BRGT', DrawCards(3), T_FUNCS['all_players'])],
     'yawgmoth-demon': [Triggered(YawgmothDemon(), None, UpkeepEvent)],
     'ydwen-efreet': [Triggered(YdwenEfreet(), None, BlockEvent)],
+    'xenic-poltergeist': [Activated('T', AddCreatureTypePTManaValue(), T_FUNCS['non_creature_artifacts']),
+                          Triggered(XenicPoltergeistRelease(), None, UpkeepEvent)],
     'zombie-master': [Static(ZombieMasterWalk())],  # TODO: giving other zombies an activated ability
 }

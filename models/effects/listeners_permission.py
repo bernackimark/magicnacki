@@ -362,5 +362,5 @@ class WinterOrb(Listener):
             return
         # TODO: this should probably enter a flow where user can declare which one card they want to untap
         events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
-        if [e for e in events if 'Land' in e.card.card_types]:
+        if [e for e in events if e.card.is_land]:
             event.permission = False

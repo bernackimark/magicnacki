@@ -319,6 +319,14 @@ class RasputinDreamweaverUntap(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
         source.extras['started_turn_untapped'] = not source.is_tapped
 
+class Stasis(Listener):
+    """Players skip their untap steps ... """
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        from models.phase_manager import Phase
+        gs.phase_mgr.set_phase(Phase.UPKEEP, gs)
+
 class TimeVaultOption(Listener):
     """If you would begin your turn while this artifact is tapped, you may skip that turn instead."""
     listens_to = UntapPhaseEvent
@@ -737,6 +745,16 @@ class VesuvanDoppelgangerUpkeep(Listener):
             return
         gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False)
 
+class XenicPoltergeistRelease(Listener):
+    """{T}: Until your NEXT upkeep, target noncreature artifact becomes an artifact creature with PT each = its MV.
+    This effect removes the registered listener at the next upkeep"""
+    # TODO: This effect unregisterer should persist even if Xenic Poltergeist leaves battlefield
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+        gs.event_mgr.unregister_effects(source)
 
 class YawgmothDemon(Listener):
     """At your upkeep, Sac an artifact, or tap this creature, and it deals 2 damage to you"""
