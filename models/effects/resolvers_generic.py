@@ -154,13 +154,6 @@ class DestroyAll(Resolver):
         for c in self.card_filter_func(gs, s):
             gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
 
-
-class DestroyIfItAttacked(Resolver):
-    """Destroy creature if it attacked this turn."""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        for t in gs.card_filter.attackers().result():
-            gs.pile_mgr.destroy(t)
-
 class ExileAllCreatures(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for c in gs.card_filter.in_play().creatures().result():

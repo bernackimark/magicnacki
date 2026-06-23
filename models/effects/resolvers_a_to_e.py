@@ -7,10 +7,11 @@ from models.actions.tap_untap import LeaveTapped
 from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, CopyCardChoice, AttachToChoice
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
-from models.effects.listeners_generic import SkipUntaps
+from models.effects.listeners_generic import SkipUntaps, DestroyAtEndStepIfItAttacked
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
+from models.phase_manager import Phase
 from models.utils import flip
 from models.zone import Zone
 
@@ -19,6 +20,18 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
+class Banshee(Resolver):
+    """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        if not t:
+            raise ValueError(f'{s.props.name} needs a target')
+        x = s.extras.get('x', 0)
+        damage_to_target = x // 2
+        damage_to_you = x - damage_to_target
+        gs.apply_damage(s, damage_to_target, t)
+        gs.apply_damage(s, damage_to_you, s.owner_id)
+        del s.extras['x']
+
 class BarlsCage(Resolver):
     """Target creature doesn't untap during its controller's NEXT untap step; registers a listener"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
@@ -26,17 +39,19 @@ class BarlsCage(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(SkipUntaps(target), source)
 
+class Berserk(Resolver):
+    """Cast this spell only before the combat damage step.
+    Target creature gains trample and gets +X/+0 until end of turn, where X is its power.
+    At end step, destroy that creature if it attacked this turn."""
+    def can_cast(self, gs: GameState, source: GameCard) -> bool:
+        return gs.phase_mgr.phase < Phase.COMBAT_DAMAGE
 
-class Disharmony(Resolver):
-    """Cast this spell only during combat before blockers are declared.
-    Untap target attacking creature and remove it from combat. Gain control of that creature until end of turn."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        if target is None:
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
+        if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.untap()
-        gs.combat_mgr.remove_from_combat(target)
-        target.modifiers.append(OwnershipMod(source.owner_id, s=source, expires='EOT'))
-
+        target.modifiers.append(PTMod(s=source, p_adj=int(target.power) * 2, expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+        gs.event_mgr.register(DestroyAtEndStepIfItAttacked(target), source)
 
 class CityOfShadowsAA1(Resolver):
     """{T}, Exile a creature you control: Put a storage counter on this land"""
@@ -56,19 +71,15 @@ class CocoonCast(Resolver):
         target.tap()
         source.counters.add_counter(PUPA, 3)
 
-
-class Banshee(Resolver):
-    """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        if not t:
-            raise ValueError(f'{s.props.name} needs a target')
-        x = s.extras.get('x', 0)
-        damage_to_target = x // 2
-        damage_to_you = x - damage_to_target
-        gs.apply_damage(s, damage_to_target, t)
-        gs.apply_damage(s, damage_to_you, s.owner_id)
-        del s.extras['x']
-
+class Disharmony(Resolver):
+    """Cast this spell only during combat before blockers are declared.
+    Untap target attacking creature and remove it from combat. Gain control of that creature until end of turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.untap()
+        gs.combat_mgr.remove_from_combat(target)
+        target.modifiers.append(OwnershipMod(source.owner_id, s=source, expires='EOT'))
 
 class Earthquake(Resolver):
     """Earthquake deals X damage to each creature without flying and each player"""
@@ -225,18 +236,6 @@ class ArmyOfAllah(Resolver):
     """Attacking creatures get +2/0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.event_mgr.register(ArmyOfAllahEOT(), source)
-
-
-class BerserkPump(Resolver):
-    """Cast this spell only before the combat damage step.
-    Target creature gains trample and gets +X/+0 until end of turn, where X is its power.
-    At the beginning of the next end step, destroy that creature if it attacked this turn."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        target.modifiers.append(PTMod(s=source, p_adj=int(target.power) * 2, expires='EOT'))
-        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
-
 
 class BloodLust(Resolver):
     """Target creature gains +4/-4 until end of turn. If this reduces creature's toughness < 1, toughness = 1."""

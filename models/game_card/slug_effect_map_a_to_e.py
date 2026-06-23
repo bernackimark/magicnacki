@@ -8,18 +8,18 @@ from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, CHARGE
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec
 from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, CityOfShadowsAA2, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
-    DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, BerserkPump, BloodLust, \
+    DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, Berserk, BloodLust, \
     BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     CocoonUpkeep, Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
     CocoonHostStaysTapped, EnchantmentAlteration
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     ManaBatteriesAddMana, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
-    DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, DestroyIfItAttacked, \
+    DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat
 from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY_ADD_CHARGE, \
-    untap_for_mana_at_owner_upkeep, is_tapped
+    untap_for_mana_at_owner_upkeep
 from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, AliFromCairo, Blight, \
     CityOfBrassDamageOnTap, BlackVise, \
     CosmicHorror, CurseArtifact, Cyclone, DemonicHordesUpkeep, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, \
@@ -111,17 +111,13 @@ MAP: dict[str, list[EffSpec]] = {
     'bayou': dual_land_activated_ability_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
     'beasts-of-bogardan': [Static(BeastsOfBogardan())],
-    'berserk': [Triggered(BerserkPump(), T_FUNCS['creatures'], CastResolvedEvent,
-                          allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE]),
-                Triggered(DestroyIfItAttacked(), T_FUNCS['creatures'], EndStepEvent)],
-    # warning: I don't think this target func is correct; it needs to know the target previously selected
+    'berserk': [Triggered(Berserk(), T_FUNCS['creatures'])],
     'birds-of-paradise': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'black-lotus': [Activated('T', AddMana(c, 3), extra_costs=[SacSelfCost], text=f'Add {{3{c}}}')
                     for c in COLOR_LETTERS],
     'black-mana-battery': [MANA_BATTERY_ADD_CHARGE,
                            Activated('T', ManaBatteriesAddMana('B'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_x_func=lambda gs, s:
-                                     T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+                                     max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
     'black-vise': [Triggered(BlackVise())],
     'black-ward': [Triggered(KWAModEffect('add', 'Protection From Black'),
                              T_FUNCS['creatures'], CastResolvedEvent)],
