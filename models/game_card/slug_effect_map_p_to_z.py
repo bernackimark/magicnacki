@@ -20,7 +20,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, AddCountersYourTurnOnly, AddCounterPerCreatureDeath, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
-    PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, PayManaOrSac, Regenerate, DrawCards, \
+    PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, HostStaysTapped, StaysTapped, DeclareAColor
 from ..effects.listeners_card_specific import PestilenceEndStep, SeasonOfTheWitchEndStep, \
@@ -41,18 +41,16 @@ from ..effects.listeners_combat import CockatriceAndThicketBasilisk, Sentinel, V
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
-    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers
+    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep
 from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
-from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    DamageResolvedEvent, TapCardEvent, UntapCardEvent, StateBasedEvent, DiesEvent, ZoneChangeEvent, \
-    BlockEvent, DiscardEvent, DamageProposedEvent, CanUntapQueryEvent
+from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, UpkeepEvent, BlockEvent
 from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
-    'palladia-mors': [Triggered(PayManaOrSac('RGW'), None, UpkeepEvent)],
+    'palladia-mors': [Triggered(PayManaOrSacAtUpkeep('RGW'))],
     'paralyze': [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
                  Triggered(HostStaysTapped(), T_FUNCS['host'], UntapPhaseEvent),
                  untap_host_for_mana_at_opp_upkeep('4')],
@@ -64,7 +62,7 @@ MAP: dict[str, list[EffSpec]] = {
     'people-of-the-woods': [Static(PeopleOfTheWoodsPT())],
     'personal-incarnation': [Triggered(PersonalIncarnation())],  # more to code
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
-    'phantasmal-forces': [Triggered(PayManaOrSac('U'), None, UpkeepEvent)],
+    'phantasmal-forces': [Triggered(PayManaOrSacAtUpkeep('U'))],
     'phantasmal-terrain': [Triggered(PhantasmalTerrain(land_type), T_FUNCS['lands'], CastResolvedEvent,
                                      text=f'convert to {land_type}')
                            for land_type in {'Swamp', 'Island', 'Forest', 'Mountain', 'Plains'}],
@@ -195,7 +193,7 @@ MAP: dict[str, list[EffSpec]] = {
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
                         for c in COLOR_LETTERS],
     'stangg': [Triggered(CreateTokenCreature('stangg-twin'), None, CastResolvedEvent), Triggered(StanggOnLeave())],
-    'stasis': [Triggered(PayManaOrSac('U'), None, UpkeepEvent), Triggered(Stasis(), None, UntapPhaseEvent)],
+    'stasis': [Triggered(PayManaOrSacAtUpkeep('U')), Triggered(Stasis())],
     'steal-artifact': [Triggered(Steal(), T_FUNCS['opp_artifacts'], CastResolvedEvent),
                        Triggered(ReturnToOwnerOnLTB())],
     'stone-calendar': [Static(StoneCalendar())],
@@ -210,7 +208,7 @@ MAP: dict[str, list[EffSpec]] = {
     'su-chi': [Triggered(SuChi())],
     'subdue': [Triggered(Subdue(), T_FUNCS['creatures'], CastResolvedEvent)],
     'sunastian-falconer': [Activated('T', AddMana('C', 2))],
-    'sunken-city': [Static(SunkenCity()), Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],
+    'sunken-city': [Static(SunkenCity()), Triggered(PayManaOrSacAtUpkeep('UU'))],
     'swords-to-plowshares': [Triggered(SwordsToPlowshares(), T_FUNCS['creatures'], CastResolvedEvent)],
     'sylvan-paradise': [Triggered(SetColor('G', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None),
                                   CastResolvedEvent)],
@@ -299,7 +297,7 @@ MAP: dict[str, list[EffSpec]] = {
     'urzas-power-plant': [Activated('T', UrzasTrio())],
     'urzas-tower': [Activated('T', UrzasTrio())],
     'uthden-troll': [Activated('R', Regenerate(), T_FUNCS['self'])],
-    'vaevictis-asmadi': [Triggered(PayManaOrSac('BRG'), None, UpkeepEvent),
+    'vaevictis-asmadi': [Triggered(PayManaOrSacAtUpkeep('BRG')),
                          Activated('B', Pump(1, 0, True), T_FUNCS['self']),
                          Activated('R', Pump(1, 0, True), T_FUNCS['self']),
                          Activated('G', Pump(1, 0, True), T_FUNCS['self'])],

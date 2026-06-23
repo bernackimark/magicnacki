@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import PayOneColorlessForOneLifeChoice, UntapChoice
+from models.choice_actions_all import PayOneColorlessForOneLifeChoice, UntapChoice, PayManaOrSacUpkeepChoice
 from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
@@ -367,6 +367,14 @@ class DealDamageOnHostUpkeep(Listener):
             return
         gs.apply_damage(source, self.amount, source.host.owner_id)
 
+class PayManaOrSacAtUpkeep(Listener):
+    listens_to = UpkeepEvent
+
+    def __init__(self, mana_cost: str):
+        self.mana_cost = mana_cost
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        gs.action_stack.push(PayManaOrSacUpkeepChoice(source.owner_id, gs, source, self.mana_cost), gs, False)
 
 # --- ZONE CHANGE ---
 class ReturnToOwnerOnLTB(Listener):

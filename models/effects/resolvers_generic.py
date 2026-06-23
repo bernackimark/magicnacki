@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
 from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import PayManaOrSacUpkeepChoice, DiscardChoice, UntapWithManaChoice, DeclareColorChoice
+from models.choice_actions_all import DiscardChoice, UntapWithManaChoice, DeclareColorChoice
 from models.constants import COLOR_LETTERS_W_COLORLESS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE
 from models.effects.base import Resolver
@@ -256,13 +256,6 @@ class XZeroOneCountersByManaValue(Resolver):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         target.counters.add_counter(PLUS_ZERO_ONE, target.props.mana_value)
-
-class PayManaOrSac(Resolver):
-    def __init__(self, mana_cost: str):
-        self.mana_cost = mana_cost
-
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        gs.action_stack.push(PayManaOrSacUpkeepChoice(source.owner_id, gs, source, self.mana_cost), gs, False)
 
 
 class Regenerate(Resolver):

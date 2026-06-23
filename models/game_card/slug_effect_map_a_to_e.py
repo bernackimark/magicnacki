@@ -15,7 +15,7 @@ from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, 
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     ManaBatteriesAddMana, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, DestroyIfItAttacked, \
-    PayManaOrSac, Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
+    Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     StaysTapped, PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat
 from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY_ADD_CHARGE, \
@@ -32,7 +32,7 @@ from ..effects.listeners_combat import CavePeopleAttackPump, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, AislingLeprechaun, Arboria
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
-    DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures
+    DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottle, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
@@ -77,7 +77,7 @@ MAP: dict[str, list[EffSpec]] = {
                         Static(HostCantBeTargetedByAuras())],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'arboria': [Static(Arboria())],
-    'arcades-sabboth': [Triggered(PayManaOrSac('GWU'), None, UpkeepEvent), Static(ArcadesSabbathAllCreaturePump()),
+    'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), Static(ArcadesSabbathAllCreaturePump()),
                         Activated('W', Pump(0, 1, True), T_FUNCS['self'])],
     'arena-of-the-ancients': [Triggered(ArenaOfTheAncientsCast(), None, CastResolvedEvent),
                               Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['legendary_creatures']))],
@@ -159,7 +159,7 @@ MAP: dict[str, list[EffSpec]] = {
     'chaos-orb': [Activated('1T', ChaosOrb(), T_FUNCS['opp_non_token_perms'], extra_costs=[SacSelfCost()],
                             text='If random di roll is 1-4, destroy target')],
     'chaoslace': [Triggered(SetColor('R'), T_FUNCS['cards'], CastResolvedEvent)],
-    'chromium': [Triggered(PayManaOrSac('WUB'), None, UpkeepEvent)],
+    'chromium': [Triggered(PayManaOrSacAtUpkeep('WUB'))],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts'])],
     'circle-of-protection-black': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['black'])],
     'circle-of-protection-blue': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['blue'])],
@@ -201,7 +201,7 @@ MAP: dict[str, list[EffSpec]] = {
                         Static(HostCantBeTargetedByAuras())],
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
     'control-magic': [Triggered(Steal(), T_FUNCS['opp_creatures'], CastResolvedEvent), Triggered(ReturnToOwnerOnLTB())],
-    'conversion': [Triggered(PayManaOrSac('WW'), None, UpkeepEvent), Static(Conversion())],
+    'conversion': [Triggered(PayManaOrSacAtUpkeep('WW')), Static(Conversion())],
     'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
     'copy-artifact': [Triggered(CopyArtifact(), None, CastResolvedEvent)],
     'coral-helm': [Activated('3', Pump(2, 2, True), T_FUNCS['creatures'],
@@ -221,7 +221,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cyclopean-mummy': [Triggered(CyclopeanMummy())],
     'dakkon-blackblade': [Static(DakkonBlackbladePT())],
     'damping-field': [Triggered(DampingField())],
-    'dance-of-many': [Triggered(PayManaOrSac('UU'), None, UpkeepEvent)],  # the rest of the card still needs coding
+    'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU'))],  # the rest of the card still needs coding
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests'])])],
     'dark-ritual': [Triggered(AddMana('B', 3), None, CastResolvedEvent)],
     'dark-sphere': [Activated('T', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts'],

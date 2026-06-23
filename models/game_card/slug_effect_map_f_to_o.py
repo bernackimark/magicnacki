@@ -20,7 +20,7 @@ from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
-    PreventAllCombatDamageThisTurn, Destroy, DestroyAll, PayManaOrSac, Regenerate, SacAll, DrawCards, \
+    PreventAllCombatDamageThisTurn, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, StaysTapped, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
@@ -45,7 +45,7 @@ from ..effects.listeners_dies import Onulet
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, CardsDontUntapAtUntapPhase, OptionalUntap, \
-    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn
+    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -82,7 +82,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fog': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'force-of-nature': [Triggered(ForceOfNatureUpkeep())],
     'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
-    'forethought-amulet': [Triggered(PayManaOrSac('3'), None, UpkeepEvent)],  # more to code
+    'forethought-amulet': [Triggered(PayManaOrSacAtUpkeep('3'))],  # more to code
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
     'frozen-shade': [Activated('B', Pump(1, 1, True), T_FUNCS['self'])],
     'fungusaur': [Triggered(FungusaurOnDamage())],
@@ -204,7 +204,7 @@ MAP: dict[str: list[EffSpec]] = {
     'juggernaut': [Static(JuggernautUnblockableByWalls())],
     'jump':
         [Triggered(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'], CastResolvedEvent)],
-    'junún-efreet': [Triggered(PayManaOrSac('BB'), None, UpkeepEvent)],
+    'junún-efreet': [Triggered(PayManaOrSacAtUpkeep('BB'))],
     'juzám-djinn': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'])],
     'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures'])],
     'karma': [Triggered(Karma())],
@@ -304,7 +304,7 @@ MAP: dict[str: list[EffSpec]] = {
     'nevinyrrals-disk': [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
                          Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments']))],
     'niall-silvain': [Activated('GGGGT', Regenerate(), T_FUNCS['creatures'])],
-    'nicol-bolas': [Triggered(PayManaOrSac('UBR'), None, UpkeepEvent), Triggered(NicolBolas())],
+    'nicol-bolas': [Triggered(PayManaOrSacAtUpkeep('UBR')), Triggered(NicolBolas())],
     'nightmare': [Static(NightmarePT())],
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents'])],
     'oasis': [Activated('T', PreventNextDamageBy(1), T_FUNCS['creatures'])],
