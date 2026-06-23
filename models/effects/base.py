@@ -157,7 +157,7 @@ class ActivatedAbility:
             return False
         if self.eff_spec.conditions:
             for cond in self.eff_spec.conditions:
-                if not cond(self.source):
+                if not cond(gs, self.source):
                     print('G')
                     return False
         return all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs)

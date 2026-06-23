@@ -303,7 +303,6 @@ class KoboldDrillSergeant(Resolver):
                 k.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample'))
                 k.modifiers.append(PTMod(s=source, p_adj=0, t_adj=1))
 
-
 class KryShield(Resolver):
     """Prevent all damage that would be dealt this turn by target creature you control.
     That creature gets +0/+X until end of turn, where X is its mana value"""

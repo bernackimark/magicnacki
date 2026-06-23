@@ -16,6 +16,7 @@ from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, 
     DestroyAtEndStep, PreventNextDamageByEOT
 from models.effects.listeners_mod_queries import PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.effects.listeners_permission import TowerOfCoireallEOT
+from models.effects.resolvers_generic import Reveal
 from models.modifiers import SubTypeMod, KWAMod, PTMod
 from models.phase_manager import Phase
 from models.utils import flip
@@ -371,6 +372,14 @@ class Shapeshifter(Resolver):
             return
         gs.action_stack.push(ShapeshifterChoice(source.owner_id, gs, source), gs, False)
 
+class Sindbad(Resolver):
+    """{T}: Draw a card and reveal it. If it isn't a land, discard it."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        top_card = gs.pile_mgr.libraries[source.owner_id][0] if gs.pile_mgr.libraries[source.owner_id] else None
+        gs.pile_mgr.draw(source.owner_id)
+        Reveal().resolve(gs, source, top_card)
+        if not top_card.is_land:
+            gs.pile_mgr.discard(top_card, source)
 
 class StoneGiant(Resolver):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
@@ -387,13 +396,11 @@ class Subdue(Resolver):
         gs.event_mgr.register(PreventNextDamageByEOT(t, combat_only=True), s)
         t.modifiers.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
 
-
 class SwordsToPlowshares(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         if target:
             gs.pile_mgr.exile(target)  # which is correct?  exile_from_play() or exile()
             gs.score_mgr.increment_life(target.owner_id, target.power, source, gs)
-
 
 class SylvanLibrary(Resolver):
     """At your draw step, you may draw two additional cards.

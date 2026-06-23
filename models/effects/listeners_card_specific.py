@@ -13,7 +13,7 @@ from models.choice_actions_all import FloralSpuzzemChoice, CosmicHorrorUpkeepCho
     DemonicHordesUpkeepChoice, ElderSpawnUpkeepChoice, PayManaOrSacUpkeepChoice, ErhnamDjinnChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, LandTaxChoice, LordOfThePitUpkeepChoice, SacChoice, PsychicAllergyUpkeepChoice, \
     RogahhOfKherKeepUpkeepChoice, PayLifeOrSacChoice, CopyCardChoice, YawgmothDemonChoice, MoldDemonChoice, \
-    DrawCardsOrDontChoice, GabrielAngelfireChoice, GiantSlugChoice, FastingChoice
+    DrawCardsOrDontChoice, GabrielAngelfireChoice, GiantSlugChoice, FastingChoice, AttachToChoice
 from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND, DREAM, HUNGER
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
@@ -212,6 +212,24 @@ class CityOfBrassDamageOnTap(Listener):
             return
         gs.apply_damage(source, 1, source.owner_id)
 
+class Kudzu(Listener):
+    """When enchanted land becomes tapped, destroy it.
+    That land's controller must attach this Aura to a land of their choice. If they own no lands, destroy Kudzu."""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent) -> None:
+        if event.card is not s.host:
+            return
+        gs.pile_mgr.destroy(event.card)  # Note: this may cause the aura to be sent to the graveyard already
+        host_owner_lands = gs.card_filter.on_player_board(event.card.owner_id).lands().result()
+        if not host_owner_lands:
+            gs.pile_mgr.destroy(s)
+            return
+        if len(host_owner_lands) == 1:
+            s.host = host_owner_lands[0]
+            s.host.auras.append(s)
+            return
+        gs.pending_choice = gs.action_stack.push(AttachToChoice(s.host.owner_id, gs, s, s, host_owner_lands), gs, True)
 
 class Lifeblood(Listener):
     """Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""

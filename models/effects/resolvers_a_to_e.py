@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING, Optional
 
 from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, CopyCardChoice
+from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, CopyCardChoice, AttachToChoice
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import SkipUntaps
@@ -79,6 +79,18 @@ class Earthquake(Resolver):
         for p_id in (0, 1):
             gs.apply_damage(source, x, p_id)
 
+class EnchantmentAlteration(Resolver):
+    """Attach target Aura attached to a creature or land to another permanent of that type"""
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None) -> None:
+        if not target:
+            raise ValueError(f'{s.props.name} needs a target')
+        if target.host.is_creature:
+            available_hosts = [c for c in gs.card_filter.creatures().result() if c is not target.host]
+        elif target.host.is_land:
+            available_hosts = [c for c in gs.card_filter.lands().result() if c is not target.host]
+        else:
+            return
+        gs.pending_choice = gs.action_stack.push(AttachToChoice(s.owner_id, gs, s, target, available_hosts), gs, False)
 
 class EternalFlame(Resolver):
     """X = # of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""

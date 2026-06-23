@@ -7,6 +7,7 @@ from models.counter_tokens import CounterType, CHARGE, PLUS_ONE_ZERO, PLUS_ZERO_
 from models.effects.base import Resolver
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
+from models.utils import flip
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -296,6 +297,11 @@ class Discard(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         gs.pending_choice = DiscardChoice(target, gs, source, target)
 
+class Reveal(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.add_presentation_request(flip(target.owner_id), 'view_card', {'cards': [target]})
 
 class RevealLibrary(Resolver):
     def __init__(self, viewer_id: int | None = None, top_x: int | None = None):

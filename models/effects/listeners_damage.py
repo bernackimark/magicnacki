@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 from models.counter_tokens import PLUS_ONE, VITALITY
 from models.effects.base import Listener
-from models.events_all import DamageProposedEvent, DamageResolvedEvent
+from models.events_all import DamageProposedEvent, DamageResolvedEvent, Event
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -77,6 +77,19 @@ class ForcefieldPrevention(Listener):
             event.remaining = 1
 
         self.is_expired = True
+
+class ForethoughtAmulet(Listener):
+    """If an instant or sorcery source would deal 3 or more damage to you, it deals 2 damage to you instead"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not source.owner_id or event.remaining < 3:
+            return
+        if not event.source.is_instant and not event.source.is_sorcery:
+            return
+        prevention_amt = event.amt - (event.amt - 2)
+        event.prevented += prevention_amt
+        event.remaining -= prevention_amt
 
 class GaseousForm(Listener):
     """Prevent all combat damage that would be dealt this turn by enchanted creature and each creature blocking it."""

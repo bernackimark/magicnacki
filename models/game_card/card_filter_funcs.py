@@ -28,7 +28,10 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'artifacts_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).artifacts().result(),
     'assembly_workers': lambda gs, s: gs.card_filter.in_play().by_sub_type('Assembly-Worker').result(),
     'attackers': lambda gs, s: gs.card_filter.attackers().result(),
+    'auras_on_creatures': lambda gs, s: [a for c in gs.card_filter.in_play().creatures().result() for a in c.auras],
     'auras_on_lands': lambda gs, s: [a for c in gs.card_filter.in_play().lands().result() for a in c.auras],
+    'auras_on_creatures_or_lands': lambda gs, s: [a for c in gs.card_filter.in_play().creatures().result() for a in c.auras] + \
+        [a for c in gs.card_filter.in_play().lands().result() for a in c.auras],
     'auras_on_owners_creatures': lambda gs, s: [a for c in gs.card_filter.on_player_board(s.owner_id).creatures().result()
                                                 for a in c.auras],
     'black': lambda gs, s: gs.card_filter.in_play().black().result(),

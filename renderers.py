@@ -46,6 +46,10 @@ class ConsoleRenderer(Renderer):
 
     @staticmethod
     def render_presentation_request(req: PresentationRequest):
+        if req.type_ == 'view_card':
+            print("Viewing card:")
+            for c in req.payload['cards']:
+                print(c)
         if req.type_ == 'view_library':
             print("Viewing library:")
             for c in req.payload['cards']:

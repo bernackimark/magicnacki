@@ -27,7 +27,7 @@ from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
     HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep, SelectXAction, \
-    RogahhOfKherKeepTapAndStealAction
+    RogahhOfKherKeepTapAndStealAction, Attach
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -64,6 +64,16 @@ class AddManaOfColorChoice(ChoiceAction):
 
     def get_actions(self) -> list[Action]:
         return [AddMana(self.player_idx, self.gs, self.source, color, self.amt) for color in self.possible_colors]
+
+class AttachToChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, aura: GameCard, available_targets: list[GameCard]):
+        super().__init__(p_id, gs, source)
+        self.aura = aura
+        self.available_targets = available_targets
+
+    def get_actions(self) -> list[Action]:
+        return [Attach(self.player_idx, self.gs, self.aura, host) for host in self.available_targets]
+
 
 class CopyCardChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, card_options: list[GameCard],

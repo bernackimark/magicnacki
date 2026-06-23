@@ -3,6 +3,7 @@ from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
+    from game_state import GameState
 
 from models.counter_tokens import CounterType, CHARGE
 from models.effects.base import EffSpec, Activated
@@ -31,6 +32,9 @@ def is_tapped(s: GameCard) -> bool:
 
 def has_ge_x_counters(card_func: Callable, counter_type: CounterType, min_cnt: int) -> bool:
     ...
+
+def has_seven_cards_in_hand(gs: GameState, s: GameCard) -> bool:
+    return len(gs.pile_mgr.hands[s.owner_id].cards) == 7
 
 
 MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])

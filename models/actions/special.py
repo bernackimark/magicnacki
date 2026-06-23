@@ -18,6 +18,23 @@ if TYPE_CHECKING:
 
 from models.actions.base import Action
 
+class Attach(Action):
+    def __init__(self, p_id: int, gs: GameState, aura: GameCard, host: GameCard):
+        super().__init__(p_id, gs)
+        self.aura = aura
+        self.host = host
+
+    def __repr__(self):
+        return f'Attach {self.aura} to {self.host}'
+
+    def play(self) -> None:
+        self.aura.host = self.host
+        self.host.auras.append(self.aura)
+        if self.gs.pending_choice:
+            self.gs.pending_choice = None
+        else:
+            self.gs.action_stack.pop()
+
 class CopyCard(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard,
                  addtional_types: list[str] = None, copy_color: bool = True):

@@ -15,7 +15,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, VenarianGoldHostStaysTapped, Scarecrow
+    Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Sindbad
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
     ManaBatteriesAddMana, RemoveCountersOnHostTurn, AddCountersYourTurnOnly, AddCounterPerCreatureDeath, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
@@ -174,6 +174,7 @@ MAP: dict[str, list[EffSpec]] = {
     'shivan-dragon': [Activated('R', Pump(1, 0, True), T_FUNCS['self'])],
     'silhouette': [Triggered(PreventAllNoncombatDamageToThisTurn(), T_FUNCS['creatures'])],
     'simulacrum': [Triggered(Simulacrum(), None, CastResolvedEvent)],
+    'sindbad': [Activated('T', Sindbad())],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
     'sinkhole': [Triggered(Destroy(), T_FUNCS['lands'], CastResolvedEvent)],
     'sirens-call': [Static(SirensCallCanCast()),  # this doesn't feel right

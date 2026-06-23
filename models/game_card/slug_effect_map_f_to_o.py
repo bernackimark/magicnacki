@@ -29,17 +29,17 @@ from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, 
     StateBasedEvent
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
-from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE
+from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, has_seven_cards_in_hand
 from ..effects.listeners_card_specific import GoblinsOfTheFlarg, Lifeblood, \
     Lifetap, FloralSpuzzem, MerchantShip, MurkDwellers, ForceOfNatureUpkeep, GhazbanOgre, IvoryTower, Karma, LandTax, \
     LordOfThePitUpkeep, ManaVortexUpkeep, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, \
     InfiniteAuthorityEndStep, GabrielAngelfire, GiantSlug, HazezonTamarTokenCreation, HazezonTamarLTB, \
-    GoblinRockSledUntap, IchneumonDruid, JihadSac, Fasting
+    GoblinRockSledUntap, IchneumonDruid, JihadSac, Fasting, Kudzu
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack
 from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, MarblePriestPrevention, MartyrsOfKorlis, \
-    FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas
+    FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet
 from ..effects.listeners_dies import Onulet
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
@@ -82,7 +82,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fog': [Triggered(PreventAllCombatDamageThisTurn(), None, CastResolvedEvent)],
     'force-of-nature': [Triggered(ForceOfNatureUpkeep())],
     'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
-    'forethought-amulet': [Triggered(PayManaOrSacAtUpkeep('3'))],  # more to code
+    'forethought-amulet': [Triggered(PayManaOrSacAtUpkeep('3')), Static(ForethoughtAmulet())],
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
     'frozen-shade': [Activated('B', Pump(1, 1, True), T_FUNCS['self'])],
     'fungusaur': [Triggered(FungusaurOnDamage())],
@@ -219,6 +219,7 @@ MAP: dict[str: list[EffSpec]] = {
     'kobold-taskmaster': [Static(KoboldTaskmaster())],
     'kormus-bell': [Static(KormusBell())],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures'])],
+    'kudzu': [Triggered(Kudzu()), Triggered(None, T_FUNCS['lands'], CastResolvedEvent)],
     'lady-caleria': [Activated('T', DealDamage(3), T_FUNCS['combatants'])],
     'lady-evangela': [Activated('WBT', PreventAllDamageBy(combat_only=True), T_FUNCS['creatures'],
                                 CastResolvedEvent)],
@@ -238,6 +239,8 @@ MAP: dict[str: list[EffSpec]] = {
          Activated(None, KWAModEffect('add', 'Attack'), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
                    allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_player_turn=T_FUNCS['card_owner'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
+    'library-of-alexandria': [Activated('T', AddMana('C')),
+                              Activated('T', DrawCards(), conditions=[lambda gs, s: has_seven_cards_in_hand(gs, s)])],
     'lifeblood': [Triggered(Lifeblood())],
     'lifelace': [Triggered(SetColor('G'), T_FUNCS['cards'], CastResolvedEvent)],
     'lifetap': [Triggered(Lifetap(), None, TapCardEvent)],

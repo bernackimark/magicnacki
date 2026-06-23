@@ -11,7 +11,7 @@ from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, 
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, BerserkPump, BloodLust, \
     BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     CocoonUpkeep, Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    CocoonHostStaysTapped
+    CocoonHostStaysTapped, EnchantmentAlteration
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     ManaBatteriesAddMana, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, DestroyIfItAttacked, \
@@ -281,6 +281,8 @@ MAP: dict[str, list[EffSpec]] = {
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
     'enchanted-being': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'])],
+    'enchantment-alteration': [Triggered(EnchantmentAlteration(), T_FUNCS['auras_on_creatures_or_lands'],
+                                         CastResolvedEvent)],
     'energy-flux': [Triggered(EnergyFlux())],
     'energy-tap': [Triggered(EnergyTap(), T_FUNCS['your_untapped_creatures'], CastResolvedEvent)],
     'erg-raiders': [Triggered(ErgRaiders())],
