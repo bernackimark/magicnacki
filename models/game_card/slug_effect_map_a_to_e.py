@@ -268,8 +268,7 @@ MAP: dict[str, list[EffSpec]] = {
                     # TODO: all allowed_p_id_turn needs a better solution
     'earthbind': [Triggered(Earthbind(), T_FUNCS['creatures'], CastResolvedEvent)],
     'earthquake': [Triggered(Earthquake(), None, CastResolvedEvent)],
-    'eater-of-the-dead':
-        [Activated('', EaterOfTheDead(), T_FUNCS['creatures_in_all_graveyards'], conditions=[is_tapped])],
+    'eater-of-the-dead': [Activated('', EaterOfTheDead(), T_FUNCS['creatures_in_all_graveyards'])],
     'ebony-horse': [Activated('2T', RemoveFromCombat(), T_FUNCS['attackers'])],
     'el-hajjâj': [Triggered(ElHajjaj(), T_FUNCS['self'])],
     'elder-land-wurm': [Triggered(ElderLandWurm())],

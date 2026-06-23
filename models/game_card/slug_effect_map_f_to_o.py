@@ -16,7 +16,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
-    FireAndBrimstone
+    FireAndBrimstone, LibraryOfAlexandria
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
@@ -29,7 +29,7 @@ from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, 
     StateBasedEvent
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
-from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, has_seven_cards_in_hand
+from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE
 from ..effects.listeners_card_specific import GoblinsOfTheFlarg, Lifeblood, \
     Lifetap, FloralSpuzzem, MerchantShip, MurkDwellers, ForceOfNatureUpkeep, GhazbanOgre, IvoryTower, Karma, LandTax, \
     LordOfThePitUpkeep, ManaVortexUpkeep, FieldOfDreams, GoblinShrineOnLeave, Kismet, LandEquilibrium, MoldDemonETB, \
@@ -240,7 +240,7 @@ MAP: dict[str: list[EffSpec]] = {
                    allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_player_turn=T_FUNCS['card_owner'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
     'library-of-alexandria': [Activated('T', AddMana('C')),
-                              Activated('T', DrawCards(), conditions=[lambda gs, s: has_seven_cards_in_hand(gs, s)])],
+                              Activated('T', LibraryOfAlexandria())],
     'lifeblood': [Triggered(Lifeblood())],
     'lifelace': [Triggered(SetColor('G'), T_FUNCS['cards'], CastResolvedEvent)],
     'lifetap': [Triggered(Lifetap(), None, TapCardEvent)],

@@ -129,6 +129,9 @@ class DustToDust(Resolver):
 
 class EaterOfTheDead(Resolver):
     """Exile target creature card from a graveyard and untap this creature"""
+    def can_activate(self, _: GameState, source: GameCard):
+        return source.is_tapped
+
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')

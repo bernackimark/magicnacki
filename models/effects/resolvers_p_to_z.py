@@ -9,7 +9,7 @@ from models.actions.tap_untap import LeaveTapped
 from models.choice_actions_all import SearchLibraryChoice, ShuffleOrDontChoice, PrimalClayChoice, CopyCardChoice, \
     TriassicEggChoice, SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice, \
     WoodElementalChoice
-from models.counter_tokens import PLUS_ONE, SLEEP
+from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, PreventNextDamageToCardEOT, \
@@ -80,9 +80,11 @@ class RapidFire(Resolver):
 
 class Reset(Resolver):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
+    @staticmethod
+    def can_cast(gs: GameState, source: GameCard) -> bool:
+        return gs.turn_mgr.player_turn_idx != source.owner_id and gs.phase_mgr.phase > Phase.UPKEEP
+
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.phase_mgr.phase == Phase.UPKEEP or gs.turn_mgr.player_turn_idx == source.owner_id:
-            return
         for land in gs.card_filter.on_player_board(source.owner_id).lands().untapped().result():
             land.untap()
 
@@ -197,9 +199,12 @@ class Tracker(Resolver):
         gs.apply_damage(target, target.power, source)
 
 class TriassicEgg(Resolver):
-    """Choose one:
+    """Choose one (activate only if there are two or more hatchling counters on this artifact.):
     * You may put a creature card from your hand onto the battlefield.
     * Return target creature card from your graveyard to the battlefield."""
+    def can_activate(self, _: GameState, source: GameCard) -> bool:
+        return source.counters.get_count(HATCHLING) >= 2
+
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
         gs.action_stack.push(TriassicEggChoice(source.owner_id, gs, source), gs, False)
 

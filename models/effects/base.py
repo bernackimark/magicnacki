@@ -28,9 +28,15 @@ class Effect(ABC):
     pass
 
 class Resolver(Effect):
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None) -> None:
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         """Perform an explicit game action (ex: deal 3 damage)"""
         raise NotImplementedError()
+
+    def can_cast(self, gs: GameState, source: GameCard) -> bool:
+        return True
+
+    def can_activate(self, gs: GameState, source: GameCard) -> bool:
+        return True
 
 class Listener(Effect):
     listens_to: type[Event] | None = None  # used by event listeners
@@ -71,7 +77,6 @@ class EffSpec:
     effect: Effect
     target_spec: Union[tuple[Callable, int, int | None], Callable, TargetSpec, None] = None
     trigger_event: type[Event] | None = None
-    conditions: list[Callable[[], bool], None] = field(default_factory=list)
     extra_costs: list[Cost | None] = None
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
@@ -143,6 +148,11 @@ class ActivatedAbility:
             self.eff_spec.allowed_p_id_turn = flip(self.source.owner_id)
 
     def can_activate(self, gs: GameState) -> bool:
+        # card-specific restriction
+        if hasattr(self.eff_spec, 'can_activate'):
+            if not self.eff_spec.can_activate(gs, self.source):
+                print("B")
+                return False
         if self.eff_spec.allowed_phases and gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
             print("C")
             return False
@@ -155,11 +165,6 @@ class ActivatedAbility:
         if self.eff_spec.activated_cnt_this_turn >= self.eff_spec.max_activations_per_turn:
             print("E")
             return False
-        if self.eff_spec.conditions:
-            for cond in self.eff_spec.conditions:
-                if not cond(gs, self.source):
-                    print('G')
-                    return False
         return all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs)
 
 @dataclass

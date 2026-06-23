@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .effect_spec_helpers import dual_land_activated_ability_specs, untap_host_for_mana_at_opp_upkeep, \
-    has_ge_x_counters, MANA_BATTERY_ADD_CHARGE
+    MANA_BATTERY_ADD_CHARGE
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
@@ -120,8 +120,7 @@ MAP: dict[str, list[EffSpec]] = {
     'regeneration': [Activated('G', Regenerate(), T_FUNCS['host'])],
     'regrowth': [Triggered(Bounce(), T_FUNCS['cards_in_your_graveyard'], CastResolvedEvent)],
     'relic-barrier': [Activated('T', TapCardEffect(), T_FUNCS['untapped_artifacts'])],
-    'reset': [Triggered(Reset(), None, CastResolvedEvent, conditions=[])],
-              # TODO: Cast this spell only during an opponent's turn after their upkeep step
+    'reset': [Triggered(Reset(), None, CastResolvedEvent)],
     'resurrection': [Triggered(Reanimate(), T_FUNCS['creatures_in_your_graveyard'], CastResolvedEvent)],
     'revelation': [Triggered(Revelation())],
     'reverse-damage': [Triggered(ReverseDamage(), T_FUNCS['cards'], CastResolvedEvent)],
@@ -266,8 +265,7 @@ MAP: dict[str, list[EffSpec]] = {
                    None, CastResolvedEvent)],
     'transmutation': [Triggered(Transmutation(), T_FUNCS['creatures'], CastResolvedEvent)],
     'triassic-egg': [Activated('3T', AddCounter(HATCHLING)),
-                     Activated('', TriassicEgg(), extra_costs=[SacSelfCost()],
-                               conditions=[has_ge_x_counters(T_FUNCS['self'], HATCHLING, 2)])],  # conditions needs to know who this card is
+                     Activated('', TriassicEgg(), extra_costs=[SacSelfCost()])],
     'triskelion': [Triggered(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'], CastResolvedEvent),
                    Activated('', DealDamage(1), T_FUNCS['all_creatures_and_players'],
                              extra_costs=[RemoveCounterCost(PLUS_ONE)])],

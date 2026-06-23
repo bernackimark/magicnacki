@@ -13,7 +13,7 @@ from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNext
     DestroyAtEndStep
 from models.effects.listeners_mod_queries import HellSwarmEOT, HolyLightEOT, MarshGasEOT, MoraleEOT
 from models.effects.listeners_permission import NoAttacksAllowedEOT
-from models.effects.resolvers_generic import GraveyardToExile
+from models.effects.resolvers_generic import GraveyardToExile, DrawCards
 from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
@@ -310,6 +310,13 @@ class KryShield(Resolver):
         gs.event_mgr.register(PreventNextDamageByEOT(t), s)
         t.modifiers.append(PTMod(s=s, t_adj=t.props.mana_value, expires='EOT'))
 
+class LibraryOfAlexandria(Resolver):
+    """{T}: Draw a card. Activate only if you have exactly seven cards in hand."""
+    def can_activate(self, gs: GameState, source: GameCard):
+        return len(gs.pile_mgr.hands[source.owner_id].cards) == 7
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        DrawCards().resolve(gs, source)
 
 class LivingArtifactUpkeep(Resolver):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
