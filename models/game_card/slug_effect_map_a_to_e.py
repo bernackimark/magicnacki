@@ -41,8 +41,7 @@ from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, Ang
     ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    DamageResolvedEvent, TapCardEvent, DiesEvent, ZoneChangeEvent, BlockEvent, AttackEvent, DamageProposedEvent, \
-    CanUntapQueryEvent
+    ZoneChangeEvent
 from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -107,7 +106,7 @@ MAP: dict[str, list[EffSpec]] = {
                           max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
     'barls-cage': [Activated('3', BarlsCage(), T_FUNCS['creatures'])],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
-    'basalt-monolith': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
+    'basalt-monolith': [Triggered(DoesntUntapAtUntap()),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_activated_ability_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
@@ -144,7 +143,7 @@ MAP: dict[str, list[EffSpec]] = {
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
         [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(HostCantAttack()),
          Activated('3', KWAModEffect('add', 'Attack', True), T_FUNCS['host'])],
-    'brass-man': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('1')],
+    'brass-man': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('1')],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing':
         [Triggered(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'], CastResolvedEvent)],
@@ -194,8 +193,7 @@ MAP: dict[str, list[EffSpec]] = {
         [Triggered(CocoonCast(), T_FUNCS['your_creatures'], CastResolvedEvent),
          Triggered(CocoonHostStaysTapped(), None, UntapPhaseEvent),
          Triggered(CocoonUpkeep(), None, UpkeepEvent)],
-    'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
-                           untap_for_mana_at_owner_upkeep('9')],
+    'colossus-of-sardia': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('9')],
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'consecrate-land': [Triggered(None, T_FUNCS['lands'], CastResolvedEvent),
                         Static(HostCantBeTargetedByAuras())],

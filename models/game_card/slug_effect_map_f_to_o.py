@@ -24,9 +24,7 @@ from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
-from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    DamageResolvedEvent, TapCardEvent, UntapCardEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
-    DrawStepEvent, UnblockedAttackerEvent, BlockEvent, AttackEvent, CanBlockQueryEvent, CanAttackQueryEvent, \
+from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, TapCardEvent, DrawCardEvent, \
     StateBasedEvent
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
@@ -184,8 +182,7 @@ MAP: dict[str: list[EffSpec]] = {
     'inquisition': [Triggered(Inquisition(), T_FUNCS['all_players'], CastResolvedEvent)],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
-    'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
-                              untap_for_mana_at_owner_upkeep('UUU')],
+    'island-fish-jasconius': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('UUU')],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower())],
@@ -231,8 +228,7 @@ MAP: dict[str: list[EffSpec]] = {
                                   allowed_phases=[Phase.DECLARE_ATTACKERS])],  # at Declare Attackers, won't know how it's combating
     'leviathan':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
-         # TODO: StaysTapped() doesn't work because it uses resolve() instead of event() listening for UntapPhaseEvent
-         Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
+         Triggered(DoesntUntapAtUntap()),
          # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
          Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
                    allowed_phases=[Phase.UPKEEP], allowed_player_turn=T_FUNCS['card_owner']),
@@ -264,7 +260,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
     'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
-    'mana-vault': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
+    'mana-vault': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('4'),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
                    Triggered(ManaVaultDamageIfTapped())],
     'mana-vortex': [Triggered(Destroy(), T_FUNCS['your_lands'], CastResolvedEvent), Triggered(ManaVortexUpkeep())],
