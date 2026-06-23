@@ -22,7 +22,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
-    CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, HostStaysTapped, StaysTapped, DeclareAColor
+    CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor
 from ..effects.listeners_card_specific import PestilenceEndStep, SeasonOfTheWitchEndStep, \
     VoodooDollEndStep, SerendibDjinnNoLands, PsychicVenom, SpiritShackle, WildGrowth, PowerSurge, \
     PsychicAllergySac, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
@@ -43,7 +43,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
     PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep
 from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
-    WalkRuleRemoved, Smoke, WinterOrb
+    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, UpkeepEvent, BlockEvent
@@ -52,7 +52,7 @@ from models.phase_manager import Phase
 MAP: dict[str, list[EffSpec]] = {
     'palladia-mors': [Triggered(PayManaOrSacAtUpkeep('RGW'))],
     'paralyze': [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
-                 Triggered(HostStaysTapped(), T_FUNCS['host'], UntapPhaseEvent),
+                 Triggered(HostDoesntUntapAtUntap(), T_FUNCS['host'], UntapPhaseEvent),
                  untap_host_for_mana_at_opp_upkeep('4')],
     'part-water': [Triggered(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'], CastResolvedEvent,
                    max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XU') // 2)],
@@ -244,7 +244,7 @@ MAP: dict[str, list[EffSpec]] = {
                        Activated('2UUT', TimeElementalBounce(), T_FUNCS['unenchanted_perms'])],
     'time-vault':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
-         Triggered(StaysTapped(), T_FUNCS['self']), Triggered(TimeVaultOption()), Activated('T', TakeAnotherTurn())],
+         Triggered(DoesntUntapAtUntap(), T_FUNCS['self']), Triggered(TimeVaultOption()), Activated('T', TakeAnotherTurn())],
     'time-walk': [Triggered(TakeAnotherTurn(), None, CastResolvedEvent)],
     'timetwister': [Triggered(Timetwister(), None, CastResolvedEvent)],
     'tivadars-crusade':

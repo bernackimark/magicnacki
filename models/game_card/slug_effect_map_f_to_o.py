@@ -10,7 +10,7 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, G
     KormusBell, LivingLands, LivingPlane, LordOfAtlantisPT, LordOfAtlantisWalk, Mightstone, NightmarePT, \
     OrcishOriflamme, JihadPT
 from models.effects.listeners_permission import Moat, Meekstone, Invisibility, IronclawOrcs, Fear, \
-    JuggernautUnblockableByWalls, LivonyaSilone, WalkRuleRemoved
+    JuggernautUnblockableByWalls, LivonyaSilone, WalkRuleRemoved, DoesntUntapAtUntap
 from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
     GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HellSwarm, \
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
@@ -22,7 +22,7 @@ from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
     PreventAllCombatDamageThisTurn, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
-    Pump, TapCardEffect, UntapCardEffect, StaysTapped, PreventNextDamageToSourceOwner, \
+    Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
 from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
     DamageResolvedEvent, TapCardEvent, UntapCardEvent, DiesEvent, DrawCardEvent, ZoneChangeEvent, \
@@ -184,7 +184,7 @@ MAP: dict[str: list[EffSpec]] = {
     'inquisition': [Triggered(Inquisition(), T_FUNCS['all_players'], CastResolvedEvent)],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
-    'island-fish-jasconius': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+    'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
                               untap_for_mana_at_owner_upkeep('UUU')],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
@@ -232,7 +232,7 @@ MAP: dict[str: list[EffSpec]] = {
     'leviathan':
         [Triggered(TapCardEffect(), T_FUNCS['self'], CastResolvedEvent),
          # TODO: StaysTapped() doesn't work because it uses resolve() instead of event() listening for UntapPhaseEvent
-         Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+         Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
          # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
          Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
                    allowed_phases=[Phase.UPKEEP], allowed_player_turn=T_FUNCS['card_owner']),
@@ -264,7 +264,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
     'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
-    'mana-vault': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
+    'mana-vault': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('4'),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
                    Triggered(ManaVaultDamageIfTapped())],
     'mana-vortex': [Triggered(Destroy(), T_FUNCS['your_lands'], CastResolvedEvent), Triggered(ManaVortexUpkeep())],

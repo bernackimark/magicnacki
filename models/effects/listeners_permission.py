@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.actions.tap_untap import LeaveTapped
 from models.events_all import Event, CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
     CanUntapQueryEvent, UntapCardEvent
 
@@ -55,6 +56,30 @@ class NoAttacksAllowedEOT(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
         event.permission = False
 
+class DoesntUntapAtUntap(Listener):
+    """Card does not untap during its owner's untap phase"""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if event.card is not source or gs.phase_mgr.phase != Phase.UNTAP:
+            return
+        event.permission = False
+
+class HostDoesntUntapAtUntap(Listener):
+    """Host does not untap during its owner's untap phase"""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if event.card is not source.host or gs.phase_mgr.phase != Phase.UNTAP:
+            return
+        event.permission = False
+
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        if not source.host:
+            raise RuntimeError(f"{source.props.name} needs a host at untap phase")
+        if gs.turn_mgr.player_turn_idx != source.host.owner_id:
+            return
+        gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
 
 class UnblockableEOT(Listener):
     """Target creature can't be blocked this turn"""

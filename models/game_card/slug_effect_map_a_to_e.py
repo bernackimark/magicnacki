@@ -17,7 +17,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, DestroyIfItAttacked, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
-    StaysTapped, PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat
+    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat
 from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, is_tapped
 from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, AliFromCairo, Blight, \
@@ -36,7 +36,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottle, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
-    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField
+    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
@@ -107,7 +107,7 @@ MAP: dict[str, list[EffSpec]] = {
                           max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
     'barls-cage': [Activated('3', BarlsCage(), T_FUNCS['creatures'])],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
-    'basalt-monolith': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+    'basalt-monolith': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_activated_ability_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
@@ -144,7 +144,7 @@ MAP: dict[str, list[EffSpec]] = {
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
         [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(HostCantAttack()),
          Activated('3', KWAModEffect('add', 'Attack', True), T_FUNCS['host'])],
-    'brass-man': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('1')],
+    'brass-man': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent), untap_for_mana_at_owner_upkeep('1')],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing':
         [Triggered(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'], CastResolvedEvent)],
@@ -194,7 +194,7 @@ MAP: dict[str, list[EffSpec]] = {
         [Triggered(CocoonCast(), T_FUNCS['your_creatures'], CastResolvedEvent),
          Triggered(CocoonHostStaysTapped(), None, UntapPhaseEvent),
          Triggered(CocoonUpkeep(), None, UpkeepEvent)],
-    'colossus-of-sardia': [Triggered(StaysTapped(), T_FUNCS['self'], UntapPhaseEvent),
+    'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(), T_FUNCS['self'], UntapPhaseEvent),
                            untap_for_mana_at_owner_upkeep('9')],
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'consecrate-land': [Triggered(None, T_FUNCS['lands'], CastResolvedEvent),

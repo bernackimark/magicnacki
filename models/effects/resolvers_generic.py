@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
-from models.actions.tap_untap import LeaveTapped
 from models.choice_actions_all import DiscardChoice, UntapWithManaChoice, DeclareColorChoice
 from models.constants import COLOR_LETTERS_W_COLORLESS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE
@@ -495,20 +494,6 @@ class UntapCardsEffect(Resolver):
             raise ValueError(f'{source.props.name} needs a list of targets')
         for t in target:
             t.untap()
-
-class HostStaysTapped(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if not source.host:
-            raise RuntimeError(f"{source.props.name} needs a host at untap phase")
-        if gs.turn_mgr.player_turn_idx != source.host.owner_id:
-            return
-        gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
-
-
-class StaysTapped(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        gs.action_stack.push(LeaveTapped(source.owner_id, gs, source), gs, False)
-
 
 class UntapForManaEffect(Resolver):
     def __init__(self, mana_cost: str):
