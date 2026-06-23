@@ -15,7 +15,8 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HellSwarm, \
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
-    KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield
+    KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
+    FireAndBrimstone
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
@@ -64,6 +65,7 @@ MAP: dict[str: list[EffSpec]] = {
     'festival': [Triggered(Festival(), None, CastResolvedEvent, allowed_phases=[Phase.UPKEEP],
                            allowed_p_id_turn=T_FUNCS['opponent'])],
     'field-of-dreams': [Triggered(FieldOfDreams())],
+    'fire-and-brimstone': [Triggered(FireAndBrimstone(), None, CastResolvedEvent)],
     'fire-drake': [Activated('R', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],
     'firebreathing': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent),

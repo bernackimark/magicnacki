@@ -22,14 +22,15 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, Ad
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
-    CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor
+    CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
+    PreventAllNoncombatDamageToThisTurn
 from ..effects.listeners_card_specific import PestilenceEndStep, SeasonOfTheWitchEndStep, \
     VoodooDollEndStep, SerendibDjinnNoLands, PsychicVenom, SpiritShackle, WildGrowth, PowerSurge, \
     PsychicAllergySac, RogahhOfKherKeepUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, YawgmothDemon, Revelation, StanggOnLeave, \
     VerduranEnchantress, TheWretchedUnsteal, WhirlingDervish, TimeVaultOption, TheFallen, PsychicAllergyDamage, \
     RasputinDreamweaverUntap, RasputinDreamweaverUpkeep, SafeHavenUpkeep, TawnossCoffinUntap, TawnossCoffinZoneChange, \
-    Stasis, XenicPoltergeistRelease
+    Stasis, XenicPoltergeistRelease, SirensCallEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
@@ -171,10 +172,12 @@ MAP: dict[str, list[EffSpec]] = {
     'shatterstorm': [Triggered(DestroyAll(T_FUNCS['artifacts'], False), None, CastResolvedEvent)],
     'shield-wall': [Triggered(ShieldWall(), None, CastResolvedEvent)],
     'shivan-dragon': [Activated('R', Pump(1, 0, True), T_FUNCS['self'])],
+    'silhouette': [Triggered(PreventAllNoncombatDamageToThisTurn(), T_FUNCS['creatures'])],
     'simulacrum': [Triggered(Simulacrum(), None, CastResolvedEvent)],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
     'sinkhole': [Triggered(Destroy(), T_FUNCS['lands'], CastResolvedEvent)],
     'sirens-call': [Static(SirensCallCanCast()),  # this doesn't feel right
+                    Triggered(SirensCallEndStep()),
                     Triggered(KWAModEffect('add', 'Goad', True), T_FUNCS['opp_creatures'], CastResolvedEvent)],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'skull-of-orm': [Activated('5T', Bounce(), T_FUNCS['enchants_in_your_graveyard'])],

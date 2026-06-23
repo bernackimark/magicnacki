@@ -228,6 +228,13 @@ class Festival(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.event_mgr.register(NoAttacksAllowedEOT(), source)
 
+class FireAndBrimstone(Resolver):
+    """Fire and Brimstone deals 4 damage to opponent if they attacked this turn and 4 damage to you"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        opp = flip(source.owner_id)
+        if gs.card_filter.on_player_board(opp).attackers().result():
+            gs.apply_damage(source, 4, opp)
+            gs.apply_damage(source, 4, source.owner_id)
 
 class FlashFlood(Resolver):
     """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""

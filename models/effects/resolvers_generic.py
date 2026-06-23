@@ -177,6 +177,13 @@ class PreventAllDamageToThisTurn(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(PreventAllDamageToEOT(target), source)
 
+class PreventAllNoncombatDamageToThisTurn(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
+        from models.effects.listeners_generic import PreventAllNoncombatDamageToEOT
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.event_mgr.register(PreventAllNoncombatDamageToEOT(target), source)
+
 class PreventNextDamageToCardEffect(Resolver):
     def __init__(self, prevent_amt: int = None, combat_only: bool = False):
         self.prevent_amt = prevent_amt

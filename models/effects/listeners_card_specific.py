@@ -107,6 +107,20 @@ class SeasonOfTheWitchEndStep(Listener):
                 continue
             gs.pile_mgr.destroy(creature)
 
+class SirensCallEndStep(Listener):
+    """At next end step, destroy all non-Wall creatures that player controls that didn't attack this turn.
+    Ignore this effect for each creature the player didn't control continuously since the beginning of the turn."""
+    listens_to = EndStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+        non_wall_creatures = gs.card_filter.on_player_board(event.active_player).non_wall_creatures().result()
+        attackers = gs.card_filter.attackers().result()
+        for creature in non_wall_creatures:
+            if not creature.has_summoning_sickness and creature not in attackers:
+                gs.pile_mgr.destroy(creature)
+
 class VoodooDollEndStep(Listener):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
     listens_to = EndStepEvent

@@ -171,6 +171,19 @@ class PreventAllDamageToEOT(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class PreventAllNoncombatDamageToEOT(Listener):
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, damage_receiver: GameCard):
+        self.damage_receiver = damage_receiver
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not self.damage_receiver or event.is_combat:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
+
 class PreventNextDamageByEOT(Listener):
     listens_to = DamageProposedEvent
 
