@@ -8,12 +8,13 @@ if TYPE_CHECKING:
 from models.actions.destroy_sac_regen import DestroyAction, TheAbyssAction
 from models.actions.special import RogahhOfKherKeepTapAndStealAction
 from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import FloralSpuzzemChoice, CosmicHorrorUpkeepChoice, CurseArtifactUpkeepChoice, CycloneChoice, OpponentDestroysLandChoice, \
+from models.choice_actions_all import FloralSpuzzemChoice, CosmicHorrorUpkeepChoice, CurseArtifactUpkeepChoice, \
+    CycloneChoice, OpponentDestroysLandChoice, \
     DemonicHordesUpkeepChoice, ElderSpawnUpkeepChoice, PayManaOrSacUpkeepChoice, ErhnamDjinnChoice, ErosionUpkeepChoice, \
     ForceOfNatureUpkeepChoice, LandTaxChoice, LordOfThePitUpkeepChoice, SacChoice, PsychicAllergyUpkeepChoice, \
     RogahhOfKherKeepUpkeepChoice, PayLifeOrSacChoice, CopyCardChoice, YawgmothDemonChoice, MoldDemonChoice, \
-    DrawCardsOrDontChoice, GabrielAngelfireChoice, GiantSlugChoice
-from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND, DREAM
+    DrawCardsOrDontChoice, GabrielAngelfireChoice, GiantSlugChoice, FastingChoice
+from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND, DREAM, HUNGER
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
@@ -461,6 +462,19 @@ class ErosionUpkeep(Listener):
         if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(ErosionUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
+
+class Fasting(Listener):
+    """At your upkeep, add a hunger counter. Destroy Fasting if >=5 hunger counters.
+    If you would begin your draw step, you may skip that step instead. If you do, you gain 2 life ..."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+        source.counters.add_counter(HUNGER)
+        if source.counters.get_count(HUNGER) > 4:
+            gs.pile_mgr.destroy(source)
+        gs.action_stack.push(FastingChoice(source.owner_id, gs, source), gs, False)
 
 class ForceOfNatureUpkeep(Listener):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""

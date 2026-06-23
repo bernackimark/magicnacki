@@ -3,9 +3,8 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Optional
 
-from models.choice_actions_all import FalseOrdersChoice, DiscardChoice, NaturalSelectionChoice, FastingChoice, \
-    HealingSalveChoice, RemoveCounterForLifeChoice, NamelessRaceChoice
-from models.counter_tokens import MINUS_ZERO_ONE, HUNGER, VITALITY
+from models.choice_actions_all import FalseOrdersChoice, DiscardChoice, NaturalSelectionChoice, HealingSalveChoice, RemoveCounterForLifeChoice, NamelessRaceChoice
+from models.counter_tokens import MINUS_ZERO_ONE, VITALITY
 from models.effects.base import Resolver
 from models.effects.listeners_card_specific import HazezonTamarTokenCreation
 from models.effects.listeners_combat import GlyphOfDoomListener
@@ -197,16 +196,6 @@ class FallingStar(Resolver):
         print(f'The roll is a: {result}')
         if result <= 5:
             gs.apply_damage(s, 3, t)
-
-
-class Fasting(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
-            return
-        source.counters.add_counter(HUNGER)
-        if source.counters.get_count(HUNGER) > 4:
-            gs.pile_mgr.destroy(source)
-        gs.action_stack.push(FastingChoice(source.owner_id, gs, source), gs, False)
 
 
 class Feint(Resolver):
