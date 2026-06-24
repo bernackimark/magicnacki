@@ -28,9 +28,9 @@ class TestDamage(unittest.TestCase):
         add_to_battlefield(attacker, self.gs)
         self.gs.combat_mgr.create_combat(self.gs, attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
-        starting_life = self.gs.score_mgr.life_totals[1]
+        starting_life = self.gs.score_mgr.life[1]
         combat.handle_damage()
-        self.assertEqual(starting_life - attacker.power, self.gs.score_mgr.life_totals[1])
+        self.assertEqual(starting_life - attacker.power, self.gs.score_mgr.life[1])
 
 
 if __name__ == '__main__':

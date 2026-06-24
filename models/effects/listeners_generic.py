@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Optional
 
+from models.phase_manager import Phase
+
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
@@ -50,6 +52,8 @@ class DoesntUntapIfItAttackedLastTurn(Listener):
 class SkipUntaps(Listener):
     """Card doesn't untap during its controller's next X untap steps;
     set the event's permission to false & expire this listener"""
+    # I don't think this is technically correct.
+    # I'm incrementing skips_used on each event, but should probably switch to counting the turn numbers
     listens_to = CanUntapQueryEvent
 
     def __init__(self, target: GameCard, next_x_turns: int = 1):
@@ -59,6 +63,8 @@ class SkipUntaps(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
         if event.card is not self.target or gs.turn_mgr.player_turn_idx != self.target.owner_id:
+            return
+        if gs.phase_mgr.phase != Phase.UNTAP:
             return
         event.permission = False
         self.skips_used += 1
