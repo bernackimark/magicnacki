@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import random
-from typing import TYPE_CHECKING, Optional, Literal
+from typing import TYPE_CHECKING, Optional
 
 from models.actions.draw_discard import DiscardCard
 from models.actions.special import SacCreatureAndAddMana
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 class PhantasmalTerrain(Resolver):
     """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type"""
-    def __init__(self, land_type: Literal['Swamp', 'Island', 'Forest', 'Mountain', 'Plains']):
+    def __init__(self, land_type: str):
         self.land_type = land_type
 
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
