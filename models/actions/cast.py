@@ -86,21 +86,13 @@ class CastToTargetAddToStack(Action):
     #  if so, the repr shouldn't say "Cast", the class name shouldn't include "Cast", etc.
 
     def __repr__(self) -> str:
-        from models.game_card.game_card import GameCard
-        target_text, variable_cast_text = '', ''
+        from models.target import create_target_text
+        variable_cast_text = ''
         if self.card.extras.get('x') is not None:
             variable_cast_text = f", X={self.card.extras.get('x')}"
         if not self.target:
             return f"Cast {self.card.props.name} {self.text}{variable_cast_text}"
-        if isinstance(self.target, list) and self.target:
-            if all(isinstance(t, GameCard) for t in self.target):
-                target_text = f", targeting {', '.join([c.props.name for c in self.target])}"
-            else:
-                target_text = f", targeting {', '.join([str(c) if isinstance(c, int) else c for c in self.target])}"
-        elif isinstance(self.target, int):
-            target_text = f', targeting Player #{self.target}'
-        else:  # self.target should be a GameCard ... cannot import GameCard, as circular
-            target_text = ', targeting ' + self.target.props.name
+        target_text = create_target_text(self.target)
         return f"Cast {self.card.props.name} {self.text}{target_text}{variable_cast_text}"
 
     def play(self) -> None:
