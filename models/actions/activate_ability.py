@@ -24,17 +24,19 @@ class ActivateAbility(Action):
                 f"{self.ability.eff_spec.text}{target_text}")
 
     def _parse_target_text(self) -> str:
-        # handled this way to avoid circular import with game_card.py
+        """0 -> ', targeting Player #0' ... [1, c1] -> ', targeting Player #1, Air Elemental'
+        (0, 1) -> ', targeting Player #0, Player #1' ... [c1, c2] -> , 'targeting Air Elemental, Savannah Lions'"""
         from models.game_card.game_card import GameCard
-        if isinstance(self.target, list):
-            if len(self.target) > 1 and isinstance(self.target[0], GameCard):
-                return f", targeting {', '.join([c.props.name for c in self.target])}"
-            if len(self.target) == 1 and isinstance(self.target[0], GameCard):
-                return ', targeting ' + self.target[0].props.name
-        elif self.target and isinstance(self.target, (list, tuple)) and isinstance(self.target[0], int):
-            return ', targeting Player #' + '& '.join([_ for _ in self.target])
-        elif isinstance(self.target, int):
+        if isinstance(self.target, int):
             return f', targeting Player #{self.target}'
+        if isinstance(self.target, GameCard):
+            return ', targeting ' + self.target.props.name
+        begin_text = ', targeting'
+        target_texts = []
+        for t in self.target:
+            target_text = t.props.name if isinstance(t, GameCard) else f'Player #{t}'
+            target_texts.append(target_text)
+        return f"{begin_text} {', '.join(target_texts)}"
 
     def play(self) -> None:
         if self.x_value is not None:
