@@ -1,5 +1,7 @@
 import unittest
 
+from models.actions.cast import CastToTargetAddToStack
+from models.actions.stack_accept_counter import AcceptAction
 from models.modifiers import KWAMod
 from tests.setup_helpers import create_engine_and_universe, get_card, add_to_battlefield
 
@@ -53,13 +55,21 @@ class TestCombat(unittest.TestCase):
         self.assertEqual(starting_life - expected_trample, self.gs.score_mgr.life[1])
 
     def test_remove_blocker_from_combat(self):
+        """Blocker should be removed from battlefield, but attacker should deal no damage (except for trample)"""
         attacker = get_card(self.gs, 'grizzly-bears', 0)
         blocker = get_card(self.gs, 'hill-giant', 1)
+        unsummon = get_card(self.gs, 'unsummon', 1)
+        island = get_card(self.gs, 'island', 1)
+        add_to_battlefield(island, self.gs)
         self.gs.combat_mgr.create_combat(self.gs, attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
         combat.blockers.append(blocker)
         self.gs.combat_mgr.remove_from_combat(blocker)
-        self.assertEqual([], combat.blockers)
+        CastToTargetAddToStack(1, self.gs, unsummon, blocker, unsummon.triggered_abilities[0]).play()
+        AcceptAction(0, self.gs).play()
+        self.assertNotIn(blocker, self.gs.card_filter.in_play().result())
+        combat.handle_damage()
+        self.assertEqual(self.gs.score_mgr.life[1], 20)
 
     def test_remove_attacker_from_combat(self):
         attacker = get_card(self.gs, 'grizzly-bears', 0)

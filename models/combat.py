@@ -49,8 +49,10 @@ class Combat:
                                              t_adj=a.rampage_amt * multiplier, expires='EOT'))
 
                 target = self.blockers[0]
-                if self.gs.perm_querier.can_damage(target, a):
-                    damage_assignments.append((a, a.power, target))
+                # If blocker is not on the battlefield (destroyed/bounced), it will not receive a damage assignment
+                if target in self.gs.card_filter.on_player_board(flip(self.gs.turn_mgr.player_turn_idx)).result():
+                    if self.gs.perm_querier.can_damage(target, a):
+                        damage_assignments.append((a, a.power, target))
 
             # --- Blockers → attacker ---
             for blocker in self.blockers:
@@ -104,13 +106,11 @@ class CombatManager:
             return [com.attacker]
 
     def remove_from_combat(self, c: GameCard):
-        """If attacker, delete that combat object, untap attacker; if blocker, remove blocker from the combat object"""
+        """If attacker, delete that combat object, untap attacker;
+        If a blocking creature is destroyed/bounced after it is declared as a blocker, the attacking creature remains
+        blocked and will deal no damage, unless it has trample"""
         for com in self.combats:
             if com.attacker is c:
                 com.attacker.untap()
                 self.combats.remove(com)
                 return
-            for blocker in com.blockers:
-                if blocker is c:
-                    com.blockers.remove(blocker)
-                    return
