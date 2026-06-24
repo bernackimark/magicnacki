@@ -19,13 +19,13 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     FireAndBrimstone, LibraryOfAlexandria
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import ManaBatteriesAddMana, \
-    AddCountersIfAnyCreatureDied, AddCounterPerCreatureDeath, XZeroOneCountersByManaValue, DealDamage, \
+    XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
     PreventAllCombatDamageThisTurn, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
-from models.events_all import CastResolvedEvent, EndStepEvent, TapCardEvent, DrawCardEvent, StateBasedEvent
+from models.events_all import CastResolvedEvent
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE
@@ -40,10 +40,11 @@ from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, MarblePriestPrevention, MartyrsOfKorlis, \
     FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet
 from ..effects.listeners_dies import Onulet
-from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped
+from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, CardsDontUntapAtUntapPhase, OptionalUntap, \
-    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep
+    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
+    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -55,7 +56,7 @@ MAP: dict[str: list[EffSpec]] = {
     'farmstead': [Triggered(None, T_FUNCS['lands'], CastResolvedEvent),
                   Activated('WW', GainLife(), T_FUNCS['host_owner'], allowed_phases=[Phase.UPKEEP],
                             allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
-    'fasting': [Triggered(Fasting(), T_FUNCS['self']), Triggered(Destroy(), T_FUNCS['self'], DrawCardEvent)],
+    'fasting': [Triggered(Fasting(), T_FUNCS['self']), Triggered(FastingDestroy())],
     'fear': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(Fear())],
     'feedback': [Triggered(None, T_FUNCS['enchants'], CastResolvedEvent),
                  Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host'])],
@@ -196,7 +197,7 @@ MAP: dict[str: list[EffSpec]] = {
     'jandors-ring': [Activated('2T', DrawCards(), T_FUNCS['card_owner'], extra_costs=[DiscardLastCardDrawnThisTurn()])],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
-    'jihad': [Static(JihadPT()), Triggered(JihadSac(), None, StateBasedEvent),
+    'jihad': [Static(JihadPT()), Static(JihadSac()),
               Triggered(DeclareAColor(), None, CastResolvedEvent)],
     # if Jihad's CastResolvedEvent isn't last, the engine will never register the listeners
     'jovial-evil': [Triggered(JovialEvil(), T_FUNCS['opponent'], CastResolvedEvent)],
@@ -209,7 +210,7 @@ MAP: dict[str: list[EffSpec]] = {
     'karma': [Triggered(Karma())],
     'kei-takahashi': [Activated('T', PreventNextDamageBy(2), T_FUNCS['creatures'])],
     'keldon-warlord': [Static(KeldonWarlordPT())],
-    'khabál-ghoul': [AddCounterPerCreatureDeath(PLUS_ONE), None, EndStepEvent],
+    'khabál-ghoul': [AddCounterPerCreatureDeathAtEndStep(PLUS_ONE)],
     'killer-bees': [Activated('G', Pump(1, 1, True), T_FUNCS['self'])],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
     'kird-ape': [Static(KirdApePT())],
@@ -235,7 +236,7 @@ MAP: dict[str: list[EffSpec]] = {
          # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
          Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
                    allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner']),
-         Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['self'], EndStepEvent),
+         # TODO: handle this via CanAttackQueryEvent
          Activated(None, KWAModEffect('add', 'Attack'), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
                    allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_p_id_turn=T_FUNCS['card_owner'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
@@ -243,7 +244,7 @@ MAP: dict[str: list[EffSpec]] = {
                               Activated('T', LibraryOfAlexandria())],
     'lifeblood': [Triggered(Lifeblood())],
     'lifelace': [Triggered(SetColor('G'), T_FUNCS['cards'], CastResolvedEvent)],
-    'lifetap': [Triggered(Lifetap(), None, TapCardEvent)],
+    'lifetap': [Triggered(Lifetap())],
     'lightning-bolt': [Triggered(DealDamage(3), T_FUNCS['all_creatures_and_players'], CastResolvedEvent)],
     'living-armor':
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures'], extra_costs=[SacSelfCost()])],
@@ -318,7 +319,7 @@ MAP: dict[str: list[EffSpec]] = {
     'orcish-mechanics': [Activated('T', DealDamage(2), T_FUNCS['all_creatures_and_players'],
                                    extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
     'orcish-oriflamme': [Static(OrcishOriflamme())],
-    'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION), T_FUNCS['self'], EndStepEvent),
+    'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION)),
                       Activated('', Pump(1, 1, True),
                                 extra_costs=[RemoveCounterCost(CARRION, 2)], text='Remove 2 counters for +1/+1')],
 }

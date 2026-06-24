@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import PayManaOrTakeDamage
+from models.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
 from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, Event, \
@@ -267,6 +268,14 @@ class MarblePriestForcesBlock(Listener):
 
 
 # --- COMBAT END EVENT ---
+class ClockworkCombatEnd(Listener):
+    """At end of combat, if this creature attacked or blocked this combat, remove a +1/+0 counter from it"""
+    listens_to = CombatEndEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
+        if source in gs.card_filter.combatants().result():
+            source.counters.remove_counter(PLUS_ONE_ZERO)
+
 class InfiniteAuthorityCombatEnd(Listener):
     """At combat end, if host is in combat with a creature with toughness <= 3, destroy the other creature ..."""
     listens_to = CombatEndEvent

@@ -10,10 +10,9 @@ from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, 
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, Berserk, BloodLust, \
     BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
-    CocoonUpkeep, Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    CocoonHostStaysTapped, EnchantmentAlteration
+    Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, EnchantmentAlteration
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
-    ManaBatteriesAddMana, RemovePlusOneZeroFromCombatant, AddCountersYourTurnOnly, \
+    ManaBatteriesAddMana, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
@@ -23,25 +22,25 @@ from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY
 from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, AliFromCairo, Blight, \
     CityOfBrassDamageOnTap, BlackVise, \
     CosmicHorror, CurseArtifact, Cyclone, DemonicHordesUpkeep, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, \
-    ErosionUpkeep, AnkhOfMishra, CitanulDruid, DingusEgg, DropOfHoney
+    ErosionUpkeep, AnkhOfMishra, CitanulDruid, DingusEgg, DropOfHoney, CocoonUntap, CocoonUpkeep, CityInABottle
 from ..effects.listeners_draw_discard import CursedRackEffect
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
 from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, \
     Backfire, ElHajjaj
 from ..effects.listeners_combat import CavePeopleAttackPump, Abomination, \
-    CockatriceAndThicketBasilisk, ElderLandWurm, AislingLeprechaun, Arboria
+    CockatriceAndThicketBasilisk, ElderLandWurm, AislingLeprechaun, Arboria, ClockworkCombatEnd
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
-    DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep
+    DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep, \
+    DestroyAtEndStep, DealDamageOnEveryUpkeep
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
-    BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottle, \
+    BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
-from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, CombatEndEvent, UpkeepEvent, \
-    ZoneChangeEvent
+from models.events_all import CastResolvedEvent
 from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -101,7 +100,7 @@ MAP: dict[str, list[EffSpec]] = {
     'backfire': [Triggered(Backfire())],
     'bad-moon': [Static(BadMoon())],
     'badlands': dual_land_activated_ability_specs('BR'),
-    'ball-lightning': [Triggered(Destroy(), T_FUNCS['self'], EndStepEvent)],
+    'ball-lightning': [Triggered(DestroyAtEndStep(T_FUNCS['self']))],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'],
                           max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
     'barls-cage': [Activated('3', BarlsCage(), T_FUNCS['creatures'])],
@@ -162,8 +161,7 @@ MAP: dict[str, list[EffSpec]] = {
     'circle-of-protection-white': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['white'])],
     'citanul-druid': [Triggered(CitanulDruid())],
     'city-in-a-bottle': [Triggered(SacAll(T_FUNCS['city_in_a_bottle']), None, CastResolvedEvent),
-                         Triggered(SacAll(T_FUNCS['city_in_a_bottle']), None, ZoneChangeEvent),
-                         Static(CityInABottle())],
+                         Static(CityInABottle()), Static(CityInABottleCantCast())],
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap())],
     'city-of-shadows':
@@ -171,23 +169,22 @@ MAP: dict[str, list[EffSpec]] = {
         # TODO: needs a way to find a creature to exile in extra_costs
     'clay-statue': [Activated('2', Regenerate(), T_FUNCS['self'])],
     'cleanse': [Triggered(DestroyAll(T_FUNCS['black_creatures']), None, CastResolvedEvent)],
-    'clockwork-avian':
-        [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
-         Triggered(AddCounter(PLUS_ONE_ZERO, 4), None, CastResolvedEvent),
-         Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
-                   max_x_func=lambda gs, s: 4 - s.counters.get_count(PLUS_ONE_ZERO))],
-    'clockwork-beast':
-        [Triggered(RemovePlusOneZeroFromCombatant(), T_FUNCS['self'], CombatEndEvent),
-         Triggered(AddCounter(PLUS_ONE_ZERO, 7), None, CastResolvedEvent),
-         Activated('XT', AddCountersYourTurnOnly(PLUS_ONE_ZERO), None, UpkeepEvent,
-                   max_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO))],
+    'clockwork-avian': [Static(ClockworkCombatEnd()),
+                        Triggered(AddCounter(PLUS_ONE_ZERO, 4), None, CastResolvedEvent),
+                        Activated('XT', AddCounter(PLUS_ONE_ZERO), None, allowed_phases=[Phase.UPKEEP],
+                                  allowed_p_id_turn=T_FUNCS['card_owner'],
+                                  max_x_func=lambda gs, s: 4 - s.counters.get_count(PLUS_ONE_ZERO))],
+    'clockwork-beast': [Static(ClockworkCombatEnd()),
+                        Triggered(AddCounter(PLUS_ONE_ZERO, 7), None, CastResolvedEvent),
+                        Activated('XT', AddCounter(PLUS_ONE_ZERO), None, allowed_phases=[Phase.UPKEEP],
+                                  allowed_p_id_turn=T_FUNCS['card_owner'],
+                                  max_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO))],
     'clone': [Triggered(Clone(), None, CastResolvedEvent)],
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
     'cockatrice': [Triggered(CockatriceAndThicketBasilisk())],
     'cocoon':
         [Triggered(CocoonCast(), T_FUNCS['your_creatures'], CastResolvedEvent),
-         Triggered(CocoonHostStaysTapped(), None, UntapPhaseEvent),
-         Triggered(CocoonUpkeep(), None, UpkeepEvent)],
+         Static(CocoonUntap()), Static(CocoonUpkeep())],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('9', T_FUNCS['card_owner'])],
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'consecrate-land': [Triggered(None, T_FUNCS['lands'], CastResolvedEvent),
@@ -195,11 +192,11 @@ MAP: dict[str, list[EffSpec]] = {
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
     'control-magic': [Triggered(Steal(), T_FUNCS['opp_creatures'], CastResolvedEvent), Triggered(ReturnToOwnerOnLTB())],
     'conversion': [Triggered(PayManaOrSacAtUpkeep('WW')), Static(Conversion())],
-    'copper-tablet': [Triggered(DealDamage(1), T_FUNCS['in_turn_player'], UpkeepEvent)],
+    'copper-tablet': [Static(DealDamageOnEveryUpkeep(T_FUNCS['in_turn_player'], 1))],
     'copy-artifact': [Triggered(CopyArtifact(), None, CastResolvedEvent)],
     'coral-helm': [Activated('3', Pump(2, 2, True), T_FUNCS['creatures'],
                              extra_costs=[DiscardAtRandomCost()])],
-    'cosmic-horror': [Triggered(CosmicHorror(), T_FUNCS['self'], UpkeepEvent)],
+    'cosmic-horror': [Static(CosmicHorror())],
     'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
     'creature-bond': [Triggered(CreatureBond())],
     'crimson-manticore': [Activated('RT', DealDamage(1), T_FUNCS['combatants'])],
@@ -242,7 +239,7 @@ MAP: dict[str, list[EffSpec]] = {
     'divine-transformation':
         [Triggered(Pump(3, 3), T_FUNCS['creatures'], CastResolvedEvent)],
     'dragon-engine': [Activated('2', Pump(1, 0, True), T_FUNCS['self'])],
-    'dragon-whelp': [Activated('R', Pump(1, 0, True)), Triggered(DragonWhelpEndStep(), None, EndStepEvent)],
+    'dragon-whelp': [Activated('R', Pump(1, 0, True)), Triggered(DragonWhelpEndStep())],
     'drain-power': [Triggered(DrainPower(), T_FUNCS['opponent'], CastResolvedEvent)],
     'dream-coat': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent)] +
                   [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,

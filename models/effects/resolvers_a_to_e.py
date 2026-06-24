@@ -324,23 +324,6 @@ class ChaosOrb(Resolver):
         if result <= 4:
             gs.pile_mgr.destroy(t)
 
-
-class CocoonUpkeep(Resolver):
-    """At your upkeep, remove a pupa counter from this Aura.
-        If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        p_id = gs.turn_mgr.player_turn_idx
-        host = source.host
-        if p_id != source.owner_id:
-            return
-        if not host.counters.get_count(PUPA):
-            gs.pile_mgr.destroy(source)
-            host.counters.add_counter(PLUS_ONE)
-            host.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
-            return
-        host.counters.remove_counter(PUPA)
-
-
 class Crumble(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
@@ -382,9 +365,3 @@ class ArenaOfTheAncientsCast(Resolver):
         for c in gs.card_filter.in_play().creatures().untapped().legendary().result():
             c.tap()
 
-
-class CocoonHostStaysTapped(Resolver):
-    """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if source.host.counters.get_count(PUPA):
-            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)

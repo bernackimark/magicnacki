@@ -38,6 +38,14 @@ class CursedRackEffect(Listener):
 
 
 # --- DRAW EVENT ---
+class FastingDestroy(Listener):
+    """When you draw a card, destroy this enchantment"""
+    listens_to = DrawCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawCardEvent):
+        if event.player_id == source.owner_id:
+            gs.pile_mgr.destroy(source)
+
 class UnderworldDreams(Listener):
     """Whenever an opponent draws a card, this enchantment deals 1 damage to that player"""
     listens_to = DrawCardEvent

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -282,6 +282,29 @@ class AddCounterAtEndStep(Listener):
         self.target.counters.add_counter(self.counter_type, self.cnt)
         gs.event_mgr.unregister_specific_effect(self)
 
+class AddCounterPerCreatureDeathAtEndStep(Listener):
+    """At the beginning of each end step, put a counter on this creature for each creature that died this turn"""
+    listens_to = EndStepEvent
+
+    def __init__(self, counter_type: CounterType):
+        self.counter_type = counter_type
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
+        if death_cnt := len(gs.turn_mgr.cards_that_died) > 0:
+            source.counters.add_counter(self.counter_type, death_cnt)
+
+class AddCountersIfAnyCreatureDied(Listener):
+    """At each end step, if a creature died this turn, put a counter on this creature"""
+    listens_to = EndStepEvent
+
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
+        if gs.turn_mgr.cards_that_died:
+            source.counters.add_counter(self.counter_type, self.cnt)
+
 class DestroyAtEndStep(Listener):
     """Destroys target if it is still on the battlefield at end step"""
     listens_to = EndStepEvent
@@ -373,6 +396,30 @@ class OptionalUntap(Listener):
 
 
 # --- UPKEEP ---
+class AddCounterAtTargetUpkeep(Listener):
+    """At target owner's upkeep, put counter(s) on this card"""
+    listens_to = UpkeepEvent
+
+    def __init__(self, target: GameCard, counter_type: CounterType, amt: int = 1):
+        self.target = target
+        self.counter_type = counter_type
+        self.amt = amt
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != self.target.owner_id:
+            return
+        self.target.counters.add_counter(self.counter_type, self.amt)
+
+class DealDamageOnEveryUpkeep(Listener):
+    listens_to = UpkeepEvent
+
+    def __init__(self, target: GameCard | int, amt: int):
+        self.target = target
+        self.amt = amt
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
+        gs.apply_damage(source, self.amt, self.target)
+
 class DealDamageToOwnerOnUpkeep(Listener):
     listens_to = UpkeepEvent
 
@@ -405,6 +452,20 @@ class PayManaOrSacAtUpkeep(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         gs.action_stack.push(PayManaOrSacUpkeepChoice(source.owner_id, gs, source, self.mana_cost), gs, False)
 
+class RemoveCounterAtTargetUpkeep(Listener):
+    """At target owner's upkeep, put counter(s) on this card"""
+    listens_to = UpkeepEvent
+
+    def __init__(self, target: GameCard, counter_type: CounterType, amt: int = 1):
+        self.target = target
+        self.counter_type = counter_type
+        self.amt = amt
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != self.target.owner_id:
+            return
+        self.target.counters.remove_counter(self.counter_type, self.amt)
+
 # --- ZONE CHANGE ---
 class ReturnToOwnerOnLTB(Listener):
     """Although the OnwershipMod will be removed upon LTB; need to transfer the stolen GameCard across boards"""
@@ -421,7 +482,6 @@ class ReturnToOwnerOnLTB(Listener):
                 if isinstance(mod, OwnershipMod):
                     gs.pile_mgr.boards[source.owner_id].remove(c)
                     gs.pile_mgr.boards[flip(source.owner_id)].append(c)
-
 
 class StealCardLeaves(Listener):
     """You control enchanted creature; must return if Control Magic leaves board"""

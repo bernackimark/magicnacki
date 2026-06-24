@@ -174,7 +174,7 @@ class BogRats(Listener):
         event.permission = False
 
 
-class CityInABottle(Listener):
+class CityInABottleCantCast(Listener):
     """Players can't cast spells or play lands with a name originally printed in the Arabian Nights expansion"""
     listens_to = CanCastQueryEvent
 

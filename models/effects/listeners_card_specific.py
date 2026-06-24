@@ -14,17 +14,27 @@ from models.choice_actions_all import FloralSpuzzemChoice, CosmicHorrorUpkeepCho
     ForceOfNatureUpkeepChoice, LandTaxChoice, LordOfThePitUpkeepChoice, SacChoice, PsychicAllergyUpkeepChoice, \
     RogahhOfKherKeepUpkeepChoice, PayLifeOrSacChoice, CopyCardChoice, YawgmothDemonChoice, MoldDemonChoice, \
     DrawCardsOrDontChoice, GabrielAngelfireChoice, GiantSlugChoice, FastingChoice, AttachToChoice
-from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND, DREAM, HUNGER
+from models.counter_tokens import PLUS_ONE, PIN, MINUS_ZERO_TWO, WIND, DREAM, HUNGER, PUPA
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import EndStepEvent, LifeLossEvent, StateBasedEvent, TapCardEvent, \
     UnblockedAttackerEvent, UntapPhaseEvent, UpkeepEvent, Event, ZoneChangeEvent, CanUntapQueryEvent, AttackEvent, \
     CastResolvedEvent, UntapCardEvent
-from models.modifiers import PTMod
+from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
 
 # --- CAN UNTAP QUERY EVENT ---
+class CocoonUntap(Listener):
+    """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if event.card is not source.host:
+            return
+        if source.host.counters.get_count(PUPA):
+            event.permission = False
+
 class GoblinRockSledUntap(Listener):
     """This creature doesn't untap during your untap step if it attacked during your last turn"""
     listens_to = CanUntapQueryEvent
@@ -161,6 +171,15 @@ class AliFromCairo(Listener):
 
 
 # --- STATE CHANGE ---
+class CityInABottle(Listener):
+    """Whenever a nontoken permanent with a name originally printed in Arabian Nights is on battlefield, sac it"""
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        for c in gs.card_filter.in_play().non_token().result():
+            if c in gs.card_filter.by_set_code('AN').result():
+                gs.pile_mgr.destroy(c, allow_regeneration=False)
+
 class GoblinsOfTheFlarg(Listener):
     """When you control a Dwarf, sacrifice this creature"""
     listens_to = StateBasedEvent
@@ -382,6 +401,23 @@ class BlackVise(Listener):
         opp_hand_len = len(gs.pile_mgr.hands[opp_id].cards)
         if opp_hand_len > 4:
             gs.apply_damage(s, opp_hand_len - 4, opp_id)
+
+class CocoonUpkeep(Listener):
+    """At your upkeep, remove a pupa counter from this Aura.
+        If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        p_id = gs.turn_mgr.player_turn_idx
+        host = source.host
+        if p_id != source.owner_id:
+            return
+        if host.counters.get_count(PUPA):
+            host.counters.remove_counter(PUPA)
+            return
+        gs.pile_mgr.destroy(source)
+        host.counters.add_counter(PLUS_ONE)
+        host.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
 
 class CosmicHorror(Listener):
     """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Optional, Callable, Literal
 
 from models.choice_actions_all import DiscardChoice, UntapWithManaChoice, DeclareColorChoice
 from models.constants import COLOR_LETTERS_W_COLORLESS
-from models.counter_tokens import CounterType, CHARGE, PLUS_ONE_ZERO, PLUS_ZERO_ONE
+from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
@@ -65,24 +65,6 @@ class AddCountersYourTurnOnly(Resolver):
         s.counters.add_counter(self.counter_type, cnt)
 
 
-class AddCountersIfAnyCreatureDied(Resolver):
-    def __init__(self, counter_type: CounterType, cnt: int = 1):
-        self.counter_type = counter_type
-        self.cnt = cnt
-
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        if gs.turn_mgr.cards_that_died:
-            s.counters.add_counter(self.counter_type, self.cnt)
-
-
-class AddCounterPerCreatureDeath(Resolver):
-    def __init__(self, counter_type: CounterType):
-        self.counter_type = counter_type
-
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        if death_cnt := len(gs.turn_mgr.cards_that_died) > 0:
-            s.counters.add_counter(self.counter_type, death_cnt)
-
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
@@ -93,7 +75,6 @@ class DealDamage(Resolver):
         self.amt = amt
 
     def resolve(self, gs: GameState, source: GameCard, target: GameCard | int = None, variable_amt: int = None):
-        print(source, self.amt, target)
         amt = self.amt if not variable_amt else variable_amt
         gs.apply_damage(source, amt, target)
 
@@ -236,11 +217,6 @@ class RemoveFromCombat(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         gs.combat_mgr.remove_from_combat(target)
-
-class RemovePlusOneZeroFromCombatant(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if source in gs.card_filter.combatants().result():
-            source.counters.remove_counter(PLUS_ONE_ZERO)
 
 class UnblockableThisTurn(Resolver):
     """Target creature can't be blocked this turn"""

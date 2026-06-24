@@ -15,8 +15,8 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
     Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Sindbad
-from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, AddCountersOnHostTurn, \
-    ManaBatteriesAddMana, RemoveCountersOnHostTurn, AddCountersYourTurnOnly, AddCounterPerCreatureDeath, DealDamage, \
+from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
+    ManaBatteriesAddMana, AddCountersYourTurnOnly, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
@@ -41,12 +41,13 @@ from ..effects.listeners_combat import CockatriceAndThicketBasilisk, Sentinel, V
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
-    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep
+    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
+    AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep
 from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
-from models.events_all import CastResolvedEvent, EndStepEvent, UpkeepEvent, BlockEvent
+from models.events_all import CastResolvedEvent
 from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -80,7 +81,7 @@ MAP: dict[str, list[EffSpec]] = {
     'preacher': [Activated('T', Steal(), T_FUNCS['opp_creatures']), Triggered(OptionalUntap()),
                  Triggered(ReturnToOwnerOnUntap())],
     'primal-clay': [Triggered(PrimalClay(), None, CastResolvedEvent)],
-    'primordial-ooze': [Triggered(AddCountersYourTurnOnly(PLUS_ONE), T_FUNCS['self'], UpkeepEvent)],  # more to code
+    'primordial-ooze': [Static(AddCounterAtTargetUpkeep(T_FUNCS['self'], PLUS_ONE))],  # more to code
     'princess-lucrezia': [Activated('T', AddMana('U'))],
     'prodigal-sorcerer': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'], text="Deal 1 Damage}")],
     'psionic-blast': [Triggered(DealDamageToTargetAndYou(4, 2),
@@ -152,7 +153,7 @@ MAP: dict[str, list[EffSpec]] = {
         [Activated('GGGGT', KWAModEffect('add', 'Forestwalk', True), T_FUNCS['creatures_wo_forestwalk']),
          Activated('GGGGT', KWAModEffect('remove', 'Forestwalk', True), T_FUNCS['forestwalkers'])],
     'scavenger-folk': [Activated('GT', Destroy(), T_FUNCS['artifacts'], extra_costs=[SacSelfCost()])],
-    'scavenging-ghoul': [Triggered(AddCounterPerCreatureDeath(CORPSE), T_FUNCS['self'], EndStepEvent),
+    'scavenging-ghoul': [Triggered(AddCounterPerCreatureDeathAtEndStep(CORPSE)),
                          Activated('', Regenerate(), T_FUNCS['self'], extra_costs=[RemoveCounterCost(CORPSE)])],
     'scrubland': dual_land_activated_ability_specs('BW'),
     'sea-kings-blessing': [Triggered(SetColor('U', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None),
@@ -256,7 +257,7 @@ MAP: dict[str, list[EffSpec]] = {
     'tormods-crypt':
         [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'], extra_costs=[SacSelfCost()])],
     'touch-of-darkness': [Triggered(SetColor('B', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None),
-                               CastResolvedEvent)],
+                          CastResolvedEvent)],
     'tower-of-coireall': [Activated('T', TowerOfCoireall(), T_FUNCS['creatures'])],
     'tracker': [Activated('GGT', Tracker(), T_FUNCS['creatures'])],
     'tranquility':
@@ -283,7 +284,7 @@ MAP: dict[str, list[EffSpec]] = {
     'unholy-strength': [Triggered(Pump(2, 1), T_FUNCS['creatures'], CastResolvedEvent)],
     'unstable-mutation':
         [Triggered(Pump(3, 3), T_FUNCS['creatures'], CastResolvedEvent),
-         Triggered(AddCountersOnHostTurn(MINUS_ONE), T_FUNCS['self'], UpkeepEvent)],
+         Triggered(AddCounterAtTargetUpkeep(T_FUNCS['host_owner'], MINUS_ONE))],
     'unsummon': [Triggered(Bounce(), T_FUNCS['creatures'], CastResolvedEvent)],
     'ur-drago': [Static(WalkRuleRemoved('Swampwalk'))],
     'urborg': [Activated('T', AddMana('B')),
@@ -304,7 +305,7 @@ MAP: dict[str, list[EffSpec]] = {
                          Activated('G', Pump(1, 0, True), T_FUNCS['self'])],
     'vampire-bats': [Activated('B', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=2)],
     'venarian-gold':
-        [Triggered(RemoveCountersOnHostTurn(SLEEP), T_FUNCS['your_creatures'], UpkeepEvent),
+        [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host_owner'], SLEEP)),
          Triggered(VenarianGoldHostStaysTapped())],
     'venom': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Triggered(Venom())],
     'verduran-enchantress': [Static(VerduranEnchantress())],
@@ -317,7 +318,7 @@ MAP: dict[str, list[EffSpec]] = {
     'visions': [Triggered(Visions(), T_FUNCS['all_players'], CastResolvedEvent)],
     'volcanic-island': dual_land_activated_ability_specs('RU'),
     'voodoo-doll':
-        [Triggered(AddCountersYourTurnOnly(PIN), T_FUNCS['self'], UpkeepEvent),
+        [Triggered(AddCounterAtTargetUpkeep(T_FUNCS['card_owner'], PIN)),
          Triggered(VoodooDollEndStep()),
          Activated('XXT', DealDamage(), T_FUNCS['all_creatures_and_players'],
                    min_x=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2,
@@ -325,7 +326,7 @@ MAP: dict[str, list[EffSpec]] = {
     'walking-dead': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-bone': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],
-    'wall-of-dust': [Triggered(WallOfDust(), None, BlockEvent)],
+    'wall-of-dust': [Triggered(WallOfDust())],
     'wall-of-opposition': [Activated('1', Pump(1, 0, True), T_FUNCS['self'])],
     'wall-of-putrid-flesh': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'])],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
@@ -372,6 +373,6 @@ MAP: dict[str, list[EffSpec]] = {
     'yawgmoth-demon': [Static(YawgmothDemon())],
     'ydwen-efreet': [Static(YdwenEfreet())],
     'xenic-poltergeist': [Activated('T', AddCreatureTypePTManaValue(), T_FUNCS['non_creature_artifacts']),
-                          Triggered(XenicPoltergeistRelease(), None, UpkeepEvent)],
+                          Triggered(XenicPoltergeistRelease())],
     'zombie-master': [Static(ZombieMasterWalk())],  # TODO: giving other zombies an activated ability
 }
