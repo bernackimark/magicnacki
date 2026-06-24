@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from .effect_spec_helpers import dual_land_activated_ability_specs, untap_host_for_mana_at_opp_upkeep, \
-    MANA_BATTERY_ADD_CHARGE
+from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY_ADD_CHARGE
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
@@ -47,14 +46,14 @@ from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantB
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
-from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, UpkeepEvent, BlockEvent
+from models.events_all import CastResolvedEvent, EndStepEvent, UpkeepEvent, BlockEvent
 from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
     'palladia-mors': [Triggered(PayManaOrSacAtUpkeep('RGW'))],
     'paralyze': [Triggered(TapCardEffect(), T_FUNCS['host'], CastResolvedEvent),
                  Triggered(HostDoesntUntapAtUntap()),
-                 untap_host_for_mana_at_opp_upkeep('4')],
+                 Activated('4', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'])],
     'part-water': [Triggered(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'], CastResolvedEvent,
                    max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XU') // 2)],
     'pavel-maliki': [Activated('BR', Pump(1, 0, True), T_FUNCS['self'])],

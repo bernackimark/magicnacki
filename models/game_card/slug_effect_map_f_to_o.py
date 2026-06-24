@@ -25,8 +25,7 @@ from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
-from models.events_all import CastResolvedEvent, UntapPhaseEvent, EndStepEvent, TapCardEvent, DrawCardEvent, \
-    StateBasedEvent
+from models.events_all import CastResolvedEvent, EndStepEvent, TapCardEvent, DrawCardEvent, StateBasedEvent
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE
@@ -92,7 +91,7 @@ MAP: dict[str: list[EffSpec]] = {
     'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()],
                               text='Exile for {GG}'),
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
-                              allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, max_activations_per_turn=1)],
+                              allowed_p_id_turn=T_FUNCS['card_owner'], max_activations_per_turn=1)],
     # TODO: activated_cnt_this_turn needs to increment
     'gaseous-form': [Triggered(GaseousForm(), T_FUNCS['creatures'], CastResolvedEvent)],
     'gate-to-phyrexia': [Activated('', Destroy(), T_FUNCS['artifacts'],
@@ -184,7 +183,8 @@ MAP: dict[str: list[EffSpec]] = {
     'inquisition': [Triggered(Inquisition(), T_FUNCS['all_players'], CastResolvedEvent)],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
-    'island-fish-jasconius': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('UUU')],
+    'island-fish-jasconius': [Triggered(DoesntUntapAtUntap()),
+                              untap_for_mana_at_owner_upkeep('UUU', T_FUNCS['card_owner'])],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower())],
@@ -234,10 +234,10 @@ MAP: dict[str: list[EffSpec]] = {
          Triggered(DoesntUntapAtUntap()),
          # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
          Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
-                   allowed_phases=[Phase.UPKEEP], allowed_player_turn=T_FUNCS['card_owner']),
+                   allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner']),
          Triggered(KWAModEffect('remove', 'Attack'), T_FUNCS['self'], EndStepEvent),
          Activated(None, KWAModEffect('add', 'Attack'), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
-                   allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_player_turn=T_FUNCS['card_owner'])],
+                   allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_p_id_turn=T_FUNCS['card_owner'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
     'library-of-alexandria': [Activated('T', AddMana('C')),
                               Activated('T', LibraryOfAlexandria())],
@@ -260,12 +260,11 @@ MAP: dict[str: list[EffSpec]] = {
     'lure': [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Triggered(Lure())],
     'magnetic-mountain': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['in_turn_player_tapped_blue_creatures'])),
                           Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
-                                    allowed_phases=[Phase.UPKEEP],
-                                    allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER)],  # not correct
+                                    allowed_phases=[Phase.UPKEEP])],
     'mana-clash': [Triggered(ManaClash(), None, CastResolvedEvent)],
     'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Triggered(ManaShort(), T_FUNCS['all_players'], CastResolvedEvent)],
-    'mana-vault': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('4'),
+    'mana-vault': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('4', T_FUNCS['card_owner']),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
                    Triggered(ManaVaultDamageIfTapped())],
     'mana-vortex': [Triggered(Destroy(), T_FUNCS['your_lands'], CastResolvedEvent), Triggered(ManaVortexUpkeep())],

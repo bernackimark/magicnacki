@@ -79,7 +79,6 @@ class EffSpec:
     trigger_event: type[Event] | None = None
     extra_costs: list[Cost | None] = None
     allowed_phases: list[Phase | None] = field(default_factory=list)
-    allowed_player_turn: AllowedPlayerTurn | None = field(default_factory=list)
     allowed_p_id_turn: int | None = None
     activated_cnt_this_turn: int = 0
     max_activations_per_turn: int = 999
@@ -141,11 +140,7 @@ class ActivatedAbility:
     def __post_init__(self):
         """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
         allowed_p_id_turns need knowledge of the card's owner and is assigned here;
-        if allowed_player_turn is None, then the ability should be permitted on both turns"""
-        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.CASTER:
-            self.eff_spec.allowed_p_id_turn = self.source.owner_id
-        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
-            self.eff_spec.allowed_p_id_turn = flip(self.source.owner_id)
+        if allowed_p_id_turn is None, then the ability should be permitted on both turns"""
 
     def can_activate(self, gs: GameState) -> bool:
         # card-specific restriction
@@ -155,9 +150,6 @@ class ActivatedAbility:
                 return False
         if self.eff_spec.allowed_phases and gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
             print("C")
-            return False
-        if self.eff_spec.allowed_player_turn and gs.turn_mgr.player_turn_idx != self.eff_spec.allowed_p_id_turn:
-            print("F")
             return False
         if self.eff_spec.allowed_p_id_turn and self.source.owner_id != self.eff_spec.allowed_p_id_turn:
             print("D")
@@ -171,15 +163,6 @@ class ActivatedAbility:
 class TriggeredAbility:
     source: GameCard
     eff_spec: EffSpec
-
-    def __post_init__(self):
-        """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
-        allowed_p_id_turns need knowledge of the card's owner and is assigned here;
-        if allowed_player_turn is None, then the ability should be permitted on both turns"""
-        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.CASTER:
-            self.eff_spec.allowed_p_id_turn = self.source.owner_id
-        if self.eff_spec.allowed_player_turn == self.eff_spec.AllowedPlayerTurn.OPPONENT:
-            self.eff_spec.allowed_p_id_turn = flip(self.source.owner_id)
 
 
 """

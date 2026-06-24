@@ -139,10 +139,9 @@ MAP: dict[str, list[EffSpec]] = {
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
         [Triggered(None, T_FUNCS['creatures'], CastResolvedEvent), Static(HostCantAttack()),
          Activated('3', KWAModEffect('add', 'Attack', True), T_FUNCS['host'])],
-    'brass-man': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('1')],
+    'brass-man': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('1', T_FUNCS['card_owner'])],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
-    'burrowing':
-        [Triggered(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'], CastResolvedEvent)],
+    'burrowing': [Triggered(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'], CastResolvedEvent)],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['tapped_lands'], 1, None),
                                        max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
     # TODO: if candelabra's owner has 0 mana, the effect should be offered, but it's putting game in infinite loop
@@ -189,7 +188,7 @@ MAP: dict[str, list[EffSpec]] = {
         [Triggered(CocoonCast(), T_FUNCS['your_creatures'], CastResolvedEvent),
          Triggered(CocoonHostStaysTapped(), None, UntapPhaseEvent),
          Triggered(CocoonUpkeep(), None, UpkeepEvent)],
-    'colossus-of-sardia': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('9')],
+    'colossus-of-sardia': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('9', T_FUNCS['card_owner'])],
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'consecrate-land': [Triggered(None, T_FUNCS['lands'], CastResolvedEvent),
                         Static(HostCantBeTargetedByAuras())],

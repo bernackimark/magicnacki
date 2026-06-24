@@ -9,14 +9,9 @@ def dual_land_activated_ability_specs(colors: str) -> list[EffSpec]:
     return [Activated('T', AddMana(color), T_FUNCS['card_owner'], text=f'Add {{{color}}}') for color in colors]
 
 
-def untap_for_mana_at_owner_upkeep(untap_cost: str) -> EffSpec:
+def untap_for_mana_at_owner_upkeep(untap_cost: str, owner_id: int) -> EffSpec:
     return Activated(untap_cost, UntapForManaEffect(untap_cost), allowed_phases=[Phase.UPKEEP],
-                     allowed_player_turn=EffSpec.AllowedPlayerTurn.CASTER, text='Untap')
-
-
-def untap_host_for_mana_at_opp_upkeep(untap_cost: str) -> EffSpec:
-    return Activated(untap_cost, UntapHostForManaEffect(untap_cost), allowed_phases=[Phase.UPKEEP],
-                     allowed_player_turn=EffSpec.AllowedPlayerTurn.OPPONENT, text='Untap')
+                     allowed_p_id_turn=owner_id, text='Untap')
 
 
 MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
