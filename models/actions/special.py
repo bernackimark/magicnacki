@@ -59,9 +59,7 @@ class CopyCard(Action):
         self.s.has_summoning_sickness = the_copy.props.is_creature and 'Haste' not in the_copy.props.keyword_abilities
         self.s.base_pt = the_copy.base_pt
         self.s._base_kwa = the_copy.props.keyword_abilities
-        self.s.activated_abilities = the_copy.activated_abilities
-        self.s.static_abilities = the_copy.static_abilities
-        self.s.triggered_abilities = the_copy.triggered_abilities
+        self.s.abilities = the_copy.abilities
         if self.gs.phase_mgr.phase != Phase.UPKEEP:  # hack. Vesuvan Doppel =only card that calls this during upkeep
             self.gs.pile_mgr.cast(self.s)
         if self.gs.pending_choice:
@@ -146,13 +144,11 @@ class SacTwoIslands(Action):
         self.gs.action_stack.pop()
 
 class SelectXAction(Action):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, choice: XValueChoice, x_value: int,
-                 activated_ability: ActivatedAbility | None = None):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, choice: XValueChoice, x_value: int):
         super().__init__(p_id, gs)
         self.source = source
         self.choice = choice
         self.x_value = x_value
-        self.activated_ability = activated_ability
 
     def __repr__(self):
         record = self.gs.game_history.last_action
@@ -169,16 +165,17 @@ class SelectXAction(Action):
                                                               self.choice.source, self.choice.eff_spec,
                                                               x_value_for_variable_cast=self.choice.selected_x)
         else:
+            choice = self.choice
             # No targets → spell goes straight to stack
-            if self.activated_ability:
+            if choice.eff_spec.activation_type == 'activated':
                 from models.actions.activate_ability import ActivateAbility
-                next_action = ActivateAbility(self.choice.player_idx, self.choice.gs, self.activated_ability,
+                next_action = ActivateAbility(choice.player_idx, choice.gs, choice.source, choice.eff_spec,
                                               target=None, x_value=self.x_value)
             else:
-                next_action = CastToTargetAddToStack(self.choice.player_idx, self.choice.gs, self.choice.source,
-                                                     target=None, eff_spec=self.choice.eff_spec)
+                next_action = CastToTargetAddToStack(choice.player_idx, choice.gs, choice.source,
+                                                     target=None, eff_spec=choice.eff_spec)
             self.gs.action_stack.push(next_action, self.gs)
-            self.choice.gs.pending_choice = None
+            choice.gs.pending_choice = None
 
 class SkipDrawPhaseGainLife(Action):
     def __init__(self, p_id: int, gs: GameState, amt: int):

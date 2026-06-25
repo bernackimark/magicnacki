@@ -18,11 +18,12 @@ class AcceptAction(Action):
         target = last_action.target if hasattr(last_action, 'target') else None
 
         if isinstance(last_action, ActivateAbility):
-            if isinstance(target, list):
-                for t in target:
-                    last_action.ability.eff_spec.effect.resolve(self.gs, last_action.ability.source, t)
-            else:
-                last_action.ability.eff_spec.effect.resolve(self.gs, last_action.ability.source, target)
+            if hasattr(last_action.eff_spec.effect, 'resolve'):
+                if isinstance(target, list):
+                    for t in target:
+                        last_action.eff_spec.effect.resolve(self.gs, last_action.card, t)
+                else:
+                    last_action.eff_spec.effect.resolve(self.gs, last_action.card, target)
 
             self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
             self.gs.action_stack.clear_()
@@ -42,7 +43,8 @@ class AcceptAction(Action):
             if not last_action.eff_spec.effect:
                 print('Warning:', last_action.card, 'has no effect')  # some cards do nothing on cast
             else:
-                last_action.eff_spec.effect.resolve(self.gs, card, target)
+                if hasattr(last_action.eff_spec.effect, 'resolve'):
+                    last_action.eff_spec.effect.resolve(self.gs, card, target)
 
         # # --- new system: resolve the card's own effect(s) ---
         # from models.card_attributes.card_effect_specs import INVOCATIONS

@@ -148,28 +148,29 @@ class GameState:
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility | BeginAbilityActivationAction] = []
 
-        for ability in c.activated_abilities:
-            spec = ability.eff_spec
+        for eff_spec in c.abilities:
+            if eff_spec.activation_type != 'activated':
+                continue
 
-            if not ability.can_activate(self):
+            if hasattr(eff_spec.effect, 'can_activate') and not eff_spec.effect.can_activate(self, c):
                 continue
-            if spec.extra_costs and any(not cost.can_pay(self, c) for cost in spec.extra_costs):
+            if eff_spec.extra_costs and any(not cost.can_pay(self, c) for cost in eff_spec.extra_costs):
                 continue
-            if c.has_summoning_sickness:
+            if c.has_summoning_sickness and c.is_creature and 'T' in eff_spec.cost:
                 continue
 
             # Determine potential targets
-            target_spec = ability.eff_spec.target_spec
+            target_spec = eff_spec.target_spec
 
             # TODO: THIS IF CHAIN ARE WRONG
             #  EX: mana battery has no target_spec but does have a max_x_func and must enter BeginAbilityActivation ...
 
-            if (target_spec and target_spec.min_cnt > 1) or ability.eff_spec.max_x_func:
-                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, ability))
+            if (target_spec and target_spec.min_cnt > 1) or eff_spec.max_x_func:
+                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, c, eff_spec))
                 continue
 
             if not target_spec:
-                actions.append(ActivateAbility(self.action_on_idx, self, ability, target=None))
+                actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=None))
                 continue
 
             targets = target_spec.filter_func(self, c)
@@ -183,7 +184,7 @@ class GameState:
                 # Not enough legal targets → skip ability entirely
                 continue
 
-            actions.append(ActivateAbility(self.action_on_idx, self, ability, target=targets))
+            actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=targets))
 
         return actions
 
@@ -216,9 +217,8 @@ class GameState:
                 actions.append(CastToBoard(p_id, self, c))
                 continue
 
-            # Gather triggered abilities tied to casting
-            cast_eff_specs = [e for e in c.triggered_abilities
-                              if e.activation_type == 'triggered' and e.trigger_event is CastResolvedEvent]
+            # Gather abilities tied to casting
+            cast_eff_specs = [e for e in c.abilities if e.trigger_event is CastResolvedEvent]
 
             if not cast_eff_specs:
                 actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=None))

@@ -65,7 +65,7 @@ class TestCombat(unittest.TestCase):
         combat = self.gs.combat_mgr.get_combat(attacker)
         combat.blockers.append(blocker)
         self.gs.combat_mgr.remove_from_combat(blocker)
-        CastToTargetAddToStack(1, self.gs, unsummon, blocker, unsummon.triggered_abilities[0]).play()
+        CastToTargetAddToStack(1, self.gs, unsummon, blocker, unsummon.abilities[0]).play()
         AcceptAction(0, self.gs).play()
         self.assertNotIn(blocker, self.gs.card_filter.in_play().result())
         combat.handle_damage()

@@ -25,7 +25,7 @@ class PermissionQuerier:
         return event.permission is not False
 
     def can_cast(self, card: GameCard, p_id: int) -> bool:
-        for eff_spec in card.triggered_abilities:
+        for eff_spec in card.abilities:
             if hasattr(eff_spec.effect, 'can_cast'):
                 if not eff_spec.effect.can_cast(self._gs, card):
                     return False

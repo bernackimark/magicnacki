@@ -29,7 +29,7 @@ class TestAvailableActionsFromHand(unittest.TestCase):
         add_to_battlefield(creature2, self.gs)
         aura = get_card(self.gs, 'holy-strength', 0)
         self.gs.pile_mgr.hands[0].cards.append(aura)
-        BeginSpellCastAction(0, self.gs, aura, eff_spec=aura.triggered_abilities[0]).play()
+        BeginSpellCastAction(0, self.gs, aura, eff_spec=aura.abilities[0]).play()
         target_cnt = len(self.gs.pending_choice.get_actions())
         self.assertEqual(target_cnt, 2)
 

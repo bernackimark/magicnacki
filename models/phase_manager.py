@@ -329,7 +329,7 @@ class EndTurnEffectsPhase(PhaseState):
             pool.clear_floating()
 
         for c in gs.card_filter.in_play().result():
-            for aa in c.activated_abilities:
+            for aa in c.abilities:
                 aa.eff_spec.activated_cnt_this_turn = 0
 
         gs.combat_mgr.combats.clear()

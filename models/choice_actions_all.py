@@ -311,7 +311,7 @@ class XValueChoice(ChoiceAction):
     def get_actions(self) -> list[Action]:
         min_x = self.eff_spec.min_x
         max_x = self.eff_spec.max_x_func(self.gs, self.source)
-        return [SelectXAction(self.player_idx, self.gs, self.source, self, x, self.aa) for x in range(min_x, max_x + 1)]
+        return [SelectXAction(self.player_idx, self.gs, self.source, self, x) for x in range(min_x, max_x + 1)]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):

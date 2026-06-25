@@ -4,15 +4,16 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
+    from models.effects.base import EffSpec
 
 from models.actions.base import Action
-from models.effects.base import ActivatedAbility
 from models.events_all import StateBasedEvent
 
 
 @dataclass
 class ActivateAbility(Action):
-    ability: ActivatedAbility
+    card: GameCard
+    eff_spec: EffSpec
     target: GameCard | list[GameCard] | tuple[int] | int | None = None
     x_value: int | None = None
 
@@ -21,44 +22,45 @@ class ActivateAbility(Action):
         target_text = create_target_text(self.target)
         if self.x_value is not None:
             target_text += f", X={self.x_value}"
-        return (f"{self.ability.source}: {{{self.x_value or ''}{self.ability.eff_spec.cost}}}: "
-                f"{self.ability.eff_spec.text}{target_text}")
+        return (f"{self.card}: {{{self.x_value or ''}{self.eff_spec.cost}}}: "
+                f"{self.eff_spec.text}{target_text}")
 
     def play(self) -> None:
         if self.x_value is not None:
-            x_cost = self.ability.eff_spec.cost[:].replace('X', str(self.x_value))
+            x_cost = self.eff_spec.cost[:].replace('X', str(self.x_value))
             self.gs.mana_pools[self.player_idx].pay(x_cost)
-            self.ability.source.extras['x'] = self.x_value
+            self.card.extras['x'] = self.x_value
         else:
-            self.gs.mana_pools[self.player_idx].pay(self.ability.eff_spec.cost)
-            if self.ability.eff_spec.extra_costs:
-                for extra_cost in self.ability.eff_spec.extra_costs:
-                    extra_cost.pay(self.gs, self.ability.source)
-        if 'T' in self.ability.eff_spec.cost:
-            self.ability.source.tap()
+            self.gs.mana_pools[self.player_idx].pay(self.eff_spec.cost)
+            if self.eff_spec.extra_costs:
+                for extra_cost in self.eff_spec.extra_costs:
+                    extra_cost.pay(self.gs, self.card)
+        if 'T' in self.eff_spec.cost:
+            self.card.tap()
         self.gs.action_stack.push(self, self.gs)
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 
 @dataclass
 class BeginAbilityActivationAction(Action):
     """Handles pre-activation choices: X-values and target selection."""
-    ability: ActivatedAbility
+    card: GameCard
+    eff_spec: EffSpec
 
     def __repr__(self):
-        return f'{self.ability.eff_spec.cost}: {self.ability.eff_spec.effect}'
+        return f'{self.eff_spec.cost}: {self.eff_spec.effect}'
 
     def play(self):
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
 
-        a = self.ability
-        if a.eff_spec.max_x_func:
+        spec = self.eff_spec
+        if spec.max_x_func:
             from models.choice_actions_all import XValueChoice
-            self.gs.pending_choice = XValueChoice(a.source.owner_id, self.gs, a.source, a.eff_spec, a)
+            self.gs.pending_choice = XValueChoice(self.card.owner_id, self.gs, self.card, spec, a)
             return
 
         from models.choice_actions_all import MultiTargetChoice
-        self.gs.pending_choice = MultiTargetChoice(a.source.owner_id, self.gs, a.source, a.eff_spec)
+        self.gs.pending_choice = MultiTargetChoice(self.card.owner_id, self.gs, self.card, spec)
 
         # # --- No X or targets → simple activation
         # self.gs.action_stack.append(ActivateAbility(self.player_idx, self.gs, self.ability))

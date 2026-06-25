@@ -1,4 +1,4 @@
-
+from __future__ import annotations
 
 def create_target_text(targets: int | "GameCard" | tuple | list):
     from models.game_card.game_card import GameCard

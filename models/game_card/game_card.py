@@ -7,27 +7,12 @@ from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
 if TYPE_CHECKING:
     from game_state import GameState
     from .card import Card
+    from ..effects.base import EffSpec
 
 from .slug_effect_map import INVOCATIONS
 from models.counter_tokens import Counters
-from models.effects.base import ActivatedAbility, EffSpec
 from models.modifiers import Modifiers, KWAMod
 from models.zone import Zone
-
-
-def attach_invocations(card: GameCard):
-    """From INVOCATIONS, populate card.activated_abilities, card.static_abilities, and card.triggered_abilities"""
-    eff_specs = INVOCATIONS.get(card.props.slug, [])
-
-    for eff_spec in eff_specs:
-        if eff_spec.activation_type == 'activated':
-            card.activated_abilities.append(ActivatedAbility(card, eff_spec))
-        elif eff_spec.activation_type == 'triggered':
-            card.triggered_abilities.append(eff_spec)
-        elif eff_spec.activation_type == 'static':
-            card.static_abilities.append(eff_spec)
-        else:
-            raise ValueError(f'{eff_spec.activation_type} is not a known activation type')
 
 
 class GameCard:
@@ -60,11 +45,7 @@ class GameCard:
 
         self.extras: dict[str, Any] = {}  # declarations of X, color upon entry, etc
 
-        self.activated_abilities: list[ActivatedAbility] = []
-        self.static_abilities: list[EffSpec] = []
-        self.triggered_abilities: list[EffSpec] = []
-
-        attach_invocations(self)
+        self.abilities: list[EffSpec | None] = INVOCATIONS.get(self.props.slug, [])
 
     def __repr__(self) -> str:
         text = self.props.name

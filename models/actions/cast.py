@@ -121,7 +121,7 @@ class CastCounter(Action):
         self.gs.action_stack.push(self, self.gs)
 
         # --- new event emission approach
-        for eff_spec in self.card.triggered_abilities:
+        for eff_spec in self.card.abilities:
             self.gs.event_mgr.register(eff_spec.effect, self.card)
 
 @dataclass

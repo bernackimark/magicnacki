@@ -55,9 +55,9 @@ def deflate_costs(game_card_decks: list[list[GameCard]]) -> None:
         for c in d:
             if c.casting_cost:
                 c.casting_cost = _deflate(c.casting_cost)
-            for aa in c.activated_abilities:
-                if aa.eff_spec.cost:
-                    aa.eff_spec.cost = _deflate(aa.eff_spec.cost)
+            for a in c.abilities:
+                if a.cost:
+                    a.cost = _deflate(a.cost)
 
 def create_engine_from_json(file_path_str: str, settings_key: str, test_mode: bool = False) -> Engine:
     """From provided path string & key, pull JSON; create CardUniverse; create decks;
