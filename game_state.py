@@ -154,6 +154,8 @@ class GameState:
 
             if hasattr(eff_spec.effect, 'can_activate') and not eff_spec.effect.can_activate(self, c):
                 continue
+            if not self.mana_pools[c.owner_id].can_pay(eff_spec.cost):
+                continue
             if eff_spec.extra_costs and any(not cost.can_pay(self, c) for cost in eff_spec.extra_costs):
                 continue
             if c.has_summoning_sickness and c.is_creature and 'T' in eff_spec.cost:
@@ -178,13 +180,13 @@ class GameState:
             targets = [targets] if not isinstance(targets, (list, tuple)) else targets
             # remove illegal targets
             if isinstance(targets[0], GameCard):
-                targets = [t for t in targets
-                           if self.perm_querier.can_target(t, c)]
+                targets = [t for t in targets if self.perm_querier.can_target(t, c)]
             if len(targets) < target_spec.min_cnt:
                 # Not enough legal targets → skip ability entirely
                 continue
 
-            actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=targets))
+            for t in targets:
+                actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=t))
 
         return actions
 
