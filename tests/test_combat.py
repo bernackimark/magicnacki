@@ -8,8 +8,7 @@ from tests.setup_helpers import create_engine_and_universe, get_card, add_to_bat
 
 class TestCombat(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 

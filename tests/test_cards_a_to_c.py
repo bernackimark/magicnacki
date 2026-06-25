@@ -4,10 +4,9 @@ from models.effects.resolvers_a_to_e import BloodLust
 from tests.setup_helpers import create_engine_and_universe, get_card, add_to_battlefield
 
 
-class TestCombat(unittest.TestCase):
+class TestCardsAtoC(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -28,9 +27,12 @@ class TestCombat(unittest.TestCase):
 
     def test_creature_bond(self):
         """When host dies, this Aura deals damage equal to that creature's toughness to the creature's controller."""
+        # TODO: By the time CreatureBond.on_event() is called, the source.host is None;
+        #  I'm guessing the aura is detached already
         host = get_card(self.gs, 'merfolk-of-the-pearl-trident', 0)  # 1/1
         creature_bond = get_card(self.gs, 'creature-bond', 1)
         host.auras.append(creature_bond)
+        self.gs.event_mgr.register(creature_bond.abilities[0].effect, creature_bond)
         self.gs.pile_mgr.destroy(host)
         self.assertEqual(self.gs.score_mgr.life[0], 19)
 

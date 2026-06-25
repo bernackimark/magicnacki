@@ -6,13 +6,12 @@ from models.effects.listeners_generic import SkipUntaps
 from models.effects.listeners_permission import UnblockableEOT, Meekstone
 from models.events_all import CanCastQueryEvent, CanTargetQueryEvent
 from models.phase_manager import Phase
-from .setup_helpers import (add_to_battlefield, create_engine_and_universe, get_card,
-                            put_onto_battlefield_last_turn, put_onto_battlefield_this_turn)
+from tests.setup_helpers import (add_to_battlefield, create_engine_and_universe, get_card,
+                                 put_onto_battlefield_last_turn, put_onto_battlefield_this_turn)
 
 class TestCanAttack(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -42,8 +41,7 @@ class TestCanAttack(unittest.TestCase):
 
 class TestCanBlock(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -93,8 +91,7 @@ class TestCanBlock(unittest.TestCase):
 
 class TestCanCast(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -151,8 +148,7 @@ class TestCanCast(unittest.TestCase):
 
 class TestCanDamage(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -178,8 +174,7 @@ class TestCanDamage(unittest.TestCase):
 
 class TestCanTarget(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 
@@ -215,8 +210,7 @@ class TestCanTarget(unittest.TestCase):
 
 class TestCanUntap(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 

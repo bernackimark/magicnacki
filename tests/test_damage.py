@@ -1,13 +1,12 @@
 import unittest
 
 from models.effects.resolvers_generic import PreventNextDamageToSourceOwner
-from .setup_helpers import add_to_battlefield, create_engine_and_universe, get_card
+from tests.setup_helpers import add_to_battlefield, create_engine_and_universe, get_card
 
 
 class TestDamage(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe('testing/game_testing_settings.json',
-                                                                'engine_testing_setup_a', True)
+        self.engine, self.universe = create_engine_and_universe()
         self.engine.gs = self.engine.match_manager.create_game_state()
         self.gs = self.engine.gs
 

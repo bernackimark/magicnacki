@@ -1,7 +1,9 @@
 from __future__ import annotations
+from dotenv import load_dotenv
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -13,11 +15,18 @@ from models.game_card.card import CardUniverse
 from models.game_card.game_card import GameCard
 from models.deck import Deck
 from models.match_manager import MatchManager
+from models.zone import Zone
 from players import ConsolePlayer
 from renderers import ConsoleRenderer
 
 
-def create_engine_and_universe(file_path_str: str, settings_key: str, test_mode: bool = True) -> tuple[Engine, CardUniverse]:
+load_dotenv()
+GAME_TESTING_SETTINGS_PATH = Path(os.getenv('GAME_TESTING_SETTINGS'))
+
+
+def create_engine_and_universe(file_path_str: str = GAME_TESTING_SETTINGS_PATH,
+                               settings_key: str = 'engine_testing_setup_a',
+                               test_mode: bool = True) -> tuple[Engine, CardUniverse]:
     """From provided path string & key, pull JSON; create CardUniverse; create decks;
     deflate casting costs, if applicable; set rules; create & return a fresh Engine oboject
     """
