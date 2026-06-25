@@ -8,6 +8,13 @@ if TYPE_CHECKING:
     from models.modifiers import ModType
     from models.zone import Zone
 
+"""
+Events are dataclasses that can be emitted and Listener effects can respond.
+They are commonly frozen.
+However, some objects can be passed around and mutated, such as:
+    -   DamageProposedEvent, which is mutated until finalization, when it becomes a frozen DamageResolvedEvent
+    -   Can[x]QueryEvent, containing a .permission attribute, which Listeners can set to False
+"""
 
 class Event:
     pass
@@ -200,5 +207,3 @@ class ZoneChangeEvent(Event):
     to_zone: Zone
     cause: str | None = None
 
-# Note: Damage is special since it is not fire-and-forget; it must be stateful to apply a chain of modifications
-# It can be found in the dedicated damage module
