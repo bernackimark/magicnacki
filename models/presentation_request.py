@@ -6,4 +6,4 @@ from typing import Any
 class PresentationRequest:
     viewer_id: int
     type_: str
-    payload: Any
+    payload: dict[str, Any]
