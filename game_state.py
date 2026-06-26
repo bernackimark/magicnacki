@@ -203,7 +203,7 @@ class GameState:
                 continue
 
             # Gather abilities tied to casting
-            cast_eff_specs = [e for e in c.abilities if e.trigger_event is CastResolvedEvent]
+            cast_eff_specs = [e for e in c.abilities if e.activation_type == 'spell']
 
             if not cast_eff_specs:
                 actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=None))

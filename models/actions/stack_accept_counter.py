@@ -46,14 +46,6 @@ class AcceptAction(Action):
                 if hasattr(last_action.eff_spec.effect, 'resolve'):
                     last_action.eff_spec.effect.resolve(self.gs, card, target)
 
-        # # --- new system: resolve the card's own effect(s) ---
-        # from models.card_attributes.card_effect_specs import INVOCATIONS
-        # for eff_spec in INVOCATIONS.get(card.props.slug, []):
-        #     if eff_spec.activation_type in ('activated', 'triggered'):
-        #         # resolve immediately if it's a 'cast' effect
-        #         if eff_spec.trigger_event is CastResolvedEvent and eff_spec.effect:
-        #             eff_spec.effect.resolve(self.gs, card, target)
-
         # --- Emit event so other effects can respond ---
         print(f"Successfully cast {card.props.name}")
         self.gs.event_mgr.emit(CastResolvedEvent(card=card, owner_id=card.orig_owner_id, target=target), self.gs)
@@ -68,7 +60,7 @@ class AcceptAction(Action):
         for eff_spec in INVOCATIONS.get(card.props.slug, []):
             if isinstance(eff_spec.effect, Listener):
                 self.gs.event_mgr.register(eff_spec.effect, card)
-                print(f"Registered triggered effect for {card.props.name} on {eff_spec.trigger_event.__name__}")
+                print(f"Registered triggered effect for {card.props.name} on {eff_spec.__name__}")
 
         # --- reset action stack and current actor ---
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor

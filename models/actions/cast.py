@@ -49,7 +49,7 @@ class CastToBoard(Action):
                 if eff_spec.activation_type != 'triggered':
                     continue
 
-                if eff_spec.trigger_event is CastResolvedEvent:
+                if eff_spec.activation_type == 'spell':
                     target_spec = eff_spec.target_spec
 
                     if target_spec is None:
