@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -45,7 +46,7 @@ class GameCard:
 
         self.extras: dict[str, Any] = {}  # declarations of X, color upon entry, etc
 
-        self.abilities: list[EffSpec | None] = INVOCATIONS.get(self.props.slug, [])
+        self.abilities: list[EffSpec | None] = deepcopy(INVOCATIONS.get(self.props.slug, []))
 
     def __repr__(self) -> str:
         text = self.props.name
