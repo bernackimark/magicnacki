@@ -2,7 +2,7 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence, TYPE_CHECKING
 
-from models.effects.base import Activated
+from models.effects.base import Activated, ActivatedAbility
 
 if TYPE_CHECKING:
     from models.game_card.card import Card
@@ -151,51 +151,34 @@ class GameState:
         for eff_spec in c.abilities:
             if eff_spec.activation_type != 'activated':
                 continue
-
-            if hasattr(eff_spec.effect, 'can_activate') and not eff_spec.effect.can_activate(self, c):
-                continue
-            if not self.mana_pools[c.owner_id].can_pay(eff_spec.cost):
-                continue
-            if eff_spec.extra_costs and any(not cost.can_pay(self, c) for cost in eff_spec.extra_costs):
-                continue
-            if c.has_summoning_sickness and c.is_creature and 'T' in eff_spec.cost:
+            aa = ActivatedAbility(c, eff_spec)
+            if not aa.can_activate(self):
                 continue
 
             # Determine potential targets
-            target_spec = eff_spec.target_spec
+            target_spec = aa.eff_spec.target_spec
 
-            # TODO: THIS IF CHAIN ARE WRONG
-            #  EX: mana battery has no target_spec but does have a max_x_func and must enter BeginAbilityActivation ...
-
-            if (target_spec and target_spec.min_cnt > 1) or eff_spec.max_x_func:
-                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, c, eff_spec))
-                continue
-
+            # If the ability takes no targets, create the ActivateAbility action
             if not target_spec:
                 actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=None))
                 continue
 
-            targets = target_spec.filter_func(self, c)
-            # convert to list
-            targets = [targets] if not isinstance(targets, (list, tuple)) else targets
-            # remove illegal targets
-            if isinstance(targets[0], GameCard):
-                targets = [t for t in targets if self.perm_querier.can_target(t, c)]
-            if len(targets) < target_spec.min_cnt:
-                # Not enough legal targets → skip ability entirely
+            # TODO: THIS IF CHAIN ARE WRONG
+            #  EX: mana battery has no target_spec but does have a max_x_func and must enter BeginAbilityActivation ...
+
+            # If the ability requires multiple targets or X needs to be declared, being that flow
+            if target_spec.min_cnt > 1 or eff_spec.max_x_func:
+                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, c, eff_spec))
                 continue
 
-            for t in targets:
+            # For each single legal target, create an ActivateAbility action
+            for t in target_spec.get_targets(self, c):
                 actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=t))
 
         return actions
 
     def add_activated_abilities_from_board(self) -> list[ActivateAbility] | list[None]:
-        actions: list[ActivateAbility] = []
-        for card in self.pile_mgr.boards[self.action_on_idx]:
-            actions.extend(self.get_available_activated_abilities(card))
-
-        return actions
+        return [a for c in self.pile_mgr.boards[self.action_on_idx] for a in self.get_available_activated_abilities(c)]
 
     def available_actions_from_hand(self) -> list[Action]:
         """For each card in hand for the in-scope player ...

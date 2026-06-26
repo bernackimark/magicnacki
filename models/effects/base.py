@@ -23,6 +23,14 @@ class TargetSpec:
     max_cnt: int | None = 1
     allow_duplicate_targets: bool = False  # used in pyrotechnics/fireball where we always add 1 damage at a time
 
+    def get_targets(self, gs: GameState, source: GameCard) -> list[GameCard | int | None]:
+        """Execute the effect's filter func
+        If target is an int, let it through; if target is a GameCard, check can_target();
+        If there are enough targets, return all targets, else return []"""
+        candidates = self.filter_func(gs, source)
+        legal_targets = [c for c in candidates if isinstance(c, int) or gs.perm_querier.can_target(c, source)]
+        return legal_targets if len(legal_targets) >= self.min_cnt else []
+
 class Effect(ABC):
     """Base class for all card effects."""
     pass
@@ -67,12 +75,7 @@ class ModRetriever(Effect):
 @dataclass
 class EffSpec:
     """Effect Specification; mapping slugs to Effects uses EffSpec"""
-
-    class AllowedPlayerTurn(Enum):
-        CASTER = auto()
-        OPPONENT = auto()
-
-    activation_type: Literal['activated', 'static', 'triggered']
+    activation_type: Literal['activated', 'spell', 'static', 'triggered']
     cost: str
     effect: Effect
     target_spec: Union[tuple[Callable, int, int | None], Callable, TargetSpec, None] = None
@@ -137,11 +140,6 @@ class ActivatedAbility:
     source: GameCard
     eff_spec: EffSpec
 
-    def __post_init__(self):
-        """from InitVars 'cost_mana', 'cost_tap', and 'extra_costs', build attribute 'costs'
-        allowed_p_id_turns need knowledge of the card's owner and is assigned here;
-        if allowed_p_id_turn is None, then the ability should be permitted on both turns"""
-
     def can_activate(self, gs: GameState) -> bool:
         # card-specific restriction
         if hasattr(self.eff_spec, 'can_activate'):
@@ -157,20 +155,23 @@ class ActivatedAbility:
         if self.eff_spec.activated_cnt_this_turn >= self.eff_spec.max_activations_per_turn:
             print("E")
             return False
-        return all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs)
-
-@dataclass
-class TriggeredAbility:
-    source: GameCard
-    eff_spec: EffSpec
+        if self.source.has_summoning_sickness and self.source.is_creature and 'T' in self.eff_spec.cost:
+            print("F")
+            return False
+        if not all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs):
+            print("G")
+            return False
+        return True
 
 
 """
-Triggered is when something happens & fires once
-Activated is when the player opts to do something
-Static is always on & answers questions without causing actions
+Activated is when the player opts to activate an ability (aladdins-ring)
+Spell is one per card max; it is for casting (lightning-bolt)
+Static is always on & can answer questions without causing actions (crusade)
+Triggered are abilities that respond to 'when/whenever' (hypnotic-specter)
 """
 
 Activated = partial(EffSpec, 'activated')
+Spell = partial(EffSpec, 'spell', '')
 Static = partial(EffSpec, 'static', '')
 Triggered = partial(EffSpec, 'triggered', '')
