@@ -51,7 +51,7 @@ MAP: dict[str, list[EffSpec]] = {
     'aisling-leprechaun': [Triggered(AislingLeprechaun())],
     'akron-legionnaire': [Static(AkronLegionnaire())],
     'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts']), Triggered(ReturnToOwnerOnLTB())],
-    'aladdins-ring': [Activated('T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
+    'aladdins-ring': [Activated('8T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'ali-baba': [Activated('R', TapCardEffect(), T_FUNCS['walls'])],
     'ali-from-cairo': [Static(AliFromCairo())],
     'alchors-tomb': [Activated('2T', SetColor(c), T_FUNCS['your_permanents'], text=f'Set color to {{{c}}}')
