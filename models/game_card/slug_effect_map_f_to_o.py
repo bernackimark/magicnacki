@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCounterCost, \
     SacCardCost, DiscardLastCardDrawnThisTurn
-from models.counter_tokens import CARRION, PLUS_ONE, CHARGE
+from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec, Spell
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, \
     GoblinShrinePump, GravitySphere, \
@@ -18,8 +18,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
     FireAndBrimstone, LibraryOfAlexandria
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
-from models.effects.resolvers_generic import ManaBatteriesAddMana, \
-    XZeroOneCountersByManaValue, DealDamage, \
+from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
     PreventAllCombatDamageThisTurn, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -27,7 +26,8 @@ from models.effects.resolvers_generic import ManaBatteriesAddMana, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
-from .effect_spec_helpers import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE
+from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
+    mox_specs, self_pump
 from ..effects.listeners_misc import IchneumonDruid
 from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
@@ -60,8 +60,7 @@ MAP: dict[str: list[EffSpec]] = {
                             allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
     'fasting': [Triggered(Fasting(), T_FUNCS['self']), Triggered(FastingDestroy())],
     'fear': [Spell(None, T_FUNCS['creatures']), Static(Fear())],
-    'feedback': [Spell(None, T_FUNCS['enchants']),
-                 Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host'])],
+    'feedback': [Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host']), Spell(None, T_FUNCS['enchants'])],
     'feint': [Spell(Feint(), T_FUNCS['attackers'])],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
     'festival': [Spell(Festival(), None, allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['opponent'])],
@@ -69,7 +68,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fire-and-brimstone': [Spell(FireAndBrimstone(),)],
     'fire-drake': [Activated('R', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],
-    'firebreathing': [Spell(None, T_FUNCS['creatures']), Activated('R', Pump(1, 0, True), T_FUNCS['self'])],
+    'firebreathing': [Spell(None, T_FUNCS['creatures']), self_pump('R', 1, 0)],
     'fishliver-oil': [Spell(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures'])],
     'fissure': [Spell(Destroy(False), T_FUNCS['creatures_and_lands'])],
     'flash-flood': [Spell(FlashFlood(), T_FUNCS['flash_flood'])],
@@ -83,7 +82,7 @@ MAP: dict[str: list[EffSpec]] = {
     'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
     'forethought-amulet': [Triggered(PayManaOrSacAtUpkeep('3')), Static(ForethoughtAmulet())],
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['card_owner'])],
-    'frozen-shade': [Activated('B', Pump(1, 1, True), T_FUNCS['self'])],
+    'frozen-shade': [self_pump('B', 1, 1)],
     'fungusaur': [Triggered(FungusaurOnDamage())],
     'gabriel-angelfire': [Triggered(GabrielAngelfire())],
     'gaeas-avenger': [Static(GaeasAvengerPT())],
@@ -123,25 +122,22 @@ MAP: dict[str: list[EffSpec]] = {
     'goblins-of-the-flarg': [Static(GoblinsOfTheFlarg())],
     'golgothian-sylex': [Activated('1T', SacAll(T_FUNCS['golgothian_sylex']))],
     'gosta-dirk': [Static(WalkRuleRemoved('Islandwalk'))],
-    'granite-gargoyle': [Activated('R', Pump(0, 1, True), T_FUNCS['self'])],
+    'granite-gargoyle': [self_pump('R', 0, 1)],
     'grapeshot-catapult': [Activated('T', DealDamage(4), T_FUNCS['fliers'])],
     'grave-robbers': [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
     'gravity-sphere': [Static(GravitySphere())],
     'great-defender': [Spell(GreatDefender(), T_FUNCS['creatures'])],
     'great-wall': [Static(WalkRuleRemoved('Plainswalk'))],
-    'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(),
-                                                T_FUNCS['black_and_red'])],
+    'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(), T_FUNCS['black_and_red'])],
     'greed': [Activated('B', Greed(), T_FUNCS['card_owner'])],
-    'green-mana-battery': [MANA_BATTERY_ADD_CHARGE,
-                           Activated('T', ManaBatteriesAddMana('G'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+    'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', 'Protection From Green'), T_FUNCS['creatures'])],
     'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), T_FUNCS['all_players'])],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures'])],
     'hasran-ogress': [Triggered(HasranOgress())],
-    'hazezon-tamar': [Spell(HazezonTamar()),
-                      Triggered(HazezonTamarTokenCreation(T_FUNCS['card_owner'])), Triggered(HazezonTamarLTB())],
+    'hazezon-tamar': [Triggered(HazezonTamarTokenCreation(T_FUNCS['card_owner'])), Triggered(HazezonTamarLTB()),
+                      Spell(HazezonTamar())],
     'healing-salve': [Spell(HealingSalve())],
     'heavens-gate': [Spell(SetColor('W', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
     'hell-swarm': [Spell(HellSwarm())],
@@ -202,7 +198,7 @@ MAP: dict[str: list[EffSpec]] = {
     'kei-takahashi': [Activated('T', PreventNextDamageBy(2), T_FUNCS['creatures'])],
     'keldon-warlord': [Static(KeldonWarlordPT())],
     'khabál-ghoul': [AddCounterPerCreatureDeathAtEndStep(PLUS_ONE)],
-    'killer-bees': [Activated('G', Pump(1, 1, True), T_FUNCS['self'])],
+    'killer-bees': [self_pump('G', 1, 1)],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
     'kird-ape': [Static(KirdApePT())],
     'kismet': [Static(Kismet())],
@@ -281,11 +277,11 @@ MAP: dict[str: list[EffSpec]] = {
     'moat': [Static(Moat())],
     'mold-demon': [Triggered(MoldDemonETB())],
     'morale': [Spell(Morale())],
-    'mox-emerald': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
-    'mox-jet': [Activated('T', AddMana('B'), T_FUNCS['card_owner'])],
-    'mox-pearl': [Activated('T', AddMana('W'), T_FUNCS['card_owner'])],
-    'mox-ruby': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
-    'mox-sapphire': [Activated('T', AddMana('U'), T_FUNCS['card_owner'])],
+    'mox-emerald': mox_specs('G'),
+    'mox-jet': mox_specs('B'),
+    'mox-pearl': mox_specs('W'),
+    'mox-ruby': mox_specs('R'),
+    'mox-sapphire': mox_specs('U'),
     'murk-dwellers': [Triggered(MurkDwellers())],
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), T_FUNCS['all_players'])],

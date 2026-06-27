@@ -3,8 +3,8 @@ from itertools import combinations
 
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS
-from models.cost import SacSelfCost, RemoveCounterCost, DiscardAtRandomCost, SacCardCost
-from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, CHARGE
+from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
+from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec, Spell
 from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, CityOfShadowsAA2, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
@@ -12,13 +12,12 @@ from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, 
     BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, EnchantmentAlteration
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
-    ManaBatteriesAddMana, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat
-from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY_ADD_CHARGE, \
-    untap_for_mana_at_owner_upkeep
+from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
+    untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump
 from ..effects.listeners_misc import AliFromCairo
 from ..effects.listeners_state_change import CityInABottle
 from ..effects.listeners_zone_change import AnkhOfMishra, CitanulDruid, DingusEgg
@@ -76,7 +75,7 @@ MAP: dict[str, list[EffSpec]] = {
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'arboria': [Static(Arboria())],
     'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), Static(ArcadesSabbathAllCreaturePump()),
-                        Activated('W', Pump(0, 1, True), T_FUNCS['self'])],
+                        self_pump('W', 0, 1)],
     'arena-of-the-ancients': [Spell(ArenaOfTheAncientsCast()),
                               Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['legendary_creatures']))],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
@@ -97,7 +96,7 @@ MAP: dict[str, list[EffSpec]] = {
     'axelrod-gunnarson': [Triggered(AxelrodGunnarson())],
     'backfire': [Triggered(Backfire())],
     'bad-moon': [Static(BadMoon())],
-    'badlands': dual_land_activated_ability_specs('BR'),
+    'badlands': dual_land_specs('BR'),
     'ball-lightning': [Triggered(DestroyAtEndStep(T_FUNCS['self']))],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'],
                           max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
@@ -105,24 +104,20 @@ MAP: dict[str, list[EffSpec]] = {
     'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
     'basalt-monolith': [Triggered(DoesntUntapAtUntap()),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
-    'bayou': dual_land_activated_ability_specs('BG'),
+    'bayou': dual_land_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
     'beasts-of-bogardan': [Static(BeastsOfBogardan())],
     'berserk': [Triggered(Berserk(), T_FUNCS['creatures'])],
     'birds-of-paradise': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
-    'black-lotus': [Activated('T', AddMana(c, 3), extra_costs=[SacSelfCost], text=f'Add {{3{c}}}')
-                    for c in COLOR_LETTERS],
-    'black-mana-battery': [MANA_BATTERY_ADD_CHARGE,
-                           Activated('T', ManaBatteriesAddMana('B'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                     max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+    'black-lotus': [Activated('T', AddMana(c, 3), extra_costs=[SacSelfCost],
+                              text=f'Add {{3{c}}}') for c in COLOR_LETTERS],
+    'black-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('B')],
     'black-vise': [Triggered(BlackVise())],
     'black-ward': [Spell(KWAModEffect('add', 'Protection From Black'), T_FUNCS['creatures'])],
     'blessing': [Activated('W', Pump(1, 1, True), T_FUNCS['host'])],
     'blight': [Spell(None, T_FUNCS['lands']), Triggered(Blight())],
     'blood-lust': [Spell(BloodLust(), T_FUNCS['creatures'])],
-    'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE,
-                          Activated('T', ManaBatteriesAddMana('U'), extra_costs=[RemoveCounterCost(CHARGE)],
-                                    max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE))],
+    'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
     'blue-ward': [Spell(KWAModEffect('add', 'Protection From Blue'), T_FUNCS['creatures'])],
     'bog-rats': [Static(BogRats())],
     'bone-flute': [Activated('2T', BoneFlute())],
@@ -135,13 +130,14 @@ MAP: dict[str, list[EffSpec]] = {
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
         [Spell(None, T_FUNCS['creatures']), Static(HostCantAttack()),
          Activated('3', KWAModEffect('add', 'Attack', True), T_FUNCS['host'])],
+        # TODO: 'Attack' is now outdated, need a different approach
     'brass-man': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('1', T_FUNCS['card_owner'])],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing': [Spell(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'])],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['tapped_lands'], 1, None),
                                        max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
     # TODO: if candelabra's owner has 0 mana, the effect should be offered, but it's putting game in infinite loop
-    'carrion-ants': [Activated('1', Pump(1, 1, True), T_FUNCS['self'])],
+    'carrion-ants': [self_pump('1', 1, 1)],
     'castle': [Static(Castle())],
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self']),
                     Activated('1RRT', KWAModEffect('add', 'Mountainwalk', True), T_FUNCS['creatures'])],
@@ -157,8 +153,8 @@ MAP: dict[str, list[EffSpec]] = {
     'circle-of-protection-red': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['red'])],
     'circle-of-protection-white': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['white'])],
     'citanul-druid': [Triggered(CitanulDruid())],
-    'city-in-a-bottle': [Spell(SacAll(T_FUNCS['city_in_a_bottle'])),
-                         Static(CityInABottle()), Static(CityInABottleCantCast())],
+    'city-in-a-bottle': [Static(CityInABottle()), Static(CityInABottleCantCast()),
+                         Spell(SacAll(T_FUNCS['city_in_a_bottle']))],
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap())],
     'city-of-shadows': [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],
@@ -174,7 +170,7 @@ MAP: dict[str, list[EffSpec]] = {
                         Activated('XT', AddCounter(PLUS_ONE_ZERO), None, allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'],
                                   max_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO)),
-                        Spell(AddCounter(PLUS_ONE_ZERO, 7)),],
+                        Spell(AddCounter(PLUS_ONE_ZERO, 7))],
     'clone': [Spell(Clone())],
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
     'cockatrice': [Triggered(CockatriceAndThicketBasilisk())],
@@ -187,8 +183,7 @@ MAP: dict[str, list[EffSpec]] = {
     'conversion': [Triggered(PayManaOrSacAtUpkeep('WW')), Static(Conversion())],
     'copper-tablet': [Static(DealDamageOnEveryUpkeep(T_FUNCS['in_turn_player'], 1))],
     'copy-artifact': [Spell(CopyArtifact())],
-    'coral-helm': [Activated('3', Pump(2, 2, True), T_FUNCS['creatures'],
-                             extra_costs=[DiscardAtRandomCost()])],
+    'coral-helm': [Activated('3', Pump(2, 2, True), T_FUNCS['creatures'], extra_costs=[DiscardAtRandomCost()])],
     'cosmic-horror': [Static(CosmicHorror())],
     'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
     'creature-bond': [Triggered(CreatureBond())],
@@ -228,8 +223,8 @@ MAP: dict[str, list[EffSpec]] = {
     'disenchant': [Spell(Destroy(), T_FUNCS['artifacts_and_enchantments'])],
     'divine-offering': [Spell(DivineOffering(), T_FUNCS['artifacts'])],
     'divine-transformation': [Spell(Pump(3, 3), T_FUNCS['creatures'])],
-    'dragon-engine': [Activated('2', Pump(1, 0, True), T_FUNCS['self'])],
-    'dragon-whelp': [Activated('R', Pump(1, 0, True), T_FUNCS['self']), Triggered(DragonWhelpEndStep())],
+    'dragon-engine': [self_pump('2', 1, 0)],
+    'dragon-whelp': [self_pump('R', 1, 0), Triggered(DragonWhelpEndStep())],
     'drain-power': [Spell(DrainPower(), T_FUNCS['opponent'])],
     'dream-coat': [Spell(None, T_FUNCS['creatures'])] +
                   [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,
