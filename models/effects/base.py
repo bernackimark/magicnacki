@@ -79,7 +79,6 @@ class EffSpec:
     cost: str
     effect: Effect
     target_spec: Union[tuple[Callable, int, int | None], Callable, TargetSpec, None] = None
-    trigger_event: type[Event] | None = None
     extra_costs: list[Cost | None] = None
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_p_id_turn: int | None = None
