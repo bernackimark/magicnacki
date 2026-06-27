@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from ..game_card.game_card import GameCard
     from game_state import GameState
     from models.phase_manager import Phase
-    from ..modifiers import ModType
 
 @dataclass
 class TargetSpec:
@@ -52,13 +51,6 @@ class Listener(Effect):
         """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""
         raise NotImplementedError()
 
-class Querier(Effect):
-    query: str | tuple[str] | None = None  # used by queriers
-
-    @abstractmethod
-    def on_query(self, gs: GameState, card: GameCard, **kwargs) -> bool | None:
-        """Answer a rules question (ex: can this attack?)"""
-        return None  # default: no opinion
 
 @dataclass
 class EffSpec:
@@ -83,7 +75,7 @@ class EffSpec:
         self.target_spec: TargetSpec | None = self._normalize_target_spec(self.target_spec)
 
     @staticmethod
-    def _normalize_target_spec(target_spec: tuple[Callable, int, int] | None | Callable | TargetSpec | None) -> (
+    def _normalize_target_spec(target_spec: tuple[Callable, int, int] | Callable | TargetSpec | None) -> (
             TargetSpec | None):
         if target_spec is None:
             return None
@@ -118,11 +110,6 @@ class EffSpec:
 
 
 @dataclass
-class StaticEffSpec(EffSpec):
-    ...
-
-
-@dataclass
 class ActivatedAbility:
     source: GameCard
     eff_spec: EffSpec
@@ -153,7 +140,7 @@ class ActivatedAbility:
 
 """
 Activated is when the player opts to activate an ability (aladdins-ring)
-Spell is one per card max; it is for casting (lightning-bolt)
+Spell is rarely more than one per card; it is for casting (lightning-bolt)
 Static is always on & can answer questions without causing actions (crusade)
 Triggered are abilities that respond to 'when/whenever' (hypnotic-specter)
 """
