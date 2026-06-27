@@ -1,8 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-import models.game_card.effect_spec_helpers
-
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
