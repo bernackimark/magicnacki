@@ -19,10 +19,13 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat
 from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep
-from ..effects.listeners_card_specific import DragonWhelpEndStep, ErgRaiders, AliFromCairo, Blight, \
-    CityOfBrassDamageOnTap, BlackVise, \
-    CosmicHorror, CurseArtifact, Cyclone, DemonicHordesUpkeep, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, \
-    ErosionUpkeep, AnkhOfMishra, CitanulDruid, DingusEgg, DropOfHoney, CocoonUntap, CocoonUpkeep, CityInABottle
+from ..effects.listeners_misc import AliFromCairo
+from ..effects.listeners_state_change import CityInABottle
+from ..effects.listeners_zone_change import AnkhOfMishra, CitanulDruid, DingusEgg
+from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, CurseArtifact, Cyclone, \
+    DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
+from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap
+from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRackEffect
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
 from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, \
@@ -36,7 +39,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
-    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap
+    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
