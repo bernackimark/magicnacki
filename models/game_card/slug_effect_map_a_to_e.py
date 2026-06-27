@@ -229,7 +229,7 @@ MAP: dict[str, list[EffSpec]] = {
     'divine-offering': [Spell(DivineOffering(), T_FUNCS['artifacts'])],
     'divine-transformation': [Spell(Pump(3, 3), T_FUNCS['creatures'])],
     'dragon-engine': [Activated('2', Pump(1, 0, True), T_FUNCS['self'])],
-    'dragon-whelp': [Activated('R', Pump(1, 0, True)), Triggered(DragonWhelpEndStep())],
+    'dragon-whelp': [Activated('R', Pump(1, 0, True), T_FUNCS['self']), Triggered(DragonWhelpEndStep())],
     'drain-power': [Spell(DrainPower(), T_FUNCS['opponent'])],
     'dream-coat': [Spell(None, T_FUNCS['creatures'])] +
                   [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,
