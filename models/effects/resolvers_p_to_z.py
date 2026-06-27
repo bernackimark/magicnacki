@@ -68,6 +68,17 @@ class RagMan(Resolver):
         random_card: GameCard = gs.randomize_event(target, opp_creatures)
         gs.pile_mgr.discard(random_card, source)
 
+class Rakalite(Resolver):
+    """{2}: Prevent the next 1 damage that would be dealt to any target this turn.
+    Return this artifact to its owner's hand at the beginning of the next end step."""
+    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
+        """target is the card dealing damage"""
+        if not target:
+            raise ValueError(f'{s.props.name} needs a target')
+        gs.event_mgr.register(PreventNextDamageToCardEOT(target, 1), s)
+        # TODO: this bounce is supposed to occur at End Step; need to create a listener
+        gs.pile_mgr.bounce(s)
+
 class RapidFire(Resolver):
     """Cast this spell only before blockers are declared. Target creature gains first strike until end of turn.
     If it doesn't have rampage, that creature gains rampage 2 until end of turn."""
@@ -87,6 +98,14 @@ class Reset(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for land in gs.card_filter.on_player_board(source.owner_id).lands().untapped().result():
             land.untap()
+
+class ReverseDamage(Resolver):
+    """The next time a source of your choice would deal damage to you this turn, prevent that damage.
+    You gain life equal to the damage prevented this way."""
+    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        """target = the GameCard doing the damage"""
+        from models.effects.listeners_damage import ReverseDamageEOT
+        gs.event_mgr.register(ReverseDamageEOT(damage_dealer=target), s)
 
 class ReversePolarity(Resolver):
     """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts"""
@@ -110,6 +129,36 @@ class RockHydraCast(Resolver):
         if x := source.extras.get('x', 0):  # read X chosen when casting
             source.counters.add_counter(PLUS_ONE, x)
 
+class RocketLauncherCast(Resolver):
+    """To support 'Activate only if you've controlled continuously since the beginning of your most recent turn."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        s.has_summoning_sickness = True
+
+class RocketLauncherAA(Resolver):
+    """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        gs.apply_damage(s, 1, t)
+        gs.event_mgr.register(DestroyAtEndStep(s), s)
+
+class SacrificeOnCast(Resolver):
+    """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
+    Note "sacrifice" refers to the card called sacrifice, not the game action of sacrifice"""
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        if not t:
+            raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
+        gs.action_stack.push(SacCreatureAndAddMana(s.owner_id, gs, s, t, 'B', t.props.mana_value), gs, False)
+
+
+class SafeHaven(Resolver):
+    """{2}, {T}: Exile target creature you control, storing the exiled card's ID for future reference"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if not target:
+            raise ValueError(f"{source.props.name} needs a target")
+        gs.pile_mgr.exile(target)
+        if source.extras.get('cards_exiled') is None:
+            source.extras['cards_exiled'] = set()
+        source.extras['cards_exiled'].add(target)
+
 class SandalsOfAbdallahIslandWalk(Resolver):
     """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -131,6 +180,26 @@ class Scarecrow(Resolver):
         from models.effects.listeners_damage import ScarecrowPrevention
         gs.event_mgr.register(ScarecrowPrevention(protected_player=source.owner_id), source)
 
+class SerendibDjinn(Resolver):
+    """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+        gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
+
+
+class Shapeshifter(Resolver):
+    """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
+            return
+        gs.action_stack.push(ShapeshifterChoice(source.owner_id, gs, source), gs, False)
+
+class ShieldWall(Resolver):
+    """Creatures you control get +0/+2 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.event_mgr.register(ShieldWallEOT(), source)
+
 class Simulacrum(Resolver):
     """You gain life equal to the damage already dealt to you this turn. If you control a creature,
     Simulacrum deals damage to target creature you control equal to the damage dealt to you this turn."""
@@ -148,6 +217,29 @@ class Simulacrum(Resolver):
             from models.choice_actions_all import DealDamageToChoice
             gs.pending_choice = DealDamageToChoice(source.owner_id, gs, source, damage_taken_this_turn, your_creatures)
 
+class Sindbad(Resolver):
+    """{T}: Draw a card and reveal it. If it isn't a land, discard it."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        top_card = gs.pile_mgr.libraries[source.owner_id][0] if gs.pile_mgr.libraries[source.owner_id] else None
+        gs.pile_mgr.draw(source.owner_id)
+        Reveal().resolve(gs, source, top_card)
+        if not top_card.is_land:
+            gs.pile_mgr.discard(top_card, source)
+
+class SingingTree(Resolver):
+    """Target attacking creature has base power 0 until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.append(PTMod(s=source, p_adj=-target.base_pt[0], expires='EOT'))
+
+class StoneGiant(Resolver):
+    """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
+    Destroy that creature at the beginning of the next end step."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
+        gs.event_mgr.register(DestroyAtEndStep(t), s)
+
 class StormSeeker(Resolver):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
@@ -159,6 +251,33 @@ class StreamOfLife(Resolver):
         x = source.extras.get('x', 0)  # read X chosen when casting
         gs.score_mgr.increment_life(target, x, source, gs)
 
+class Subdue(Resolver):
+    """Prevent all combat damage that would be dealt by target creature this turn.
+    That creature gets +0/+X until end of turn, where X is its mana value."""
+    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        gs.event_mgr.register(PreventNextDamageByEOT(t, combat_only=True), s)
+        t.modifiers.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
+
+class SwordsToPlowshares(Resolver):
+    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+        if target:
+            gs.pile_mgr.exile(target)  # which is correct?  exile_from_play() or exile()
+            gs.score_mgr.increment_life(target.owner_id, target.power, source, gs)
+
+class SylvanLibrary(Resolver):
+    """At your draw step, you may draw two additional cards.
+    If you do, choose two cards in your hand drawn this turn.
+    For each of those cards, pay 4 life or put the card on top of your library."""
+    # TODO: Once player opts to draw, control needs to be returned back to player to then make subsequent choices.
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.action_stack.push(DrawCardsOrDontChoice(gs.turn_mgr.player_turn_idx, gs, source, 2))
+
+class SyphonSoul(Resolver):
+    """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.apply_damage(source, 2, target)
+        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
+
 class TangleKelp(Resolver):
     """Tap host. Host doesn't untap during its controller's untap step if it attacked their last turn."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
@@ -167,6 +286,17 @@ class TangleKelp(Resolver):
         target.tap()
         from .listeners_generic import DoesntUntapIfItAttackedLastTurn
         gs.event_mgr.register(DoesntUntapIfItAttackedLastTurn(target), source)
+
+class TawnossCoffin(Resolver):
+    """... Exile target creature & all its auras. Note the number & kind of counters that were on that creature ..."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from copy import deepcopy
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        my_deep_copy = deepcopy(target)
+        source.extras['exiled_card'] = target
+        source.extras['exiled_card_deep_copy'] = my_deep_copy
+        gs.pile_mgr.exile(target)
 
 class Telekinesis(Resolver):
     """Tap target creature. Prevent all combat damage that would be dealt by that creature this turn.
@@ -183,6 +313,23 @@ class TimeElementalBounce(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.pile_mgr.bounce(target)
 
+class Timetwister(Resolver):
+    """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
+    (Timetwister to its owner's graveyard.)"""
+    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
+        time_twister = next(c for c in gs.pile_mgr.graveyards[s.owner_id] if c is s)
+        for p_id in range(2):
+            hand_cards = gs.pile_mgr.hands[p_id][:]
+            gs.pile_mgr.hands[p_id].cards.clear()
+            graveyard_cards = gs.pile_mgr.graveyards[p_id][:]
+            gs.pile_mgr.graveyards.clear()
+            gs.pile_mgr.libraries[p_id].extend(hand_cards)
+            gs.pile_mgr.libraries[p_id].extend(graveyard_cards)
+            random.shuffle(gs.pile_mgr.libraries[p_id])
+            gs.pile_mgr.draw(p_id, 7)
+            if p_id == s.owner_id:
+                gs.pile_mgr.graveyards[p_id].append(time_twister)
+
 class TowerOfCoireall(Resolver):
     """{T}: Target creature can't be blocked by Walls this turn"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -197,6 +344,13 @@ class Tracker(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         gs.apply_damage(source, source.power, target)
         gs.apply_damage(target, target.power, source)
+
+class Transmutation(Resolver):
+    """Switch target creature's power and toughness until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.event_mgr.register(TransmutationEOT(target), source)
 
 class TriassicEgg(Resolver):
     """Choose one (activate only if there are two or more hatchling counters on this artifact.):
@@ -242,6 +396,24 @@ class UrborgLoseSwampwalk(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Swampwalk', expires='EOT'))
 
+class UrzasAvengerFlying(Resolver):
+    """This creature gets -1/-1 and gains your choice of FLYING, first strike, or trample until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying', expires='EOT'))
+
+class UrzasAvengerFirstStrike(Resolver):
+    """This creature gets -1/-1 and gains your choice of flying, FIRST STRIKE, or trample until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
+
+class UrzasAvengerTrample(Resolver):
+    """This creature gets -1/-1 and gains your choice of flying, first strike, or TRAMPLE until end of turn"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+
 class UrzasTrio(Resolver):
     """{T}: Add {C}.
     urzas-mine: If you control an Urza's Power-Plant and an Urza's Tower, add {CC} instead.
@@ -257,6 +429,21 @@ class UrzasTrio(Resolver):
             gs.mana_pools[s.owner_id].add_floating('CCC')
         else:
             gs.mana_pools[s.owner_id].add_floating('CC')
+
+class VenarianGoldCast(Resolver):
+    """When this Aura enters, tap enchanted creature and put X sleep counters on it ..."""
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise RuntimeError(f"{source.props.name} needs a casting target")
+        target.tap()
+        if x := source.extras.get('x', 0):  # read X chosen when casting
+            source.counters.add_counter(SLEEP, x)
+
+class VenarianGoldHostStaysTapped(Resolver):
+    """Enchanted creature doesn't untap during its controller's untap step if it has a sleep counter on it."""
+    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
+        if source.host.counters.get_count(SLEEP):
+            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
 
 class VesuvanDoppelgangerCast(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield,
@@ -278,217 +465,6 @@ class Visions(Resolver):
             print('Showing you', c)
         gs.pending_choice = ShuffleOrDontChoice(target, gs, source, gs.pile_mgr.libraries[target])
 
-class WheelOfFortune(Resolver):
-    """Each player discards their hand, then draws seven cards"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        for i in (0, 1):
-            [DiscardCard(i, gs, card).play() for card in gs.pile_mgr.hands[i].cards]
-            gs.pile_mgr.draw(i, 7)
-
-
-class ShieldWall(Resolver):
-    """Creatures you control get +0/+2 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(ShieldWallEOT(), source)
-
-
-class SingingTree(Resolver):
-    """Target attacking creature has base power 0 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(PTMod(s=source, p_adj=-target.base_pt[0], expires='EOT'))
-
-
-class Transmutation(Resolver):
-    """Switch target creature's power and toughness until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(TransmutationEOT(target), source)
-
-
-class Rakalite(Resolver):
-    """{2}: Prevent the next 1 damage that would be dealt to any target this turn.
-    Return this artifact to its owner's hand at the beginning of the next end step."""
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        """target is the card dealing damage"""
-        if not target:
-            raise ValueError(f'{s.props.name} needs a target')
-        gs.event_mgr.register(PreventNextDamageToCardEOT(target, 1), s)
-        # TODO: this bounce is supposed to occur at End Step; need to create a listener
-        gs.pile_mgr.bounce(s)
-
-
-class ReverseDamage(Resolver):
-    """The next time a source of your choice would deal damage to you this turn, prevent that damage.
-    You gain life equal to the damage prevented this way."""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        """target = the GameCard doing the damage"""
-        from models.effects.listeners_damage import ReverseDamageEOT
-        gs.event_mgr.register(ReverseDamageEOT(damage_dealer=target), s)
-
-
-class RocketLauncherCast(Resolver):
-    """To support 'Activate only if you've controlled continuously since the beginning of your most recent turn."""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        s.has_summoning_sickness = True
-
-
-class RocketLauncherAA(Resolver):
-    """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        gs.apply_damage(s, 1, t)
-        gs.event_mgr.register(DestroyAtEndStep(s), s)
-
-
-class SacrificeOnCast(Resolver):
-    """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
-    Note "sacrifice" refers to the card called sacrifice, not the game action of sacrifice"""
-    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        if not t:
-            raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
-        gs.action_stack.push(SacCreatureAndAddMana(s.owner_id, gs, s, t, 'B', t.props.mana_value), gs, False)
-
-
-class SafeHaven(Resolver):
-    """{2}, {T}: Exile target creature you control, storing the exiled card's ID for future reference"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        if not target:
-            raise ValueError(f"{source.props.name} needs a target")
-        gs.pile_mgr.exile(target)
-        if source.extras.get('cards_exiled') is None:
-            source.extras['cards_exiled'] = set()
-        source.extras['cards_exiled'].add(target)
-
-
-class SerendibDjinn(Resolver):
-    """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
-            return
-        gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
-
-
-class Shapeshifter(Resolver):
-    """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
-            return
-        gs.action_stack.push(ShapeshifterChoice(source.owner_id, gs, source), gs, False)
-
-class Sindbad(Resolver):
-    """{T}: Draw a card and reveal it. If it isn't a land, discard it."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        top_card = gs.pile_mgr.libraries[source.owner_id][0] if gs.pile_mgr.libraries[source.owner_id] else None
-        gs.pile_mgr.draw(source.owner_id)
-        Reveal().resolve(gs, source, top_card)
-        if not top_card.is_land:
-            gs.pile_mgr.discard(top_card, source)
-
-class StoneGiant(Resolver):
-    """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
-    Destroy that creature at the beginning of the next end step."""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
-        gs.event_mgr.register(DestroyAtEndStep(t), s)
-
-
-class Subdue(Resolver):
-    """Prevent all combat damage that would be dealt by target creature this turn.
-    That creature gets +0/+X until end of turn, where X is its mana value."""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        gs.event_mgr.register(PreventNextDamageByEOT(t, combat_only=True), s)
-        t.modifiers.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
-
-class SwordsToPlowshares(Resolver):
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-        if target:
-            gs.pile_mgr.exile(target)  # which is correct?  exile_from_play() or exile()
-            gs.score_mgr.increment_life(target.owner_id, target.power, source, gs)
-
-class SylvanLibrary(Resolver):
-    """At your draw step, you may draw two additional cards.
-    If you do, choose two cards in your hand drawn this turn.
-    For each of those cards, pay 4 life or put the card on top of your library."""
-    # TODO: Once player opts to draw, control needs to be returned back to player to then make subsequent choices.
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.action_stack.push(DrawCardsOrDontChoice(gs.turn_mgr.player_turn_idx, gs, source, 2))
-
-
-class SyphonSoul(Resolver):
-    """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.apply_damage(source, 2, target)
-        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
-
-
-class TawnossCoffin(Resolver):
-    """... Exile target creature & all its auras. Note the number & kind of counters that were on that creature ..."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        from copy import deepcopy
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        my_deep_copy = deepcopy(target)
-        source.extras['exiled_card'] = target
-        source.extras['exiled_card_deep_copy'] = my_deep_copy
-        gs.pile_mgr.exile(target)
-
-
-class Timetwister(Resolver):
-    """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
-    (Timetwister to its owner's graveyard.)"""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        time_twister = next(c for c in gs.pile_mgr.graveyards[s.owner_id] if c is s)
-        for p_id in range(2):
-            hand_cards = gs.pile_mgr.hands[p_id][:]
-            gs.pile_mgr.hands[p_id].cards.clear()
-            graveyard_cards = gs.pile_mgr.graveyards[p_id][:]
-            gs.pile_mgr.graveyards.clear()
-            gs.pile_mgr.libraries[p_id].extend(hand_cards)
-            gs.pile_mgr.libraries[p_id].extend(graveyard_cards)
-            random.shuffle(gs.pile_mgr.libraries[p_id])
-            gs.pile_mgr.draw(p_id, 7)
-            if p_id == s.owner_id:
-                gs.pile_mgr.graveyards[p_id].append(time_twister)
-
-
-class UrzasAvengerFlying(Resolver):
-    """This creature gets -1/-1 and gains your choice of FLYING, first strike, or trample until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying', expires='EOT'))
-
-
-class UrzasAvengerFirstStrike(Resolver):
-    """This creature gets -1/-1 and gains your choice of flying, FIRST STRIKE, or trample until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
-
-
-class UrzasAvengerTrample(Resolver):
-    """This creature gets -1/-1 and gains your choice of flying, first strike, or TRAMPLE until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
-
-
-class VenarianGoldCast(Resolver):
-    """When this Aura enters, tap enchanted creature and put X sleep counters on it ..."""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise RuntimeError(f"{source.props.name} needs a casting target")
-        target.tap()
-        if x := source.extras.get('x', 0):  # read X chosen when casting
-            source.counters.add_counter(SLEEP, x)
-
-class VenarianGoldHostStaysTapped(Resolver):
-    """Enchanted creature doesn't untap during its controller's untap step if it has a sleep counter on it."""
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if source.host.counters.get_count(SLEEP):
-            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
-
 class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
@@ -508,13 +484,18 @@ class WandOfIth(Resolver):
         life_payment_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
         gs.pending_choice = PayLifeOrDiscardChoice(opp, gs, source, life_payment_amt, the_card)
 
-
 class Web(Resolver):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
             target.modifiers.append(PTMod(s=source, p_adj=0, t_adj=2))
             target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Reach'))
 
+class WheelOfFortune(Resolver):
+    """Each player discards their hand, then draws seven cards"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        for i in (0, 1):
+            [DiscardCard(i, gs, card).play() for card in gs.pile_mgr.hands[i].cards]
+            gs.pile_mgr.draw(i, 7)
 
 class WindsOfChange(Resolver):
     """Each player shuffles the cards from their hand into their library, then draws that many cards"""
@@ -528,7 +509,6 @@ class WindsOfChange(Resolver):
             random.shuffle(gs.pile_mgr.libraries[p_id])
             gs.pile_mgr.draw(p_id, len(hand_cards))
 
-
 class WinterBlast(Resolver):
     """Tap X target creatures. Winter Blast deals 2 damage to each of those creatures with flying."""
     def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
@@ -539,12 +519,10 @@ class WinterBlast(Resolver):
             if 'Flying' in t.keyword_abilities:
                 gs.apply_damage(source, 2, t)
 
-
 class WoodElemental(Resolver):
     """As this creature enters, sac any number of untapped Forests. WE's PT are each = # of Forests sacrificed."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.action_stack.push(WoodElementalChoice(source.owner_id, gs, source), gs, False)
-
 
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
@@ -552,10 +530,8 @@ class WormwoodTreefolkForestwalk(Resolver):
         target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Forestwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
 
-
 class WormwoodTreefolkSwampwalk(Resolver):
     """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Swampwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
-
