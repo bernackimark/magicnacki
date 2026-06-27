@@ -259,7 +259,7 @@ MAP: dict[str, list[EffSpec]] = {
     'energy-tap': [Spell(EnergyTap(), T_FUNCS['your_untapped_creatures'])],
     'erg-raiders': [Triggered(ErgRaiders())],
     'erhnam-djinn': [Triggered(ErhnamDjinn(), T_FUNCS['opp_non_wall_creatures'])],
-    'erosion': [Spell(None, T_FUNCS['lands']), Triggered(ErosionUpkeep())],
+    'erosion': [Triggered(ErosionUpkeep()), Spell(None, T_FUNCS['lands'])],
     'eternal-flame': [Spell(EternalFlame())],
     'eternal-warrior': [Spell(KWAModEffect('add', 'Vigilance'), T_FUNCS['creatures'])],
     'evil-eye-of-orms-by-gore': [Static(EvilEyeOfOrmsByGoreCanBeBlocked()),
