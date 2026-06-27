@@ -1,5 +1,5 @@
 from __future__ import annotations
-from abc import ABC, abstractmethod
+from abc import ABC
 from dataclasses import dataclass, field
 from functools import partial
 from typing import TYPE_CHECKING, Optional, Literal, Union, Callable
@@ -20,11 +20,22 @@ class TargetSpec:
     allow_duplicate_targets: bool = False  # used in pyrotechnics/fireball where we always add 1 damage at a time
 
     def get_targets(self, gs: GameState, source: GameCard) -> list[GameCard | int | None]:
-        """Execute the effect's filter func
+        """Execute the effect's filter func;
         If target is an int, let it through; if target is a GameCard, check can_target();
         If there are enough targets, return all targets, else return []"""
-        candidates = self.filter_func(gs, source)
-        legal_targets = [c for c in candidates if isinstance(c, int) or gs.perm_querier.can_target(c, source)]
+        from ..game_card.game_card import GameCard
+        candidates: list[GameCard] | list[int] | list[GameCard | int] | GameCard | int = self.filter_func(gs, source)
+        legal_targets = []
+        if isinstance(candidates, int):
+            return [candidates]
+        if isinstance(candidates, GameCard):
+            return [candidates] if gs.perm_querier.can_target(candidates, source) else []
+        for c in candidates:
+            if isinstance(c, int):
+                legal_targets.append(c)
+                continue
+            if gs.perm_querier.can_target(c, source):
+                legal_targets.append(c)
         return legal_targets if len(legal_targets) >= self.min_cnt else []
 
 class Effect(ABC):

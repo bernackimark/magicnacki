@@ -16,7 +16,7 @@ class DragonWhelpEndStep(Listener):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if len([temp for temp in s.modifiers.items if temp.source is s]) >= 4:
+        if len([temp for temp in s.modifiers.items if temp.s is s]) >= 4:
             gs.pile_mgr.destroy(s, allow_regeneration=False)
 
 

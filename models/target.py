@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-def create_target_text(targets: int | "GameCard" | tuple | list):
+def create_target_text(targets: int | "GameCard" | tuple | list | None):
     from models.game_card.game_card import GameCard
     """0 -> ', targeting Player #0' ... [1, c1] -> ', targeting Player #1, Air Elemental'
     (0, 1) -> ', targeting Player #0, Player #1' ... [c1, c2] -> , 'targeting Air Elemental, Savannah Lions'"""
     from models.game_card.game_card import GameCard
+    if not targets:
+        return ''
     if isinstance(targets, int):
         return f', targeting Player #{targets}'
     if isinstance(targets, GameCard):
