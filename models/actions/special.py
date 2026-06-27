@@ -55,7 +55,6 @@ class CopyCard(Action):
         self.s._card_sub_types = the_copy.props.card_sub_types
         if self.copy_color:
             self.s.colors = the_copy.props.colors
-        self.s.has_summoning_sickness = the_copy.props.is_creature and 'Haste' not in the_copy.props.keyword_abilities
         self.s.base_pt = the_copy.base_pt
         self.s._base_kwa = the_copy.props.keyword_abilities
         self.s.abilities = the_copy.abilities
