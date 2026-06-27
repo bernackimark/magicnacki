@@ -188,7 +188,6 @@ MAP: dict[str: list[EffSpec]] = {
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jihad': [Static(JihadPT()), Static(JihadSac()), Spell(DeclareAColor())],
-    # if Jihad's CastResolvedEvent isn't last, the engine will never register the listeners
     'jovial-evil': [Spell(JovialEvil(), T_FUNCS['opponent'])],
     'juggernaut': [Static(JuggernautUnblockableByWalls())],
     'jump': [Spell(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'])],

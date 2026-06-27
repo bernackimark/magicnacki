@@ -15,7 +15,7 @@ from models.actions.base import Action
 from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import CombatManager
-from models.events_all import DamageResolvedEvent, CastResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
+from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
@@ -180,7 +180,7 @@ class GameState:
     def add_activated_abilities_from_board(self) -> list[ActivateAbility] | list[None]:
         return [a for c in self.pile_mgr.boards[self.action_on_idx] for a in self.get_available_activated_abilities(c)]
 
-    def available_actions_from_hand(self) -> list[Action]:
+    def available_actions_from_hand(self) -> list[CastToBoard | BeginSpellCastAction]:
         """For each card in hand for the in-scope player ...
             -   If not can_cast(), skip
             -   If permanent, cast to board directly w/o stack (speed of testing; will need to amend to just lands)
@@ -190,7 +190,7 @@ class GameState:
                 -   If there are no or fewer targets than the effect requires, skip
                 -   Else add BeginSpellCastAction as a valid action
             Return list of legal Actions"""
-        actions: list[Action] = []
+        actions: list[CastToBoard | BeginSpellCastAction] = []
         p_id = self.action_on_idx
 
         for c in self.pile_mgr.hands[self.action_on_idx].cards:
@@ -203,24 +203,24 @@ class GameState:
                 continue
 
             # Gather abilities tied to casting
-            cast_eff_specs = [e for e in c.abilities if e.activation_type == 'spell']
+            spell_effect_specs = [e for e in c.abilities if e.activation_type == 'spell']
 
-            if not cast_eff_specs:
+            if not spell_effect_specs:
                 actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=None))
                 continue
 
-            # --- For each cast-triggered spec
-            for eff_spec in cast_eff_specs:
-                if 'X' in c.casting_cost and self.mana_pools[p_id].get_max_x(c.casting_cost) < eff_spec.min_x:
+            # --- For each spell effect spec ---
+            for spell_eff in spell_effect_specs:
+                if 'X' in c.casting_cost and self.mana_pools[p_id].get_max_x(c.casting_cost) < spell_eff.min_x:
                     continue
 
-                if eff_spec.target_spec and eff_spec.target_spec.filter_func:
-                    candidates = eff_spec.target_spec.filter_func(self, c)
+                if spell_eff.target_spec and spell_eff.target_spec.filter_func:
+                    candidates = spell_eff.target_spec.filter_func(self, c)
                     valid_targets = [t for t in candidates if self.perm_querier.can_target(t, c)]
-                    if len(valid_targets) < eff_spec.target_spec.min_cnt:
+                    if len(valid_targets) < spell_eff.target_spec.min_cnt:
                         continue
 
-                actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=eff_spec))
+                actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=spell_eff))
 
         return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
 
