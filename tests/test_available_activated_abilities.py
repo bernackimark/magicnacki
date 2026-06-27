@@ -11,7 +11,7 @@ class TestAvailableActionsFromHand(unittest.TestCase):
 
     def test_can_activate_ability_simple(self):
         card = get_card(self.gs, 'aladdins-ring', 0)
-        mana = [get_card(self.gs, 'island', 0) for _ in range(2)]
+        mana = [get_card(self.gs, 'island', 0) for _ in range(8)]
         add_to_battlefield(card, self.gs)
         [add_to_battlefield(m, self.gs) for m in mana]
         aa_cnt = len(self.gs.get_available_activated_abilities(card))
