@@ -158,9 +158,8 @@ MAP: dict[str, list[EffSpec]] = {
                          Static(CityInABottle()), Static(CityInABottleCantCast())],
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap())],
-    'city-of-shadows':
-        [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],
-        # TODO: needs a way to find a creature to exile in extra_costs
+    'city-of-shadows': [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],
+                        # TODO: I have no way of selecting a target to exile in Cost
     'clay-statue': [Activated('2', Regenerate(), T_FUNCS['self'])],
     'cleanse': [Spell(DestroyAll(T_FUNCS['black_creatures']))],
     'clockwork-avian': [Static(ClockworkCombatEnd()),
@@ -222,8 +221,7 @@ MAP: dict[str, list[EffSpec]] = {
     'dingus-egg': [Triggered(DingusEgg())],
     'disharmony': [Spell(Disharmony(), T_FUNCS['attackers'],
                          allowed_phases=[Phase.DECLARE_COMBAT, Phase.DECLARE_ATTACKERS])],
-    'disrupting-scepter': [Activated('3T', Discard(), T_FUNCS['all_players'],
-                                     allowed_p_id_turn=0)],  # TODO: p_id_turn needs a solution
+    'disrupting-scepter': [Activated('3T', Discard(), T_FUNCS['all_players'], allowed_p_id_turn=T_FUNCS['card_owner'])],
     'disenchant': [Spell(Destroy(), T_FUNCS['artifacts_and_enchantments'])],
     'divine-offering': [Spell(DivineOffering(), T_FUNCS['artifacts'])],
     'divine-transformation': [Spell(Pump(3, 3), T_FUNCS['creatures'])],
@@ -245,7 +243,6 @@ MAP: dict[str, list[EffSpec]] = {
     'dwarven-weaponsmith': [Activated('T', AddCounter(PLUS_ONE), T_FUNCS['creatures'],
                                       extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])],
                                       allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner'])],
-                    # TODO: all allowed_p_id_turn needs a better solution
     'earthbind': [Spell(Earthbind(), T_FUNCS['creatures'])],
     'earthquake': [Spell(Earthquake())],
     'eater-of-the-dead': [Activated('', EaterOfTheDead(), T_FUNCS['creatures_in_all_graveyards'])],

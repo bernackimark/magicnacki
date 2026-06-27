@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .effect_spec_helpers import dual_land_activated_ability_specs, MANA_BATTERY_ADD_CHARGE
 from .card_filter_funcs import T_FUNCS
-from models.constants import COLOR_LETTERS
+from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, CHARGE, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec, Spell
@@ -64,8 +64,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
     'phantasmal-forces': [Triggered(PayManaOrSacAtUpkeep('U'))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(land_type), T_FUNCS['lands'],
-                                 text=f'convert to {land_type}')
-                                 for land_type in {'Swamp', 'Island', 'Forest', 'Mountain', 'Plains'}],
+                                 text=f'convert to {land_type}') for land_type in BASIC_LANDS],
                                  # TODO: All 5 of these are getting registered, and I think that's causing problems
     'phyrexian-gremlins': [Triggered(OptionalUntap())],  # more to code
     'piety': [Spell(Piety())],

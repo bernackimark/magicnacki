@@ -70,7 +70,7 @@ class EffSpec:
     extra_costs: list[Cost | None] = None
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_p_id_turn: int | None = None
-    activated_cnt_this_turn: int = 0
+    activated_cnt_this_turn: int = 0   # TODO: doesn't belong in the spec, belongs in the constructor of the Effect
     max_activations_per_turn: int = 999
     text: str = ''
     max_x_func: Union[Callable[..., int], None] = None
