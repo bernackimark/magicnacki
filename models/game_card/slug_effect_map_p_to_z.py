@@ -4,7 +4,7 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
-from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, CHARGE, DREAM, HATCHLING
+from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec, Spell
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -15,8 +15,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
     Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Sindbad
-from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
-    ManaBatteriesAddMana, AddCountersYourTurnOnly, DealDamage, \
+from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
@@ -218,7 +217,7 @@ MAP: dict[str, list[EffSpec]] = {
     'telekinesis': [Spell(Telekinesis(), T_FUNCS['creatures'])],
     'teleport': [Spell(UnblockableThisTurn(), T_FUNCS['creatures'], allowed_phases=[Phase.DECLARE_COMBAT])],
     'terror': [Spell(Destroy(allow_regen=False), T_FUNCS['non_artifact_non_black_creatures'])],
-    'tetravus': [Spell(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'])],
+    'tetravus': [Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self'])],
     'tetsuo-umezawa': [Activated('UBBRT', Destroy(), T_FUNCS['tapped_or_blocking_creatures']),
                        Static(CantBeTargetedByAuras())],
     'the-abyss': [Triggered(TheAbyss())],
@@ -250,7 +249,7 @@ MAP: dict[str, list[EffSpec]] = {
                      Activated('', TriassicEgg(), extra_costs=[SacSelfCost()])],
     'triskelion': [Activated('', DealDamage(1), T_FUNCS['all_creatures_and_players'],
                              extra_costs=[RemoveCounterCost(PLUS_ONE)]),
-                   Spell(AddCountersYourTurnOnly(PLUS_ONE, 3), T_FUNCS['self'])],
+                   Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self'])],
     'tropical-island': dual_land_specs('GU'),
     'tsunami': [Spell(DestroyAll(lambda gs, s: gs.card_filter.in_play().islands().result()))],
     'tuknir-deathlock': [Activated('RGT', Pump(2, 2, True), T_FUNCS['creatures'])],
