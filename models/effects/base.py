@@ -1,13 +1,10 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from functools import partial
 from typing import TYPE_CHECKING, Optional, Literal, Union, Callable
 
 from models.cost import Cost, TapCost, ManaCost
-from models.utils import flip
-
 from models.events_all import Event
 
 if TYPE_CHECKING:
@@ -62,15 +59,6 @@ class Querier(Effect):
     def on_query(self, gs: GameState, card: GameCard, **kwargs) -> bool | None:
         """Answer a rules question (ex: can this attack?)"""
         return None  # default: no opinion
-
-class ModRetriever(Effect):
-    modifies: str | tuple[str] | None = None  # used by Modifier queries
-
-    @abstractmethod
-    def get_mods(self, gs: GameState, query: str, card: GameCard, source: GameCard, **kwargs) -> (
-            ModType | list[ModType] | None):
-        """A GameCard asks for any global mods (ex: Crusade would return a PTMOd to a white creature)"""
-        return None
 
 @dataclass
 class EffSpec:
