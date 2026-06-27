@@ -1,0 +1,166 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+
+from models.actions.tap_untap import LeaveTapped
+from models.choice_actions_all import AttachToChoice
+from models.counter_tokens import MINUS_ZERO_TWO
+from models.effects.base import Listener
+from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent
+
+if TYPE_CHECKING:
+    from models.game_card.game_card import GameCard
+    from game_state import GameState
+
+
+# --- TAP CARD EVENT ---
+class Blight(Listener):
+    """Enchant land; When enchanted land becomes tapped, destroy it."""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
+        if not source.host or source.props.slug != 'blight' or event.card is not source.host:
+            return
+        gs.pile_mgr.destroy(source.host)
+
+
+class CityOfBrassDamageOnTap(Listener):
+    """Whenever this land becomes tapped, it deals 1 damage to you"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
+        if event.card is not source:
+            return
+        gs.apply_damage(source, 1, source.owner_id)
+
+
+class Kudzu(Listener):
+    """When enchanted land becomes tapped, destroy it.
+    That land's controller must attach this Aura to a land of their choice. If they own no lands, destroy Kudzu."""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent) -> None:
+        if event.card is not s.host:
+            return
+        gs.pile_mgr.destroy(event.card)  # Note: this may cause the aura to be sent to the graveyard already
+        host_owner_lands = gs.card_filter.on_player_board(event.card.owner_id).lands().result()
+        if not host_owner_lands:
+            gs.pile_mgr.destroy(s)
+            return
+        if len(host_owner_lands) == 1:
+            s.host = host_owner_lands[0]
+            s.host.auras.append(s)
+            return
+        gs.pending_choice = gs.action_stack.push(AttachToChoice(s.host.owner_id, gs, s, s, host_owner_lands), gs, True)
+
+
+class Lifeblood(Listener):
+    """Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
+        if event.card.owner_id == s.owner_id:
+            return
+        if 'Mountain' in event.card.card_sub_types:
+            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
+
+
+class Lifetap(Listener):
+    """Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
+        if event.card.owner_id == s.owner_id:
+            return
+        if 'Forest' in event.card.card_sub_types:
+            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
+
+
+class PsychicVenom(Listener):
+    """Whenever enchanted land becomes tapped, this Aura deals 2 damage to that land's controller"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
+        if event.card is not s.host:
+            return
+        gs.apply_damage(s, 2, event.card.owner_id)
+
+
+class SpiritShackle(Listener):
+    """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
+        if event.card is not s.host:
+            return
+        s.host.counters.add_counter(MINUS_ZERO_TWO)
+
+
+class WildGrowth(Listener):
+    """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
+        if source.host is not event.card:
+            return
+        gs.mana_pools[event.card.owner_id].add_floating('G')
+
+
+# --- UNTAP CARD EVENT ---
+class TawnossCoffinUntap(Listener):
+    """When this artifact ... becomes untapped, return its exiled card to the battlefield tapped with the noted number &
+     kind of counters on it and re-attach all auras.
+     Note: all of this code is repeated in TawnossCoffinZoneChange"""
+    listens_to = UntapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapCardEvent) -> None:
+        if event.card is not source:
+            return
+        exiled_card: GameCard = source.extras.get('exiled_card')
+        deep_copy: GameCard = source.extras.get('exiled_card_deep_copy')
+        exiled_card.tap()
+        for ctr in deep_copy.counters:
+            exiled_card.counters.add_counter(ctr)
+        for aura in deep_copy.modifiers.items:
+            if isinstance(aura, GameCard):
+                exiled_card.modifiers.append(aura)
+
+
+# --- UNTAP PHASE ---
+class MagneticMountainOnUntapStep(Listener):
+    """Blue creatures don't untap during their controllers' untap steps"""
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UntapPhaseEvent):
+        if event.active_player != s.owner_id:
+            return
+        if s in gs.card_filter.on_player_board(event.active_player).blue().creatures().result():
+            gs.action_stack.push(LeaveTapped(s.owner_id, gs, s), gs, False)
+
+
+class RasputinDreamweaverUntap(Listener):
+    """... At your upkeep, if RD started the turn (as proxied w the UntapPhaseEvent) untapped &
+    w < 7 dream counters on it, put a dream counter on it."""
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        source.extras['started_turn_untapped'] = not source.is_tapped
+
+
+class Stasis(Listener):
+    """Players skip their untap steps ... """
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        from models.phase_manager import Phase
+        gs.phase_mgr.set_phase(Phase.UPKEEP, gs)
+
+
+class TimeVaultOption(Listener):
+    """If you would begin your turn while this artifact is tapped, you may skip that turn instead."""
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        if source.owner_id != event.active_player or not source.is_tapped:
+            return
+        from models.choice_actions_all import TimeVaultChoice
+        gs.action_stack.push(TimeVaultChoice(source.owner_id, gs, source), False)

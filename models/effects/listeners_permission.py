@@ -1,21 +1,23 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.actions.tap_untap import LeaveTapped
-from models.events_all import Event, CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
-    CanUntapQueryEvent, UntapCardEvent
+from models.counter_tokens import PUPA
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-from models.effects.base import Querier, Listener
-from models.utils import flip
+from models.actions.tap_untap import LeaveTapped
+from models.effects.base import Listener
+from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
+    CanUntapQueryEvent, UntapCardEvent, AttackEvent
 from models.phase_manager import Phase
+from models.utils import flip
 
 """
-These query-style effects must have a class-level attribute 'query', implement on_query(), and return a bool.
-These all ask for permission to do something.
+These are Effects that listens for Events that are XXQueryEvent
+These query-style effects must have a class-level attribute 'listens_to', implement on_event(gs, card, XXQueryEvent).
+It may set the event.permission = False
 """
 
 
@@ -73,13 +75,6 @@ class HostDoesntUntapAtUntap(Listener):
         if event.card is not source.host or gs.phase_mgr.phase != Phase.UNTAP:
             return
         event.permission = False
-
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if not source.host:
-            raise RuntimeError(f"{source.props.name} needs a host at untap phase")
-        if gs.turn_mgr.player_turn_idx != source.host.owner_id:
-            return
-        gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
 
 class UnblockableEOT(Listener):
     """Target creature can't be blocked this turn"""
@@ -351,6 +346,16 @@ class TowerOfCoireallEOT(Listener):
 
 
 # --- CAN UNTAP QUERY EVENT ---
+class CocoonUntap(Listener):
+    """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if event.card is not source.host:
+            return
+        if source.host.counters.get_count(PUPA):
+            event.permission = False
+
 class DampingField(Listener):
     """Players can't untap more than one artifact during their untap steps"""
     listens_to = CanUntapQueryEvent
@@ -363,6 +368,19 @@ class DampingField(Listener):
         events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
         if [e for e in events if e.card.is_artifact]:
             event.permission = False
+
+class GoblinRockSledUntap(Listener):
+    """This creature doesn't untap during your untap step if it attacked during your last turn"""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if source is not event.card:
+            return
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
+        for e, turn_num in gs.event_mgr.events[::-1]:
+            if turn_num == p_last_turn_num:
+                if isinstance(e, AttackEvent) and e.attacker is source:
+                    event.permission = False
 
 class Smoke(Listener):
     """Players can't untap more than one creature during their untap steps"""

@@ -6,7 +6,7 @@ from models.choice_actions_all import FalseOrdersChoice, DiscardChoice, NaturalS
     RemoveCounterForLifeChoice, NamelessRaceChoice
 from models.counter_tokens import MINUS_ZERO_ONE, VITALITY
 from models.effects.base import Resolver
-from models.effects.listeners_card_specific import HazezonTamarTokenCreation
+from models.effects.listeners_upkeep import HazezonTamarTokenCreation
 from models.effects.listeners_combat import GlyphOfDoomListener
 from models.effects.listeners_damage import GlyphOfLifeListener
 from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNextDamageToCardEOT, \
