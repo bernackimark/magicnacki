@@ -318,6 +318,7 @@ class EndTurnEffectsPhase(PhaseState):
     phase = Phase.END_TURN_EFFECTS
 
     def on_enter(self, gs: GameState):
+        from models.effects.base import ActivatedAbility
         # clean up effects
         gs.event_mgr.cleanup_eot()
 
@@ -328,9 +329,10 @@ class EndTurnEffectsPhase(PhaseState):
         for pool in gs.mana_pools:
             pool.clear_floating()
 
-        for c in gs.card_filter.in_play().result():
+        for c in gs.card_filter.result():
             for a in c.abilities:
-                a.activated_cnt_this_turn = 0
+                if isinstance(a, ActivatedAbility):
+                    a.activations_this_turn = 0
 
         gs.combat_mgr.combats.clear()
 

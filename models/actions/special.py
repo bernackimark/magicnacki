@@ -167,7 +167,7 @@ class SelectXAction(Action):
             # No targets → spell goes straight to stack
             if choice.eff_spec.activation_type == 'activated':
                 from models.actions.activate_ability import ActivateAbility
-                next_action = ActivateAbility(choice.player_idx, choice.gs, choice.source, choice.eff_spec,
+                next_action = ActivateAbility(choice.player_idx, choice.gs, choice.aa,
                                               target=None, x_value=self.x_value)
             else:
                 next_action = CastToTargetAddToStack(choice.player_idx, choice.gs, choice.source,

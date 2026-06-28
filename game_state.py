@@ -148,10 +148,7 @@ class GameState:
     def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
         actions: list[ActivateAbility | BeginAbilityActivationAction] = []
 
-        for eff_spec in c.abilities:
-            if eff_spec.activation_type != 'activated':
-                continue
-            aa = ActivatedAbility(c, eff_spec)
+        for aa in c.activated_abilities:
             if not aa.can_activate(self):
                 continue
 
@@ -160,20 +157,20 @@ class GameState:
 
             # If the ability takes no targets, create the ActivateAbility action
             if not target_spec:
-                actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=None))
+                actions.append(ActivateAbility(self.action_on_idx, self, aa, target=None))
                 continue
 
             # TODO: THIS IF CHAIN ARE WRONG
             #  EX: mana battery has no target_spec but does have a max_x_func and must enter BeginAbilityActivation ...
 
             # If the ability requires multiple targets or X needs to be declared, being that flow
-            if target_spec.min_cnt > 1 or eff_spec.max_x_func:
-                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, c, eff_spec))
+            if target_spec.min_cnt > 1 or aa.eff_spec.max_x_func:
+                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, aa))
                 continue
 
             # For each single legal target, create an ActivateAbility action
             for t in target_spec.get_targets(self, c):
-                actions.append(ActivateAbility(self.action_on_idx, self, c, eff_spec, target=t))
+                actions.append(ActivateAbility(self.action_on_idx, self, aa, target=t))
 
         return actions
 

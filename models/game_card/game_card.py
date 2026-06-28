@@ -8,9 +8,10 @@ from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
 if TYPE_CHECKING:
     from game_state import GameState
     from .card import Card
-    from ..effects.base import EffSpec
+    # from ..effects.base import EffSpec, ActivatedAbility
 
 from .slug_effect_map import INVOCATIONS
+from ..effects.base import EffSpec, ActivatedAbility
 from models.counter_tokens import Counters
 from models.modifiers import Modifiers, KWAMod
 from models.zone import Zone
@@ -47,6 +48,8 @@ class GameCard:
         self.extras: dict[str, Any] = {}  # declarations of X, color upon entry, etc
 
         self.abilities: list[EffSpec | None] = deepcopy(INVOCATIONS.get(self.props.slug, []))
+        self.activated_abilities: list[ActivatedAbility | None] = [ActivatedAbility(self, a) for a in self.abilities
+                                                                   if a.activation_type == 'activated']
 
     def __repr__(self) -> str:
         text = self.props.name

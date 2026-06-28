@@ -18,12 +18,12 @@ class AcceptAction(Action):
         target = last_action.target if hasattr(last_action, 'target') else None
 
         if isinstance(last_action, ActivateAbility):
-            if hasattr(last_action.eff_spec.effect, 'resolve'):
+            if hasattr(last_action.spec.effect, 'resolve'):
                 if isinstance(target, list):
                     for t in target:
-                        last_action.eff_spec.effect.resolve(self.gs, last_action.card, t)
+                        last_action.spec.effect.resolve(self.gs, last_action.card, t)
                 else:
-                    last_action.eff_spec.effect.resolve(self.gs, last_action.card, target)
+                    last_action.spec.effect.resolve(self.gs, last_action.card, target)
 
             self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
             self.gs.action_stack.clear_()
