@@ -230,7 +230,6 @@ MAP: dict[str, list[EffSpec]] = {
                   [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,
                              text=f'{{{combo}}}')
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],
-                  # TODO: max_activations_per_turn wasn't respected, assuming it's broke for all
     'drop-of-honey': [Triggered(DropOfHoney())],
     'drowned': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'drudge-skeletons': [Activated('B', Regenerate(), T_FUNCS['self'])],

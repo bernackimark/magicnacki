@@ -91,7 +91,6 @@ MAP: dict[str: list[EffSpec]] = {
                               text='Exile for {GG}'),
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
                               allowed_p_id_turn=T_FUNCS['card_owner'], max_activations_per_turn=1)],
-    # TODO: activated_cnt_this_turn needs to increment
     'gaseous-form': [Spell(GaseousForm(), T_FUNCS['creatures'])],
     'gate-to-phyrexia': [Activated('', Destroy(), T_FUNCS['artifacts'],
                                    extra_costs=[SacCardCost(T_FUNCS['your_creatures'])],
