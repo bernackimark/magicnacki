@@ -69,7 +69,7 @@ class EffSpec:
     activation_type: Literal['activated', 'spell', 'static', 'triggered']
     cost: str
     effect: Effect
-    target_spec: Union[tuple[Callable, int, int | None], Callable, TargetSpec, None] = None
+    target_spec: Union[Callable, TargetSpec, None] = None
     extra_costs: list[Cost | None] = None
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_p_id_turn: int | None = None
@@ -85,22 +85,13 @@ class EffSpec:
         object.__setattr__(self, "target_spec", self._normalize_target_spec(self.target_spec))
 
     @staticmethod
-    def _normalize_target_spec(target_spec: tuple[Callable, int, int] | Callable | TargetSpec | None) -> (
-            TargetSpec | None):
+    def _normalize_target_spec(target_spec: Callable | TargetSpec | None) -> TargetSpec | None:
         if target_spec is None:
             return None
-
         if isinstance(target_spec, TargetSpec):
             return target_spec
-
-        if isinstance(target_spec, tuple):
-            filter_func, min_cnt, max_cnt = target_spec
-            return TargetSpec(filter_func, min_cnt, max_cnt)
-
-        # Legacy support: assume single-target filter
         if callable(target_spec):
             return TargetSpec(target_spec, 1, 1)
-
         raise TypeError(f"Invalid target type: {target_spec}")
 
     @property
