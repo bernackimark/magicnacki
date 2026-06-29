@@ -59,7 +59,7 @@ MAP: dict[str, list[EffSpec]] = {
                  Triggered(HostDoesntUntapAtUntap()),
                  Activated('4', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'])],
     'part-water': [Spell(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'],
-                         max_x_from_printed_card)],
+                         max_x_func=max_x_from_printed_card)],
     'pavel-maliki': [self_pump('BR', 1, 0)],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['card_owner']),
                     Activated('T', Pump(1, 2, True), T_FUNCS['one_one_creatures'])],

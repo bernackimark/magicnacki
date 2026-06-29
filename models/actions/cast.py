@@ -139,7 +139,7 @@ class BeginSpellCastAction(Action):
             from models.choice_actions_all import XValueChoice
 
             min_x = self.eff_spec.min_x_func(self.gs, self.card)
-            max_x = self.eff_spec.max_x_func(self.gs, self.card)
+            max_x = self.eff_spec.max_x_func(self.gs, self.card) // self.card.casting_cost.count('X')  # for double X
             x_options = [i for i in range(min_x, max_x + 1)]
 
             self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, x_options, self.eff_spec)
