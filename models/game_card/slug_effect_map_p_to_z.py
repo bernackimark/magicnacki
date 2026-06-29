@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump
+from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
+    voodoo_doll_x, max_x_from_printed_card
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, DREAM, HATCHLING
-from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec, Spell
+from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
+from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
@@ -57,7 +59,7 @@ MAP: dict[str, list[EffSpec]] = {
                  Triggered(HostDoesntUntapAtUntap()),
                  Activated('4', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'])],
     'part-water': [Spell(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'],
-                   max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XU') // 2)],
+                         max_x_from_printed_card)],
     'pavel-maliki': [self_pump('BR', 1, 0)],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['card_owner']),
                     Activated('T', Pump(1, 2, True), T_FUNCS['one_one_creatures'])],
@@ -194,8 +196,7 @@ MAP: dict[str, list[EffSpec]] = {
     'stone-rain': [Spell(Destroy(), T_FUNCS['lands'])],
     'storm-seeker': [Spell(StormSeeker(), T_FUNCS['all_players'])],
     'storm-world': [Triggered(StormWorld())],
-    'stream-of-life': [Spell(StreamOfLife(), T_FUNCS['all_players'],
-                             max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XG'))],
+    'stream-of-life': [Spell(StreamOfLife(), T_FUNCS['all_players'], max_x_func=max_x_from_printed_card)],
     'strip-mine': [Activated('T', AddMana('C'), T_FUNCS['card_owner']),
                    Activated('T', Destroy(), T_FUNCS['lands'], extra_costs=[SacSelfCost()])],
     'su-chi': [Triggered(SuChi())],
@@ -236,14 +237,14 @@ MAP: dict[str, list[EffSpec]] = {
                    Activated('T', TakeAnotherTurn()), Spell(TapCardEffect(), T_FUNCS['self'])],
     'time-walk': [Spell(TakeAnotherTurn())],
     'timetwister': [Spell(Timetwister())],
-    'tivadars-crusade': [Spell(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result()))],
+    'tivadars-crusade': [Spell(DestroyAll(T_FUNCS['goblins']))],
     'tor-wauki': [Activated('T', DealDamage(2), T_FUNCS['combatants'])],
     'tormods-crypt': [Activated('T', GraveyardToExileInItsEntirety(), T_FUNCS['all_players'],
                                 extra_costs=[SacSelfCost()])],
     'touch-of-darkness': [Spell(SetColor('B', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
     'tower-of-coireall': [Activated('T', TowerOfCoireall(), T_FUNCS['creatures'])],
     'tracker': [Activated('GGT', Tracker(), T_FUNCS['creatures'])],
-    'tranquility': [Spell(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Enchantment').result()))],
+    'tranquility': [Spell(DestroyAll(T_FUNCS['enchants']))],
     'transmutation': [Spell(Transmutation(), T_FUNCS['creatures'])],
     'triassic-egg': [Activated('3T', AddCounter(HATCHLING)),
                      Activated('', TriassicEgg(), extra_costs=[SacSelfCost()])],
@@ -251,7 +252,7 @@ MAP: dict[str, list[EffSpec]] = {
                              extra_costs=[RemoveCounterCost(PLUS_ONE)]),
                    Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self'])],
     'tropical-island': dual_land_specs('GU'),
-    'tsunami': [Spell(DestroyAll(lambda gs, s: gs.card_filter.in_play().islands().result()))],
+    'tsunami': [Spell(DestroyAll(T_FUNCS['islands']))],
     'tuknir-deathlock': [Activated('RGT', Pump(2, 2, True), T_FUNCS['creatures'])],
     'tundra': dual_land_specs('WU'),
     'tunnel': [Spell(Destroy(False), T_FUNCS['walls'])],
@@ -296,8 +297,7 @@ MAP: dict[str, list[EffSpec]] = {
     'volcanic-island': dual_land_specs('RU'),
     'voodoo-doll': [Triggered(AddCounterAtTargetUpkeep(T_FUNCS['card_owner'], PIN)), Triggered(VoodooDollEndStep()),
                     Activated('XXT', DealDamage(), T_FUNCS['all_creatures_and_players'],
-                              min_x=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2,
-                              max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(PIN)//2)],
+                              min_x=voodoo_doll_x, max_x_func=voodoo_doll_x)],
     'walking-dead': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-bone': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],
@@ -325,14 +325,14 @@ MAP: dict[str, list[EffSpec]] = {
                      Static(OptionalUntap()), Static(ReturnToOwnerOnUntap())],
     'winds-of-change': [Spell(WindsOfChange())],
     'winter-blast': [Spell(WinterBlast(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None),
-                           max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XG'))],
+                           max_x_func=max_x_from_printed_card)],
     'winter-orb': [Static(WinterOrb())],
     'witch-hunter': [Activated('T', DealDamage(1), T_FUNCS['all_players']),
                      Activated('1WWT', Bounce(), T_FUNCS['opp_creatures'])],
     'wood-elemental': [Spell(WoodElemental())],
     'wooden-sphere': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('G'))],
     'word-of-binding': [Spell(TapCardsEffect(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None),
-                              max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XBB'))],
+                              max_x_func=max_x_from_printed_card)],
     'wormwood-treefolk': [Activated('GG', WormwoodTreefolkForestwalk()), Activated('BB', WormwoodTreefolkSwampwalk())],
     'wrath-of-god': [Spell(ExileAllCreatures())],
     'wyluli-wolf': [Activated('T', Pump(1, 1, True), T_FUNCS['creatures'])],

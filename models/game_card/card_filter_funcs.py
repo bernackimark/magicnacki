@@ -87,6 +87,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'host_owner': lambda gs, s: s.host.owner_id,
     'in_turn_player': lambda gs, _: gs.turn_mgr.player_turn_idx,
     'in_turn_player_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).tapped().blue().creatures().result(),
+    'islands': lambda gs, s: gs.card_filter.in_play().islands().result(),
     'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),
     'lands': lambda gs, s: gs.card_filter.in_play().lands().result(),
     'legendary_creatures': lambda gs, s: gs.card_filter.in_play().legendary().creatures().result(),
@@ -119,6 +120,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'perms_you_own_and_control': lambda gs, s: [p for p in gs.card_filter.in_play().permanents().result()
                                                 if id(p) in {id(y) for y in gs.card_filter.on_player_board(s.owner_id).result()} &
                                                 {id(z) for z in gs.card_filter.on_player_board(s.owner_id).result()}],
+    'plains': lambda gs, s: gs.card_filter.in_play().plains().result(),
     'red': lambda gs, s: gs.card_filter.in_play().red().result(),
     'self': lambda gs, s: s,
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()

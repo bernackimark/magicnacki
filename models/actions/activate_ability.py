@@ -72,6 +72,10 @@ class BeginAbilityActivationAction(Action):
 
         if self.spec.max_x_func:
             from models.choice_actions_all import XValueChoice
+
+            # TODO: Feed XValueChoice options for X based on casting cost & available mana
+            #  this would handle banshee & candelabra-of-tawnos
+
             self.gs.pending_choice = XValueChoice(self.card.owner_id, self.gs, self.card, self.spec, self.aa)
             return
 

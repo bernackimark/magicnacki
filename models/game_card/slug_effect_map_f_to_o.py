@@ -3,7 +3,8 @@ from __future__ import annotations
 from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCounterCost, \
     SacCardCost, DiscardLastCardDrawnThisTurn
 from models.counter_tokens import CARRION, PLUS_ONE
-from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec, Spell
+from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
+from ..target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, \
     GoblinShrinePump, GravitySphere, \
     HiddenPath, IvoryGuardians, JacquesLeVert, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, \
@@ -27,7 +28,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
-    mox_specs, self_pump
+    mox_specs, self_pump, max_x_from_printed_card
 from ..effects.listeners_misc import IchneumonDruid
 from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
@@ -72,7 +73,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fishliver-oil': [Spell(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures'])],
     'fissure': [Spell(Destroy(False), T_FUNCS['creatures_and_lands'])],
     'flash-flood': [Spell(FlashFlood(), T_FUNCS['flash_flood'])],
-    'flashfires': [Spell(DestroyAll(lambda gs, s: gs.card_filter.in_play().plains().result()))],
+    'flashfires': [Spell(DestroyAll(T_FUNCS['plains']))],
     'flight': [Spell(KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
     'flood': [Activated('UU', TapCardEffect(), T_FUNCS['untapped_creatures_without_flying'])],
     'floral-spuzzem': [Triggered(FloralSpuzzem())],
@@ -265,8 +266,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mightstone': [Static(Mightstone())],
     'mijae-djinn': [Triggered(MijaeDjinn())],
     'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
-    'mind-twist': [Spell(MindTwist(), T_FUNCS['all_players'],
-                         max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('XB'))],
+    'mind-twist': [Spell(MindTwist(), T_FUNCS['all_players'], max_x_func=max_x_from_printed_card)],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
     'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_id_turn=T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],

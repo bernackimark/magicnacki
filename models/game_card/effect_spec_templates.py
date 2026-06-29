@@ -1,5 +1,5 @@
 from models.cost import RemoveCounterCost
-from models.counter_tokens import CHARGE
+from models.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
 from models.effects.resolvers_generic import AddMana, UntapForManaEffect, AddCounter, ManaBatteriesAddMana, Pump
 from models.game_card.card_filter_funcs import T_FUNCS
@@ -29,3 +29,18 @@ def mox_specs(color: str) -> list[EffSpec]:
 
 
 MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
+
+
+# --- X HELPERS ---
+def clockwork_avian_x(_, s):
+    return 4 - s.counters.get_count(PLUS_ONE_ZERO)
+
+def clockwork_beast_x(_, s):
+    return 7 - s.counters.get_count(PLUS_ONE_ZERO)
+
+def max_x_from_printed_card(gs, s):
+    ...
+
+def voodoo_doll_x(_, source):
+    return source.counters.get_count(PIN) // 2
+

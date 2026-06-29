@@ -136,14 +136,13 @@ class BeginSpellCastAction(Action):
         """Determines which pipeline to enter"""
         # --- X selection first (if needed)
         if self.eff_spec and 'X' in self.card.casting_cost:
-            min_x = self.eff_spec.min_x
-            max_x = self.eff_spec.max_x_func(self.gs, self.card)
-            if min_x != max_x:
-                from models.choice_actions_all import XValueChoice
-                self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, self.eff_spec)
-                return
-            else:
-                self.card.extras['x'] = min_x
+            from models.choice_actions_all import XValueChoice
+
+            # TODO: Feed XValueChoice options for X based on casting cost & available mana
+            #  must consider double-X
+
+            self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, self.eff_spec)
+            return
 
         # --- Targeting ---
         if self.eff_spec and self.eff_spec.target_spec:

@@ -208,9 +208,6 @@ class GameState:
 
             # --- For each spell effect spec ---
             for spell_eff in spell_effect_specs:
-                if 'X' in c.casting_cost and self.mana_pools[p_id].get_max_x(c.casting_cost) < spell_eff.min_x:
-                    continue
-
                 if spell_eff.target_spec and spell_eff.target_spec.filter_func:
                     candidates = spell_eff.target_spec.filter_func(self, c)
                     valid_targets = [t for t in candidates if self.perm_querier.can_target(t, c)]

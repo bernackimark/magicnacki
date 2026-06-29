@@ -5,7 +5,8 @@ from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
-from models.effects.base import EffSpec, Activated, Triggered, Static, TargetSpec, Spell
+from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
+from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, CityOfShadowsAA2, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, Berserk, BloodLust, \
@@ -17,7 +18,8 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
-    untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump
+    untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
+    max_x_from_printed_card
 from ..effects.listeners_misc import AliFromCairo
 from ..effects.listeners_state_change import CityInABottle
 from ..effects.listeners_zone_change import AnkhOfMishra, CitanulDruid, DingusEgg
@@ -80,7 +82,7 @@ MAP: dict[str, list[EffSpec]] = {
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures'])],
     'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked()), Static(ArgothianPixies())],
     'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
-    'armageddon': [Spell(DestroyAll(lambda gs, s: gs.card_filter.in_play().by_type('Land').result()))],
+    'armageddon': [Spell(DestroyAll(T_FUNCS['lands']))],
     'army-of-allah': [Spell(ArmyOfAllah())],
     'artifact-ward': [Spell(None, T_FUNCS['creatures']), Static(ArtifactWardCanBeBlocked()),
                       Static(ArtifactWardPrevention()), Static(ArtifactWardCanBeTargeted())],
@@ -96,8 +98,7 @@ MAP: dict[str, list[EffSpec]] = {
     'bad-moon': [Static(BadMoon())],
     'badlands': dual_land_specs('BR'),
     'ball-lightning': [Triggered(DestroyAtEndStep(T_FUNCS['self']))],
-    'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'],
-                          max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
+    'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'], max_x_func=max_x_from_printed_card)],
     'barls-cage': [Activated('3', BarlsCage(), T_FUNCS['creatures'])],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
     'basalt-monolith': [Triggered(DoesntUntapAtUntap()),
@@ -133,7 +134,7 @@ MAP: dict[str, list[EffSpec]] = {
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing': [Spell(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'])],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['tapped_lands'], 1, None),
-                                       max_x_func=lambda gs, s: gs.mana_pools[s.owner_id].get_max_x('X'))],
+                                       max_x_func=max_x_from_printed_card)],
     # TODO: if candelabra's owner has 0 mana, the effect should be offered, but it's putting game in infinite loop
     'carrion-ants': [self_pump('1', 1, 1)],
     'castle': [Static(Castle())],
@@ -161,13 +162,11 @@ MAP: dict[str, list[EffSpec]] = {
     'cleanse': [Spell(DestroyAll(T_FUNCS['black_creatures']))],
     'clockwork-avian': [Static(ClockworkCombatEnd()),
                         Activated('XT', AddCounter(PLUS_ONE_ZERO), None, allowed_phases=[Phase.UPKEEP],
-                                  allowed_p_id_turn=T_FUNCS['card_owner'],
-                                  max_x_func=lambda gs, s: 4 - s.counters.get_count(PLUS_ONE_ZERO)),
+                                  allowed_p_id_turn=T_FUNCS['card_owner'], max_x_func=clockwork_avian_x),
                         Spell(AddCounter(PLUS_ONE_ZERO, 4))],
     'clockwork-beast': [Static(ClockworkCombatEnd()),
                         Activated('XT', AddCounter(PLUS_ONE_ZERO), None, allowed_phases=[Phase.UPKEEP],
-                                  allowed_p_id_turn=T_FUNCS['card_owner'],
-                                  max_x_func=lambda gs, s: 7 - s.counters.get_count(PLUS_ONE_ZERO)),
+                                  allowed_p_id_turn=T_FUNCS['card_owner'], max_x_func=clockwork_beast_x),
                         Spell(AddCounter(PLUS_ONE_ZERO, 7))],
     'clone': [Spell(Clone())],
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
