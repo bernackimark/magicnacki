@@ -297,7 +297,7 @@ MAP: dict[str, list[EffSpec]] = {
     'volcanic-island': dual_land_specs('RU'),
     'voodoo-doll': [Triggered(AddCounterAtTargetUpkeep(T_FUNCS['card_owner'], PIN)), Triggered(VoodooDollEndStep()),
                     Activated('XXT', DealDamage(), T_FUNCS['all_creatures_and_players'],
-                              min_x=voodoo_doll_x, max_x_func=voodoo_doll_x)],
+                              min_x_func=voodoo_doll_x, max_x_func=voodoo_doll_x)],
     'walking-dead': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-bone': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],

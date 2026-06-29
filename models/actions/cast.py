@@ -96,7 +96,7 @@ class CastToTargetAddToStack(Action):
         return f"Cast {self.card.props.name} {self.text}{target_text}{variable_cast_text}"
 
     def play(self) -> None:
-        if self.card.extras.get('x') is not None:
+        if self.card.extras.get('x'):
             cast_cost = self.card.casting_cost[:]
             cast_cost = cast_cost.replace('X', str(self.card.extras.get('x')))
             self.gs.mana_pools[self.player_idx].pay(cast_cost)
@@ -138,10 +138,11 @@ class BeginSpellCastAction(Action):
         if self.eff_spec and 'X' in self.card.casting_cost:
             from models.choice_actions_all import XValueChoice
 
-            # TODO: Feed XValueChoice options for X based on casting cost & available mana
-            #  must consider double-X
+            min_x = self.eff_spec.min_x_func(self.gs, self.card)
+            max_x = self.eff_spec.max_x_func(self.gs, self.card)
+            x_options = [i for i in range(min_x, max_x + 1)]
 
-            self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, self.eff_spec)
+            self.gs.pending_choice = XValueChoice(self.player_idx, self.gs, self.card, x_options, self.eff_spec)
             return
 
         # --- Targeting ---

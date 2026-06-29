@@ -142,9 +142,8 @@ class SacTwoIslands(Action):
         self.gs.action_stack.pop()
 
 class SelectXAction(Action):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, choice: XValueChoice, x_value: int):
+    def __init__(self, p_id: int, gs: GameState, choice: XValueChoice, x_value: int):
         super().__init__(p_id, gs)
-        self.source = source
         self.choice = choice
         self.x_value = x_value
 
@@ -153,22 +152,21 @@ class SelectXAction(Action):
         return f'{record}, X={self.x_value}'
 
     def play(self):
-        self.choice.selected_x = self.x_value
-        self.source.extras['x'] = self.x_value
+        choice = self.choice
+        source = choice.source
+
+        source.extras['x'] = self.x_value
 
         # After selecting X, check if the spell also has targets
-        if self.choice.eff_spec.target_spec:
+        if choice.eff_spec.target_spec:
             from models.choice_actions_all import MultiTargetChoice
-            self.choice.gs.pending_choice = MultiTargetChoice(self.choice.player_idx, self.choice.gs,
-                                                              self.choice.source, self.choice.eff_spec,
-                                                              x_value_for_variable_cast=self.choice.selected_x)
+            choice.gs.pending_choice = MultiTargetChoice(choice.player_idx, choice.gs, choice.source, choice.eff_spec,
+                                                         x_value_for_variable_cast=self.x_value)
         else:
-            choice = self.choice
             # No targets → spell goes straight to stack
             if choice.eff_spec.activation_type == 'activated':
                 from models.actions.activate_ability import ActivateAbility
-                next_action = ActivateAbility(choice.player_idx, choice.gs, choice.aa,
-                                              target=None, x_value=self.x_value)
+                next_action = ActivateAbility(choice.player_idx, choice.gs, choice.aa, target=None)
             else:
                 next_action = CastToTargetAddToStack(choice.player_idx, choice.gs, choice.source,
                                                      target=None, eff_spec=choice.eff_spec)

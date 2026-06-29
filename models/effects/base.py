@@ -51,8 +51,8 @@ class EffSpec:
     allowed_p_id_turn: int | None = None
     max_activations_per_turn: int = 999
     text: str = ''
+    min_x_func: Callable = lambda gs, s: 1
     max_x_func: Union[Callable[..., int], None] = None
-    min_x: int = 1
 
     def __post_init__(self):
         """Some slug-eff_spec mappings provide a callable (assume exactly 1 target will be chosen);

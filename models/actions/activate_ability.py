@@ -12,11 +12,10 @@ from models.events_all import StateBasedEvent
 
 @dataclass
 class ActivateAbility(Action):
-    """Action for acitvating an activated ability"""
+    """Action for activating an activated ability"""
     # candidate for a re-name
     aa: ActivatedAbility
     target: GameCard | list[GameCard] | tuple[int] | int | None = None
-    x_value: int | None = None
 
     def __repr__(self) -> str:
         from models.target import create_target_text
@@ -34,8 +33,12 @@ class ActivateAbility(Action):
     def spec(self) -> EffSpec:
         return self.aa.eff_spec
 
+    @property
+    def x_value(self) -> int:
+        return self.aa.source.extras.get('x')
+
     def play(self) -> None:
-        if self.x_value is not None:
+        if self.x_value:
             x_cost = self.spec.cost[:].replace('X', str(self.x_value))
             self.gs.mana_pools[self.player_idx].pay(x_cost)
             self.card.extras['x'] = self.x_value
@@ -73,10 +76,11 @@ class BeginAbilityActivationAction(Action):
         if self.spec.max_x_func:
             from models.choice_actions_all import XValueChoice
 
-            # TODO: Feed XValueChoice options for X based on casting cost & available mana
-            #  this would handle banshee & candelabra-of-tawnos
+            min_x = self.aa.eff_spec.min_x_func(self.gs, self.card)
+            max_x = self.aa.eff_spec.max_x_func(self.gs, self.card)
+            x_options = [i for i in range(min_x, max_x + 1)]
 
-            self.gs.pending_choice = XValueChoice(self.card.owner_id, self.gs, self.card, self.spec, self.aa)
+            self.gs.pending_choice = XValueChoice(self.card.owner_id, self.gs, self.card, x_options, self.spec, self.aa)
             return
 
         from models.choice_actions_all import MultiTargetChoice

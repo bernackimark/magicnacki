@@ -164,10 +164,8 @@ class MultiTargetChoice(ChoiceAction):
         self.selected_targets = []
 
     def get_actions(self) -> list[Action]:
-        from models.game_card.game_card import GameCard
         actions = []
         target_spec = self.eff_spec.target_spec
-
         candidates = target_spec.filter_func(self.gs, self.source)
 
         if target_spec.max_cnt is None or len(self.selected_targets) < target_spec.max_cnt:
@@ -302,16 +300,15 @@ class UntapWithManaChoice(ChoiceAction):
                 UntapWithManaAction(self.player_idx, self.gs, self.source, self.mana_cost)]
 
 class XValueChoice(ChoiceAction):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, eff_spec: EffSpec, aa: ActivatedAbility = None):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, x_options: list[int],
+                 eff_spec: EffSpec, aa: ActivatedAbility = None):
         super().__init__(p_id, gs, source)
+        self.x_options = x_options
         self.eff_spec = eff_spec
-        self.selected_x: int | None = None
         self.aa = aa
 
     def get_actions(self) -> list[Action]:
-        min_x = self.eff_spec.min_x
-        max_x = self.eff_spec.max_x_func(self.gs, self.source)
-        return [SelectXAction(self.player_idx, self.gs, self.source, self, x) for x in range(min_x, max_x + 1)]
+        return [SelectXAction(self.player_idx, self.gs, self, x) for x in self.x_options]
 
 # --- CARD-SPECIFIC ---
 class CosmicHorrorUpkeepChoice(ChoiceAction):
