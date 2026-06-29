@@ -82,7 +82,7 @@ class AngryMobPT(Listener):
             mod = PTMod(s=source, p_adj=2 + opp_swamp_cnt, t_adj=2 + opp_swamp_cnt, expires='EOT')
         event.mods.append(mod)
 
-class ArcadesSabbathAllCreaturePump(Listener):
+class ArcadesSabbathPumpAll(Listener):
     """... Each untapped creature you control gets +0/+2 as long as it's not attacking ..."""
     listens_to = ModQueryEvent
     modifies = 'pt'

@@ -40,7 +40,7 @@ from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCan
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    ArcadesSabbathAllCreaturePump, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
+    ArcadesSabbathPumpAll, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
 from models.phase_manager import Phase
 
@@ -70,14 +70,12 @@ MAP: dict[str, list[EffSpec]] = {
     'animate-dead': [Spell(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'])],
     'animate-wall': [Spell(KWAModEffect('remove', 'Defender'), T_FUNCS['walls'])],
     'ankh-of-mishra': [Triggered(AnkhOfMishra())],
-    'anti-magic-aura': [Spell(RemoveHostAuras(), T_FUNCS['creatures']),
-                        Static(HostCantBeTargetedByAuras())],
+    'anti-magic-aura': [Static(HostCantBeTargetedByAuras()), Spell(RemoveHostAuras(), T_FUNCS['creatures'])],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'arboria': [Static(Arboria())],
-    'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), Static(ArcadesSabbathAllCreaturePump()),
-                        self_pump('W', 0, 1)],
-    'arena-of-the-ancients': [Spell(ArenaOfTheAncientsCast()),
-                              Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['legendary_creatures']))],
+    'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), Static(ArcadesSabbathPumpAll()), self_pump('W', 0, 1)],
+    'arena-of-the-ancients': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['legendary_creatures'])),
+                              Spell(ArenaOfTheAncientsCast())],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures'])],
     'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked()), Static(ArgothianPixies())],
