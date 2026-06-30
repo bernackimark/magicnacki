@@ -255,6 +255,24 @@ class PreventNextDamageToEOT(Listener):
         event.remaining = event.amt - event.prevented
         self.is_expired = True
 
+class RedirectNextDamageFromCardToOwnerEOT(Listener):
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, protected_card: GameCard, redirectable_amt: int | None = None):
+        self.protected_card = protected_card
+        self.redirectable_amt = redirectable_amt
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.target is not self.protected_card:
+            return
+        redirected_amt = min(self.redirectable_amt, event.remaining)
+        event.prevented += redirected_amt
+        event.remaining = event.amt - event.prevented
+        damage_event_to_owner = DamageProposedEvent(event.source, self.protected_card.owner_id,
+                                                    redirected_amt, redirected_amt)
+        gs.event_mgr.register(damage_event_to_owner, source)
+
 # --- DAMAGE RESOLVED EVENT ---
 class AddPoisonCounter(Listener):
     """Whenever creature deals damage to a player, that player gets poison counter(s)"""

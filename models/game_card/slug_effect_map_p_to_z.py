@@ -23,7 +23,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
-    PreventAllNoncombatDamageToThisTurn
+    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner
 from ..effects.listeners_state_change import SerendibDjinnNoLands
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal, \
     VerduranEnchantress
@@ -35,7 +35,7 @@ from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowt
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, SirensCallEndStep, \
     VoodooDollEndStep, WhirlingDervish
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
-from ..effects.listeners_dies import PersonalIncarnation, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
+from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, UncleIstvanPrevention, \
     VeteranBodyguard, SpiritLink
@@ -64,7 +64,8 @@ MAP: dict[str, list[EffSpec]] = {
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['card_owner']),
                     Activated('T', Pump(1, 2, True), T_FUNCS['one_one_creatures'])],
     'people-of-the-woods': [Static(PeopleOfTheWoodsPT())],
-    'personal-incarnation': [Triggered(PersonalIncarnation())],  # more to code
+    'personal-incarnation': [Triggered(PersonalIncarnationDies()),
+                             Activated('0', RedirectNextDamageToOwner(), T_FUNCS['self'])],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
     'phantasmal-forces': [Triggered(PayManaOrSacAtUpkeep('U'))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(land_type), T_FUNCS['lands'],

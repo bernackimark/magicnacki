@@ -3,7 +3,7 @@ import random
 from typing import TYPE_CHECKING, Optional
 
 from models.choice_actions_all import FalseOrdersChoice, DiscardChoice, NaturalSelectionChoice, HealingSalveChoice, \
-    RemoveCounterForLifeChoice, NamelessRaceChoice
+    RemoveCounterForLifeChoice, NamelessRaceChoice, AddManaOfColorChoice
 from models.counter_tokens import MINUS_ZERO_ONE, VITALITY
 from models.effects.base import Resolver
 from models.effects.listeners_upkeep import HazezonTamarTokenCreation
@@ -65,6 +65,14 @@ class FeldonsCane(Resolver):
         lib.extend(gy)
         gy.clear()
         random.shuffle(lib)
+
+class FellwarStone(Resolver):
+    """{T}: Add one mana of any color that a land an opponent controls could produce"""
+    # Note: Because mana_produced is only stored on read-only props, it doesn't update if lands are altered in-game
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        produceable = {mana_produced for c in gs.card_filter.on_player_board(flip(source.owner_id)).result()
+                       for mana_produced in c.props.mana_produced}
+        gs.pending_choice = AddManaOfColorChoice(source.owner_id, gs, source, produceable)
 
 class Festival(Resolver):
     """... Creatures can't attack this turn"""

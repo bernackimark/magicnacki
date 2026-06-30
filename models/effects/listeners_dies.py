@@ -82,12 +82,12 @@ class Onulet(Listener):
         gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
 
-class PersonalIncarnation(Listener):
+class PersonalIncarnationDies(Listener):
     """... When this creature dies, its owner loses half their life, rounding up the loss amount"""
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or event.card != source:
+        if not isinstance(event, DiesEvent) or event.card is not source:
             return
         reduce_life_by = math.ceil(gs.score_mgr.life[source.owner_id] / 2)
         gs.apply_damage(source, reduce_life_by, source.owner_id)

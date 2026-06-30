@@ -17,7 +17,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
-    FireAndBrimstone, LibraryOfAlexandria
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
@@ -64,6 +64,7 @@ MAP: dict[str: list[EffSpec]] = {
     'feedback': [Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host']), Spell(None, T_FUNCS['enchants'])],
     'feint': [Spell(Feint(), T_FUNCS['attackers'])],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
+    'fellwar-stone': [Activated('T', FellwarStone())],
     'festival': [Spell(Festival(), None, allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['opponent'])],
     'field-of-dreams': [Triggered(FieldOfDreams())],
     'fire-and-brimstone': [Spell(FireAndBrimstone(),)],

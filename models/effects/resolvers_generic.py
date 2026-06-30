@@ -5,6 +5,7 @@ from models.choice_actions_all import DiscardChoice, UntapWithManaChoice, Declar
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
 from models.effects.base import Resolver
+from models.effects.listeners_generic import RedirectNextDamageFromCardToOwnerEOT
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
 from models.utils import flip
@@ -293,6 +294,10 @@ class Reanimate(Resolver):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         gs.pile_mgr.reanimate(target)
+
+class RedirectNextDamageToOwner(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        gs.event_mgr.register_effect(RedirectNextDamageFromCardToOwnerEOT(source), source)
 
 class Regenerate(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
