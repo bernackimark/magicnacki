@@ -29,7 +29,8 @@ from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCo
     VerduranEnchantress
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
-    TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon
+    TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
+    PowerLeak
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
     RasputinDreamweaverUntap, Stasis, TimeVaultOption
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, SirensCallEndStep, \
@@ -79,6 +80,7 @@ MAP: dict[str, list[EffSpec]] = {
     'planar-gate': [Static(PlanarGate())],
     'plateau': dual_land_specs('RW'),
     'power-artifact': [Spell(None, T_FUNCS['artifacts']), Static(PowerArtifact())],
+    'power-leak': [Static(PowerLeak())],
     'power-surge': [Triggered(PowerSurge())],
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), T_FUNCS['creatures'])],
     'preacher': [Activated('T', Steal(), T_FUNCS['opp_creatures']), Triggered(OptionalUntap()),

@@ -7,7 +7,7 @@ from models.choice_actions_all import CosmicHorrorUpkeepChoice, CurseArtifactUpk
     OpponentDestroysLandChoice, DemonicHordesUpkeepChoice, ElderSpawnUpkeepChoice, PayManaOrSacUpkeepChoice, \
     ErhnamDjinnChoice, ErosionUpkeepChoice, FastingChoice, ForceOfNatureUpkeepChoice, GabrielAngelfireChoice, \
     GiantSlugChoice, LandTaxChoice, LordOfThePitUpkeepChoice, SacChoice, PsychicAllergyUpkeepChoice, \
-    RogahhOfKherKeepUpkeepChoice, PayLifeOrSacChoice, CopyCardChoice, YawgmothDemonChoice
+    RogahhOfKherKeepUpkeepChoice, PayLifeOrSacChoice, CopyCardChoice, YawgmothDemonChoice, PowerLeakChoice
 from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
@@ -32,7 +32,6 @@ class BlackVise(Listener):
         if opp_hand_len > 4:
             gs.apply_damage(s, opp_hand_len - 4, opp_id)
 
-
 class CocoonUpkeep(Listener):
     """At your upkeep, remove a pupa counter from this Aura.
         If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
@@ -50,7 +49,6 @@ class CocoonUpkeep(Listener):
         host.counters.add_counter(PLUS_ONE)
         host.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
 
-
 class CosmicHorror(Listener):
     """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
     listens_to = UpkeepEvent
@@ -64,7 +62,6 @@ class CosmicHorror(Listener):
             return
         gs.action_stack.push(CosmicHorrorUpkeepChoice(source.owner_id, gs, source), gs, False)
 
-
 class CurseArtifact(Listener):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
     listens_to = UpkeepEvent
@@ -73,7 +70,6 @@ class CurseArtifact(Listener):
         if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(CurseArtifactUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
-
 
 class Cyclone(Listener):
     """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
@@ -87,7 +83,6 @@ class Cyclone(Listener):
         if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
             gs.pile_mgr.destroy(source, False)
         gs.action_stack.push(CycloneChoice(source.owner_id, gs, source), gs, False)
-
 
 class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
@@ -106,7 +101,6 @@ class DemonicHordesUpkeep(Listener):
             gs.action_stack.push(OpponentDestroysLandChoice(flip(source.owner_id), gs, source))
         else:
             gs.action_stack.push(DemonicHordesUpkeepChoice(source.owner_id, gs, source), gs, False)
-
 
 class DropOfHoney(Listener):
     """At your upkeep, destroy the creature with the least power. It can't be regenerated.
@@ -132,7 +126,6 @@ class DropOfHoney(Listener):
         from models.choice_actions_all import DestroyChoice
         gs.pending_choice = DestroyChoice(source.owner_id, gs, source, creatures_w_min_power, allow_regen=False)
 
-
 class ElderSpawnUpkeep(Listener):
     """At YOUR upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
     listens_to = UpkeepEvent
@@ -142,7 +135,6 @@ class ElderSpawnUpkeep(Listener):
             return
         gs.action_stack.push(ElderSpawnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, s), gs, False)
 
-
 class EnergyFlux(Listener):
     """All artifacts have 'At your [the owner's] upkeep, sacrifice this artifact unless you pay {2}'"""
     listens_to = UpkeepEvent
@@ -150,7 +142,6 @@ class EnergyFlux(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         for your_artifact in gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).artifacts().result():
             gs.action_stack.push(PayManaOrSacUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, your_artifact, '2'), gs, False)
-
 
 class ErhnamDjinn(Listener):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
@@ -161,7 +152,6 @@ class ErhnamDjinn(Listener):
             return
         gs.pending_choice = ErhnamDjinnChoice(s.owner_id, gs, s)
 
-
 class ErosionUpkeep(Listener):
     """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life."""
     listens_to = UpkeepEvent
@@ -170,7 +160,6 @@ class ErosionUpkeep(Listener):
         if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
             return
         gs.action_stack.push(ErosionUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
-
 
 class Fasting(Listener):
     """At your upkeep, add a hunger counter. Destroy Fasting if >=5 hunger counters.
@@ -311,6 +300,16 @@ class ManaVortexUpkeep(Listener):
         your_lands = gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).lands().result()
         gs.action_stack.push(SacChoice(gs.turn_mgr.player_turn_idx, gs, source, your_lands), gs, False)
 
+class PowerLeak(Listener):
+    """At host owner's upkeep, host owner may pay 0, 1, or 2 mana. PL deals 2 - the mana paid damage to host owner"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        host_owner = source.host.owner_id
+        if event.active_player != host_owner:
+            return
+        available_mana_cnt = gs.mana_pools[host_owner].get_max_x('')
+        gs.action_stack.push(PowerLeakChoice(host_owner, gs, source, available_mana_cnt), gs, False)
 
 class PowerSurge(Listener):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,

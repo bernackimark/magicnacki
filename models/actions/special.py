@@ -80,6 +80,22 @@ class DestroyAndForegoCombatDamage(Action):
         self.gs.event_mgr.register(PreventNextDamageByEOT(self.source, combat_only=True))
         self.gs.action_stack.pop()
 
+class PayManaAndOrTakeDamage(Action):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, pay_mana_amt: int, damage_amt: int):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.pay_mana_amt = pay_mana_amt
+        self.damage_amt = damage_amt
+
+    def __repr__(self):
+        return f'Pay {self.pay_mana_amt} mana & take {self.damage_amt} amount assigned by {self.source.props.name}'
+
+    def play(self):
+        if self.pay_mana_amt:
+            self.gs.mana_pools[self.player_idx].pay(str(self.pay_mana_amt))
+        if self.damage_amt:
+            self.gs.apply_damage(self.source, self.damage_amt, self.player_idx)
+
 class PayManaForLife(Action):
     def __init__(self, p_id: int, gs: GameState, mana_cost: str, gain_life_amt: int):
         super().__init__(p_id, gs)

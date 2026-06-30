@@ -27,7 +27,7 @@ from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, PayManaForLife, SkipDrawPhaseGainLife, SacTwoIslands, \
     RemoveCounterGainLife, DestroyAndForegoCombatDamage, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, HealingSalveA, \
     HealingSalveB, CyclonePayManaPerCounterDealDamage, YawgmothDemonUnpaidUpkeep, SelectXAction, \
-    RogahhOfKherKeepTapAndStealAction, Attach
+    RogahhOfKherKeepTapAndStealAction, Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import UntapCardStackPop, LeaveTapped, UntapWithManaAction
 from models.counter_tokens import CounterType
 from models.utils import flip
@@ -521,6 +521,21 @@ class NaturalSelectionChoice(ChoiceAction):
         a5 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c3, c1, c2])
         a6 = ReorderTopOfLibrary(self.player_idx, self.gs, self.library_id, [c3, c2, c1])
         return [a0, a1, a2, a3, a4, a5, a6]
+
+class PowerLeakChoice(ChoiceAction):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, available_mana_cnt: int):
+        super().__init__(p_id, gs, source)
+        self.available_mana_cnt = available_mana_cnt
+
+    def get_actions(self) -> list[Action]:
+        if self.available_mana_cnt == 0:
+            pay_mana_options = (0, )
+        elif self.available_mana_cnt == 1:
+            pay_mana_options = (0, 1)
+        else:
+            pay_mana_options = (0, 1, 2)
+        return [PayManaAndOrTakeDamage(self.player_idx, self.gs, self.source, mana_amt, 2 - mana_amt)
+                for mana_amt in pay_mana_options]
 
 class PrimalClayChoice(ChoiceAction):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
