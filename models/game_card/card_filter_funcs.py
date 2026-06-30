@@ -96,6 +96,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
                                                        if 'B' not in c.colors and 'Artifact' not in c.card_types],
     'non_creature_artifacts': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'non_token_permanents': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
+    'non_wall_creatures_wo_summoning_sickness': lambda gs, s: [c for c in gs.card_filter.in_play().non_wall_creatures().result()
+                                                               if not c.has_summoning_sickness],
     'one_one_creatures': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                         if c.power == 1 and c.toughness == 1],
     'opp_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),

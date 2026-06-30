@@ -5,7 +5,7 @@ from models.choice_actions_all import DiscardChoice, UntapWithManaChoice, Declar
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
 from models.effects.base import Resolver
-from models.effects.listeners_generic import RedirectNextDamageFromCardToOwnerEOT
+
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
 from models.utils import flip
@@ -297,6 +297,7 @@ class Reanimate(Resolver):
 
 class RedirectNextDamageToOwner(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.effects.listeners_generic import RedirectNextDamageFromCardToOwnerEOT
         gs.event_mgr.register_effect(RedirectNextDamageFromCardToOwnerEOT(source), source)
 
 class Regenerate(Resolver):

@@ -10,7 +10,7 @@ from models.effects.listeners_upkeep import HazezonTamarTokenCreation
 from models.effects.listeners_combat import GlyphOfDoomListener
 from models.effects.listeners_damage import GlyphOfLifeListener
 from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNextDamageToCardEOT, \
-    PreventAllDamageToEOT, DestroyAtEndStep
+    PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
 from models.effects.listeners_mod_queries import HellSwarmEOT, HolyLightEOT, MarshGasEOT, MoraleEOT
 from models.effects.listeners_permission import NoAttacksAllowedEOT
 from models.effects.resolvers_generic import GraveyardToExile, DrawCards
@@ -360,3 +360,12 @@ class NaturalSelection(Resolver):
         top_3_cards = gs.pile_mgr.libraries[target][:3]
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
         gs.pending_choice = NaturalSelectionChoice(source.owner_id, gs, source, target, top_3_cards)
+
+class NettlingImp(Resolver):
+    """Give target non-Wall creature w/o summoning sickness Goad until EOT.
+    Destroy it at end step if it didn't attack this turn ..."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.append(KWAMod('add', 'Goad', s=source, expires='EOT'))
+        gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(target), source)

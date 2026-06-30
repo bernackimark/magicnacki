@@ -17,7 +17,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
@@ -287,6 +287,7 @@ MAP: dict[str: list[EffSpec]] = {
     'natural-selection': [Spell(NaturalSelection(), T_FUNCS['all_players'])],
     'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],
     # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'nettling-imp': [Activated('T', NettlingImp(), T_FUNCS['non_wall_creatures_wo_summoning_sickness'])],
     'nevinyrrals-disk': [Spell(TapCardEffect(), T_FUNCS['self']),
                          Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments']))],
     'niall-silvain': [Activated('GGGGT', Regenerate(), T_FUNCS['creatures'])],

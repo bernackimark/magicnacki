@@ -359,6 +359,22 @@ class DestroyAtEndStepIfItAttacked(Listener):
         gs.pile_mgr.destroy(self.target)
         self.is_expired = True
 
+class DestroyAtEndStepIfItDidntAttack(Listener):
+    """Destroy target at end step if it is still on the battlefield, and it attacked this turn"""
+    listens_to = EndStepEvent
+    expires = 'EOT'
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
+        if self.target not in gs.card_filter.in_play().result():
+            return
+        if self.target in gs.card_filter.attackers().result():
+            return
+        gs.pile_mgr.destroy(self.target)
+        self.is_expired = True
+
 # --- PASS THE TURN EVENT ---
 class TakingAnotherTurnEOT(Listener):
     listens_to = PassTheTurnEvent
