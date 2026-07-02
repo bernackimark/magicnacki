@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 import random
+from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
-from models.actions.draw_discard import DiscardCard
-from models.actions.special import SacCreatureAndAddMana
+from models.actions.base import DoNothing
+from models.actions.damage import DealDamageTo, PayLife
+from models.actions.destroy_sac_regen import ReanimateAction
+from models.actions.draw_discard import DiscardCards, DrawCard
+from models.actions.piles import Tutor, Shuffle, HandToBattlefield
+from models.actions.pump import VariablePTMod
+from models.actions.special import SacCreatureAndAddMana, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
 from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import SearchLibraryChoice, ShuffleOrDontChoice, PrimalClayChoice, CopyCardChoice, \
-    TriassicEggChoice, SerendibDjinnUpkeepChoice, ShapeshifterChoice, DrawCardsOrDontChoice, PayLifeOrDiscardChoice, \
-    WoodElementalChoice
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
@@ -49,7 +53,8 @@ class PrimalClay(Resolver):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,
     or a 1/6 Wall artifact creature with defender in addition to its other types."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        gs.pending_choice = PrimalClayChoice(s.owner_id, gs, s)
+        options = [PrimalClayA(s.owner_id, gs, s), PrimalClayB(s.owner_id, gs, s), PrimalClayC(s.owner_id, gs, s)]
+        gs.pending_choice = ChoiceAction(options)
 
 class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
@@ -180,20 +185,12 @@ class Scarecrow(Resolver):
         from models.effects.listeners_damage import ScarecrowPrevention
         gs.event_mgr.register(ScarecrowPrevention(protected_player=source.owner_id), source)
 
-class SerendibDjinn(Resolver):
-    """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
-            return
-        gs.action_stack.push(SerendibDjinnUpkeepChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
 
-
-class Shapeshifter(Resolver):
+class ShapeshifterCast(Resolver):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
-            return
-        gs.action_stack.push(ShapeshifterChoice(source.owner_id, gs, source), gs, False)
+        options = [VariablePTMod(source.owner_id, gs, source, source, i, 7 - i) for i in range(8)]
+        gs.pending_choice = ChoiceAction(options)
 
 class ShieldWall(Resolver):
     """Creatures you control get +0/+2 until end of turn"""
@@ -214,8 +211,8 @@ class Simulacrum(Resolver):
 
         your_creatures = gs.card_filter.creatures().on_player_board(source.owner_id).result()
         if your_creatures:
-            from models.choice_actions_all import DealDamageToChoice
-            gs.pending_choice = DealDamageToChoice(source.owner_id, gs, source, damage_taken_this_turn, your_creatures)
+            options = [DealDamageTo(source.owner_id, gs, source, damage_taken_this_turn, c) for c in your_creatures]
+            gs.pending_choice = ChoiceAction(options)
 
 class Sindbad(Resolver):
     """{T}: Draw a card and reveal it. If it isn't a land, discard it."""
@@ -270,7 +267,8 @@ class SylvanLibrary(Resolver):
     For each of those cards, pay 4 life or put the card on top of your library."""
     # TODO: Once player opts to draw, control needs to be returned back to player to then make subsequent choices.
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.action_stack.push(DrawCardsOrDontChoice(gs.turn_mgr.player_turn_idx, gs, source, 2))
+        options = [DrawCard(source.owner_id, gs), DoNothing(source.owner_id, gs)]
+        gs.action_stack.push(ChoiceAction(options), gs, False)
 
 class SyphonSoul(Resolver):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
@@ -360,7 +358,16 @@ class TriassicEgg(Resolver):
         return source.counters.get_count(HATCHLING) >= 2
 
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
-        gs.action_stack.push(TriassicEggChoice(source.owner_id, gs, source), gs, False)
+        options = []
+        for card_in_hand in gs.pile_mgr.hands[source.owner_id].cards:
+            if card_in_hand.is_creature:
+                options.append(HandToBattlefield(source.owner_id, gs, card_in_hand))
+        for card_in_graveyard in gs.pile_mgr.graveyards[source.owner_id]:
+            if card_in_graveyard.is_creature:
+                options.append(ReanimateAction(source.owner_id, gs, source, card_in_graveyard))
+        if not options:
+            return
+        gs.pending_choice = ChoiceAction(options)
 
 class Twiddle(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
@@ -380,7 +387,9 @@ class UntamedWilds(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target=None):
         p_id = source.owner_id
         basic_lands = [c for c in gs.pile_mgr.libraries[p_id] if c.props.is_basic_land]
-        gs.pending_choice = SearchLibraryChoice(p_id, gs, source, basic_lands, Zone.BATTLEFIELD)
+        gs.add_presentation_request(p_id, 'search_library', {'cards': basic_lands})
+        options = [Tutor(p_id, gs, source, basic_land, Zone.BATTLEFIELD) for basic_land in basic_lands]
+        gs.pending_choice = ChoiceAction(options)
 
 class UrborgLoseFirstStrike(Resolver):
     """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
@@ -454,16 +463,17 @@ class VesuvanDoppelgangerCast(Resolver):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options, copy_color=False)
+        options = [CopyCard(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
+        gs.pending_choice = ChoiceAction(options)
 
 class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target player')
-        for c in gs.pile_mgr.libraries[target][:5]:
-            print('Showing you', c)
-        gs.pending_choice = ShuffleOrDontChoice(target, gs, source, gs.pile_mgr.libraries[target])
+        gs.add_presentation_request(source.owner_id, 'view_library', {'cards': gs.pile_mgr.libraries[target][:5]})
+        options = [Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[target]), DoNothing(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
 
 class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
@@ -482,7 +492,8 @@ class WandOfIth(Resolver):
             return
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
         life_payment_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
-        gs.pending_choice = PayLifeOrDiscardChoice(opp, gs, source, life_payment_amt, the_card)
+        options = [PayLife(opp, gs, source, life_payment_amt), DiscardCards(opp, gs, the_card)]
+        gs.pending_choice = ChoiceAction(options)
 
 class Web(Resolver):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -494,7 +505,7 @@ class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for i in (0, 1):
-            [DiscardCard(i, gs, card).play() for card in gs.pile_mgr.hands[i].cards]
+            [DiscardCards(i, gs, card).play() for card in gs.pile_mgr.hands[i].cards]
             gs.pile_mgr.draw(i, 7)
 
 class WindsOfChange(Resolver):
@@ -522,7 +533,11 @@ class WinterBlast(Resolver):
 class WoodElemental(Resolver):
     """As this creature enters, sac any number of untapped Forests. WE's PT are each = # of Forests sacrificed."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.action_stack.push(WoodElementalChoice(source.owner_id, gs, source), gs, False)
+        from models.actions.special import WoodElementalETBAction
+        your_untapped_forests = gs.card_filter.on_player_board(source.owner_id).forests().untapped().result()
+        options = [WoodElementalETBAction(source.owner_id, gs, source, combo)
+                   for r in range(len(your_untapped_forests)) for combo in combinations(your_untapped_forests, r=r)]
+        gs.pending_choice = ChoiceAction(options)
 
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""

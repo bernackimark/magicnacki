@@ -1,7 +1,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.choice_actions_all import PayManaOrTakeDamage, FloralSpuzzemChoice
+from models.actions.base import DoNothing
+from models.actions.damage import DealDamageToYou
+from models.actions.mana import PayMana
+from models.actions.special import DestroyAndForegoCombatDamage
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
@@ -32,7 +36,11 @@ class HasranOgress(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
         if event.attacker is not s:
             return
-        gs.action_stack.push(PayManaOrTakeDamage(s.owner_id, gs, s, '2', 3), gs, False)
+        if not gs.mana_pools[s.owner_id].can_pay('2'):
+            gs.apply_damage(s, 3, s.owner_id)
+            return
+        options = [PayMana(s.owner_id, gs, s, '2'), DealDamageToYou(s.owner_id, gs, s, 3)]
+        gs.action_stack.push(ChoiceAction(options), gs, False)
 
 class MijaeDjinn(Listener):
     """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
@@ -317,9 +325,14 @@ class FloralSpuzzem(Listener):
     listens_to = UnblockedAttackerEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
-        if event.attacker != s or not gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result():
+        if event.attacker is not s:
             return
-        gs.action_stack.push(FloralSpuzzemChoice(s.owner_id, gs, s), gs, False)
+        opp_artifacts = gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result()
+        if not opp_artifacts:
+            return
+        options = ([DestroyAndForegoCombatDamage(s.owner_id, gs, s, t) for t in opp_artifacts] +
+                   [DoNothing(s.owner_id, gs)])
+        gs.pending_choice = ChoiceAction(options)
 
 
 class MerchantShip(Listener):

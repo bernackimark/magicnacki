@@ -2,8 +2,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from models.choice_actions_all import BattlefieldToGraveyardChoice
-from models.modifiers import RegenerationMod
+from models.actions.piles import BattlefieldToGraveyard
+from models.choice_actions_all import ChoiceAction
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -61,8 +61,8 @@ class LegendarySBR(StateBasedRule):
                 if c.props.slug not in legends_seen:
                     legends_seen[c.props.slug] = c
                 else:
-                    gs.pending_choice = BattlefieldToGraveyardChoice(p_id, gs, [legends_seen[c.props.slug], c])
-                    changed = True
+                    options = [BattlefieldToGraveyard(p_id, gs, c) for c in legends_seen.values()]
+                    gs.pending_choice = ChoiceAction(options)
 
 class ZeroToughnessSBR(StateBasedRule):
     @staticmethod

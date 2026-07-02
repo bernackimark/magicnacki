@@ -20,7 +20,7 @@ class TapCard(Action):
 
 
 @dataclass
-class UntapCard(Action):
+class Untap(Action):
     card: GameCard
 
     def __repr__(self) -> str:
@@ -28,20 +28,10 @@ class UntapCard(Action):
 
     def play(self) -> None:
         self.card.untap()
+        self.gs.turn_mgr.untap_decisions_made.add(self.card.id_)
+        if self.gs.action_stack:
+            self.gs.action_stack.pop()
 
-
-class UntapCardStackPop(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.source = s
-
-    def __repr__(self):
-        return f'Untap {self.source}'
-
-    def play(self):
-        self.source.untap()
-        self.gs.turn_mgr.untap_decisions_made.add(self.source.id_)
-        self.gs.action_stack.pop()
 
 class UntapWithManaAction(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, mana_cost: str):

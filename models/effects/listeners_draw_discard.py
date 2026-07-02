@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.actions.draw_discard import DiscardCard
+from models.actions.draw_discard import DiscardCards
 from models.effects.base import Listener
 from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
 from models.utils import flip
@@ -34,7 +34,7 @@ class CursedRackEffect(Listener):
 
         hand = gs.pile_mgr.hands[opp_id]
         for i in range(len(hand.cards) - 4):
-            gs.action_stack.push(DiscardCard(opp_id, gs, hand.cards[0]), gs, False)
+            gs.action_stack.push(DiscardCards(opp_id, gs, hand.cards[0]), gs, False)
 
 
 # --- DRAW EVENT ---

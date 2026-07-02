@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 from models.constants import Target
 
 if TYPE_CHECKING:
-    from models.game_card.game_card import GameCard
-    from models.choice_actions_all import TargetChoiceAction, MultiTargetChoice
+    from models.choice_actions_all import MultiTargetChoice
 
 from models.actions.base import Action
 
 @dataclass
 class AddTargetAction(Action):
-    choice: TargetChoiceAction | MultiTargetChoice
+    choice: MultiTargetChoice
     target: Target
 
     def __repr__(self):
@@ -32,7 +31,7 @@ class AddTargetAction(Action):
 
 @dataclass
 class FinishTargetsAction(Action):
-    choice: TargetChoiceAction | MultiTargetChoice
+    choice: MultiTargetChoice
 
     def __repr__(self):
         return 'Finish Adding Targets'

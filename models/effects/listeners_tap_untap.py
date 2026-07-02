@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.actions.base import DoNothing
+from models.actions.special import TimeVaultSkipTurnAction
 from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import AttachToChoice
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
 from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent
@@ -50,7 +52,9 @@ class Kudzu(Listener):
             s.host = host_owner_lands[0]
             s.host.auras.append(s)
             return
-        gs.pending_choice = gs.action_stack.push(AttachToChoice(s.host.owner_id, gs, s, s, host_owner_lands), gs, True)
+        from models.actions.special import Attach
+        options = [Attach(s.host.owner_id, gs, s, land) for land in host_owner_lands]
+        gs.pending_choice = gs.action_stack.push(ChoiceAction(options), gs, True)
 
 
 class Lifeblood(Listener):
@@ -162,5 +166,5 @@ class TimeVaultOption(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
         if source.owner_id != event.active_player or not source.is_tapped:
             return
-        from models.choice_actions_all import TimeVaultChoice
-        gs.action_stack.push(TimeVaultChoice(source.owner_id, gs, source), False)
+        options = [TimeVaultSkipTurnAction(source.owner_id, gs, source), DoNothing(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)

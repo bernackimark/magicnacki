@@ -20,8 +20,10 @@ class AllowOpponentToDestroyALand(Action):
         if self.gs.action_stack:
             self.gs.action_stack.pop()
             # must first pop Demonic Hordes' controller's choice to pay
-        from models.choice_actions_all import OpponentDestroysLandChoice
-        self.gs.action_stack.push(OpponentDestroysLandChoice(flip(self.player_idx), self.gs, self.source), self.gs, True)
+        from models.choice_actions_all import ChoiceAction
+        options = [DestroyAction(flip(self.player_idx), self.gs, self.source, land)
+                   for land in self.gs.card_filter.lands().on_player_board(self.player_idx).result()]
+        self.gs.action_stack.push(ChoiceAction(options), self.gs, True)
 
 class DestroyAction(Action):
     def __init__(self, p_id, gs, source: GameCard, target: GameCard, allow_regen: bool = True):
@@ -55,17 +57,17 @@ class Exile(Action):
         self.gs.pile_mgr.exile(self.source)
         self.gs.action_stack.pop()  # remove choice
 
-class Reanimate(Action):
-    def __init__(self, p_id, gs, source: GameCard):
+class ReanimateAction(Action):
+    def __init__(self, p_id, gs, source: GameCard, target: GameCard):
         super().__init__(p_id, gs)
         self.source = source
+        self.target = target
 
     def __repr__(self):
-        return f'Reanimate {self.source.props.name}'
+        return f'Reanimate {self.target.props.name}'
 
     def play(self):
-        self.gs.pile_mgr.reanimate(self.source)
-        self.gs.action_stack.pop()  # remove choice
+        self.gs.pile_mgr.reanimate(self.target)
 
 class SacToReturnAllCardsExiledBy(Action):
     def __init__(self, p_id, gs, source: GameCard, exiler: GameCard):
@@ -85,18 +87,18 @@ class SacToReturnAllCardsExiledBy(Action):
         self.gs.pile_mgr.destroy(self.exiler, allow_regeneration=False)
 
 class Sac(Action):
-    def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
+    def __init__(self, p_id, gs, target: GameCard, w_damage_amt: int = 0):
         super().__init__(p_id, gs)
-        self.source = source
+        self.target = target
         self.w_damage_amt = w_damage_amt
 
     def __repr__(self):
-        return f'Sacrifice {self.source.props.name}'
+        return f'Sacrifice {self.target.props.name}'
 
     def play(self):
         if self.w_damage_amt:
-            self.gs.apply_damage(self.source, self.w_damage_amt, self.source.owner_id)
-        self.gs.pile_mgr.destroy(self.source, False)
+            self.gs.apply_damage(self.target, self.w_damage_amt, self.target.owner_id)
+        self.gs.pile_mgr.destroy(self.target, False)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         elif len(self.gs.action_stack):
@@ -118,16 +120,3 @@ class SacCards(Action):
             self.gs.pending_choice = None
         elif len(self.gs.action_stack):
             self.gs.action_stack.pop()  # remove choice
-
-# --- Card Specific ---
-class TheAbyssAction(Action):
-    def __init__(self, p_id, gs, source: GameCard):
-        super().__init__(p_id, gs)
-        self.source = source
-
-    def __repr__(self):
-        return f"{self.source.props.name}: Choose creature to destroy"
-
-    def play(self):
-        from models.choice_actions_all import TheAbyssChoice
-        self.gs.pending_choice = TheAbyssChoice(self.player_idx, self.gs, self.source)

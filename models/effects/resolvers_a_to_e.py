@@ -1,8 +1,12 @@
 from __future__ import annotations
 import math
+from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
-from models.choice_actions_all import DiscardChoice, SearchLibraryChoice, CopyCardChoice, AttachToChoice
+from models.actions.draw_discard import DiscardCards
+from models.actions.piles import Tutor
+from models.actions.special import CopyCard
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import SkipUntaps, DestroyAtEndStepIfItAttacked
@@ -98,7 +102,14 @@ class BazaarOfBaghdad(Resolver):
     """Draw two cards, then discard three cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.pile_mgr.draw(source.owner_id, 2)
-        gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id, 3, 3)
+        cards = gs.pile_mgr.hands[source.owner_id].cards
+        if len(cards) <= 2:
+            for c in cards[:]:
+                cards.remove(c)
+            return
+        options = [DiscardCards(source.owner_id, gs, list(combo))
+                   for r in range(3, 4) for combo in combinations(cards, r)]
+        gs.pending_choice = ChoiceAction(options)
 
 class Berserk(Resolver):
     """Cast this spell only before the combat damage step.
@@ -179,7 +190,8 @@ class Clone(Resolver):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
+        options = [CopyCard(s.owner_id, gs, s, card) for card in card_options]
+        gs.pending_choice = ChoiceAction(options)
 
 class CocoonCast(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target=None):
@@ -193,7 +205,8 @@ class CopyArtifact(Resolver):
         card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
         if not card_options:
             return
-        gs.pending_choice = CopyCardChoice(s.owner_id, gs, s, card_options)
+        options = [CopyCard(s.owner_id, gs, s, card) for card in card_options]
+        gs.pending_choice = ChoiceAction(options)
 
 class Crumble(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -205,7 +218,10 @@ class DemonicTutor(Resolver):
     """Search your library for a card, put that card into your hand, then shuffle"""
     def resolve(self, gs: GameState, source: GameCard, target=None):
         p_id = source.owner_id
-        gs.pending_choice = SearchLibraryChoice(p_id, gs, source, list(gs.pile_mgr.libraries[p_id]), Zone.HAND)
+        library_cards = gs.pile_mgr.libraries[p_id]
+        gs.add_presentation_request(p_id, 'search_library', {'cards': library_cards})
+        options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in library_cards]
+        gs.pending_choice = ChoiceAction(options)
 
 class Disharmony(Resolver):
     """Cast this spell only during combat before blockers are declared.
@@ -291,7 +307,9 @@ class EnchantmentAlteration(Resolver):
             available_hosts = [c for c in gs.card_filter.lands().result() if c is not target.host]
         else:
             return
-        gs.pending_choice = gs.action_stack.push(AttachToChoice(s.owner_id, gs, s, target, available_hosts), gs, False)
+        from models.actions.special import Attach
+        options = [Attach(s.owner_id, gs, s, host) for host in available_hosts]
+        gs.pending_choice = gs.action_stack.push(ChoiceAction(options), gs, False)
 
 class EnergyTap(Resolver):
     """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""

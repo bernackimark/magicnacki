@@ -292,9 +292,9 @@ class DiscardPhase(PhaseState):
         gs.event_mgr.emit(DiscardStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.actions.draw_discard import DiscardCard
+        from models.actions.draw_discard import DiscardCards
         hand = gs.pile_mgr.hands[p_id]
-        return [DiscardCard(p_id, gs, c) for c in hand.cards] if len(hand.cards) > 7 else None
+        return [DiscardCards(p_id, gs, c) for c in hand.cards] if len(hand.cards) > 7 else None
 
     def next(self, gs: GameState):
         return CreaturesHealPhase()

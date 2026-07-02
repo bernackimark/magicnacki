@@ -1,4 +1,9 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from game_state import GameState
 
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
@@ -7,9 +12,9 @@ from models.phase_manager import Phase
 
 
 class GameOverChoice(ChoiceAction):
-    def __init__(self, p_id, gs):
-        super().__init__(p_id, gs, source=None)
-        ...
+    def __init__(self, p_id: int, gs: GameState):
+        self.player_idx = p_id
+        self.gs = gs
 
     def get_actions(self) -> list[Action]:
         return [KeepDeck(self.player_idx, self.gs), Sideboard(self.player_idx, self.gs)]

@@ -21,7 +21,7 @@ class DrawCard(Action):
 
 
 @dataclass
-class DiscardCard(Action):
+class DiscardCards(Action):
     cards: GameCard | list[GameCard]
 
     def __repr__(self) -> str:

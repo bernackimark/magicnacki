@@ -1,8 +1,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
-from models.choice_actions_all import DiscardChoice, UntapWithManaChoice, DeclareColorChoice
-from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS
+from models.actions.draw_discard import DiscardCards
+from models.actions.tap_untap import UntapWithManaAction, LeaveTapped
+from models.choice_actions_all import ChoiceAction
+from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 
@@ -83,7 +85,9 @@ class CreateTokenCreature(Resolver):
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        gs.pending_choice = DeclareColorChoice(source.owner_id, gs, source, ['B', 'G', 'R', 'U', 'W'])
+        from models.actions.special import StoreColorOnCard
+        options = [StoreColorOnCard(source.owner_id, gs, source, color) for color in COLOR_LETTERS]
+        gs.pending_choice = ChoiceAction(options)
 
 class DealDamage(Resolver):
     def __init__(self, amt: int = None):  # None is permitted due to the possibility of variable X
@@ -154,7 +158,8 @@ class Discard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.pending_choice = DiscardChoice(target, gs, source, target)
+        options = [DiscardCards(target, gs, c) for c in gs.pile_mgr.hands[target].cards]
+        gs.pending_choice = ChoiceAction(options)
 
 class DrawCards(Resolver):
     def __init__(self, card_cnt: int = 1):
@@ -428,8 +433,9 @@ class UntapForManaEffect(Resolver):
     def __init__(self, mana_cost: str):
         self.mana_cost = mana_cost
 
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        gs.action_stack.push(UntapWithManaChoice(source.owner_id, gs, source, self.mana_cost))
+    def resolve(self, gs: GameState, s: GameCard, _: GameCard = None):
+        options = [UntapWithManaAction(s.owner_id, gs, s, self.mana_cost), LeaveTapped(s.owner_id, gs, s)]
+        gs.pending_choice = ChoiceAction(options)
 
 class XZeroOneCountersByManaValue(Resolver):
     """Put X +0/+1 counters on target creature, where X is that creature's mana value"""

@@ -7,6 +7,7 @@ from models.phase_manager import Phase
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
+    from game_state import GameState
 
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
@@ -29,8 +30,9 @@ Flow:
 """
 
 class MulliganChoice(ChoiceAction):
-    def __init__(self, p_id, gs, rule: Mulligan):
-        super().__init__(p_id, gs, source=None)
+    def __init__(self, p_id: int, gs: GameState, rule: Mulligan):
+        self.player_idx = p_id
+        self.gs = gs
         self.rule = rule
         self.mulligans_taken = 0
 
@@ -60,8 +62,9 @@ class MulliganChoice(ChoiceAction):
 
 
 class BottomChoice(ChoiceAction):
-    def __init__(self, p_id, gs, bottom_cnt: int):
-        super().__init__(p_id, gs, source=None)
+    def __init__(self, p_id: int, gs: GameState, bottom_cnt: int):
+        self.player_idx = p_id
+        self.gs = gs
         self.bottom_cnt = bottom_cnt
         self.selected: list[GameCard] = []
 

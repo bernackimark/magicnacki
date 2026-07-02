@@ -1,7 +1,12 @@
 from __future__ import annotations
+
+from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.choice_actions_all import SacChoice, MoldDemonChoice, DrawCardsOrDontChoice
+from models.actions.base import DoNothing
+from models.actions.destroy_sac_regen import Sac, SacCards
+from models.actions.draw_discard import DrawCard
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import ZoneChangeEvent
@@ -104,7 +109,8 @@ class LandEquilibrium(Listener):
         opp_lands = gs.card_filter.on_player_board(event.card.owner_id).lands().result()
         if len(opp_lands) < your_land_cnt:
             return
-        gs.action_stack.push(SacChoice(event.card.owner_id, gs, source, opp_lands), gs, False)
+        options = [Sac(event.card.owner_id, gs, land) for land in opp_lands]
+        gs.pending_choice = ChoiceAction(options)
 
 
 class MoldDemonETB(Listener):
@@ -117,7 +123,8 @@ class MoldDemonETB(Listener):
         your_swamps = gs.card_filter.on_player_board(source.owner_id).swamps().result()
         if len(your_swamps) < 2:
             gs.pile_mgr.destroy(event.card, False)
-        gs.action_stack.push(MoldDemonChoice(gs.turn_mgr.player_turn_idx, gs, source, your_swamps), gs, False)
+        two_swamp_combos = list(combinations(your_swamps, 2))
+        gs.pending_choice = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in two_swamp_combos]
 
 
 class Revelation(Listener):
@@ -188,6 +195,7 @@ class VerduranEnchantress(Listener):
     listens_to = ZoneChangeEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        if source.owner_id != event.card.owner_id or event.card not in gs.card_filter.enchantments().result():
+        if source.owner_id != event.card.owner_id or not event.card.is_enchantment:
             return
-        gs.action_stack.push(DrawCardsOrDontChoice(source.owner_id, gs, source), gs, False)
+        options = [DrawCard(source.owner_id, gs), DoNothing(source.owner_id, gs)]
+        gs.action_stack.push(ChoiceAction(options), gs, False)

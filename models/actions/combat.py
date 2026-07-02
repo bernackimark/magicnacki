@@ -1,9 +1,13 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
-from models.game_card.game_card import GameCard
-from models.utils import flip
 from models.phase_manager import Phase
+from models.utils import flip
 
 @dataclass
 class CreatureAttack(Action):

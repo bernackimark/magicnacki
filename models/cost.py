@@ -3,6 +3,9 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable
 
+from models.actions.destroy_sac_regen import Sac
+from models.choice_actions_all import ChoiceAction
+
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
@@ -98,8 +101,8 @@ class SacCardCost(Cost):
         # because this is a cost, it must be paid before its action goes on the stack
         # within gs.get_available_actions(), it first seeks out gs.pending_choice, presents user w the action options,
         # executes and then pushes the effect onto the stack
-        from models.choice_actions_all import SacChoice
-        gs.pending_choice = SacChoice(gs.action_on_idx, gs, source, sac_options)
+        options = [Sac(gs.action_on_idx, gs, c) for c in sac_options]
+        gs.pending_choice = ChoiceAction(options)
 
 class SacSelfCost(Cost):
     def can_pay(self, gs, source):

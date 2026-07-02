@@ -3,7 +3,9 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.choice_actions_all import PayOneColorlessForOneLifeChoice, PayManaToDrawCardsChoice
+from models.actions.base import DoNothing
+from models.actions.special import PayManaToDrawCards, PayManaForLife
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import DiesEvent, DamageResolvedEvent
@@ -148,10 +150,10 @@ class SoulNet(Listener):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or not event.card.is_creature:
+        if not event.card.is_creature:
             return
-
-        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
+        options = [PayManaForLife(source.owner_id, gs, '1', 1), DoNothing(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
 
 
 class TabletOfEpityr(Listener):
@@ -159,10 +161,10 @@ class TabletOfEpityr(Listener):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
-                or event.card.owner_id != source.owner_id:
+        if not event.card.is_artifact or event.card.owner_id != source.owner_id:
             return
-        gs.action_stack.push(PayOneColorlessForOneLifeChoice(source.owner_id, gs, source), gs, False)
+        options = [PayManaForLife(source.owner_id, gs, '1', 1), DoNothing(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
 
 
 class UrzasMiter(Listener):
@@ -173,4 +175,5 @@ class UrzasMiter(Listener):
         if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
                 or event.card.owner_id != source.owner_id:
             return
-        gs.action_stack.push(PayManaToDrawCardsChoice(source.owner_id, gs, source), gs, False)
+        options = [PayManaToDrawCards(source.owner_id, gs, '3', 1), DoNothing(source.owner_id, gs)]
+        gs.action_stack.push(ChoiceAction(options), gs, False)

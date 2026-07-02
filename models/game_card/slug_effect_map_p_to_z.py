@@ -13,7 +13,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEgg, Piety, \
     ShieldWall, SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncherCast, RocketLauncherAA, \
-    SacrificeOnCast, SafeHaven, SerendibDjinn, Shapeshifter, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
+    SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
     Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Sindbad
@@ -30,7 +30,7 @@ from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCo
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
-    PowerLeak
+    PowerLeak, SerendibDjinn, ShapeshifterUpkeep
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
     RasputinDreamweaverUntap, Stasis, TimeVaultOption
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, SirensCallEndStep, \
@@ -162,7 +162,7 @@ MAP: dict[str, list[EffSpec]] = {
     'serendib-djinn': [Triggered(SerendibDjinn()), Triggered(SerendibDjinnNoLands())],
     'serendib-efreet': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'])],
     'serpent-generator': [Activated('4T', CreateTokenCreature('snake'))],
-    'shapeshifter': [Spell(Shapeshifter()), Triggered(Shapeshifter())],
+    'shapeshifter': [Spell(ShapeshifterCast()), Static(ShapeshifterUpkeep())],
     'shatter': [Spell(Destroy(), T_FUNCS['artifacts'])],
     'shatterstorm': [Spell(DestroyAll(T_FUNCS['artifacts'], False))],
     'shield-wall': [Spell(ShieldWall())],

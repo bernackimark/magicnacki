@@ -1,19 +1,23 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Optional
 
+from models.actions.base import DoNothing
+from models.actions.destroy_sac_regen import Sac
+from models.actions.mana import PayMana
+from models.actions.special import PayManaForLife
 from models.phase_manager import Phase
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
-from models.actions.tap_untap import LeaveTapped
-from models.choice_actions_all import PayOneColorlessForOneLifeChoice, UntapChoice, PayManaOrSacUpkeepChoice
+from models.actions.tap_untap import LeaveTapped, Untap
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, Event, PassTheTurnEvent, CanUntapQueryEvent, \
+    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, CanUntapQueryEvent, \
     CanAttackQueryEvent, AttackEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
@@ -98,7 +102,8 @@ class OnColorSpellPayOneColorlessForOneLifeChoice(Listener):
             return
         if not gs.mana_pools[s.owner_id].can_pay('1'):
             return
-        gs.action_stack.push(PayOneColorlessForOneLifeChoice(s.owner_id, gs, s), gs, False)
+        options = [PayManaForLife(s.owner_id, gs, '1', 1), DoNothing(s.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
 
 
 # --- COMBAT END ---
@@ -432,7 +437,8 @@ class OptionalUntap(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
         if source.owner_id != event.active_player or not source.is_tapped:
             return
-        gs.action_stack.push(UntapChoice(gs.turn_mgr.player_turn_idx, gs, source), gs, False)
+        options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
+        gs.pending_choice = ChoiceAction(options)
 
 
 # --- UPKEEP ---
@@ -484,13 +490,20 @@ class DealDamageOnHostUpkeep(Listener):
         gs.apply_damage(source, self.amount, source.host.owner_id)
 
 class PayManaOrSacAtUpkeep(Listener):
+    """At owner's upkeep, if owner cannot pay mana, card is destroyed on the spot"""
     listens_to = UpkeepEvent
 
     def __init__(self, mana_cost: str):
         self.mana_cost = mana_cost
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        gs.action_stack.push(PayManaOrSacUpkeepChoice(source.owner_id, gs, source, self.mana_cost), gs, False)
+        if event.active_player != source.owner_id:
+            return
+        if not gs.mana_pools[source.owner_id].can_pay(self.mana_cost):
+            gs.pile_mgr.destroy(source, allow_regeneration=False)
+            return
+        options = [PayMana(source.owner_id, gs, source, self.mana_cost), Sac(source.owner_id, gs, source)]
+        gs.action_stack.push(ChoiceAction(options), gs, False)
 
 class RemoveCounterAtTargetUpkeep(Listener):
     """At target owner's upkeep, put counter(s) on this card"""

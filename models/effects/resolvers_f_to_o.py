@@ -2,8 +2,12 @@ from __future__ import annotations
 import random
 from typing import TYPE_CHECKING, Optional
 
-from models.choice_actions_all import FalseOrdersChoice, DiscardChoice, NaturalSelectionChoice, HealingSalveChoice, \
-    RemoveCounterForLifeChoice, NamelessRaceChoice, AddManaOfColorChoice
+from models.actions.base import DoNothing
+from models.actions.combat import AssignBlocker
+from models.actions.draw_discard import DiscardCards
+from models.actions.piles import Shuffle, ReorderTopOfLibrary
+from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
+from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import MINUS_ZERO_ONE, VITALITY
 from models.effects.base import Resolver
 from models.effects.listeners_upkeep import HazezonTamarTokenCreation
@@ -38,10 +42,12 @@ class FalseOrders(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
-        other_combats = [com for com in gs.combat_mgr.combats if target not in com.blockers]
         gs.combat_mgr.remove_from_combat(target)
+        other_combats = [com for com in gs.combat_mgr.combats if target not in com.blockers]
         if other_combats:
-            gs.pending_choice = FalseOrdersChoice(source.owner_id, gs, source)
+            options = ([AssignBlocker(source.owner_id, gs, target, com.attacker) for com in other_combats] +
+                       [DoNothing(source.owner_id, gs)])
+            gs.pending_choice = ChoiceAction(options)
 
 class Feint(Resolver):
     """Tap all creatures blocking target attacking creature.
@@ -70,9 +76,12 @@ class FellwarStone(Resolver):
     """{T}: Add one mana of any color that a land an opponent controls could produce"""
     # Note: Because mana_produced is only stored on read-only props, it doesn't update if lands are altered in-game
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.actions.mana import AddMana
         produceable = {mana_produced for c in gs.card_filter.on_player_board(flip(source.owner_id)).result()
                        for mana_produced in c.props.mana_produced}
-        gs.pending_choice = AddManaOfColorChoice(source.owner_id, gs, source, produceable)
+        options = [AddMana(source.owner_id, gs, source, color) for color in produceable]
+        if options:
+            gs.pending_choice = ChoiceAction(options)
 
 class Festival(Resolver):
     """... Creatures can't attack this turn"""
@@ -176,7 +185,9 @@ class HazezonTamar(Resolver):
 class HealingSalve(Resolver):
     """Choose one - * You gain 3 life. * Prevent the next 3 damage that would be dealt to any target this turn."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        gs.pending_choice = HealingSalveChoice(s.owner_id, gs, s)
+        all_targets = gs.card_filter.in_play().creatures().result() + [0, 1]
+        options = [HealingSalveA(s.owner_id, gs, s)] + [HealingSalveB(s.owner_id, gs, s, t) for t in all_targets]
+        gs.pending_choice = ChoiceAction(options)
 
 class HellSwarm(Resolver):
     """All creatures get -1/-0 until end of turn"""
@@ -218,7 +229,8 @@ class JalumTome(Resolver):
     """Draw a card, then discard a card"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.pile_mgr.draw(source.owner_id)
-        gs.pending_choice = DiscardChoice(source.owner_id, gs, source, source.owner_id)
+        options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id].cards]
+        gs.pending_choice = ChoiceAction(options)
 
 class JovialEvil(Resolver):
     """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
@@ -265,7 +277,8 @@ class LivingArtifactUpkeep(Resolver):
     def resolve(self, gs: GameState, s: GameCard, target=None):
         if gs.turn_mgr.player_turn_idx != s.owner_id:
             return
-        gs.action_stack.push(RemoveCounterForLifeChoice(s.owner_id, gs, s, VITALITY), gs, False)
+        options = [RemoveCounterGainLife(s.owner_id, gs, s, VITALITY), DoNothing(s.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
 
 class ManaClash(Resolver):
     """You and target opponent each flip a coin. Mana Clash deals 1 damage to each player whose coin comes up tails.
@@ -350,16 +363,31 @@ class NamelessRace(Resolver):
     """Upon ETB, pay any amount of life (max = # of white nontoken permanents your opponents control +
     the total number of white cards in their graveyards). NR's PT are each = life paid as it entered."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.action_stack.push(NamelessRaceChoice(source.owner_id, gs, source), gs, False)
+        from models.actions.special import NamelessRaceETBAction
+        opp = flip(source.owner_id)
+        max_amt = (len(gs.card_filter.on_player_board(opp).non_token().white().permanents().result()) +
+                   len(gs.card_filter.in_player_graveyard(opp).white().result()))
+        options = [NamelessRaceETBAction(source.owner_id, gs, source, r) for r in range(max_amt + 1)]
+        gs.pending_choice = ChoiceAction(options)
 
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""
+    # TODO: this doesn't address the 'you may shuffle'
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         top_3_cards = gs.pile_mgr.libraries[target][:3]
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
-        gs.pending_choice = NaturalSelectionChoice(source.owner_id, gs, source, target, top_3_cards)
+        a0 = Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[target])
+        c1, c2, c3 = top_3_cards
+        a1 = ReorderTopOfLibrary(source.owner_id, gs, target, [c1, c2, c3])
+        a2 = ReorderTopOfLibrary(source.owner_id, gs, target, [c1, c3, c2])
+        a3 = ReorderTopOfLibrary(source.owner_id, gs, target, [c2, c1, c3])
+        a4 = ReorderTopOfLibrary(source.owner_id, gs, target, [c2, c3, c1])
+        a5 = ReorderTopOfLibrary(source.owner_id, gs, target, [c3, c1, c2])
+        a6 = ReorderTopOfLibrary(source.owner_id, gs, target, [c3, c2, c1])
+        options = [a0, a1, a2, a3, a4, a5, a6]
+        gs.pending_choice = ChoiceAction(options)
 
 class NettlingImp(Resolver):
     """Give target non-Wall creature w/o summoning sickness Goad until EOT.
