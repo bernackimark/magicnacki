@@ -122,7 +122,8 @@ class MainPhase(PhaseState):
     phase = Phase.MAIN
 
     def on_enter(self, gs: GameState) -> None:
-        pass
+        from models.events_all import MainPhaseEvent
+        gs.event_mgr.emit(MainPhaseEvent(gs.turn_mgr.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.combat import BeginCombat

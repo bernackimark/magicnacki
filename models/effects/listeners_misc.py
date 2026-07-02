@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Listener
-from models.events_all import LifeLossEvent, CastResolvedEvent
+from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, Event
 from models.utils import flip
 
 
@@ -35,3 +35,18 @@ class AliFromCairo(Listener):
 
         if current_life - event.amt < 1:
             event.amt = max(current_life - 1, 0)
+
+# --- MAIN PHASE ---
+class ManaDrainMainPhase(Listener):
+    """... At your next main phase, add an amount of {C} equal to that spell's mana value"""
+    # TODO: Create ManaDrain(Resolver), which would create & register an instance of this class
+    listens_to = MainPhaseEvent
+
+    def __init__(self, mana_value: int):
+        self.mana_value = mana_value
+
+    def on_event(self, gs: GameState, source: GameCard, event: MainPhaseEvent) -> None:
+        if event.active_p_id != source.owner_id:
+            return
+        gs.mana_pools[source.owner_id].add_floating('C', self.mana_value)
+        gs.event_mgr.unregister_specific_effect(self)

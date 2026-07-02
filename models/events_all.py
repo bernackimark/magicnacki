@@ -154,6 +154,10 @@ class LifeLossEvent(Event):
     amt: int
     source: GameCard
 
+@dataclass(frozen=True)
+class MainPhaseEvent(Event):
+    active_p_id: int
+
 @dataclass
 class QueryEvent(Event):
     query: str
