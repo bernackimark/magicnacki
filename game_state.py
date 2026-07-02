@@ -2,7 +2,7 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence, TYPE_CHECKING
 
-from models.effects.base import Activated, ActivatedAbility
+from models.effects.base import Activated
 
 if TYPE_CHECKING:
     from models.game_card.card import Card
@@ -209,9 +209,7 @@ class GameState:
             # --- For each spell effect spec ---
             for spell_eff in spell_effect_specs:
                 if spell_eff.target_spec and spell_eff.target_spec.filter_func:
-                    candidates = spell_eff.target_spec.filter_func(self, c)
-                    valid_targets = [t for t in candidates if self.perm_querier.can_target(t, c)]
-                    if len(valid_targets) < spell_eff.target_spec.min_cnt:
+                    if not spell_eff.target_spec.get_targets(self, c):
                         continue
 
                 actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=spell_eff))
