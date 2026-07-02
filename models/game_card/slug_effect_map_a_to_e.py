@@ -124,6 +124,8 @@ MAP: dict[str, list[EffSpec]] = {
     'blessing': [Activated('W', Pump(1, 1, True), T_FUNCS['host'])],
     'blight': [Spell(None, T_FUNCS['lands']), Triggered(Blight())],
     'blood-lust': [Spell(BloodLust(), T_FUNCS['creatures'])],
+    'blue-elemental-blast': [Spell(CounterSpell(), T_FUNCS['red_spells']),
+                             Spell(Destroy(), T_FUNCS['red_permanents'])],
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
     'blue-ward': [Spell(KWAModEffect('add', 'Protection From Blue'), T_FUNCS['creatures'])],
     'bog-rats': [Static(BogRats())],

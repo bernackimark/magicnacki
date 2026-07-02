@@ -132,6 +132,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
                                                 {id(z) for z in gs.card_filter.on_player_board(s.owner_id).result()}],
     'plains': lambda gs, s: gs.card_filter.in_play().plains().result(),
     'red': lambda gs, s: gs.card_filter.in_play().red().result(),
+    'red_permanents': lambda gs, s: gs.card_filter.in_play().permanents().red().result(),
+    'red_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_red],
     'self': lambda gs, s: s,
     'spells': lambda gs, s: gs.action_stack.spells,
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
