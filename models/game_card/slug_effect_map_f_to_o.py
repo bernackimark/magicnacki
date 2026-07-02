@@ -17,7 +17,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
@@ -32,7 +32,7 @@ from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation
 from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
-    LandEquilibrium, MoldDemonETB
+    LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, GiantSlug, \
     HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep
 from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
@@ -227,8 +227,7 @@ MAP: dict[str: list[EffSpec]] = {
                    allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_p_id_turn=T_FUNCS['card_owner']),
          Spell(TapCardEffect(), T_FUNCS['self'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
-    'library-of-alexandria': [Activated('T', AddMana('C')),
-                              Activated('T', LibraryOfAlexandria())],
+    'library-of-alexandria': [Activated('T', AddMana('C')), Activated('T', LibraryOfAlexandria())],
     'lifeblood': [Triggered(Lifeblood())],
     'lifelace': [Spell(SetColor('G'), T_FUNCS['cards'])],
     'lifetap': [Triggered(Lifetap())],
@@ -276,7 +275,7 @@ MAP: dict[str: list[EffSpec]] = {
                         Activated('1', BecomeCreature(2, 2, 'Assembly-Worker', True), T_FUNCS['self'], text='Become 2/2'),
                         Activated('T', Pump(1, 1, True), T_FUNCS['assembly_workers'], text='Pump Assembly-Worker')],
     'moat': [Static(Moat())],
-    'mold-demon': [Triggered(MoldDemonETB())],
+    'mold-demon': [Spell(MoldDemon())],
     'morale': [Spell(Morale())],
     'mox-emerald': mox_specs('G'),
     'mox-jet': mox_specs('B'),

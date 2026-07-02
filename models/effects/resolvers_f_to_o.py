@@ -1,9 +1,11 @@
 from __future__ import annotations
 import random
+from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
 from models.actions.base import DoNothing
 from models.actions.combat import AssignBlocker
+from models.actions.destroy_sac_regen import SacCards
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
@@ -270,7 +272,7 @@ class LibraryOfAlexandria(Resolver):
         return len(gs.pile_mgr.hands[source.owner_id].cards) == 7
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        DrawCards().resolve(gs, source)
+        gs.pile_mgr.draw(source.owner_id)
 
 class LivingArtifactUpkeep(Resolver):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
@@ -353,6 +355,16 @@ class MindTwist(Resolver):
         for _ in range(x):
             random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
             gs.pile_mgr.discard(random_card, source)
+
+class MoldDemon(Resolver):
+    """When this creature enters, sacrifice this creature unless you sacrifice two Swamps"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        your_swamps = gs.card_filter.on_player_board(source.owner_id).swamps().result()
+        if len(your_swamps) < 2:
+            gs.pile_mgr.destroy(source, False)
+        two_swamp_combos = list(combinations(your_swamps, 2))
+        options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in two_swamp_combos]
+        gs.pending_choice = ChoiceAction(options)
 
 class Morale(Resolver):
     """Attacking creatures get +1/+1 until end of turn"""

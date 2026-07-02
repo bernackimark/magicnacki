@@ -112,21 +112,6 @@ class LandEquilibrium(Listener):
         options = [Sac(event.card.owner_id, gs, land) for land in opp_lands]
         gs.pending_choice = ChoiceAction(options)
 
-
-class MoldDemonETB(Listener):
-    """When this creature enters, sacrifice this creature unless you sacrifice two Swamps"""
-    listens_to = ZoneChangeEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        if source is not event.card or event.to_zone != Zone.BATTLEFIELD:
-            return
-        your_swamps = gs.card_filter.on_player_board(source.owner_id).swamps().result()
-        if len(your_swamps) < 2:
-            gs.pile_mgr.destroy(event.card, False)
-        two_swamp_combos = list(combinations(your_swamps, 2))
-        gs.pending_choice = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in two_swamp_combos]
-
-
 class Revelation(Listener):
     """Players play with their hands revealed"""
     listens_to = ZoneChangeEvent
