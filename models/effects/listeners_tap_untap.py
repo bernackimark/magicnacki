@@ -7,7 +7,7 @@ from models.actions.tap_untap import LeaveTapped
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
-from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent
+from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, Event
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -15,6 +15,15 @@ if TYPE_CHECKING:
 
 
 # --- TAP CARD EVENT ---
+class ArtifactPossessionTap(Listener):
+    """Enchant artifact Whenever host becomes tapped ... deal 2 damage to host's controller"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent) -> None:
+        if event.card is not source.host:
+            return
+        gs.apply_damage(source, 2, source.host.owner_id)
+
 class Blight(Listener):
     """Enchant land; When enchanted land becomes tapped, destroy it."""
     listens_to = TapCardEvent
@@ -34,6 +43,14 @@ class CityOfBrassDamageOnTap(Listener):
             return
         gs.apply_damage(source, 1, source.owner_id)
 
+class HauntingWindTap(Listener):
+    """Whenever an artifact becomes tapped ... deal 2 damage to artifact's controller"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent) -> None:
+        if not event.card.is_artifact:
+            return
+        gs.apply_damage(source, 2, event.card.owner_id)
 
 class Kudzu(Listener):
     """When enchanted land becomes tapped, destroy it.
@@ -78,6 +95,14 @@ class Lifetap(Listener):
         if 'Forest' in event.card.card_sub_types:
             gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
 
+class PowerleechTap(Listener):
+    """Whenever an opponent's artifact becomes tapped ... you gain 1 life"""
+    listens_to = TapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent) -> None:
+        if source.owner_id == event.card.owner_id or not event.card.is_artifact:
+            return
+        gs.score_mgr.increment_life(source.owner_id, 1, source, gs)
 
 class PsychicVenom(Listener):
     """Whenever enchanted land becomes tapped, this Aura deals 2 damage to that land's controller"""

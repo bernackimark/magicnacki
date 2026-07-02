@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from models.effects.base import EffSpec, ActivatedAbility
 
 from models.actions.base import Action
-from models.events_all import StateBasedEvent
+from models.events_all import StateBasedEvent, AbilityActivatedEvent
 
 
 @dataclass
@@ -51,6 +51,7 @@ class ActivateAbility(Action):
             self.card.tap()
         self.aa.activations_this_turn += 1
         self.gs.action_stack.push(self, self.gs)
+        self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, self.aa))
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 
 @dataclass

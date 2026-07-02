@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterable, Any
 
 if TYPE_CHECKING:
+    from models.effects.base import ActivatedAbility
     from models.constants import Target
     from models.game_card.game_card import GameCard
     from models.modifiers import ModType
@@ -19,6 +20,11 @@ However, some objects can be passed around and mutated, such as:
 class Event:
     pass
 
+
+@dataclass(frozen=True)
+class AbilityActivatedEvent(Event):
+    activator: int
+    aa: ActivatedAbility
 
 @dataclass(frozen=True)
 class AttackEvent(Event):

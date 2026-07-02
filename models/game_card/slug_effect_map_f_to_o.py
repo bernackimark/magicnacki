@@ -29,13 +29,13 @@ from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
-from ..effects.listeners_misc import IchneumonDruid
+from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation
 from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium, MoldDemonETB
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, GiantSlug, \
     HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep
-from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap
+from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, MerchantShip, \
@@ -137,6 +137,7 @@ MAP: dict[str: list[EffSpec]] = {
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['card_owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures'])],
     'hasran-ogress': [Triggered(HasranOgress())],
+    'haunting-wind': [Triggered(HauntingWindActivation()), Triggered(HauntingWindTap())],
     'hazezon-tamar': [Triggered(HazezonTamarTokenCreation(T_FUNCS['card_owner'])), Triggered(HazezonTamarLTB()),
                       Spell(HazezonTamar())],
     'healing-salve': [Spell(HealingSalve())],

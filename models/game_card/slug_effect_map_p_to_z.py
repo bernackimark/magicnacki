@@ -7,6 +7,7 @@ from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
+from ..effects.listeners_misc import PowerleechActivation
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -32,7 +33,7 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
-    RasputinDreamweaverUntap, Stasis, TimeVaultOption
+    RasputinDreamweaverUntap, Stasis, TimeVaultOption, PowerleechTap
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, SirensCallEndStep, \
     VoodooDollEndStep, WhirlingDervish
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
@@ -82,6 +83,7 @@ MAP: dict[str, list[EffSpec]] = {
     'power-artifact': [Spell(None, T_FUNCS['artifacts']), Static(PowerArtifact())],
     'power-leak': [Static(PowerLeak())],
     'power-surge': [Triggered(PowerSurge())],
+    'powerleech': [Triggered(PowerleechActivation()), Triggered(PowerleechTap())],
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), T_FUNCS['creatures'])],
     'preacher': [Activated('T', Steal(), T_FUNCS['opp_creatures']), Triggered(OptionalUntap()),
                  Triggered(ReturnToOwnerOnUntap())],

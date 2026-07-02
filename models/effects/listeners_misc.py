@@ -6,9 +6,37 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Listener
-from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, Event
+from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, Event
 from models.utils import flip
 
+
+# --- ABILITY ACTIVATED EVENT ---
+class ArtifactPossessionActivation(Listener):
+    """Whenever host ... activates an ability, deal 2 damage to host's controller"""
+    listens_to = AbilityActivatedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: AbilityActivatedEvent) -> None:
+        if event.aa.source is not source.host:
+            return
+        gs.apply_damage(source, 2, source.host.owner_id)
+
+class HauntingWindActivation(Listener):
+    """Whenever an artifact ... activates an ability, deal 2 damage to artifact's controller"""
+    listens_to = AbilityActivatedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: AbilityActivatedEvent) -> None:
+        if not event.aa.source.is_artifact:
+            return
+        gs.apply_damage(source, 2, event.aa.source.owner_id)
+
+class PowerleechActivation(Listener):
+    """Whenever an opponent's artifact ... activates an ability, you gain 1 life"""
+    listens_to = AbilityActivatedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: AbilityActivatedEvent) -> None:
+        if source.owner_id == event.aa.source.owner_id or not event.aa.source.is_artifact:
+            return
+        gs.score_mgr.increment_life(source.owner_id, 1, source, gs)
 
 # --- CAST RESOLVED EVENT ---
 class IchneumonDruid(Listener):

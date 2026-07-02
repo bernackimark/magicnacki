@@ -20,12 +20,12 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
-from ..effects.listeners_misc import AliFromCairo
+from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
 from ..effects.listeners_state_change import CityInABottle
 from ..effects.listeners_zone_change import AnkhOfMishra, CitanulDruid, DingusEgg
 from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, CurseArtifact, Cyclone, \
     DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
-from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap
+from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRackEffect
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
@@ -89,6 +89,8 @@ MAP: dict[str, list[EffSpec]] = {
     'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
     'armageddon': [Spell(DestroyAll(T_FUNCS['lands']))],
     'army-of-allah': [Spell(ArmyOfAllah())],
+    'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),
+                            Spell(None, T_FUNCS['artifacts'])],
     'artifact-ward': [Spell(None, T_FUNCS['creatures']), Static(ArtifactWardCanBeBlocked()),
                       Static(ArtifactWardPrevention()), Static(ArtifactWardCanBeTargeted())],
     'ashes-to-ashes': [Spell(AshesToAshes(), TargetSpec(T_FUNCS['non_artifact_creatures'], 2, 2))],
