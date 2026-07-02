@@ -15,11 +15,11 @@ class Hand:
 
     @property
     def instants(self) -> list[GameCard]:
-        return [c for c in self.cards if 'Instant' in c.props.card_types]
+        return [c for c in self.cards if c.is_instant]
 
     @property
     def sorceries(self) -> list[GameCard]:
-        return [c for c in self.cards if 'Sorcery' in c.props.card_types]
+        return [c for c in self.cards if c.is_sorcery]
 
     def sort_cards(self):
         self.cards.sort(key=lambda x: x.props.mana_value, reverse=self.sort_pref.value)

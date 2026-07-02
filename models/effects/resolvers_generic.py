@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
+from models.actions.cast import CastToTargetAddToStack
 from models.actions.draw_discard import DiscardCards
 from models.actions.tap_untap import UntapWithManaAction, LeaveTapped
 from models.choice_actions_all import ChoiceAction
@@ -65,6 +66,14 @@ class Bounce(Resolver):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         gs.pile_mgr.bounce(target)
+
+class CounterSpell(Resolver):
+    """This can be used by all counter spells, not just the card named 'Counterspell'"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | CastToTargetAddToStack] = None) -> None:
+        if not isinstance(target, CastToTargetAddToStack):
+            raise TypeError(f'{source.props.name} needs an Action for a target')
+        gs.action_stack.remove(target)
+        gs.pile_mgr.move_card(target.card, Zone.GRAVEYARD, cause='countered', emit_zone_event=False)
 
 class CreateTokenCreature(Resolver):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""

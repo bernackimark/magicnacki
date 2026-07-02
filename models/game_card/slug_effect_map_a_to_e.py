@@ -16,7 +16,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
-    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, PreventNextDamageToCardEffect
+    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, PreventNextDamageToCardEffect, CounterSpell
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -189,6 +189,7 @@ MAP: dict[str, list[EffSpec]] = {
     'copy-artifact': [Spell(CopyArtifact())],
     'coral-helm': [Activated('3', Pump(2, 2, True), T_FUNCS['creatures'], extra_costs=[DiscardAtRandomCost()])],
     'cosmic-horror': [Static(CosmicHorror())],
+    'counterspell': [Spell(CounterSpell(), T_FUNCS['spells_on_stack'])],
     'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
     'creature-bond': [Triggered(CreatureBond())],
     'crimson-manticore': [Activated('RT', DealDamage(1), T_FUNCS['combatants'])],

@@ -4,6 +4,7 @@ from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING:
     from game_state import GameState
     from game_card import GameCard
+    from models.actions.base import Action
 
 from models.constants import Target, ALL_PLAYER_INDICES
 from models.utils import flip
@@ -11,7 +12,7 @@ from models.utils import flip
 """Since 90% of lookups seek cards on battlefield, keys that don't specify will only return those on battlfield.
 Ex: 'artifacts' will only return artifact creatures currently on the battlefield.
 Ex: 'artifacts_in_graveyards' explicitly indicates that it's looking somewhere besides the battlefield."""
-T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
+T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action | int | None]]] = {
     # --- COMMON TARGET FUNCS ---
     'active_volcano_targets': lambda gs, s: gs.card_filter.in_play().blue().permanents().result() +
                                  gs.card_filter.in_play().islands().result(),
@@ -125,6 +126,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target]]] = {
     'plains': lambda gs, s: gs.card_filter.in_play().plains().result(),
     'red': lambda gs, s: gs.card_filter.in_play().red().result(),
     'self': lambda gs, s: s,
+    'spells_on_stack': lambda gs, s: gs.action_stack.spells,
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
                                   if c.toughness < s.power],
     'tapped_creatures': lambda gs, s: gs.card_filter.in_play().creatures().tapped().result(),

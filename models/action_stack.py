@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from models.choice_actions_all import ChoiceAction
 
 if TYPE_CHECKING:
+    from models.actions.cast import CastToTargetAddToStack
     from game_state import GameState
     from models.actions.base import Action
 
@@ -39,6 +40,11 @@ class ActionStack:
     def last_action(self) -> Action | ChoiceAction:
         return self._actions[-1]
 
+    @property
+    def spells(self) -> list[CastToTargetAddToStack | None]:
+        from models.actions.cast import CastToTargetAddToStack
+        return [a for a in self.actions if isinstance(a, CastToTargetAddToStack)]
+
     def push(self, action: Action, gs: GameState, flip_action_on_opponent: bool = True) -> None:
         self._actions.append(action)
         if flip_action_on_opponent:
@@ -46,6 +52,11 @@ class ActionStack:
 
     def pop(self):
         self._actions.pop()
+
+    def remove(self, action: Action | ChoiceAction):
+        if action not in self.actions:
+            return
+        self._actions.remove(action)
 
     def clear_(self) -> None:
         self._actions.clear()

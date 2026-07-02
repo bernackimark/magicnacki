@@ -111,7 +111,8 @@ class CanTargetRule(Listener):
     listens_to = CanTargetQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
-        if isinstance(event.target, int):
+        from models.game_card.game_card import GameCard
+        if not isinstance(event.target, GameCard):
             return
 
         # Protection from color rule

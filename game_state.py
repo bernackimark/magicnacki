@@ -242,6 +242,7 @@ class GameState:
 
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
+            print('ABC123 I have stack !!!')
             available_actions: list[Action] = []
             hand = self.pile_mgr.hands[p_id]
             if isinstance(self.action_stack.last_action, ChoiceAction):
@@ -249,22 +250,15 @@ class GameState:
 
             available_actions.append(AcceptAction(p_id, self))
 
-            # Check instants (or other spells allowed to respond)
-            allowed_cards = hand.instants + hand.sorceries if p_id == self.turn_mgr.player_turn_idx else hand.sorceries
-            playable_cards: list[GameCard] = [c for c in allowed_cards if self.mana_pools[p_id].can_pay(c.casting_cost)]
+            available_actions.extend(self.add_activated_abilities_from_board())
 
-            for c in playable_cards:
-                # Handle counterspells separately; not thought through yet
-                if c.props.slug in ('counterspell',):
-                    target: Action = self.action_stack.last_action
-                    available_actions.append(CastCounter(p_id, self, c, target))
-                    continue
-
-                # Handle other spells
-                available_actions.extend(self.available_actions_from_hand())
-
-                # Activated abilities can also respond
-                available_actions.extend(self.add_activated_abilities_from_board())
+            # Check instants & sorceries
+            allowed_cards = hand.sorceries if p_id == self.turn_mgr.player_turn_idx else hand.sorceries + hand.instants
+            for a in self.available_actions_from_hand():
+                print('CCC', a)
+                if a.card in allowed_cards:
+                    print('DDD')
+                    available_actions.append(a)
 
             return available_actions
 
