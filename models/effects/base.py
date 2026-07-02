@@ -9,6 +9,7 @@ from models.events_all import Event
 from ..target import TargetSpec
 
 if TYPE_CHECKING:
+    from ..actions.base import Action
     from ..game_card.game_card import GameCard
     from game_state import GameState
     from models.phase_manager import Phase
@@ -19,7 +20,7 @@ class Effect(ABC):
     pass
 
 class Resolver(Effect):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
         """Perform an explicit game action (ex: deal 3 damage)"""
         raise NotImplementedError()
 
