@@ -4,6 +4,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
 from models.actions.base import DoNothing
+from models.actions.cast import CastToTargetAddToStack
 from models.actions.combat import AssignBlocker
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.draw_discard import DiscardCards
@@ -298,6 +299,16 @@ class ManaClash(Resolver):
                 gs.apply_damage(source, 1, caster_id)
             if opp_result == 'tails':
                 gs.apply_damage(source, 1, opp_id)
+
+class ManaDrain(Resolver):
+    """Counter target spell. At your next main phase, add {C} = spell's mana value."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[CastToTargetAddToStack] = None):
+        from models.effects.listeners_misc import ManaDrainMainPhase
+        if not isinstance(target, CastToTargetAddToStack):
+            raise TypeError(f'{source.props.name} needs an Action for a target')
+        gs.action_stack.remove(target)
+        gs.pile_mgr.move_card(target.card, Zone.GRAVEYARD, cause='countered', emit_zone_event=False)
+        gs.event_mgr.register(ManaDrainMainPhase(target.card.props.mana_value), source)
 
 class ManaShort(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):

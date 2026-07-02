@@ -24,7 +24,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
-    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner
+    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell
 from ..effects.listeners_state_change import SerendibDjinnNoLands
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal, \
     VerduranEnchantress
@@ -115,11 +115,14 @@ MAP: dict[str, list[EffSpec]] = {
                              Triggered(RasputinDreamweaverUntap()), Triggered(RasputinDreamweaverUpkeep()),
                              Spell(AddCounter(DREAM, 7))],
     'reconstruction': [Spell(Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
+    'red-elemental-blast': [Spell(CounterSpell(), T_FUNCS['blue_spells']),
+                            Spell(Destroy(), T_FUNCS['blue_permanents'])],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('R')],
     'red-ward': [Spell(KWAModEffect('add', 'Protection From Red'), T_FUNCS['creatures'])],
     'regeneration': [Activated('G', Regenerate(), T_FUNCS['host'])],
     'regrowth': [Spell(Bounce(), T_FUNCS['cards_in_your_graveyard'])],
     'relic-barrier': [Activated('T', TapCardEffect(), T_FUNCS['untapped_artifacts'])],
+    'remove-soul': [Spell(CounterSpell(), T_FUNCS['creature_spells'])],
     'reset': [Spell(Reset())],
     'resurrection': [Spell(Reanimate(), T_FUNCS['creatures_in_your_graveyard'])],
     'revelation': [Triggered(Revelation())],

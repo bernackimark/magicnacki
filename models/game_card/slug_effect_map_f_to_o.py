@@ -17,19 +17,19 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
     PreventAllCombatDamageThisTurn, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
-    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor
+    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
-from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation
+from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, ManaDrainMainPhase
 from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
@@ -73,6 +73,7 @@ MAP: dict[str: list[EffSpec]] = {
     'firebreathing': [Spell(None, T_FUNCS['creatures']), self_pump('R', 1, 0)],
     'fishliver-oil': [Spell(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures'])],
     'fissure': [Spell(Destroy(False), T_FUNCS['creatures_and_lands'])],
+    'flash-counter': [Spell(CounterSpell(), T_FUNCS['instant_spells'])],
     'flash-flood': [Spell(FlashFlood(), T_FUNCS['flash_flood'])],
     'flashfires': [Spell(DestroyAll(T_FUNCS['plains']))],
     'flight': [Spell(KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
@@ -229,6 +230,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
     'library-of-alexandria': [Activated('T', AddMana('C')), Activated('T', LibraryOfAlexandria())],
     'lifeblood': [Triggered(Lifeblood())],
+    'lifeforce': [Activated('GG', CounterSpell(), T_FUNCS['black_spells'])],
     'lifelace': [Spell(SetColor('G'), T_FUNCS['cards'])],
     'lifetap': [Triggered(Lifetap())],
     'lightning-bolt': [Spell(DealDamage(3), T_FUNCS['all_creatures_and_players'])],
@@ -249,6 +251,7 @@ MAP: dict[str: list[EffSpec]] = {
                           Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
                                     allowed_phases=[Phase.UPKEEP])],
     'mana-clash': [Spell(ManaClash())],
+    'mana-drain': [Spell(ManaDrain(), T_FUNCS['spells'])],
     'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Spell(ManaShort(), T_FUNCS['all_players'])],
     'mana-vault': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('4', T_FUNCS['card_owner']),

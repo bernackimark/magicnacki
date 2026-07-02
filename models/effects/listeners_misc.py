@@ -50,6 +50,13 @@ class IchneumonDruid(Listener):
         if instants_cast_in_turn > 1:
             gs.apply_damage(source, 4, opp)
 
+class PresenceOfTheMaster(Listener):
+    """Whenever a player casts an enchantment spell, counter it"""
+    listens_to = CastResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> None:
+        ...
+
 # --- LIFE LOSS ---
 class AliFromCairo(Listener):
     """Damage that would reduce your life total to less than 1 reduces it to 1 instead"""
