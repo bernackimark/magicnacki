@@ -1,6 +1,10 @@
 import unittest
 
+from models.actions.activate_ability import ActivateAbility
+from models.actions.special import Attach
+from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
+from models.events_all import AbilityActivatedEvent
 from tests.setup_helpers import TestGame
 
 
@@ -8,6 +12,18 @@ class TestCardsAtoC(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_artifact_possession(self):
+        """Whenever enchanted artifact becomes tapped or a player activates an ability of enchanted artifact without {T}
+        in its activation cost, this Aura deals 2 damage to that artifact's controller."""
+        artifact = self.g.battlefield('barls-cage')  # Activated('3', ...)
+        aura = self.g.card('artifact-possession')
+        aura.host = artifact
+        listener = ArtifactPossessionActivation()
+        self.gs.event_mgr.register(listener, aura)
+        aa = artifact.activated_abilities[0]
+        self.gs.event_mgr.emit(AbilityActivatedEvent(0, aa), self.gs)
+        self.assertEqual(self.gs.score_mgr.life[0], 18)
 
     def test_blood_lust(self):
         """If target creature has toughness 5 or greater, it gets +4/-4 until end of turn.

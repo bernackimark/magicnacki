@@ -12,11 +12,13 @@ from models.utils import flip
 
 # --- ABILITY ACTIVATED EVENT ---
 class ArtifactPossessionActivation(Listener):
-    """Whenever host ... activates an ability, deal 2 damage to host's controller"""
+    """Whenever host ... activates an ability without {T} in its activation cost, deal 2 damage to host's controller"""
     listens_to = AbilityActivatedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: AbilityActivatedEvent) -> None:
         if event.aa.source is not source.host:
+            return
+        if 'T' in event.aa.eff_spec.cost:
             return
         gs.apply_damage(source, 2, source.host.owner_id)
 

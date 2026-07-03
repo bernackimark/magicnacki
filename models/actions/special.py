@@ -32,7 +32,8 @@ class Attach(Action):
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         else:
-            self.gs.action_stack.pop()
+            if self.gs.action_stack:
+                self.gs.action_stack.pop()
 
 class CopyCard(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard,
