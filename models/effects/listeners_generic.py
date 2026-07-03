@@ -386,10 +386,11 @@ class DestroyAtEndStepIfItDidntAttack(Listener):
 # --- PASS THE TURN EVENT ---
 class TakingAnotherTurnEOT(Listener):
     listens_to = PassTheTurnEvent
-    expires = 'EOT'
 
     def on_event(self, gs: GameState, source: GameCard, event: PassTheTurnEvent) -> None:
+        # need to unregister this way else 'EOT' effects expire in a phase before PassTheTurn
         from models.actions.end_step_pass_turn import PassTheTurn
+        gs.event_mgr.unregister_specific_effect(self)
         PassTheTurn(source.owner_id, gs, pass_turn_to_opp=False).play()
 
 # --- UNTAP CARD EVENT ---

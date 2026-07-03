@@ -349,7 +349,12 @@ class PassTurnPhase(PhaseState):
     def on_enter(self, gs: GameState):
         from models.actions.end_step_pass_turn import PassTheTurn
         from models.events_all import PassTheTurnEvent
-        gs.event_mgr.emit(PassTheTurnEvent, gs)
+
+        current_turn_number = gs.turn_mgr.turn_number
+        gs.event_mgr.emit(PassTheTurnEvent(gs.turn_mgr.player_turn_idx), gs)
+        if gs.turn_mgr.turn_number != current_turn_number:  # if a PassTheTurn Listener already advanced turn
+            return
+
         PassTheTurn(gs.turn_mgr.player_turn_idx, gs).play()
 
     def get_actions(self, p_id: int, gs: GameState):
