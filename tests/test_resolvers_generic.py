@@ -1,6 +1,6 @@
 import unittest
 
-from models.effects.resolvers_generic import PreventNextDamageTo
+from models.effects.resolvers_generic import PreventNextDamageTo, GraveyardToExileInItsEntirety
 from tests.setup_helpers import TestGame
 
 
@@ -44,6 +44,13 @@ class TestPreventDamage(unittest.TestCase):
         PreventNextDamageTo(3, combat_only=True).resolve(self.gs, target, target)
         self.gs.apply_damage(attacker, 3, target, is_combat=True)
         self.assertEqual(target.damage_received_this_turn, 0)
+
+    def test_graveyard_to_exile_in_its_entirety(self):
+        gy = self.gs.pile_mgr.graveyards[0]
+        self.g.graveyard('merfolk-of-the-pearl-trident')
+        self.assertEqual(1, len(gy))
+        GraveyardToExileInItsEntirety().resolve(self.gs, None, 0)
+        self.assertEqual(0, len(gy))
 
 
 if __name__ == '__main__':

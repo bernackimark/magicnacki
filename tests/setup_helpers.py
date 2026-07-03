@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from models.effects.base import Listener
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -96,7 +97,7 @@ class TestGame:
         self.gs.pile_mgr.libraries[player_id].append(game_card)
         return game_card
 
-    def battlefield(self, *slugs, cnt=1, owner=0) -> GameCard | list[GameCard]:
+    def battlefield(self, *slugs, cnt=1, owner=0, register_listeners=True) -> GameCard | list[GameCard]:
         """From any amount of positional argument slugs, create GameCard, update Zone to Battlefield without emitting;
         if one slug was provided, return the GameCard; if multiple slugs, return a list of slugs"""
         cards = []
@@ -104,6 +105,10 @@ class TestGame:
             for _ in range(cnt):
                 card = self.card(slug, owner)
                 self.gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, emit_zone_event=False)
+                if register_listeners:
+                    for eff_spec in card.abilities:
+                        if isinstance(eff_spec.effect, Listener):
+                            self.gs.event_mgr.register(eff_spec.effect, card)
                 if len(slugs) == 1 and cnt == 1:
                     return card
                 cards.append(card)
