@@ -4,7 +4,7 @@ from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCou
     SacCardCost, DiscardLastCardDrawnThisTurn
 from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
-from ..target import TargetSpec
+from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, \
     GoblinShrinePump, GravitySphere, \
     HiddenPath, IvoryGuardians, JacquesLeVert, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, \
@@ -169,7 +169,7 @@ MAP: dict[str: list[EffSpec]] = {
     'indestructible-aura': [Spell(PreventAllDamageToThisTurn(), T_FUNCS['creatures'])],
     'infernal-medusa': [Triggered(InfernalMedusa())],
     'inferno': [Spell(DealDamageToAllCreaturesAndPlayers(6))],
-    'infinte-authority': [Triggered(InfiniteAuthorityCombatEnd()), Triggered(InfiniteAuthorityEndStep())],
+    'infinite-authority': [Triggered(InfiniteAuthorityCombatEnd()), Triggered(InfiniteAuthorityEndStep())],
     'instill-energy': [Spell(KWAModEffect('add', 'Haste'), T_FUNCS['creatures']),
                        Activated('', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'],
                                  max_activations_per_turn=1)],
