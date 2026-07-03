@@ -16,7 +16,8 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
-    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, PreventNextDamageToCardEffect, CounterSpell
+    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, PreventNextDamageToCardEffect, CounterSpell, \
+    PreventNextDamageTo
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -56,7 +57,7 @@ MAP: dict[str, list[EffSpec]] = {
     'akron-legionnaire': [Static(AkronLegionnaire())],
     'alabaster-potion': [Spell(GainLife(), T_FUNCS['all_players'], max_x_func=max_x_from_printed_card,
                                text="Target player gains X life"),
-                         Spell(PreventNextDamageToCardEffect(), T_FUNCS['all_creatures_and_players'],
+                         Spell(PreventNextDamageTo(), T_FUNCS['all_creatures_and_players'],
                                max_x_func=max_x_from_printed_card,
                                text="Prevent the next X damage that would be dealt to any target this turn")],
     'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts']), Triggered(ReturnToOwnerOnLTB())],

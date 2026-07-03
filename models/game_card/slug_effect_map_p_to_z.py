@@ -24,7 +24,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
-    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell
+    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo
 from ..effects.listeners_state_change import SerendibDjinnNoLands
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal, \
     VerduranEnchantress
@@ -110,7 +110,7 @@ MAP: dict[str, list[EffSpec]] = {
     'rapid-fire': [Spell(RapidFire(), T_FUNCS['creatures'],
                          allowed_phases=[p for p in Phase if p < Phase.DECLARE_BLOCKERS])],
     'rasputin-dreamweaver': [Activated('', AddMana('C'), extra_costs=[RemoveCounterCost(DREAM)]),
-                             Activated('', PreventNextDamageToCardEffect(1), T_FUNCS['self'],
+                             Activated('', PreventNextDamageTo(1), T_FUNCS['self'],
                                        extra_costs=[RemoveCounterCost(DREAM)]),
                              Triggered(RasputinDreamweaverUntap()), Triggered(RasputinDreamweaverUpkeep()),
                              Spell(AddCounter(DREAM, 7))],

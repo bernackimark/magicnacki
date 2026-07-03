@@ -256,7 +256,10 @@ class PreventNextDamageToEOT(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if event.target is not self.protected_target or (self.combat_only and not event.is_combat):
             return
-        event.prevented += min(self.preventable_amt, event.remaining)
+        if self.preventable_amt is None:
+            event.prevented += 999999
+        else:
+            event.prevented += min(self.preventable_amt, event.remaining)
         event.remaining = event.amt - event.prevented
         self.is_expired = True
 

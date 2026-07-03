@@ -251,6 +251,16 @@ class PreventAllNoncombatDamageToThisTurn(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(PreventAllNoncombatDamageToEOT(target), source)
 
+class PreventNextDamageTo(Resolver):
+    def __init__(self, prevent_amt: int = None, combat_only: bool = False):
+        self.prevent_amt = prevent_amt
+        self.combat_only = combat_only
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        """target = the GameCard | int being protected"""
+        from models.effects.listeners_generic import PreventNextDamageToEOT
+        gs.event_mgr.register(PreventNextDamageToEOT(target, self.prevent_amt, self.combat_only), source)
+
 class PreventNextDamageToCardEffect(Resolver):
     def __init__(self, prevent_amt: int = None, combat_only: bool = False):
         self.prevent_amt = prevent_amt
