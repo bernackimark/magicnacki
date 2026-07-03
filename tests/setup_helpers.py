@@ -105,6 +105,9 @@ class TestGame:
             for _ in range(cnt):
                 card = self.card(slug, owner)
                 self.gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, emit_zone_event=False)
+                for s in card.abilities:
+                    if s.activation_type == 'spell':
+                        s.effect.resolve(self.gs, card, card)  # type: ignore
                 if register_listeners:
                     for eff_spec in card.abilities:
                         if isinstance(eff_spec.effect, Listener):
