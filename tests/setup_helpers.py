@@ -77,3 +77,88 @@ def put_onto_battlefield_last_turn(card: GameCard, gs: GameState):
     gs.pile_mgr.boards[card.owner_id].append(card)
     gs.turn_mgr.most_recent_turn_started[card.owner_id] += 1
     card.turn_entered_for_owner = gs.turn_mgr.most_recent_turn_started[card.owner_id] - 1
+
+
+class TestGame:
+    """A wrapper around Engine/GameState that provides helpful methods for setting up board states;
+    its methods are shortcuts and do not emit to the event system, so they should be used specifically in setup"""
+    def __init__(self, file_path_str: str = GAME_TESTING_SETTINGS_PATH,
+                 settings_key: str = 'engine_testing_setup_a', test_mode: bool = True):
+        engine, cu = self._create_engine_and_universe(file_path_str, settings_key, test_mode)
+        self.engine = engine
+        self.cu = cu
+        self.gs = self.engine.match_manager.create_game_state()
+        self.engine.gs = self.gs
+
+    def card(self, slug: str, player_id: int = 0) -> GameCard:
+        game_card = GameCard(self.cu[slug], player_id)
+        game_card.game_state = self.gs
+        self.gs.pile_mgr.libraries[player_id].append(game_card)
+        return game_card
+
+    def battlefield(self, *slugs, cnt=1, owner=0) -> GameCard | list[GameCard]:
+        """From any amount of positional argument slugs, create GameCard, update Zone to Battlefield without emitting;
+        if one slug was provided, return the GameCard; if multiple slugs, return a list of slugs"""
+        cards = []
+        for slug in slugs:
+            for _ in range(cnt):
+                card = self.card(slug, owner)
+                self.gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, emit_zone_event=False)
+                if len(slugs) == 1 and cnt == 1:
+                    return card
+                cards.append(card)
+        return cards
+
+    def hand(self, slug, owner=0) -> GameCard:
+        """Create GameCard, update Zone to Battlefield without emitting"""
+        card = self.card(slug, owner)
+        self.gs.pile_mgr.move_card(card, Zone.HAND, emit_zone_event=False)
+        return card
+
+    def graveyard(self, slug, owner=0) -> GameCard:
+        """Create GameCard, update Zone to Graveyard without emitting"""
+        card = self.card(slug, owner)
+        self.gs.pile_mgr.move_card(card, Zone.GRAVEYARD, emit_zone_event=False)
+        return card
+
+    def library(self, slug, owner=0) -> GameCard:
+        """Create GameCard, update Zone to Library without emitting"""
+        card = self.card(slug, owner)
+        self.gs.pile_mgr.move_card(card, Zone.LIBRARY, emit_zone_event=False)
+        return card
+
+    def mana(self, mana: str, owner=0) -> None:
+        """A shorthand way of getting lands/available mana onto the battlefield; 'RRU' adds two mountains & an island"""
+        lookup = {'B': 'swamp', 'G': 'forest', 'R': 'mountain', 'U': 'island', 'W': 'plains'}
+        for color in mana:
+            self.battlefield(lookup[color], owner=owner)
+
+    @staticmethod
+    def _create_engine_and_universe(file_path_str, settings_key, test_mode) -> tuple[Engine, CardUniverse]:
+        """From provided path string & key, pull JSON; create CardUniverse; create decks;
+        deflate casting costs, if applicable; set rules; create & return a fresh Engine oboject"""
+        import json
+        with open(file_path_str, 'r') as f:
+            data = json.load(f)
+            data = data[settings_key]
+
+        universe = CardUniverse(data['universe'])
+
+        decks = [Deck.from_json(deck_id, str(i)) for i, deck_id in enumerate((data['deck_0'], data['deck_1']))]
+
+        # create players
+        players = []
+        for i, user_id in enumerate(data['users']):
+            user_data = get_user(user_id)
+            player = ConsolePlayer(i, user_data.handle, user_data.is_bot)
+            players.append(player)
+
+        # would put in the testing JSON, but not sure how to convert mulligan to enum member
+        rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS, 'best_of': 3}
+
+        eng = Engine(players=players, renderer=ConsoleRenderer(),
+                     match_manager=MatchManager(len(players), rules, decks, universe.token_cards,
+                                                first_to_act=data['starting_deck']))
+        if test_mode:
+            deflate_costs(eng.match_manager.deck_game_cards)
+        return eng, universe

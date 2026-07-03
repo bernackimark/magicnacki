@@ -1,23 +1,20 @@
 import unittest
 
 from models.effects.resolvers_a_to_e import BloodLust
-from tests.setup_helpers import create_engine_and_universe, get_card, add_to_battlefield
+from tests.setup_helpers import TestGame
 
 
 class TestCardsAtoC(unittest.TestCase):
     def setUp(self):
-        self.engine, self.universe = create_engine_and_universe()
-        self.engine.gs = self.engine.match_manager.create_game_state()
-        self.gs = self.engine.gs
+        self.g = TestGame()
+        self.gs = self.g.gs
 
     def test_blood_lust(self):
         """If target creature has toughness 5 or greater, it gets +4/-4 until end of turn.
         Otherwise, it gets +4/-X until end of turn, where X is its toughness minus 1."""
-        large_creature = get_card(self.gs, 'bartel-runeaxe', 0)  # 6/5
-        small_creature = get_card(self.gs, 'merfolk-of-the-pearl-trident', 0)  # 1/1
-        blood_lust = get_card(self.gs, 'blood-lust', 1)
-        add_to_battlefield(large_creature, self.gs)
-        add_to_battlefield(small_creature, self.gs)
+        large_creature = self.g.battlefield('bartel-runeaxe')  # 6/5
+        small_creature = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
+        blood_lust = self.g.card('blood-lust', 1)
         BloodLust().resolve(self.gs, blood_lust, large_creature)
         BloodLust().resolve(self.gs, blood_lust, small_creature)
         self.assertEqual(large_creature.power, 10)
