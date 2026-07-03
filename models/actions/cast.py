@@ -130,7 +130,8 @@ class BeginSpellCastAction(Action):
     eff_spec: EffSpec | None
 
     def __repr__(self):
-        return f'Cast {self.card.props.name}'
+        effect_text = f': {self.eff_spec.text}'
+        return f'Cast {self.card.props.name}{effect_text if self.eff_spec.text else ""}'
 
     def play(self) -> None:
         """Determines which pipeline to enter"""
