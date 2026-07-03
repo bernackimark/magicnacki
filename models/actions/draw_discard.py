@@ -33,7 +33,7 @@ class DiscardCards(Action):
     def play(self) -> None:
         if not isinstance(self.cards, list):
             self.cards = [self.cards]
-        for c in self.cards:
+        for c in self.cards[::]:
             print(f"Discarding {c} from player {self.player_idx}'s hand")
             self.gs.pile_mgr.discard(c)
         if self.gs.pending_choice:

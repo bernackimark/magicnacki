@@ -505,7 +505,7 @@ class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for i in (0, 1):
-            [DiscardCards(i, gs, card).play() for card in gs.pile_mgr.hands[i].cards]
+            DiscardCards(i, gs, gs.pile_mgr.hands[i].cards).play()
             gs.pile_mgr.draw(i, 7)
 
 class WindsOfChange(Resolver):
