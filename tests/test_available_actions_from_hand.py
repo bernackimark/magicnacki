@@ -11,9 +11,8 @@ class TestAvailableActionsFromHand(unittest.TestCase):
 
     def test_can_cast_aura_with_valid_target(self):
         self.g.battlefield('plains', 'savannah-lions')
-        self.g.battlefield('savannah-lions')
-        self.g.hand('holy-strength')
-        self.assertIn('Cast Holy Strength', [a.__repr__() for a in self.gs.available_actions_from_hand()])
+        card = self.g.hand('holy-strength')
+        self.assertIn(card, [a.card for a in self.gs.available_actions_from_hand()])
 
     def test_can_cast_aura_to_multiple_valid_targets(self):
         self.g.battlefield('plains', 'savannah-lions', 'tundra-wolves')
@@ -23,9 +22,15 @@ class TestAvailableActionsFromHand(unittest.TestCase):
         self.assertEqual(target_cnt, 2)
 
     def test_cannot_cast_auras_without_valid_target(self):
-        self.g.battlefield('plains')
-        self.g.hand('holy-strength')
-        self.assertNotIn('Cast Holy Strength', [a.__repr__() for a in self.gs.available_actions_from_hand()])
+        card = self.g.hand('holy-strength')
+        self.g.mana('W')
+        self.assertNotIn(card, [a.card for a in self.gs.available_actions_from_hand()])
+
+    def test_cards_w_multiple_spells(self):
+        card = self.g.hand('alabaster-potion')  # has two modes
+        self.g.mana('WWW')
+        cast_actions = [a for a in self.gs.available_actions_from_hand() if a.card is card]
+        self.assertEqual(len(cast_actions), 2)
 
 
 if __name__ == '__main__':
