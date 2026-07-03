@@ -316,11 +316,11 @@ class Timetwister(Resolver):
     (Timetwister to its owner's graveyard.)"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         time_twister = next(c for c in gs.pile_mgr.graveyards[s.owner_id] if c is s)
-        for p_id in range(2):
-            hand_cards = gs.pile_mgr.hands[p_id][:]
+        for p_id in (0, 1):
+            hand_cards = gs.pile_mgr.hands[p_id].cards[:]
             gs.pile_mgr.hands[p_id].cards.clear()
             graveyard_cards = gs.pile_mgr.graveyards[p_id][:]
-            gs.pile_mgr.graveyards.clear()
+            gs.pile_mgr.graveyards[p_id].clear()
             gs.pile_mgr.libraries[p_id].extend(hand_cards)
             gs.pile_mgr.libraries[p_id].extend(graveyard_cards)
             random.shuffle(gs.pile_mgr.libraries[p_id])
