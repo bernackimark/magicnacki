@@ -7,7 +7,7 @@ from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
-from ..effects.listeners_misc import PowerleechActivation
+from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -26,8 +26,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
     PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo
 from ..effects.listeners_state_change import SerendibDjinnNoLands
-from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal, \
-    VerduranEnchantress
+from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \

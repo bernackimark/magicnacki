@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.base import DoNothing
-from models.actions.destroy_sac_regen import Sac, SacCards
-from models.actions.draw_discard import DrawCard
+from models.actions.destroy_sac_regen import Sac
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
@@ -173,14 +170,3 @@ class TheWretchedUnsteal(Listener):
                     gs.pile_mgr.boards[source.owner_id].remove(c)
                     gs.pile_mgr.boards[flip(source.owner_id)].append(c)
                     break
-
-
-class VerduranEnchantress(Listener):
-    """Whenever you cast an enchantment spell, you may draw a card"""
-    listens_to = ZoneChangeEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        if source.owner_id != event.card.owner_id or not event.card.is_enchantment:
-            return
-        options = [DrawCard(source.owner_id, gs), DoNothing(source.owner_id, gs)]
-        gs.action_stack.push(ChoiceAction(options), gs, False)

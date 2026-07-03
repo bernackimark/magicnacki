@@ -1,12 +1,17 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.actions.base import DoNothing
+from models.actions.draw_discard import DrawCard
+from models.choice_actions_all import ChoiceAction
+
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
 from models.effects.base import Listener
-from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, Event
+from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, Event, \
+    ZoneChangeEvent
 from models.utils import flip
 
 
@@ -58,6 +63,16 @@ class PresenceOfTheMaster(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> None:
         ...
+
+class VerduranEnchantress(Listener):
+    """Whenever you cast an enchantment spell, you may draw a card"""
+    listens_to = CastResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent):
+        if source.owner_id != event.card.owner_id or not event.card.is_enchantment:
+            return
+        options = [DrawCard(source.owner_id, gs), DoNothing(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
 
 # --- LIFE LOSS ---
 class AliFromCairo(Listener):

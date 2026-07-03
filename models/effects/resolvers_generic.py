@@ -202,10 +202,9 @@ class GraveyardToExile(Resolver):
 class GraveyardToExileInItsEntirety(Resolver):
     """Moves all cards from target player's graveyard to that same player's exile"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        if not target:
+        if target is None:
             raise RuntimeError(f'{source.props.name} needs a target')
         gy = gs.pile_mgr.graveyards[target][:]
-        gs.pile_mgr.graveyards[target].clear()
         for card in gy:
             gs.pile_mgr.exile(card)
 

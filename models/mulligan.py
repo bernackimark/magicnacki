@@ -35,6 +35,7 @@ class MulliganChoice(ChoiceAction):
         self.gs = gs
         self.rule = rule
         self.mulligans_taken = 0
+        self.options = []  # not sure why self.options isn't inheriting from its parent
 
     def get_card_cnt_to_be_drawn(self) -> int:
         if self.rule in (Mulligan.PARIS, Mulligan.PARIS_WITH_GENTLEMENS):
