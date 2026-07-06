@@ -107,7 +107,8 @@ class TestGame:
                 self.gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, emit_zone_event=False)
                 for s in card.abilities:
                     if s.activation_type == 'spell':
-                        s.effect.resolve(self.gs, card, card)  # type: ignore
+                        if s.effect:
+                            s.effect.resolve(self.gs, card, card)  # type: ignore
                 if register_listeners:
                     for eff_spec in card.abilities:
                         if isinstance(eff_spec.effect, Listener):
@@ -130,9 +131,11 @@ class TestGame:
         return card
 
     def library(self, slug, owner=0) -> GameCard:
-        """Create GameCard, update Zone to Library without emitting"""
+        """Create GameCard, move to top of library, update Zone to Library without emitting"""
         card = self.card(slug, owner)
-        self.gs.pile_mgr.move_card(card, Zone.LIBRARY, emit_zone_event=False)
+        card_in_lib = self.gs.pile_mgr.libraries[0].pop()
+        self.gs.pile_mgr.libraries[0].insert(0, card_in_lib)
+        # self.gs.pile_mgr.move_card(card, Zone.LIBRARY, emit_zone_event=False)
         return card
 
     def mana(self, mana: str, owner=0) -> None:
