@@ -1,7 +1,5 @@
 import unittest
 
-from models.actions.activate_ability import ActivateAbility
-from models.actions.special import Attach
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent

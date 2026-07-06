@@ -4,7 +4,10 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from models.effects.base import Listener
+from models.actions.activate_ability import ActivateAbility
+from models.actions.stack_accept_counter import AcceptAction
+from models.effects.base import Listener, ActivatedAbility
+from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -143,6 +146,11 @@ class TestGame:
         lookup = {'B': 'swamp', 'G': 'forest', 'R': 'mountain', 'U': 'island', 'W': 'plains'}
         for color in mana:
             self.battlefield(lookup[color], owner=owner)
+
+    def activate_ability(self, aa: ActivatedAbility, target: GameCard | int | None = None, owner: int = 0):
+        ActivateAbility(owner, self.gs, aa, target).play()
+        AcceptAction(flip(owner), self.gs).play()
+
 
     @staticmethod
     def _create_engine_and_universe(file_path_str, settings_key, test_mode) -> tuple[Engine, CardUniverse]:

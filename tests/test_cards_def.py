@@ -1,13 +1,6 @@
 import unittest
 
-from models.actions.activate_ability import ActivateAbility
-from models.actions.damage import DealDamageToYou
 from models.actions.mana import PayMana
-from models.actions.special import Attach
-from models.actions.stack_accept_counter import AcceptAction
-from models.effects.listeners_misc import ArtifactPossessionActivation
-from models.effects.resolvers_a_to_e import BloodLust
-from models.events_all import AbilityActivatedEvent
 from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
@@ -62,8 +55,7 @@ class TestCardsAtoC(unittest.TestCase):
         attacker = self.g.battlefield('grizzly-bears')  # 2/2
         self.gs.combat_mgr.create_combat(self.gs, attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
-        ActivateAbility(1, self.gs, ff.activated_abilities[0], attacker).play()
-        AcceptAction(0, self.gs).play()
+        self.g.activate_ability(ff.activated_abilities[0], attacker, 1)
         combat.handle_damage()
         self.assertEqual(19, self.gs.score_mgr.life[1])
 

@@ -1,10 +1,8 @@
 import unittest
 
-from models.actions.activate_ability import ActivateAbility
 from models.actions.cast import BeginSpellCastAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
-from models.actions.stack_accept_counter import AcceptAction
 from models.actions.target import AddTargetAction
 from models.effects.resolvers_generic import Destroy
 from models.effects.resolvers_p_to_z import Sindbad
@@ -45,8 +43,7 @@ class TestCardsWtoZ(unittest.TestCase):
         'Whenever this creature deals damage to a player, that player gets a poison counter.'"""
         self.g.mana('UUUUUUU')
         sg = self.g.battlefield('serpent-generator')
-        ActivateAbility(0, self.gs, sg.activated_abilities[0]).play()
-        AcceptAction(1, self.gs).play()
+        self.g.activate_ability(sg.activated_abilities[0])
         snake = next(c for c in self.gs.pile_mgr.boards[0] if c.props.slug == 'snake')
         self.assertIn(snake, self.gs.pile_mgr.boards[0])
         PassTheTurn(0, self.gs).play()

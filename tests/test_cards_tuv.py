@@ -1,11 +1,7 @@
 import unittest
 
-from models.actions.activate_ability import ActivateAbility
-from models.actions.cast import CastToBoard
 from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
-from models.effects.base import Spell
-from models.effects.resolvers_generic import TakeAnotherTurn
 from models.effects.resolvers_p_to_z import Timetwister
 from models.events_all import CastResolvedEvent
 from tests.setup_helpers import TestGame
@@ -27,7 +23,7 @@ class TestCardsWtoZ(unittest.TestCase):
         PassTheTurn(1, self.gs).play()
         skip_turn_and_untap_tv = self.gs.pending_choice.options[0]
         skip_turn_and_untap_tv.play()
-        ActivateAbility(0, self.gs, tv.activated_abilities[0]).play()
+        self.g.activate_ability(tv.activated_abilities[0])
         PassTheTurn(0, self.gs).play()
         self.assertEqual(0, self.gs.turn_mgr.player_turn_idx)
         self.assertTrue(tv.is_tapped)
