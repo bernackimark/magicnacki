@@ -85,6 +85,13 @@ class TestCombat(unittest.TestCase):
         combat.handle_damage()
         self.assertIn(blocker, self.gs.pile_mgr.boards[1], 'First Striker appears to have dealt damage 2x')
 
+    def test_unblocked_attacker_damage(self):
+        attacker = self.g.battlefield('white-knight')  # 2/2 First Strike
+        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        combat = self.gs.combat_mgr.get_combat(attacker)
+        combat.handle_damage()
+        self.assertEqual(18, self.gs.score_mgr.life[1])
+
 
 if __name__ == '__main__':
     unittest.main()

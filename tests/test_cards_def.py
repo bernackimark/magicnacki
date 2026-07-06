@@ -1,10 +1,14 @@
 import unittest
 
 from models.actions.activate_ability import ActivateAbility
+from models.actions.damage import DealDamageToYou
+from models.actions.mana import PayMana
 from models.actions.special import Attach
+from models.actions.stack_accept_counter import AcceptAction
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent
+from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
 
@@ -26,6 +30,42 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.battlefield('birds-of-paradise', owner=1)
         fellwar_stone.activated_abilities[0].eff_spec.effect.resolve(self.gs, fellwar_stone, None)
         self.assertEqual(5, len(self.gs.pending_choice.get_actions()))
+
+    def test_field_of_dreams(self):
+        """Players play with the top card of their libraries revealed"""
+        self.g.battlefield('field-of-dreams')
+        top_card = self.gs.pile_mgr.libraries[0][0]
+        self.assertTrue(top_card.is_face_up)
+        self.gs.pile_mgr.draw(0)
+        top_card = self.gs.pile_mgr.libraries[0][0]
+        self.assertTrue(top_card.is_face_up)
+
+    def test_force_of_nature(self):
+        """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
+        self.g.battlefield('force-of-nature')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.assertEqual(12, self.gs.score_mgr.life[0])
+
+        self.g.mana('GGGGG')  # five forests
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        for a in self.gs.pending_choice.get_actions():
+            if isinstance(a, PayMana):
+                a.play()
+        self.assertEqual(1, len([c for c in self.gs.pile_mgr.boards[0]
+                                 if c.props.slug == 'forest' and not c.is_tapped]))
+
+    def test_forcefield(self):
+        """{1}: The next time an unblocked creature of your choice would deal combat damage to you this turn,
+        prevent all but 1 of that damage"""
+        ff = self.g.battlefield('forcefield', owner=1)
+        self.g.mana('U', owner=1)
+        attacker = self.g.battlefield('grizzly-bears')  # 2/2
+        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        combat = self.gs.combat_mgr.get_combat(attacker)
+        ActivateAbility(1, self.gs, ff.activated_abilities[0], attacker).play()
+        AcceptAction(0, self.gs).play()
+        combat.handle_damage()
+        self.assertEqual(19, self.gs.score_mgr.life[1])
 
 
 if __name__ == '__main__':
