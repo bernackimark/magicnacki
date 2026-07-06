@@ -24,7 +24,8 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     PreventAllCombatDamageThisTurn, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
-    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell
+    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell, \
+    RevealTopLibraryCard
 from models.phase_manager import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
@@ -66,7 +67,7 @@ MAP: dict[str: list[EffSpec]] = {
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
     'fellwar-stone': [Activated('T', FellwarStone())],
     'festival': [Spell(Festival(), None, allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['opponent'])],
-    'field-of-dreams': [Triggered(FieldOfDreams())],
+    'field-of-dreams': [Triggered(FieldOfDreams()), Spell(RevealTopLibraryCard())],
     'fire-and-brimstone': [Spell(FireAndBrimstone(),)],
     'fire-drake': [Activated('R', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['card_owner'])],

@@ -372,6 +372,17 @@ class RevealLibrary(Resolver):
         cards = gs.pile_mgr.libraries[source.owner_id] if not self.top_x else gs.pile_mgr.libraries[source.owner_id][:self.top_x]
         gs.add_presentation_request(self.viewer_id, 'view_library', {'cards': cards})
 
+class RevealTopLibraryCard(Resolver):
+    """Reveal top card of each library; if library_id is not provided, reveal for all libraries"""
+    def __init__(self, library_id: int = None):
+        self.library_id = library_id
+
+    def resolve(self, gs: GameState, source: GameCard, target=None):
+        libraries = (0, 1) if self.library_id is None else (self.library_id, )
+        for p_id in libraries:
+            if gs.pile_mgr.libraries[p_id]:
+                gs.pile_mgr.libraries[p_id][0].reveal()
+
 class SacAll(Resolver):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
         self.card_filter_func = card_filter_func
