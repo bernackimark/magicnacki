@@ -301,7 +301,7 @@ class Seeker(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
         a = event.attacker
-        if a.host is not source:
+        if source not in a.auras:
             return
         artifact_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).artifacts().creatures().result()
         white_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).white().creatures().result()
