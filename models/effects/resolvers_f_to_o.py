@@ -3,11 +3,12 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
-from models.actions.base import DoNothing
+from models.actions.base import DoNothing, Action
 from models.actions.cast import CastToTargetAddToStack
 from models.actions.combat import AssignBlocker
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.draw_discard import DiscardCards
+from models.actions.kwa import AddKWA
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction
@@ -21,6 +22,7 @@ from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNext
 from models.effects.listeners_mod_queries import HellSwarmEOT, HolyLightEOT, MarshGasEOT, MoraleEOT
 from models.effects.listeners_permission import NoAttacksAllowedEOT
 from models.effects.resolvers_generic import GraveyardToExile, DrawCards
+from models.events_all import UpkeepEvent
 from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
@@ -109,6 +111,12 @@ class Forcefield(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         from models.effects.listeners_damage import ForcefieldPrevention
         gs.event_mgr.register(ForcefieldPrevention(creature=t, protected_player=s.owner_id), s)
+
+class GiantSlug(Resolver):
+    """At your next upkeep, this creature gains landwalk of your choice until the end of that turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        from models.effects.listeners_upkeep import GiantSlugUpkeep
+        gs.event_mgr.register(GiantSlugUpkeep(), source)
 
 class GlassesOfUrza(Resolver):
     """Look at opponent's hand"""

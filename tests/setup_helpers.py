@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from models.actions.activate_ability import ActivateAbility
+from models.actions.combat import AssignBlocker
+from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.effects.base import Listener, ActivatedAbility
 from models.utils import flip
@@ -151,6 +153,20 @@ class TestGame:
         ActivateAbility(owner, self.gs, aa, target).play()
         AcceptAction(flip(owner), self.gs).play()
 
+    def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard]):
+        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        if isinstance(blockers, GameCard):
+            AssignBlocker(1, self.gs, blockers, attacker).play()
+        else:
+            for blocker in blockers:
+                AssignBlocker(1, self.gs, blocker, attacker).play()
+        combat = self.gs.combat_mgr.get_combat(attacker)
+        combat.handle_damage()
+
+    def next_turn(self):
+        """Passes the current turn; passes the next turn; returning action back to the original player"""
+        PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
+        PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
 
     @staticmethod
     def _create_engine_and_universe(file_path_str, settings_key, test_mode) -> tuple[Engine, CardUniverse]:

@@ -28,13 +28,17 @@ class ArtifactPossessionActivation(Listener):
         gs.apply_damage(source, 2, source.host.owner_id)
 
 class HauntingWindActivation(Listener):
-    """Whenever an artifact ... activates an ability, deal 2 damage to artifact's controller"""
+    """Whenever an artifact ... activates an ability without a {T} in its cost,
+    deal 1 damage to artifact's controller"""
     listens_to = AbilityActivatedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: AbilityActivatedEvent) -> None:
         if not event.aa.source.is_artifact:
             return
-        gs.apply_damage(source, 2, event.aa.source.owner_id)
+        if 'T' in event.aa.eff_spec.cost:
+            return
+        print(event.aa.eff_spec.cost)
+        gs.apply_damage(source, 1, event.aa.source.owner_id)
 
 class PowerleechActivation(Listener):
     """Whenever an opponent's artifact ... activates an ability, you gain 1 life"""

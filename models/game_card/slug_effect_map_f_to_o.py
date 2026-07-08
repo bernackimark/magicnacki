@@ -17,7 +17,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, Ha
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, GiantSlug
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, \
@@ -34,7 +34,7 @@ from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, Man
 from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
-from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, GiantSlug, \
+from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
     HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep
 from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
@@ -90,12 +90,12 @@ MAP: dict[str: list[EffSpec]] = {
     'fungusaur': [Triggered(FungusaurOnDamage())],
     'gabriel-angelfire': [Triggered(GabrielAngelfire())],
     'gaeas-avenger': [Static(GaeasAvengerPT())],
-    'gaeas-liege': [Static(GaeasLiegePT())],
-    'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[ExileSelfCost()],
+    'gaeas-liege': [Static(GaeasLiegePT())],  # more to code
+    'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()],
                               text='Exile for {GG}'),
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',
                               allowed_p_id_turn=T_FUNCS['card_owner'], max_activations_per_turn=1)],
-    'gaseous-form': [Spell(GaseousForm(), T_FUNCS['creatures'])],
+    'gaseous-form': [Static(GaseousForm()), Spell(None, T_FUNCS['creatures'])],
     'gate-to-phyrexia': [Activated('', Destroy(), T_FUNCS['artifacts'],
                                    extra_costs=[SacCardCost(T_FUNCS['your_creatures'])],
                                    allowed_phases=[Phase.UPKEEP], max_activations_per_turn=1,
@@ -105,7 +105,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ghosts-of-the-damned': [Activated('T', Pump(-1, 0, True), T_FUNCS['creatures'])],
     'giant-growth': [Spell(Pump(3, 3, True), T_FUNCS['creatures'])],
     'giant-shark': [Triggered(GiantShark())],
-    'giant-slug': [Triggered(GiantSlug())],
+    'giant-slug': [Activated('5', GiantSlug())],
     'giant-strength': [Spell(Pump(2, 2), T_FUNCS['creatures'])],
     'giant-tortoise': [Static(GiantTortoisePT())],
     'giant-turtle': [Triggered(CantAttackIfAttackedLastTurn())],

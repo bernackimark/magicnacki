@@ -5,7 +5,7 @@ from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
 
-class TestCardsAtoC(unittest.TestCase):
+class TestCardsDEF(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs

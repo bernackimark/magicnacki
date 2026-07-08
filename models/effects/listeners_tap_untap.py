@@ -44,13 +44,13 @@ class CityOfBrassDamageOnTap(Listener):
         gs.apply_damage(source, 1, source.owner_id)
 
 class HauntingWindTap(Listener):
-    """Whenever an artifact becomes tapped ... deal 2 damage to artifact's controller"""
+    """Whenever an artifact becomes tapped ... deal 1 damage to artifact's controller"""
     listens_to = TapCardEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent) -> None:
         if not event.card.is_artifact:
             return
-        gs.apply_damage(source, 2, event.card.owner_id)
+        gs.apply_damage(source, 1, event.card.owner_id)
 
 class Kudzu(Listener):
     """When enchanted land becomes tapped, destroy it.

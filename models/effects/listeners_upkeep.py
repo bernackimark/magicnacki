@@ -253,8 +253,7 @@ class GhazbanOgre(Listener):
         if most_life_player_idx != source.owner_id:
             Steal().resolve(gs, source, source)
 
-
-class GiantSlug(Listener):
+class GiantSlugUpkeep(Listener):
     """At your next upkeep, this creature gains landwalk of your choice until the end of that turn."""
     listens_to = UpkeepEvent
 
