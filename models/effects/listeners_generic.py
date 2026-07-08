@@ -403,12 +403,11 @@ class ReturnToOwnerOnUntap(Listener):
         if source is not event.card:
             return
         for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.auras:
-                if isinstance(mod, OwnershipMod):
-                    c.modifiers.remove(mod)
-                    gs.pile_mgr.boards[source.owner_id].remove(c)
-                    gs.pile_mgr.boards[flip(source.owner_id)].append(c)
-                    break
+            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+                c.modifiers.remove(mod)
+                gs.pile_mgr.boards[source.owner_id].remove(c)
+                gs.pile_mgr.boards[flip(source.owner_id)].append(c)
+                return
 
 class UntapRemovesPumpFromAnotherCard(Listener):
     """If an effect targeted another card and its duration was for as long as the source is tapped,

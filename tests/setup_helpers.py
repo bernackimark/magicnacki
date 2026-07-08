@@ -153,9 +153,11 @@ class TestGame:
         ActivateAbility(owner, self.gs, aa, target).play()
         AcceptAction(flip(owner), self.gs).play()
 
-    def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard]):
+    def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard] | None):
         self.gs.combat_mgr.create_combat(self.gs, attacker)
-        if isinstance(blockers, GameCard):
+        if blockers is None:
+            pass
+        elif isinstance(blockers, GameCard):
             AssignBlocker(1, self.gs, blockers, attacker).play()
         else:
             for blocker in blockers:

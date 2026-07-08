@@ -118,6 +118,7 @@ class MartyrsOfKorlis(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if event.target is not source.owner_id or source.is_tapped or 'Artifact' not in event.source.card_types:
             return
+        source.damage_received_this_turn += event.remaining
         event.prevented += event.remaining
         event.remaining = 0
 

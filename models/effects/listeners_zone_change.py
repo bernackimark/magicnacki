@@ -100,7 +100,7 @@ class LandEquilibrium(Listener):
     listens_to = ZoneChangeEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        if source.owner_id == event.card.owner_id or event.card not in gs.card_filter.land().result():
+        if source.owner_id == event.card.owner_id or 'Land' not in event.card.card_types:
             return
         your_land_cnt = len(gs.card_filter.on_player_board(source.owner_id).lands().result())
         opp_lands = gs.card_filter.on_player_board(event.card.owner_id).lands().result()

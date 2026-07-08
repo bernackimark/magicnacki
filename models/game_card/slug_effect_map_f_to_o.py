@@ -31,7 +31,7 @@ from .card_filter_funcs import T_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, ManaDrainMainPhase
-from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac
+from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac, OldManOfTheSeaPowerCheck
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
@@ -301,7 +301,8 @@ MAP: dict[str: list[EffSpec]] = {
     'oasis': [Activated('T', PreventNextDamageBy(1), T_FUNCS['creatures'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
     'old-man-of-the-sea': [Activated('T', Steal(), T_FUNCS['opp_creatures_power_not_greater_than_source']),
-                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap())],
+                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap()),
+                           Static(OldManOfTheSeaPowerCheck())],
     'onulet': [Triggered(Onulet())],
     'orc-general': [Activated('T', Pump(1, 1, True), T_FUNCS['your_other_orcs'],
                               extra_costs=[SacCardCost(T_FUNCS['another_orc_or_goblin'])])],

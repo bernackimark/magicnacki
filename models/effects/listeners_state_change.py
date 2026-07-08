@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.effects.base import Listener
-from models.events_all import StateBasedEvent
+from models.events_all import StateBasedEvent, Event
+from models.modifiers import OwnershipMod
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -42,6 +43,22 @@ class JihadSac(Listener):
         if not gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result():
             gs.pile_mgr.destroy(source, allow_regeneration=False)
 
+class OldManOfTheSeaPowerCheck(Listener):
+    """Gain control of target creature with power <= OMOTS's power for as long as ... t
+    arget's power remains <= OMOTS's power."""
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        for c in gs.pile_mgr.boards[source.owner_id]:
+            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+                if mod.s is source:
+                    print('AAA', source, source.power, c.power)
+                    if source.power > c.power:
+                        print('YYY')
+                        c.modifiers.remove(mod)
+                        gs.pile_mgr.boards[source.owner_id].remove(c)
+                        gs.pile_mgr.boards[flip(source.owner_id)].append(c)
+                        return
 
 class SerendibDjinnNoLands(Listener):
     """When you control no lands, sacrifice this creature"""
