@@ -210,7 +210,7 @@ class GraveyardToExileInItsEntirety(Resolver):
 
 class HandToBoard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.pile_mgr.cast(source)
+        gs.pile_mgr.cast(target)
 
 class KWAModEffect(Resolver):
     def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):
