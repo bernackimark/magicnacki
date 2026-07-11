@@ -33,18 +33,19 @@ class Untap(Action):
             self.gs.action_stack.pop()
 
 
-class UntapWithManaAction(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard, mana_cost: str):
+class PayManaToUntapAction(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard, mana_cost: str):
         super().__init__(p_id, gs)
         self.source = s
+        self.target = target
         self.mana_cost = mana_cost
 
     def __repr__(self):
-        return f'{{{self.mana_cost}}}: Untap {self.source}'
+        return f'{{{self.mana_cost}}}: Untap {self.target}'
 
     def play(self):
-        self.gs.mana_pools[self.source.owner_id].pay(self.mana_cost)
-        self.source.untap()
+        self.gs.mana_pools[self.target.owner_id].pay(self.mana_cost)
+        self.target.untap()
         self.gs.action_stack.pop()
 
 class LeaveTapped(Action):

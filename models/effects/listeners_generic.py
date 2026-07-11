@@ -11,14 +11,14 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
-from models.actions.tap_untap import LeaveTapped, Untap
+from models.actions.tap_untap import LeaveTapped, Untap, PayManaToUntapAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, CanUntapQueryEvent, \
-    CanAttackQueryEvent, AttackEvent
+    CanAttackQueryEvent, AttackEvent, Event
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -209,23 +209,6 @@ class PreventNextDamageByEOT(Listener):
         event.remaining = 0
         self.is_expired = True
 
-class PreventNextDamageToCardEOT(Listener):
-    listens_to = DamageProposedEvent
-    expires = 'EOT'
-
-    def __init__(self, damage_receiver: GameCard, prevented_amt: int = None, combat_only: bool = False):
-        self.damage_receiver = damage_receiver
-        self.prevented_amt = prevented_amt
-        self.combat_only = combat_only
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not self.damage_receiver or (self.combat_only and not event.is_combat):
-            return
-        if self.prevented_amt is None:
-            self.prevented_amt = event.amt
-        event.prevented += self.prevented_amt
-        event.remaining = event.amt - self.prevented_amt
-
 class PreventNextDamageToSourceOwnerEOT(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
@@ -336,6 +319,20 @@ class AddCountersIfAnyCreatureDied(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
         if gs.turn_mgr.cards_that_died:
             source.counters.add_counter(self.counter_type, self.cnt)
+
+class BounceAtEndStep(Listener):
+    """Bounce at end step if it is still on the battlefield at end step"""
+    listens_to = EndStepEvent
+    expires = 'EOT'
+
+    def __init__(self, card_to_be_bounced: GameCard):
+        self.card_to_be_bounced = card_to_be_bounced
+
+    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
+        if self.card_to_be_bounced not in gs.card_filter.in_play().result():
+            return
+        gs.pile_mgr.bounce(self.card_to_be_bounced)
+        self.is_expired = True
 
 class DestroyAtEndStep(Listener):
     """Destroys target if it is still on the battlefield at end step"""
@@ -449,15 +446,18 @@ class AddCounterAtTargetUpkeep(Listener):
     """At target owner's upkeep, put counter(s) on this card"""
     listens_to = UpkeepEvent
 
-    def __init__(self, target: GameCard, counter_type: CounterType, amt: int = 1):
-        self.target = target
+    def __init__(self, target_func: Callable[..., GameCard], counter_type: CounterType, amt: int = 1):
+        self.target_func = target_func
         self.counter_type = counter_type
         self.amt = amt
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if event.active_player != self.target.owner_id:
+        target = self.target_func(gs, source)
+        if target is None:
             return
-        self.target.counters.add_counter(self.counter_type, self.amt)
+        if event.active_player != target.owner_id:
+            return
+        target.counters.add_counter(self.counter_type, self.amt)
 
 class DealDamageOnEveryUpkeep(Listener):
     listens_to = UpkeepEvent
@@ -507,6 +507,24 @@ class PayManaOrSacAtUpkeep(Listener):
             return
         options = [PayMana(source.owner_id, gs, source, self.mana_cost), Sac(source.owner_id, gs, source)]
         gs.action_stack.push(ChoiceAction(options), gs, False)
+
+class PayManaToUntapUpkeep(Listener):
+    """Pay [x] to untap at target owner's upkeep"""
+    listens_to = UpkeepEvent
+
+    def __init__(self, mana_cost: str, target_func: Callable):
+        self.mana_cost = mana_cost
+        self.target_func = target_func
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent) -> None:
+        target = self.target_func(gs, s)
+        if event.active_player != target.owner_id:
+            return
+        if not gs.mana_pools[target.owner_id].can_pay(self.mana_cost):
+            return
+        options = [PayManaToUntapAction(target.owner_id, gs, s, target, self.mana_cost),
+                   LeaveTapped(target.owner_id, gs, s)]
+        gs.pending_choice = ChoiceAction(options)
 
 class RemoveCounterAtTargetUpkeep(Listener):
     """At target owner's upkeep, put counter(s) on this card"""

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
-    voodoo_doll_x, max_x_from_printed_card
+    voodoo_doll_x, max_x_from_printed_card, untap_for_mana_at_owner_upkeep
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
@@ -46,8 +46,8 @@ from ..effects.listeners_combat import CockatriceAndThicketBasilisk, Sentinel, V
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
-    PreventNextDamageToCardEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
-    AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep
+    PreventNextDamageToEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
+    AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep
 from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
@@ -56,9 +56,8 @@ from models.phase_manager import Phase
 
 MAP: dict[str, list[EffSpec]] = {
     'palladia-mors': [Triggered(PayManaOrSacAtUpkeep('RGW'))],
-    'paralyze': [Spell(TapCardEffect(), T_FUNCS['host']),
-                 Triggered(HostDoesntUntapAtUntap()),
-                 Activated('4', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'])],
+    'paralyze': [Triggered(HostDoesntUntapAtUntap()), Static(PayManaToUntapUpkeep('4', T_FUNCS['host'])),
+                 Spell(TapCardEffect(), T_FUNCS['host'])],
     'part-water': [Spell(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'],
                          max_x_func=max_x_from_printed_card)],
     'pavel-maliki': [self_pump('BR', 1, 0)],
@@ -131,7 +130,7 @@ MAP: dict[str, list[EffSpec]] = {
     'riptide': [Spell(Riptide())],
     'riven-turnbull': [Activated('T', AddMana('B'))],
     'rock-hydra': [Triggered(RockHydraAutoDamagePrevent()),
-                   Activated('R', PreventNextDamageToCardEOT(T_FUNCS['self'])), Activated('RRR', AddCounter(PLUS_ONE)),
+                   Activated('R', PreventNextDamageToEOT(T_FUNCS['self'])), Activated('RRR', AddCounter(PLUS_ONE)),
                    Spell(RockHydraCast(), T_FUNCS['self'])],
     'rocket-launcher': [Activated('2', RocketLauncherAA(), T_FUNCS['all_creatures_and_players']),
                         Spell(RocketLauncherCast())],
@@ -269,7 +268,7 @@ MAP: dict[str, list[EffSpec]] = {
     'undertow': [Static(WalkRuleRemoved('Islandwalk'))],
     'underground-sea': dual_land_specs('BU'),
     'unholy-strength': [Spell(Pump(2, 1), T_FUNCS['creatures'])],
-    'unstable-mutation': [Triggered(AddCounterAtTargetUpkeep(T_FUNCS['host_owner'], MINUS_ONE)),
+    'unstable-mutation': [Static(AddCounterAtTargetUpkeep(T_FUNCS['host'], MINUS_ONE)),
                           Spell(Pump(3, 3), T_FUNCS['creatures'])],
     'unsummon': [Spell(Bounce(), T_FUNCS['creatures'])],
     'ur-drago': [Static(WalkRuleRemoved('Swampwalk'))],
@@ -291,7 +290,7 @@ MAP: dict[str, list[EffSpec]] = {
                          self_pump('G', 1, 0)],
     'vampire-bats': [Activated('B', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=2)],
     'venarian-gold':
-        [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host_owner'], SLEEP)),
+        [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host'], SLEEP)),
          Triggered(VenarianGoldHostStaysTapped())],
     'venom': [Spell(None, T_FUNCS['creatures']), Triggered(Venom())],
     'verduran-enchantress': [Static(VerduranEnchantress())],
@@ -302,7 +301,7 @@ MAP: dict[str, list[EffSpec]] = {
     'veteran-bodyguard': [Triggered(VeteranBodyguard())],
     'visions': [Spell(Visions(), T_FUNCS['all_players'])],
     'volcanic-island': dual_land_specs('RU'),
-    'voodoo-doll': [Triggered(AddCounterAtTargetUpkeep(T_FUNCS['card_owner'], PIN)), Triggered(VoodooDollEndStep()),
+    'voodoo-doll': [Triggered(AddCounterAtTargetUpkeep(T_FUNCS['self'], PIN)), Triggered(VoodooDollEndStep()),
                     Activated('XXT', DealDamage(), T_FUNCS['all_creatures_and_players'],
                               min_x_func=voodoo_doll_x, max_x_func=voodoo_doll_x)],
     'walking-dead': [Activated('B', Regenerate(), T_FUNCS['self'])],

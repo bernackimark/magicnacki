@@ -2,8 +2,10 @@ import unittest
 
 from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
+from models.actions.special import Attach
 from models.effects.resolvers_p_to_z import Timetwister
 from models.events_all import CastResolvedEvent
+from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
 
@@ -27,6 +29,18 @@ class TestCardsWtoZ(unittest.TestCase):
         PassTheTurn(0, self.gs).play()
         self.assertEqual(0, self.gs.turn_mgr.player_turn_idx)
         self.assertTrue(tv.is_tapped)
+
+    def test_unstable_mutation(self):
+        """Host gets +3/+3. At host's upkeep, put a -1/-1 counter on host."""
+        card = self.g.battlefield('unstable-mutation')
+        host = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
+        Attach(0, self.gs, card, host).play()
+        card.abilities[1].effect.resolve(self.gs, card, host)  # type: ignore
+        self.assertEqual(4, host.power)
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.assertEqual(3, host.power)
 
     def test_verduran_enchantress(self):
         """Whenever you cast an enchantment spell, you may draw a card"""

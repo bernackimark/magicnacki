@@ -1,12 +1,13 @@
 import unittest
 
-from models.actions.cast import BeginSpellCastAction
+from models.actions.cast import BeginSpellCastAction, CastToTargetAddToStack
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
+from models.actions.stack_accept_counter import AcceptAction
 from models.actions.target import AddTargetAction
 from models.effects.resolvers_generic import Destroy
 from models.effects.resolvers_p_to_z import Sindbad
-from models.events_all import StateBasedEvent
+from models.events_all import StateBasedEvent, DamageProposedEvent
 from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
@@ -15,6 +16,47 @@ class TestCardsWtoZ(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_rag_man(self):
+        """{BBB}, {T}: Opp reveals their hand and discards a creature card at random. Activate only during your turn"""
+        card = self.g.battlefield('rag-man')
+        aa = card.activated_abilities[0]
+        self.g.mana('BBBBBBBBB')
+        opp_hand = self.gs.pile_mgr.hands[1].cards
+        opp_hand.clear()
+        self.g.hand('merfolk-of-the-pearl-trident', owner=1)
+        self.g.hand('phantom-monster', owner=1)
+        non_creature = self.g.hand('jump', owner=1)
+        self.g.next_turn()
+
+        self.g.activate_ability(aa, 1)
+        self.assertIn(non_creature, opp_hand)
+        self.assertEqual(2, len(opp_hand))
+        self.g.next_turn()
+
+        opp_hand.clear()
+        self.g.hand('jump', owner=1)
+        self.g.activate_ability(aa, 1)
+        self.assertEqual(1, len(opp_hand))
+        self.g.next_turn()
+
+        opp_hand.clear()
+        self.g.activate_ability(aa, 1)  # just make sure nothing blows up if the hand is empty
+
+    def test_rakalite(self):
+        """{2}: Prevent the next 1 damage that would be dealt to any target this turn. Bounce Rakalite at end step."""
+        card = self.g.battlefield('rakalite')
+        aa = card.activated_abilities[0]
+        self.g.mana('BBBB')
+        self.g.activate_ability(aa, 0)
+        self.g.activate_ability(aa, 0)
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('R', owner=1)
+        CastToTargetAddToStack(1, self.gs, bolt, 0, bolt.abilities[0]).play()
+        AcceptAction(0, self.gs).play()
+        self.assertEqual(19, self.gs.score_mgr.life[0])
+        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.assertIn(card, self.gs.pile_mgr.hands[0].cards)
 
     def test_seeker(self):
         """Host can't be blocked except by artifact creatures and/or white creatures"""

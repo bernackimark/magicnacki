@@ -16,8 +16,8 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
-from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, PreventNextDamageToCardEOT, \
-    DestroyAtEndStep, PreventNextDamageByEOT
+from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, PreventNextDamageToEOT, \
+    DestroyAtEndStep, PreventNextDamageByEOT, BounceAtEndStep, PreventNextDamageToEOT
 from models.effects.listeners_mod_queries import PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.effects.listeners_permission import TowerOfCoireallEOT
 from models.effects.resolvers_generic import Reveal
@@ -78,11 +78,10 @@ class Rakalite(Resolver):
     Return this artifact to its owner's hand at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
         """target is the card dealing damage"""
-        if not target:
+        if target is None:
             raise ValueError(f'{s.props.name} needs a target')
-        gs.event_mgr.register(PreventNextDamageToCardEOT(target, 1), s)
-        # TODO: this bounce is supposed to occur at End Step; need to create a listener
-        gs.pile_mgr.bounce(s)
+        gs.event_mgr.register(PreventNextDamageToEOT(target, 1), s)
+        gs.event_mgr.register(BounceAtEndStep(s), s)
 
 class RapidFire(Resolver):
     """Cast this spell only before blockers are declared. Target creature gains first strike until end of turn.
@@ -503,9 +502,10 @@ class Web(Resolver):
 
 class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
         for i in (0, 1):
-            DiscardCards(i, gs, gs.pile_mgr.hands[i].cards).play()
+            for c in gs.pile_mgr.hands[i].cards[::]:
+                gs.pile_mgr.discard(c)
             gs.pile_mgr.draw(i, 7)
 
 class WindsOfChange(Resolver):

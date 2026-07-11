@@ -3,12 +3,11 @@ from typing import TYPE_CHECKING, Optional, Callable, Literal
 
 from models.actions.cast import CastToTargetAddToStack
 from models.actions.draw_discard import DiscardCards
-from models.actions.tap_untap import UntapWithManaAction, LeaveTapped
+from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
 from models.choice_actions_all import ChoiceAction
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
 from models.effects.base import Resolver
-
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
 from models.utils import flip
@@ -267,8 +266,8 @@ class PreventNextDamageToCardEffect(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         """target = the GameCard being protected"""
-        from models.effects.listeners_generic import PreventNextDamageToCardEOT
-        gs.event_mgr.register(PreventNextDamageToCardEOT(target, self.prevent_amt, self.combat_only), source)
+        from models.effects.listeners_generic import PreventNextDamageToEOT
+        gs.event_mgr.register(PreventNextDamageToEOT(target, self.prevent_amt, self.combat_only), source)
 
 class PreventNextDamageToSourceOwner(Resolver):
     def __init__(self, amt: int = None, combat_only: bool = False):
@@ -276,8 +275,8 @@ class PreventNextDamageToSourceOwner(Resolver):
         self.combat_only = combat_only
 
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        from models.effects.listeners_generic import PreventNextDamageToSourceOwnerEOT
-        gs.event_mgr.register(PreventNextDamageToSourceOwnerEOT(self.amt, self.combat_only), s)
+        from models.effects.listeners_generic import PreventNextDamageToEOT
+        gs.event_mgr.register(PreventNextDamageToEOT(s.owner_id, self.amt, self.combat_only), s)
 
 class PreventAllDamageBy(Resolver):
     """Prevent all damage that would be dealt by target this turn"""
@@ -462,8 +461,10 @@ class UntapForManaEffect(Resolver):
     def __init__(self, mana_cost: str):
         self.mana_cost = mana_cost
 
-    def resolve(self, gs: GameState, s: GameCard, _: GameCard = None):
-        options = [UntapWithManaAction(s.owner_id, gs, s, self.mana_cost), LeaveTapped(s.owner_id, gs, s)]
+    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
+        if t is None:
+            t = s
+        options = [PayManaToUntapAction(s.owner_id, gs, s, t, self.mana_cost), LeaveTapped(s.owner_id, gs, s)]
         gs.pending_choice = ChoiceAction(options)
 
 class XZeroOneCountersByManaValue(Resolver):

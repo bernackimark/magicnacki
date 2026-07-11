@@ -364,7 +364,7 @@ class PowerLeak(Listener):
         host_owner = source.host.owner_id
         if event.active_player != host_owner:
             return
-        available_mana_cnt = gs.mana_pools[host_owner].get_max_x('')
+        available_mana_cnt = sum(gs.mana_pools[host_owner].available_mana.values())
         if available_mana_cnt == 0:
             pay_mana_options = (0, )
         elif available_mana_cnt == 1:

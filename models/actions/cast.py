@@ -78,7 +78,7 @@ class CastToBoard(Action):
 @dataclass
 class CastToTargetAddToStack(Action):
     card: GameCard
-    target: GameCard | list[GameCard] | None
+    target: GameCard | list[GameCard] | int | None
     eff_spec: EffSpec | None = None
     text: str = ''
 

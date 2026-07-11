@@ -17,7 +17,7 @@ from models.effects.base import Resolver
 from models.effects.listeners_upkeep import HazezonTamarTokenCreation
 from models.effects.listeners_combat import GlyphOfDoomListener
 from models.effects.listeners_damage import GlyphOfLifeListener
-from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNextDamageToCardEOT, \
+from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNextDamageToEOT, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
 from models.effects.listeners_mod_queries import HellSwarmEOT, HolyLightEOT, MarshGasEOT, MoraleEOT
 from models.effects.listeners_permission import NoAttacksAllowedEOT
@@ -65,7 +65,7 @@ class Feint(Resolver):
         the_combat = the_combat[0]
         gs.event_mgr.register(PreventNextDamageByEOT(s, combat_only=True))
         for b in the_combat.blockers:
-            gs.event_mgr.register(PreventNextDamageToCardEOT(b, combat_only=True))
+            gs.event_mgr.register(PreventNextDamageToEOT(b, combat_only=True))
             b.tap()
 
 class FeldonsCane(Resolver):
@@ -347,7 +347,7 @@ class MazeOfIth(Resolver):
             return
         gs.event_mgr.register(PreventNextDamageByEOT(the_combat.attacker, combat_only=True))
         for b in the_combat.blockers:
-            gs.event_mgr.register(PreventNextDamageToCardEOT(b, combat_only=True))
+            gs.event_mgr.register(PreventNextDamageToEOT(b, combat_only=True))
         t.untap()
 
 class Millstone(Resolver):
