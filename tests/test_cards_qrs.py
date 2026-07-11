@@ -158,6 +158,29 @@ class TestCardsWtoZ(unittest.TestCase):
         self.g.activate_ability(lose_aa, forest_walker)
         self.assertNotIn('Forestwalk', forest_walker.keyword_abilities)
 
+    def test_season_of_the_witch(self):
+        """At your upkeep, sac SOTW unless you pay 2 life. At end step,
+        destroy all untapped creatures that didn't attack this turn, except for creatures that couldn't attack."""
+        card = self.g.battlefield('season-of-the-witch')
+        wall = self.g.battlefield('wall-of-wood')
+        has_haste = self.g.battlefield('nether-shadow')
+        regular = self.g.battlefield('savannah-lions')
+        gy = self.gs.pile_mgr.graveyards[0]
+        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.assertIn(has_haste, gy)
+        self.assertNotIn(wall, gy)
+        self.assertNotIn(regular, gy)
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.pending_choice.get_actions()[0].play()
+        self.assertEqual(18, self.gs.score_mgr.life[0])
+
+        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.assertIn(regular, gy)
+        self.assertNotIn(wall, gy)
+
+
     def test_seeker(self):
         """Host can't be blocked except by artifact creatures and/or white creatures"""
         host = self.g.battlefield('giant-spider')
