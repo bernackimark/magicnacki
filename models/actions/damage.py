@@ -60,5 +60,8 @@ class PayLife(Action):
         return f'Pay {self.amt} life for {self.source.props.name}'
 
     def play(self):
-        self.gs.apply_damage(self.source, self.amt, self.source.host.owner_id)
-        self.gs.action_stack.pop()
+        self.gs.apply_damage(self.source, self.amt, self.source.owner_id)
+        if self.gs.action_stack:
+            self.gs.action_stack.pop()
+        elif self.gs.pending_choice:
+            self.gs.pending_choice = None
