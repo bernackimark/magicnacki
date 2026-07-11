@@ -180,7 +180,6 @@ class TestCardsWtoZ(unittest.TestCase):
         self.assertIn(regular, gy)
         self.assertNotIn(wall, gy)
 
-
     def test_seeker(self):
         """Host can't be blocked except by artifact creatures and/or white creatures"""
         host = self.g.battlefield('giant-spider')
@@ -268,6 +267,31 @@ class TestCardsWtoZ(unittest.TestCase):
         Attach(0, self.gs, spirit_shackle, host).play()
         host.tap()
         self.assertEqual(2, host.toughness)
+
+    def test_storm_seeker(self):
+        """SS deals damage to target player equal to the number of cards in that player's hand"""
+        card = self.g.hand('storm-seeker')
+        self.g.mana('GGGG')
+        CastToTargetAddToStack(0, self.gs, card, 1, card.abilities[0]).play()
+        AcceptAction(1, self.gs).play()
+        self.assertEqual(13, self.gs.score_mgr.life[1])
+
+    def test_syphon_soul(self):
+        """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
+        card = self.g.hand('syphon-soul')
+        self.g.mana('BBB')
+        CastToTargetAddToStack(0, self.gs, card, 1, card.abilities[0]).play()
+        AcceptAction(1, self.gs).play()
+        self.assertEqual([22, 18], self.gs.score_mgr.life)
+
+    def test_tablet_of_epityr(self):
+        """Whenever an artifact you control is put into a graveyard from battlefield, you may pay {1} to gain 1 life."""
+        card = self.g.battlefield('tablet-of-epityr')
+        your_artifact = self.g.battlefield('barls-cage')
+        self.g.mana('U')
+        self.gs.pile_mgr.destroy(your_artifact)
+        self.gs.pending_choice.options[0].play()
+        self.assertEqual(21, self.gs.score_mgr.life[0])
 
 
 if __name__ == '__main__':

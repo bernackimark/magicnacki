@@ -106,7 +106,10 @@ class PayManaForLife(Action):
     def play(self):
         self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
         self.gs.score_mgr.increment_life(self.player_idx, self.gain_life_amt, source=None, gs=self.gs)
-        self.gs.action_stack.pop()
+        if self.gs.action_stack:
+            self.gs.action_stack.pop()
+        elif self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 class PayManaToDrawCards(Action):
     def __init__(self, p_id: int, gs: GameState, mana_cost: str, card_cnt: int):
