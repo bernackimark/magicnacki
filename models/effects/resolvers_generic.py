@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
+from models.actions.base import Action
 from models.actions.cast import CastToTargetAddToStack
 from models.actions.draw_discard import DiscardCards
 from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
@@ -359,6 +360,16 @@ class Reveal(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         gs.add_presentation_request(flip(target.owner_id), 'view_card', {'cards': [target]})
+
+class RevealHands(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: int | list[int] = None) -> None:
+        if isinstance(target, int):
+            target = [target]
+        elif target is None:
+            target = [0, 1]
+        for t in target:
+            for c in gs.pile_mgr.hands[t].cards:
+                c.reveal()
 
 class RevealLibrary(Resolver):
     def __init__(self, viewer_id: int | None = None, top_x: int | None = None):

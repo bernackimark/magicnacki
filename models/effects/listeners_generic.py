@@ -556,6 +556,11 @@ class ReturnToOwnerOnLTB(Listener):
                 if isinstance(mod, OwnershipMod):
                     gs.pile_mgr.boards[source.owner_id].remove(c)
                     gs.pile_mgr.boards[flip(source.owner_id)].append(c)
+            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+                c.modifiers.remove(mod)
+                gs.pile_mgr.boards[source.owner_id].remove(c)
+                gs.pile_mgr.boards[flip(source.owner_id)].append(c)
+                break
 
 class StealCardLeaves(Listener):
     """You control enchanted creature; must return if Control Magic leaves board"""

@@ -9,6 +9,7 @@ from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.effects.base import Listener, ActivatedAbility
+from models.phase_manager import Phase
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -167,7 +168,9 @@ class TestGame:
 
     def next_turn(self):
         """Passes the current turn; passes the next turn; returning action back to the original player"""
+        self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS, self.gs)
         PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
+        self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS, self.gs)
         PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
 
     @staticmethod

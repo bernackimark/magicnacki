@@ -4,8 +4,10 @@ from models.actions.cast import BeginSpellCastAction, CastToTargetAddToStack
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
 from models.actions.stack_accept_counter import AcceptAction
+from models.actions.tap_untap import Untap
 from models.actions.target import AddTargetAction
-from models.effects.resolvers_generic import Destroy
+from models.effects.listeners_damage import ReverseDamageEOT
+from models.effects.resolvers_generic import Destroy, RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, DamageProposedEvent
 from models.phase_manager import Phase
@@ -57,6 +59,104 @@ class TestCardsWtoZ(unittest.TestCase):
         self.assertEqual(19, self.gs.score_mgr.life[0])
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
         self.assertIn(card, self.gs.pile_mgr.hands[0].cards)
+
+    def test_revelation(self):
+        """Players play with their hands revealed"""
+        card = self.g.card('revelation')
+        RevealHands().resolve(self.gs, card)
+        self.gs.event_mgr.register(card.abilities[0].effect, card)
+        hand = self.gs.pile_mgr.hands[0].cards
+        self.assertTrue(all(c.is_face_up for c in hand))
+        self.gs.pile_mgr.draw(0, 1)
+        self.assertTrue(all(c.is_face_up for c in hand))
+
+    def test_reverse_damage(self):
+        """The next time a source of your choice would deal damage to you this turn, prevent that damage.
+        You gain life equal to the damage prevented this way."""
+        damage_dealer = self.g.battlefield('grizzly-bears', owner=1)
+        PassTheTurn(0, self.gs).play()
+        card = self.g.card('reverse-damage')
+        self.gs.event_mgr.register(ReverseDamageEOT(damage_dealer=damage_dealer), card)
+        self.g.combat(damage_dealer, None)
+        self.assertEqual(22, self.gs.score_mgr.life[0])
+
+    def test_rubinia_soulsinger(self):
+        """You may choose not to untap Rubinia Soulsinger during your untap step.
+        {T}: Gain control of target creature for as long as you control RS and RS remains tapped."""
+        card = self.g.battlefield('rubinia-soulsinger')
+        aa = card.activated_abilities[0]
+        target = self.g.battlefield('air-elemental', owner=1)
+        self.g.next_turn()
+        self.g.activate_ability(aa, target)
+        self.assertEqual(0, target.owner_id)
+
+        self.g.next_turn()
+        self.assertTrue(any(isinstance(a, Untap) for a in self.gs.pending_choice.get_actions()))
+
+        card.untap()
+        self.assertEqual(1, target.owner_id)
+
+        self.g.next_turn()
+        self.g.activate_ability(aa, target)
+        self.assertEqual(0, target.owner_id)
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual(1, target.owner_id)
+
+    def test_safe_haven(self):
+        """{2}, {T}: Exile target creature you control.
+        At your upkeep, you may sacrifice SH to return each card exiled by SH to the battlefield."""
+        card = self.g.battlefield('safe-haven')
+        aa = card.activated_abilities[0]
+        target = self.g.battlefield('phantom-monster')
+        self.g.mana('BBBBBB')
+        self.g.activate_ability(aa, target)
+        self.assertIn(target, self.gs.pile_mgr.exiles[0])
+
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.pending_choice.get_actions()[0].play()
+        self.assertIn(target, self.gs.pile_mgr.boards[0])
+
+    def test_sandals_of_abdallah(self):
+        """{2}, {T}: Target creature gains islandwalk until EOT. When that creature dies this turn, destroy SOA."""
+        card = self.g.battlefield('sandals-of-abdallah')
+        aa = card.activated_abilities[0]
+        target = self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.g.mana('UUUUUU')
+        self.g.activate_ability(aa, target)
+        self.assertIn('Islandwalk', target.keyword_abilities)
+
+        self.gs.pile_mgr.destroy(target)
+        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+
+    def test_scarecrow(self):
+        """{6}, {T}: Prevent all damage that would be dealt to you this turn by creatures with flying"""
+        card = self.g.battlefield('scarecrow')
+        aa = card.activated_abilities[0]
+        self.g.mana('UUUUUUUU')
+        flier = self.g.battlefield('air-elemental', owner=1)  # 4/4
+        non_flier = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+        PassTheTurn(0, self.gs).play()
+        self.g.activate_ability(aa)
+        self.g.combat(flier, None)
+        self.g.combat(non_flier, None)
+        self.assertEqual(19, self.gs.score_mgr.life[0])
+
+    def test_scarwood_hag(self):
+        """{GGGG}, {T}: Target creature gains forestwalk EOT. {T}: Target creature loses forestwalk until EOT."""
+        card = self.g.battlefield('scarwood-hag')
+        give_aa = card.activated_abilities[0]
+        lose_aa = card.activated_abilities[1]
+        forest_walker = self.g.battlefield('cat-warriors')
+        non_forest_walker = self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.g.mana('GGGGGGG')
+
+        self.g.next_turn()
+        self.g.activate_ability(give_aa, non_forest_walker)
+        self.assertIn('Forestwalk', non_forest_walker.keyword_abilities)
+
+        self.g.next_turn()
+        self.g.activate_ability(lose_aa, forest_walker)
+        self.assertNotIn('Forestwalk', forest_walker.keyword_abilities)
 
     def test_seeker(self):
         """Host can't be blocked except by artifact creatures and/or white creatures"""

@@ -24,7 +24,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
-    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo
+    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands
 from ..effects.listeners_state_change import SerendibDjinnNoLands
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -123,7 +123,7 @@ MAP: dict[str, list[EffSpec]] = {
     'remove-soul': [Spell(CounterSpell(), T_FUNCS['creature_spells'])],
     'reset': [Spell(Reset())],
     'resurrection': [Spell(Reanimate(), T_FUNCS['creatures_in_your_graveyard'])],
-    'revelation': [Triggered(Revelation())],
+    'revelation': [Static(Revelation()), Spell(RevealHands())],
     'reverse-damage': [Spell(ReverseDamage(), T_FUNCS['cards'])],
     'reverse-polarity': [Spell(ReversePolarity())],
     'righteousness': [Spell(Pump(7, 7, True), T_FUNCS['blockers'])],
@@ -138,7 +138,8 @@ MAP: dict[str, list[EffSpec]] = {
     'rohgahh-of-kher-keep': [Static(RohgahhOfKherKeepPump()), Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'rubinia-soulsinger': [Activated('T', Steal(), T_FUNCS['opp_creatures']),
-                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap())],
+                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap()),
+                           Triggered(ReturnToOwnerOnLTB())],
     'rukh-egg': [Triggered(RukhEgg())],
     'sacrifice': [Spell(SacrificeOnCast(), T_FUNCS['your_creatures'])],
     'safe-haven': [Activated('2T', SafeHaven(), T_FUNCS['your_creatures']), Triggered(SafeHavenUpkeep())],
@@ -151,7 +152,7 @@ MAP: dict[str, list[EffSpec]] = {
     'savannah': dual_land_specs('GW'),
     'scarecrow': [Activated('6T', Scarecrow())],
     'scarwood-hag': [Activated('GGGGT', KWAModEffect('add', 'Forestwalk', True), T_FUNCS['creatures_wo_forestwalk']),
-                     Activated('GGGGT', KWAModEffect('remove', 'Forestwalk', True), T_FUNCS['forestwalkers'])],
+                     Activated('T', KWAModEffect('remove', 'Forestwalk', True), T_FUNCS['forestwalkers'])],
     'scavenger-folk': [Activated('GT', Destroy(), T_FUNCS['artifacts'], extra_costs=[SacSelfCost()])],
     'scavenging-ghoul': [Triggered(AddCounterPerCreatureDeathAtEndStep(CORPSE)),
                          Activated('', Regenerate(), T_FUNCS['self'], extra_costs=[RemoveCounterCost(CORPSE)])],
