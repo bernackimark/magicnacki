@@ -1,7 +1,6 @@
 import unittest
 
 from models.effects.listeners_generic import PreventNextDamageToEOT
-from models.effects.resolvers_generic import PreventNextDamageToSourceOwner
 from tests.setup_helpers import TestGame
 
 

@@ -1,9 +1,6 @@
 import unittest
 
-from models.actions.cast import CastToTargetAddToStack
-from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach
-from models.actions.stack_accept_counter import AcceptAction
 from models.phase_manager import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
@@ -88,10 +85,8 @@ class TestCardsGHI(unittest.TestCase):
         self.g.mana('RR', owner=1)
         bolt = self.g.hand('lightning-bolt', owner=1)
         bolt_2 = self.g.hand('lightning-bolt', owner=1)
-        CastToTargetAddToStack(1, self.gs, bolt, 0, bolt.abilities[0]).play()
-        AcceptAction(0, self.gs).play()
-        CastToTargetAddToStack(1, self.gs, bolt_2, 0, bolt_2.abilities[0]).play()
-        AcceptAction(0, self.gs).play()
+        self.g.cast_and_accept(bolt, 0, bolt.abilities[0], owner=1)
+        self.g.cast_and_accept(bolt_2, 0, bolt_2.abilities[0], owner=1)
         self.assertEqual(16, self.gs.score_mgr.life[1])
 
     def test_instill_energy(self):

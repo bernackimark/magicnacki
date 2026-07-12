@@ -1,9 +1,7 @@
 import unittest
 
-from models.actions.cast import BeginSpellCastAction, CastToTargetAddToStack
-from models.actions.end_step_pass_turn import PassTheTurn
+from models.actions.cast import BeginSpellCastAction
 from models.actions.special import SelectXAction
-from models.actions.stack_accept_counter import AcceptAction
 from models.choice_actions_all import XValueChoice
 from tests.setup_helpers import TestGame
 
@@ -19,8 +17,7 @@ class TestVariableX(unittest.TestCase):
         eff_spec = card.abilities[0]
         choice = XValueChoice(0, self.gs, card, [1, 2, 3], eff_spec)  # create choices for user
         SelectXAction(0, self.gs, choice, 3).play()  # select a value of 3, assign 3 to card.extras['x']
-        CastToTargetAddToStack(0, self.gs, card, 0, eff_spec).play()  # add spell to stack
-        AcceptAction(1, self.gs).play()  # opponent accepts spell; spell materializes, adding 3 life
+        self.g.cast_and_accept(card, 0, eff_spec)
         self.assertEqual(self.gs.score_mgr.life[0], 23)
 
     def test_x_activation_simple(self):

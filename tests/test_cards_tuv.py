@@ -1,6 +1,5 @@
 import unittest
 
-from models.actions.cast import CastToTargetAddToStack
 from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.mana import PayMana

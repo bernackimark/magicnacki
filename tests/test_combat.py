@@ -1,7 +1,5 @@
 import unittest
 
-from models.actions.cast import CastToTargetAddToStack
-from models.actions.stack_accept_counter import AcceptAction
 from models.modifiers import KWAMod
 from tests.setup_helpers import TestGame
 
@@ -51,8 +49,7 @@ class TestCombat(unittest.TestCase):
         combat = self.gs.combat_mgr.get_combat(attacker)
         combat.blockers.append(blocker)
         self.gs.combat_mgr.remove_from_combat(blocker)
-        CastToTargetAddToStack(1, self.gs, unsummon, blocker, unsummon.abilities[0]).play()
-        AcceptAction(0, self.gs).play()
+        self.g.cast_and_accept(unsummon, blocker, unsummon.abilities[0], owner=1)
         self.assertNotIn(blocker, self.gs.card_filter.in_play().result())
         combat.handle_damage()
         self.assertEqual(self.gs.score_mgr.life[1], 20)
