@@ -201,7 +201,10 @@ class SkipDrawPhaseGainLife(Action):
     def play(self):
         self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)
         self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
-        self.gs.action_stack.pop()
+        if self.gs.action_stack:
+            self.gs.action_stack.pop()
+        elif self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 class StoreColorOnCard(Action):
     def __init__(self, p_id: int, gs: GameState, card: GameCard, color_letter: str):

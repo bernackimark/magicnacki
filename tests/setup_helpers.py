@@ -158,6 +158,14 @@ class TestGame:
 
     def cast_and_accept(self, card: GameCard, target: GameCard | int | None = None,
                         eff_spec: EffSpec | None = None, owner: int = 0):
+        # add a boatload of mana
+        casting_colors = {color for color in card.casting_cost if color in {'B', 'G', 'R', 'U', 'W'}}
+        if casting_colors:
+            for color in casting_colors:
+                self.mana(color * 10, owner=owner)
+        else:
+            self.mana('U' * 10, owner=owner)
+
         CastToTargetAddToStack(owner, self.gs, card, target, eff_spec).play()
         AcceptAction(flip(owner), self.gs).play()
 
@@ -173,10 +181,12 @@ class TestGame:
         combat = self.gs.combat_mgr.get_combat(attacker)
         combat.handle_damage()
 
-    def next_turn(self):
+    def next_turn(self, go_to_opp_turn: bool = False):
         """Passes the current turn; passes the next turn; returning action back to the original player"""
         self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS, self.gs)
         PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
+        if go_to_opp_turn:
+            return
         self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS, self.gs)
         PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
 

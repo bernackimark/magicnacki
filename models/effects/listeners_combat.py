@@ -116,19 +116,6 @@ class GiantShark(Listener):
             s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
             s.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Trample', expires='EOT'))
 
-class GlyphOfDoomListener(Listener):
-    """Registered by GlyphOfDoom. At this turn's combat end, destroy creature blocked by that wall this turn."""
-    listens_to = BlockEvent
-
-    def __init__(self, the_wall: GameCard):
-        self.the_wall = the_wall
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.blocker is not self.the_wall:
-            return
-        effect = DestroyAtCombatEnd(self.the_wall, event.attacker)
-        gs.event_mgr.register(effect, self.the_wall)
-
 class InfernalMedusa(Listener):
     """Whenever this creature blocks, destroy attacker at combat end.
     Whenever this creature becomes blocked by a non-Wall creature, destroy blocker at combat end."""
@@ -283,6 +270,21 @@ class ClockworkCombatEnd(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
         if source in gs.card_filter.combatants().result():
             source.counters.remove_counter(PLUS_ONE_ZERO)
+
+class GlyphOfDoomListener(Listener):
+    """Registered by GlyphOfDoom. At this turn's combat end, destroy creature blocked by that wall this turn."""
+    listens_to = CombatEndEvent
+    expires = 'EOT'
+
+    def __init__(self, the_wall: GameCard):
+        self.the_wall = the_wall
+
+    def on_event(self, gs: GameState, s: GameCard, event: CombatEndEvent):
+        attacker = next((c for c in gs.combat_mgr.get_combatants_against(self.the_wall)), None)
+        if not attacker:
+            return
+        gs.pile_mgr.destroy(attacker)
+        self.is_expired = True
 
 class InfiniteAuthorityCombatEnd(Listener):
     """At combat end, if host is in combat with a creature with toughness <= 3, destroy the other creature ..."""

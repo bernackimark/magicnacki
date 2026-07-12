@@ -87,7 +87,7 @@ class ForethoughtAmulet(Listener):
             return
         if not event.source.is_instant and not event.source.is_sorcery:
             return
-        prevention_amt = event.amt - (event.amt - 2)
+        prevention_amt = event.amt - 2
         event.prevented += prevention_amt
         event.remaining -= prevention_amt
 
@@ -237,6 +237,7 @@ class FungusaurOnDamage(Listener):
 class GlyphOfLifeListener(Listener):
     """Registered by GlyphOfLife. Whenever that wall is dealt damage by an attacker this turn, gain that much life."""
     listens_to = DamageResolvedEvent
+    expires = 'EOT'
 
     def __init__(self, the_wall: GameCard):
         self.the_wall = the_wall
@@ -245,6 +246,7 @@ class GlyphOfLifeListener(Listener):
         if event.target is not self.the_wall or not event.is_combat:
             return
         gs.score_mgr.increment_life(s.owner_id, event.amt, s, gs)
+        self.is_expired = True
 
 
 class HypnoticSpecter(Listener):

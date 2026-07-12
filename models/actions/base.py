@@ -25,4 +25,7 @@ class DoNothing(Action):
         return 'Do Nothing'
 
     def play(self) -> None:
-        self.gs.action_stack.pop()
+        if self.gs.action_stack:
+            self.gs.action_stack.pop()
+        elif self.gs.pending_choice:
+            self.gs.pending_choice = None

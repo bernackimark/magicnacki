@@ -1,6 +1,7 @@
 import unittest
 
 from models.actions.special import Attach
+from models.events_all import EndStepEvent, CombatEndEvent
 from models.phase_manager import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
@@ -51,6 +52,47 @@ class TestCardsGHI(unittest.TestCase):
         self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
         self.assertEqual(5, len(self.gs.pending_choice.get_actions()))
+
+    def test_glyph_of_destruction(self):
+        """Target blocking Wall you control gets +10/+0 until end of combat.
+        Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
+        card = self.g.hand('glyph-of-destruction')
+        wall = self.g.battlefield('wall-of-bone')
+        attacker = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        com = self.gs.combat_mgr.get_combat(attacker)
+        com.blockers.append(wall)
+        self.g.cast_and_accept(card, wall, card.abilities[0])
+        self.assertTrue(wall.power > 9)
+        com.handle_damage()
+        self.assertEqual(0, wall.damage_dealt_this_turn)
+        self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
+        self.assertIn(wall, self.gs.pile_mgr.graveyards[0])
+
+    def test_glyph_of_doom(self):
+        """At combat end, destroy all creatures that were blocked by that target wall this turn."""
+        card = self.g.hand('glyph-of-doom')
+        wall = self.g.battlefield('wall-of-brambles')  # 2/3
+        attacker = self.g.battlefield('craw-wurm', owner=1)  # 6/4
+
+        self.g.next_turn(True)
+        self.g.cast_and_accept(card, wall, card.abilities[0])
+        self.g.combat(attacker, wall)
+        self.gs.event_mgr.emit(CombatEndEvent(0), self.gs)
+        self.assertIn(attacker, self.gs.pile_mgr.graveyards[1])
+
+    def test_glyph_of_life(self):
+        """Whenever target wall is dealt damage by an attacking creature this turn, you gain that much life."""
+        card = self.g.hand('glyph-of-life')
+        wall = self.g.battlefield('wall-of-brambles')  # 2/3
+        attacker = self.g.battlefield('craw-wurm', owner=1)  # 6/4
+
+        self.g.next_turn(True)
+        self.g.cast_and_accept(card, wall, card.abilities[0])
+        self.g.combat(attacker, wall)
+        self.assertEqual(26, self.gs.score_mgr.life[0])
 
     def test_haunting_wind(self):
         """Whenever an artifact becomes tapped or a player activates an artifact's ability

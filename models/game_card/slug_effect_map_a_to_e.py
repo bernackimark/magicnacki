@@ -17,7 +17,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, PreventNextDamageToCardEffect, CounterSpell, \
-    PreventNextDamageTo
+    PreventNextDamageTo, PreventAllDamageBy
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -220,7 +220,8 @@ MAP: dict[str, list[EffSpec]] = {
     'deathlace': [Spell(SetColor('B'), T_FUNCS['cards'])],
     'death-ward': [Spell(Regenerate(), T_FUNCS['creatures'])],
     'demonic-hordes': [Activated('T', Destroy(), T_FUNCS['lands']), Triggered(DemonicHordesUpkeep())],
-    'demonic-torment': [Spell(None, T_FUNCS['creatures']), Static(HostCantAttack())],
+    'demonic-torment': [Spell(None, T_FUNCS['creatures']), Static(HostCantAttack()),
+                        Static(PreventAllDamageBy(combat_only=True), T_FUNCS['host'])],
     'demonic-tutor': [Spell(DemonicTutor())],
     'desert': [Activated('T', AddMana('C')),
                Activated('T', DealDamage(1), T_FUNCS['attackers'], allowed_phases=[Phase.COMBAT_END])],

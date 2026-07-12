@@ -301,17 +301,17 @@ class ElvesOfTheDeepShadow(Resolver):
 class EnchantmentAlteration(Resolver):
     """Attach target Aura attached to a creature or land to another permanent of that type"""
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None) -> None:
-        if not target:
+        if target is None:
             raise ValueError(f'{s.props.name} needs a target')
         if target.host.is_creature:
-            available_hosts = [c for c in gs.card_filter.creatures().result() if c is not target.host]
+            available_hosts = [c for c in gs.card_filter.in_play().creatures().result() if c is not target.host]
         elif target.host.is_land:
-            available_hosts = [c for c in gs.card_filter.lands().result() if c is not target.host]
+            available_hosts = [c for c in gs.card_filter.in_play().lands().result() if c is not target.host]
         else:
             return
         from models.actions.special import Attach
         options = [Attach(s.owner_id, gs, s, host) for host in available_hosts]
-        gs.pending_choice = gs.action_stack.push(ChoiceAction(options), gs, False)
+        gs.pending_choice = ChoiceAction(options)
 
 class EnergyTap(Resolver):
     """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""
@@ -351,4 +351,4 @@ class EyeForAnEye(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         """target = the GameCard doing the original damage"""
         from models.effects.listeners_damage import EyeForAnEyeEOT
-        gs.event_mgr.register_effect(EyeForAnEyeEOT(damage_dealer=t, damage_receiving_player=s.owner_id), s)
+        gs.event_mgr.register(EyeForAnEyeEOT(damage_dealer=t, damage_receiving_player=s.owner_id), s)
