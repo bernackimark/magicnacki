@@ -246,9 +246,22 @@ class AssignCombatDamagePhase(PhaseState):
                 event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                 gs.event_mgr.emit(event, gs)
             com.handle_damage()
-        gs.event_mgr.emit(CombatEndEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+        # gs.event_mgr.emit(CombatEndEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
+        return None
+
+    def next(self, gs: GameState):
+        return CombatEndPhase()
+
+class CombatEndPhase(PhaseState):
+    phase = Phase.COMBAT_END
+
+    def on_enter(self, gs: GameState):
+        from models.events_all import CombatEndEvent
+        gs.event_mgr.emit(CombatEndEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+
+    def get_actions(self, p_id: int, gs: GameState) -> list[Action] | None:
         return None
 
     def next(self, gs: GameState):
@@ -380,6 +393,7 @@ PHASE_MAP = {
     Phase.DECLARE_BLOCKERS: DeclareBlockersPhase,  # declare who's blocking whom
     Phase.PRE_COMBAT_DAMAGE: PreCombatDamagePhase,  # CIAA
     Phase.ASSIGN_COMBAT_DAMAGE: AssignCombatDamagePhase,
+    Phase.COMBAT_END: CombatEndPhase,
     Phase.SECOND_MAIN: SecondMainPhase,
     Phase.END_STEP: EndStepPhase,
     Phase.DISCARD: DiscardPhase,
