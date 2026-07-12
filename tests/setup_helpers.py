@@ -157,14 +157,15 @@ class TestGame:
         AcceptAction(flip(owner), self.gs).play()
 
     def cast_and_accept(self, card: GameCard, target: GameCard | int | None = None,
-                        eff_spec: EffSpec | None = None, owner: int = 0):
+                        eff_spec: EffSpec | None = None, owner: int = 0, add_lots_of_mana: bool = True):
         # add a boatload of mana
-        casting_colors = {color for color in card.casting_cost if color in {'B', 'G', 'R', 'U', 'W'}}
-        if casting_colors:
-            for color in casting_colors:
-                self.mana(color * 10, owner=owner)
-        else:
-            self.mana('U' * 10, owner=owner)
+        if add_lots_of_mana:
+            casting_colors = {color for color in card.casting_cost if color in {'B', 'G', 'R', 'U', 'W'}}
+            if casting_colors:
+                for color in casting_colors:
+                    self.mana(color * 10, owner=owner)
+            else:
+                self.mana('U' * 10, owner=owner)
 
         CastToTargetAddToStack(owner, self.gs, card, target, eff_spec).play()
         AcceptAction(flip(owner), self.gs).play()

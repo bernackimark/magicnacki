@@ -321,7 +321,7 @@ class Reanimate(Resolver):
 class RedirectNextDamageToOwner(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.effects.listeners_generic import RedirectNextDamageFromCardToOwnerEOT
-        gs.event_mgr.register_effect(RedirectNextDamageFromCardToOwnerEOT(source), source)
+        gs.event_mgr.register(RedirectNextDamageFromCardToOwnerEOT(source), source)
 
 class Regenerate(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
