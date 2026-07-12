@@ -3,9 +3,9 @@ import unittest
 from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach
-from models.effects.resolvers_p_to_z import Timetwister
 from models.events_all import CastResolvedEvent
 from models.phase_manager import Phase
+from models.zone import Zone
 from tests.setup_helpers import TestGame
 
 
@@ -21,14 +21,27 @@ class TestCardsWtoZ(unittest.TestCase):
         self.g.mana('UUUUUUUUUU')
         tv = self.g.battlefield('time-vault')
         self.assertTrue(tv.is_tapped)
-        PassTheTurn(0, self.gs).play()
-        PassTheTurn(1, self.gs).play()
+
+        self.g.next_turn()
         skip_turn_and_untap_tv = self.gs.pending_choice.options[0]
         skip_turn_and_untap_tv.play()
         self.g.activate_ability(tv.activated_abilities[0])
         PassTheTurn(0, self.gs).play()
         self.assertEqual(0, self.gs.turn_mgr.player_turn_idx)
         self.assertTrue(tv.is_tapped)
+
+    def test_timetwister(self):
+        """Each player shuffles their hand & graveyard into their library, then draws seven cards.
+        (Then put Timetwister into its owner's graveyard.)"""
+        self.g.graveyard('scryb-sprites')
+        self.g.graveyard('serra-angel')
+        self.g.hand('island')
+        self.g.hand('island')
+        card = self.g.hand('timetwister')
+        self.gs.pile_mgr.move_card(card, Zone.GRAVEYARD, emit_zone_event=False)
+        card.abilities[0].effect.resolve(self.gs, card, None)  # type: ignore
+        self.assertTrue(7, len(self.gs.pile_mgr.hands[0].cards))
+        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
 
     def test_unstable_mutation(self):
         """Host gets +3/+3. At host's upkeep, put a -1/-1 counter on host."""
@@ -50,25 +63,6 @@ class TestCardsWtoZ(unittest.TestCase):
         cast_event = CastResolvedEvent(enchantment, 0)
         self.gs.event_mgr.emit(cast_event, self.gs)
         self.assertTrue(any(isinstance(a, DrawCard) for a in self.gs.pending_choice.options))
-
-
-class TestTimetwisterSeparately(unittest.TestCase):
-    def setUp(self):
-        self.g = TestGame()
-        self.gs = self.g.gs
-
-    def test_timetwister(self):
-        """Each player shuffles their hand & graveyard into their library, then draws seven cards.
-        (Then put Timetwister into its owner's graveyard.)"""
-        # This has been failing if there are other tests in this class
-        self.g.graveyard('scryb-sprites')
-        self.g.graveyard('serra-angel')
-        self.g.hand('island')
-        self.g.hand('island')
-        tt = self.g.graveyard('timetwister')
-        Timetwister().resolve(self.gs, tt, None)
-        self.assertTrue(7, len(self.gs.pile_mgr.hands[0].cards))
-        self.assertIn(tt, self.gs.pile_mgr.graveyards[0])
 
 
 if __name__ == '__main__':

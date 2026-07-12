@@ -132,6 +132,7 @@ class TestGame:
 
     def graveyard(self, slug, owner=0) -> GameCard:
         """Create GameCard, update Zone to Graveyard without emitting"""
+        print('AAA', slug)
         card = self.card(slug, owner)
         self.gs.pile_mgr.move_card(card, Zone.GRAVEYARD, emit_zone_event=False)
         return card
@@ -153,6 +154,9 @@ class TestGame:
     def activate_ability(self, aa: ActivatedAbility, target: GameCard | int | None = None, owner: int = 0):
         ActivateAbility(owner, self.gs, aa, target).play()
         AcceptAction(flip(owner), self.gs).play()
+
+    def cast_and_accept(self, slug: str, target: GameCard | int | None = None, owner: int = 0):
+        ...
 
     def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard] | None):
         self.gs.combat_mgr.create_combat(self.gs, attacker)

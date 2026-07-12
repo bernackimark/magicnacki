@@ -14,17 +14,14 @@ class TestDamage(unittest.TestCase):
         red_source = self.g.card('goblin-hero')
         cop = self.g.battlefield('circle-of-protection-red', owner=1)
         self.g.mana('WW', owner=1)
-        PreventNextDamageToSourceOwner().resolve(self.gs, cop, red_source)
+        cop.activated_abilities[0].eff_spec.effect.resolve(self.gs, cop, red_source)  # type: ignore
         self.gs.apply_damage(red_source, 5, 1, True)
         self.assertEqual(self.gs.score_mgr.life[1], 20)
 
     def test_unblocked_attacker_deals_damage_to_player(self):
         attacker = self.g.battlefield('grizzly-bears')
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
-        combat = self.gs.combat_mgr.get_combat(attacker)
-        starting_life = self.gs.score_mgr.life[1]
-        combat.handle_damage()
-        self.assertEqual(starting_life - attacker.power, self.gs.score_mgr.life[1])
+        self.g.combat(attacker, None)
+        self.assertEqual(20 - attacker.power, self.gs.score_mgr.life[1])
 
     def test_multiple_damage_reducers(self):
         card = self.g.card('rakalite')

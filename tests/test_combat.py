@@ -29,10 +29,7 @@ class TestCombat(unittest.TestCase):
     def test_blocked_combat_assigns_damage(self):
         attacker = self.g.battlefield('grizzly-bears')  # 2/2
         blocker = self.g.battlefield('hill-giant', owner=1)  # 3/3
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
-        combat = self.gs.combat_mgr.get_combat(attacker)
-        combat.blockers.append(blocker)
-        combat.handle_damage()
+        self.g.combat(attacker, blocker)
         self.assertEqual(attacker.damage_received_this_turn, blocker.power)
         self.assertEqual(blocker.damage_received_this_turn, attacker.power)
 
@@ -40,13 +37,9 @@ class TestCombat(unittest.TestCase):
         attacker = self.g.battlefield('craw-wurm')  # 6/4
         blocker = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)  # 1/1
         attacker.modifiers.append(KWAMod(s=attacker, add_or_remove='add', kwa='Trample'))
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
-        combat = self.gs.combat_mgr.get_combat(attacker)
-        combat.blockers.append(blocker)
-        starting_life = self.gs.score_mgr.life[1]
-        combat.handle_damage()
+        self.g.combat(attacker, blocker)
         expected_trample = attacker.power - blocker.toughness
-        self.assertEqual(starting_life - expected_trample, self.gs.score_mgr.life[1])
+        self.assertEqual(20 - expected_trample, self.gs.score_mgr.life[1])
 
     def test_remove_blocker_from_combat(self):
         """Blocker should be removed from battlefield, but attacker should deal no damage (except for trample)"""
@@ -79,17 +72,12 @@ class TestCombat(unittest.TestCase):
     def test_first_strike_only_deals_damage_once(self):
         attacker = self.g.battlefield('white-knight')  # 2/2 First Strike
         blocker = self.g.battlefield('phantom-monster', owner=1)  # 3/3
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
-        combat = self.gs.combat_mgr.get_combat(attacker)
-        combat.blockers.append(blocker)
-        combat.handle_damage()
+        self.g.combat(attacker, blocker)
         self.assertIn(blocker, self.gs.pile_mgr.boards[1], 'First Striker appears to have dealt damage 2x')
 
     def test_unblocked_attacker_damage(self):
         attacker = self.g.battlefield('white-knight')  # 2/2 First Strike
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
-        combat = self.gs.combat_mgr.get_combat(attacker)
-        combat.handle_damage()
+        self.g.combat(attacker, None)
         self.assertEqual(18, self.gs.score_mgr.life[1])
 
 

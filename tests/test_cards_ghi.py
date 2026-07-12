@@ -19,8 +19,7 @@ class TestCardsGHI(unittest.TestCase):
         card = self.g.battlefield('gaeas-touch')
         aa = card.activated_abilities[1]
         self.g.mana('G')
-        PassTheTurn(0, self.gs).play()
-        PassTheTurn(1, self.gs).play()
+        self.g.next_turn()
         forest = self.g.hand('forest')
         self.g.activate_ability(aa, forest)
         self.assertTrue(self.gs.mana_pools[0].can_pay('GG'))

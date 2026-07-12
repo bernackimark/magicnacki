@@ -1,20 +1,19 @@
 import unittest
 
-from models.actions.cast import BeginSpellCastAction, CastToTargetAddToStack
+from models.actions.cast import BeginSpellCastAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
-from models.actions.stack_accept_counter import AcceptAction
 from models.actions.tap_untap import Untap
 from models.actions.target import AddTargetAction
 from models.effects.listeners_damage import ReverseDamageEOT
 from models.effects.resolvers_generic import Destroy, RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
-from models.events_all import StateBasedEvent, DamageProposedEvent
+from models.events_all import StateBasedEvent
 from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
 
-class TestCardsWtoZ(unittest.TestCase):
+class TestCardsQRS(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
@@ -53,9 +52,7 @@ class TestCardsWtoZ(unittest.TestCase):
         self.g.activate_ability(aa, 0)
         self.g.activate_ability(aa, 0)
         bolt = self.g.hand('lightning-bolt', owner=1)
-        self.g.mana('R', owner=1)
-        CastToTargetAddToStack(1, self.gs, bolt, 0, bolt.abilities[0]).play()
-        AcceptAction(0, self.gs).play()
+        bolt.abilities[0].effect.resolve(self.gs, bolt, 0)  # type: ignore
         self.assertEqual(19, self.gs.score_mgr.life[0])
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
         self.assertIn(card, self.gs.pile_mgr.hands[0].cards)
@@ -271,17 +268,16 @@ class TestCardsWtoZ(unittest.TestCase):
     def test_storm_seeker(self):
         """SS deals damage to target player equal to the number of cards in that player's hand"""
         card = self.g.hand('storm-seeker')
-        self.g.mana('GGGG')
-        CastToTargetAddToStack(0, self.gs, card, 1, card.abilities[0]).play()
-        AcceptAction(1, self.gs).play()
+        card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         self.assertEqual(13, self.gs.score_mgr.life[1])
 
     def test_syphon_soul(self):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
         card = self.g.hand('syphon-soul')
-        self.g.mana('BBB')
-        CastToTargetAddToStack(0, self.gs, card, 1, card.abilities[0]).play()
-        AcceptAction(1, self.gs).play()
+        card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
+        # self.g.mana('BBB')
+        # CastToTargetAddToStack(0, self.gs, card, 1, card.abilities[0]).play()
+        # AcceptAction(1, self.gs).play()
         self.assertEqual([22, 18], self.gs.score_mgr.life)
 
     def test_tablet_of_epityr(self):

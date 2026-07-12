@@ -27,8 +27,7 @@ class TestVariableX(unittest.TestCase):
         """{XT}: Banshee deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
         card = self.g.card('banshee')
         self.g.mana('WWW')
-        PassTheTurn(0, self.gs).play()  # clears summoning sickness
-        PassTheTurn(1, self.gs).play()
+        self.g.next_turn()
         eff_spec = card.abilities[0]
         aa = card.activated_abilities[0]
         choice = XValueChoice(0, self.gs, card, [1, 2, 3], eff_spec, aa)  # create choices for user

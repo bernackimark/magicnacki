@@ -113,7 +113,7 @@ class TestCardsMNOP(unittest.TestCase):
     def test_powerleech(self):
         """Whenever an opp's artifact becomes tapped or an opponent activates an artifact's ability without {T}
         in its activation cost, you gain 1 life."""
-        card = self.g.battlefield('powerleech')
+        self.g.battlefield('powerleech')
         tapping_artifact = self.g.battlefield('sol-ring', owner=1)
         no_tap_artifact = self.g.battlefield('book-of-rass', owner=1)
         aa = no_tap_artifact.activated_abilities[0]
