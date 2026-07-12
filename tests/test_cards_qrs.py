@@ -8,8 +8,9 @@ from models.actions.target import AddTargetAction
 from models.effects.listeners_damage import ReverseDamageEOT
 from models.effects.resolvers_generic import Destroy, RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
-from models.events_all import StateBasedEvent
+from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
 from models.phase_manager import Phase
+from models.zone import Zone
 from tests.setup_helpers import TestGame
 
 
@@ -264,6 +265,40 @@ class TestCardsQRS(unittest.TestCase):
         Attach(0, self.gs, spirit_shackle, host).play()
         host.tap()
         self.assertEqual(2, host.toughness)
+
+    def test_stasis(self):
+        """Players skip their untap steps. At your upkeep, pay {U} or sac Stasis."""
+        card = self.g.battlefield('stasis')
+        self.gs.event_mgr.register(card.abilities[0].effect, card)
+        self.gs.event_mgr.register(card.abilities[1].effect, card)
+        self.g.mana('U')
+        tapped_card = self.g.battlefield('nether-void')
+        tapped_card.tap()
+        untapped_card = self.g.battlefield('grizzly-bears')
+
+        self.g.next_turn()
+        self.assertTrue(tapped_card.is_tapped)
+
+        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        sac_stasis_action = self.gs.pending_choice.options[1]
+        sac_stasis_action.play()
+
+        self.g.next_turn()
+        self.assertFalse(tapped_card.is_tapped)
+
+    def test_stone_giant(self):
+        """{T}: Target creature you control with toughness < SG's power gains flying EOT. Destroy target at end step."""
+        card = self.g.card('stone-giant')  # 3/4
+        aa = card.activated_abilities[0]
+        legal_target = self.g.battlefield('grizzly-bears')  # 2/2
+        illegal_target = self.g.battlefield('sengir-vampire')  # 4/4
+        self.assertIn(legal_target, aa.eff_spec.target_spec.get_targets(self.gs, card))
+        self.assertNotIn(illegal_target, aa.eff_spec.target_spec.get_targets(self.gs, card))
+
+        self.g.activate_ability(aa, legal_target)
+        self.assertIn('Flying', legal_target.keyword_abilities)
+        self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
+        self.assertEqual(legal_target.zone, Zone.GRAVEYARD)
 
     def test_storm_seeker(self):
         """SS deals damage to target player equal to the number of cards in that player's hand"""

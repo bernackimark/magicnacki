@@ -1,7 +1,10 @@
 import unittest
 
+from models.actions.damage import PayLife
 from models.actions.end_step_pass_turn import PassTheTurn
+from models.game_card.game_card import GameCard
 from models.phase_manager import Phase
+from models.zone import Zone
 from tests.setup_helpers import TestGame
 
 
@@ -9,6 +12,30 @@ class TestCardsWXYZ(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_wand_of_ith(self):
+        """3T: Target player reveals a random card from their hand. If it's a land, that player pays 1 life or discards.
+        If it isn't a land, the player pays life = its MV or discards it. Activate only during your turn."""
+        card = self.g.card('wand-of-ith')
+        aa = card.activated_abilities[0]
+        self.g.mana('UUUUUU')
+        self.g.activate_ability(aa, 0)
+        pay_option = self.gs.pending_choice.options[0]
+        discard_option = self.gs.pending_choice.options[1]
+        if discard_option.cards.is_land:
+            pay_option.play()
+            self.assertEqual(19, self.gs.score_mgr.life[0])
+        else:
+            mv = discard_option.cards.props.mana_value
+            pay_option.play()
+            self.assertEqual(20 - mv, self.gs.score_mgr.life[0])
+
+        self.g.next_turn()
+        self.g.activate_ability(aa, 0)
+        discard_option = self.gs.pending_choice.options[1]
+        discard_option.play()
+        discarded_card = discard_option.cards[0]
+        self.assertEqual(discarded_card.zone, Zone.GRAVEYARD)
 
     def test_wheel_of_fortune(self):
         """Each player discards their hand, then draws seven cards"""

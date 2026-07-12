@@ -136,7 +136,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'red_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_red],
     'self': lambda gs, s: s,
     'spells': lambda gs, s: gs.action_stack.spells,
-    'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s).creatures().result()
+    'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result()
                                   if c.toughness < s.power],
     'tapped_creatures': lambda gs, s: gs.card_filter.in_play().creatures().tapped().result(),
     'tapped_or_blocking_creatures': lambda gs, s: list(set(gs.card_filter.blockers().result() +

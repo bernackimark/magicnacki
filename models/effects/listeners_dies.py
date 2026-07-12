@@ -172,8 +172,7 @@ class UrzasMiter(Listener):
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or 'Artifact' not in event.card.props.card_types \
-                or event.card.owner_id != source.owner_id:
+        if event.card.owner_id != source.owner_id or 'Artifact' not in event.card.card_types:
             return
         options = [PayManaToDrawCards(source.owner_id, gs, '3', 1), DoNothing(source.owner_id, gs)]
-        gs.action_stack.push(ChoiceAction(options), gs, False)
+        gs.pending_choice = ChoiceAction(options)

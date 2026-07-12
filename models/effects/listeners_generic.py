@@ -506,7 +506,7 @@ class PayManaOrSacAtUpkeep(Listener):
             gs.pile_mgr.destroy(source, allow_regeneration=False)
             return
         options = [PayMana(source.owner_id, gs, source, self.mana_cost), Sac(source.owner_id, gs, source)]
-        gs.action_stack.push(ChoiceAction(options), gs, False)
+        gs.pending_choice = ChoiceAction(options)
 
 class PayManaToUntapUpkeep(Listener):
     """Pay [x] to untap at target owner's upkeep"""

@@ -59,6 +59,11 @@ class CanDamageQueryEvent(Event):
     permission: bool | None = None
 
 @dataclass
+class CanEnterUntapPhaseQueryEvent(Event):
+    active_player: int
+    permission: bool | None = None
+
+@dataclass
 class CanTargetQueryEvent(Event):
     source: GameCard
     target: GameCard | int

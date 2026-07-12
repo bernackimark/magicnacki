@@ -543,7 +543,6 @@ class TheRack(Listener):
         if opp_hand_len < 3:
             gs.apply_damage(s, 3 - opp_hand_len, opp_id)
 
-
 class TheTabernacleAtPendrellVale(Listener):
     """All creatures have 'At your upkeep, destroy this creature unless you pay {1}.'"""
     listens_to = UpkeepEvent
@@ -553,8 +552,7 @@ class TheTabernacleAtPendrellVale(Listener):
             if not gs.mana_pools[event.active_player].can_pay('1'):
                 gs.pile_mgr.destroy(your_creature, allow_regeneration=False)
             options = [PayMana(event.active_player, gs, source, '1'), Sac(event.active_player, gs, source)]
-            gs.action_stack.push(ChoiceAction(options), gs, False)
-
+            gs.pending_choice = ChoiceAction(options)
 
 class VesuvanDoppelgangerUpkeep(Listener):
     """You may have this creature enter as a copy of any creature on the battlefield,

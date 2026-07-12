@@ -7,10 +7,9 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-from models.actions.tap_untap import LeaveTapped
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
-    CanUntapQueryEvent, UntapCardEvent, AttackEvent
+    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, Event
 from models.phase_manager import Phase
 from models.utils import flip
 
@@ -31,7 +30,6 @@ class CantBeTargetedByAuras(Listener):
             return
         event.permission = False
 
-
 class HostCantAttack(Listener):
     listens_to = CanAttackQueryEvent
 
@@ -49,13 +47,24 @@ class HostCantBeTargetedByAuras(Listener):
             return
         event.permission = False
 
-
 class NoAttacksAllowedEOT(Listener):
     """No attacks are allowed this turn"""
     listens_to = CanAttackQueryEvent
     expires = 'EOT'
 
     def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        event.permission = False
+
+class SkipUntapPhase(Listener):
+    """Player skips their untap phase"""
+    listens_to = CanEnterUntapPhaseQueryEvent
+
+    def __init__(self, skipped_player_id: int | None = None):
+        self.skipped_player_ids = (skipped_player_id, ) if skipped_player_id is not None else (0, 1)
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanEnterUntapPhaseQueryEvent) -> None:
+        if event.active_player not in self.skipped_player_ids:
+            return
         event.permission = False
 
 class DoesntUntapAtUntap(Listener):

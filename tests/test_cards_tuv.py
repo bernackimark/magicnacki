@@ -1,18 +1,54 @@
 import unittest
 
+from models.actions.cast import CastToTargetAddToStack
 from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
-from models.actions.special import Attach
-from models.events_all import CastResolvedEvent
+from models.actions.mana import PayMana
+from models.actions.special import Attach, PayManaToDrawCards
+from models.events_all import CastResolvedEvent, UpkeepEvent
 from models.phase_manager import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
 
 
-class TestCardsWtoZ(unittest.TestCase):
+class TestCardsTUV(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_tetsuo_umezawa(self):
+        """TU can't be the target of Aura spells. {UBBR}, {T}: Destroy target tapped or blocking creature."""
+        card = self.g.card('tetsuo-umezawa')
+        aa = card.activated_abilities[0]
+        aura = self.g.hand('holy-strength')
+        self.g.mana('WWWWUBBR')
+        self.assertEqual(0, len(aura.abilities[0].target_spec.get_targets(self.gs, card)))
+
+        self.g.next_turn()
+        tapped_target = self.g.battlefield('grizzly-bears')
+        tapped_target.tap()
+        self.g.activate_ability(aa, tapped_target)
+        self.assertIn(tapped_target, self.gs.pile_mgr.graveyards[0])
+
+        self.g.next_turn()
+        illegal_target = self.g.battlefield('savannah-lions')
+        self.assertNotIn(illegal_target, aa.eff_spec.target_spec.get_targets(self.gs, card))
+
+        self.g.next_turn()
+        attacker = self.g.battlefield('azure-drake')  # 2/4
+        blocker = self.g.battlefield('giant-spider')  # 2/4
+        self.g.combat(attacker, blocker)
+        self.assertIn(blocker, aa.eff_spec.target_spec.get_targets(self.gs, card))
+
+    def test_the_tabernacle_at_pendrell_vale(self):
+        """All creatures have 'At the beginning of your upkeep, pay {1} or destroy this creature'"""
+        card = self.g.card('the-tabernacle-at-pendrell-vale')
+        self.gs.event_mgr.register(card.abilities[0].effect, card)
+        self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.g.battlefield('phantom-monster')
+        self.g.mana('UUUU')
+        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.assertTrue(any(isinstance(a, PayMana) for a in self.gs.pending_choice.get_actions()))
 
     def test_time_vault(self):
         """This artifact enters tapped. This artifact doesn't untap during your untap step.
@@ -33,11 +69,13 @@ class TestCardsWtoZ(unittest.TestCase):
     def test_timetwister(self):
         """Each player shuffles their hand & graveyard into their library, then draws seven cards.
         (Then put Timetwister into its owner's graveyard.)"""
+        # this works 1/2 the time
         self.g.graveyard('scryb-sprites')
         self.g.graveyard('serra-angel')
         self.g.hand('island')
         self.g.hand('island')
         card = self.g.hand('timetwister')
+        self.gs.pile_mgr.graveyards[0].clear()
         self.gs.pile_mgr.move_card(card, Zone.GRAVEYARD, emit_zone_event=False)
         card.abilities[0].effect.resolve(self.gs, card, None)  # type: ignore
         self.assertTrue(7, len(self.gs.pile_mgr.hands[0].cards))
@@ -54,6 +92,15 @@ class TestCardsWtoZ(unittest.TestCase):
         self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
         self.assertEqual(3, host.power)
+
+    def test_urzas_miter(self):
+        """Whenever an artifact you control is put into a graveyard from the battlefield,
+        if it wasn't sacrificed, you may pay {3} to draw a card"""
+        card = self.g.battlefield('urzas-miter')
+        self.gs.event_mgr.register(card.abilities[0].effect, card)
+        artifact = self.g.battlefield('sol-ring')
+        self.gs.pile_mgr.destroy(artifact)
+        self.assertTrue(any(isinstance(a, PayManaToDrawCards) for a in self.gs.pending_choice.get_actions()))
 
     def test_verduran_enchantress(self):
         """Whenever you cast an enchantment spell, you may draw a card"""

@@ -32,7 +32,7 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
-    RasputinDreamweaverUntap, Stasis, TimeVaultOption, PowerleechTap
+    RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, SirensCallEndStep, \
     VoodooDollEndStep, WhirlingDervish
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
@@ -49,7 +49,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     PreventNextDamageToEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep
 from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
-    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap
+    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap, SkipUntapPhase
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
 from models.phase_manager import Phase
@@ -196,7 +196,7 @@ MAP: dict[str, list[EffSpec]] = {
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
                         for c in COLOR_LETTERS],
     'stangg': [Spell(CreateTokenCreature('stangg-twin')), Triggered(StanggOnLeave())],
-    'stasis': [Triggered(PayManaOrSacAtUpkeep('U')), Triggered(Stasis())],
+    'stasis': [Triggered(PayManaOrSacAtUpkeep('U')), Static(SkipUntapPhase())],
     'steal-artifact': [Triggered(ReturnToOwnerOnLTB()), Spell(Steal(), T_FUNCS['opp_artifacts'])],
     'stone-calendar': [Static(StoneCalendar())],
     'stone-giant': [Activated('T', StoneGiant(), T_FUNCS['stone_giant'])],
@@ -292,7 +292,9 @@ MAP: dict[str, list[EffSpec]] = {
     'vampire-bats': [Activated('B', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=2)],
     'venarian-gold':
         [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host'], SLEEP)),
-         Triggered(VenarianGoldHostStaysTapped())],
+         Triggered(VenarianGoldHostStaysTapped()),
+         Spell(TapCardEffect(), T_FUNCS['creatures'])],
+    # TODO: convert the Spell from TapCard() -> VenarianGoldSpell() because it need to understand the counters
     'venom': [Spell(None, T_FUNCS['creatures']), Triggered(Venom())],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerUpkeep()), Spell(VesuvanDoppelgangerCast())],

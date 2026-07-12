@@ -174,16 +174,6 @@ class RasputinDreamweaverUntap(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
         source.extras['started_turn_untapped'] = not source.is_tapped
 
-
-class Stasis(Listener):
-    """Players skip their untap steps ... """
-    listens_to = UntapPhaseEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
-        from models.phase_manager import Phase
-        gs.phase_mgr.set_phase(Phase.UPKEEP, gs)
-
-
 class TimeVaultOption(Listener):
     """If you would begin your turn while this artifact is tapped, you may skip that turn instead."""
     listens_to = UntapPhaseEvent
