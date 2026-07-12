@@ -212,6 +212,12 @@ class GameState:
                     if not spell_eff.target_spec.get_targets(self, c):
                         continue
 
+                if 'X' in c.casting_cost:
+                    min_x = spell_eff.min_x_func(self, c)
+                    max_x = spell_eff.max_x_func(self, c) // c.casting_cost.count('X')  # for double X
+                    if max_x < min_x:
+                        continue
+
                 actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=spell_eff))
 
         return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
