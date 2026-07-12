@@ -99,12 +99,13 @@ class PileManager:
         print(f'{card} is cast')
         self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is cast')
 
-    def draw(self, p_id: int, cnt: int = 1):
+    def draw(self, p_id: int, cnt: int = 1, print_output: bool = True):
         for _ in range(cnt):
             top_lib_card = self._gs.pile_mgr.libraries[p_id][0]
             self.move_card(top_lib_card, Zone.HAND, cause='draw')
             self._gs.event_mgr.emit(DrawCardEvent(p_id, top_lib_card), self._gs)
-            print(f'Player #{p_id} draws')
+            if print_output:
+                print(f'Player #{p_id} draws')
             self._gs.game_history.append_non_action(self._gs, text=f'Player #{p_id} draws')
 
     def _add_to_zone(self, card: GameCard, zone: Zone):

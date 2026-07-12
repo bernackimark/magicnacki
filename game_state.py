@@ -76,7 +76,7 @@ class GameState:
 
         for i in range(self.player_cnt):
             random.shuffle(self.pile_mgr.libraries[i])
-            self.pile_mgr.draw(i, 7)
+            self.pile_mgr.draw(i, 7, print_output=False)
 
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
