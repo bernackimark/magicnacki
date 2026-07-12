@@ -118,7 +118,6 @@ class Revelation(Listener):
             return
         event.card.reveal()
 
-
 class StanggOnLeave(Listener):
     """Exile that Stangg Twin token when Stangg leaves the battlefield; sacrific Stangg when Stangg Twin LTB"""
     listens_to = ZoneChangeEvent
@@ -129,9 +128,9 @@ class StanggOnLeave(Listener):
         if event.from_zone != Zone.BATTLEFIELD:
             return
         other_slug = 'stangg-twin' if event.card.props.slug == 'stangg' else 'stangg'
-        other_card = gs.card_filter.on_player_board(event.card.owner_id).by_slug(other_slug).result()[0]
+        other_card = next(c for c in gs.pile_mgr.boards[source.owner_id] if c.props.slug == other_slug)
+        gs.event_mgr.unregister_specific_effect(self)
         gs.pile_mgr.destroy(other_card)
-
 
 class TawnossCoffinZoneChange(Listener):
     """When this artifact LTB, return its exiled card to the battlefield tapped with the noted number &

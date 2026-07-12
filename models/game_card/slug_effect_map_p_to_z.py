@@ -195,7 +195,7 @@ MAP: dict[str, list[EffSpec]] = {
     'staff-of-zegon': [Activated('3T', Pump(-2, 0, True), T_FUNCS['creatures'])],
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
                         for c in COLOR_LETTERS],
-    'stangg': [Spell(CreateTokenCreature('stangg-twin')), Triggered(StanggOnLeave())],
+    'stangg': [Spell(CreateTokenCreature('stangg-twin')), Static(StanggOnLeave())],
     'stasis': [Triggered(PayManaOrSacAtUpkeep('U')), Static(SkipUntapPhase())],
     'steal-artifact': [Triggered(ReturnToOwnerOnLTB()), Spell(Steal(), T_FUNCS['opp_artifacts'])],
     'stone-calendar': [Static(StoneCalendar())],

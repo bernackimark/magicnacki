@@ -266,6 +266,21 @@ class TestCardsQRS(unittest.TestCase):
         host.tap()
         self.assertEqual(2, host.toughness)
 
+    def test_stangg(self):
+        """When S enters, create Stangg Twin, a legendary 3/4 red and green Human Warrior creature token.
+        Exile that token when S leaves the battlefield. Sacrifice S when that token leaves the battlefield."""
+        card = self.g.battlefield('stangg')
+        stangg_twin = next(c for c in self.gs.card_filter.on_player_board(0).result() if c is not card)
+        self.assertIn(stangg_twin, self.gs.pile_mgr.boards[0])
+        self.gs.pile_mgr.destroy(card)
+        self.assertNotIn(stangg_twin, self.gs.pile_mgr.boards[0])
+
+        card = self.g.battlefield('stangg')
+        stangg_twin = next(c for c in self.gs.card_filter.on_player_board(0).result() if c is not card)
+        self.gs.pile_mgr.destroy(stangg_twin)
+        self.assertNotIn(card, self.gs.pile_mgr.boards[0])
+
+
     def test_stasis(self):
         """Players skip their untap steps. At your upkeep, pay {U} or sac Stasis."""
         card = self.g.battlefield('stasis')
