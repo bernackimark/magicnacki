@@ -50,8 +50,8 @@ class CocoonUpkeep(Listener):
         host = source.host
         if p_id != source.owner_id:
             return
-        if host.counters.get_count(PUPA):
-            host.counters.remove_counter(PUPA)
+        if source.counters.get_count(PUPA):
+            source.counters.remove_counter(PUPA)
             return
         gs.pile_mgr.destroy(source)
         host.counters.add_counter(PLUS_ONE)

@@ -5,10 +5,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from models.actions.activate_ability import ActivateAbility
+from models.actions.cast import CastToTargetAddToStack
 from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
-from models.effects.base import Listener, ActivatedAbility
+from models.effects.base import Listener, ActivatedAbility, EffSpec
 from models.phase_manager import Phase
 from models.utils import flip
 
@@ -155,8 +156,10 @@ class TestGame:
         ActivateAbility(owner, self.gs, aa, target).play()
         AcceptAction(flip(owner), self.gs).play()
 
-    def cast_and_accept(self, slug: str, target: GameCard | int | None = None, owner: int = 0):
-        ...
+    def cast_and_accept(self, card: GameCard, target: GameCard | int | None = None,
+                        eff_spec: EffSpec | None = None, owner: int = 0):
+        CastToTargetAddToStack(owner, self.gs, card, target, eff_spec).play()
+        AcceptAction(flip(owner), self.gs).play()
 
     def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard] | None):
         self.gs.combat_mgr.create_combat(self.gs, attacker)

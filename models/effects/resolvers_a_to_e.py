@@ -121,7 +121,7 @@ class Berserk(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(PTMod(s=source, p_adj=int(target.power) * 2, expires='EOT'))
+        target.modifiers.append(PTMod(s=source, p_adj=target.power, expires='EOT'))
         target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStepIfItAttacked(target), source)
 
@@ -194,7 +194,9 @@ class Clone(Resolver):
         gs.pending_choice = ChoiceAction(options)
 
 class CocoonCast(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target=None):
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
         target.tap()
         source.counters.add_counter(PUPA, 3)
 

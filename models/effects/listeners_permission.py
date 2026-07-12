@@ -358,11 +358,12 @@ class TowerOfCoireallEOT(Listener):
 class CocoonUntap(Listener):
     """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
     listens_to = CanUntapQueryEvent
+    query = 'can_untap'
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
         if event.card is not source.host:
             return
-        if source.host.counters.get_count(PUPA):
+        if source.counters.get_count(PUPA):
             event.permission = False
 
 class DampingField(Listener):
