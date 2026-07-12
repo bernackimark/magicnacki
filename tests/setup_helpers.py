@@ -190,6 +190,10 @@ class TestGame:
         self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS, self.gs)
         PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
 
+    @property
+    def gy(self) -> list[list[GameCard | None]]:
+        return self.gs.pile_mgr.graveyards
+
     @staticmethod
     def _create_engine_and_universe(file_path_str, settings_key, test_mode) -> tuple[Engine, CardUniverse]:
         """From provided path string & key, pull JSON; create CardUniverse; create decks;

@@ -47,7 +47,7 @@ class TestPreventDamage(unittest.TestCase):
         self.assertEqual(target.damage_received_this_turn, 0)
 
     def test_graveyard_to_exile_in_its_entirety(self):
-        gy = self.gs.pile_mgr.graveyards[0]
+        gy = self.g.gy[0]
         self.g.graveyard('merfolk-of-the-pearl-trident')
         self.assertEqual(1, len(gy))
         GraveyardToExileInItsEntirety().resolve(self.gs, None, 0)

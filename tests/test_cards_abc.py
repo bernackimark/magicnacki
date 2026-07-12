@@ -41,7 +41,7 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.combat(target, None)
         self.assertEqual(16, self.gs.score_mgr.life[1])
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
-        self.assertIn(target, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(target, self.g.gy[0])
 
     def test_blood_lust(self):
         """If target creature has toughness 5 or greater, it gets +4/-4 until end of turn.
@@ -114,7 +114,7 @@ class TestCardsAtoC(unittest.TestCase):
 
         self.g.next_turn()
         self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
         self.assertEqual(3, host.power)
         self.assertIn('Flying', host.keyword_abilities)
 
@@ -133,7 +133,7 @@ class TestCardsAtoC(unittest.TestCase):
         # TODO: once Indestructible is coded, uncomment this test
         # stone_rain = self.g.card('stone-rain')
         # stone_rain.abilities[0].effect.resolve(self.gs, stone_rain, host)  # type: ignore
-        # self.assertNotIn(host, self.gs.pile_mgr.graveyards[0])
+        # self.assertNotIn(host, self.g.gy[0])
 
 
     # def test_creature_bond(self):

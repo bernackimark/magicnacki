@@ -27,7 +27,7 @@ class TestCardsTUV(unittest.TestCase):
         tapped_target = self.g.battlefield('grizzly-bears')
         tapped_target.tap()
         self.g.activate_ability(aa, tapped_target)
-        self.assertIn(tapped_target, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(tapped_target, self.g.gy[0])
 
         self.g.next_turn()
         illegal_target = self.g.battlefield('savannah-lions')
@@ -74,11 +74,11 @@ class TestCardsTUV(unittest.TestCase):
         self.g.hand('island')
         self.g.hand('island')
         card = self.g.hand('timetwister')
-        self.gs.pile_mgr.graveyards[0].clear()
+        self.g.gy[0].clear()
         self.gs.pile_mgr.move_card(card, Zone.GRAVEYARD, emit_zone_event=False)
         card.abilities[0].effect.resolve(self.gs, card, None)  # type: ignore
         self.assertTrue(7, len(self.gs.pile_mgr.hands[0].cards))
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
 
     def test_unstable_mutation(self):
         """Host gets +3/+3. At host's upkeep, put a -1/-1 counter on host."""

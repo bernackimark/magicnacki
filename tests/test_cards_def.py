@@ -83,7 +83,7 @@ class TestCardsDEF(unittest.TestCase):
         do_not_skip_draw.play()
         self.gs.phase_mgr.set_phase(Phase.DRAW, self.gs)
         self.assertEqual(8, len(self.gs.pile_mgr.hands[0].cards))
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
 
     def test_fellwar_stone_1(self):
         """{T}: Add one mana of any color that a land an opponent controls could produce"""
@@ -164,7 +164,7 @@ class TestCardsDEF(unittest.TestCase):
         self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
         sac_fa = self.gs.pending_choice.get_actions()[1]
         sac_fa.play()
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
 
 
 if __name__ == '__main__':

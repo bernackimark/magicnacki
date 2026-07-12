@@ -3,7 +3,7 @@ import unittest
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
-from models.events_all import UpkeepEvent, StateBasedEvent
+from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent
 from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
@@ -19,7 +19,7 @@ class TestCardsMNOP(unittest.TestCase):
         card = self.g.hand('mana-vortex')
         island_to_sac = self.g.battlefield('island')
         self.g.cast_and_accept(card, island_to_sac, card.abilities[0])
-        self.assertIn(island_to_sac, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(island_to_sac, self.g.gy[0])
 
         opp_land = self.g.battlefield('swamp', owner=1)
         for my_land in self.gs.card_filter.on_player_board(0).lands().result()[::]:
@@ -28,9 +28,9 @@ class TestCardsMNOP(unittest.TestCase):
 
         self.g.next_turn(True)
         self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
-        self.assertIn(opp_land, self.gs.pile_mgr.graveyards[1])
+        self.assertIn(opp_land, self.g.gy[1])
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
 
     def test_martyrs_of_korlis(self):
         """As long as MOK is untapped, all damage that would be dealt to you by artifacts is dealt to MOK instead"""
@@ -47,6 +47,34 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.combat(juggernaut, None)
         self.assertEqual(0, card.damage_received_this_turn)
         self.assertEqual(15, self.gs.score_mgr.life[0], 'Damage should not have been redirected to MOK')
+
+    def test_nettling_imp(self):
+        """{T}: Choose target non-Wall creature the active player has controlled continuously since BOT.
+        That creature attacks this turn if able. Destroy at end step if it didn't attack this turn.
+        Activate only during an opponent's turn, before attackers are declared."""
+        card = self.g.battlefield('nettling-imp')
+        aa = card.activated_abilities[0]
+        legal_target = self.g.battlefield('savannah-lions', owner=1)
+        legal_target_2 = self.g.battlefield('tundra-wolves', owner=1)
+        illegal_target_1 = self.g.battlefield('wall-of-brambles', owner=1)
+
+        self.g.next_turn(True)
+        illegal_target_2 = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+        targets = aa.eff_spec.target_spec.get_targets(self.gs, card)
+        self.assertIn(legal_target, targets)
+        self.assertNotIn(illegal_target_1, targets)
+        self.assertNotIn(illegal_target_2, targets)
+
+        self.assertNotIn('Goad', legal_target.keyword_abilities)
+        self.g.activate_ability(aa, legal_target)
+        self.assertIn('Goad', legal_target.keyword_abilities)
+
+        self.g.next_turn()
+        festival = self.g.hand('festival')  # no creatures may attack
+        self.g.cast_and_accept(festival, None, festival.abilities[0])
+        self.g.activate_ability(aa, legal_target_2)
+        self.gs.event_mgr.emit(EndStepEvent(1), self.gs)
+        self.assertIn(legal_target_2, self.g.gy[1])
 
     def test_obelisk_of_undoing(self):
         """{6}, {T}: Return target permanent you both own and control to your hand"""
@@ -96,7 +124,7 @@ class TestCardsMNOP(unittest.TestCase):
 
         self.g.next_turn()
         self.g.activate_ability(aa, target)
-        self.assertIn(target, self.gs.pile_mgr.graveyards[1])
+        self.assertIn(target, self.g.gy[1])
 
         self.g.next_turn()
         self.g.activate_ability(aa, 1)

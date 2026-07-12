@@ -30,7 +30,7 @@ class TestCardsGHI(unittest.TestCase):
         aa = card.activated_abilities[0]
         self.g.activate_ability(aa, 0)
         self.assertTrue(self.gs.mana_pools[0].can_pay('GG'))
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
 
     def test_gaseous_form(self):
         """Prevent all combat damage that would be dealt to and dealt by enchanted creature"""
@@ -69,7 +69,7 @@ class TestCardsGHI(unittest.TestCase):
         com.handle_damage()
         self.assertEqual(0, wall.damage_dealt_this_turn)
         self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
-        self.assertIn(wall, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(wall, self.g.gy[0])
 
     def test_glyph_of_doom(self):
         """At combat end, destroy all creatures that were blocked by that target wall this turn."""
@@ -81,7 +81,7 @@ class TestCardsGHI(unittest.TestCase):
         self.g.cast_and_accept(card, wall, card.abilities[0])
         self.g.combat(attacker, wall)
         self.gs.event_mgr.emit(CombatEndEvent(0), self.gs)
-        self.assertIn(attacker, self.gs.pile_mgr.graveyards[1])
+        self.assertIn(attacker, self.g.gy[1])
 
     def test_glyph_of_life(self):
         """Whenever target wall is dealt damage by an attacking creature this turn, you gain that much life."""
@@ -102,7 +102,7 @@ class TestCardsGHI(unittest.TestCase):
         goblin = self.g.battlefield('monss-goblin-raiders')  # 1/1
         self.assertEqual(2, goblin.power)
         self.gs.pile_mgr.destroy(card)
-        self.assertIn(goblin, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(goblin, self.g.gy[0])
 
     def test_haunting_wind(self):
         """Whenever an artifact becomes tapped or a player activates an artifact's ability

@@ -13,7 +13,7 @@ class TestPileManager(unittest.TestCase):
         card = self.g.battlefield("grizzly-bears")
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(card.zone, Zone.GRAVEYARD)
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
         self.assertNotIn(card, self.gs.pile_mgr.boards[0])
 
     def test_exile(self):
@@ -34,7 +34,7 @@ class TestPileManager(unittest.TestCase):
         card = self.g.hand("grizzly-bears")
         self.gs.pile_mgr.discard(card)
         self.assertEqual(card.zone, Zone.GRAVEYARD)
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
         self.assertNotIn(card, self.gs.pile_mgr.hands[0].cards)
 
     def test_reanimate(self):
@@ -42,7 +42,7 @@ class TestPileManager(unittest.TestCase):
         self.gs.pile_mgr.reanimate(card)
         self.assertEqual(card.zone, Zone.BATTLEFIELD)
         self.assertIn(card, self.gs.pile_mgr.boards[0])
-        self.assertNotIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertNotIn(card, self.g.gy[0])
 
     def test_cast(self):
         card = self.g.hand("grizzly-bears")

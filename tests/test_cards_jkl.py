@@ -24,7 +24,7 @@ class TestCardsJKL(unittest.TestCase):
     #     other_target_2 = self.g.battlefield('plains', owner=1)
     #     self.g.cast_and_accept(card, target, card.abilities[1])
     #     target.tap()
-    #     self.assertIn(target, self.gs.pile_mgr.graveyards[1])
+    #     self.assertIn(target, self.g.gy[1])
     #     print(self.gs.pending_choice)
 
     def test_land_equilibrium(self):

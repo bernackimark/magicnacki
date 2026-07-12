@@ -138,7 +138,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn('Islandwalk', target.keyword_abilities)
 
         self.gs.pile_mgr.destroy(target)
-        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(card, self.g.gy[0])
 
     def test_scarecrow(self):
         """{6}, {T}: Prevent all damage that would be dealt to you this turn by creatures with flying"""
@@ -177,7 +177,7 @@ class TestCardsQRS(unittest.TestCase):
         wall = self.g.battlefield('wall-of-wood')
         has_haste = self.g.battlefield('nether-shadow')
         regular = self.g.battlefield('savannah-lions')
-        gy = self.gs.pile_mgr.graveyards[0]
+        gy = self.g.gy[0]
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
         self.assertIn(has_haste, gy)
         self.assertNotIn(wall, gy)
@@ -212,7 +212,7 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.pending_choice.options[0].play()
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
         self.assertEqual(17, self.gs.score_mgr.life[0])
-        self.assertIn(sd, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(sd, self.g.gy[0])
 
     def test_serpent_generator(self):
         """{4}, {T}: Create a 1/1 colorless Snake artifact creature token w
@@ -238,7 +238,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(land_atop_lib, self.gs.pile_mgr.hands[0].cards)
         non_land_atop_lib = self.g.library('serendib-efreet')
         Sindbad().resolve(self.gs, card, None)
-        self.assertIn(non_land_atop_lib, self.gs.pile_mgr.graveyards[0])
+        self.assertIn(non_land_atop_lib, self.g.gy[0])
 
     def test_soul_net(self):
         self.assertFalse(any(isinstance(a, PayManaForLife) for a in self.gs.pending_choice.get_actions()))
