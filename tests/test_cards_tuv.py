@@ -15,6 +15,12 @@ class TestCardsTUV(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_tawnoss_coffin(self):
+        """You may choose not to untap TC during your untap step.
+        3T: Exile target creature and all attached auras. Note the number & kind of counters that were on that creature.
+        When TC leaves the battlefield or becomes untapped, return that exiled card to the battlefield under its owner's
+        control tapped with the original counters & auras on it."""
+
     def test_tetsuo_umezawa(self):
         """TU can't be the target of Aura spells. {UBBR}, {T}: Destroy target tapped or blocking creature."""
         card = self.g.card('tetsuo-umezawa')

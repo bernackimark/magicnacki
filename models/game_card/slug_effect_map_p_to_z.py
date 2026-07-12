@@ -216,7 +216,7 @@ MAP: dict[str, list[EffSpec]] = {
     'taiga': dual_land_specs('RG'),
     'tangle-kelp': [Spell(TangleKelp(), T_FUNCS['creatures'])],
     'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()),
-                       Triggered(TawnossCoffinZoneChange())],
+                       Triggered(TawnossCoffinZoneChange())],  # TODO: code the actual exiling part
     'tawnoss-wand': [Activated('2T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
     'tawnoss-weaponry': [Triggered(OptionalUntap()),
                          Activated('2T', Pump(1, 1, True), T_FUNCS['creatures']),
