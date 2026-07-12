@@ -12,7 +12,7 @@ from models.actions.stack_accept_counter import AcceptAction
 from models.event_manager import EventManager
 from models.actions.activate_ability import ActivateAbility, BeginAbilityActivationAction
 from models.actions.base import Action
-from models.actions.cast import CastToBoard, CastCounter, BeginSpellCastAction
+from models.actions.cast import CastToBoard, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import CombatManager
 from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
