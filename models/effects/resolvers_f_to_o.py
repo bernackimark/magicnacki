@@ -24,6 +24,7 @@ from models.effects.listeners_permission import NoAttacksAllowedEOT
 from models.effects.resolvers_generic import GraveyardToExile, DrawCards
 from models.events_all import UpkeepEvent
 from models.modifiers import PTMod, KWAMod
+from models.phase_manager import Phase
 from models.utils import flip
 from models.zone import Zone
 
@@ -422,7 +423,11 @@ class NaturalSelection(Resolver):
 
 class NettlingImp(Resolver):
     """Give target non-Wall creature w/o summoning sickness Goad until EOT.
-    Destroy it at end step if it didn't attack this turn ..."""
+    Destroy it at end step if it didn't attack this turn ...
+    Activate only during an opponent's turn, before attackers are declared."""
+    def can_activate(self, gs: GameState, source: GameCard) -> bool:
+        return source.owner_id != gs.turn_mgr.player_turn_idx and gs.phase_mgr.phase < Phase.DECLARE_ATTACKERS
+
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         if not target:
             raise ValueError(f'{source.props.name} needs a target')

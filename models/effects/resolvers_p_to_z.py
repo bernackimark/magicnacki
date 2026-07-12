@@ -4,7 +4,7 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
-from models.actions.base import DoNothing
+from models.actions.base import DoNothing, Action
 from models.actions.damage import DealDamageTo, PayLife
 from models.actions.destroy_sac_regen import ReanimateAction
 from models.actions.draw_discard import DiscardCards, DrawCard
@@ -17,7 +17,7 @@ from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, PreventNextDamageToEOT, \
-    DestroyAtEndStep, PreventNextDamageByEOT, BounceAtEndStep, PreventNextDamageToEOT
+    DestroyAtEndStep, PreventNextDamageByEOT, BounceAtEndStep, PreventNextDamageToEOT, DestroyAtEndStepIfItDidntAttack
 from models.effects.listeners_mod_queries import PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.effects.listeners_permission import TowerOfCoireallEOT
 from models.effects.resolvers_generic import Reveal
@@ -133,13 +133,15 @@ class RockHydraCast(Resolver):
         if x := source.extras.get('x', 0):  # read X chosen when casting
             source.counters.add_counter(PLUS_ONE, x)
 
-class RocketLauncherCast(Resolver):
-    """To support 'Activate only if you've controlled continuously since the beginning of your most recent turn."""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        s.has_summoning_sickness = True
+class RocketLauncher(Resolver):
+    """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step.
+    Activate only if you've controlled continuously since the beginning of your most recent turn."""
+    def can_activate(self, gs: GameState, s: GameCard) -> bool:
+        print(s.turn_entered_for_owner, gs.turn_mgr.most_recent_turn_started[s.owner_id])
+        if not s.turn_entered_for_owner:
+            return False  # turn_entered_for_owner is getting set AFTER this check
+        return s.turn_entered_for_owner < gs.turn_mgr.most_recent_turn_started[s.owner_id]
 
-class RocketLauncherAA(Resolver):
-    """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         gs.apply_damage(s, 1, t)
         gs.event_mgr.register(DestroyAtEndStep(s), s)
@@ -228,6 +230,15 @@ class SingingTree(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.append(PTMod(s=source, p_adj=-target.base_pt[0], expires='EOT'))
+
+class SirensCall(Resolver):
+    """... All non-Wall creatures the active player has controlled continuously since BOT must attack ..."""
+    def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard | int | Action] = None) -> None:
+        non_wall_creatures = gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).non_wall_creatures().result()
+        for creature in non_wall_creatures:
+            if not creature.has_summoning_sickness:
+                creature.modifiers.append(KWAMod('add', 'Goad', s=source, expires='EOT'))
+                gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(creature), source)
 
 class StoneGiant(Resolver):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.

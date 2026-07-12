@@ -1,14 +1,17 @@
 import unittest
 
-from models.actions.cast import BeginSpellCastAction
+from models.actions.cast import BeginSpellCastAction, CastToTargetAddToStack
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
+from models.actions.stack_accept_counter import AcceptAction
 from models.actions.tap_untap import Untap
 from models.actions.target import AddTargetAction
+from models.counter_tokens import PLUS_ONE
 from models.effects.listeners_damage import ReverseDamageEOT
 from models.effects.resolvers_generic import Destroy, RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
+from models.modifiers import OwnershipMod
 from models.phase_manager import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
@@ -91,6 +94,78 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.event_mgr.register(ReverseDamageEOT(damage_dealer=damage_dealer), card)
         self.g.combat(damage_dealer, None)
         self.assertEqual(22, self.gs.score_mgr.life[0])
+
+    def test_rock_hydra(self):
+        """XRR RH enters with X +1/+1 counters.
+        For each 1 damage that would be dealt to this creature, if it has a +1/+1 counter on it, remove a +1/+1 counter
+        & prevent that 1 damage.
+        {R}: Prevent the next 1 damage that would be dealt to RH EOT.
+        {RRR}: Add a +1/+1 counter on this creature. Activate only during your upkeep."""
+        card = self.g.hand('rock-hydra')
+        self.g.mana('RRRRRR')
+        begin_spell_action = BeginSpellCastAction(0, self.gs, card, card.abilities[3])
+        begin_spell_action.play()
+        possible_actions = self.gs.pending_choice.get_actions()  # should be SelectXAction X=1, X=2, X=3, X=4
+        self.assertEqual(4, len(possible_actions))
+
+        card.extras['x'] = 4
+        self.g.cast_and_accept(card, card, card.abilities[3])  # RH = 4/4
+        self.assertEqual(4, card.counters.get_count(PLUS_ONE))
+
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.cast_and_accept(bolt, card, bolt.abilities[0], 1)
+        self.assertEqual(0, card.damage_received_this_turn)
+        self.assertEqual(1, card.counters.get_count(PLUS_ONE))  # RH = 1/1
+        self.assertEqual(1, card.power)
+
+        self.g.mana('RRR')
+        aa_add_ctr = card.activated_abilities[1]
+        self.g.activate_ability(aa_add_ctr, card)
+        self.assertEqual(2, card.counters.get_count(PLUS_ONE))
+
+        random_source = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+        self.g.next_turn(True)
+        self.g.mana('R')
+        aa_prevent = card.activated_abilities[0]
+        self.g.activate_ability(aa_prevent, card)
+        self.g.combat(random_source, card)
+        self.assertEqual(0, card.damage_received_this_turn)
+
+        # TODO: the auto damage reduction is competing w the activated ability that is creating a diff damage reducer
+        #  need to lookup the rule on this
+        # self.assertEqual(2, card.power)
+
+    def test_rocket_launcher(self):
+        """{2}: RL deals 1 damage to any target. Destroy this artifact at end step.
+        Activate only if you've controlled this artifact continuously since the beginning of your most recent turn."""
+        card = self.g.battlefield('rocket-launcher')
+        aa = card.activated_abilities[0]
+        self.g.mana('RR')
+        can_activate_effect = aa.eff_spec.effect.can_activate(self.gs, card)  # type: ignore
+        self.assertFalse(can_activate_effect)
+
+        self.g.next_turn()
+        self.g.activate_ability(aa, 1)
+        self.assertEqual(19, self.gs.score_mgr.life[1])
+
+        self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
+        self.assertIn(card, self.g.gy[0])
+
+    def test_rohgahh_of_kher_keep(self):
+        """At your upkeep, you may pay {RRR} or: tap ROKK, all Kobolds of Kher Keep & opponent gains control of them.
+        Creatures you control named Kobolds of Kher Keep get +2/+2."""
+        card = self.g.battlefield('rohgahh-of-kher-keep')
+        kobold = self.g.battlefield('kobolds-of-kher-keep')  # 0/1
+        self.assertEqual(2, kobold.power)
+
+        self.g.mana('RRR')
+        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        the_bad_option = self.gs.pending_choice.get_actions()[1]
+        the_bad_option.play()
+        self.assertTrue(card.is_tapped)
+        self.assertTrue(kobold.is_tapped)
+        self.assertEqual(1, card.owner_id)
+        self.assertEqual(1, kobold.owner_id)
 
     def test_rubinia_soulsinger(self):
         """You may choose not to untap Rubinia Soulsinger during your untap step.
@@ -239,6 +314,26 @@ class TestCardsQRS(unittest.TestCase):
         non_land_atop_lib = self.g.library('serendib-efreet')
         Sindbad().resolve(self.gs, card, None)
         self.assertIn(non_land_atop_lib, self.g.gy[0])
+
+    def test_sirens_call(self):
+        """All non-Wall creatures the active player has controlled continuously since BOT must attack.
+        Destroy at end step if it didn't attack this turn.
+        Cast only during an opponent's turn, before attackers are declared."""
+        card = self.g.hand('sirens-call')
+        attacker = self.g.battlefield('savannah-lions', owner=1)
+        non_attacker = self.g.battlefield('tundra-wolves', owner=1)
+        wall = self.g.battlefield('wall-of-brambles', owner=1)
+        self.assertFalse(any(a for a in self.gs.available_actions_from_hand() if a.card is card))
+
+        self.g.next_turn(True)
+        has_sickness = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+        self.g.cast_and_accept(card, None, card.abilities[0])
+        self.g.combat(attacker, None)
+        self.gs.event_mgr.emit(EndStepEvent(1), self.gs)
+        self.assertNotIn(attacker, self.g.gy[1])
+        self.assertIn(non_attacker, self.g.gy[1])
+        self.assertNotIn(wall, self.g.gy[1])
+        self.assertNotIn(has_sickness, self.g.gy[1])
 
     def test_soul_net(self):
         self.assertFalse(any(isinstance(a, PayManaForLife) for a in self.gs.pending_choice.get_actions()))

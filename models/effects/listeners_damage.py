@@ -149,11 +149,11 @@ class RockHydraAutoDamagePrevent(Listener):
         if event.target is not source:
             return
         counter_cnt = source.counters.get_count(PLUS_ONE)
-        if not counter_cnt:
-            return
-        source.counters.remove_counter(PLUS_ONE, counter_cnt)
-        event.prevented += counter_cnt
-        event.amt -= counter_cnt
+        iterations = min(event.remaining, counter_cnt)
+        for _ in range(iterations):
+            source.counters.remove_counter(PLUS_ONE)
+            event.prevented += 1
+            event.remaining -= 1
 
 class ScarecrowPrevention(Listener):
     listens_to = DamageProposedEvent

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
-    voodoo_doll_x, max_x_from_printed_card, untap_for_mana_at_owner_upkeep
+    voodoo_doll_x, max_x_from_printed_card
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
@@ -13,11 +13,11 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEgg, Piety, \
-    ShieldWall, SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncherCast, RocketLauncherAA, \
+    ShieldWall, SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Sindbad
+    Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Sindbad, SirensCall
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
@@ -46,9 +46,9 @@ from ..effects.listeners_combat import CockatriceAndThicketBasilisk, Sentinel, V
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
-    PreventNextDamageToEOT, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
+    PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep
-from models.effects.listeners_permission import Seeker, SirensCallCanCast, CantBeTargetedByAuras, SpectralCloak, \
+from models.effects.listeners_permission import Seeker, CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap, SkipUntapPhase
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
@@ -129,11 +129,11 @@ MAP: dict[str, list[EffSpec]] = {
     'righteousness': [Spell(Pump(7, 7, True), T_FUNCS['blockers'])],
     'riptide': [Spell(Riptide())],
     'riven-turnbull': [Activated('T', AddMana('B'))],
-    'rock-hydra': [Triggered(RockHydraAutoDamagePrevent()),
-                   Activated('R', PreventNextDamageToEOT(T_FUNCS['self'])), Activated('RRR', AddCounter(PLUS_ONE)),
-                   Spell(RockHydraCast(), T_FUNCS['self'])],
-    'rocket-launcher': [Activated('2', RocketLauncherAA(), T_FUNCS['all_creatures_and_players']),
-                        Spell(RocketLauncherCast())],
+    'rock-hydra': [Static(RockHydraAutoDamagePrevent()),
+                   Activated('R', PreventNextDamageToCardEffect(1), T_FUNCS['self']),
+                   Activated('RRR', AddCounter(PLUS_ONE)),
+                   Spell(RockHydraCast(), T_FUNCS['self'], max_x_func=max_x_from_printed_card)],
+    'rocket-launcher': [Activated('2', RocketLauncher(), T_FUNCS['all_creatures_and_players'])],
     'rod-of-ruin': [Activated('3T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'rohgahh-of-kher-keep': [Static(RohgahhOfKherKeepPump()), Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
@@ -176,9 +176,8 @@ MAP: dict[str, list[EffSpec]] = {
     'sindbad': [Activated('T', Sindbad())],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
     'sinkhole': [Spell(Destroy(), T_FUNCS['lands'])],
-    'sirens-call': [Static(SirensCallCanCast()),  # this doesn't feel right
-                    Triggered(SirensCallEndStep()),
-                    Spell(KWAModEffect('add', 'Goad', True), T_FUNCS['opp_creatures'])],
+    'sirens-call': [Spell(SirensCall(), allowed_p_id_turn=T_FUNCS['opponent'],
+                          allowed_phases=[p for p in Phase if p < Phase.DECLARE_ATTACKERS])],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'skull-of-orm': [Activated('5T', Bounce(), T_FUNCS['enchants_in_your_graveyard'])],
     'smoke': [Triggered(Smoke())],

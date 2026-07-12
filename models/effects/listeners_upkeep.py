@@ -431,7 +431,7 @@ class RogahhOfKherKeepUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id or source.props.slug != 'rogahh-of-kher-keep':
+        if gs.turn_mgr.player_turn_idx != source.owner_id:
             return
         owner = source.owner_id
         target_cards = [source] + gs.card_filter.on_player_board(owner).by_slug('kobolds-of-kher-keep').result()
@@ -439,7 +439,7 @@ class RogahhOfKherKeepUpkeep(Listener):
         if not gs.mana_pools[source.owner_id].can_pay('RRR'):
             action.play()
             return
-        options = [action, PayMana(source.owner_id, gs, source, 'RRR')]
+        options = [PayMana(source.owner_id, gs, source, 'RRR'), action]
         gs.pending_choice = ChoiceAction(options)
 
 class SafeHavenUpkeep(Listener):

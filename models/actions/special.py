@@ -332,6 +332,7 @@ class RogahhOfKherKeepTapAndStealAction(Action):
         super().__init__(p_id, gs)
         self.source = source
         self.targets = targets
+        self.owner_upon_class_creation = int(source.owner_id)  # fixes multiple flips in .play() for unknown reason
 
     def __repr__(self):
         return f'Tapping & transferring control of Rogahh Of Kher Keep & all Kobolds Of Kher Keep'
@@ -339,9 +340,11 @@ class RogahhOfKherKeepTapAndStealAction(Action):
     def play(self):
         for t in self.targets:
             t.tap()
-            t.modifiers.append(OwnershipMod(flip(self.source.owner_id), s=self.source))
+            t.modifiers.append(OwnershipMod(flip(self.owner_upon_class_creation), s=self.source))
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
+        elif self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 class TimeVaultSkipTurnAction(Action):
     def __init__(self, p_id, gs, source: GameCard):

@@ -317,18 +317,6 @@ class Seeker(Listener):
         if event.blocker not in artifact_creatures + white_creatures:
             event.permission = False
 
-
-class SirensCallCanCast(Listener):
-    """Cast this spell only during an opponent's turn, before attackers are declared ..."""
-    listens_to = CanCastQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
-        if gs.turn_mgr.player_turn_idx == event.card.owner_id:
-            return
-        if gs.phase_mgr.phase >= Phase.DECLARE_ATTACKERS:
-            event.permission = False
-
-
 class SpectralCloak(Listener):
     """Enchanted creature has shroud as long as it's untapped. (It can't be the target of spells or abilities.)"""
     listens_to = CanTargetQueryEvent
@@ -337,7 +325,6 @@ class SpectralCloak(Listener):
         if event.target is not source.host:
             return
         event.permission = False
-
 
 class TowerOfCoireallEOT(Listener):
     """Target creature can't be blocked by Walls this turn"""
