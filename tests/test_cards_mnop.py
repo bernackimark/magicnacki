@@ -100,6 +100,17 @@ class TestCardsMNOP(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
         self.assertTrue(any(isinstance(a, PayManaToUntapAction) for a in self.gs.pending_choice.get_actions()))
 
+    def test_pendelhaven(self):
+        """{T}: Add {G}. {T}: Target 1/1 creature gets +1/+2 until end of turn."""
+        card = self.g.battlefield('pendelhaven')
+        aa = card.activated_abilities[1]
+        illegal_target = self.g.battlefield('giant-spider')  # 2/4
+        self.assertNotIn(illegal_target, aa.eff_spec.target_spec.get_targets(self.gs, card))
+
+        legal_target = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
+        self.g.activate_ability(aa, legal_target)
+        self.assertEqual((2, 3), (legal_target.power, legal_target.toughness))
+
     def test_power_leak(self):
         """At host's upkeep, PL deals 2 damage to host owner. Host may pay X mana to prevent X of that damage."""
         card = self.g.battlefield('power-leak')

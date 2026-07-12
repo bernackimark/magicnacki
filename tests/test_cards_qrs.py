@@ -58,6 +58,20 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
         self.assertIn(card, self.gs.pile_mgr.hands[0].cards)
 
+    def test_reset(self):
+        """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control."""
+        card = self.g.hand('reset')
+        island_1 = self.g.battlefield('island')
+        self.g.battlefield('island')
+        self.assertNotIn(card, [a.card for a in self.gs.available_actions_from_hand()])
+
+        PassTheTurn(0, self.gs).play()
+        island_1.tap()
+        self.assertTrue(island_1.is_tapped)
+        self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)
+        card.abilities[0].effect.resolve(self.gs, card)  # type: ignore
+        self.assertFalse(island_1.is_tapped)
+
     def test_revelation(self):
         """Players play with their hands revealed"""
         card = self.g.card('revelation')
@@ -279,7 +293,6 @@ class TestCardsQRS(unittest.TestCase):
         stangg_twin = next(c for c in self.gs.card_filter.on_player_board(0).result() if c is not card)
         self.gs.pile_mgr.destroy(stangg_twin)
         self.assertNotIn(card, self.gs.pile_mgr.boards[0])
-
 
     def test_stasis(self):
         """Players skip their untap steps. At your upkeep, pay {U} or sac Stasis."""

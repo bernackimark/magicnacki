@@ -100,7 +100,7 @@ class Reset(Resolver):
         return gs.turn_mgr.player_turn_idx != source.owner_id and gs.phase_mgr.phase > Phase.UPKEEP
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        for land in gs.card_filter.on_player_board(source.owner_id).lands().untapped().result():
+        for land in gs.card_filter.on_player_board(source.owner_id).lands().tapped().result():
             land.untap()
 
 class ReverseDamage(Resolver):
