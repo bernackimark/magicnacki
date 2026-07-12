@@ -15,6 +15,18 @@ class TestCardsJKL(unittest.TestCase):
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         self.assertEqual(18, self.gs.score_mgr.life[1])
 
+    # def test_kudzu(self):
+    #     """When host becomes tapped, destroy it. Host may attach this Aura to a land of their choice."""
+    #     # TODO: aura is already sent to graveyard upon its host being destroyed, just like creature-bond
+    #     card = self.g.hand('kudzu')
+    #     target = self.g.battlefield('island', owner=1)
+    #     other_target_1 = self.g.battlefield('swamp', owner=1)
+    #     other_target_2 = self.g.battlefield('plains', owner=1)
+    #     self.g.cast_and_accept(card, target, card.abilities[1])
+    #     target.tap()
+    #     self.assertIn(target, self.gs.pile_mgr.graveyards[1])
+    #     print(self.gs.pending_choice)
+
     def test_land_equilibrium(self):
         """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,
         that player instead puts that land onto the battlefield then sacrifices a land of their choice;

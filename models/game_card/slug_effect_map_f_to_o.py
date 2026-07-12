@@ -31,7 +31,7 @@ from .card_filter_funcs import T_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, ManaDrainMainPhase
-from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac, OldManOfTheSeaPowerCheck
+from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac, OldManOfTheSeaPowerCheck, ManaVortexSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
@@ -258,7 +258,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mana-vault': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('4', T_FUNCS['card_owner']),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
                    Triggered(ManaVaultDamageIfTapped())],
-    'mana-vortex': [Spell(Destroy(), T_FUNCS['your_lands']), Triggered(ManaVortexUpkeep())],
+    'mana-vortex': [Spell(Destroy(), T_FUNCS['your_lands']), Static(ManaVortexUpkeep()), Static(ManaVortexSac())],
     'marble-priest': [Static(MarblePriestPrevention()), Static(MarblePriestForcesBlock())],
     'marsh-gas': [Spell(MarshGas())],
     'marsh-viper': [Triggered(AddPoisonCounter(2))],

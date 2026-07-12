@@ -345,14 +345,15 @@ class LordOfThePitUpkeep(Listener):
 
 
 class ManaVortexUpkeep(Listener):
-    """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
+    """At each player's upkeep, they sac a land.
+    If no lands on entire battlefield, sac this enchantment (handled by ManaVortexSac StateBasedEvent Listener"""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if len(gs.card_filter.lands().in_play().result()) == 0:
-            gs.pile_mgr.destroy(source)
-            return
         your_lands = gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).lands().result()
+        if len(your_lands) == 1:
+            gs.pile_mgr.destroy(your_lands[0], allow_regeneration=False)
+            return
         options = [Sac(event.active_player, gs, land) for land in your_lands]
         gs.pending_choice = ChoiceAction(options)
 

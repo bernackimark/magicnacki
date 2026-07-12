@@ -3,6 +3,7 @@ import unittest
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
+from models.events_all import UpkeepEvent, StateBasedEvent
 from models.phase_manager import Phase
 from tests.setup_helpers import TestGame
 
@@ -10,6 +11,26 @@ class TestCardsMNOP(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_mana_vortex(self):
+        """When you cast MV, counter it unless you sacrifice a land.
+        At each player's upkeep, that player sacs a land of their choice.
+        When there are no lands on the battlefield, sac MV."""
+        card = self.g.hand('mana-vortex')
+        island_to_sac = self.g.battlefield('island')
+        self.g.cast_and_accept(card, island_to_sac, card.abilities[0])
+        self.assertIn(island_to_sac, self.gs.pile_mgr.graveyards[0])
+
+        opp_land = self.g.battlefield('swamp', owner=1)
+        for my_land in self.gs.card_filter.on_player_board(0).lands().result()[::]:
+            self.gs.pile_mgr.destroy(my_land)
+        print('Total Lands in play', len(self.gs.card_filter.in_play().lands().result()))
+
+        self.g.next_turn(True)
+        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.assertIn(opp_land, self.gs.pile_mgr.graveyards[1])
+        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        self.assertIn(card, self.gs.pile_mgr.graveyards[0])
 
     def test_martyrs_of_korlis(self):
         """As long as MOK is untapped, all damage that would be dealt to you by artifacts is dealt to MOK instead"""
@@ -96,6 +117,14 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertTrue(host.is_tapped)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
         self.assertTrue(any(isinstance(a, PayManaToUntapAction) for a in self.gs.pending_choice.get_actions()))
+
+    def test_part_water(self):
+        """[casting cost XXU] X target creatures gain islandwalk until end of turn."""
+        card = self.g.hand('part-water')
+        c_1 = self.g.battlefield('savannah-lions')
+        c_2 = self.g.battlefield('serendib-efreet')
+        for t in card.abilities[0].target_spec.get_targets(self.gs, card):
+            print(t)
 
     def test_pendelhaven(self):
         """{T}: Add {G}. {T}: Target 1/1 creature gets +1/+2 until end of turn."""

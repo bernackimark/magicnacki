@@ -43,6 +43,15 @@ class JihadSac(Listener):
         if not gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result():
             gs.pile_mgr.destroy(source, allow_regeneration=False)
 
+class ManaVortexSac(Listener):
+    """At each player's upkeep, they sac a land. If no lands on entire battlefield, sac this enchantment."""
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent):
+        if len(gs.card_filter.in_play().lands().result()) == 0:
+            gs.pile_mgr.destroy(source)
+            return
+
 class OldManOfTheSeaPowerCheck(Listener):
     """Gain control of target creature with power <= OMOTS's power for as long as ... t
     arget's power remains <= OMOTS's power."""

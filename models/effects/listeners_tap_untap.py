@@ -71,7 +71,7 @@ class Kudzu(Listener):
             return
         from models.actions.special import Attach
         options = [Attach(s.host.owner_id, gs, s, land) for land in host_owner_lands]
-        gs.pending_choice = gs.action_stack.push(ChoiceAction(options), gs, True)
+        gs.pending_choice = ChoiceAction(options)
 
 
 class Lifeblood(Listener):
