@@ -256,7 +256,7 @@ class GoblinShrinePump(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         basic_lands = gs.card_filter.basic_lands().in_play().result()
-        if source.host is basic_lands and source.host.props.slug == 'mountain':
+        if source.host in basic_lands and source.host.props.slug == 'mountain':
             if event.card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
                 event.mods.append(PTMod(s=source, p_adj=1))
 

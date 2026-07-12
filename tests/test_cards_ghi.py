@@ -94,6 +94,16 @@ class TestCardsGHI(unittest.TestCase):
         self.g.combat(attacker, wall)
         self.assertEqual(26, self.gs.score_mgr.life[0])
 
+    def test_goblin_shrine(self):
+        """As long as host is a basic Mountain, all Goblins get +1/+0. When GS LTB, it deals 1 damage to each Goblin"""
+        card = self.g.hand('goblin-shrine')
+        host = self.g.battlefield('mountain')
+        self.g.cast_and_accept(card, host, card.abilities[0])
+        goblin = self.g.battlefield('monss-goblin-raiders')  # 1/1
+        self.assertEqual(2, goblin.power)
+        self.gs.pile_mgr.destroy(card)
+        self.assertIn(goblin, self.gs.pile_mgr.graveyards[0])
+
     def test_haunting_wind(self):
         """Whenever an artifact becomes tapped or a player activates an artifact's ability
         without {T} in its activation cost, HW deals 1 damage to that artifact's controller."""
