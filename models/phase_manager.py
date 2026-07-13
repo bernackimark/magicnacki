@@ -342,9 +342,8 @@ class EndTurnEffectsPhase(PhaseState):
         # clean up effects
         gs.event_mgr.cleanup_eot()
 
-        for player_cards in gs.all_player_cards:
-            for c in player_cards:
-                c.modifiers.clear_eots()
+        for c in gs.card_filter.result():
+            c.modifiers.clear_eots()
 
         for pool in gs.mana_pools:
             pool.clear_floating()
