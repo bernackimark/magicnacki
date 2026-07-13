@@ -1,5 +1,7 @@
 import unittest
 
+from models.counter_tokens import MINUS_ZERO_ONE
+from models.phase_manager import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
 
@@ -43,6 +45,28 @@ class TestCardsJKL(unittest.TestCase):
         opp_land = self.g.hand('swamp', owner=1)
         self.gs.pile_mgr.move_card(opp_land, Zone.BATTLEFIELD, cause='cast', emit_zone_event=True)
         self.assertEqual(None, self.gs.pending_choice, 'Should not trigger if you own more lands')
+
+    def test_lesser_werewolf(self):
+        """{B}: If LW's power is >= 1, it gets -1/-0 EOT &
+        put a -0/-1 counter on target creature blocking or blocked by LW.
+        Activate only during the declare blockers step."""
+        card = self.g.battlefield('lesser-werewolf')  # 2/4
+        aa = card.activated_abilities[0]
+        blocker = self.g.battlefield('giant-spider', owner=1)  # 2/4
+        self.g.mana('B')
+
+        self.g.next_turn()
+        self.assertFalse(aa.can_activate(self.gs))
+        self.gs.combat_mgr.create_combat(self.gs, card)
+        com = self.gs.combat_mgr.get_combat(card)
+        com.blockers.append(blocker)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS, self.gs)
+        self.g.activate_ability(aa, blocker)
+        self.assertEqual(1, card.power)
+        self.assertEqual(1, blocker.counters.get_count(MINUS_ZERO_ONE))
+
+        self.g.next_turn()
+        self.assertEqual(2, card.power)
 
 
 if __name__ == '__main__':

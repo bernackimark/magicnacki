@@ -172,15 +172,18 @@ class ChaosOrb(Resolver):
         if result <= 4:
             gs.pile_mgr.destroy(t)
 
-class CityOfShadowsAA1(Resolver):
+class CityOfShadowsAddCounter(Resolver):
     """{T}, Exile a creature you control: Put a storage counter on this land"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         source.counters.add_counter(STORAGE)
 
-class CityOfShadowsAA2(Resolver):
+class CityOfShadowsAddMana(Resolver):
     """{T}: Add {C} for each storage counter on this land"""
+    def can_activate(self, gs: GameState, source: GameCard) -> bool:
+        return source.counters.get_count(STORAGE) > 0
+
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        cnt = len(source.counters.get_count(STORAGE))
+        cnt = source.counters.get_count(STORAGE)
         gs.mana_pools[source.owner_id].add_floating('C', cnt)
 
 class Clone(Resolver):

@@ -218,7 +218,7 @@ MAP: dict[str: list[EffSpec]] = {
     'land-equilibrium': [Static(LandEquilibrium())],
     'land-tax': [Triggered(LandTax())],
     'lesser-werewolf': [Activated('B', LesserWerewolf(), T_FUNCS['combating_against'],
-                                  allowed_phases=[Phase.DECLARE_ATTACKERS])],  # at Declare Attackers, won't know how it's combating
+                                  allowed_phases=[Phase.DECLARE_BLOCKERS])],
     'leviathan':
         [Triggered(DoesntUntapAtUntap()),
          # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)

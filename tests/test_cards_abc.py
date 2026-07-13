@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.activate_ability import BeginAbilityActivationAction
 from models.actions.special import SelectXAction, Attach
-from models.counter_tokens import PLUS_ONE_ZERO, PUPA
+from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent
@@ -14,6 +14,15 @@ class TestCardsAtoC(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_animate_wall(self):
+        card = self.g.hand('animate-wall')
+        host = self.g.battlefield('wall-of-brambles')
+
+        self.g.next_turn()
+        self.assertFalse(self.gs.perm_querier.can_attack(host))
+        self.g.cast_and_accept(card, host, card.abilities[1])
+        self.assertTrue(self.gs.perm_querier.can_attack(host))
 
     def test_artifact_possession(self):
         """Whenever enchanted artifact becomes tapped or a player activates an ability of enchanted artifact without {T}
@@ -55,6 +64,44 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertEqual(large_creature.toughness, 1)
         self.assertEqual(small_creature.power, 5)
         self.assertEqual(small_creature.toughness, 1)
+
+    # def test_candelabra_of_tawnos(self):
+    #     """{X}, {T}: Untap X target lands"""
+    #     card = self.g.battlefield('candelabra-of-tawnos')
+    #     aa = card.activated_abilities[0]
+    #     self.g.mana('BGRUW')
+    #     self.assertFalse(aa.eff_spec.target_spec.get_targets(self.gs, card))
+    #
+    #     for land in self.gs.card_filter.in_play().lands().result():
+    #         land.tap()
+    #     self.assertEqual(5, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
+    #
+    #     self.g.mana('BB')
+    #     begin_activation_action = BeginAbilityActivationAction(0, self.gs, aa)
+    #     begin_activation_action.play()
+    #     """ ^ Traceback
+    #     [activate_ability.py] max_x = self.aa.eff_spec.max_x_func(self.gs, self.card) // ...
+    #     [effect_spec_templates.py] return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost)
+    #     [mana.py] raise ValueError(f"X is not in the casting cost")
+    #     """
+
+    def test_city_of_shadows(self):
+        """{T}, Exile a creature you control: Put a storage counter COS.
+        {T}: Add {C} * storage counters on SOC."""
+        card = self.g.battlefield('city-of-shadows')
+        aa2 = card.activated_abilities[1]
+        self.assertFalse(aa2.eff_spec.effect.can_activate(self.gs, card))  # type: ignore
+
+        aa1 = card.activated_abilities[0]
+        creature = self.g.battlefield('savannah-lions')
+        self.g.activate_ability(aa1)
+        self.gs.pending_choice.get_actions()[0].play()  # Sac the creature
+        self.assertEqual(1, card.counters.get_count(STORAGE))
+        self.assertIn(creature, self.g.gy[0])
+
+        self.g.next_turn()
+        self.g.activate_ability(aa2)
+        self.assertEqual(1, self.gs.mana_pools[0].available_mana.get('C'))
 
     def test_clockwork_avian(self):
         """CA enters with four +1/+0 counters. At combat end, if CA attacked or blocked, remove a +1/+0 counter from it.

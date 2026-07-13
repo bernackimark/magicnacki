@@ -30,6 +30,13 @@ class CantBeTargetedByAuras(Listener):
             return
         event.permission = False
 
+class HostCanAttack(Listener):
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if source.host is event.attacker:
+            event.permission = True
+
 class HostCantAttack(Listener):
     listens_to = CanAttackQueryEvent
 

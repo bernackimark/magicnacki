@@ -7,7 +7,7 @@ from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from ..target import TargetSpec
-from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAA1, CityOfShadowsAA2, CocoonCast, Banshee, \
+from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, Berserk, BloodLust, \
     BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
@@ -41,7 +41,8 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
-    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap
+    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
+    HostCanAttack
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathPumpAll, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
@@ -76,7 +77,7 @@ MAP: dict[str, list[EffSpec]] = {
     'angry-mob': [Static(AngryMobPT())],
     'animate-artifact': [Spell(None, T_FUNCS['non_creature_artifacts']), Static(AddCreatureTypePTManaValue())],
     'animate-dead': [Spell(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'])],
-    'animate-wall': [Spell(KWAModEffect('remove', 'Defender'), T_FUNCS['walls'])],
+    'animate-wall': [Static(HostCanAttack()), Spell(None, T_FUNCS['walls'])],
     'ankh-of-mishra': [Triggered(AnkhOfMishra())],
     'anti-magic-aura': [Static(HostCantBeTargetedByAuras()), Spell(RemoveHostAuras(), T_FUNCS['creatures'])],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
@@ -167,7 +168,8 @@ MAP: dict[str, list[EffSpec]] = {
                          Spell(SacAll(T_FUNCS['city_in_a_bottle']))],
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap())],
-    'city-of-shadows': [Activated('T', CityOfShadowsAA1()), Activated('T', CityOfShadowsAA2())],
+    'city-of-shadows': [Activated('T', CityOfShadowsAddCounter(), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])]),
+                        Activated('T', CityOfShadowsAddMana())],
                         # TODO: I have no way of selecting a target to exile in Cost
     'clay-statue': [Activated('2', Regenerate(), T_FUNCS['self'])],
     'cleanse': [Spell(DestroyAll(T_FUNCS['black_creatures']))],
