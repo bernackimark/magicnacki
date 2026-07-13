@@ -60,7 +60,7 @@ class GameState:
 
         self.game_history = GameHistory()  # turn num, p_idx, Action; appended to in engine.play()
 
-        self.card_filter = CardFilter(self)
+        # self.card_filter = CardFilter(self)  # replaced by the @property card_filter due to ChatGPT suggestion
         # only has knowledge of the current game; match info is handled in Engine's MatchManager
         self.is_game_over: bool = False
         self.winner: int | None = None
@@ -77,6 +77,10 @@ class GameState:
         for i in range(self.player_cnt):
             random.shuffle(self.pile_mgr.libraries[i])
             self.pile_mgr.draw(i, 7, print_output=False)
+
+    @property
+    def card_filter(self) -> CardFilter:
+        return CardFilter(self)
 
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))

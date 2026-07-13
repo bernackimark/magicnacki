@@ -19,23 +19,28 @@ class CardFilter:
 
     # --- in what pile, card is located ---
     def in_player_hand(self, p_id: int):
-        self._cards = self._gs.pile_mgr.hands[p_id].cards
+        hand = self._gs.pile_mgr.hands[p_id].cards
+        self._cards = [c for c in self._cards if c in hand]
         return self
 
     def in_play(self):
-        self._cards = [c for b in self._gs.pile_mgr.boards for c in b]
+        board = [c for b in self._gs.pile_mgr.boards for c in b]
+        self._cards = [c for c in self._cards if c in board]
         return self
 
     def on_player_board(self, p_id: int):
-        self._cards = [c for c in self._gs.pile_mgr.boards[p_id]]
+        board = self._gs.pile_mgr.boards[p_id]
+        self._cards = [c for c in self._cards if c in board]
         return self
 
     def in_graveyards(self):
-        self._cards = [c for g in self._gs.pile_mgr.graveyards for c in g]
+        board = self._gs.pile_mgr.graveyards
+        self._cards = [c for c in self._cards if c in board]
         return self
 
     def in_player_graveyard(self, p_id: int):
-        self._cards = [_ for _ in self._gs.pile_mgr.graveyards[p_id]]
+        gy = self._gs.pile_mgr.graveyards[p_id]
+        self._cards = [c for c in self._cards if c in gy]
         return self
 
     # --- by slug ---
@@ -176,25 +181,31 @@ class CardFilter:
 
     # --- Attackers/Blockers ---
     def attackers(self):
-        self._cards = [combat.attacker for combat in self._gs.combat_mgr.combats]
+        attackers = [combat.attacker for combat in self._gs.combat_mgr.combats]
+        self._cards = [c for c in self._cards if c in attackers]
         return self
 
     def blockers(self):
-        self._cards = [b for combat in self._gs.combat_mgr.combats for b in combat.blockers]
+        blockers = [b for combat in self._gs.combat_mgr.combats
+                    for b in combat.blockers]
+        self._cards = [c for c in self._cards if c in blockers]
         return self
 
     def unblocked_attackers(self):
-        self._cards = [com.attacker for com in self._gs.combat_mgr.combats if not com.blockers]
+        attackers = [combat.attacker for combat in self._gs.combat_mgr.combats if not combat.blockers]
+        self._cards = [c for c in self._cards if c in attackers]
         return self
 
     def combatants(self):
-        self._cards = ([combat.attacker for combat in self._gs.combat_mgr.combats] +
-                       [b for combat in self._gs.combat_mgr.combats for b in combat.blockers])
+        combatants = [com.attacker for com in self._gs.combat_mgr.combats] + \
+                     [b for com in self._gs.combat_mgr.combats for b in com.blockers]
+        self._cards = [c for c in self._cards if c in combatants]
         return self
 
     def combating_against(self, c: GameCard):
-        self._cards = [b for com in self._gs.combat_mgr.combats for b in com.blockers if com.attacker is c] + \
-                      [com.attacker for com in self._gs.combat_mgr.combats for b in com.blockers if b is c]
+        opponents = [b for com in self._gs.combat_mgr.combats for b in com.blockers if com.attacker is c] + \
+                    [com.attacker for com in self._gs.combat_mgr.combats for b in com.blockers if b is c]
+        self._cards = [card for card in self._cards if card in opponents]
         return self
 
     # --- is enchanted ---

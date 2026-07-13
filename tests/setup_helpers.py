@@ -133,7 +133,6 @@ class TestGame:
 
     def graveyard(self, slug, owner=0) -> GameCard:
         """Create GameCard, update Zone to Graveyard without emitting"""
-        print('AAA', slug)
         card = self.card(slug, owner)
         self.gs.pile_mgr.move_card(card, Zone.GRAVEYARD, emit_zone_event=False)
         return card
