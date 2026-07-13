@@ -100,8 +100,8 @@ class ActivatedAbility:
 
     def can_activate(self, gs: GameState) -> bool:
         # card-specific restriction
-        if hasattr(self.eff_spec, 'can_activate'):
-            if not self.eff_spec.can_activate(gs, self.source):
+        if hasattr(self.eff_spec.effect, 'can_activate'):
+            if not self.eff_spec.effect.can_activate(gs, self.source):
                 print("B")
                 return False
         if self.eff_spec.allowed_phases and gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
