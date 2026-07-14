@@ -3,7 +3,7 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
-from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.base import DoNothing, Action
 from models.actions.combat import AssignBlocker
 from models.actions.destroy_sac_regen import SacCards

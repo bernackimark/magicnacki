@@ -2,7 +2,7 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence, TYPE_CHECKING
 
-from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction
 from models.effects.base import Activated
 

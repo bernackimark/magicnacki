@@ -6,14 +6,14 @@ from typing import Callable, TYPE_CHECKING
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
-    from models.ability_pipeline import AbilityPipeline
+    from models.actions.ability_pipeline import AbilityPipeline
 
 
 def create_target_text(targets: int | GameCard | AbilityPipeline | tuple | list | None):
     """0 -> ', targeting Player #0' ... [1, c1] -> ', targeting Player #1, Air Elemental'
     (0, 1) -> ', targeting Player #0, Player #1' ... [c1, c2] -> , 'targeting Air Elemental, Savannah Lions'"""
     from models.game_card.game_card import GameCard
-    from models.ability_pipeline import AbilityPipeline
+    from models.actions.ability_pipeline import AbilityPipeline
     if not targets:
         return ''
     if isinstance(targets, int):

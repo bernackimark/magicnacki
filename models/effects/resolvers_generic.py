@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
-from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.draw_discard import DiscardCards
 from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
 from models.choice_actions_all import ChoiceAction

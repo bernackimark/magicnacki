@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.ability_pipeline import AbilityPipeline
+    from models.actions.ability_pipeline import AbilityPipeline
     from models.actions.cast import CastPermanentAction
 
 from models.actions.base import Action
