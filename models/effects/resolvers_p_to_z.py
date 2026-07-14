@@ -325,18 +325,15 @@ class Timetwister(Resolver):
     """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
     (Timetwister to its owner's graveyard.)"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        time_twister = next(c for c in gs.pile_mgr.graveyards[s.owner_id] if c is s)
         for p_id in (0, 1):
-            hand_cards = gs.pile_mgr.hands[p_id].cards[:]
-            gs.pile_mgr.hands[p_id].cards.clear()
-            graveyard_cards = gs.pile_mgr.graveyards[p_id][:]
-            gs.pile_mgr.graveyards[p_id].clear()
-            gs.pile_mgr.libraries[p_id].extend(hand_cards)
-            gs.pile_mgr.libraries[p_id].extend(graveyard_cards)
+            for c in gs.pile_mgr.hands[p_id].cards:
+                gs.pile_mgr.move_card(c, Zone.LIBRARY, emit_zone_event=False)
+            for c in gs.pile_mgr.graveyards[p_id]:
+                gs.pile_mgr.move_card(c, Zone.LIBRARY, emit_zone_event=False)
             random.shuffle(gs.pile_mgr.libraries[p_id])
             gs.pile_mgr.draw(p_id, 7)
-            if p_id == s.owner_id:
-                gs.pile_mgr.graveyards[p_id].append(time_twister)
+            # if p_id == s.owner_id:
+            #     gs.pile_mgr.graveyards[p_id].append(time_twister)
 
 class TowerOfCoireall(Resolver):
     """{T}: Target creature can't be blocked by Walls this turn"""

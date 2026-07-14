@@ -76,16 +76,17 @@ class TestCardsTUV(unittest.TestCase):
         """Each player shuffles their hand & graveyard into their library, then draws seven cards.
         (Then put Timetwister into its owner's graveyard.)"""
         # this works 1/2 the time
+        self.g.gy[0].clear()
         self.g.graveyard('scryb-sprites')
         self.g.graveyard('serra-angel')
+        hand_snapshot = self.gs.pile_mgr.hands[0].cards[:]
         self.g.hand('island')
         self.g.hand('island')
         card = self.g.hand('timetwister')
-        self.g.gy[0].clear()
-        self.gs.pile_mgr.move_card(card, Zone.GRAVEYARD, emit_zone_event=False)
-        card.abilities[0].effect.resolve(self.gs, card, None)  # type: ignore
+        self.g.cast_and_accept(card, None, card.abilities[0])
         self.assertTrue(7, len(self.gs.pile_mgr.hands[0].cards))
         self.assertIn(card, self.g.gy[0])
+        self.assertNotEqual(hand_snapshot, self.gs.pile_mgr.hands[0].cards)
 
     def test_unstable_mutation(self):
         """Host gets +3/+3. At host's upkeep, put a -1/-1 counter on host."""
