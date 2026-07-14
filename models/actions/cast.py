@@ -24,6 +24,9 @@ class CastPermanentAction(Action):
         self.gs.pile_mgr.move_card(self.source, Zone.BATTLEFIELD, cause='cast')
         self.gs.event_mgr.emit(CastResolvedEvent(self.source, self.source.orig_owner_id, None), self.gs)
 
+        if self.source.is_land:
+            self.gs.turn_mgr.has_played_land = True
+
         from models.effects.base import Listener
         for eff_spec in self.source.abilities:
             if isinstance(eff_spec.effect, Listener):

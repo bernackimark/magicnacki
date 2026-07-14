@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal, TYPE_CHECKING, Union
 
+from models.actions.cast import CastPermanentAction
 from models.effects.base import Resolver
 from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent
 from models.zone import Zone
@@ -13,6 +14,21 @@ if TYPE_CHECKING:
 
 @dataclass
 class AbilityPipeline:
+    """Class the builds & shepherds an ability from the hand or activation.
+    1) can_begin() determines whether an ability can be made
+    2) advance() handles the selections for: X, mode, targets, and extra costs
+    3) finish() pays costs &:
+            if casting a land:
+                land_played = True
+                creates & plays CastPermanent (move card, emit Cast, reg listeners, emits StateBased).
+                You are done; do not go to step 4.
+            if not casting a land:
+                creates an AbilityAction, pushes to stack, raises StateBasedEvent ... go to #4
+    4) resolve_ability():
+            if a resolver: executes effect.resolve()
+            if an activated ability: activations += 1, emit ActivatedAbility
+            if card in hand: move to battlfield/gy, emit CastResolved, attach aura, reg listeners, emit StateBased
+            """
     p_id: int
     gs: GameState
     source: GameCard
@@ -56,7 +72,7 @@ class AbilityPipeline:
             Each branch either:
                 1. Creates a pending ChoiceAction and returns, or
                 2. Continues automatically if no user input is required."""
-
+        print('Entering .advance()')
         # unique to auras who use the pipeline to find a target & attach but only have listeners & no resolver
         if self.eff_spec.effect is None:
             self.finish()
@@ -85,6 +101,7 @@ class AbilityPipeline:
 
     def finish(self):
         """Pay costs; create the AbilityAction & push it onto the stack"""
+        print('I am finishing')
         from models.actions.ability_pipeline import AbilityAction
         if self.origin == 'activated' and 'T' in self.eff_spec.cost:
             self.source.tap()
@@ -95,16 +112,15 @@ class AbilityPipeline:
         for extra_cost in (self.eff_spec.extra_costs or []):
             extra_cost.pay(self.gs, self.source)
 
-        action = AbilityAction(self.p_id, self.gs, self)
-        if 'Land' in self.source.card_types:
-            self.gs.turn_mgr.has_played_land = True
+        if self.source.is_land and self.source.zone == Zone.HAND:
+            action = CastPermanentAction(self.p_id, self.gs, self.source)
             action.play()
         else:
+            action = AbilityAction(self.p_id, self.gs, self)
             self.gs.action_stack.push(action, self.gs)
-        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+            self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 
     def resolve_ability(self):
-
         if isinstance(self.eff_spec.effect, Resolver):
             self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
 
