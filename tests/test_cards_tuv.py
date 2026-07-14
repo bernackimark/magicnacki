@@ -60,16 +60,17 @@ class TestCardsTUV(unittest.TestCase):
         If you would begin your turn while this artifact is tapped, you may: skip that turn & untap this artifact.
         {T}: Take an extra turn after this one."""
         self.g.mana('UUUUUUUUUU')
-        tv = self.g.battlefield('time-vault')
-        self.assertTrue(tv.is_tapped)
+        card = self.g.battlefield('time-vault')
+        self.g.resolve_spell(card, card)
+        self.assertTrue(card.is_tapped)
 
         self.g.next_turn()
         skip_turn_and_untap_tv = self.gs.pending_choice.options[0]
         skip_turn_and_untap_tv.play()
-        self.g.activate_ability(tv.activated_abilities[0])
+        self.g.activate_ability(card.activated_abilities[0])
         PassTheTurn(0, self.gs).play()
         self.assertEqual(0, self.gs.turn_mgr.player_turn_idx)
-        self.assertTrue(tv.is_tapped)
+        self.assertTrue(card.is_tapped)
 
     def test_timetwister(self):
         """Each player shuffles their hand & graveyard into their library, then draws seven cards.

@@ -2,9 +2,10 @@ from __future__ import annotations
 from dotenv import load_dotenv
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from models.ability_pipeline import AbilityPipeline
+from models.actions.cast import CastPermanentAction
 from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
@@ -104,22 +105,25 @@ class TestGame:
         self.gs.pile_mgr.libraries[player_id].append(game_card)
         return game_card
 
-    def battlefield(self, *slugs, cnt=1, owner=0, register_listeners=True) -> GameCard | list[GameCard]:
-        """From any amount of positional argument slugs, create GameCard, update Zone to Battlefield without emitting;
-        if one slug was provided, return the GameCard; if multiple slugs, return a list of slugs"""
+    def battlefield(self, *slugs, cnt=1, owner=0, pay_mana=False) -> GameCard | list[GameCard]:
+        """Warning: if the card has a spell action, please also use resolve_spell();
+        From any amount of positional argument slugs, creates GameCard(s);
+        Imitates CastPermanentAction, except paying mana is optional & no emissions
+        Returns GameCard or list[GameCard]"""
         cards = []
         for slug in slugs:
             for _ in range(cnt):
                 card = self.card(slug, owner)
-                self.gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, emit_zone_event=False)
-                for s in card.abilities:
-                    if s.activation_type == 'spell':
-                        if s.effect:
-                            s.effect.resolve(self.gs, card, card)  # type: ignore
-                if register_listeners:
-                    for eff_spec in card.abilities:
-                        if isinstance(eff_spec.effect, Listener):
-                            self.gs.event_mgr.register(eff_spec.effect, card)
+                self.gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, cause='cast', emit_zone_event=False)
+                if pay_mana:
+                    self.gs.mana_pools[owner].pay(card.casting_cost)
+                if card.is_land:
+                    self.gs.turn_mgr.has_played_land = True
+                from models.effects.base import Listener
+                for eff_spec in card.abilities:
+                    if isinstance(eff_spec.effect, Listener):
+                        self.gs.event_mgr.register(eff_spec.effect, card)
+                        print(f"Registered listener for {card.props.name}: {eff_spec.effect}")
                 if len(slugs) == 1 and cnt == 1:
                     return card
                 cards.append(card)
@@ -167,8 +171,11 @@ class TestGame:
 
     def cast_and_accept(self, card: GameCard, target: GameCard | int | None = None,
                         eff_spec: EffSpec | None = None, owner: int = 0, add_lots_of_mana: bool = True):
+        if card.is_land:
+            CastPermanentAction(owner, self.gs, card).play()
+            return
         # add a boatload of mana
-        if add_lots_of_mana:
+        if add_lots_of_mana and card.casting_cost:
             casting_colors = {color for color in card.casting_cost if color in {'B', 'G', 'R', 'U', 'W'}}
             if casting_colors:
                 for color in casting_colors:
@@ -204,6 +211,11 @@ class TestGame:
             return
         self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS, self.gs)
         PassTheTurn(self.gs.turn_mgr.player_turn_idx, self.gs).play()
+
+    def resolve_spell(self, card: GameCard, target: Any = None, spell: EffSpec | None = None):
+        if not spell:
+            spell = next(eff_spec for eff_spec in card.abilities if eff_spec.activation_type == 'spell')
+            spell.effect.resolve(self.gs, card, target)  # type: ignore
 
     @property
     def gy(self) -> list[list[GameCard | None]]:

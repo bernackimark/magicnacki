@@ -1,7 +1,19 @@
 import unittest
 
 from models.mana import ManaCost
+from tests.setup_helpers import TestGame
 
+
+class TestMana(unittest.TestCase):
+    def setUp(self):
+        self.g = TestGame()
+        self.gs = self.g.gs
+
+    def test_mana_taps_after_use(self):
+        plains = self.g.battlefield('plains')
+        self.g.battlefield('savannah-lions', pay_mana=True)
+        self.assertTrue(plains.is_tapped)
+        self.assertEqual(0, sum(self.gs.mana_pools[0].available_mana.values()))
 
 class ManaCostMath(unittest.TestCase):
     def test_adding_two_costs(self):

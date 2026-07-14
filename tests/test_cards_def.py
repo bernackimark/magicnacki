@@ -113,7 +113,8 @@ class TestCardsDEF(unittest.TestCase):
 
     def test_field_of_dreams(self):
         """Players play with the top card of their libraries revealed"""
-        self.g.battlefield('field-of-dreams')
+        card = self.g.battlefield('field-of-dreams')
+        self.g.resolve_spell(card)
         top_card = self.gs.pile_mgr.libraries[0][0]
         self.assertTrue(top_card.is_face_up)
         self.gs.pile_mgr.draw(0)

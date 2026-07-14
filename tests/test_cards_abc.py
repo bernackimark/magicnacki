@@ -108,6 +108,7 @@ class TestCardsAtoC(unittest.TestCase):
         """CA enters with four +1/+0 counters. At combat end, if CA attacked or blocked, remove a +1/+0 counter from it.
         {X}, {T}: Put up to X +1/+0 counters on CA. Can't exceed 4 such counters. Activate only during your upkeep."""
         card = self.g.battlefield('clockwork-avian')
+        self.g.resolve_spell(card, card)
         aa = card.activated_abilities[0]
         self.assertEqual(4, card.counters.get_count(PLUS_ONE_ZERO))
         self.g.mana('UUUUUUUU')
@@ -128,6 +129,7 @@ class TestCardsAtoC(unittest.TestCase):
         """CA enters with 7 +1/+0 counters. At combat end, if CA attacked or blocked, remove a +1/+0 counter from it.
         {X}, {T}: Put up to X +1/+0 counters on CB. Can't exceed 7 such counters. Activate only during your upkeep."""
         card = self.g.battlefield('clockwork-beast')
+        self.g.resolve_spell(card, card)
         aa = card.activated_abilities[0]
         self.assertEqual(7, card.counters.get_count(PLUS_ONE_ZERO))
         self.g.mana('UUUUUUUU')
