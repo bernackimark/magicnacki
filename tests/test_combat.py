@@ -66,6 +66,20 @@ class TestCombat(unittest.TestCase):
         creature = self.g.card('grizzly-bears')
         self.assertIsNone(self.gs.combat_mgr.get_combat(creature))
 
+    def test_first_strike_attacker(self):
+        attacker = self.g.battlefield('tundra-wolves')
+        blocker = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+        self.g.combat(attacker, blocker)
+        self.assertIn(blocker, self.g.gy[1])
+        self.assertNotIn(attacker, self.g.gy[0])
+
+    def test_first_strike_blocker(self):
+        attacker = self.g.battlefield('merfolk-of-the-pearl-trident')
+        blocker = self.g.battlefield('tundra-wolves', owner=1)
+        self.g.combat(attacker, blocker)
+        self.assertIn(attacker, self.g.gy[0])
+        self.assertNotIn(blocker, self.g.gy[1])
+
     def test_first_strike_only_deals_damage_once(self):
         attacker = self.g.battlefield('white-knight')  # 2/2 First Strike
         blocker = self.g.battlefield('phantom-monster', owner=1)  # 3/3
