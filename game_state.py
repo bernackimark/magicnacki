@@ -169,6 +169,7 @@ class GameState:
         actions: list[AbilityPipeline | CastPermanentAction | None] = []
 
         for c in self.pile_mgr.hands[self.action_on_idx].cards:
+            print(c)
             if not self.perm_querier.can_cast(c, c.owner_id):
                 continue
 
@@ -182,10 +183,9 @@ class GameState:
                 if spell_eff.allowed_p_id_turn is not None:
                     if spell_eff.allowed_p_id_turn != self.turn_mgr.player_turn_idx:
                         continue
-                if spell_eff.allowed_phases is not None:
+                if spell_eff.allowed_phases:
                     if self.phase_mgr.phase not in spell_eff.allowed_phases:
                         continue
-
                 pipeline = AbilityPipeline(c.owner_id, self, c, spell_eff)
                 print('XXX', c, spell_eff)
                 if pipeline.can_begin():
