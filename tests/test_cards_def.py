@@ -1,6 +1,6 @@
 import unittest
 
-from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.mana import PayMana
 from models.actions.special import Attach
 from models.counter_tokens import HUNGER

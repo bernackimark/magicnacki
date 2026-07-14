@@ -1,7 +1,7 @@
 import unittest
 
-from models.ability_pipeline import AbilityPipeline
-from models.actions.ability_pipeline import SelectXAction2
+from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.special import Attach
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
 from models.effects.listeners_misc import ArtifactPossessionActivation

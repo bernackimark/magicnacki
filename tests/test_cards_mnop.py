@@ -1,6 +1,6 @@
 import unittest
 
-from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction

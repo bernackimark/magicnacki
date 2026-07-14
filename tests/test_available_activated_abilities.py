@@ -1,7 +1,5 @@
 import unittest
 
-from models.ability_pipeline import AbilityPipeline
-from models.actions.stack_accept_counter import AcceptAction
 from tests.setup_helpers import TestGame
 
 

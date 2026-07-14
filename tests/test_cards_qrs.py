@@ -1,6 +1,6 @@
 import unittest
 
-from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
 from models.actions.tap_untap import Untap
@@ -9,7 +9,6 @@ from models.effects.listeners_damage import ReverseDamageEOT
 from models.effects.resolvers_generic import Destroy, RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
-from models.modifiers import OwnershipMod
 from models.phase_manager import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame

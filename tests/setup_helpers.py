@@ -4,13 +4,12 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction
 from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
-from models.choice_actions_all import TargetChoice2
-from models.effects.base import Listener, ActivatedAbility, EffSpec
+from models.effects.base import ActivatedAbility, EffSpec
 from models.phase_manager import Phase
 from models.utils import flip
 
@@ -183,7 +182,6 @@ class TestGame:
             else:
                 self.mana('U' * 10, owner=owner)
 
-        from models.effects.base import Resolver
         pipeline = AbilityPipeline(owner, self.gs, card, eff_spec)
         if target is not None:
             pipeline.targets.append(target)

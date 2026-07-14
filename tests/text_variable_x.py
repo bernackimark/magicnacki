@@ -1,7 +1,7 @@
 import unittest
 
-from models.ability_pipeline import AbilityPipeline
-from models.actions.ability_pipeline import SelectXAction2
+from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.stack_accept_counter import AcceptAction
 from tests.setup_helpers import TestGame
 
