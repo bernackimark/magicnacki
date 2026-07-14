@@ -1,6 +1,6 @@
 import unittest
 
-from models.actions.cast import CastToTargetAddToStack
+from models.ability_pipeline import AbilityPipeline
 from models.actions.mana import PayMana
 from models.actions.special import Attach
 from models.counter_tokens import HUNGER
@@ -16,7 +16,7 @@ class TestCardsDEF(unittest.TestCase):
 
     def test_demonic_torment(self):
         """Host can't attack. Prevent all combat damage that would be dealt by host."""
-        card = self.g.battlefield('demonic-torment')
+        card = self.g.hand('demonic-torment')
         host = self.g.battlefield('grizzly-bears')
         attacker = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
         self.g.cast_and_accept(card, host, card.abilities[0])
@@ -103,8 +103,8 @@ class TestCardsDEF(unittest.TestCase):
         """Cast this spell only during an opponent's upkeep. Creatures can't attack this turn."""
         card = self.g.hand('festival')
         self.g.mana('WWWW')
-        self.assertNotIn(card, [a.card for a in self.gs.available_actions_from_hand()
-                                if isinstance(a, CastToTargetAddToStack)])
+        self.assertNotIn(card, [a.source for a in self.gs.available_actions_from_hand()
+                                if isinstance(a, AbilityPipeline)])
         attacker = self.g.battlefield('grizzly-bears', owner=1)
         self.g.next_turn(True)
 

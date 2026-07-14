@@ -2,6 +2,8 @@ from __future__ import annotations
 import random
 from typing import Any, Sequence, TYPE_CHECKING
 
+from models.ability_pipeline import AbilityPipeline
+from models.actions.cast import CastPermanentAction
 from models.effects.base import Activated
 
 if TYPE_CHECKING:
@@ -10,9 +12,7 @@ if TYPE_CHECKING:
 from models.action_stack import ActionStack
 from models.actions.stack_accept_counter import AcceptAction
 from models.event_manager import EventManager
-from models.actions.activate_ability import ActivateAbility, BeginAbilityActivationAction
 from models.actions.base import Action
-from models.actions.cast import CastToBoard, BeginSpellCastAction
 from models.choice_actions_all import ChoiceAction
 from models.combat import CombatManager
 from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
@@ -149,39 +149,14 @@ class GameState:
         self.event_mgr.emit(event, self)
         return event.cost
 
-    def get_available_activated_abilities(self, c: GameCard) -> list[ActivateAbility]:
-        actions: list[ActivateAbility | BeginAbilityActivationAction] = []
+    def get_available_activated_abilities(self, c: GameCard) -> list[AbilityPipeline | None]:
+        return [AbilityPipeline(self.action_on_idx, self, c, aa.eff_spec)
+                for aa in c.activated_abilities if aa.can_activate(self)]
 
-        for aa in c.activated_abilities:
-            if not aa.can_activate(self):
-                continue
-
-            # Determine potential targets
-            target_spec = aa.eff_spec.target_spec
-
-            # If the ability takes no targets, create the ActivateAbility action
-            if not target_spec:
-                actions.append(ActivateAbility(self.action_on_idx, self, aa, target=None))
-                continue
-
-            # TODO: THIS IF CHAIN ARE WRONG
-            #  EX: mana battery has no target_spec but does have a max_x_func and must enter BeginAbilityActivation ...
-
-            # If the ability requires multiple targets or X needs to be declared, being that flow
-            if target_spec.min_cnt > 1 or aa.eff_spec.max_x_func:
-                actions.append(BeginAbilityActivationAction(self.action_on_idx, self, aa))
-                continue
-
-            # For each single legal target, create an ActivateAbility action
-            for t in target_spec.get_targets(self, c):
-                actions.append(ActivateAbility(self.action_on_idx, self, aa, target=t))
-
-        return actions
-
-    def add_activated_abilities_from_board(self) -> list[ActivateAbility] | list[None]:
+    def add_activated_abilities_from_board(self) -> list[AbilityPipeline | None]:
         return [a for c in self.pile_mgr.boards[self.action_on_idx] for a in self.get_available_activated_abilities(c)]
 
-    def available_actions_from_hand(self) -> list[CastToBoard | BeginSpellCastAction]:
+    def available_actions_from_hand(self) -> list[AbilityPipeline | CastPermanentAction | None]:
         """For each card in hand for the in-scope player ...
             -   If not can_cast(), skip
             -   If permanent, cast to board directly w/o stack (speed of testing; will need to amend to just lands)
@@ -191,42 +166,34 @@ class GameState:
                 -   If there are no or fewer targets than the effect requires, skip
                 -   Else add BeginSpellCastAction as a valid action
             Return list of legal Actions"""
-        actions: list[CastToBoard | BeginSpellCastAction] = []
-        p_id = self.action_on_idx
+        actions: list[AbilityPipeline | CastPermanentAction | None] = []
 
         for c in self.pile_mgr.hands[self.action_on_idx].cards:
-            if not self.perm_querier.can_cast(c, p_id):
+            if not self.perm_querier.can_cast(c, c.owner_id):
                 continue
 
-            # Short-cutting these directly to the board for testing expedience
-            if c.props.is_permanent and 'Aura' not in c.card_sub_types:
-                actions.append(CastToBoard(p_id, self, c))
-                continue
-
-            # Gather abilities tied to casting
             spell_effect_specs = [e for e in c.abilities if e.activation_type == 'spell']
 
             if not spell_effect_specs:
-                actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=None))
+                actions.append(CastPermanentAction(c.owner_id, self, c))
                 continue
 
-            # --- For each spell effect spec ---
             for spell_eff in spell_effect_specs:
-                if spell_eff.target_spec and spell_eff.target_spec.filter_func:
-                    if not spell_eff.target_spec.get_targets(self, c):
+                if spell_eff.allowed_p_id_turn is not None:
+                    if spell_eff.allowed_p_id_turn != self.turn_mgr.player_turn_idx:
+                        continue
+                if spell_eff.allowed_phases is not None:
+                    if self.phase_mgr.phase not in spell_eff.allowed_phases:
                         continue
 
-                if 'X' in c.casting_cost:
-                    min_x = spell_eff.min_x_func(self, c)
-                    max_x = spell_eff.max_x_func(self, c) // c.casting_cost.count('X')  # for double X
-                    if max_x < min_x:
-                        continue
+                pipeline = AbilityPipeline(c.owner_id, self, c, spell_eff)
+                print('XXX', c, spell_eff)
+                if pipeline.can_begin():
+                    actions.append(pipeline)
 
-                actions.append(BeginSpellCastAction(p_id, self, c, eff_spec=spell_eff))
+        return actions
 
-        return list({repr(x): x for x in actions}.values())  # Deduplicate by repr
-
-    def get_available_actions(self, p_id: int) -> list[Action] | None:
+    def get_available_actions(self, p_id: int) -> list[AbilityPipeline | Action] | None:
         """This method is called by the engine; in order, check for:
             -   Pending Choice (selections that are forced & are not placed on stack)
             -   Check global state-based actions (game over, creatures w 0 weakness die, etc.)
@@ -244,7 +211,7 @@ class GameState:
             return self.pending_choice.get_actions()
 
         if self.is_game_over:
-            print('YYY')
+            print('The game is over')
             if not self.pending_choice:
                 from models.game_over import GameOverChoice
                 self.pending_choice = GameOverChoice(p_id, self)
@@ -253,21 +220,18 @@ class GameState:
         # if there is something on the stack, respond & resolve, don't seek out other available actions
         if len(self.action_stack):
             print('ABC123 I have stack !!!')
-            available_actions: list[Action] = []
+
             hand = self.pile_mgr.hands[p_id]
             if isinstance(self.action_stack.last_action, ChoiceAction):
                 return self.action_stack.last_action.get_actions()
 
-            available_actions.append(AcceptAction(p_id, self))
-
+            available_actions: list[AbilityPipeline | Action] = [AcceptAction(p_id, self)]
             available_actions.extend(self.add_activated_abilities_from_board())
 
             # Check instants & sorceries
             allowed_cards = hand.sorceries if p_id == self.turn_mgr.player_turn_idx else hand.sorceries + hand.instants
             for a in self.available_actions_from_hand():
-                print('CCC', a)
-                if a.card in allowed_cards:
-                    print('DDD')
+                if a.source in allowed_cards:
                     available_actions.append(a)
 
             return available_actions

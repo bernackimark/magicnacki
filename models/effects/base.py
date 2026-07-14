@@ -40,12 +40,13 @@ class Listener(Effect):
         raise NotImplementedError()
 
 
+# TODO: I thought this dataclass was supposed to be frozen?
 @dataclass
 class EffSpec:
     """Effect Specification; mapping slugs to Effects uses EffSpec"""
     activation_type: Literal['activated', 'spell', 'static', 'triggered']
     cost: str
-    effect: Effect
+    effect: Effect | None  # this can be None if an aura needs EffSpec to create target_spec but has no resolver
     target_spec: Union[Callable, TargetSpec, None] = None
     extra_costs: list[Cost | None] = None
     allowed_phases: list[Phase | None] = field(default_factory=list)

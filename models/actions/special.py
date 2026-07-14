@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
-from models.actions.cast import CastToTargetAddToStack
 from models.counter_tokens import CounterType, WIND
 from models.modifiers import OwnershipMod
 from models.phase_manager import Phase
@@ -12,7 +11,6 @@ from models.utils import flip
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
-    from models.choice_actions_all import XValueChoice
 
 
 from models.actions.base import Action
@@ -160,38 +158,6 @@ class SacTwoIslands(Action):
         for island in your_islands[:2]:
             self.gs.pile_mgr.destroy(island)
         self.gs.action_stack.pop()
-
-class SelectXAction(Action):
-    def __init__(self, p_id: int, gs: GameState, choice: XValueChoice, x_value: int):
-        super().__init__(p_id, gs)
-        self.choice = choice
-        self.x_value = x_value
-
-    def __repr__(self):
-        record = self.gs.game_history.last_action
-        return f'{record}, X={self.x_value}'
-
-    def play(self):
-        choice = self.choice
-        source = choice.source
-
-        source.extras['x'] = self.x_value
-
-        # After selecting X, check if the spell also has targets
-        if choice.eff_spec.target_spec:
-            from models.choice_actions_all import MultiTargetChoice
-            choice.gs.pending_choice = MultiTargetChoice(choice.player_idx, choice.gs, choice.source, choice.eff_spec,
-                                                         x_value_for_variable_cast=self.x_value)
-        else:
-            # No targets → spell goes straight to stack
-            if choice.eff_spec.activation_type == 'activated':
-                from models.actions.activate_ability import ActivateAbility
-                next_action = ActivateAbility(choice.player_idx, choice.gs, choice.aa, target=None)
-            else:
-                next_action = CastToTargetAddToStack(choice.player_idx, choice.gs, choice.source,
-                                                     target=None, eff_spec=choice.eff_spec)
-            self.gs.action_stack.push(next_action, self.gs)
-            choice.gs.pending_choice = None
 
 class SkipDrawPhaseGainLife(Action):
     def __init__(self, p_id: int, gs: GameState, amt: int):

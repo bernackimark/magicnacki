@@ -62,8 +62,11 @@ class GoblinShrineOnLeave(Listener):
     listens_to = ZoneChangeEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        if event.from_zone != Zone.BATTLEFIELD or event.card.props.slug != 'goblin-shrine':
+        print('AAA')
+        if event.card is not source or event.from_zone != Zone.BATTLEFIELD:
+            print('ABC', event.card, source, event.from_zone)
             return
+        print('BBB')
         for goblin in gs.card_filter.in_play().by_sub_type('Goblin').creatures().result():
             gs.apply_damage(event.card, 1, goblin)
 

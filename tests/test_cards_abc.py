@@ -1,7 +1,8 @@
 import unittest
 
-from models.actions.activate_ability import BeginAbilityActivationAction
-from models.actions.special import SelectXAction, Attach
+from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import SelectXAction2
+from models.actions.special import Attach
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
@@ -77,9 +78,9 @@ class TestCardsAtoC(unittest.TestCase):
     #     self.assertEqual(5, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
     #
     #     self.g.mana('BB')
-    #     begin_activation_action = BeginAbilityActivationAction(0, self.gs, aa)
-    #     begin_activation_action.play()
-    #     """ ^ Traceback
+    #     pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+    #     pipeline.advance()
+    #     """ ^ Traceback - NOTE: this traceback is from the previous ability pipeline model
     #     [activate_ability.py] max_x = self.aa.eff_spec.max_x_func(self.gs, self.card) // ...
     #     [effect_spec_templates.py] return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost)
     #     [mana.py] raise ValueError(f"X is not in the casting cost")
@@ -94,7 +95,7 @@ class TestCardsAtoC(unittest.TestCase):
 
         aa1 = card.activated_abilities[0]
         creature = self.g.battlefield('savannah-lions')
-        self.g.activate_ability(aa1)
+        self.g.activate_ability(aa1)  # TODO: this fails, because gs.pending_choice is implemented by
         self.gs.pending_choice.get_actions()[0].play()  # Sac the creature
         self.assertEqual(1, card.counters.get_count(STORAGE))
         self.assertIn(creature, self.g.gy[0])
@@ -118,8 +119,9 @@ class TestCardsAtoC(unittest.TestCase):
             self.assertEqual(4 - i, card.counters.get_count(PLUS_ONE_ZERO))
 
         self.g.next_turn()
-        BeginAbilityActivationAction(0, self.gs, aa).play()
-        x_options_cnt = len([a for a in self.gs.pending_choice.get_actions() if isinstance(a, SelectXAction)])
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        pipeline.advance()
+        x_options_cnt = len([a for a in self.gs.pending_choice.get_actions() if isinstance(a, SelectXAction2)])
         self.assertEqual(2, x_options_cnt, "Should only be able to activate for X=1 or X=2, due to counter cap of 4")
 
     def test_clockwork_beast(self):
@@ -137,8 +139,9 @@ class TestCardsAtoC(unittest.TestCase):
             self.assertEqual(7 - i, card.counters.get_count(PLUS_ONE_ZERO))
 
         self.g.next_turn()
-        BeginAbilityActivationAction(0, self.gs, aa).play()
-        x_options_cnt = len([a for a in self.gs.pending_choice.get_actions() if isinstance(a, SelectXAction)])
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        pipeline.advance()
+        x_options_cnt = len([a for a in self.gs.pending_choice.get_actions() if isinstance(a, SelectXAction2)])
         self.assertEqual(3, x_options_cnt, "Should only be able to activate for X=1, 2, or 3, due to counter cap of 7")
 
     def test_cocoon(self):

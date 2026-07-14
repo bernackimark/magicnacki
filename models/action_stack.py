@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 from models.choice_actions_all import ChoiceAction
 
 if TYPE_CHECKING:
-    from models.actions.cast import CastToTargetAddToStack
     from game_state import GameState
+    from models.ability_pipeline import AbilityPipeline
     from models.actions.base import Action
 
 from dataclasses import dataclass, field
@@ -41,9 +41,8 @@ class ActionStack:
         return self._actions[-1]
 
     @property
-    def spells(self) -> list[CastToTargetAddToStack | None]:
-        from models.actions.cast import CastToTargetAddToStack
-        return [a for a in self.actions if isinstance(a, CastToTargetAddToStack)]
+    def spells(self) -> list[AbilityPipeline | None]:
+        return [a for a in self.actions if isinstance(a, AbilityPipeline) and a.origin == 'spell']
 
     def push(self, action: Action, gs: GameState, flip_action_on_opponent: bool = True) -> None:
         self._actions.append(action)

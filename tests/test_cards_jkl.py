@@ -75,6 +75,10 @@ class TestCardsJKL(unittest.TestCase):
         aa_add_mana = card.activated_abilities[0]
         aa_draw_card = card.activated_abilities[1]
 
+        # TODO: this is failing; look at AbilityPipeline.finish()
+        #  only a Land that's cast from the hand is subject to bypassing the stack
+        #  the current code executes .play()
+        #  it's a hot mess, needs re-configure
         self.g.activate_ability(aa_add_mana, 0)
         self.assertEqual(1, self.gs.mana_pools[0].available_mana.get('C'))
 

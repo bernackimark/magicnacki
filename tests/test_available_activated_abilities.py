@@ -1,6 +1,7 @@
 import unittest
 
-from models.actions.activate_ability import ActivateAbility
+from models.ability_pipeline import AbilityPipeline
+from models.actions.stack_accept_counter import AcceptAction
 from tests.setup_helpers import TestGame
 
 
@@ -13,7 +14,7 @@ class TestAvailableActionsFromHand(unittest.TestCase):
         card = self.g.card('aladdins-ring')
         self.g.battlefield('island', cnt=8)
         aa_cnt = len(self.gs.get_available_activated_abilities(card))
-        self.assertEqual(aa_cnt, 2)  # aladdins-ring should have 2 distinct targets (player #0 & player #1)
+        self.assertEqual(1, aa_cnt)
 
     def test_cannot_activate_with_insufficient_mana(self):
         card = self.g.battlefield('aladdins-ring')  # {1}: Deal 4 damage to any player
@@ -25,10 +26,9 @@ class TestAvailableActionsFromHand(unittest.TestCase):
         self.g.battlefield('mountain', cnt=4)
         aa = card.activated_abilities[0]
         aaa_cnt = len(self.gs.get_available_activated_abilities(card))
-        self.assertEqual(aaa_cnt, 1)
-        ActivateAbility(0, self.gs, aa, card).play()
-        aaa_cnt = len(self.gs.get_available_activated_abilities(card))
-        self.assertEqual(aaa_cnt, 0)
+        self.assertEqual(1, aaa_cnt)
+        self.g.activate_ability(aa, card)
+        self.assertEqual(0, len(self.gs.get_available_activated_abilities(card)))
 
 
 if __name__ == '__main__':

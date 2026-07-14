@@ -1,11 +1,12 @@
+from __future__ import annotations
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from models.actions.activate_ability import ActivateAbility
+if TYPE_CHECKING:
+    from models.ability_pipeline import AbilityPipeline
+    from models.actions.cast import CastPermanentAction
+
 from models.actions.base import Action
-from models.actions.cast import CastToTargetAddToStack
-from models.events_all import CastResolvedEvent
-from models.zone import Zone
-from models.utils import flip
 
 
 @dataclass
@@ -14,65 +15,12 @@ class AcceptAction(Action):
         return f"Accept {self.gs.action_stack.last_action}"
 
     def play(self) -> None:
-        last_action: CastToTargetAddToStack | ActivateAbility = self.gs.action_stack.last_action
-        target = last_action.target if hasattr(last_action, 'target') else None
+        last_action: CastPermanentAction | AbilityPipeline = self.gs.action_stack.last_action
+        if last_action is None:
+            raise RuntimeError("Nothing on the stack.")
 
-        if isinstance(last_action, ActivateAbility):
-            if hasattr(last_action.spec.effect, 'resolve'):
-                if isinstance(target, list):
-                    for t in target:
-                        last_action.spec.effect.resolve(self.gs, last_action.card, t)
-                else:
-                    last_action.spec.effect.resolve(self.gs, last_action.card, target)
-
-            self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
-            self.gs.action_stack.clear_()
-            return
-
-        if not hasattr(last_action, 'card'):
-            action = self.gs.action_stack.actions.pop()
-            action.play()
-            return
-
-        card = last_action.card
-        if card.props.is_aura:
-            card.host = target
-            target.auras.append(card)
-
-        if isinstance(last_action, CastToTargetAddToStack):
-            if not last_action.eff_spec.effect:
-                print('Warning:', last_action.card, 'has no effect')  # some cards do nothing on cast
-            else:
-                if hasattr(last_action.eff_spec.effect, 'resolve'):
-                    last_action.eff_spec.effect.resolve(self.gs, card, target)
-
-        # --- Emit event so other effects can respond ---
-        print(f"Successfully cast {card.props.name}")
-        self.gs.event_mgr.emit(CastResolvedEvent(card=card, owner_id=card.orig_owner_id, target=target), self.gs)
-
-        # --- if permanent, add card to board, else graveyard ---
-        zone = Zone.BATTLEFIELD if card.props.is_permanent else Zone.GRAVEYARD
-        self.gs.pile_mgr.move_card(card, zone, cause='cast')
-
-        # --- register triggered effects --- is this the best place to do this?, where are static effect being reg'ed?
-        from models.effects.base import Listener
-        for eff_spec in card.abilities:
-            if isinstance(eff_spec.effect, Listener):
-                self.gs.event_mgr.register(eff_spec.effect, card)
-                print(f"Registered triggered effect for {card.props.name} on {eff_spec.effect.__class__.__name__}")
+        last_action.play()
 
         # --- reset action stack and current actor ---
         self.gs.action_on_idx = self.gs.action_stack.first_actor_idx  # action returns to the first actor
         self.gs.action_stack.clear_()
-
-
-@dataclass
-class CounterAction(Action):
-    action: Action
-
-    def __repr__(self) -> str:
-        return f"In response to {self.gs.action_stack.last_action}: {self.action}"
-
-    def play(self) -> None:
-        self.gs.action_stack.push(self.action, self.gs)
-        self.gs.action_on_idx = flip(self.gs.action_on_idx)

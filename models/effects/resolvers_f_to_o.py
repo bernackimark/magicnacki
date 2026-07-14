@@ -3,12 +3,11 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
+from models.ability_pipeline import AbilityPipeline
 from models.actions.base import DoNothing, Action
-from models.actions.cast import CastToTargetAddToStack
 from models.actions.combat import AssignBlocker
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.draw_discard import DiscardCards
-from models.actions.kwa import AddKWA
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction
@@ -21,8 +20,7 @@ from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNext
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
 from models.effects.listeners_mod_queries import HellSwarmEOT, HolyLightEOT, MarshGasEOT, MoraleEOT
 from models.effects.listeners_permission import NoAttacksAllowedEOT
-from models.effects.resolvers_generic import GraveyardToExile, DrawCards
-from models.events_all import UpkeepEvent
+from models.effects.resolvers_generic import GraveyardToExile
 from models.modifiers import PTMod, KWAMod
 from models.phase_manager import Phase
 from models.utils import flip
@@ -311,13 +309,13 @@ class ManaClash(Resolver):
 
 class ManaDrain(Resolver):
     """Counter target spell. At your next main phase, add {C} = spell's mana value."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[CastToTargetAddToStack] = None):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[AbilityPipeline] = None):
         from models.effects.listeners_misc import ManaDrainMainPhase
-        if not isinstance(target, CastToTargetAddToStack):
+        if not isinstance(target, AbilityPipeline):
             raise TypeError(f'{source.props.name} needs an Action for a target')
         gs.action_stack.remove(target)
-        gs.pile_mgr.move_card(target.card, Zone.GRAVEYARD, cause='countered', emit_zone_event=False)
-        gs.event_mgr.register(ManaDrainMainPhase(target.card.props.mana_value), source)
+        gs.pile_mgr.move_card(target.source, Zone.GRAVEYARD, cause='countered', emit_zone_event=False)
+        gs.event_mgr.register(ManaDrainMainPhase(target.source.props.mana_value), source)
 
 class ManaShort(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):

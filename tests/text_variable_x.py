@@ -1,8 +1,8 @@
 import unittest
 
-from models.actions.cast import BeginSpellCastAction
-from models.actions.special import SelectXAction
-from models.choice_actions_all import XValueChoice
+from models.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline import SelectXAction2
+from models.actions.stack_accept_counter import AcceptAction
 from tests.setup_helpers import TestGame
 
 
@@ -12,32 +12,84 @@ class TestVariableX(unittest.TestCase):
         self.gs = self.g.gs
 
     def test_x_cast_simple(self):
+        """Verify casting pipeline flow for X spells:
+        - choose X
+        - choose target
+        - resolve ability"""
         card = self.g.card('stream-of-life')
         self.g.mana('GGGG')
-        eff_spec = card.abilities[0]
-        choice = XValueChoice(0, self.gs, card, [1, 2, 3], eff_spec)  # create choices for user
-        SelectXAction(0, self.gs, choice, 3).play()  # select a value of 3, assign 3 to card.extras['x']
-        self.g.cast_and_accept(card, 0, eff_spec)
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+
+        # Pipeline should request X selection
+        pipeline.advance()
+        self.assertIsNotNone(self.gs.pending_choice)
+
+        # Player chooses X=3
+        SelectXAction2(0, self.gs, pipeline, 3).play()
+
+        # Pipeline should now request target selection
+        pipeline.advance()
+        self.assertIsNotNone(self.gs.pending_choice)
+
+        # Choose player 0 as target
+        target_actions = self.gs.pending_choice.get_actions()
+        target_action = next(a for a in target_actions if a.target == 0)
+        target_action.play()
+
+        # Pipeline should now be complete
+        pipeline.advance()
+
+        # Accept the generated AbilityAction
+        AcceptAction(1, self.gs).play()
         self.assertEqual(self.gs.score_mgr.life[0], 23)
 
     def test_x_activation_simple(self):
-        """{XT}: Banshee deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
-        card = self.g.card('banshee')
+        """Verify activation pipeline flow for X abilities:
+        - choose X
+        - choose target
+        - resolve ability"""
+        card = self.g.battlefield('banshee')
         self.g.mana('WWW')
+
         self.g.next_turn()
-        eff_spec = card.abilities[0]
         aa = card.activated_abilities[0]
-        choice = XValueChoice(0, self.gs, card, [1, 2, 3], eff_spec, aa)  # create choices for user
-        SelectXAction(0, self.gs, choice, 3).play()  # select a value of 3, assign 3 to card.extras['x']
-        self.g.activate_ability(aa, 1)
-        self.assertEqual((self.gs.score_mgr.life[0], self.gs.score_mgr.life[1]), (18, 19))
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+
+        # Pipeline should request X selection
+        pipeline.advance()
+        self.assertIsNotNone(self.gs.pending_choice)
+
+        # Player chooses X=3
+        SelectXAction2(0, self.gs, pipeline, 3).play()
+
+        # Pipeline should now request target selection
+        pipeline.advance()
+        self.assertIsNotNone(self.gs.pending_choice)
+
+        # Choose player 1 as target
+        target_actions = self.gs.pending_choice.get_actions()
+        target_action = next(a for a in target_actions if a.target == 1)
+        target_action.play()
+
+        # Pipeline should now be complete
+        pipeline.advance()
+
+        # Accept the generated AbilityAction
+        AcceptAction(1, self.gs).play()
+
+        self.assertEqual([18, 19], [self.gs.score_mgr.life[0], self.gs.score_mgr.life[1]])
 
     def test_xx(self):
         card = self.g.hand('part-water')  # casting_cost: XXU
         self.g.mana('UUUU')
         eff_spec = card.abilities[0]
-        BeginSpellCastAction(0, self.gs, card, eff_spec).play()
-        self.assertEqual(len(self.gs.pending_choice.get_actions()), 1)
+        pipeline = AbilityPipeline(0, self.gs, card, eff_spec)
+
+        # Pipeline should request X selection
+        pipeline.advance()
+
+        # since XX must draw from the remaining UUU, only X=1 is allowed
+        self.assertEqual(1, len(self.gs.pending_choice.get_actions()))
 
 
 if __name__ == '__main__':

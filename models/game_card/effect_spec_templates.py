@@ -39,7 +39,7 @@ def clockwork_beast_x(_, s):
     return 7 - s.counters.get_count(PLUS_ONE_ZERO)
 
 def max_x_from_printed_card(gs, s):
-    return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost)
+    return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost) // s.casting_cost.count('X')
 
 def voodoo_doll_x(_, source):
     return source.counters.get_count(PIN) // 2

@@ -1,11 +1,9 @@
 import unittest
 
-from models.actions.cast import BeginSpellCastAction, CastToTargetAddToStack
+from models.ability_pipeline import AbilityPipeline
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
-from models.actions.stack_accept_counter import AcceptAction
 from models.actions.tap_untap import Untap
-from models.actions.target import AddTargetAction
 from models.counter_tokens import PLUS_ONE
 from models.effects.listeners_damage import ReverseDamageEOT
 from models.effects.resolvers_generic import Destroy, RevealHands
@@ -66,7 +64,8 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.hand('reset')
         island_1 = self.g.battlefield('island')
         self.g.battlefield('island')
-        self.assertNotIn(card, [a.card for a in self.gs.available_actions_from_hand()])
+        self.assertNotIn(card, [a.source for a in self.gs.available_actions_from_hand()
+                                if isinstance(a, AbilityPipeline)])
 
         PassTheTurn(0, self.gs).play()
         island_1.tap()
@@ -103,10 +102,11 @@ class TestCardsQRS(unittest.TestCase):
         {RRR}: Add a +1/+1 counter on this creature. Activate only during your upkeep."""
         card = self.g.hand('rock-hydra')
         self.g.mana('RRRRRR')
-        begin_spell_action = BeginSpellCastAction(0, self.gs, card, card.abilities[3])
-        begin_spell_action.play()
-        possible_actions = self.gs.pending_choice.get_actions()  # should be SelectXAction X=1, X=2, X=3, X=4
-        self.assertEqual(4, len(possible_actions))
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+        # TODO: this didn't get to sending the x choices to self.gs.pending_choice()
+        possible_actions = self.gs.pending_choice.get_actions()
+        self.assertEqual({1, 2, 3, 4}, {a.x_value for a in possible_actions})
 
         card.extras['x'] = 4
         self.g.cast_and_accept(card, card, card.abilities[3])  # RH = 4/4
@@ -323,7 +323,8 @@ class TestCardsQRS(unittest.TestCase):
         attacker = self.g.battlefield('savannah-lions', owner=1)
         non_attacker = self.g.battlefield('tundra-wolves', owner=1)
         wall = self.g.battlefield('wall-of-brambles', owner=1)
-        self.assertFalse(any(a for a in self.gs.available_actions_from_hand() if a.card is card))
+        self.assertFalse(any(a for a in self.gs.available_actions_from_hand()
+                             if isinstance(a, AbilityPipeline) and a.source is card))
 
         self.g.next_turn(True)
         has_sickness = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
@@ -348,16 +349,16 @@ class TestCardsQRS(unittest.TestCase):
         creature = self.g.battlefield('giant-spider')  # 4/4
         self.g.mana('RRR')
         bolt = self.g.hand('lightning-bolt')
-        BeginSpellCastAction(0, self.gs, bolt, bolt.abilities[0]).play()
-        self.assertIn(creature, [a.target for a in self.gs.pending_choice.get_actions()
-                                 if isinstance(a, AddTargetAction)])
+        pipeline = AbilityPipeline(0, self.gs, bolt, bolt.abilities[0])
+        pipeline.advance()
+        self.assertIn(creature, [a.target for a in self.gs.pending_choice.get_actions()])
 
         self.gs.pending_choice = None
         spectral_cloak = self.g.battlefield('spectral-cloak')
         Attach(0, self.gs, spectral_cloak, creature).play()
-        BeginSpellCastAction(0, self.gs, bolt, bolt.abilities[0]).play()
-        self.assertNotIn(creature, [a.target for a in self.gs.pending_choice.get_actions()  # type: ignore
-                                    if isinstance(a, AddTargetAction)])
+        pipeline = AbilityPipeline(0, self.gs, bolt, bolt.abilities[0])
+        pipeline.advance()
+        self.assertNotIn(creature, self.gs.pending_choice.targets)
 
     def test_spirit_link(self):
         """Whenever enchanted creature deals damage, you gain that much life"""
@@ -434,8 +435,7 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.hand('syphon-soul')
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         # self.g.mana('BBB')
-        # CastToTargetAddToStack(0, self.gs, card, 1, card.abilities[0]).play()
-        # AcceptAction(1, self.gs).play()
+        # self.g.cast_and_accept(card, 1, card.abilities[0])
         self.assertEqual([22, 18], self.gs.score_mgr.life)
 
     def test_tablet_of_epityr(self):

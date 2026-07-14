@@ -1,9 +1,8 @@
 import unittest
 
-from models.actions.cast import CastToTargetAddToStack
+from models.ability_pipeline import AbilityPipeline
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
-from models.actions.stack_accept_counter import AcceptAction
 from models.actions.tap_untap import Untap, PayManaToUntapAction
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent
 from models.phase_manager import Phase
@@ -154,11 +153,12 @@ class TestCardsMNOP(unittest.TestCase):
         c_1 = self.g.battlefield('savannah-lions')
         c_2 = self.g.battlefield('serendib-efreet')
         self.g.mana('U')
-        self.assertFalse(any(a for a in self.gs.available_actions_from_hand() if a.card is card))
+        self.assertFalse(any(a for a in self.gs.available_actions_from_hand()
+                             if isinstance(a, AbilityPipeline) and a.source is card))
 
         self.g.mana('UU')
-        begin_spell_action = next(a for a in self.gs.available_actions_from_hand() if a.card is card)
-        begin_spell_action.play()
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
         possible_actions = self.gs.pending_choice.get_actions()
         self.assertEqual(1, len(possible_actions))
 
@@ -184,8 +184,9 @@ class TestCardsMNOP(unittest.TestCase):
         aa = card.activated_abilities[0]
         bolt = self.g.hand('lightning-bolt', owner=1)
         self.g.mana('R', owner=1)
-        action = CastToTargetAddToStack(1, self.gs, bolt, card, bolt.abilities[0])
-        action.play()
+        pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0])
+        pipeline.targets.append(bolt)
+        pipeline.advance()
         self.g.activate_ability(aa)
 
         # # TODO: Cast Action then Activated Ability; AcceptAction is confused about what it's accepting
@@ -229,7 +230,7 @@ class TestCardsMNOP(unittest.TestCase):
     #     card = self.g.hand('psychic-purge')
     #     spell_card = self.g.hand('wheel-of-fortune', owner=1)
     #     self.g.mana('RRRRRR', owner=1)
-    #     CastToTargetAddToStack(1, self.gs, spell_card, None, spell_card.abilities[0]).play()
+    #     pipeline = self.g.begin_cast(spell_card)
     #     AcceptAction(0, self.gs).play()
     #     self.assertEqual(15, self.gs.score_mgr.life[1])
 

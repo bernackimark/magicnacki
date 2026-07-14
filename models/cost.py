@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from models.counter_tokens import CounterType
 
 class Cost(ABC):
+    requires_choice: bool = False
+
     @abstractmethod
     def can_pay(self, gs: GameState, source: GameCard) -> bool:
         ...
@@ -90,6 +92,8 @@ class RemoveCounterCost(Cost):
         source.counters.remove_counter(self.counter_type, self.cnt)
 
 class SacCardCost(Cost):
+    requires_choice = True
+
     def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]]):
         self.target_func = target_func
 

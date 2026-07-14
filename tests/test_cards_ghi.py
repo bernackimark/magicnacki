@@ -99,10 +99,13 @@ class TestCardsGHI(unittest.TestCase):
         card = self.g.hand('goblin-shrine')
         host = self.g.battlefield('mountain')
         self.g.cast_and_accept(card, host, card.abilities[0])
+        print()
+        print(self.gs.event_mgr._event_listeners)
+        print()
         goblin = self.g.battlefield('monss-goblin-raiders')  # 1/1
         self.assertEqual(2, goblin.power)
         self.gs.pile_mgr.destroy(card)
-        self.assertIn(goblin, self.g.gy[0])
+        self.assertIn(goblin, self.g.gy[0])  # this test now fails
 
     def test_haunting_wind(self):
         """Whenever an artifact becomes tapped or a player activates an artifact's ability

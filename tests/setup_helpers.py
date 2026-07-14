@@ -4,11 +4,11 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from models.actions.activate_ability import ActivateAbility
-from models.actions.cast import CastToTargetAddToStack
+from models.ability_pipeline import AbilityPipeline
 from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
+from models.choice_actions_all import TargetChoice2
 from models.effects.base import Listener, ActivatedAbility, EffSpec
 from models.phase_manager import Phase
 from models.utils import flip
@@ -152,8 +152,18 @@ class TestGame:
             self.battlefield(lookup[color], owner=owner)
 
     def activate_ability(self, aa: ActivatedAbility, target: GameCard | int | None = None, owner: int = 0):
-        ActivateAbility(owner, self.gs, aa, target).play()
+        pipeline = AbilityPipeline(owner, self.gs, aa.source, aa.eff_spec)
+        if target is not None:
+            pipeline.targets.append(target)
+        pipeline.advance()
         AcceptAction(flip(owner), self.gs).play()
+
+    def begin_cast(self, card: GameCard, spell: EffSpec = None) -> AbilityPipeline:
+        if not spell:
+            spell = card.abilities[0]
+        pipeline = AbilityPipeline(card.owner_id, self.gs, card, spell)
+        pipeline.advance()
+        return pipeline
 
     def cast_and_accept(self, card: GameCard, target: GameCard | int | None = None,
                         eff_spec: EffSpec | None = None, owner: int = 0, add_lots_of_mana: bool = True):
@@ -166,7 +176,11 @@ class TestGame:
             else:
                 self.mana('U' * 10, owner=owner)
 
-        CastToTargetAddToStack(owner, self.gs, card, target, eff_spec).play()
+        from models.effects.base import Resolver
+        pipeline = AbilityPipeline(owner, self.gs, card, eff_spec)
+        if target is not None:
+            pipeline.targets.append(target)
+        pipeline.advance()
         AcceptAction(flip(owner), self.gs).play()
 
     def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard] | None):
