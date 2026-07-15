@@ -211,9 +211,11 @@ class TestGame:
         PassTheTurn(self.gs.player_turn_idx, self.gs).play()
 
     def resolve_spell(self, card: GameCard, target: Any = None, spell: EffSpec | None = None):
+        """Executes eff_spec.effect.resolve();
+        if the caller is lazy & provides no spell, they are assumed to want the card's first spell ability"""
         if not spell:
             spell = next(eff_spec for eff_spec in card.abilities if eff_spec.activation_type == 'spell')
-            spell.effect.resolve(self.gs, card, target)  # type: ignore
+        spell.effect.resolve(self.gs, card, target)  # type: ignore
 
     @property
     def gy(self) -> list[list[GameCard | None]]:

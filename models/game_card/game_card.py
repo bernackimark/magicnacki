@@ -84,6 +84,10 @@ class GameCard:
         return self.modifiers.new_owner_id
 
     @property
+    def spells(self) -> list[EffSpec | None]:
+        return [e for e in self.abilities if e.activation_type == 'spell']
+
+    @property
     def is_enchanted(self) -> bool:
         return bool(self.auras)
 

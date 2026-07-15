@@ -191,13 +191,11 @@ class GameState:
             if not self.perm_querier.can_cast(c, c.owner_id):
                 continue
 
-            spell_effect_specs = [e for e in c.abilities if e.activation_type == 'spell']
-
-            if c.props.is_permanent and not spell_effect_specs:
+            if c.props.is_permanent and not c.spells:
                 actions.append(CastPermanentAction(c.owner_id, self, c))
                 continue
 
-            for spell_eff in spell_effect_specs:
+            for spell_eff in c.spells:
                 if spell_eff.allowed_p_id_turn is not None:
                     if spell_eff.allowed_p_id_turn != self.player_turn_idx:
                         continue
