@@ -15,7 +15,7 @@ class TestCardsJKL(unittest.TestCase):
         self.g.battlefield('savannah-lions', owner=1)
         card = self.g.hand('jovial-evil')
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
-        self.assertEqual(18, self.gs.score_mgr.life[1])
+        self.assertEqual(18, self.gs.life[1])
 
     # def test_kudzu(self):
     #     """When host becomes tapped, destroy it. Host may attach this Aura to a land of their choice."""

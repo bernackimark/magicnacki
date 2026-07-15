@@ -67,7 +67,7 @@ class PlayScene(Scene):
 
         self.active_animations: list[Animation] = []
         self.life_jiggle_offsets: list[list[tuple[float, float]]] = [
-            [(0, 0) for _ in range(len(int_to_dice_values(life)))] for life in self.state.score_mgr.life]
+            [(0, 0) for _ in range(len(int_to_dice_values(life)))] for life in self.state.life]
         self.flash_surface = pg.Surface(self.game.screen.get_size(), pg.SRCALPHA)
 
         self.available_actions = []
@@ -75,7 +75,7 @@ class PlayScene(Scene):
         self.recent_actions: list[RecentEventRow] = []  # game history
         self.pending_action = None
 
-        self.prev_state = {'life': self.state.score_mgr.life.copy()}
+        self.prev_state = {'life': self.state.life.copy()}
 
     def handle_events(self, events):
         for event in events:
@@ -109,9 +109,9 @@ class PlayScene(Scene):
         self.update_action_hover()
 
         # detect life changes
-        for p_idx, life_total in enumerate(self.state.score_mgr.life):
-            if self.prev_state['life'][p_idx] != self.state.score_mgr.life[p_idx]:
-                new_life_total = self.state.score_mgr.life[p_idx]
+        for p_idx, life_total in enumerate(self.state.life):
+            if self.prev_state['life'][p_idx] != self.state.life[p_idx]:
+                new_life_total = self.state.life[p_idx]
                 is_opp = p_idx != self.p_idx
                 color = (0, 125, 0, 100) if life_total > self.prev_state['life'][p_idx] else (125, 0, 0, 100)
                 self.life_change_animations(p_idx, new_life_total, is_opp, color)
@@ -123,7 +123,7 @@ class PlayScene(Scene):
                 self.active_animations.remove(anim)
 
         # assign current to previous state
-        self.prev_state['life'] = self.state.score_mgr.life.copy()
+        self.prev_state['life'] = self.state.life.copy()
 
     def update_action_hover(self):
         mouse_pos = pg.mouse.get_pos()
@@ -155,7 +155,7 @@ class PlayScene(Scene):
 
     def draw_dice(self, p_idx: int, x: int, y: int):
         """draw dice in a 2-wide by 3-tall (max) configuration"""
-        dice_values = int_to_dice_values(self.state.score_mgr.life[p_idx])
+        dice_values = int_to_dice_values(self.state.life[p_idx])
         x += 5  # the dice are slightly too far left
 
         for i, value in enumerate(dice_values):

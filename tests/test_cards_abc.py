@@ -35,7 +35,7 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.event_mgr.register(listener, aura)
         aa = artifact.activated_abilities[0]
         self.gs.event_mgr.emit(AbilityActivatedEvent(0, aa), self.gs)
-        self.assertEqual(self.gs.score_mgr.life[0], 18)
+        self.assertEqual(self.gs.life[0], 18)
 
     def test_berserk(self):
         """Cast this spell only before the combat damage step. Target creature gains trample and gets +X/+0 EOT,
@@ -49,7 +49,7 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.next_turn()
         card.abilities[0].effect.resolve(self.gs, card, target)  # type: ignore
         self.g.combat(target, None)
-        self.assertEqual(16, self.gs.score_mgr.life[1])
+        self.assertEqual(16, self.gs.life[1])
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
         self.assertIn(target, self.g.gy[0])
 
@@ -197,7 +197,7 @@ class TestCardsAtoC(unittest.TestCase):
     #     host.auras.append(creature_bond)
     #     self.gs.event_mgr.register(creature_bond.abilities[0].effect, creature_bond)
     #     self.gs.pile_mgr.destroy(host)
-    #     self.assertEqual(self.gs.score_mgr.life[0], 19)
+    #     self.assertEqual(self.gs.life[0], 19)
 
 
 if __name__ == '__main__':

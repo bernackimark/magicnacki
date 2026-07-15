@@ -62,7 +62,7 @@ class TestCardsDEF(unittest.TestCase):
         self.g.next_turn(True)
         self.g.cast_and_accept(card, attacker, card.abilities[0])
         self.g.combat(attacker, None)
-        self.assertEqual([18, 18], self.gs.score_mgr.life)
+        self.assertEqual([18, 18], self.gs.life)
 
     def test_fasting(self):
         """At your upkeep, put a hunger counter on F. Destroy F if it has >=5 hunger counters.
@@ -76,7 +76,7 @@ class TestCardsDEF(unittest.TestCase):
 
         self.g.next_turn()
         self.assertEqual(7, len(self.gs.pile_mgr.hands[0].cards))
-        self.assertEqual(22, self.gs.score_mgr.life[0])
+        self.assertEqual(22, self.gs.life[0])
 
         self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
         do_not_skip_draw = self.gs.pending_choice.get_actions()[1]
@@ -125,7 +125,7 @@ class TestCardsDEF(unittest.TestCase):
         """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
         self.g.battlefield('force-of-nature')
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
-        self.assertEqual(12, self.gs.score_mgr.life[0])
+        self.assertEqual(12, self.gs.life[0])
 
         self.g.mana('GGGGG')  # five forests
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
@@ -145,7 +145,7 @@ class TestCardsDEF(unittest.TestCase):
         combat = self.gs.combat_mgr.get_combat(attacker)
         self.g.activate_ability(ff.activated_abilities[0], attacker, 1)
         combat.handle_damage()
-        self.assertEqual(19, self.gs.score_mgr.life[1])
+        self.assertEqual(19, self.gs.life[1])
 
     def test_forethought_amulet(self):
         """At your upkeep, pay {3} or sac FA. If an instant or sorcery source would deal >=3 damage to you,
@@ -159,7 +159,7 @@ class TestCardsDEF(unittest.TestCase):
         self.g.next_turn(True)
         bolt = self.g.hand('lightning-bolt', owner=1)
         self.g.cast_and_accept(bolt, 0, bolt.abilities[0], owner=1)
-        self.assertEqual(18, self.gs.score_mgr.life[0])
+        self.assertEqual(18, self.gs.life[0])
 
         self.g.next_turn(True)
         self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)

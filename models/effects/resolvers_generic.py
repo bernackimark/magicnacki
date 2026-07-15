@@ -334,7 +334,7 @@ class RemoveCountersOnHostTurn(Resolver):
         self.cnt = cnt
 
     def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.turn_mgr.player_turn_idx != source.host.owner_id:
+        if gs.player_turn_idx != source.host.owner_id:
             return
         source.host.counters.remove_counter(self.counter_type, self.cnt)
 

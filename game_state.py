@@ -52,7 +52,7 @@ class GameState:
 
         # action, turn, phase (game flow) concepts
         self.turn_mgr = TurnManager(self.player_cnt, player_turn_idx)
-        self.action_on_idx: int = self.turn_mgr.player_turn_idx
+        self.action_on_idx: int = self.player_turn_idx
 
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
 
@@ -68,7 +68,7 @@ class GameState:
         self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
-        self.pending_choice: ChoiceAction | None = MulliganChoice(self.turn_mgr.player_turn_idx,
+        self.pending_choice: ChoiceAction | None = MulliganChoice(self.player_turn_idx,
                                                                   self, self.rules['mulligan'])
 
         # objects that carry data to be displayed in UI that aren't common (ex: Show Library)
@@ -79,8 +79,28 @@ class GameState:
             self.pile_mgr.draw(i, 7, print_output=False)
 
     @property
+    def boards(self) -> list[list[GameCard]]:
+        return self.pile_mgr.boards
+
+    @property
     def card_filter(self) -> CardFilter:
         return CardFilter(self)
+
+    @property
+    def exiles(self) -> list[list[GameCard]]:
+        return self.pile_mgr.exiles
+
+    @property
+    def graveyards(self) -> list[list[GameCard]]:
+        return self.pile_mgr.graveyards
+
+    @property
+    def life(self) -> list[int, int]:
+        return self.score_mgr.life
+    
+    @property
+    def player_turn_idx(self) -> int:
+        return self.player_turn_idx
 
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
@@ -158,14 +178,12 @@ class GameState:
 
     def available_actions_from_hand(self) -> list[AbilityPipeline | CastPermanentAction | None]:
         """For each card in hand for the in-scope player ...
-            -   If not can_cast(), skip
-            -   If permanent, cast to board directly w/o stack (speed of testing; will need to amend to just lands)
-            -   If card has no cast effects, add BeginSpellCastAction as a valid action
+            -   If not can_cast(), skip (can_cast emits to Listeners, including base game rules)
+            -   If a permanent w no spell effect, create a CastPermanentAction
             -   For each cast effect:
-                -   If X & X can't be paid, skip
-                -   If there are no or fewer targets than the effect requires, skip
-                -   Else add BeginSpellCastAction as a valid action
-            Return list of legal Actions"""
+                -   If it's sepcification declares allowed turn/phase, skip if illegal
+                -   Else create a AbilityPipeline action (which builds the Ability -- X, mode, target, etc.)
+            Return the list of legal Actions"""
         actions: list[AbilityPipeline | CastPermanentAction | None] = []
 
         for c in self.pile_mgr.hands[self.action_on_idx].cards:
@@ -175,13 +193,13 @@ class GameState:
 
             spell_effect_specs = [e for e in c.abilities if e.activation_type == 'spell']
 
-            if not spell_effect_specs:
+            if c.props.is_permanent and not spell_effect_specs:
                 actions.append(CastPermanentAction(c.owner_id, self, c))
                 continue
 
             for spell_eff in spell_effect_specs:
                 if spell_eff.allowed_p_id_turn is not None:
-                    if spell_eff.allowed_p_id_turn != self.turn_mgr.player_turn_idx:
+                    if spell_eff.allowed_p_id_turn != self.player_turn_idx:
                         continue
                 if spell_eff.allowed_phases:
                     if self.phase_mgr.phase not in spell_eff.allowed_phases:
@@ -221,7 +239,6 @@ class GameState:
         if len(self.action_stack):
             print('ABC123 I have stack !!!')
 
-            hand = self.pile_mgr.hands[p_id]
             if isinstance(self.action_stack.last_action, ChoiceAction):
                 return self.action_stack.last_action.get_actions()
 
@@ -229,7 +246,9 @@ class GameState:
             available_actions.extend(self.add_activated_abilities_from_board())
 
             # Check instants & sorceries
-            allowed_cards = hand.sorceries if p_id == self.turn_mgr.player_turn_idx else hand.sorceries + hand.instants
+            hand_instants = [c for c in self.pile_mgr.hands[p_id].cards if c.is_instant]
+            hand_sorceries = [c for c in self.pile_mgr.hands[p_id].cards if c.is_sorcery]
+            allowed_cards = hand_sorceries if p_id == self.player_turn_idx else hand_sorceries + hand_instants
             for a in self.available_actions_from_hand():
                 if a.source in allowed_cards:
                     available_actions.append(a)

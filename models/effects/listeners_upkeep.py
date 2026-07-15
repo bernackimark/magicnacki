@@ -46,7 +46,7 @@ class CocoonUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        p_id = gs.turn_mgr.player_turn_idx
+        p_id = gs.player_turn_idx
         host = source.host
         if p_id != source.owner_id:
             return
@@ -62,7 +62,7 @@ class CosmicHorror(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         if not gs.mana_pools[source.owner_id].can_pay('3BBB'):
             gs.pile_mgr.destroy(source)
@@ -77,7 +77,7 @@ class CurseArtifact(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
+        if not source.host or gs.player_turn_idx != source.host.owner_id:
             return
         options = [DealDamageTo(event.active_player, gs, source, 2, source.host.owner_id),
                    Sac(event.active_player, gs, source.host)]
@@ -89,7 +89,7 @@ class Cyclone(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         source.counters.add_counter(WIND)
         if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
@@ -102,7 +102,7 @@ class DemonicHordesUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         your_lands = gs.card_filter.on_player_board(source.owner_id).lands().result()
         if not your_lands:
@@ -126,7 +126,7 @@ class DropOfHoney(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         creatures = gs.card_filter.creatures().in_play().result()
         if not creatures:
@@ -206,7 +206,7 @@ class Fasting(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
@@ -245,11 +245,11 @@ class GhazbanOgre(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: Event):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
-        if len(set(gs.score_mgr.life)) == 1:
+        if len(set(gs.life)) == 1:
             return
-        most_life_player_idx = max(range(len(gs.score_mgr.life)), key=lambda i: gs.score_mgr.life[i])
+        most_life_player_idx = max(range(len(gs.life)), key=lambda i: gs.life[i])
         if most_life_player_idx != source.owner_id:
             Steal().resolve(gs, source, source)
 
@@ -272,7 +272,7 @@ class HazezonTamarTokenCreation(Listener):
         self.owner_id = owner_id
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
 
         from .resolvers_generic import CreateTokenCreature
@@ -350,7 +350,7 @@ class ManaVortexUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        your_lands = gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).lands().result()
+        your_lands = gs.card_filter.on_player_board(gs.player_turn_idx).lands().result()
         if len(your_lands) == 1:
             gs.pile_mgr.destroy(your_lands[0], allow_regeneration=False)
             return
@@ -384,7 +384,7 @@ class PowerSurge(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         untapped_lands = gs.card_filter.in_play().untapped().lands().result()
         if untapped_lands:
-            gs.apply_damage(source, len(untapped_lands), gs.turn_mgr.player_turn_idx)
+            gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
 
 
 class PsychicAllergyDamage(Listener):
@@ -392,7 +392,7 @@ class PsychicAllergyDamage(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if gs.turn_mgr.player_turn_idx == source.owner_id:
+        if gs.player_turn_idx == source.owner_id:
             return
         declared_color = source.extras.get('color_declaration')
         opp = flip(source.owner_id)
@@ -406,7 +406,7 @@ class PsychicAllergySac(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         your_islands = gs.card_filter.on_player_board(source.owner_id).islands().result()
         if len(your_islands) < 2:
@@ -431,7 +431,7 @@ class RogahhOfKherKeepUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         owner = source.owner_id
         target_cards = [source] + gs.card_filter.on_player_board(owner).by_slug('kobolds-of-kher-keep').result()
@@ -497,9 +497,9 @@ class StormWorld(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        card_cnt = len(gs.pile_mgr.hands[gs.turn_mgr.player_turn_idx].cards)
+        card_cnt = len(gs.pile_mgr.hands[gs.player_turn_idx].cards)
         if card_cnt > 4:
-            gs.apply_damage(source, card_cnt - 4, gs.turn_mgr.player_turn_idx)
+            gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
 
 
 class TheAbyss(Listener):
@@ -561,7 +561,7 @@ class VesuvanDoppelgangerUpkeep(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != s.owner_id:
+        if gs.player_turn_idx != s.owner_id:
             return
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
@@ -578,7 +578,7 @@ class XenicPoltergeistRelease(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         gs.event_mgr.unregister_effects(source)
 

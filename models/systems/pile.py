@@ -19,7 +19,7 @@ class PileManager:
         self.boards: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
-        self.hands: list[Hand] = [Hand(sort_pref=Hand.SortOrient.L_TO_R) for _ in range(self._gs.player_cnt)]
+        self.hands: list[Hand] = [Hand() for _ in range(self._gs.player_cnt)]
         
         # GameCard getting reference to GameState is a ChatGPT suggestion
         for lib in self.libraries:
@@ -107,6 +107,9 @@ class PileManager:
                 print(f'Player #{p_id} draws')
             self._gs.game_history.append_non_action(self._gs, text=f'Player #{p_id} draws')
 
+    def sort_hand(self, p_idx: int):
+        self.hands[p_idx].cards.sort(key=lambda x: x.props.mana_value)
+
     def _add_to_zone(self, card: GameCard, zone: Zone):
         if card.is_token and zone != Zone.BATTLEFIELD:
             return
@@ -117,7 +120,7 @@ class PileManager:
                 card.turn_entered_for_owner = self._gs.turn_mgr.turn_number
             case Zone.HAND:
                 self._gs.pile_mgr.hands[card.orig_owner_id].cards.append(card)
-                self._gs.pile_mgr.hands[card.orig_owner_id].sort_cards()
+                self._gs.pile_mgr.sort_hand(card.orig_owner_id)
             case Zone.GRAVEYARD:
                 card.reveal()
                 self._gs.pile_mgr.graveyards[card.orig_owner_id].append(card)
@@ -135,7 +138,7 @@ class PileManager:
                     card.is_tapped = False
             case Zone.HAND:
                 self._gs.pile_mgr.hands[card.orig_owner_id].cards.remove(card)
-                self._gs.pile_mgr.hands[card.orig_owner_id].sort_cards()
+                self._gs.pile_mgr.sort_hand(card.orig_owner_id)
             case Zone.GRAVEYARD:
                 self._gs.pile_mgr.graveyards[card.owner_id].remove(card)
             case Zone.EXILE:

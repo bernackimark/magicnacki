@@ -92,8 +92,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'green_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_green],
     'host': lambda gs, s: s.host,
     'host_owner': lambda gs, s: s.host.owner_id,
-    'in_turn_player': lambda gs, _: gs.turn_mgr.player_turn_idx,
-    'in_turn_player_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).tapped().blue().creatures().result(),
+    'in_turn_player': lambda gs, _: gs.player_turn_idx,
+    'in_turn_player_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).tapped().blue().creatures().result(),
     'instant_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_instant],
     'islands': lambda gs, s: gs.card_filter.in_play().islands().result(),
     'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),
@@ -155,7 +155,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_artifacts': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).artifacts().result(),
     'your_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().result(),
     'your_forests': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
-    'your_lands': lambda gs, s: gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).lands().result(),
+    'your_lands': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).lands().result(),
     'your_other_creatures':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result() if c is not s],
     'your_other_orcs':
@@ -165,6 +165,6 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_swamps': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).swamps().result(),
     'your_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).tapped().blue().creatures().result(),
     'your_untapped_creatures':
-        lambda gs, s: gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).creatures().untapped().result(),
-    'your_walls': lambda gs, s: gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).in_play().walls().result(),
+        lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),
+    'your_walls': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).in_play().walls().result(),
 }

@@ -37,7 +37,7 @@ class TestCombat(unittest.TestCase):
         attacker.modifiers.append(KWAMod(s=attacker, add_or_remove='add', kwa='Trample'))
         self.g.combat(attacker, blocker)
         expected_trample = attacker.power - blocker.toughness
-        self.assertEqual(20 - expected_trample, self.gs.score_mgr.life[1])
+        self.assertEqual(20 - expected_trample, self.gs.life[1])
 
     def test_remove_blocker_from_combat(self):
         """Blocker should be removed from battlefield, but attacker should deal no damage (except for trample)"""
@@ -52,7 +52,7 @@ class TestCombat(unittest.TestCase):
         self.g.cast_and_accept(unsummon, blocker, unsummon.abilities[0], owner=1)
         self.assertNotIn(blocker, self.gs.card_filter.in_play().result())
         combat.handle_damage()
-        self.assertEqual(self.gs.score_mgr.life[1], 20)
+        self.assertEqual(self.gs.life[1], 20)
 
     def test_remove_attacker_from_combat(self):
         attacker = self.g.card('grizzly-bears')
@@ -89,7 +89,7 @@ class TestCombat(unittest.TestCase):
     def test_unblocked_attacker_damage(self):
         attacker = self.g.battlefield('white-knight')  # 2/2 First Strike
         self.g.combat(attacker, None)
-        self.assertEqual(18, self.gs.score_mgr.life[1])
+        self.assertEqual(18, self.gs.life[1])
 
 
 if __name__ == '__main__':

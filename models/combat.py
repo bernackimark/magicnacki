@@ -36,7 +36,7 @@ class Combat:
         # --- No blockers ---
         if not self.blockers:
             if not first_strike:
-                defender = flip(self.gs.turn_mgr.player_turn_idx)
+                defender = flip(self.gs.player_turn_idx)
                 damage_assignments.append((self.attacker, self.attacker.power, defender))
 
         else:
@@ -50,7 +50,7 @@ class Combat:
 
                 target = self.blockers[0]
                 # If blocker is not on the battlefield (destroyed/bounced), it will not receive a damage assignment
-                if target in self.gs.card_filter.on_player_board(flip(self.gs.turn_mgr.player_turn_idx)).result():
+                if target in self.gs.card_filter.on_player_board(flip(self.gs.player_turn_idx)).result():
                     if self.gs.perm_querier.can_damage(target, a):
                         damage_assignments.append((a, a.power, target))
 

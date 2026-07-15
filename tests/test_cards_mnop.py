@@ -40,14 +40,14 @@ class TestCardsMNOP(unittest.TestCase):
         PassTheTurn(0, self.gs).play()
         self.g.combat(juggernaut, None)
         self.assertEqual(5, card.damage_received_this_turn)
-        self.assertEqual(20, self.gs.score_mgr.life[0], 'Damage should be redirected to Martyrs Of Korlis')
+        self.assertEqual(20, self.gs.life[0], 'Damage should be redirected to Martyrs Of Korlis')
 
         self.g.next_turn()
         card.damage_received_this_turn = 0
         card.tap()
         self.g.combat(juggernaut, None)
         self.assertEqual(0, card.damage_received_this_turn)
-        self.assertEqual(15, self.gs.score_mgr.life[0], 'Damage should not have been redirected to MOK')
+        self.assertEqual(15, self.gs.life[0], 'Damage should not have been redirected to MOK')
 
     def test_nettling_imp(self):
         """{T}: Choose target non-Wall creature the active player has controlled continuously since BOT.
@@ -129,7 +129,7 @@ class TestCardsMNOP(unittest.TestCase):
 
         self.g.next_turn()
         self.g.activate_ability(aa, 1)
-        self.assertEqual([14, 18], self.gs.score_mgr.life)
+        self.assertEqual([14, 18], self.gs.life)
 
     def test_paralyze(self):
         """When this Aura enters, tap host. Host doesn't untap during its untap step.
@@ -191,7 +191,7 @@ class TestCardsMNOP(unittest.TestCase):
 
         # # TODO: Cast Action then Activated Ability; AcceptAction is confused about what it's accepting
         # AcceptAction(0, self.gs).play()
-        # self.assertEqual(18, self.gs.score_mgr.life[0])
+        # self.assertEqual(18, self.gs.life[0])
 
 
     def test_power_leak(self):
@@ -216,13 +216,13 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.next_turn()
 
         tapping_artifact.tap()
-        self.assertEqual(21, self.gs.score_mgr.life[0])
+        self.assertEqual(21, self.gs.life[0])
 
         self.g.activate_ability(aa, owner=1)
-        self.assertEqual(22, self.gs.score_mgr.life[0])
+        self.assertEqual(22, self.gs.life[0])
 
         not_an_artifact.tap()
-        self.assertEqual(22, self.gs.score_mgr.life[0])
+        self.assertEqual(22, self.gs.life[0])
 
     # def test_psychic_purge(self):
     #     """... When a spell or ability an opp controls causes you to discard this card, that player loses 5 life."""
@@ -232,7 +232,7 @@ class TestCardsMNOP(unittest.TestCase):
     #     self.g.mana('RRRRRR', owner=1)
     #     pipeline = self.g.begin_cast(spell_card)
     #     AcceptAction(0, self.gs).play()
-    #     self.assertEqual(15, self.gs.score_mgr.life[1])
+    #     self.assertEqual(15, self.gs.life[1])
 
 
 if __name__ == '__main__':

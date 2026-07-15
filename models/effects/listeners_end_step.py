@@ -25,7 +25,7 @@ class ErgRaiders(Listener):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if gs.turn_mgr.player_turn_idx != s.owner_id or s.has_summoning_sickness:
+        if gs.player_turn_idx != s.owner_id or s.has_summoning_sickness:
             return
         if s not in gs.card_filter.attackers().result():
             gs.apply_damage(s, 2, s.owner_id)
@@ -60,7 +60,7 @@ class SeasonOfTheWitchEndStep(Listener):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if gs.turn_mgr.player_turn_idx != s.owner_id:
+        if gs.player_turn_idx != s.owner_id:
             return
         your_untapped_creatures = gs.card_filter.on_player_board(s.owner_id).creatures().untapped().result()
         attackers = gs.card_filter.attackers().result()
@@ -78,7 +78,7 @@ class SirensCallEndStep(Listener):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         non_wall_creatures = gs.card_filter.on_player_board(event.active_player).non_wall_creatures().result()
         attackers = gs.card_filter.attackers().result()
@@ -92,7 +92,7 @@ class VoodooDollEndStep(Listener):
     listens_to = EndStepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         if source.is_tapped:
             return

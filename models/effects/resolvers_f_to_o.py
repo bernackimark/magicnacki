@@ -285,7 +285,7 @@ class LibraryOfAlexandria(Resolver):
 class LivingArtifactUpkeep(Resolver):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
     def resolve(self, gs: GameState, s: GameCard, target=None):
-        if gs.turn_mgr.player_turn_idx != s.owner_id:
+        if gs.player_turn_idx != s.owner_id:
             return
         options = [RemoveCounterGainLife(s.owner_id, gs, s, VITALITY), DoNothing(s.owner_id, gs)]
         gs.pending_choice = ChoiceAction(options)
@@ -424,7 +424,7 @@ class NettlingImp(Resolver):
     Destroy it at end step if it didn't attack this turn ...
     Activate only during an opponent's turn, before attackers are declared."""
     def can_activate(self, gs: GameState, source: GameCard) -> bool:
-        return source.owner_id != gs.turn_mgr.player_turn_idx and gs.phase_mgr.phase < Phase.DECLARE_ATTACKERS
+        return source.owner_id != gs.player_turn_idx and gs.phase_mgr.phase < Phase.DECLARE_ATTACKERS
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         if not target:

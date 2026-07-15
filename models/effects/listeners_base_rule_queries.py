@@ -87,7 +87,7 @@ class CanCastRule(Listener):
             event.permission = False
         elif c.props.is_land and gs.turn_mgr.has_played_land:
             event.permission = False
-        elif gs.turn_mgr.player_turn_idx != event.p_id and 'Instant' not in c.props.card_types:
+        elif gs.player_turn_idx != event.p_id and 'Instant' not in c.props.card_types:
             event.permission = False
 
 class CanDamageRule(Listener):

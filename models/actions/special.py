@@ -145,7 +145,7 @@ class SacCreatureAndAddMana(Action):
     def play(self):
         # Sacrifice then later apply effect that depends on the creature sacrificed
         self.gs.pile_mgr.destroy(self.creature)
-        self.gs.mana_pools[self.gs.turn_mgr.player_turn_idx].add_floating(self.color, self.amt)
+        self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
         self.gs.action_stack.pop()
 
 class SacTwoIslands(Action):

@@ -23,11 +23,11 @@ class Renderer(ABC):
 class ConsoleRenderer(Renderer):
     @staticmethod
     def render(gs: GameState, players: list[Player]):
-        p_idx = gs.turn_mgr.player_turn_idx
+        p_idx = gs.player_turn_idx
         action_idx = gs.action_on_idx
         opp_idx = 1 if gs.action_on_idx == 0 else 0
         print()
-        print(f"{players[p_idx].name}'s turn; {players[action_idx].name}'s action; current phase: {gs.phase_mgr.phase.name}; current life: {gs.score_mgr.life}")
+        print(f"{players[p_idx].name}'s turn; {players[action_idx].name}'s action; current phase: {gs.phase_mgr.phase.name}; current life: {gs.life}")
         print(f"Their hand: {['*' if not c.is_face_up else c for c in gs.pile_mgr.hands[opp_idx].cards]}")
         print(f"Their board: {[c for c in gs.pile_mgr.boards[opp_idx] if not c.props.is_aura]}")
         print(f"Combats: {gs.combat_mgr.combats}")

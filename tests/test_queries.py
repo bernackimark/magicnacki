@@ -105,13 +105,13 @@ class TestCanCast(unittest.TestCase):
     def test_can_cast_instant_on_opponents_turn(self):
         instant = self.g.hand('giant-growth')
         self.g.mana('GRU')
-        self.gs.turn_mgr.player_turn_idx = 1  # opponent's turn
+        self.gs.player_turn_idx = 1  # opponent's turn
         self.assertTrue(self.gs.perm_querier.can_cast(instant, p_id=0))
 
     def test_cannot_cast_sorcery_on_opponents_turn(self):
         sorcery = self.g.hand('timetwister')
         self.g.mana('GRU')
-        self.gs.turn_mgr.player_turn_idx = 1  # opponent's turn
+        self.gs.player_turn_idx = 1  # opponent's turn
         self.assertFalse(self.gs.perm_querier.can_cast(sorcery, p_id=0))
 
     def test_permission_effect_can_prevent_cast(self):

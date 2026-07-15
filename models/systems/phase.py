@@ -58,15 +58,15 @@ class UntapPhase(PhaseState):
         """Signal the start of the Untap phase;
         If optional untap, check if player has already decided to leave card tapped;
         If compelled to stay tapped, skip; else untap all cards on in-turn player's board;"""
-        query = CanEnterUntapPhaseQueryEvent(gs.turn_mgr.player_turn_idx)
+        query = CanEnterUntapPhaseQueryEvent(gs.player_turn_idx)
         gs.event_mgr.emit(query, gs)
         if query.permission is False:
             gs.phase_mgr.set_phase(Phase.UPKEEP, gs)
             return
 
         from models.events_all import UntapPhaseEvent
-        gs.event_mgr.emit(UntapPhaseEvent(gs.turn_mgr.player_turn_idx), gs)
-        for c in gs.pile_mgr.boards[gs.turn_mgr.player_turn_idx]:
+        gs.event_mgr.emit(UntapPhaseEvent(gs.player_turn_idx), gs)
+        for c in gs.pile_mgr.boards[gs.player_turn_idx]:
             if not c.is_tapped or c.id_ in gs.turn_mgr.untap_decisions_made:
                 continue
             if gs.perm_querier.can_untap(c):
@@ -95,7 +95,7 @@ class UpkeepPhase(PhaseState):
 
     def on_enter(self, gs: GameState) -> None:
         from models.events_all import UpkeepEvent
-        gs.event_mgr.emit(UpkeepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+        gs.event_mgr.emit(UpkeepEvent(active_player=gs.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.draw_discard import MoveToDrawPhase
@@ -115,8 +115,8 @@ class DrawPhase(PhaseState):
 
     def on_enter(self, gs: GameState) -> None:
         from models.events_all import DrawStepEvent
-        gs.event_mgr.emit(DrawStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
-        gs.pile_mgr.draw(gs.turn_mgr.player_turn_idx)
+        gs.event_mgr.emit(DrawStepEvent(active_player=gs.player_turn_idx), gs)
+        gs.pile_mgr.draw(gs.player_turn_idx)
 
     def get_actions(self, p_id: int, gs: GameState):
         return None  # draw is automatic
@@ -129,7 +129,7 @@ class MainPhase(PhaseState):
 
     def on_enter(self, gs: GameState) -> None:
         from models.events_all import MainPhaseEvent
-        gs.event_mgr.emit(MainPhaseEvent(gs.turn_mgr.player_turn_idx), gs)
+        gs.event_mgr.emit(MainPhaseEvent(gs.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.combat import BeginCombat
@@ -146,7 +146,7 @@ class MainPhase(PhaseState):
         actions.extend(gs.add_activated_abilities_from_board())
 
         # combat option
-        if any(gs.perm_querier.can_attack(c) for c in gs.pile_mgr.boards[gs.turn_mgr.player_turn_idx]):
+        if any(gs.perm_querier.can_attack(c) for c in gs.pile_mgr.boards[gs.player_turn_idx]):
             actions.append(BeginCombat(p_id, gs))
 
         # auto-advance safety:
@@ -246,7 +246,7 @@ class AssignCombatDamagePhase(PhaseState):
                 event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
                 gs.event_mgr.emit(event, gs)
             com.handle_damage()
-        # gs.event_mgr.emit(CombatEndEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+        # gs.event_mgr.emit(CombatEndEvent(active_player=gs.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         return None
@@ -259,7 +259,7 @@ class CombatEndPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.events_all import CombatEndEvent
-        gs.event_mgr.emit(CombatEndEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+        gs.event_mgr.emit(CombatEndEvent(active_player=gs.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState) -> list[Action] | None:
         return None
@@ -294,7 +294,7 @@ class EndStepPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.events_all import EndStepEvent
-        gs.event_mgr.emit(EndStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+        gs.event_mgr.emit(EndStepEvent(active_player=gs.player_turn_idx), gs)
         for c in gs.card_filter.in_play().result():
             c.modifiers.clear_eots()
 
@@ -309,7 +309,7 @@ class DiscardPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.events_all import DiscardStepEvent
-        gs.event_mgr.emit(DiscardStepEvent(active_player=gs.turn_mgr.player_turn_idx), gs)
+        gs.event_mgr.emit(DiscardStepEvent(active_player=gs.player_turn_idx), gs)
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.draw_discard import DiscardCards
@@ -369,11 +369,11 @@ class PassTurnPhase(PhaseState):
         from models.events_all import PassTheTurnEvent
 
         current_turn_number = gs.turn_mgr.turn_number
-        gs.event_mgr.emit(PassTheTurnEvent(gs.turn_mgr.player_turn_idx), gs)
+        gs.event_mgr.emit(PassTheTurnEvent(gs.player_turn_idx), gs)
         if gs.turn_mgr.turn_number != current_turn_number:  # if a PassTheTurn Listener already advanced turn
             return
 
-        PassTheTurn(gs.turn_mgr.player_turn_idx, gs).play()
+        PassTheTurn(gs.player_turn_idx, gs).play()
 
     def get_actions(self, p_id: int, gs: GameState):
         return None

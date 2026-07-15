@@ -92,7 +92,7 @@ class TestCardsGHI(unittest.TestCase):
         self.g.next_turn(True)
         self.g.cast_and_accept(card, wall, card.abilities[0])
         self.g.combat(attacker, wall)
-        self.assertEqual(26, self.gs.score_mgr.life[0])
+        self.assertEqual(26, self.gs.life[0])
 
     def test_goblin_shrine(self):
         """As long as host is a basic Mountain, all Goblins get +1/+0. When GS LTB, it deals 1 damage to each Goblin"""
@@ -113,25 +113,25 @@ class TestCardsGHI(unittest.TestCase):
         self.g.battlefield('haunting-wind')
         artifact_1 = self.g.battlefield('sol-ring', owner=1)
         artifact_1.tap()
-        self.assertEqual(19, self.gs.score_mgr.life[1], '1 damage should be dealt for a tap unrelated to AA')
+        self.assertEqual(19, self.gs.life[1], '1 damage should be dealt for a tap unrelated to AA')
 
         artifact_2 = self.g.battlefield('aladdins-ring', owner=1)
         aa = artifact_2.activated_abilities[0]  # {8}, {T}
         self.g.mana('UUUUUUUUUUU')
         self.g.activate_ability(aa, 0)
-        self.assertEqual(18, self.gs.score_mgr.life[1], '1 damage should be dealt for AA w tap')
+        self.assertEqual(18, self.gs.life[1], '1 damage should be dealt for AA w tap')
 
         artifact_3 = self.g.battlefield('jade-statue', owner=1)
         aa = artifact_3.activated_abilities[0]  # {2}
         self.g.mana('RRRR')
         self.g.activate_ability(aa, artifact_3)
-        self.assertEqual(17, self.gs.score_mgr.life[1], '1 damage should be dealt for AA w/o tap')
+        self.assertEqual(17, self.gs.life[1], '1 damage should be dealt for AA w/o tap')
 
         non_artifact = self.g.battlefield('dragon-whelp')
         aa = non_artifact.activated_abilities[0]
         self.g.mana('R')
         self.g.activate_ability(aa, non_artifact)
-        self.assertEqual(17, self.gs.score_mgr.life[1], '0 damage should be dealt for a non-artifact')
+        self.assertEqual(17, self.gs.life[1], '0 damage should be dealt for a non-artifact')
 
     def test_ichneumon_druid(self):
         """Whenever an opponent casts an instant spell other than the first instant spell that player casts each turn,
@@ -142,7 +142,7 @@ class TestCardsGHI(unittest.TestCase):
         bolt_2 = self.g.hand('lightning-bolt', owner=1)
         self.g.cast_and_accept(bolt, 0, bolt.abilities[0], owner=1)
         self.g.cast_and_accept(bolt_2, 0, bolt_2.abilities[0], owner=1)
-        self.assertEqual(16, self.gs.score_mgr.life[1])
+        self.assertEqual(16, self.gs.life[1])
 
     def test_instill_energy(self):
         """Enchanted creature can attack as though it had haste.

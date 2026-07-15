@@ -68,7 +68,7 @@ class TestCardsTUV(unittest.TestCase):
         skip_turn_and_untap_tv.play()
         self.g.activate_ability(card.activated_abilities[0])
         PassTheTurn(0, self.gs).play()
-        self.assertEqual(0, self.gs.turn_mgr.player_turn_idx)
+        self.assertEqual(0, self.gs.player_turn_idx)
         self.assertTrue(card.is_tapped)
 
     def test_timetwister(self):

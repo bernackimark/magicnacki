@@ -29,7 +29,7 @@ class CursedRackEffect(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: DiscardEvent):
         opp_id = flip(source.owner_id)
-        if gs.turn_mgr.player_turn_idx != opp_id:
+        if gs.player_turn_idx != opp_id:
             return
 
         hand = gs.pile_mgr.hands[opp_id]

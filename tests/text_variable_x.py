@@ -41,7 +41,7 @@ class TestVariableX(unittest.TestCase):
 
         # Accept the generated AbilityAction
         AcceptAction(1, self.gs).play()
-        self.assertEqual(self.gs.score_mgr.life[0], 23)
+        self.assertEqual(self.gs.life[0], 23)
 
     def test_x_activation_simple(self):
         """Verify activation pipeline flow for X abilities:
@@ -77,7 +77,7 @@ class TestVariableX(unittest.TestCase):
         # Accept the generated AbilityAction
         AcceptAction(1, self.gs).play()
 
-        self.assertEqual([18, 19], [self.gs.score_mgr.life[0], self.gs.score_mgr.life[1]])
+        self.assertEqual([18, 19], [self.gs.life[0], self.gs.life[1]])
 
     def test_xx(self):
         card = self.g.hand('part-water')  # casting_cost: XXU

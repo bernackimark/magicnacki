@@ -87,7 +87,7 @@ class AliFromCairo(Listener):
         if event.p_id_taking_damage != s.owner_id:
             return
 
-        current_life = gs.score_mgr.life[event.p_id_taking_damage]
+        current_life = gs.life[event.p_id_taking_damage]
 
         if current_life - event.amt < 1:
             event.amt = max(current_life - 1, 0)

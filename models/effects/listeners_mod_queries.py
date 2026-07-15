@@ -75,7 +75,7 @@ class AngryMobPT(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         if event.card is not source:
             return
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             mod = PTMod(s=source, p_adj=2, t_adj=2, expires='EOT')
         else:
             opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).swamps().result())
@@ -616,7 +616,7 @@ class WallOfTombstonesPT(Listener):
     modifies = 'pt'
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source or gs.turn_mgr.player_turn_idx != source.owner_id:
+        if event.card is not source or gs.player_turn_idx != source.owner_id:
             return
         cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
         event.mods.append(PTMod(s=source, t_adj=1 + cnt))

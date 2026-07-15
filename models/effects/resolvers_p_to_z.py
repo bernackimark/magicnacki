@@ -96,7 +96,7 @@ class Reset(Resolver):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
     @staticmethod
     def can_cast(gs: GameState, source: GameCard) -> bool:
-        return gs.turn_mgr.player_turn_idx != source.owner_id and gs.phase_mgr.phase > Phase.UPKEEP
+        return gs.player_turn_idx != source.owner_id and gs.phase_mgr.phase > Phase.UPKEEP
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for land in gs.card_filter.on_player_board(source.owner_id).lands().tapped().result():
@@ -233,7 +233,7 @@ class SingingTree(Resolver):
 class SirensCall(Resolver):
     """... All non-Wall creatures the active player has controlled continuously since BOT must attack ..."""
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard | int | Action] = None) -> None:
-        non_wall_creatures = gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).non_wall_creatures().result()
+        non_wall_creatures = gs.card_filter.on_player_board(gs.player_turn_idx).non_wall_creatures().result()
         for creature in non_wall_creatures:
             if not creature.has_summoning_sickness:
                 creature.modifiers.append(KWAMod('add', 'Goad', s=source, expires='EOT'))
@@ -383,7 +383,7 @@ class Twiddle(Resolver):
 class Typhoon(Resolver):
     """Typhoon deals damage to opponent = the number of Islands that player controls"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        opp = flip(gs.turn_mgr.player_turn_idx)
+        opp = flip(gs.player_turn_idx)
         opp_island_cnt = len(gs.card_filter.on_player_board(opp).islands().result())
         if opp_island_cnt:
             gs.apply_damage(s, opp_island_cnt, opp)
@@ -464,7 +464,7 @@ class VesuvanDoppelgangerCast(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield,
     except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        if gs.turn_mgr.player_turn_idx != s.owner_id:
+        if gs.player_turn_idx != s.owner_id:
             return
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:

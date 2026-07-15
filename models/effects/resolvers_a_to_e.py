@@ -328,9 +328,9 @@ class EnergyTap(Resolver):
 class EternalFlame(Resolver):
     """X = # of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        x = len(gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).mountains().result())
-        gs.apply_damage(source, x, flip(gs.turn_mgr.player_turn_idx))
-        gs.apply_damage(source, math.ceil(x/2), gs.turn_mgr.player_turn_idx)
+        x = len(gs.card_filter.on_player_board(gs.player_turn_idx).mountains().result())
+        gs.apply_damage(source, x, flip(gs.player_turn_idx))
+        gs.apply_damage(source, math.ceil(x/2), gs.player_turn_idx)
 
 class EvilPresence(Resolver):
     """Enchant land Enchanted land is a Swamp"""
@@ -345,9 +345,9 @@ class EvilPresence(Resolver):
 
 class ExchangeLifeTotals(Resolver):
     def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):
-        your_life = gs.score_mgr.life[s.owner_id]
-        opp_life = gs.score_mgr.life[flip(s.owner_id)]
-        gs.score_mgr.life[s.owner_id], gs.score_mgr.life[flip(s.owner_id)] = opp_life, your_life
+        your_life = gs.life[s.owner_id]
+        opp_life = gs.life[flip(s.owner_id)]
+        gs.life[s.owner_id], gs.life[flip(s.owner_id)] = opp_life, your_life
 
 class EyeForAnEye(Resolver):
     """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""

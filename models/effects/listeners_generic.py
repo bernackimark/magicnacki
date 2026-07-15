@@ -66,7 +66,7 @@ class SkipUntaps(Listener):
         self.skips_used = 0
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if event.card is not self.target or gs.turn_mgr.player_turn_idx != self.target.owner_id:
+        if event.card is not self.target or gs.player_turn_idx != self.target.owner_id:
             return
         if gs.phase_mgr.phase != Phase.UNTAP:
             return
@@ -476,7 +476,7 @@ class DealDamageToOwnerOnUpkeep(Listener):
         self.amount = amount
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.turn_mgr.player_turn_idx != source.owner_id:
+        if gs.player_turn_idx != source.owner_id:
             return
         gs.apply_damage(source, self.amount, source.owner_id)
 
@@ -488,7 +488,7 @@ class DealDamageOnHostUpkeep(Listener):
         self.amount = amount
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.host or gs.turn_mgr.player_turn_idx != source.host.owner_id:
+        if not source.host or gs.player_turn_idx != source.host.owner_id:
             return
         gs.apply_damage(source, self.amount, source.host.owner_id)
 

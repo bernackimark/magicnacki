@@ -54,7 +54,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.activate_ability(aa, 0)
         bolt = self.g.hand('lightning-bolt', owner=1)
         bolt.abilities[0].effect.resolve(self.gs, bolt, 0)  # type: ignore
-        self.assertEqual(19, self.gs.score_mgr.life[0])
+        self.assertEqual(19, self.gs.life[0])
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
         self.assertIn(card, self.gs.pile_mgr.hands[0].cards)
 
@@ -91,7 +91,7 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.card('reverse-damage')
         self.gs.event_mgr.register(ReverseDamageEOT(damage_dealer=damage_dealer), card)
         self.g.combat(damage_dealer, None)
-        self.assertEqual(22, self.gs.score_mgr.life[0])
+        self.assertEqual(22, self.gs.life[0])
 
     def test_rock_hydra(self):
         """XRR RH enters with X +1/+1 counters.
@@ -145,7 +145,7 @@ class TestCardsQRS(unittest.TestCase):
 
         self.g.next_turn()
         self.g.activate_ability(aa, 1)
-        self.assertEqual(19, self.gs.score_mgr.life[1])
+        self.assertEqual(19, self.gs.life[1])
 
         self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
         self.assertIn(card, self.g.gy[0])
@@ -225,7 +225,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.activate_ability(aa)
         self.g.combat(flier, None)
         self.g.combat(non_flier, None)
-        self.assertEqual(19, self.gs.score_mgr.life[0])
+        self.assertEqual(19, self.gs.life[0])
 
     def test_scarwood_hag(self):
         """{GGGG}, {T}: Target creature gains forestwalk EOT. {T}: Target creature loses forestwalk until EOT."""
@@ -260,7 +260,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
         self.gs.pending_choice.get_actions()[0].play()
-        self.assertEqual(18, self.gs.score_mgr.life[0])
+        self.assertEqual(18, self.gs.life[0])
 
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
         self.assertIn(regular, gy)
@@ -285,7 +285,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn('Sacrifice Island', [a.__repr__() for a in self.gs.pending_choice.get_actions()])
         self.gs.pending_choice.options[0].play()
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
-        self.assertEqual(17, self.gs.score_mgr.life[0])
+        self.assertEqual(17, self.gs.life[0])
         self.assertIn(sd, self.g.gy[0])
 
     def test_serpent_generator(self):
@@ -365,7 +365,7 @@ class TestCardsQRS(unittest.TestCase):
         spirit_link = self.g.battlefield('spirit-link')
         Attach(0, self.gs, spirit_link, host).play()
         self.gs.apply_damage(host, 4, 1, is_combat=True)
-        self.assertEqual(24, self.gs.score_mgr.life[0])
+        self.assertEqual(24, self.gs.life[0])
 
     def test_sprit_shackle(self):
         """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it"""
@@ -429,7 +429,7 @@ class TestCardsQRS(unittest.TestCase):
         """SS deals damage to target player equal to the number of cards in that player's hand"""
         card = self.g.hand('storm-seeker')
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
-        self.assertEqual(13, self.gs.score_mgr.life[1])
+        self.assertEqual(13, self.gs.life[1])
 
     def test_syphon_soul(self):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
@@ -437,7 +437,7 @@ class TestCardsQRS(unittest.TestCase):
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         # self.g.mana('BBB')
         # self.g.cast_and_accept(card, 1, card.abilities[0])
-        self.assertEqual([22, 18], self.gs.score_mgr.life)
+        self.assertEqual([22, 18], self.gs.life)
 
     def test_tablet_of_epityr(self):
         """Whenever an artifact you control is put into a graveyard from battlefield, you may pay {1} to gain 1 life."""
@@ -446,7 +446,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.mana('U')
         self.gs.pile_mgr.destroy(your_artifact)
         self.gs.pending_choice.options[0].play()
-        self.assertEqual(21, self.gs.score_mgr.life[0])
+        self.assertEqual(21, self.gs.life[0])
 
 
 if __name__ == '__main__':

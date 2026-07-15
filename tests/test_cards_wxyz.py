@@ -21,11 +21,11 @@ class TestCardsWXYZ(unittest.TestCase):
         discard_option = self.gs.pending_choice.options[1]
         if discard_option.cards.is_land:
             pay_option.play()
-            self.assertEqual(19, self.gs.score_mgr.life[0])
+            self.assertEqual(19, self.gs.life[0])
         else:
             mv = discard_option.cards.props.mana_value
             pay_option.play()
-            self.assertEqual(20 - mv, self.gs.score_mgr.life[0])
+            self.assertEqual(20 - mv, self.gs.life[0])
 
         self.g.next_turn()
         self.g.activate_ability(aa, 0)
