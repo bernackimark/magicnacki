@@ -16,7 +16,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
-    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, PreventNextDamageToCardEffect, CounterSpell, \
+    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, CounterSpell, \
     PreventNextDamageTo, PreventAllDamageBy
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
@@ -46,7 +46,7 @@ from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCan
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathPumpAll, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
     'abomination': [Triggered(Abomination())],

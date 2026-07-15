@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.special import Attach
 from models.events_all import EndStepEvent, CombatEndEvent
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
 

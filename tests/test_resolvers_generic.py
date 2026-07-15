@@ -1,7 +1,7 @@
 import unittest
 
 from models.effects.resolvers_generic import PreventNextDamageTo, GraveyardToExileInItsEntirety, TakeAnotherTurn
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
 

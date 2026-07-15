@@ -5,7 +5,7 @@ from models.effects.base import Listener
 from models.effects.listeners_generic import SkipUntaps
 from models.effects.listeners_permission import UnblockableEOT, Meekstone
 from models.events_all import CanCastQueryEvent, CanTargetQueryEvent
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from tests.setup_helpers import (add_to_battlefield, get_card,
                                  put_onto_battlefield_last_turn, put_onto_battlefield_this_turn, TestGame)
 

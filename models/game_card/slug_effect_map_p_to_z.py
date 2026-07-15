@@ -33,8 +33,7 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
     RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap
-from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, SirensCallEndStep, \
-    VoodooDollEndStep, WhirlingDervish
+from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, VoodooDollEndStep, WhirlingDervish
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
@@ -52,7 +51,7 @@ from models.effects.listeners_permission import Seeker, CantBeTargetedByAuras, S
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap, SkipUntapPhase
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
     'palladia-mors': [Triggered(PayManaOrSacAtUpkeep('RGW'))],

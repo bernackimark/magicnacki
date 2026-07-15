@@ -3,7 +3,7 @@ from models.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
 from models.effects.resolvers_generic import AddMana, UntapForManaEffect, AddCounter, ManaBatteriesAddMana, Pump
 from models.game_card.card_filter_funcs import T_FUNCS
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 
 
 def dual_land_specs(colors: str) -> list[EffSpec]:

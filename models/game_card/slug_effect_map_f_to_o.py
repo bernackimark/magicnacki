@@ -26,11 +26,11 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell, \
     RevealTopLibraryCard
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
-from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, ManaDrainMainPhase
+from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation
 from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac, OldManOfTheSeaPowerCheck, ManaVortexSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium

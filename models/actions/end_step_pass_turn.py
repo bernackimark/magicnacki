@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from models.actions.base import Action
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 
 
 @dataclass

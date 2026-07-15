@@ -5,7 +5,7 @@ from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
 class TestCardsMNOP(unittest.TestCase):

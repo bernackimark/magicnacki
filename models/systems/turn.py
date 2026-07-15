@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.utils import flip
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 
 @dataclass(frozen=True)
 class Turn:

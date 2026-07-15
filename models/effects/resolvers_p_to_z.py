@@ -16,13 +16,12 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
-from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, PreventNextDamageToEOT, \
-    DestroyAtEndStep, PreventNextDamageByEOT, BounceAtEndStep, PreventNextDamageToEOT, DestroyAtEndStepIfItDidntAttack
+from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, DestroyAtEndStep, PreventNextDamageByEOT, BounceAtEndStep, PreventNextDamageToEOT, DestroyAtEndStepIfItDidntAttack
 from models.effects.listeners_mod_queries import PietyEOT, ShieldWallEOT, TransmutationEOT
 from models.effects.listeners_permission import TowerOfCoireallEOT
 from models.effects.resolvers_generic import Reveal
 from models.modifiers import SubTypeMod, KWAMod, PTMod
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from models.utils import flip
 from models.zone import Zone
 

@@ -1,11 +1,11 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable
 
 from models.actions.base import DoNothing
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -18,7 +18,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, CanUntapQueryEvent, \
-    CanAttackQueryEvent, AttackEvent, Event
+    CanAttackQueryEvent, AttackEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone

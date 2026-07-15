@@ -5,8 +5,7 @@ from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.mana import PayMana
 from models.actions.special import Attach, PayManaToDrawCards
 from models.events_all import CastResolvedEvent, UpkeepEvent
-from models.phase_manager import Phase
-from models.zone import Zone
+from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
 

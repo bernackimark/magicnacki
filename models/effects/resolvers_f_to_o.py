@@ -22,7 +22,7 @@ from models.effects.listeners_mod_queries import HellSwarmEOT, HolyLightEOT, Mar
 from models.effects.listeners_permission import NoAttacksAllowedEOT
 from models.effects.resolvers_generic import GraveyardToExile
 from models.modifiers import PTMod, KWAMod
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from models.utils import flip
 from models.zone import Zone
 

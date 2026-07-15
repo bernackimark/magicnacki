@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 from models.action_stack import ActionStack
 from models.actions.stack_accept_counter import AcceptAction
-from models.event_manager import EventManager
+from models.systems.event import EventManager
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
 from models.combat import CombatManager
@@ -21,13 +21,13 @@ from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
 from models.mana import ManaPool
 from models.mulligan import MulliganChoice
-from models.pile_manager import PileManager
+from models.systems.pile import PileManager
 from models.presentation_request import PresentationRequest
-from models.query_manager import PermissionQuerier
-from models.score_manager import ScoreManager
+from models.systems.permission import PermissionQuerier
+from models.systems.score import ScoreManager
 from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
-from models.turn_manager import TurnManager
-from models.phase_manager import PhaseManager
+from models.systems.turn import TurnManager
+from models.systems.phase import PhaseManager
 
 class GameState:
     """All-knowing class responsible for everything after a new game is created;

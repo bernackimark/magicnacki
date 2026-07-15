@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
 from models.utils import flip
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 
 
 class GameOverChoice(ChoiceAction):

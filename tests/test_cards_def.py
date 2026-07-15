@@ -5,7 +5,7 @@ from models.actions.mana import PayMana
 from models.actions.special import Attach
 from models.counter_tokens import HUNGER
 from models.events_all import UpkeepEvent
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
 

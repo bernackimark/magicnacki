@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from models.counter_tokens import CounterType, WIND
 from models.modifiers import OwnershipMod
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from models.utils import flip
 
 if TYPE_CHECKING:

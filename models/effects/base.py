@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from ..actions.base import Action
     from ..game_card.game_card import GameCard
     from game_state import GameState
-    from models.phase_manager import Phase
+    from models.systems.phase import Phase
 
 
 class Effect(ABC):

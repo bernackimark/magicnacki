@@ -55,7 +55,7 @@ class TargetChoice2(ChoiceAction):
         from models.actions.ability_pipeline_support import SelectTargetAction2
         p = self.pipeline
         targets = p.eff_spec.target_spec.get_targets(p.gs, p.source)
-        return [SelectTargetAction2(p.p_id, p.gs, p, target) for target in targets]
+        return [SelectTargetAction2(p.player_idx, p.gs, p, target) for target in targets]
 
 class ExtraCostChoice2(ChoiceAction):
     def __init__(self, pipeline: AbilityPipeline):

@@ -1,6 +1,5 @@
 from __future__ import annotations
 from copy import copy
-import random
 from typing import TYPE_CHECKING
 
 from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, StateBasedEvent

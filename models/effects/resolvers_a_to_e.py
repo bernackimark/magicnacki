@@ -13,7 +13,7 @@ from models.effects.listeners_generic import SkipUntaps, DestroyAtEndStepIfItAtt
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from models.utils import flip
 from models.zone import Zone
 

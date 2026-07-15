@@ -10,7 +10,7 @@ from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
 from models.effects.base import ActivatedAbility, EffSpec
-from models.phase_manager import Phase
+from models.systems.phase import Phase
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ from models.constants import Mulligan
 from models.game_card.card import CardUniverse
 from models.game_card.game_card import GameCard
 from models.deck import Deck
-from models.match_manager import MatchManager
+from models.systems.match import MatchManager
 from models.zone import Zone
 from players import ConsolePlayer
 from renderers import ConsoleRenderer
