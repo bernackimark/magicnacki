@@ -62,6 +62,14 @@ class EffSpec:
         either way, we convert that to a TargetSpec via _normalize_target_spec"""
         object.__setattr__(self, "target_spec", self._normalize_target_spec(self.target_spec))
 
+    @property
+    def is_aa(self) -> bool:
+        return self.activation_type == 'activated'
+
+    @property
+    def is_spell(self) -> bool:
+        return self.activation_type == 'spell'
+
     @staticmethod
     def _normalize_target_spec(target_spec: Callable | TargetSpec | None) -> TargetSpec | None:
         if target_spec is None:

@@ -48,8 +48,7 @@ class GameCard:
         self.extras: dict[str, Any] = {}  # declarations of X, color upon entry, etc
 
         self.abilities: list[EffSpec | None] = deepcopy(INVOCATIONS.get(self.props.slug, []))
-        self.activated_abilities: list[ActivatedAbility | None] = [ActivatedAbility(self, a) for a in self.abilities
-                                                                   if a.activation_type == 'activated']
+        self.activated_abilities: list[ActivatedAbility | None] = [ActivatedAbility(self, aa) for aa in self.aas]
 
     def __repr__(self) -> str:
         text = self.props.name
@@ -84,8 +83,12 @@ class GameCard:
         return self.modifiers.new_owner_id
 
     @property
+    def aas(self) -> list[EffSpec | None]:
+        return [e for e in self.abilities if e.is_aa]
+
+    @property
     def spells(self) -> list[EffSpec | None]:
-        return [e for e in self.abilities if e.activation_type == 'spell']
+        return [e for e in self.abilities if e.is_spell]
 
     @property
     def is_enchanted(self) -> bool:

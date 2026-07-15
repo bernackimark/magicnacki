@@ -42,7 +42,7 @@ class ActionStack:
 
     @property
     def spells(self) -> list[AbilityPipeline | None]:
-        return [a for a in self.actions if isinstance(a, AbilityPipeline) and a.origin == 'spell']
+        return [a for a in self.actions if isinstance(a, AbilityPipeline) and a.eff_spec.is_spell]
 
     def push(self, action: Action, gs: GameState, flip_action_on_opponent: bool = True) -> None:
         self._actions.append(action)

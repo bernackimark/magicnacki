@@ -41,14 +41,10 @@ class AbilityPipeline(Action):
     cost_result: Union["CostResult", None] = None
 
     def __repr__(self):
-        if self.origin == 'spell':
+        if self.eff_spec.is_spell:
             return f'Cast {self.source.props.name}'
-        elif self.origin == 'activated':
+        elif self.eff_spec.is_aa:
             return f'{{{self.eff_spec.cost}}} Activate ability for {self.source.props.name}: {self.eff_spec.text}'
-
-    @property
-    def origin(self) -> Literal["spell", "activated", "triggered", "static"] | None:
-        return self.eff_spec.activation_type
 
     def play(self) -> None:
         self.advance()
@@ -64,8 +60,7 @@ class AbilityPipeline(Action):
             if len(targets) < target_spec.min_cnt:
                 return False
 
-        mana_cost = self.source.casting_cost[:] if self.origin == 'spell' else self.eff_spec.cost
-        if not self.gs.mana_pools[self.player_idx].can_pay(mana_cost):
+        if not self.gs.mana_pools[self.player_idx].can_pay(self.ability_cost):
             return False
 
         for extra_cost in (self.eff_spec.extra_costs or []):
@@ -110,9 +105,9 @@ class AbilityPipeline(Action):
         """Pay costs; create the AbilityAction & push it onto the stack"""
         print('I am finishing')
         from models.actions.ability_pipeline_support import AbilityAction
-        if self.origin == 'activated' and 'T' in self.eff_spec.cost:
+        if self.eff_spec.is_aa and 'T' in self.eff_spec.cost:
             self.source.tap()
-        mana_cost = self.source.casting_cost[:] if self.origin == 'spell' else self.eff_spec.cost
+        mana_cost = self.ability_cost[::]
         mana_cost = mana_cost.replace('X', str(self.x_value)) if self.x_value else mana_cost
         if mana_cost:
             self.gs.mana_pools[self.player_idx].pay(mana_cost)
@@ -131,7 +126,7 @@ class AbilityPipeline(Action):
         if isinstance(self.eff_spec.effect, Resolver):
             self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
 
-        if self.origin == 'activated':
+        if self.eff_spec.is_aa:
             print(f"Successfully activated ability for {self.source.props.name}")
             aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
             aa.activations_this_turn += 1
@@ -164,13 +159,15 @@ class AbilityPipeline(Action):
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 
     @property
+    def ability_cost(self) -> str:
+        return self.source.casting_cost if self.eff_spec.is_spell else self.eff_spec.cost
+
+    @property
     def needs_x(self) -> bool:
         # if you have selected an x_value, you no longer need to be in this flow
         if self.x_value is not None:
             return False
-        if self.origin == 'spell' and 'X' in self.source.casting_cost:
-            return True
-        if self.origin == 'activated' and 'X' in self.eff_spec.cost:
+        if 'X' in self.ability_cost:
             return True
         return False
 

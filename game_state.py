@@ -100,7 +100,7 @@ class GameState:
     
     @property
     def player_turn_idx(self) -> int:
-        return self.player_turn_idx
+        return self.turn_mgr.player_turn_idx
 
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
