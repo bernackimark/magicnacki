@@ -166,7 +166,7 @@ class Discard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        options = [DiscardCards(target, gs, c) for c in gs.pile_mgr.hands[target].cards]
+        options = [DiscardCards(target, gs, c) for c in gs.pile_mgr.hands[target]]
         gs.pending_choice = ChoiceAction(options)
 
 class DrawCards(Resolver):
@@ -367,7 +367,7 @@ class RevealHands(Resolver):
         elif target is None:
             target = [0, 1]
         for t in target:
-            for c in gs.pile_mgr.hands[t].cards:
+            for c in gs.pile_mgr.hands[t]:
                 c.reveal()
 
 class RevealLibrary(Resolver):

@@ -75,14 +75,14 @@ class TestCardsDEF(unittest.TestCase):
         skip_draw_gain_life.play()
 
         self.g.next_turn()
-        self.assertEqual(7, len(self.gs.pile_mgr.hands[0].cards))
+        self.assertEqual(7, len(self.gs.pile_mgr.hands[0]))
         self.assertEqual(22, self.gs.life[0])
 
         self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
         do_not_skip_draw = self.gs.pending_choice.get_actions()[1]
         do_not_skip_draw.play()
         self.gs.phase_mgr.set_phase(Phase.DRAW, self.gs)
-        self.assertEqual(8, len(self.gs.pile_mgr.hands[0].cards))
+        self.assertEqual(8, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
 
     def test_fellwar_stone_1(self):

@@ -78,14 +78,14 @@ class TestCardsTUV(unittest.TestCase):
         self.g.gy[0].clear()
         self.g.graveyard('scryb-sprites')
         self.g.graveyard('serra-angel')
-        hand_snapshot = self.gs.pile_mgr.hands[0].cards[:]
+        hand_snapshot = self.gs.pile_mgr.hands[0][:]
         self.g.hand('island')
         self.g.hand('island')
         card = self.g.hand('timetwister')
         self.g.cast_and_accept(card, None, card.abilities[0])
-        self.assertTrue(7, len(self.gs.pile_mgr.hands[0].cards))
+        self.assertTrue(7, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
-        self.assertNotEqual(hand_snapshot, self.gs.pile_mgr.hands[0].cards)
+        self.assertNotEqual(hand_snapshot, self.gs.pile_mgr.hands[0])
 
     def test_unstable_mutation(self):
         """Host gets +3/+3. At host's upkeep, put a -1/-1 counter on host."""

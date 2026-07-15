@@ -60,7 +60,7 @@ class RagMan(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target player')
-        opp_cards = gs.pile_mgr.hands[target].cards
+        opp_cards = gs.pile_mgr.hands[target]
         for c in opp_cards:
             c.reveal()
         opp_creatures = [c for c in opp_cards if c.is_creature]
@@ -250,7 +250,7 @@ class StormSeeker(Resolver):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: Optional[GameCard] = None):
         opp_idx = flip(source.owner_id)
-        gs.apply_damage(source, len(gs.pile_mgr.hands[opp_idx].cards), opp_idx)
+        gs.apply_damage(source, len(gs.pile_mgr.hands[opp_idx]), opp_idx)
 
 class StreamOfLife(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
@@ -325,7 +325,7 @@ class Timetwister(Resolver):
     (Timetwister to its owner's graveyard.)"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         for p_id in (0, 1):
-            for c in gs.pile_mgr.hands[p_id].cards:
+            for c in gs.pile_mgr.hands[p_id]:
                 gs.pile_mgr.move_card(c, Zone.LIBRARY, emit_zone_event=False)
             for c in gs.pile_mgr.graveyards[p_id]:
                 gs.pile_mgr.move_card(c, Zone.LIBRARY, emit_zone_event=False)
@@ -365,7 +365,7 @@ class TriassicEgg(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
         options = []
-        for card_in_hand in gs.pile_mgr.hands[source.owner_id].cards:
+        for card_in_hand in gs.pile_mgr.hands[source.owner_id]:
             if card_in_hand.is_creature:
                 options.append(HandToBattlefield(source.owner_id, gs, card_in_hand))
         for card_in_graveyard in gs.pile_mgr.graveyards[source.owner_id]:
@@ -493,7 +493,7 @@ class WandOfIth(Resolver):
     If a non-land, the player pays life = to its mana value else discards it.  Activate only during your turn."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         opp = flip(source.owner_id)
-        opp_cards = gs.pile_mgr.hands[opp].cards
+        opp_cards = gs.pile_mgr.hands[opp]
         if not opp_cards:
             return
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
@@ -511,7 +511,7 @@ class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
         for i in (0, 1):
-            for c in gs.pile_mgr.hands[i].cards[::]:
+            for c in gs.pile_mgr.hands[i][::]:
                 gs.pile_mgr.discard(c)
             gs.pile_mgr.draw(i, 7)
 
@@ -519,10 +519,10 @@ class WindsOfChange(Resolver):
     """Each player shuffles the cards from their hand into their library, then draws that many cards"""
     def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
         for p_id in range(2):
-            if not gs.pile_mgr.hands[p_id].cards:
+            if not gs.pile_mgr.hands[p_id]:
                 continue
             hand_cards = gs.pile_mgr.hands[p_id][:]
-            gs.pile_mgr.hands[p_id].cards.clear()
+            gs.pile_mgr.hands[p_id].clear()
             gs.pile_mgr.libraries[p_id].extend(hand_cards)
             random.shuffle(gs.pile_mgr.libraries[p_id])
             gs.pile_mgr.draw(p_id, len(hand_cards))

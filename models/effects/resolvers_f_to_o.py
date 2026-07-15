@@ -120,7 +120,7 @@ class GiantSlug(Resolver):
 class GlassesOfUrza(Resolver):
     """Look at opponent's hand"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        for c in gs.pile_mgr.hands[flip(source.owner_id)].cards:
+        for c in gs.pile_mgr.hands[flip(source.owner_id)]:
             c.reveal()
 
 class GlyphOfDestruction(Resolver):
@@ -177,7 +177,7 @@ class GwendlynDiCorci(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        cards = gs.pile_mgr.hands[target].cards
+        cards = gs.pile_mgr.hands[target]
         if not cards:
             return
         if len(cards) == 1:
@@ -229,7 +229,7 @@ class Inquisition(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f"{source.props.name} needs a target player")
-        opp_cards = gs.pile_mgr.hands[flip(source.owner_id)].cards
+        opp_cards = gs.pile_mgr.hands[flip(source.owner_id)]
         for c in opp_cards:
             c.reveal()
         if white_cnt := len([c for c in opp_cards if c.is_white]):
@@ -239,7 +239,7 @@ class JalumTome(Resolver):
     """Draw a card, then discard a card"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.pile_mgr.draw(source.owner_id)
-        options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id].cards]
+        options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id]]
         gs.pending_choice = ChoiceAction(options)
 
 class JovialEvil(Resolver):
@@ -277,7 +277,7 @@ class LesserWerewolf(Resolver):
 class LibraryOfAlexandria(Resolver):
     """{T}: Draw a card. Activate only if you have exactly seven cards in hand."""
     def can_activate(self, gs: GameState, source: GameCard):
-        return len(gs.pile_mgr.hands[source.owner_id].cards) == 7
+        return len(gs.pile_mgr.hands[source.owner_id]) == 7
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         gs.pile_mgr.draw(source.owner_id)
@@ -363,7 +363,7 @@ class MindTwist(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         x = source.extras.get('x', 0)  # read X chosen when casting
         opp_id = flip(source.owner_id)
-        opp_cards = gs.pile_mgr.hands[opp_id].cards
+        opp_cards = gs.pile_mgr.hands[opp_id]
         if not opp_cards:
             return
         if len(opp_cards) <= x:

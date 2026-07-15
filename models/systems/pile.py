@@ -3,7 +3,6 @@ from copy import copy
 from typing import TYPE_CHECKING
 
 from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, StateBasedEvent
-from models.hand import Hand
 from models.modifiers import RegenerationMod
 from models.zone import Zone
 
@@ -19,7 +18,7 @@ class PileManager:
         self.boards: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
         self.graveyards: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
         self.exiles: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
-        self.hands: list[Hand] = [Hand() for _ in range(self._gs.player_cnt)]
+        self.hands: list[list[GameCard]] = [[] for _ in range(self._gs.player_cnt)]
         
         # GameCard getting reference to GameState is a ChatGPT suggestion
         for lib in self.libraries:
@@ -29,7 +28,7 @@ class PileManager:
     @property
     def all_cards(self) -> list[GameCard]:
         """Returns all cards, including tokens"""
-        return ([c for lib in self.libraries for c in lib] + [c for h in self.hands for c in h.cards] +
+        return ([c for lib in self.libraries for c in lib] + [c for h in self.hands for c in h] +
                 [c for g in self.graveyards for c in g] + [c for e in self.exiles for c in e] +
                 [c for b in self.boards for c in b])
 
@@ -100,7 +99,7 @@ class PileManager:
 
     def draw(self, p_id: int, cnt: int = 1, print_output: bool = True):
         for _ in range(cnt):
-            top_lib_card = self._gs.pile_mgr.libraries[p_id][0]
+            top_lib_card = self.libraries[p_id][0]
             self.move_card(top_lib_card, Zone.HAND, cause='draw')
             self._gs.event_mgr.emit(DrawCardEvent(p_id, top_lib_card), self._gs)
             if print_output:
@@ -108,7 +107,7 @@ class PileManager:
             self._gs.game_history.append_non_action(self._gs, text=f'Player #{p_id} draws')
 
     def sort_hand(self, p_idx: int):
-        self.hands[p_idx].cards.sort(key=lambda x: x.props.mana_value)
+        self.hands[p_idx].sort(key=lambda x: x.props.mana_value)
 
     def _add_to_zone(self, card: GameCard, zone: Zone):
         if card.is_token and zone != Zone.BATTLEFIELD:
@@ -116,35 +115,35 @@ class PileManager:
         match zone:
             case Zone.BATTLEFIELD:
                 card.reveal()
-                self._gs.pile_mgr.boards[card.owner_id].append(card)
+                self.boards[card.owner_id].append(card)
                 card.turn_entered_for_owner = self._gs.turn_mgr.turn_number
             case Zone.HAND:
-                self._gs.pile_mgr.hands[card.orig_owner_id].cards.append(card)
-                self._gs.pile_mgr.sort_hand(card.orig_owner_id)
+                self.hands[card.orig_owner_id].append(card)
+                self.sort_hand(card.orig_owner_id)
             case Zone.GRAVEYARD:
                 card.reveal()
-                self._gs.pile_mgr.graveyards[card.orig_owner_id].append(card)
+                self.graveyards[card.orig_owner_id].append(card)
             case Zone.EXILE:
                 card.reveal()
-                self._gs.pile_mgr.exiles[card.orig_owner_id].append(card)
+                self.exiles[card.orig_owner_id].append(card)
             case Zone.LIBRARY:
-                self._gs.pile_mgr.libraries[card.orig_owner_id].insert(0, card)
+                self.libraries[card.orig_owner_id].insert(0, card)
 
     def _remove_from_zone(self, card: GameCard, zone: Zone):
         match zone:
             case Zone.BATTLEFIELD:
-                self._gs.pile_mgr.boards[card.owner_id].remove(card)
+                self.boards[card.owner_id].remove(card)
                 if card.is_tapped:
                     card.is_tapped = False
             case Zone.HAND:
-                self._gs.pile_mgr.hands[card.orig_owner_id].cards.remove(card)
-                self._gs.pile_mgr.sort_hand(card.orig_owner_id)
+                self.hands[card.orig_owner_id].remove(card)
+                self.sort_hand(card.orig_owner_id)
             case Zone.GRAVEYARD:
-                self._gs.pile_mgr.graveyards[card.owner_id].remove(card)
+                self.graveyards[card.owner_id].remove(card)
             case Zone.EXILE:
-                self._gs.pile_mgr.exiles[card.owner_id].remove(card)
+                self.exiles[card.owner_id].remove(card)
             case Zone.LIBRARY:
-                self._gs.pile_mgr.libraries[card.owner_id].remove(card)
+                self.libraries[card.owner_id].remove(card)
 
     def _leave_battlefield(self, card: GameCard, to_zone: Zone):
         """Emit ZoneChangeEvent before unregistering its effects, doing so for the subject card;

@@ -8,7 +8,7 @@ class TestCardFilter(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
         for h in self.gs.pile_mgr.hands:
-            h.cards.clear()
+            h.clear()
 
     def test_in_play(self):
         lion = self.g.battlefield("savannah-lions")

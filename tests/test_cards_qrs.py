@@ -24,7 +24,7 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.battlefield('rag-man')
         aa = card.activated_abilities[0]
         self.g.mana('BBBBBBBBB')
-        opp_hand = self.gs.pile_mgr.hands[1].cards
+        opp_hand = self.gs.pile_mgr.hands[1]
         opp_hand.clear()
         self.g.hand('merfolk-of-the-pearl-trident', owner=1)
         self.g.hand('phantom-monster', owner=1)
@@ -56,7 +56,7 @@ class TestCardsQRS(unittest.TestCase):
         bolt.abilities[0].effect.resolve(self.gs, bolt, 0)  # type: ignore
         self.assertEqual(19, self.gs.life[0])
         self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
-        self.assertIn(card, self.gs.pile_mgr.hands[0].cards)
+        self.assertIn(card, self.gs.pile_mgr.hands[0])
 
     def test_reset(self):
         """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control."""
@@ -78,7 +78,7 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.card('revelation')
         RevealHands().resolve(self.gs, card)
         self.gs.event_mgr.register(card.abilities[0].effect, card)
-        hand = self.gs.pile_mgr.hands[0].cards
+        hand = self.gs.pile_mgr.hands[0]
         self.assertTrue(all(c.is_face_up for c in hand))
         self.gs.pile_mgr.draw(0, 1)
         self.assertTrue(all(c.is_face_up for c in hand))
@@ -309,7 +309,7 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.battlefield('sindbad')
         land_atop_lib = self.g.library('island')
         Sindbad().resolve(self.gs, card, None)
-        self.assertIn(land_atop_lib, self.gs.pile_mgr.hands[0].cards)
+        self.assertIn(land_atop_lib, self.gs.pile_mgr.hands[0])
         non_land_atop_lib = self.g.library('serendib-efreet')
         Sindbad().resolve(self.gs, card, None)
         self.assertIn(non_land_atop_lib, self.g.gy[0])

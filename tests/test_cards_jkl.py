@@ -83,12 +83,12 @@ class TestCardsJKL(unittest.TestCase):
         self.assertEqual(1, self.gs.mana_pools[0].available_mana.get('C'))
 
         self.g.next_turn()
-        self.assertEqual(7, len(self.gs.pile_mgr.hands[0].cards))
+        self.assertEqual(7, len(self.gs.pile_mgr.hands[0]))
         self.assertTrue(aa_draw_card.eff_spec.effect.can_activate(self.gs, card))  # type: ignore
         self.g.activate_ability(aa_draw_card, 0)
 
         self.g.next_turn()
-        self.assertTrue(8, len(self.gs.pile_mgr.hands[0].cards))
+        self.assertTrue(8, len(self.gs.pile_mgr.hands[0]))
         self.assertFalse(aa_draw_card.eff_spec.effect.can_activate(self.gs, card))  # type: ignore
 
 

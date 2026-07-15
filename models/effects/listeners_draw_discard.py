@@ -33,8 +33,8 @@ class CursedRackEffect(Listener):
             return
 
         hand = gs.pile_mgr.hands[opp_id]
-        for i in range(len(hand.cards) - 4):
-            gs.action_stack.push(DiscardCards(opp_id, gs, hand.cards[0]), gs, False)
+        for i in range(len(hand) - 4):
+            gs.action_stack.push(DiscardCards(opp_id, gs, hand[0]), gs, False)
 
 
 # --- DRAW EVENT ---

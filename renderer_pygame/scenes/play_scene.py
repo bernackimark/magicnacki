@@ -167,7 +167,7 @@ class PlayScene(Scene):
     def draw_hand(self, p_idx: int, col: int, row: int, face_down: bool, is_opp: bool):
         """Opponent hand is a straight line atop screen; player hand is fanned along an invisible arc"""
         mouse_pos = pg.mouse.get_pos()
-        cards = self.state.pile_mgr.hands[p_idx].cards
+        cards = self.state.pile_mgr.hands[p_idx]
         if not len(cards):
             return
 

@@ -36,7 +36,7 @@ class BlackVise(Listener):
         opp_id = flip(s.owner_id)
         if event.active_player != opp_id:
             return
-        opp_hand_len = len(gs.pile_mgr.hands[opp_id].cards)
+        opp_hand_len = len(gs.pile_mgr.hands[opp_id])
         if opp_hand_len > 4:
             gs.apply_damage(s, opp_hand_len - 4, opp_id)
 
@@ -290,7 +290,7 @@ class IvoryTower(Listener):
         p_id = source.owner_id
         if p_id != event.active_player:
             return
-        if (hand_size := len(gs.pile_mgr.hands[p_id].cards)) > 4:
+        if (hand_size := len(gs.pile_mgr.hands[p_id])) > 4:
             gs.score_mgr.increment_life(p_id, hand_size - 4, source, gs)
 
 
@@ -497,7 +497,7 @@ class StormWorld(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        card_cnt = len(gs.pile_mgr.hands[gs.player_turn_idx].cards)
+        card_cnt = len(gs.pile_mgr.hands[gs.player_turn_idx])
         if card_cnt > 4:
             gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
 
@@ -540,7 +540,7 @@ class TheRack(Listener):
         opp_id = flip(s.owner_id)
         if event.active_player != opp_id:
             return
-        opp_hand_len = len(gs.pile_mgr.hands[opp_id].cards)
+        opp_hand_len = len(gs.pile_mgr.hands[opp_id])
         if opp_hand_len < 3:
             gs.apply_damage(s, 3 - opp_hand_len, opp_id)
 

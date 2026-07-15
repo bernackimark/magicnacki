@@ -257,7 +257,7 @@ class HypnoticSpecter(Listener):
         opp_id = flip(source.owner_id)
         if event.source is not source or event.target is not opp_id:
             return
-        opp_cards = gs.pile_mgr.hands[opp_id].cards
+        opp_cards = gs.pile_mgr.hands[opp_id]
         if not opp_cards:
             return
         if len(opp_cards) == 1:
@@ -286,7 +286,7 @@ class NicolBolas(Listener):
         opp_id = flip(source.owner_id)
         if event.source is not source or event.target is not opp_id:
             return
-        opp_cards = gs.pile_mgr.hands[opp_id].cards
+        opp_cards = gs.pile_mgr.hands[opp_id]
         if not opp_cards:
             return
         for c in opp_cards:

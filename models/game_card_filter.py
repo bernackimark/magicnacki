@@ -19,7 +19,7 @@ class CardFilter:
 
     # --- in what pile, card is located ---
     def in_player_hand(self, p_id: int):
-        hand = self._gs.pile_mgr.hands[p_id].cards
+        hand = self._gs.pile_mgr.hands[p_id]
         self._cards = [c for c in self._cards if c in hand]
         return self
 

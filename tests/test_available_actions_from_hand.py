@@ -14,7 +14,7 @@ class TestAvailableActionsFromHand(unittest.TestCase):
         print(self.gs.perm_querier.can_cast(card, 0))
         print(self.gs.mana_pools[0].available_mana)
         print(self.gs.pile_mgr.boards[0])
-        print(card in self.gs.pile_mgr.hands[0].cards)
+        print(card in self.gs.pile_mgr.hands[0])
         self.assertIn(card, [a.source for a in self.gs.available_actions_from_hand()])
 
     def test_can_cast_aura_to_multiple_valid_targets(self):

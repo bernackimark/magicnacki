@@ -19,11 +19,11 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g.activate_ability(aa, 0)
         pay_option = self.gs.pending_choice.options[0]
         discard_option = self.gs.pending_choice.options[1]
-        if discard_option.cards.is_land:
+        if discard_option.is_land:
             pay_option.play()
             self.assertEqual(19, self.gs.life[0])
         else:
-            mv = discard_option.cards.props.mana_value
+            mv = discard_option.props.mana_value
             pay_option.play()
             self.assertEqual(20 - mv, self.gs.life[0])
 
@@ -31,15 +31,15 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g.activate_ability(aa, 0)
         discard_option = self.gs.pending_choice.options[1]
         discard_option.play()
-        discarded_card = discard_option.cards[0]
+        discarded_card = discard_option[0]
         self.assertEqual(discarded_card.zone, Zone.GRAVEYARD)
 
     def test_wheel_of_fortune(self):
         """Each player discards their hand, then draws seven cards"""
-        original_card_ids = {c.id_ for c in list(self.gs.pile_mgr.hands[0].cards)}
+        original_card_ids = {c.id_ for c in list(self.gs.pile_mgr.hands[0])}
         wheel_of_fortune = self.g.card('wheel-of-fortune')
         wheel_of_fortune.abilities[0].effect.resolve(self.gs, wheel_of_fortune, None)  # type: ignore
-        current_card_ids = {c.id_ for c in self.gs.pile_mgr.hands[0].cards}
+        current_card_ids = {c.id_ for c in self.gs.pile_mgr.hands[0]}
         self.assertTrue(original_card_ids.isdisjoint(current_card_ids))
 
     def test_whirlish_dervish(self):

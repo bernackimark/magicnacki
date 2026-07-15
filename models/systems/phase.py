@@ -314,7 +314,7 @@ class DiscardPhase(PhaseState):
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.draw_discard import DiscardCards
         hand = gs.pile_mgr.hands[p_id]
-        return [DiscardCards(p_id, gs, c) for c in hand.cards] if len(hand.cards) > 7 else None
+        return [DiscardCards(p_id, gs, c) for c in hand] if len(hand) > 7 else None
 
     def next(self, gs: GameState):
         return CreaturesHealPhase()

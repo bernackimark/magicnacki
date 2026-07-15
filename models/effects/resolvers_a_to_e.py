@@ -38,7 +38,7 @@ class Amnesia(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        for c in gs.pile_mgr.hands[target].cards[:]:
+        for c in gs.pile_mgr.hands[target][:]:
             c.reveal()
             if 'Land' not in c.card_types:
                 gs.pile_mgr.discard(c, source)
@@ -102,7 +102,7 @@ class BazaarOfBaghdad(Resolver):
     """Draw two cards, then discard three cards"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.pile_mgr.draw(source.owner_id, 2)
-        cards = gs.pile_mgr.hands[source.owner_id].cards
+        cards = gs.pile_mgr.hands[source.owner_id]
         if len(cards) <= 2:
             for c in cards[:]:
                 cards.remove(c)

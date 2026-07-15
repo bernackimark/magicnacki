@@ -186,7 +186,7 @@ class GameState:
             Return the list of legal Actions"""
         actions: list[AbilityPipeline | CastPermanentAction | None] = []
 
-        for c in self.pile_mgr.hands[self.action_on_idx].cards:
+        for c in self.pile_mgr.hands[self.action_on_idx]:
             print(c)
             if not self.perm_querier.can_cast(c, c.owner_id):
                 continue
@@ -246,8 +246,8 @@ class GameState:
             available_actions.extend(self.add_activated_abilities_from_board())
 
             # Check instants & sorceries
-            hand_instants = [c for c in self.pile_mgr.hands[p_id].cards if c.is_instant]
-            hand_sorceries = [c for c in self.pile_mgr.hands[p_id].cards if c.is_sorcery]
+            hand_instants = [c for c in self.pile_mgr.hands[p_id] if c.is_instant]
+            hand_sorceries = [c for c in self.pile_mgr.hands[p_id] if c.is_sorcery]
             allowed_cards = hand_sorceries if p_id == self.player_turn_idx else hand_sorceries + hand_instants
             for a in self.available_actions_from_hand():
                 if a.source in allowed_cards:
