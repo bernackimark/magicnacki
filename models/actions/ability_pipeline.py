@@ -76,7 +76,7 @@ class AbilityPipeline(Action):
                 2. Continues automatically if no user input is required."""
         print('Entering .advance()')
         # unique to auras who use the pipeline to find a target & attach but only have listeners & no resolver
-        if self.eff_spec.effect is None:
+        if self.eff_spec is None or self.eff_spec.effect is None:
             self.finish()
             return
 
@@ -102,17 +102,18 @@ class AbilityPipeline(Action):
         return self.targets[0] if len(self.targets) == 1 else self.targets
 
     def finish(self):
-        """Pay costs; create the AbilityAction & push it onto the stack"""
-        print('I am finishing')
+        """Pay costs; if casting a cast, CastPermanentAction.play() else create AbilityAction & push onto stack"""
+        print('Entering .finish()')
         from models.actions.ability_pipeline_support import AbilityAction
-        if self.eff_spec.is_aa and 'T' in self.eff_spec.cost:
+        if self.eff_spec and (self.eff_spec.is_aa and 'T' in self.eff_spec.cost):
             self.source.tap()
         mana_cost = self.ability_cost[::]
         mana_cost = mana_cost.replace('X', str(self.x_value)) if self.x_value else mana_cost
         if mana_cost:
             self.gs.mana_pools[self.player_idx].pay(mana_cost)
-        for extra_cost in (self.eff_spec.extra_costs or []):
-            extra_cost.pay(self.gs, self.source)
+        if self.eff_spec:
+            for extra_cost in (self.eff_spec.extra_costs or []):
+                extra_cost.pay(self.gs, self.source)
 
         if self.source.is_land and self.source.zone == Zone.HAND:
             action = CastPermanentAction(self.player_idx, self.gs, self.source)
@@ -123,14 +124,15 @@ class AbilityPipeline(Action):
             self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 
     def resolve_ability(self):
-        if isinstance(self.eff_spec.effect, Resolver):
-            self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
+        if self.eff_spec:
+            if isinstance(self.eff_spec.effect, Resolver):
+                self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
 
-        if self.eff_spec.is_aa:
-            print(f"Successfully activated ability for {self.source.props.name}")
-            aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
-            aa.activations_this_turn += 1
-            self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa), self.gs)
+            if self.eff_spec.is_aa:
+                print(f"Successfully activated ability for {self.source.props.name}")
+                aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
+                aa.activations_this_turn += 1
+                self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa), self.gs)
 
         if self.source.zone != Zone.HAND:
             print(f"Successfully executed ability for {self.source.props.name}")
@@ -160,6 +162,8 @@ class AbilityPipeline(Action):
 
     @property
     def ability_cost(self) -> str:
+        if self.eff_spec is None:
+            return ''
         return self.source.casting_cost if self.eff_spec.is_spell else self.eff_spec.cost
 
     @property
