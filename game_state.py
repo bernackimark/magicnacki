@@ -203,7 +203,6 @@ class GameState:
                     if self.phase_mgr.phase not in spell_eff.allowed_phases:
                         continue
                 pipeline = AbilityPipeline(c.owner_id, self, c, spell_eff)
-                print('XXX', c, spell_eff)
                 if pipeline.can_begin():
                     actions.append(pipeline)
 
