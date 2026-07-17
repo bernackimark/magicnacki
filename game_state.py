@@ -95,6 +95,10 @@ class GameState:
         return self.pile_mgr.graveyards
 
     @property
+    def hands(self) -> list[list[GameCard]]:
+        return self.pile_mgr.hands
+
+    @property
     def life(self) -> list[int, int]:
         return self.score_mgr.life
     
