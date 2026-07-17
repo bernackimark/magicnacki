@@ -9,6 +9,26 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
+"""
+1) Beginning of Combat Step:
+ - Players can cast spells and activate abilities before attackers are declared.
+2) Declare Attackers Step:
+ - You choose which creatures attack.
+ - You then receive priority to cast spells.
+3) Declare Blockers Step:
+ - Your opponent chooses blocking creatures.
+ - Afterward, players can cast spells (e.g., pumping your creature or casting removal)
+4) First Strike Combat Damage Step:
+ - If any attacking or blocking creature has first strike or double strike, this step is created.
+ - Only these creatures assign and deal combat damage.
+ - Check State-Based Actions First: Dead creatures moved to the graveyard immediately.
+ - The player whose turn it is gets the first chance to cast a spell, followed by the defending player.
+ - The game will not move to the normal combat damage step until both players pass priority without doing anything
+5) Normal Combat Damage Step:
+ - Instead of proceeding to the end of combat, a second damage step occurs.
+ - All remaining attacking and blocking creatures (those without first strike in the previous step) deal their damage.
+ - Creatures with double strike also deal their damage here.
+"""
 
 @dataclass
 class Combat:
@@ -19,14 +39,19 @@ class Combat:
     def __repr__(self):
         return f"{self.attacker} attacking {self.blockers}"
 
+    @property
+    def contains_first_strike(self) -> bool:
+        return any('First Strike' in self.attacker.keyword_abilities or
+                   'First Strike' in b.keyword_abilities for b in self.blockers)
+
     def handle_damage(self):
         """Main entry point for combat damage resolution. Handles first strike & normal damage & unblocked attackers.
         Currently, all attacker damage is assigned to the first blocker, no damage splitting supported yet"""
-        if self._has_first_strike(self.attacker) or any(self._has_first_strike(b) for b in self.blockers):
+        if self.contains_first_strike:
             # First strike phase
             self._combat_phase(first_strike=True)
 
-        # Normal damage phase (skip first strike creatures that already dealt damage)
+        # Normal damage phase (skip assigning damage by first strikers, who already dealt damage)
         self._combat_phase(first_strike=False)
 
     def _combat_phase(self, first_strike: bool):
@@ -69,11 +94,7 @@ class Combat:
 
     def _phase_applicable(self, creature: GameCard, first_strike: bool) -> bool:
         """Returns True if this creature should deal damage in the current phase."""
-        return first_strike is self._has_first_strike(creature)
-
-    @staticmethod
-    def _has_first_strike(creature: "GameCard") -> bool:
-        return 'First Strike' in creature.props.keyword_abilities
+        return first_strike == 'First Strike' in creature.keyword_abilities
 
 
 class CombatManager:
@@ -87,6 +108,10 @@ class CombatManager:
     @property
     def blockers(self) -> list[GameCard | None]:
         return [b for com in self.combats for b in com.blockers]
+
+    @property
+    def has_a_first_strike_phase(self) -> bool:
+        return any(c.contains_first_strike for c in self.combats)
 
     def create_combat(self, gs: GameState, c: GameCard) -> None:
         self.combats.append(Combat(gs, c))
