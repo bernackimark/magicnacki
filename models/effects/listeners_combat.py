@@ -24,7 +24,7 @@ class CavePeopleAttackPump(Listener):
     """Whenever this creature attacks, it gets +1/-2 until end of turn ..."""
     listens_to = AttackEvent
 
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
         if event.attacker is not s:
             return
         event.attacker.modifiers.append(PTMod(s=s, p_adj=1, t_adj=-2, expires='EOT'))
