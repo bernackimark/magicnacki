@@ -54,6 +54,7 @@ class ActionStack:
 
     def remove(self, action: Action | ChoiceAction):
         if action not in self.actions:
+            print('Warning: Action not found on stack')
             return
         self._actions.remove(action)
 

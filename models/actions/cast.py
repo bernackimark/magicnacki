@@ -10,6 +10,20 @@ from models.events_all import StateBasedEvent, CastResolvedEvent
 from models.zone import Zone
 
 @dataclass
+class NoSpellPermanentToStack(Action):
+    """Used for casting non-land permanents with no casting spell
+    that do not need an ability pipeline but do need to be pushed onto the stack"""
+    source: GameCard
+
+    def __repr__(self):
+        return f"Cast {self.source.props.name}"
+
+    def play(self) -> None:
+        action = CastPermanentAction(self.source.owner_id, self.gs, self.source)
+        self.gs.action_stack.push(action, self.gs)
+
+
+@dataclass
 class CastPermanentAction(Action):
     """Used for cards (all would be permanents) that have no casting spell"""
     source: GameCard

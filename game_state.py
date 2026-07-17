@@ -3,7 +3,7 @@ import random
 from typing import Any, Sequence, TYPE_CHECKING
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.cast import CastPermanentAction
+from models.actions.cast import CastPermanentAction, NoSpellPermanentToStack
 from models.effects.base import Activated
 
 if TYPE_CHECKING:
@@ -180,7 +180,7 @@ class GameState:
     def add_activated_abilities_from_board(self) -> list[AbilityPipeline | None]:
         return [a for c in self.pile_mgr.boards[self.action_on_idx] for a in self.get_available_activated_abilities(c)]
 
-    def available_actions_from_hand(self) -> list[AbilityPipeline | CastPermanentAction | None]:
+    def available_actions_from_hand(self) -> list[AbilityPipeline | CastPermanentAction | NoSpellPermanentToStack | None]:
         """For each card in hand for the in-scope player ...
             -   If not can_cast(), skip (can_cast emits to Listeners, including base game rules)
             -   If a permanent w no spell effect, create a CastPermanentAction
@@ -188,15 +188,20 @@ class GameState:
                 -   If it's sepcification declares allowed turn/phase, skip if illegal
                 -   Else create a AbilityPipeline action (which builds the Ability -- X, mode, target, etc.)
             Return the list of legal Actions"""
-        actions: list[AbilityPipeline | CastPermanentAction | None] = []
+        actions: list[AbilityPipeline | CastPermanentAction | NoSpellPermanentToStack | None] = []
 
         for c in self.pile_mgr.hands[self.action_on_idx]:
-            print(c)
             if not self.perm_querier.can_cast(c, c.owner_id):
                 continue
 
-            if c.props.is_permanent and not c.spells:
+            if c.is_land:
+                # its .play() will bypass the stack
                 actions.append(CastPermanentAction(c.owner_id, self, c))
+                continue
+
+            if c.props.is_permanent and not c.spells:
+                # its .play() will add it to the stack
+                actions.append(NoSpellPermanentToStack(c.owner_id, self, c))
                 continue
 
             for spell_eff in c.spells:
@@ -206,13 +211,14 @@ class GameState:
                 if spell_eff.allowed_phases:
                     if self.phase_mgr.phase not in spell_eff.allowed_phases:
                         continue
+                # creates a pipeline for selecting: X, mode, targets, extra costs
                 pipeline = AbilityPipeline(c.owner_id, self, c, spell_eff)
                 if pipeline.can_begin():
                     actions.append(pipeline)
 
         return actions
 
-    def get_available_actions(self, p_id: int) -> list[AbilityPipeline | Action] | None:
+    def get_available_actions(self, p_id: int) -> list[Action] | None:
         """This method is called by the engine; in order, check for:
             -   Pending Choice (selections that are forced & are not placed on stack)
             -   Check global state-based actions (game over, creatures w 0 weakness die, etc.)

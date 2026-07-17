@@ -1,5 +1,6 @@
 import unittest
 
+from models.actions.ability_pipeline import AbilityPipeline
 from models.effects.resolvers_generic import PreventNextDamageTo, GraveyardToExileInItsEntirety, TakeAnotherTurn
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -9,6 +10,33 @@ class TestPreventDamage(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_counter_an_ability_action(self):
+        card = self.g.hand('counterspell')
+        target = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('UU')
+        self.g.mana('R', owner=1)
+        target_pipeline = AbilityPipeline(1, self.gs, target, target.abilities[0])
+        target_pipeline.targets.append(0)
+        target_pipeline.finish()
+        target_ability = self.gs.action_stack.last_action
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        card_pipeline.targets.append(target_ability)
+        card_pipeline.resolve_ability()
+        self.assertEqual(0, len(self.gs.action_stack.actions))
+        self.assertIn(card, self.g.gy[0])
+        self.assertIn(target, self.g.gy[1])
+        self.assertEqual(20, self.gs.life[0])
+
+    def test_counter_a_vanilla_permanent(self):
+        self.g.clear_hands()
+        self.g.next_turn(True)
+        card = self.g.hand('counterspell')
+        target = self.g.hand('grizzly-bears', owner=1)
+        self.g.mana('UU')
+        self.g.mana('GGG', owner=1)
+        cast_target_action = next(a for a in self.gs.available_actions_from_hand() if a.source is target)
+        # TODO: casting a vanilla permanent never hits the stack; CastPermanentAction contains .play()
 
     def test_prevents_all_damage_when_amount_is_none(self):
         attacker = self.g.card('goblin-hero')

@@ -188,6 +188,12 @@ class TestGame:
         pipeline.advance()
         AcceptAction(flip(owner), self.gs).play()
 
+    def card_has_a_registered_listener(self, card: GameCard) -> bool:
+        return any(e.source is card for entries in self.gs.event_mgr._event_listeners.values() for e in entries)
+
+    def clear_hands(self) -> None:
+        [h.clear() for h in self.gs.hands]
+
     def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard] | None):
         self.gs.combat_mgr.create_combat(self.gs, attacker)
         if blockers is None:
