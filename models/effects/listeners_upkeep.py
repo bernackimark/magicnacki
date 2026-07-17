@@ -168,7 +168,7 @@ class EnergyFlux(Listener):
             if not gs.mana_pools[event.active_player].can_pay('2'):
                 gs.pile_mgr.destroy(your_artifact, allow_regeneration=False)
             options = [PayMana(event.active_player, gs, source, '2'), Sac(event.active_player, gs, source)]
-            gs.action_stack.push(ChoiceAction(options), gs, False)
+            gs.pending_choice = ChoiceAction(options)
 
 class ErhnamDjinn(Listener):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
