@@ -257,7 +257,7 @@ MAP: dict[str, list[EffSpec]] = {
     'earthquake': [Spell(Earthquake())],
     'eater-of-the-dead': [Activated('', EaterOfTheDead(), T_FUNCS['creatures_in_all_graveyards'])],
     'ebony-horse': [Activated('2T', RemoveFromCombat(), T_FUNCS['attackers'])],
-    'el-hajjâj': [Triggered(ElHajjaj(), T_FUNCS['self'])],
+    'el-hajjaj': [Triggered(ElHajjaj(), T_FUNCS['self'])],
     'elder-land-wurm': [Triggered(ElderLandWurm())],
     'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(ElderSpawnCanBeBlocked())],
     'electric-eel': [Spell(DealDamage(1), T_FUNCS['card_owner']), Activated('RR', ElectricEel())],
