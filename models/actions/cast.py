@@ -19,6 +19,7 @@ class CastWithNoSpellEffect(Action):
         return f"Cast {self.source.props.name}"
 
     def play(self) -> None:
+        self.gs.mana_pools[self.player_idx].pay(self.source.casting_cost)
         action = CastPermanentAction(self.source.owner_id, self.gs, self.source)
         self.gs.action_stack.push(action, self.gs)
 
@@ -32,8 +33,6 @@ class CastPermanentAction(Action):
         return f"Cast {self.source.props.name}"
 
     def play(self) -> None:
-        self.gs.mana_pools[self.player_idx].pay(self.source.casting_cost)
-
         print(f"Successfully cast {self.source.props.name}")
         self.gs.pile_mgr.move_card(self.source, Zone.BATTLEFIELD, cause='cast')
         self.gs.event_mgr.emit(CastResolvedEvent(self.source, self.source.orig_owner_id, None))
