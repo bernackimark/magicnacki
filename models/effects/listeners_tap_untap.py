@@ -155,17 +155,6 @@ class TawnossCoffinUntap(Listener):
 
 
 # --- UNTAP PHASE ---
-class MagneticMountainOnUntapStep(Listener):
-    """Blue creatures don't untap during their controllers' untap steps"""
-    listens_to = UntapPhaseEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UntapPhaseEvent):
-        if event.active_player != s.owner_id:
-            return
-        if s in gs.card_filter.on_player_board(event.active_player).blue().creatures().result():
-            gs.action_stack.push(LeaveTapped(s.owner_id, gs, s), gs, False)
-
-
 class RasputinDreamweaverUntap(Listener):
     """... At your upkeep, if RD started the turn (as proxied w the UntapPhaseEvent) untapped &
     w < 7 dream counters on it, put a dream counter on it."""

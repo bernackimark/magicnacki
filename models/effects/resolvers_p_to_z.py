@@ -149,10 +149,11 @@ class SacrificeOnCast(Resolver):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
     Note "sacrifice" refers to the card called sacrifice, not the game action of sacrifice"""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        if not t:
-            raise ValueError(f"{s.props.name} needs a target to ... sacrifice")
-        gs.action_stack.push(SacCreatureAndAddMana(s.owner_id, gs, s, t, 'B', t.props.mana_value), gs, False)
-
+        mana_cnt: int = s.extras.get('mana_cnt')
+        if mana_cnt is None:
+            raise ValueError("The card called 'Sacrifice' didn't get the mana count attached to its extras dictionary")
+        if mana_cnt:
+            gs.mana_pools[s.owner_id].add_floating('B', mana_cnt)
 
 class SafeHaven(Resolver):
     """{2}, {T}: Exile target creature you control, storing the exiled card's ID for future reference"""

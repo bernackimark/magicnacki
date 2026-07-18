@@ -28,7 +28,7 @@ from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, Cu
     DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
 from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
-from ..effects.listeners_draw_discard import CursedRackEffect
+from ..effects.listeners_draw_discard import CursedRack
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
 from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, \
     Backfire, ElHajjaj
@@ -207,7 +207,7 @@ MAP: dict[str, list[EffSpec]] = {
     'curse-artifact': [Spell(None, T_FUNCS['artifacts']),
                        Triggered(CurseArtifact(), T_FUNCS['self'])],
     'cursed-land': [Spell(None, T_FUNCS['lands']), Triggered(DealDamageOnHostUpkeep(1))],
-    'cursed-rack': [Triggered(CursedRackEffect())],
+    'cursed-rack': [Triggered(CursedRack())],
     'cyclone': [Triggered(Cyclone())],
     'cyclopean-mummy': [Triggered(CyclopeanMummy())],
     'dakkon-blackblade': [Static(DakkonBlackbladePT())],

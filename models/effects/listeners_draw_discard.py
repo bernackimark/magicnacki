@@ -1,7 +1,10 @@
 from __future__ import annotations
+
+from itertools import combinations
 from typing import TYPE_CHECKING
 
 from models.actions.draw_discard import DiscardCards
+from models.choice_actions_all import ChoiceAction
 from models.effects.base import Listener
 from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
 from models.utils import flip
@@ -23,18 +26,20 @@ class PsychicPurgeDiscard(Listener):
 
 
 # --- DISCARD STEP EVENT ---
-class CursedRackEffect(Listener):
+class CursedRack(Listener):
     """Opponent's maximum hand size is four [at their discard phase]"""
     listens_to = DiscardStepEvent
 
-    def on_event(self, gs: GameState, source: GameCard, event: DiscardEvent):
+    def on_event(self, gs: GameState, source: GameCard, event: DiscardStepEvent):
         opp_id = flip(source.owner_id)
-        if gs.player_turn_idx != opp_id:
+        if event.active_player != opp_id:
             return
 
         hand = gs.pile_mgr.hands[opp_id]
-        for i in range(len(hand) - 4):
-            gs.action_stack.push(DiscardCards(opp_id, gs, hand[0]), gs, False)
+        overage = len(hand) - 4
+        combos = [_ for _ in combinations(hand, r=overage)]
+        options = [DiscardCards(opp_id, gs, combo) for combo in combos]
+        gs.pending_choice = ChoiceAction(options)
 
 
 # --- DRAW EVENT ---

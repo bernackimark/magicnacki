@@ -6,7 +6,7 @@ from models.actions.special import Attach
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
-from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent
+from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -187,7 +187,6 @@ class TestCardsAtoC(unittest.TestCase):
         # stone_rain.abilities[0].effect.resolve(self.gs, stone_rain, host)  # type: ignore
         # self.assertNotIn(host, self.g.gy[0])
 
-
     # def test_creature_bond(self):
     #     """When host dies, this Aura deals damage equal to that creature's toughness to the creature's controller."""
     #     # TODO: By the time CreatureBond.on_event() is called, the source.host is None;
@@ -198,6 +197,15 @@ class TestCardsAtoC(unittest.TestCase):
     #     self.gs.event_mgr.register(creature_bond.abilities[0].effect, creature_bond)
     #     self.gs.pile_mgr.destroy(host)
     #     self.assertEqual(self.gs.life[0], 19)
+
+    def test_cursed_rack(self):
+        """Opponent's maximum hand size is four [at their discard phase]"""
+        self.g.battlefield('cursed-rack')
+        opp_hand = self.gs.hands[1]
+        self.assertTrue(len(opp_hand) > 4)
+        self.g.next_turn(True)
+        self.gs.event_mgr.emit(DiscardStepEvent(1))
+        self.assertEqual(35, len(self.gs.pending_choice.get_actions()))  # 7 card hand x 3 selections = 35 combos
 
 
 if __name__ == '__main__':

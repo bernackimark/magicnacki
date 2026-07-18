@@ -140,7 +140,7 @@ MAP: dict[str, list[EffSpec]] = {
                            Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap()),
                            Triggered(ReturnToOwnerOnLTB())],
     'rukh-egg': [Triggered(RukhEgg())],
-    'sacrifice': [Spell(SacrificeOnCast(), T_FUNCS['your_creatures'])],
+    'sacrifice': [Spell(SacrificeOnCast(), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])])],
     'safe-haven': [Activated('2T', SafeHaven(), T_FUNCS['your_creatures']), Triggered(SafeHavenUpkeep())],
     'sage-of-lat-nam': [Activated('T', DrawCards(), T_FUNCS['card_owner'],
                                   extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
