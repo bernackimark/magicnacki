@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from models.events_all import StateBasedEvent
 from models.modifiers import PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -33,7 +34,7 @@ if TYPE_CHECKING:
 
 @dataclass
 class Combat:
-    gs: GameState
+    _gs: GameState
     attacker: GameCard
     blockers: list[GameCard] = field(default_factory=list)
 
@@ -84,25 +85,31 @@ class Combat:
                 target = self.blockers[0]
                 # If blocker is not on the battlefield (destroyed/bounced), it will not receive a damage assignment
                 if target.zone == Zone.BATTLEFIELD:
-                    if self.gs.perm_querier.can_damage(target, a):
+                    if self._gs.perm_querier.can_damage(target, a):
                         damage_assignments.append((a, a.power, target))
 
             # --- Blockers → attacker ---
             for blocker in self.blockers:
                 if self._phase_applicable(blocker, first_strike):
-                    if self.gs.perm_querier.can_damage(self.attacker, blocker):
+                    if self._gs.perm_querier.can_damage(self.attacker, blocker):
                         damage_assignments.append((blocker, blocker.power, self.attacker))
 
         # --- apply damage ---
         for source, amount, target in damage_assignments:
-            self.gs.apply_damage(source, amount, target, is_combat=True)
+            self._gs.apply_damage(source, amount, target, is_combat=True)
 
         # --- run SBAs ---
-        self.gs.check_state_based_actions()
+        self._gs.event_mgr.emit(StateBasedEvent())
+        # self.gs.check_state_based_actions()
 
-    def _phase_applicable(self, creature: GameCard, first_strike: bool) -> bool:
+    @staticmethod
+    def _phase_applicable(creature: GameCard, first_strike: bool) -> bool:
         """Returns True if this creature should deal damage in the current phase."""
-        return first_strike == 'First Strike' in creature.keyword_abilities
+        if not first_strike and 'First Strike' not in creature.keyword_abilities:
+            return True
+        if first_strike and 'First Strike' in creature.keyword_abilities:
+            return True
+        return False
 
 
 class CombatManager:

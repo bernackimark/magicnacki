@@ -10,7 +10,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Listener
-from models.effects.listeners_base_rule_queries import BASE_RULES
+from models.effects.base_listeners import BaseRule
 from models.events_all import ModQueryEvent
 
 @dataclass
@@ -27,7 +27,7 @@ class EventManager:
         # key = Event subclass, value = list of (effect, source_card) tuples
         self._base_rule_listeners: dict[type[Event], list[Listener]] = defaultdict(list)
         self._event_listeners: dict[type[Event], list[ListenerEntry]] = defaultdict(list)
-        self._register_base_rules()
+        self._register_base_listeners()
 
     @property
     def events(self) -> list[Event | None]:
@@ -97,6 +97,6 @@ class EventManager:
         for event_type, entries in self._event_listeners.items():
             self._event_listeners[event_type] = [e for e in entries if not e.effect.is_expired]
 
-    def _register_base_rules(self) -> None:
-        for base_rule in BASE_RULES:
-            self._base_rule_listeners[base_rule.listens_to].append(base_rule)
+    def _register_base_listeners(self) -> None:
+        for base_rule in BaseRule.registry:
+            self._base_rule_listeners[base_rule.listens_to].append(base_rule())

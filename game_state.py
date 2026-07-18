@@ -15,7 +15,7 @@ from models.systems.event import EventManager
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
 from models.combat import CombatManager
-from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent
+from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent, StateBasedEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
@@ -25,7 +25,6 @@ from models.systems.pile import PileManager
 from models.presentation_request import PresentationRequest
 from models.systems.permission import PermissionQuerier
 from models.systems.score import ScoreManager
-from models.state_based_rules import StateBasedRule, STATE_BASED_RULES
 from models.systems.turn import TurnManager
 from models.systems.phase import PhaseManager
 
@@ -64,8 +63,6 @@ class GameState:
         # only has knowledge of the current game; match info is handled in Engine's MatchManager
         self.is_game_over: bool = False
         self.winner: int | None = None
-
-        self.state_based_rules: tuple[type[StateBasedRule]] = STATE_BASED_RULES
 
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.player_turn_idx,
@@ -109,12 +106,6 @@ class GameState:
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
 
-    def check_state_based_actions(self):
-        """state_based_rules are invariant; they must repeat until stable; there is no player choice, no stack, etc.;
-        (ex: creatures w 0 toughness or unattached auras must die, etc.)"""
-        for rule in self.state_based_rules:
-            rule.apply(self)
-
     # --- DAMAGE ---
     def apply_damage(self, source: GameCard | None, amount: int, target: GameCard | int, is_combat: bool = False):
         """Creates DamageEvent, triggers damage preventions, adds .combat_damage_received to card,
@@ -153,7 +144,8 @@ class GameState:
             self.event_mgr.emit(e)
 
         # 5. Check SBAs (ex: damage_received_this_turn >= creature.toughness)
-        self.check_state_based_actions()
+        self.event_mgr.emit(StateBasedEvent())
+        # self.check_state_based_actions()
 
     @staticmethod
     def randomize_event(p_id: int, sequence: Sequence[Any]) -> Any:
@@ -225,7 +217,8 @@ class GameState:
         if self.pending_choice:
             return self.pending_choice.get_actions()
 
-        self.check_state_based_actions()
+        self.event_mgr.emit(StateBasedEvent())
+        # self.check_state_based_actions()
 
         if self.pending_choice:
             return self.pending_choice.get_actions()

@@ -1,6 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.actions.piles import BattlefieldToGraveyard
+from models.choice_actions_all import ChoiceAction
+
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
@@ -8,11 +11,19 @@ if TYPE_CHECKING:
 from models.constants import BASIC_LANDS
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanDamageQueryEvent, \
-    CanTargetQueryEvent
+    CanTargetQueryEvent, StateBasedEvent, Event
 from models.utils import flip
 
 
-class CanBlockRule(Listener):
+class BaseRule(Listener):
+    registry: list[type["BaseRule"]] = []
+
+    def __init_subclass__(cls):
+        super().__init_subclass__()
+        BaseRule.registry.append(cls)
+
+
+class CanBlockRule(BaseRule):
     listens_to = CanBlockQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
@@ -50,7 +61,7 @@ class CanBlockRule(Listener):
                     return
 
 
-class CanAttackRule(Listener):
+class CanAttackRule(BaseRule):
     listens_to = CanAttackQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
@@ -77,7 +88,7 @@ class CanAttackRule(Listener):
             event.permission = False
             return
 
-class CanCastRule(Listener):
+class CanCastRule(BaseRule):
     listens_to = CanCastQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
@@ -90,7 +101,7 @@ class CanCastRule(Listener):
         elif gs.player_turn_idx != event.p_id and 'Instant' not in c.props.card_types:
             event.permission = False
 
-class CanDamageRule(Listener):
+class CanDamageRule(BaseRule):
     """If card has Protection From [color of source], event.permission = False;
     as of now, players never have Protection"""
     listens_to = CanDamageQueryEvent
@@ -107,7 +118,7 @@ class CanDamageRule(Listener):
                     event.permission = False
                     return
 
-class CanTargetRule(Listener):
+class CanTargetRule(BaseRule):
     listens_to = CanTargetQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
@@ -124,5 +135,66 @@ class CanTargetRule(Listener):
                     event.permission = False
                     return
 
+class IslandhomeCheck(BaseRule):
+    listens_to = StateBasedEvent
 
-BASE_RULES = [CanAttackRule(), CanBlockRule(), CanCastRule(), CanDamageRule(), CanTargetRule()]
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        for creature in gs.card_filter.in_play().has('Islandhome').result():
+            if not gs.card_filter.on_player_board(creature.owner_id).islands().result():
+                gs.pile_mgr.destroy(creature)
+
+class LegendarySingletonCheck(BaseRule):
+    """A state-based action that immediately forces you to choose one and put the other into its owner's graveyard;
+    it bypasses hexproof or indestructible; this counts as "dying" and will trigger any such abilities"""
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        for p_id in (0, 1):
+            legends_seen = {}
+            for c in gs.card_filter.on_player_board(p_id).legendaries().result():
+                print('XYZ', legends_seen)
+                if c.props.slug not in legends_seen:
+                    legends_seen[c.props.slug] = c
+                else:
+                    options = [BattlefieldToGraveyard(p_id, gs, c) for c in legends_seen.values()]
+                    gs.pending_choice = ChoiceAction(options)
+
+class LifeAndPoisonCheck(BaseRule):
+    """Check for game_over (player life <= 0 & poison >= 10); set GameState's winner = -1 draw or 0/1 for win"""
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        if gs.is_game_over:  # there could be a win condition that sets is_game_over to True elsewhere
+            return
+
+        """Returns None if game is not over;
+        else -1 if a draw, 0 for player #0, 1 for player #1, updates gs.is_game_over"""
+        zero_life = [idx for idx, life in enumerate(gs.life) if life <= 0]
+        ten_poison = [idx for idx, poison in enumerate(gs.score_mgr.poison_counters) if poison >= 10]
+
+        losers = tuple(set(zero_life + ten_poison))
+        if not losers:
+            return
+        if len(losers) > 1:
+            gs.winner = -1
+            gs.is_game_over = True
+            print('The game ends in a draw')
+            return
+        else:
+            gs.winner = flip(losers[0])
+            gs.is_game_over = True
+            print(f'Player #{gs.winner} wins the game')
+            return
+
+class ZeroToughnessCheck(BaseRule):
+    listens_to = StateBasedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        for creature in gs.card_filter.in_play().creatures().result():
+            if creature.damage_received_this_turn >= creature.toughness:
+                print(f'ZeroToughnessSBR calls gs.pile_mgr.destroy() for {creature}')
+                gs.pile_mgr.destroy(creature)
+
+
+BASE_RULES = [CanAttackRule(), CanBlockRule(), CanCastRule(), CanDamageRule(), CanTargetRule(),
+              IslandhomeCheck(), LegendarySingletonCheck(), LifeAndPoisonCheck(), ZeroToughnessCheck()]

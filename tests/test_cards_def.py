@@ -34,6 +34,7 @@ class TestCardsDEF(unittest.TestCase):
         attacker = self.g.battlefield('craw-wurm', owner=1)  # 6/4
         aura = self.g.hand('holy-strength', owner=1)
         self.g.cast_and_accept(aura, attacker, card.abilities[0], owner=1)
+        self.assertTrue(attacker is aura.host)
 
         self.g.next_turn()
         self.g.combat(attacker, card)

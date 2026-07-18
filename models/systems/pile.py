@@ -156,4 +156,4 @@ class PileManager:
             self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
             self._gs.event_mgr.unregister_effects(aura)
         card.clear_all_mods()
-        self._gs.event_mgr.emit(StateBasedEvent())
+        # self._gs.event_mgr.emit(StateBasedEvent())

@@ -91,6 +91,9 @@ class TestCardsGHI(unittest.TestCase):
 
         self.g.next_turn(True)
         self.g.cast_and_accept(card, wall, card.abilities[0])
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+        self.assertTrue(attacker.zone == Zone.BATTLEFIELD)
+        self.assertTrue(wall.zone == Zone.BATTLEFIELD)
         self.g.combat(attacker, wall)
         self.assertEqual(26, self.gs.life[0])
 
