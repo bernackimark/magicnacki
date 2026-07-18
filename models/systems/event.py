@@ -51,14 +51,12 @@ class EventManager:
 
         entries = list(self._event_listeners[type(event)])
         for e in entries:
-            print(f'Event Listener Entry for {type(event)}:', e)
-
             if isinstance(event, ModQueryEvent):
                 # enforce type contract
                 if hasattr(e.effect, "modifies"):
                     if e.effect.modifies != event.query:
                         continue
-
+            print(f'{e} emits to {type(event)} listeners')
             e.effect.on_event(gs, e.source, event)
 
         self.cleanup_expired()
@@ -69,6 +67,14 @@ class EventManager:
             raise TypeError(f"You are registering {effect} with EventManager that only accepts Listener Effects")
         listener_entry = ListenerEntry(effect, source_card)
         self._event_listeners[effect.listens_to].append(listener_entry)
+
+    def register_card(self, card: GameCard):
+        """Registers all listeners for the card"""
+        for eff_spec in card.abilities:
+            if not isinstance(eff_spec.effect, Listener):
+                continue
+            self.register(eff_spec.effect, card)
+            print(f"Registered listener for {card.props.name}: {eff_spec.effect}")
 
     def unregister_effects(self, card: GameCard):
         """Remove any event listeners tied to this card"""

@@ -50,6 +50,14 @@ class AbilityPipeline(Action):
         self.advance()
 
     def can_begin(self) -> bool:
+        if self.eff_spec and self.eff_spec.is_spell:
+            if self.eff_spec.allowed_p_id_turn is not None:
+                if self.eff_spec.allowed_p_id_turn != self.gs.player_turn_idx:
+                    return False
+            if self.eff_spec.allowed_phases:
+                if self.gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
+                    return False
+
         min_x, max_x = self.get_x_range()
         if max_x < min_x:
             return False
@@ -115,13 +123,9 @@ class AbilityPipeline(Action):
             for extra_cost in (self.eff_spec.extra_costs or []):
                 extra_cost.pay(self.gs, self.source)
 
-        if self.source.is_land and self.source.zone == Zone.HAND:
-            action = CastPermanentAction(self.player_idx, self.gs, self.source)
-            action.play()
-        else:
-            action = AbilityAction(self.player_idx, self.gs, self)
-            self.gs.action_stack.push(action, self.gs)
-            self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        action = AbilityAction(self.player_idx, self.gs, self)
+        self.gs.action_stack.push(action, self.gs)
+        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
 
     def resolve_ability(self):
         if self.eff_spec:
@@ -149,11 +153,7 @@ class AbilityPipeline(Action):
                 self.source.host = host
                 host.auras.append(self.source)
 
-            from models.effects.base import Listener
-            for eff_spec in self.source.abilities:
-                if isinstance(eff_spec.effect, Listener):
-                    self.gs.event_mgr.register(eff_spec.effect, self.source)
-                    print(f"Registered listener for {self.source.props.name}: {eff_spec.effect.__class__.__name__}")
+            self.gs.event_mgr.register_card(self.source)
 
             if not self.source.props.is_permanent:
                 self.gs.pile_mgr.move_card(self.source, Zone.GRAVEYARD, cause='cast')

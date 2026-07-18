@@ -10,7 +10,7 @@ from models.events_all import StateBasedEvent, CastResolvedEvent
 from models.zone import Zone
 
 @dataclass
-class NoSpellPermanentToStack(Action):
+class CastWithNoSpellEffect(Action):
     """Used for casting non-land permanents with no casting spell
     that do not need an ability pipeline but do need to be pushed onto the stack"""
     source: GameCard
@@ -25,7 +25,7 @@ class NoSpellPermanentToStack(Action):
 
 @dataclass
 class CastPermanentAction(Action):
-    """Used for cards (all would be permanents) that have no casting spell"""
+    """Used for cards (all would be permanents), including lands, that have no casting spell"""
     source: GameCard
 
     def __repr__(self) -> str:
@@ -41,10 +41,5 @@ class CastPermanentAction(Action):
         if self.source.is_land:
             self.gs.turn_mgr.has_played_land = True
 
-        from models.effects.base import Listener
-        for eff_spec in self.source.abilities:
-            if isinstance(eff_spec.effect, Listener):
-                self.gs.event_mgr.register(eff_spec.effect, self.source)
-                print(f"Registered listener for {self.source.props.name}: {eff_spec.effect}")
-
+        self.gs.event_mgr.register_card(self.source)
         self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
