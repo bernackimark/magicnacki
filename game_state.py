@@ -3,7 +3,7 @@ import random
 from typing import Any, Sequence, TYPE_CHECKING
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.cast import CastPermanentAction, NoSpellPermanentToStack
+from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.effects.base import Activated
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ class GameState:
 
         self._query_depth = 0  # temp solution
 
-        self.event_mgr = EventManager()  # houses, emits, registers, unregisters Listener(Effect)
+        self.event_mgr = EventManager(self)  # houses, emits, registers, unregisters Listener(Effect)
         self.phase_mgr = PhaseManager()
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
         self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
@@ -121,7 +121,7 @@ class GameState:
         decrements life to player, handles Trample combat damage"""
         # 1. Create & emit a DamageProposedEvent, allowing listeners to modify the amount; exit if no remaining damage
         event = DamageProposedEvent(source, target, amount, amount, is_combat=is_combat)
-        self.event_mgr.emit(event, self)
+        self.event_mgr.emit(event)
         if event.remaining <= 0:
             return
 
@@ -150,7 +150,7 @@ class GameState:
         # 4. Emit resolved events, allowing listeners to react
         for e in resolved_events:
             print('Damage Resolved Event', e)
-            self.event_mgr.emit(e, self)
+            self.event_mgr.emit(e)
 
         # 5. Check SBAs (ex: damage_received_this_turn >= creature.toughness)
         self.check_state_based_actions()
@@ -165,12 +165,12 @@ class GameState:
     # --- CASTING & ACTIVATION COSTS ---
     def get_casting_cost(self, p_id: int, card: GameCard) -> str:
         event = CostQueryEvent(p_id, 'cast', card, card.casting_cost[:] if card.casting_cost else '')
-        self.event_mgr.emit(event, self)
+        self.event_mgr.emit(event)
         return event.cost
 
     def get_activation_cost(self, p_id: int, source: GameCard, ability: Activated) -> str:
         event = CostQueryEvent(p_id, 'activate', source, ability.eff_spec.cost)
-        self.event_mgr.emit(event, self)
+        self.event_mgr.emit(event)
         return event.cost
 
     def get_available_activated_abilities(self, c: GameCard) -> list[AbilityPipeline | None]:
@@ -180,15 +180,16 @@ class GameState:
     def add_activated_abilities_from_board(self) -> list[AbilityPipeline | None]:
         return [a for c in self.pile_mgr.boards[self.action_on_idx] for a in self.get_available_activated_abilities(c)]
 
-    def available_actions_from_hand(self) -> list[AbilityPipeline | CastPermanentAction | NoSpellPermanentToStack | None]:
+    def available_actions_from_hand(self) -> list[AbilityPipeline | CastPermanentAction | CastWithNoSpellEffect | None]:
         """For each card in hand for the in-scope player ...
             -   If not can_cast(), skip (can_cast emits to Listeners, including base game rules)
-            -   If a permanent w no spell effect, create a CastPermanentAction
+            -   Lands create CastPermanentAction whose .play() bypasses the stack
+            -   Non-land permanents w no spell effect, create a CastWithNoSpellEffect,
+                    whose .play() adds a CastPermanentAction to the stack
             -   For each cast effect:
-                -   If it's sepcification declares allowed turn/phase, skip if illegal
-                -   Else create a AbilityPipeline action (which builds the Ability -- X, mode, target, etc.)
+                -   create a AbilityPipeline action (which builds the Ability -- X, mode, target, etc.)
             Return the list of legal Actions"""
-        actions: list[AbilityPipeline | CastPermanentAction | NoSpellPermanentToStack | None] = []
+        actions: list[AbilityPipeline | CastPermanentAction | CastWithNoSpellEffect | None] = []
 
         for c in self.pile_mgr.hands[self.action_on_idx]:
             if not self.perm_querier.can_cast(c, c.owner_id):
@@ -201,16 +202,10 @@ class GameState:
 
             if c.props.is_permanent and not c.spells:
                 # its .play() will add it to the stack
-                actions.append(NoSpellPermanentToStack(c.owner_id, self, c))
+                actions.append(CastWithNoSpellEffect(c.owner_id, self, c))
                 continue
 
             for spell_eff in c.spells:
-                if spell_eff.allowed_p_id_turn is not None:
-                    if spell_eff.allowed_p_id_turn != self.player_turn_idx:
-                        continue
-                if spell_eff.allowed_phases:
-                    if self.phase_mgr.phase not in spell_eff.allowed_phases:
-                        continue
                 # creates a pipeline for selecting: X, mode, targets, extra costs
                 pipeline = AbilityPipeline(c.owner_id, self, c, spell_eff)
                 if pipeline.can_begin():

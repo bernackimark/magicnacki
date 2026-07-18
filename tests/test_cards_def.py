@@ -69,7 +69,7 @@ class TestCardsDEF(unittest.TestCase):
         If you would begin your draw step, you may skip that step instead to gain 2 life.
         When you draw a card, destroy F."""
         card = self.g.battlefield('fasting')
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         self.assertEqual(1, card.counters.get_count(HUNGER))
         skip_draw_gain_life = self.gs.pending_choice.get_actions()[0]
         skip_draw_gain_life.play()
@@ -78,7 +78,7 @@ class TestCardsDEF(unittest.TestCase):
         self.assertEqual(7, len(self.gs.pile_mgr.hands[0]))
         self.assertEqual(22, self.gs.life[0])
 
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         do_not_skip_draw = self.gs.pending_choice.get_actions()[1]
         do_not_skip_draw.play()
         self.gs.phase_mgr.set_phase(Phase.DRAW, self.gs)
@@ -152,7 +152,7 @@ class TestCardsDEF(unittest.TestCase):
         it deals 2 damage to you instead."""
         card = self.g.battlefield('forethought-amulet')
         self.g.mana('UUUUUUUU')
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         pay_mana = self.gs.pending_choice.get_actions()[0]
         pay_mana.play()
 
@@ -162,7 +162,7 @@ class TestCardsDEF(unittest.TestCase):
         self.assertEqual(18, self.gs.life[0])
 
         self.g.next_turn(True)
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         sac_fa = self.gs.pending_choice.get_actions()[1]
         sac_fa.play()
         self.assertIn(card, self.g.gy[0])

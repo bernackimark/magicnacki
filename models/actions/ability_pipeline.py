@@ -125,7 +125,7 @@ class AbilityPipeline(Action):
 
         action = AbilityAction(self.player_idx, self.gs, self)
         self.gs.action_stack.push(action, self.gs)
-        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        self.gs.event_mgr.emit(StateBasedEvent())
 
     def resolve_ability(self):
         if self.eff_spec:
@@ -136,7 +136,7 @@ class AbilityPipeline(Action):
                 print(f"Successfully activated ability for {self.source.props.name}")
                 aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
                 aa.activations_this_turn += 1
-                self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa), self.gs)
+                self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa))
 
         if self.source.zone != Zone.HAND:
             print(f"Successfully executed ability for {self.source.props.name}")
@@ -146,7 +146,7 @@ class AbilityPipeline(Action):
             if self.source.props.is_permanent:
                 self.gs.pile_mgr.move_card(self.source, Zone.BATTLEFIELD, cause='cast')
 
-            self.gs.event_mgr.emit(CastResolvedEvent(self.source, self.source.orig_owner_id, None), self.gs)
+            self.gs.event_mgr.emit(CastResolvedEvent(self.source, self.source.orig_owner_id, None))
 
             if 'Aura' in self.source.card_sub_types:
                 host = self.targets[0]
@@ -158,7 +158,7 @@ class AbilityPipeline(Action):
             if not self.source.props.is_permanent:
                 self.gs.pile_mgr.move_card(self.source, Zone.GRAVEYARD, cause='cast')
 
-        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        self.gs.event_mgr.emit(StateBasedEvent())
 
     @property
     def ability_cost(self) -> str:

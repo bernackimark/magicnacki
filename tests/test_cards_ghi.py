@@ -68,7 +68,7 @@ class TestCardsGHI(unittest.TestCase):
         self.assertTrue(wall.power > 9)
         com.handle_damage()
         self.assertEqual(0, wall.damage_dealt_this_turn)
-        self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
+        self.gs.event_mgr.emit(EndStepEvent(0))
         self.assertIn(wall, self.g.gy[0])
 
     def test_glyph_of_doom(self):
@@ -80,7 +80,7 @@ class TestCardsGHI(unittest.TestCase):
         self.g.next_turn(True)
         self.g.cast_and_accept(card, wall, card.abilities[0])
         self.g.combat(attacker, wall)
-        self.gs.event_mgr.emit(CombatEndEvent(0), self.gs)
+        self.gs.event_mgr.emit(CombatEndEvent(0))
         self.assertIn(attacker, self.g.gy[1])
 
     def test_glyph_of_life(self):

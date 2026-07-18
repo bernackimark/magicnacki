@@ -26,7 +26,7 @@ class ScoreManager:
         event = LifeGainEvent(p_id, amt, source)
         if event.amt <= 0:
             return
-        gs.event_mgr.emit(event, gs)
+        gs.event_mgr.emit(event)
         self.life[p_id] += amt
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
 
@@ -36,6 +36,6 @@ class ScoreManager:
         event = LifeLossEvent(p_id, amt, source)
         if event.amt <= 0:
             return
-        gs.event_mgr.emit(event, gs)
+        gs.event_mgr.emit(event)
         self.life[p_id] -= amt
         print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")

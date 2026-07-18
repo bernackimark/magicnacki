@@ -46,7 +46,7 @@ class PileManager:
         self._add_to_zone(card, to_zone)
         card.zone = to_zone
         if emit_zone_event:
-            self._gs.event_mgr.emit(ZoneChangeEvent(card, from_zone, to_zone, cause), self._gs)
+            self._gs.event_mgr.emit(ZoneChangeEvent(card, from_zone, to_zone, cause))
 
         # Post-move hooks
         # self._after_zone_change(card, from_zone, to_zone)
@@ -65,7 +65,7 @@ class PileManager:
                 print(f'{card} is regenerated')
                 return
 
-        self._gs.event_mgr.emit(DiesEvent(card), self._gs)
+        self._gs.event_mgr.emit(DiesEvent(card))
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
         self._gs.turn_mgr.cards_that_died.append(card)
         print(f'{card} is destroyed')
@@ -82,7 +82,7 @@ class PileManager:
         self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is bounced')
 
     def discard(self, card: GameCard, source: GameCard | None = None):
-        self._gs.event_mgr.emit(DiscardEvent(card.orig_owner_id, card, source), self._gs)
+        self._gs.event_mgr.emit(DiscardEvent(card.orig_owner_id, card, source))
         self.move_card(card, Zone.GRAVEYARD, cause="discard")
         print(f'{card} is discarded')
         self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is bounced')
@@ -101,7 +101,7 @@ class PileManager:
         for _ in range(cnt):
             top_lib_card = self.libraries[p_id][0]
             self.move_card(top_lib_card, Zone.HAND, cause='draw')
-            self._gs.event_mgr.emit(DrawCardEvent(p_id, top_lib_card), self._gs)
+            self._gs.event_mgr.emit(DrawCardEvent(p_id, top_lib_card))
             if print_output:
                 print(f'Player #{p_id} draws')
             self._gs.game_history.append_non_action(self._gs, text=f'Player #{p_id} draws')
@@ -148,12 +148,12 @@ class PileManager:
     def _leave_battlefield(self, card: GameCard, to_zone: Zone):
         """Emit ZoneChangeEvent before unregistering its effects, doing so for the subject card;
         detach all attached GameCard auras; call GameCard.clear_all_mods()"""
-        self._gs.event_mgr.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'), self._gs)
+        self._gs.event_mgr.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'))
         self._gs.event_mgr.unregister_effects(card)
 
         for aura in list(card.auras):
-            self._gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self._gs)
+            self._gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'))
             self.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
             self._gs.event_mgr.unregister_effects(aura)
         card.clear_all_mods()
-        self._gs.event_mgr.emit(StateBasedEvent(), self._gs)
+        self._gs.event_mgr.emit(StateBasedEvent())

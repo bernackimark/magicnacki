@@ -36,10 +36,10 @@ class CastPermanentAction(Action):
 
         print(f"Successfully cast {self.source.props.name}")
         self.gs.pile_mgr.move_card(self.source, Zone.BATTLEFIELD, cause='cast')
-        self.gs.event_mgr.emit(CastResolvedEvent(self.source, self.source.orig_owner_id, None), self.gs)
+        self.gs.event_mgr.emit(CastResolvedEvent(self.source, self.source.orig_owner_id, None))
 
         if self.source.is_land:
             self.gs.turn_mgr.has_played_land = True
 
         self.gs.event_mgr.register_card(self.source)
-        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        self.gs.event_mgr.emit(StateBasedEvent())

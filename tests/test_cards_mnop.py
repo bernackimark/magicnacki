@@ -28,9 +28,9 @@ class TestCardsMNOP(unittest.TestCase):
         print('Total Lands in play', len(self.gs.card_filter.in_play().lands().result()))
 
         self.g.next_turn(True)
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         self.assertIn(opp_land, self.g.gy[1])
-        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        self.gs.event_mgr.emit(StateBasedEvent())
         self.assertIn(card, self.g.gy[0])
 
     def test_martyrs_of_korlis(self):
@@ -74,7 +74,7 @@ class TestCardsMNOP(unittest.TestCase):
         festival = self.g.hand('festival')  # no creatures may attack
         self.g.cast_and_accept(festival, None, festival.abilities[0])
         self.g.activate_ability(aa, legal_target_2)
-        self.gs.event_mgr.emit(EndStepEvent(1), self.gs)
+        self.gs.event_mgr.emit(EndStepEvent(1))
         self.assertIn(legal_target_2, self.g.gy[1])
 
     def test_obelisk_of_undoing(self):
@@ -113,7 +113,7 @@ class TestCardsMNOP(unittest.TestCase):
         # TODO: debug print statements are firing here from inside of OldManOfTheSeaPowerCheck, showing its power as 2
 
         # print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
-        # self.gs.event_mgr.emit(StateBasedEvent, self.gs)
+        # self.gs.event_mgr.emit(StateBasedEvent)
         # print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
         # self.assertEqual(1, target.owner_id, 'Target should have been returned to original owner when OMOTOS pumped')
 

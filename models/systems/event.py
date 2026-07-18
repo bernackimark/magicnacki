@@ -20,7 +20,8 @@ class ListenerEntry:
 
 class EventManager:
     """Handles all Listener effects who method is 'on_event' -- both base rules & card-based effects"""
-    def __init__(self):
+    def __init__(self, gs: GameState):
+        self._gs = gs
         self._events: list[tuple[Event, int]] = []
 
         # key = Event subclass, value = list of (effect, source_card) tuples
@@ -41,13 +42,13 @@ class EventManager:
             return [e for e in self.events if isinstance(e, event)]  # type: ignore
         return [e for e, turn_num in self._events if turn_num == turn_number and isinstance(e, event)]  # type: ignore
 
-    def emit(self, event: Event, gs: GameState):
+    def emit(self, event: Event):
         """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr"""
-        self._events.append((event, gs.turn_mgr.turn_number))
+        self._events.append((event, self._gs.turn_mgr.turn_number))
 
         for base_rule in self._base_rule_listeners[type(event)]:
             source = event.source if hasattr(event, 'source') else None
-            base_rule.on_event(gs, source, event)  # rare case where the 'source' argument is not supplied
+            base_rule.on_event(self._gs, source, event)  # rare case where the 'source' argument is not supplied
 
         entries = list(self._event_listeners[type(event)])
         for e in entries:
@@ -57,7 +58,7 @@ class EventManager:
                     if e.effect.modifies != event.query:
                         continue
             print(f'{e} emits to {type(event)} listeners')
-            e.effect.on_event(gs, e.source, event)
+            e.effect.on_event(self._gs, e.source, event)
 
         self.cleanup_expired()
 

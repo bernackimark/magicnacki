@@ -351,7 +351,7 @@ class RemoveHostAuras(Resolver):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         for aura in list(target.auras):
-            gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'), self)
+            gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'))
             gs.pile_mgr.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
             gs.event_mgr.unregister_effects(aura)
 
@@ -427,7 +427,7 @@ class Steal(Resolver):
             gs.pile_mgr.boards[source.owner_id].append(target)
         else:
             gs.pile_mgr.move_card(target, self.new_zone, cause='steal')
-        gs.event_mgr.emit(StateBasedEvent(), gs)
+        gs.event_mgr.emit(StateBasedEvent())
 
 class TakeAnotherTurn(Resolver):
     """Take another turn after this one;

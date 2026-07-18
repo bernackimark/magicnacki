@@ -115,7 +115,7 @@ class GameCard:
             return power, toughness
 
         event = ModQueryEvent(query='pt', card=self)
-        self.game_state.event_mgr.emit(event, self.game_state)
+        self.game_state.event_mgr.emit(event)
         for mod in event.mods:
             power += mod.p_adj
             toughness += mod.t_adj
@@ -130,7 +130,7 @@ class GameCard:
             return list(self._card_types)
 
         event = ModQueryEvent(query='type', card=self)
-        self.game_state.event_mgr.emit(event, self.game_state)
+        self.game_state.event_mgr.emit(event)
         adds, removes = set(), set()
         for mod in event.mods:
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
@@ -146,7 +146,7 @@ class GameCard:
             return list(self._card_sub_types)
 
         event = ModQueryEvent(query='sub_type', card=self)
-        self.game_state.event_mgr.emit(event, self.game_state)
+        self.game_state.event_mgr.emit(event)
         adds, removes = set(), set()
         for mod in event.mods:
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
@@ -164,7 +164,7 @@ class GameCard:
             return list(self._base_kwa)
 
         event = ModQueryEvent(query='kwa', card=self)
-        self.game_state.event_mgr.emit(event, self.game_state)
+        self.game_state.event_mgr.emit(event)
         adds, removes = set(), set()
         for mod in event.mods:
             adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
@@ -193,14 +193,14 @@ class GameCard:
         """If already tapped, skip; emit TapCardEvent & tap card"""
         if self.is_tapped:
             return
-        self.game_state.event_mgr.emit(TapCardEvent(card=self), self.game_state)
+        self.game_state.event_mgr.emit(TapCardEvent(card=self))
         self.is_tapped = True
 
     def untap(self) -> None:
         """If already untapped, skip; emit UntapCardEvent & untap card"""
         if not self.is_tapped:
             return
-        self.game_state.event_mgr.emit(UntapCardEvent(card=self), self.game_state)
+        self.game_state.event_mgr.emit(UntapCardEvent(card=self))
         self.is_tapped = False
 
     def reveal(self) -> None:

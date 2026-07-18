@@ -34,7 +34,7 @@ class TestCardsAtoC(unittest.TestCase):
         listener = ArtifactPossessionActivation()
         self.gs.event_mgr.register(listener, aura)
         aa = artifact.activated_abilities[0]
-        self.gs.event_mgr.emit(AbilityActivatedEvent(0, aa), self.gs)
+        self.gs.event_mgr.emit(AbilityActivatedEvent(0, aa))
         self.assertEqual(self.gs.life[0], 18)
 
     def test_berserk(self):
@@ -116,7 +116,7 @@ class TestCardsAtoC(unittest.TestCase):
         for i in range(1, 3):
             self.g.next_turn()
             self.g.combat(card, None)
-            self.gs.event_mgr.emit(CombatEndEvent(0), self.gs)
+            self.gs.event_mgr.emit(CombatEndEvent(0))
             self.assertEqual(4 - i, card.counters.get_count(PLUS_ONE_ZERO))
 
         self.g.next_turn()
@@ -137,7 +137,7 @@ class TestCardsAtoC(unittest.TestCase):
         for i in range(1, 4):
             self.g.next_turn()
             self.g.combat(card, None)
-            self.gs.event_mgr.emit(CombatEndEvent(0), self.gs)
+            self.gs.event_mgr.emit(CombatEndEvent(0))
             self.assertEqual(7 - i, card.counters.get_count(PLUS_ONE_ZERO))
 
         self.g.next_turn()
@@ -160,12 +160,12 @@ class TestCardsAtoC(unittest.TestCase):
 
         for i in range(1, 4):
             self.g.next_turn()
-            self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+            self.gs.event_mgr.emit(UpkeepEvent(0))
             self.assertTrue(host.is_tapped)
             self.assertEqual(3 - i, card.counters.get_count(PUPA))
 
         self.g.next_turn()
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         self.assertIn(card, self.g.gy[0])
         self.assertEqual(3, host.power)
         self.assertIn('Flying', host.keyword_abilities)

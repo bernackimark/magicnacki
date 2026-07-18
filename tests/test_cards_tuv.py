@@ -51,7 +51,7 @@ class TestCardsTUV(unittest.TestCase):
         self.g.battlefield('merfolk-of-the-pearl-trident')
         self.g.battlefield('phantom-monster')
         self.g.mana('UUUU')
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         self.assertTrue(any(isinstance(a, PayMana) for a in self.gs.pending_choice.get_actions()))
 
     def test_time_vault(self):
@@ -114,7 +114,7 @@ class TestCardsTUV(unittest.TestCase):
         self.g.mana('UUUUU')
         enchantment = self.g.card('undertow')
         cast_event = CastResolvedEvent(enchantment, 0)
-        self.gs.event_mgr.emit(cast_event, self.gs)
+        self.gs.event_mgr.emit(cast_event)
         self.assertTrue(any(isinstance(a, DrawCard) for a in self.gs.pending_choice.options))
 
 

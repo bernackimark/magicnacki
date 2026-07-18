@@ -147,7 +147,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.activate_ability(aa, 1)
         self.assertEqual(19, self.gs.life[1])
 
-        self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
+        self.gs.event_mgr.emit(EndStepEvent(0))
         self.assertIn(card, self.g.gy[0])
 
     def test_rohgahh_of_kher_keep(self):
@@ -158,7 +158,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(2, kobold.power)
 
         self.g.mana('RRR')
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         the_bad_option = self.gs.pending_choice.get_actions()[1]
         the_bad_option.play()
         self.assertTrue(card.is_tapped)
@@ -284,7 +284,7 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
         self.assertIn('Sacrifice Island', [a.__repr__() for a in self.gs.pending_choice.get_actions()])
         self.gs.pending_choice.options[0].play()
-        self.gs.event_mgr.emit(StateBasedEvent(), self.gs)
+        self.gs.event_mgr.emit(StateBasedEvent())
         self.assertEqual(17, self.gs.life[0])
         self.assertIn(sd, self.g.gy[0])
 
@@ -329,7 +329,7 @@ class TestCardsQRS(unittest.TestCase):
         has_sickness = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
         self.g.cast_and_accept(card, None, card.abilities[0])
         self.g.combat(attacker, None)
-        self.gs.event_mgr.emit(EndStepEvent(1), self.gs)
+        self.gs.event_mgr.emit(EndStepEvent(1))
         self.assertNotIn(attacker, self.g.gy[1])
         self.assertIn(non_attacker, self.g.gy[1])
         self.assertNotIn(wall, self.g.gy[1])
@@ -404,7 +404,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.next_turn()
         self.assertTrue(tapped_card.is_tapped)
 
-        self.gs.event_mgr.emit(UpkeepEvent(0), self.gs)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
         sac_stasis_action = self.gs.pending_choice.options[1]
         sac_stasis_action.play()
 
@@ -422,7 +422,7 @@ class TestCardsQRS(unittest.TestCase):
 
         self.g.activate_ability(aa, legal_target)
         self.assertIn('Flying', legal_target.keyword_abilities)
-        self.gs.event_mgr.emit(EndStepEvent(0), self.gs)
+        self.gs.event_mgr.emit(EndStepEvent(0))
         self.assertEqual(legal_target.zone, Zone.GRAVEYARD)
 
     def test_storm_seeker(self):
