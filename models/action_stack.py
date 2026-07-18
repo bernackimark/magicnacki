@@ -6,10 +6,10 @@ from models.choice_actions_all import ChoiceAction
 if TYPE_CHECKING:
     from game_state import GameState
     from models.actions.ability_pipeline import AbilityPipeline
-    from models.actions.base import Action
 
 from dataclasses import dataclass, field
 
+from models.actions.base import Action
 from models.utils import flip
 
 
