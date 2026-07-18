@@ -9,7 +9,7 @@ from models.actions.special import CopyCard
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
-from models.effects.listeners_generic import SkipUntaps, DestroyAtEndStepIfItAttacked
+from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
@@ -90,13 +90,6 @@ class Banshee(Resolver):
         gs.apply_damage(s, damage_to_target, t)
         gs.apply_damage(s, damage_to_you, s.owner_id)
         del s.extras['x']
-
-class BarlsCage(Resolver):
-    """Target creature doesn't untap during its controller's NEXT untap step; registers a listener"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        if target is None:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(SkipUntaps(target), source)
 
 class BazaarOfBaghdad(Resolver):
     """Draw two cards, then discard three cards"""

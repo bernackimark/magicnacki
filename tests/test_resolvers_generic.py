@@ -1,15 +1,35 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.counter_tokens import STUN
 from models.effects.resolvers_generic import PreventNextDamageTo, GraveyardToExileInItsEntirety, TakeAnotherTurn
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
 
-class TestPreventDamage(unittest.TestCase):
+class TestResolversGeneric(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_add_stun_counter(self):
+        barls_cage = self.g.battlefield('barls-cage')
+        aa = barls_cage.activated_abilities[0]
+        self.g.mana('RRRRRRRR')
+        targeted = self.g.battlefield('grizzly-bears', owner=1)
+        untargeted = self.g.battlefield('hill-giant', owner=1)
+        untargeted.tap()
+        self.g.activate_ability(aa, targeted)
+        self.assertEqual(1, targeted.counters.get_count(STUN))
+
+        self.g.next_turn(True)
+        # is the phase already set to UNTAP in the line above, thus triggering 2x?
+        self.assertFalse(untargeted.is_tapped)
+        self.assertTrue(targeted.is_tapped)
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UNTAP)
+        self.assertFalse(targeted.is_tapped)
 
     def test_counter_an_ability_action(self):
         card = self.g.hand('counterspell')

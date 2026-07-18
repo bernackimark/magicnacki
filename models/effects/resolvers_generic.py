@@ -7,7 +7,7 @@ from models.actions.draw_discard import DiscardCards
 from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
 from models.choice_actions_all import ChoiceAction
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
-from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
+from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
@@ -20,12 +20,14 @@ if TYPE_CHECKING:
 
 
 class AddCounter(Resolver):
+    """If no target is provided, the source card will receive the counter"""
     def __init__(self, counter_type: CounterType, cnt: int = 1):
         self.counter_type = counter_type
         self.cnt = cnt
 
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        source.counters.add_counter(self.counter_type, self.cnt)
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        target = source if not target else target
+        target.counters.add_counter(self.counter_type, self.cnt)
 
 class AddMana(Resolver):
     def __init__(self, color: str, cnt: int = 1):
@@ -37,6 +39,17 @@ class AddMana(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.mana_pools[source.owner_id].add_floating(self.color, self.cnt)
+
+class AddStunCounter(Resolver):
+    """Tap and add stun counter to target"""
+    def __init__(self, cnt: int = 1):
+        self.cnt = cnt
+
+    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.tap()
+        target.counters.add_counter(STUN, self.cnt)
 
 class AllWalksRemoved(Resolver):
     """Target creature loses all landwalk abilities until end of turn"""

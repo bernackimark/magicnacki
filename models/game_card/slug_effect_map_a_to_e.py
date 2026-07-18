@@ -4,10 +4,10 @@ from itertools import combinations
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
-from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
+from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, STUN
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from ..target import TargetSpec
-from ..effects.resolvers_a_to_e import BarlsCage, Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
+from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, Berserk, BloodLust, \
     BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
@@ -17,7 +17,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, CounterSpell, \
-    PreventNextDamageTo, PreventAllDamageBy
+    PreventNextDamageTo, PreventAllDamageBy, AddStunCounter
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -109,7 +109,7 @@ MAP: dict[str, list[EffSpec]] = {
     'badlands': dual_land_specs('BR'),
     'ball-lightning': [Triggered(DestroyAtEndStep(T_FUNCS['self']))],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'], max_x_func=max_x_from_printed_card)],
-    'barls-cage': [Activated('3', BarlsCage(), T_FUNCS['creatures'])],
+    'barls-cage': [Activated('3', AddStunCounter(), T_FUNCS['creatures'])],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
     'basalt-monolith': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],

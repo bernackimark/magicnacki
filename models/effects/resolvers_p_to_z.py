@@ -11,14 +11,14 @@ from models.actions.draw_discard import DiscardCards, DrawCard
 from models.actions.piles import Tutor, Shuffle, HandToBattlefield
 from models.actions.pump import VariablePTMod
 from models.actions.special import SacCreatureAndAddMana, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
-from models.actions.tap_untap import LeaveTapped
 from models.choice_actions_all import ChoiceAction
-from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING
+from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
-from models.effects.listeners_generic import PreventAllDamageByEOT, SkipUntaps, DestroyAtEndStep, PreventNextDamageByEOT, BounceAtEndStep, PreventNextDamageToEOT, DestroyAtEndStepIfItDidntAttack
+from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageByEOT, \
+    BounceAtEndStep, PreventNextDamageToEOT, DestroyAtEndStepIfItDidntAttack
 from models.effects.listeners_mod_queries import PietyEOT, ShieldWallEOT, TransmutationEOT
-from models.effects.listeners_permission import TowerOfCoireallEOT
+from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn
 from models.effects.resolvers_generic import Reveal
 from models.modifiers import SubTypeMod, KWAMod, PTMod
 from models.systems.phase import Phase
@@ -291,8 +291,7 @@ class TangleKelp(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         target.tap()
-        from .listeners_generic import DoesntUntapIfItAttackedLastTurn
-        gs.event_mgr.register(DoesntUntapIfItAttackedLastTurn(target), source)
+        gs.event_mgr.register(DoesntUntapAtUntapIfItAttackedLastTurn(target), source)
 
 class TawnossCoffin(Resolver):
     """... Exile target creature & all its auras. Note the number & kind of counters that were on that creature ..."""
@@ -313,7 +312,7 @@ class Telekinesis(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         target.tap()
         gs.event_mgr.register(PreventAllDamageByEOT(target, combat_only=True), source)
-        gs.event_mgr.register(SkipUntaps(target, next_x_turns=2))
+        target.counters.add_counter(STUN, 2)
 
 class TimeElementalBounce(Resolver):
     """... {2UU}, {T}: Return target unenchanted permanent to its owner's hand"""

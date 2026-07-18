@@ -3,6 +3,7 @@ from abc import ABC
 from enum import auto, IntEnum
 from typing import TYPE_CHECKING
 
+from models.counter_tokens import STUN
 from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
 
 if TYPE_CHECKING:
@@ -69,10 +70,17 @@ class UntapPhase(PhaseState):
         for c in gs.pile_mgr.boards[gs.player_turn_idx]:
             if not c.is_tapped or c.id_ in gs.turn_mgr.untap_decisions_made:
                 continue
+
+            if c.counters.get_count(STUN):
+                print('Removing counter from', c)
+                c.counters.remove_counter(STUN)
+                continue
+
             query = CanUntapAtUntapPhaseQueryEvent(gs.player_turn_idx, c)
             gs.event_mgr.emit(query)
             if query.permission is False:
                 continue
+
             if gs.perm_querier.can_untap(c):
                 c.untap()
 

@@ -40,6 +40,21 @@ class DoesntUntapAtUntap(Listener):
         if gs.player_turn_idx == event.card.owner_id and event.card in [self.card_filter_func(gs, source)]:
             event.permission = False
 
+class DoesntUntapAtUntapIfItAttackedLastTurn(Listener):
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if self.target.owner_id != gs.player_turn_idx or self.target is not event.card:
+            return
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(self.target.owner_id)
+        for e, turn_num in gs.event_mgr.events[::-1]:
+            if turn_num == p_last_turn_num:
+                if isinstance(e, AttackEvent) and e.attacker is self.target:
+                    event.permission = False
+
 class HostCanAttack(Listener):
     listens_to = CanAttackQueryEvent
 

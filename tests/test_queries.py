@@ -1,8 +1,7 @@
 import unittest
 
-from models.actions.end_step_pass_turn import PassTheTurn
+from models.counter_tokens import STUN
 from models.effects.base import Listener
-from models.effects.listeners_generic import SkipUntaps
 from models.effects.listeners_permission import UnblockableEOT, Meekstone
 from models.events_all import CanCastQueryEvent, CanTargetQueryEvent
 from models.systems.phase import Phase
@@ -209,16 +208,6 @@ class TestCanUntap(unittest.TestCase):
         meekstone = self.g.battlefield('meekstone')
         small_creature = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
         self.assertTrue(self.gs.perm_querier.can_untap(small_creature))
-
-    def test_barls_cage(self):
-        barls_cage = self.g.card('barls-cage')
-        affected = self.g.card('grizzly-bears', 1)
-        unaffected = self.g.card('hill-giant', 1)
-        self.gs.event_mgr.register(SkipUntaps(affected), barls_cage)
-        PassTheTurn(0, self.gs).play()
-        self.gs.phase_mgr.set_phase(Phase.UNTAP)
-        self.assertFalse(self.gs.perm_querier.can_untap(affected), f"barls-cage didn't prevent {affected}'s untap")
-        self.assertTrue(self.gs.perm_querier.can_untap(unaffected), f"Barl's Cage should have let {unaffected} untap")
 
 
 if __name__ == '__main__':
