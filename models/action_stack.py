@@ -45,6 +45,8 @@ class ActionStack:
         return [a for a in self.actions if isinstance(a, AbilityPipeline) and a.eff_spec.is_spell]
 
     def push(self, action: Action, gs: GameState, flip_action_on_opponent: bool = True) -> None:
+        if not isinstance(action, Action):
+            raise TypeError(f"Action Stack expects an action, received {action}, type {type(action)}")
         self._actions.append(action)
         if flip_action_on_opponent:
             gs.action_on_idx = flip(gs.action_on_idx)
