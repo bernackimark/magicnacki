@@ -25,7 +25,7 @@ class Sideboard(Action):
         return f"Sideboard"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.SIDEBOARDING, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.SIDEBOARDING)
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
         exit()  # TODO: Sideboarding phase; use same approach for console, which PG can render
@@ -36,7 +36,7 @@ class KeepDeck(Action):
         return f"Keep Deck"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.NEW_GAME, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.NEW_GAME)
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
 

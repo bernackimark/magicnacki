@@ -84,7 +84,7 @@ class TestPreventDamage(unittest.TestCase):
     def test_take_another_turn(self):
         time_walk = self.g.card('time-walk')
         TakeAnotherTurn().resolve(self.gs, time_walk, None)
-        self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)
 
 
 if __name__ == '__main__':

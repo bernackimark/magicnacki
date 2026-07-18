@@ -50,7 +50,7 @@ class TestCardsGHI(unittest.TestCase):
         self.g.mana('UUUUU')
         self.g.activate_ability(aa, card)
         self.g.next_turn()
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(5, len(self.gs.pending_choice.get_actions()))
 
     def test_glyph_of_destruction(self):

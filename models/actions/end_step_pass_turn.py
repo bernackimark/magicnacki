@@ -11,7 +11,7 @@ class MoveToEndStep(Action):
         return "Move to End Step"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
 
 
 @dataclass

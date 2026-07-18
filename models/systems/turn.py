@@ -43,7 +43,7 @@ class TurnManager:
         self.has_played_land = False
         self.cards_that_died.clear()
         self.untap_decisions_made.clear()
-        gs.phase_mgr.set_phase(Phase.UNTAP, gs)
+        gs.phase_mgr.set_phase(Phase.UNTAP)
 
     def get_players_last_turn_num(self, player_id: int) -> int | None:
         for turn_num, p_idx in self.turns[::-1]:

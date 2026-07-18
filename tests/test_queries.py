@@ -216,7 +216,7 @@ class TestCanUntap(unittest.TestCase):
         unaffected = self.g.card('hill-giant', 1)
         self.gs.event_mgr.register(SkipUntaps(affected), barls_cage)
         PassTheTurn(0, self.gs).play()
-        self.gs.phase_mgr.set_phase(Phase.UNTAP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UNTAP)
         self.assertFalse(self.gs.perm_querier.can_untap(affected), f"barls-cage didn't prevent {affected}'s untap")
         self.assertTrue(self.gs.perm_querier.can_untap(unaffected), f"Barl's Cage should have let {unaffected} untap")
 

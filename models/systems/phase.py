@@ -3,7 +3,7 @@ from abc import ABC
 from enum import auto, IntEnum
 from typing import TYPE_CHECKING
 
-from models.events_all import UntapCardEvent, CanEnterUntapPhaseQueryEvent
+from models.events_all import CanEnterUntapPhaseQueryEvent
 
 if TYPE_CHECKING:
     from models.actions.base import Action
@@ -61,7 +61,7 @@ class UntapPhase(PhaseState):
         query = CanEnterUntapPhaseQueryEvent(gs.player_turn_idx)
         gs.event_mgr.emit(query)
         if query.permission is False:
-            gs.phase_mgr.set_phase(Phase.UPKEEP, gs)
+            gs.phase_mgr.set_phase(Phase.UPKEEP)
             return
 
         from models.events_all import UntapPhaseEvent
@@ -151,7 +151,7 @@ class MainPhase(PhaseState):
 
         # auto-advance safety:
         if all(isinstance(a, MoveToEndStep) for a in actions):
-            gs.phase_mgr.set_phase(Phase.END_STEP, gs)
+            gs.phase_mgr.set_phase(Phase.END_STEP)
             return
 
         return actions
@@ -281,7 +281,7 @@ class SecondMainPhase(PhaseState):
 
         # auto-advance safety:
         if all(isinstance(a, MoveToEndStep) for a in actions):
-            gs.phase_mgr.set_phase(Phase.END_STEP, gs)
+            gs.phase_mgr.set_phase(Phase.END_STEP)
             return
 
         return actions
@@ -403,28 +403,29 @@ PHASE_MAP = {
 
 class PhaseManager:
     """Responsible for storing the current phase, getting avilable actions; can directly set phase"""
-    def __init__(self, state: PhaseState = PHASE_MAP[Phase.UNTAP]):
+    def __init__(self, gs: GameState, state: PhaseState = PHASE_MAP[Phase.UNTAP]):
+        self._gs = gs
         self.state: PhaseState = state
 
     @property
     def phase(self) -> Phase:
         return self.state.phase
 
-    def set_phase(self, phase: Phase, gs: GameState):
+    def set_phase(self, phase: Phase):
         """Use to directly assign a particular phase & calls its on_enter() method"""
         self.state = PHASE_MAP[phase]()
-        self.state.on_enter(gs)
+        self.state.on_enter(self._gs)
 
-    def get_actions(self, p_id: int, gs: GameState):
+    def get_actions(self, p_id: int):
         """Gets & returns the current PhaseState's actions; if no available actions, auto-advance
         (call current PhaseState's next(), new PhaseState's on_enter() & return get_actions());
         can auto-advance through many phases if it does not have any available actions"""
-        if actions := self.state.get_actions(p_id, gs):
+        if actions := self.state.get_actions(p_id, self._gs):
             return actions
 
-        self.state = self.state.next(gs)
-        self.state.on_enter(gs)
-        return self.get_actions(p_id, gs)
+        self.state = self.state.next(self._gs)
+        self.state.on_enter(self._gs)
+        return self.get_actions(p_id)
 
     @staticmethod
     def any_remaining_required_attackers(p_id: int, gs: GameState):

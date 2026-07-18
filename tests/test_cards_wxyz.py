@@ -47,7 +47,7 @@ class TestCardsWXYZ(unittest.TestCase):
         wd = self.g.battlefield('whirling-dervish')
         self.g.next_turn()
         self.g.combat(wd, None)
-        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertEqual(2, wd.power)
 
 

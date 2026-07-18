@@ -55,7 +55,7 @@ class TestCardsQRS(unittest.TestCase):
         bolt = self.g.hand('lightning-bolt', owner=1)
         bolt.abilities[0].effect.resolve(self.gs, bolt, 0)  # type: ignore
         self.assertEqual(19, self.gs.life[0])
-        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(card, self.gs.pile_mgr.hands[0])
 
     def test_reset(self):
@@ -69,7 +69,7 @@ class TestCardsQRS(unittest.TestCase):
         PassTheTurn(0, self.gs).play()
         island_1.tap()
         self.assertTrue(island_1.is_tapped)
-        self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
         card.abilities[0].effect.resolve(self.gs, card)  # type: ignore
         self.assertFalse(island_1.is_tapped)
 
@@ -198,7 +198,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.activate_ability(aa, target)
         self.assertIn(target, self.gs.pile_mgr.exiles[0])
 
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.gs.pending_choice.get_actions()[0].play()
         self.assertIn(target, self.gs.pile_mgr.boards[0])
 
@@ -252,17 +252,17 @@ class TestCardsQRS(unittest.TestCase):
         has_haste = self.g.battlefield('nether-shadow')
         regular = self.g.battlefield('savannah-lions')
         gy = self.g.gy[0]
-        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(has_haste, gy)
         self.assertNotIn(wall, gy)
         self.assertNotIn(regular, gy)
 
         self.g.next_turn()
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.gs.pending_choice.get_actions()[0].play()
         self.assertEqual(18, self.gs.life[0])
 
-        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(regular, gy)
         self.assertNotIn(wall, gy)
 
@@ -281,7 +281,7 @@ class TestCardsQRS(unittest.TestCase):
         When you control no lands, sac SD."""
         self.g.mana('U')
         sd = self.g.battlefield('serendib-djinn')
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertIn('Sacrifice Island', [a.__repr__() for a in self.gs.pending_choice.get_actions()])
         self.gs.pending_choice.options[0].play()
         self.gs.event_mgr.emit(StateBasedEvent())

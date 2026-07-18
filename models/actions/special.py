@@ -165,7 +165,7 @@ class SkipDrawPhaseGainLife(Action):
         self.amt = amt
 
     def play(self):
-        self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
         self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
         if self.gs.action_stack:
             self.gs.action_stack.pop()
@@ -322,7 +322,7 @@ class TimeVaultSkipTurnAction(Action):
 
     def play(self) -> None:
         self.source.untap()
-        self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)
 
 class WoodElementalETBAction(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, cards_to_sac: list[GameCard]):

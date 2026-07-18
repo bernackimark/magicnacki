@@ -96,7 +96,7 @@ class TestCardsTUV(unittest.TestCase):
         self.assertEqual(4, host.power)
 
         self.g.next_turn()
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, host.power)
 
     def test_urzas_miter(self):

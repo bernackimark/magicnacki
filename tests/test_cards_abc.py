@@ -43,14 +43,14 @@ class TestCardsAtoC(unittest.TestCase):
         card = self.g.hand('berserk')
         target = self.g.battlefield('grizzly-bears')  # 2/2
         self.g.mana('GGG')
-        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertFalse(card.abilities[0].effect.can_cast(self.gs, card))  # type: ignore
 
         self.g.next_turn()
         card.abilities[0].effect.resolve(self.gs, card, target)  # type: ignore
         self.g.combat(target, None)
         self.assertEqual(16, self.gs.life[1])
-        self.gs.phase_mgr.set_phase(Phase.END_STEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(target, self.g.gy[0])
 
     def test_blood_lust(self):

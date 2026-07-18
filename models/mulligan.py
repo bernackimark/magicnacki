@@ -130,7 +130,7 @@ class KeepHand(Action):
         self.gs.pending_choice = None
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
-        self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
 
 @dataclass
 class FinishBottoming(Action):
@@ -146,4 +146,4 @@ class FinishBottoming(Action):
         self.gs.pending_choice = None
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
-        self.gs.phase_mgr.set_phase(Phase.MAIN, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.MAIN)

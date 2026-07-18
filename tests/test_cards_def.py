@@ -81,7 +81,7 @@ class TestCardsDEF(unittest.TestCase):
         self.gs.event_mgr.emit(UpkeepEvent(0))
         do_not_skip_draw = self.gs.pending_choice.get_actions()[1]
         do_not_skip_draw.play()
-        self.gs.phase_mgr.set_phase(Phase.DRAW, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.DRAW)
         self.assertEqual(8, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
 
@@ -124,11 +124,11 @@ class TestCardsDEF(unittest.TestCase):
     def test_force_of_nature(self):
         """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
         self.g.battlefield('force-of-nature')
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(12, self.gs.life[0])
 
         self.g.mana('GGGGG')  # five forests
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         for a in self.gs.pending_choice.get_actions():
             if isinstance(a, PayMana):
                 a.play()

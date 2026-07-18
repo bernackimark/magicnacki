@@ -144,7 +144,7 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.mana('GGGG', owner=1)
         PassTheTurn(0, self.gs).play()
         self.assertTrue(host.is_tapped)
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertTrue(any(isinstance(a, PayManaToUntapAction) for a in self.gs.pending_choice.get_actions()))
 
     def test_part_water(self):
@@ -193,14 +193,13 @@ class TestCardsMNOP(unittest.TestCase):
         # AcceptAction(0, self.gs).play()
         # self.assertEqual(18, self.gs.life[0])
 
-
     def test_power_leak(self):
         """At host's upkeep, PL deals 2 damage to host owner. Host may pay X mana to prevent X of that damage."""
         card = self.g.battlefield('power-leak')
         host = self.g.battlefield('unstable-mutation')
         self.g.mana('GG')
         Attach(0, self.gs, card, host).play()
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, len([a for a in self.gs.pending_choice.get_actions()
                                  if isinstance(a, PayManaAndOrTakeDamage)]))
 

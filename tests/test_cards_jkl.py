@@ -60,7 +60,7 @@ class TestCardsJKL(unittest.TestCase):
         self.gs.combat_mgr.create_combat(self.gs, card)
         com = self.gs.combat_mgr.get_combat(card)
         com.blockers.append(blocker)
-        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)
         self.g.activate_ability(aa, blocker)
         self.assertEqual(1, card.power)
         self.assertEqual(1, blocker.counters.get_count(MINUS_ZERO_ONE))

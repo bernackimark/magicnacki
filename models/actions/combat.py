@@ -28,7 +28,7 @@ class BeginCombat(Action):
         return "Begin Combat"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.DECLARE_ATTACKERS, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_ATTACKERS)
 
 @dataclass
 class FinishDeclaringAttackers(Action):
@@ -37,7 +37,7 @@ class FinishDeclaringAttackers(Action):
         return "Done Declaring Attackers"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)
         self.gs.action_on_idx = flip(self.gs.action_on_idx)
 
 @dataclass
@@ -59,7 +59,7 @@ class FinishBlocking(Action):
         return f"Finish Blocks"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.PRE_COMBAT_DAMAGE, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.PRE_COMBAT_DAMAGE)
 
 @dataclass
 class AssignCombatDamage(Action):
@@ -67,4 +67,4 @@ class AssignCombatDamage(Action):
         return "Assign Combat Damage"
 
     def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.ASSIGN_COMBAT_DAMAGE, self.gs)
+        self.gs.phase_mgr.set_phase(Phase.ASSIGN_COMBAT_DAMAGE)

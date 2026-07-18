@@ -44,7 +44,7 @@ class GameState:
         self._query_depth = 0  # temp solution
 
         self.event_mgr = EventManager(self)  # houses, emits, registers, unregisters Listener(Effect)
-        self.phase_mgr = PhaseManager()
+        self.phase_mgr = PhaseManager(self)
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
         self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
         self.score_mgr = ScoreManager()  # manages life & poison
@@ -258,7 +258,7 @@ class GameState:
             return available_actions
 
         # delegating to phase manager
-        return self.phase_mgr.get_actions(p_id, self)
+        return self.phase_mgr.get_actions(p_id)
 
 
 # TODO:
