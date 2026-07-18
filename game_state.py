@@ -48,7 +48,7 @@ class GameState:
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
         self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
         self.score_mgr = ScoreManager()  # manages life & poison
-        self.combat_mgr = CombatManager()
+        self.combat_mgr = CombatManager(self)
 
         # action, turn, phase (game flow) concepts
         self.turn_mgr = TurnManager(self.player_cnt, player_turn_idx)

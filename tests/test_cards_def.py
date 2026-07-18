@@ -141,7 +141,7 @@ class TestCardsDEF(unittest.TestCase):
         ff = self.g.battlefield('forcefield', owner=1)
         self.g.mana('U', owner=1)
         attacker = self.g.battlefield('grizzly-bears')  # 2/2
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        self.gs.combat_mgr.create_combat(attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
         self.g.activate_ability(ff.activated_abilities[0], attacker, 1)
         combat.handle_damage()

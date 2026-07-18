@@ -57,7 +57,7 @@ class TestCardsJKL(unittest.TestCase):
 
         self.g.next_turn()
         self.assertFalse(aa.can_activate(self.gs))
-        self.gs.combat_mgr.create_combat(self.gs, card)
+        self.gs.combat_mgr.create_combat(card)
         com = self.gs.combat_mgr.get_combat(card)
         com.blockers.append(blocker)
         self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)

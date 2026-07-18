@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from models.modifiers import PTMod
 from models.utils import flip
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -44,6 +45,14 @@ class Combat:
         return any('First Strike' in self.attacker.keyword_abilities or
                    'First Strike' in b.keyword_abilities for b in self.blockers)
 
+    @property
+    def attacking_player(self) -> int:
+        return self.attacker.owner_id
+
+    @property
+    def defending_player(self) -> int:
+        return flip(self.attacker.owner_id)
+
     def handle_damage(self):
         """Main entry point for combat damage resolution. Handles first strike & normal damage & unblocked attackers.
         Currently, all attacker damage is assigned to the first blocker, no damage splitting supported yet"""
@@ -61,8 +70,7 @@ class Combat:
         # --- No blockers ---
         if not self.blockers:
             if not first_strike:
-                defender = flip(self.gs.player_turn_idx)
-                damage_assignments.append((self.attacker, self.attacker.power, defender))
+                damage_assignments.append((self.attacker, self.attacker.power, self.defending_player))
 
         else:
             # --- Attacker → blocker ---
@@ -75,7 +83,7 @@ class Combat:
 
                 target = self.blockers[0]
                 # If blocker is not on the battlefield (destroyed/bounced), it will not receive a damage assignment
-                if target in self.gs.card_filter.on_player_board(flip(self.gs.player_turn_idx)).result():
+                if target.zone == Zone.BATTLEFIELD:
                     if self.gs.perm_querier.can_damage(target, a):
                         damage_assignments.append((a, a.power, target))
 
@@ -98,7 +106,8 @@ class Combat:
 
 
 class CombatManager:
-    def __init__(self):
+    def __init__(self, gs: GameState):
+        self._gs = gs
         self.combats: list[Combat] = []
 
     @property
@@ -113,8 +122,8 @@ class CombatManager:
     def has_a_first_strike_phase(self) -> bool:
         return any(c.contains_first_strike for c in self.combats)
 
-    def create_combat(self, gs: GameState, c: GameCard) -> None:
-        self.combats.append(Combat(gs, c))
+    def create_combat(self, c: GameCard) -> None:
+        self.combats.append(Combat(self._gs, c))
 
     def get_combat(self, c: GameCard) -> Combat | None:
         for com in self.combats:

@@ -195,7 +195,7 @@ class TestGame:
         [h.clear() for h in self.gs.hands]
 
     def combat(self, attacker: GameCard, blockers: GameCard | list[GameCard] | None):
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        self.gs.combat_mgr.create_combat(attacker)
         if blockers is None:
             pass
         elif isinstance(blockers, GameCard):

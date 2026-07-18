@@ -19,7 +19,7 @@ class CreatureAttack(Action):
     def play(self) -> None:
         if 'Vigilance' not in self.card.keyword_abilities:
             self.card.tap()
-        self.gs.combat_mgr.create_combat(self.gs, self.card)
+        self.gs.combat_mgr.create_combat(self.card)
 
 @dataclass
 class BeginCombat(Action):

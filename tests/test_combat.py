@@ -11,14 +11,14 @@ class TestCombat(unittest.TestCase):
 
     def test_create_combat_adds_attacker(self):
         attacker = self.g.card('grizzly-bears')
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        self.gs.combat_mgr.create_combat(attacker)
         self.assertEqual([attacker], self.gs.combat_mgr.attackers)
         self.assertIs(self.gs.combat_mgr.get_combat(attacker).attacker, attacker)
 
     def test_get_combatants_against(self):
         attacker = self.g.card('grizzly-bears')
         blocker = self.g.card('hill-giant', 1)
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        self.gs.combat_mgr.create_combat(attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
         combat.blockers.append(blocker)
         self.assertEqual([blocker], self.gs.combat_mgr.get_combatants_against(attacker))
@@ -45,7 +45,7 @@ class TestCombat(unittest.TestCase):
         blocker = self.g.card('hill-giant', 1)
         unsummon = self.g.card('unsummon', 1)
         self.g.mana('U', 1)
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        self.gs.combat_mgr.create_combat(attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
         combat.blockers.append(blocker)
         self.gs.combat_mgr.remove_from_combat(blocker)
@@ -57,7 +57,7 @@ class TestCombat(unittest.TestCase):
     def test_remove_attacker_from_combat(self):
         attacker = self.g.card('grizzly-bears')
         attacker.tap()
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        self.gs.combat_mgr.create_combat(attacker)
         self.gs.combat_mgr.remove_from_combat(attacker)
         self.assertEqual([], self.gs.combat_mgr.combats)
         self.assertFalse(attacker.is_tapped)

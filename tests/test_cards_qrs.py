@@ -298,7 +298,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(snake, self.gs.pile_mgr.boards[0])
         PassTheTurn(0, self.gs).play()
         PassTheTurn(1, self.gs).play()
-        self.gs.combat_mgr.create_combat(self.gs, snake)
+        self.gs.combat_mgr.create_combat(snake)
         combat = self.gs.combat_mgr.get_combat(snake)
         combat.handle_damage()
         self.assertEqual(1, self.gs.score_mgr.poison_counters[1])

@@ -61,7 +61,7 @@ class TestCardsGHI(unittest.TestCase):
         attacker = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
 
         self.g.next_turn(True)
-        self.gs.combat_mgr.create_combat(self.gs, attacker)
+        self.gs.combat_mgr.create_combat(attacker)
         com = self.gs.combat_mgr.get_combat(attacker)
         com.blockers.append(wall)
         self.g.cast_and_accept(card, wall, card.abilities[0])
