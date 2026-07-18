@@ -1,7 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.cast import CastPermanentAction, NoSpellPermanentToStack
+from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.actions.stack_accept_counter import AcceptAction
 from tests.setup_helpers import TestGame
 
@@ -31,7 +31,7 @@ class TestCast(unittest.TestCase):
         card = self.g.hand('merfolk-of-the-pearl-trident')
         self.g.mana('U')
         available_actions = [a for a in self.gs.available_actions_from_hand()]
-        cast_action = next(a for a in available_actions if isinstance(a, NoSpellPermanentToStack) and a.source is card)
+        cast_action = next(a for a in available_actions if isinstance(a, CastWithNoSpellEffect) and a.source is card)
         cast_action.play()
         self.assertTrue(self.gs.action_stack.last_action.source is card)
         AcceptAction(1, self.gs).play()
@@ -41,7 +41,7 @@ class TestCast(unittest.TestCase):
         card = self.g.hand('ankh-of-mishra')
         self.g.mana('RRRRRR')
         available_actions = [a for a in self.gs.available_actions_from_hand()]
-        cast_action = next(a for a in available_actions if isinstance(a, NoSpellPermanentToStack) and a.source is card)
+        cast_action = next(a for a in available_actions if isinstance(a, CastWithNoSpellEffect) and a.source is card)
         cast_action.play()
         AcceptAction(1, self.gs).play()
         self.assertTrue(any(e.source is card for _, effects in self.gs.event_mgr._event_listeners.items()
