@@ -19,20 +19,21 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g.activate_ability(aa, 0)
         pay_option = self.gs.pending_choice.options[0]
         discard_option = self.gs.pending_choice.options[1]
-        if discard_option.is_land:
+        discard_card = discard_option.cards
+        if discard_card.is_land:
             pay_option.play()
             self.assertEqual(19, self.gs.life[0])
         else:
-            mv = discard_option.props.mana_value
+            mv = discard_card.props.mana_value
             pay_option.play()
             self.assertEqual(20 - mv, self.gs.life[0])
 
         self.g.next_turn()
         self.g.activate_ability(aa, 0)
         discard_option = self.gs.pending_choice.options[1]
+        discard_card = discard_option.cards
         discard_option.play()
-        discarded_card = discard_option[0]
-        self.assertEqual(discarded_card.zone, Zone.GRAVEYARD)
+        self.assertEqual(discard_card.zone, Zone.GRAVEYARD)
 
     def test_wheel_of_fortune(self):
         """Each player discards their hand, then draws seven cards"""
