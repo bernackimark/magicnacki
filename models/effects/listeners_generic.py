@@ -419,18 +419,6 @@ class UntapRemovesPumpFromAnotherCard(Listener):
 
 
 # --- UNTAP PHASE ---
-class CardsDontUntapAtUntapPhase(Listener):
-    """Cards [from card_filter_func] don't untap during their controllers' untap steps"""
-    listens_to = UntapPhaseEvent
-
-    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard | None]]):
-        self.card_filter_func = card_filter_func
-
-    def on_event(self, gs: GameState, s: GameCard, event: UntapPhaseEvent):
-        for c in self.card_filter_func(gs, s):
-            gs.action_stack.push(LeaveTapped(event.active_player, gs, c), gs, False)
-
-
 class OptionalUntap(Listener):
     listens_to = UntapPhaseEvent
 

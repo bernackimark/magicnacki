@@ -28,7 +28,8 @@ class XChoice2(ChoiceAction):
     def get_actions(self) -> list[Action]:
         from models.actions.ability_pipeline_support import SelectXAction2
         min_x, max_x = self.pipeline.get_x_range()
-        return [SelectXAction2(self.pipeline.p_id, self.pipeline.gs, self.pipeline, x) for x in range(min_x, max_x + 1)]
+        return [SelectXAction2(self.pipeline.player_idx, self.pipeline.gs, self.pipeline, x)
+                for x in range(min_x, max_x + 1)]
 
 class ModeChoice2(ChoiceAction):
     def __init__(self, pipeline: AbilityPipeline):

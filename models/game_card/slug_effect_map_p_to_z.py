@@ -17,7 +17,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, VenarianGoldHostStaysTapped, Scarecrow, Sindbad, SirensCall
+    Twiddle, Scarecrow, Sindbad, SirensCall, VenarianGoldCast
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
@@ -48,14 +48,14 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep
 from models.effects.listeners_permission import Seeker, CantBeTargetedByAuras, SpectralCloak, \
-    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, HostDoesntUntapAtUntap, SkipUntapPhase
+    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
     'palladia-mors': [Triggered(PayManaOrSacAtUpkeep('RGW'))],
-    'paralyze': [Triggered(HostDoesntUntapAtUntap()), Static(PayManaToUntapUpkeep('4', T_FUNCS['host'])),
+    'paralyze': [Triggered(DoesntUntapAtUntap(T_FUNCS['host'])), Static(PayManaToUntapUpkeep('4', T_FUNCS['host'])),
                  Spell(TapCardEffect(), T_FUNCS['host'])],
     'part-water': [Spell(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'],
                          max_x_func=max_x_from_printed_card)],
@@ -238,7 +238,7 @@ MAP: dict[str, list[EffSpec]] = {
     'throne-of-bone': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('B'))],
     'time-elemental': [Triggered(TimeElementalAttackedOrBlocked()),
                        Activated('2UUT', TimeElementalBounce(), T_FUNCS['unenchanted_perms'])],
-    'time-vault': [Triggered(DoesntUntapAtUntap()), Triggered(TimeVaultOption()),
+    'time-vault': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])), Triggered(TimeVaultOption()),
                    Activated('T', TakeAnotherTurn()), Spell(TapCardEffect(), T_FUNCS['self'])],
     'time-walk': [Spell(TakeAnotherTurn())],
     'timetwister': [Spell(Timetwister())],
@@ -288,11 +288,8 @@ MAP: dict[str, list[EffSpec]] = {
                          self_pump('R', 1, 0),
                          self_pump('G', 1, 0)],
     'vampire-bats': [Activated('B', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=2)],
-    'venarian-gold':
-        [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host'], SLEEP)),
-         Triggered(VenarianGoldHostStaysTapped()),
-         Spell(TapCardEffect(), T_FUNCS['creatures'])],
-    # TODO: convert the Spell from TapCard() -> VenarianGoldSpell() because it need to understand the counters
+    'venarian-gold': [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host'], SLEEP)), Static(VenarianGoldAtUntap()),
+                      Spell(VenarianGoldCast(), T_FUNCS['creatures'], max_x_func=max_x_from_printed_card)],
     'venom': [Spell(None, T_FUNCS['creatures']), Triggered(Venom())],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerUpkeep()), Spell(VesuvanDoppelgangerCast())],

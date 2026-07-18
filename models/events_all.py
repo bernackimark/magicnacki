@@ -71,6 +71,14 @@ class CanTargetQueryEvent(Event):
 
 @dataclass
 class CanUntapQueryEvent(Event):
+    """Should be used to determine if the card can ever untap"""
+    card: GameCard
+    permission: bool | None = None
+
+@dataclass
+class CanUntapAtUntapPhaseQueryEvent(Event):
+    """Should be used to determine if the card can untap specifically at the owner's untap phase"""
+    active_player: int
     card: GameCard
     permission: bool | None = None
 

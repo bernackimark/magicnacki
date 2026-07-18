@@ -35,7 +35,7 @@ from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevent
 from ..effects.listeners_combat import CavePeopleAttackPump, Abomination, \
     CockatriceAndThicketBasilisk, ElderLandWurm, AislingLeprechaun, Arboria, ClockworkCombatEnd
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
-    UntapRemovesPumpFromAnotherCard, CardsDontUntapAtUntapPhase, OptionalUntap, \
+    UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
@@ -83,7 +83,7 @@ MAP: dict[str, list[EffSpec]] = {
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'arboria': [Static(Arboria())],
     'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), Static(ArcadesSabbathPumpAll()), self_pump('W', 0, 1)],
-    'arena-of-the-ancients': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['legendary_creatures'])),
+    'arena-of-the-ancients': [Triggered(DoesntUntapAtUntap(T_FUNCS['legendary_creatures'])),
                               Spell(ArenaOfTheAncientsCast())],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures'])],
@@ -111,7 +111,7 @@ MAP: dict[str, list[EffSpec]] = {
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'], max_x_func=max_x_from_printed_card)],
     'barls-cage': [Activated('3', BarlsCage(), T_FUNCS['creatures'])],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
-    'basalt-monolith': [Triggered(DoesntUntapAtUntap()),
+    'basalt-monolith': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
@@ -142,7 +142,8 @@ MAP: dict[str, list[EffSpec]] = {
         [Spell(None, T_FUNCS['creatures']), Static(HostCantAttack()),
          Activated('3', KWAModEffect('add', 'Attack', True), T_FUNCS['host'])],
         # TODO: 'Attack' is now outdated, need a different approach
-    'brass-man': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('1', T_FUNCS['card_owner'])],
+    'brass-man': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
+                  untap_for_mana_at_owner_upkeep('1', T_FUNCS['card_owner'])],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing': [Spell(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'])],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['tapped_lands'], 1, None),
@@ -185,7 +186,8 @@ MAP: dict[str, list[EffSpec]] = {
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
     'cockatrice': [Triggered(CockatriceAndThicketBasilisk())],
     'cocoon': [Spell(CocoonCast(), T_FUNCS['your_creatures']), Static(CocoonUntap()), Static(CocoonUpkeep())],
-    'colossus-of-sardia': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('9', T_FUNCS['card_owner'])],
+    'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
+                           untap_for_mana_at_owner_upkeep('9', T_FUNCS['card_owner'])],
     'concordant-crossroads': [Static(ConcordantCrossroads())],
     'consecrate-land': [Spell(None, T_FUNCS['lands']), Static(HostCantBeTargetedByAuras())],
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],

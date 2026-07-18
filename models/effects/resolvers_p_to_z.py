@@ -454,12 +454,6 @@ class VenarianGoldCast(Resolver):
         if x := source.extras.get('x', 0):  # read X chosen when casting
             source.counters.add_counter(SLEEP, x)
 
-class VenarianGoldHostStaysTapped(Resolver):
-    """Enchanted creature doesn't untap during its controller's untap step if it has a sleep counter on it."""
-    def resolve(self, gs: GameState, source: GameCard, _: GameCard = None):
-        if source.host.counters.get_count(SLEEP):
-            gs.action_stack.push(LeaveTapped(source.owner_id, gs, source.host), gs, False)
-
 class VesuvanDoppelgangerCast(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield,
     except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""

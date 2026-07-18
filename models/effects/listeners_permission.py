@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
-from models.counter_tokens import PUPA
+from models.counter_tokens import PUPA, SLEEP
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -9,8 +9,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
-    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent
-from models.systems.phase import Phase
+    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, Event
 from models.utils import flip
 
 """
@@ -29,6 +28,17 @@ class CantBeTargetedByAuras(Listener):
         if event.target is not source or 'Aura' not in event.source.card_sub_types:
             return
         event.permission = False
+
+class DoesntUntapAtUntap(Listener):
+    """Card does not untap during its owner's untap phase"""
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+
+    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
+        self.card_filter_func = card_filter_func
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if gs.player_turn_idx == event.card.owner_id and event.card in [self.card_filter_func(gs, source)]:
+            event.permission = False
 
 class HostCanAttack(Listener):
     listens_to = CanAttackQueryEvent
@@ -71,24 +81,6 @@ class SkipUntapPhase(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanEnterUntapPhaseQueryEvent) -> None:
         if event.active_player not in self.skipped_player_ids:
-            return
-        event.permission = False
-
-class DoesntUntapAtUntap(Listener):
-    """Card does not untap during its owner's untap phase"""
-    listens_to = CanUntapQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if event.card is not source or gs.phase_mgr.phase != Phase.UNTAP:
-            return
-        event.permission = False
-
-class HostDoesntUntapAtUntap(Listener):
-    """Host does not untap during its owner's untap phase"""
-    listens_to = CanUntapQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if event.card is not source.host or gs.phase_mgr.phase != Phase.UNTAP:
             return
         event.permission = False
 
@@ -410,4 +402,16 @@ class WinterOrb(Listener):
         # TODO: this should probably enter a flow where user can declare which one card they want to untap
         events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
         if [e for e in events if e.card.is_land]:
+            event.permission = False
+
+
+# --- CAN UNTAP AT UNTAP QUERY EVENT ---
+class VenarianGoldAtUntap(Listener):
+    """Host doesn't untap during its controller's untap step if it has a sleep counter on it."""
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if event.card != source.host or event.card != gs.player_turn_idx:
+            return
+        if source.host.counters.get_count(SLEEP):
             event.permission = False

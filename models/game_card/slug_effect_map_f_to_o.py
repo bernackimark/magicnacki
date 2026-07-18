@@ -47,7 +47,7 @@ from ..effects.listeners_damage import GaseousForm, MarblePriestPrevention, Mart
 from ..effects.listeners_dies import Onulet
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
-    AddPoisonCounter, ReturnToOwnerOnUntap, CardsDontUntapAtUntapPhase, OptionalUntap, \
+    AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied
 
@@ -178,7 +178,7 @@ MAP: dict[str: list[EffSpec]] = {
     'inquisition': [Spell(Inquisition(), T_FUNCS['all_players'])],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
-    'island-fish-jasconius': [Triggered(DoesntUntapAtUntap()),
+    'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                               untap_for_mana_at_owner_upkeep('UUU', T_FUNCS['card_owner'])],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
@@ -220,7 +220,7 @@ MAP: dict[str: list[EffSpec]] = {
     'lesser-werewolf': [Activated('B', LesserWerewolf(), T_FUNCS['combating_against'],
                                   allowed_phases=[Phase.DECLARE_BLOCKERS])],
     'leviathan':
-        [Triggered(DoesntUntapAtUntap()),
+        [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
          # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
          Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
                    allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner']),
@@ -248,14 +248,15 @@ MAP: dict[str: list[EffSpec]] = {
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep())],
     'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
     'lure': [Spell(None, T_FUNCS['creatures']), Triggered(Lure())],
-    'magnetic-mountain': [Triggered(CardsDontUntapAtUntapPhase(T_FUNCS['in_turn_player_tapped_blue_creatures'])),
+    'magnetic-mountain': [Triggered(DoesntUntapAtUntap(T_FUNCS['in_turn_player_tapped_blue_creatures'])),
                           Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
                                     allowed_phases=[Phase.UPKEEP])],
     'mana-clash': [Spell(ManaClash())],
     'mana-drain': [Spell(ManaDrain(), T_FUNCS['spells'])],
     'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Spell(ManaShort(), T_FUNCS['all_players'])],
-    'mana-vault': [Triggered(DoesntUntapAtUntap()), untap_for_mana_at_owner_upkeep('4', T_FUNCS['card_owner']),
+    'mana-vault': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
+                   untap_for_mana_at_owner_upkeep('4', T_FUNCS['card_owner']),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
                    Triggered(ManaVaultDamageIfTapped())],
     'mana-vortex': [Spell(Destroy(), T_FUNCS['your_lands']), Static(ManaVortexUpkeep()), Static(ManaVortexSac())],

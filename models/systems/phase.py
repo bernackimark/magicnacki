@@ -3,7 +3,7 @@ from abc import ABC
 from enum import auto, IntEnum
 from typing import TYPE_CHECKING
 
-from models.events_all import CanEnterUntapPhaseQueryEvent
+from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
 
 if TYPE_CHECKING:
     from models.actions.base import Action
@@ -68,6 +68,10 @@ class UntapPhase(PhaseState):
         gs.event_mgr.emit(UntapPhaseEvent(gs.player_turn_idx))
         for c in gs.pile_mgr.boards[gs.player_turn_idx]:
             if not c.is_tapped or c.id_ in gs.turn_mgr.untap_decisions_made:
+                continue
+            query = CanUntapAtUntapPhaseQueryEvent(gs.player_turn_idx, c)
+            gs.event_mgr.emit(query)
+            if query.permission is False:
                 continue
             if gs.perm_querier.can_untap(c):
                 c.untap()
