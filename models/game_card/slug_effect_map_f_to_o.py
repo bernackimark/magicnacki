@@ -5,8 +5,7 @@ from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCou
 from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
-from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GoblinCaves, \
-    GoblinShrinePump, GravitySphere, \
+from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GravitySphere, \
     HiddenPath, IvoryGuardians, KeldonWarlordPT, KoboldOverlord, KoboldTaskmaster, \
     KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, NightmarePT, JihadPT, PumpApplies
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
@@ -115,11 +114,12 @@ MAP: dict[str: list[EffSpec]] = {
     'glyph-of-doom': [Spell(GlyphOfDoom(), T_FUNCS['walls'])],
     'glyph-of-life': [Spell(GlyphOfLife(), T_FUNCS['walls'])],
     'goblin-balloon-brigade': [Activated('R', KWAModEffect('add', 'Flying', True), T_FUNCS['self'])],
-    'goblin-caves': [Static(GoblinCaves())],
+    'goblin-caves': [Static(PumpApplies(T_FUNCS['goblins'], (0, 2), C_FUNCS['host_is_basic_mountain']))],
     'goblin-digging-team': [Activated('T', Destroy(), T_FUNCS['walls'], extra_costs=[SacSelfCost()])],
     'goblin-king': [Spell(GoblinKing())],
     'goblin-rock-sled': [Static(GoblinRockSledUntap()), Static(GoblinRockSledCanAttack())],
-    'goblin-shrine': [Static(GoblinShrinePump()), Triggered(GoblinShrineOnLeave())],
+    'goblin-shrine': [Static(PumpApplies(T_FUNCS['goblins'], (1, 0), C_FUNCS['host_is_basic_mountain'])),
+                      Triggered(GoblinShrineOnLeave())],
     'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand']),
                       Activated('T', KWAModEffect('add', 'Protection From White', True), T_FUNCS['goblins'])],
     'goblins-of-the-flarg': [Static(GoblinsOfTheFlarg())],

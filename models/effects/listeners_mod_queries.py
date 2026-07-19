@@ -102,18 +102,6 @@ class AngryMobPT(Listener):
             mod = PTMod(s=source, p_adj=2 + opp_swamp_cnt, t_adj=2 + opp_swamp_cnt, expires='EOT')
         event.mods.append(mod)
 
-class ArcadesSabbathPumpAll(Listener):
-    """... Each untapped creature you control gets +0/+2 as long as it's not attacking ..."""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        attackers = gs.card_filter.attackers().result()
-        your_untapped_creatures = gs.card_filter.creatures().on_player_board(event.card.owner_id).tapped(False).result()
-        for c in your_untapped_creatures:
-            if c not in attackers:
-                event.mods.append(PTMod(s=source, t_adj=2))
-
 class ArmyOfAllahEOT(Listener):
     """This will be called only by ArmyOfAllah(); this effect is stored in GameState and cleared at EOT;
     Attacking creatures get +2/+0 until end of turn"""
@@ -208,28 +196,6 @@ class GaeasLiegePT(Listener):
         else:
             cnt = len(gs.card_filter.on_player_board(event.card.owner_id).forests().result())
         event.mods.append(PTMod(s=source, p_adj=cnt, t_adj=cnt))
-
-class GoblinCaves(Listener):
-    """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        basic_lands = gs.card_filter.basic_lands().in_play().result()
-        if source.host in basic_lands and source.host.props.slug == 'mountain':
-            if event.card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
-                event.mods.append(PTMod(s=source, t_adj=2))
-
-class GoblinShrinePump(Listener):
-    """As long as enchanted land is a basic Mountain, Goblin creatures get +1/+0 ..."""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        basic_lands = gs.card_filter.basic_lands().in_play().result()
-        if source.host in basic_lands and source.host.props.slug == 'mountain':
-            if event.card in gs.card_filter.in_play().creatures().by_sub_type('Goblin').result():
-                event.mods.append(PTMod(s=source, p_adj=1))
 
 class GravitySphere(Listener):
     """All creatures lose flying"""

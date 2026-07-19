@@ -10,6 +10,8 @@ from models.constants import Target, ALL_PLAYER_INDICES
 from models.utils import flip
 
 C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
+    'host_is_basic_mountain': lambda gs, s: s.host.props.slug == 'mountain',
+    'self_is_not_attacking': lambda gs, s: s not in gs.card_filter.attackers().result(),
     'self_is_untapped': lambda gs, s: not s.is_tapped,
     'opp_has_island': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).islands().result(),
     'opp_has_non_token_white_perm': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).non_token().white().permanents().result(),
@@ -189,6 +191,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).tapped().blue().creatures().result(),
     'your_untapped_creatures':
         lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().untapped().result(),
+    'your_untapped_non_attacking_creatures':
+        lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().untapped().result() if c not in
+                       gs.card_filter.attackers().result().copy()],
     'your_untapped_white_creatures':
         lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().untapped().white().result(),
     'your_walls': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).in_play().walls().result(),

@@ -43,8 +43,7 @@ from models.effects.listeners_permission import CityInABottleCantCast, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    ArcadesSabbathPumpAll, AspectOfWolfPT, ConcordantCrossroads, Conversion, \
-    DakkonBlackbladePT, PumpApplies
+    AspectOfWolfPT, ConcordantCrossroads, Conversion, DakkonBlackbladePT, PumpApplies
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -81,7 +80,8 @@ MAP: dict[str, list[EffSpec]] = {
     'anti-magic-aura': [Static(HostCantBeTargetedByAuras()), Spell(RemoveHostAuras(), T_FUNCS['creatures'])],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],
     'arboria': [Static(Arboria())],
-    'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), Static(ArcadesSabbathPumpAll()), self_pump('W', 0, 1)],
+    'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), self_pump('W', 0, 1),
+                        Static(PumpApplies(T_FUNCS['your_untapped_non_attacking_creatures'], (0, 2)))],
     'arena-of-the-ancients': [Triggered(DoesntUntapAtUntap(T_FUNCS['legendary_creatures'])),
                               Spell(ArenaOfTheAncientsCast())],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
