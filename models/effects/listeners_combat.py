@@ -238,6 +238,7 @@ class WallOfDustAttackerCantAttackNextTurn(Listener):
             return
         event.permission = False
         gs.event_mgr.unregister_specific_effect(self)
+        # TODO: this needs expires = 'After Owner Next Turn'
 
 
 # --- CAN BLOCK QUERY EVENT ---
