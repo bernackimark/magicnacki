@@ -155,7 +155,7 @@ class MainPhase(PhaseState):
 
         # hand actions + abilities
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_activated_abilities_from_board())
 
         # combat option
         if any(gs.perm_querier.can_attack(c) for c in gs.pile_mgr.boards[gs.player_turn_idx]):
@@ -214,7 +214,7 @@ class DeclareBlockersPhase(PhaseState):
                     actions.append(AssignBlocker(gs.action_on_idx, gs, blocker, com.attacker))
 
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_activated_abilities_from_board())
 
         # only "finish blocking" exists → auto advance
         if all(isinstance(a, FinishBlocking) for a in actions):
@@ -238,7 +238,7 @@ class PreCombatDamagePhase(PhaseState):
         from models.actions.combat import AssignCombatDamage
         actions: list[Action] = [AssignCombatDamage(gs.action_on_idx, gs)]
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_activated_abilities_from_board())
 
         if all(isinstance(a, AssignCombatDamage) for a in actions):
             return None
@@ -289,7 +289,7 @@ class SecondMainPhase(PhaseState):
 
         # hand actions + abilities
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_activated_abilities_from_board())
 
         # auto-advance safety:
         if all(isinstance(a, MoveToEndStep) for a in actions):

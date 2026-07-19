@@ -1,6 +1,8 @@
 import unittest
 
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.special import Attach
+from models.cost import SacSelfCost
 from models.events_all import EndStepEvent, CombatEndEvent
 from models.systems.phase import Phase
 from models.zone import Zone
@@ -22,7 +24,8 @@ class TestCardsGHI(unittest.TestCase):
         self.g.activate_ability(aa, forest)
         self.assertTrue(self.gs.mana_pools[0].can_pay('GG'))
         self.g.hand('forest')
-        self.assertFalse(aa.can_activate(self.gs))
+        ability = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        self.assertFalse(ability.can_begin())
 
     def test_gaeas_touch_add_gg(self):
         """Sacrifice this enchantment: Add {GG}."""
@@ -162,7 +165,8 @@ class TestCardsGHI(unittest.TestCase):
         self.assertFalse(host.is_tapped)
 
         card.tap()
-        self.assertFalse(aa.can_activate(self.gs), 'Should not be able to activate 2x in a turn')
+        ability = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        self.assertFalse(ability.can_begin(), 'Should not be able to activate 2x in a turn')
 
 
 if __name__ == '__main__':

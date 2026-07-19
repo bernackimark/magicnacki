@@ -1,5 +1,6 @@
 import unittest
 
+from models.actions.ability_pipeline import AbilityPipeline
 from models.counter_tokens import MINUS_ZERO_ONE
 from models.systems.phase import Phase
 from models.zone import Zone
@@ -56,7 +57,8 @@ class TestCardsJKL(unittest.TestCase):
         self.g.mana('B')
 
         self.g.next_turn()
-        self.assertFalse(aa.can_activate(self.gs))
+        ability = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        self.assertFalse(ability.can_begin())
         self.gs.combat_mgr.create_combat(card)
         com = self.gs.combat_mgr.get_combat(card)
         com.blockers.append(blocker)
@@ -84,12 +86,16 @@ class TestCardsJKL(unittest.TestCase):
 
         self.g.next_turn()
         self.assertEqual(7, len(self.gs.pile_mgr.hands[0]))
-        self.assertTrue(aa_draw_card.eff_spec.effect.can_activate(self.gs, card))  # type: ignore
+        ability = AbilityPipeline(0, self.gs, card, aa_draw_card.eff_spec)
+        self.assertTrue(ability.can_begin())
+        # self.assertTrue(aa_draw_card.eff_spec.effect.can_activate(self.gs, card))  # type: ignore
         self.g.activate_ability(aa_draw_card, 0)
 
         self.g.next_turn()
         self.assertTrue(8, len(self.gs.pile_mgr.hands[0]))
-        self.assertFalse(aa_draw_card.eff_spec.effect.can_activate(self.gs, card))  # type: ignore
+        ability = AbilityPipeline(0, self.gs, card, aa_draw_card.eff_spec)
+        self.assertFalse(ability.can_begin())
+        #  self.assertFalse(aa_draw_card.eff_spec.effect.can_activate(self.gs, card))  # type: ignore
 
 
 if __name__ == '__main__':

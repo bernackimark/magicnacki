@@ -166,8 +166,12 @@ class GameState:
         return event.cost
 
     def get_available_activated_abilities(self, c: GameCard) -> list[AbilityPipeline | None]:
-        return [AbilityPipeline(self.action_on_idx, self, c, aa.eff_spec)
-                for aa in c.activated_abilities if aa.can_activate(self)]
+        actions: list[AbilityPipeline | None] = []
+        for aa in c.activated_abilities:
+            pipeline = AbilityPipeline(c.owner_id, self, c, aa.eff_spec)
+            if pipeline.can_begin():
+                actions.append(pipeline)
+        return actions
 
     def add_activated_abilities_from_board(self) -> list[AbilityPipeline | None]:
         return [a for c in self.pile_mgr.boards[self.action_on_idx] for a in self.get_available_activated_abilities(c)]
@@ -184,9 +188,6 @@ class GameState:
         actions: list[AbilityPipeline | CastPermanentAction | CastWithNoSpellEffect | None] = []
 
         for c in self.pile_mgr.hands[self.action_on_idx]:
-            if not self.perm_querier.can_cast(c, c.owner_id):
-                continue
-
             if c.is_land:
                 # its .play() will bypass the stack
                 actions.append(CastPermanentAction(c.owner_id, self, c))
@@ -238,7 +239,7 @@ class GameState:
                 return self.action_stack.last_action.get_actions()
 
             available_actions: list[AbilityPipeline | Action] = [AcceptAction(p_id, self)]
-            available_actions.extend(self.add_activated_abilities_from_board())
+            available_actions.extend(self.get_activated_abilities_from_board())
 
             # Check instants & sorceries
             hand_instants = [c for c in self.pile_mgr.hands[p_id] if c.is_instant]

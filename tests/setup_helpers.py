@@ -9,6 +9,7 @@ from models.actions.cast import CastPermanentAction
 from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.stack_accept_counter import AcceptAction
+from models.cost import Cost
 from models.effects.base import ActivatedAbility, EffSpec
 from models.systems.phase import Phase
 from models.utils import flip
@@ -158,8 +159,10 @@ class TestGame:
         pipeline = AbilityPipeline(owner, self.gs, aa.source, aa.eff_spec)
         if target is not None:
             pipeline.targets.append(target)
+        for extra_cost in aa.eff_spec.extra_costs:
+            pipeline.selected_extra_costs.append(extra_cost)
         pipeline.advance()
-        AcceptAction(flip(owner), self.gs).play()
+        pipeline.resolve_ability()
 
     def begin_cast(self, card: GameCard, spell: EffSpec = None) -> AbilityPipeline:
         if not spell:

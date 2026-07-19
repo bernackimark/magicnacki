@@ -1,10 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Any, Literal, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 
 from models.actions.base import Action
-from models.actions.cast import CastPermanentAction
-from models.effects.base import Resolver
+from models.cost import Cost
+from models.effects.base import Resolver, ActivatedAbility
 from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent
 from models.zone import Zone
 
@@ -36,9 +36,14 @@ class AbilityPipeline(Action):
     x_value: int | None = None
     chosen_mode: int | None = None
     targets: list[Any] = field(default_factory=list)
+    selected_extra_costs: list[Cost] = field(default_factory=list)
 
     # information produced by paying costs
     cost_result: Union["CostResult", None] = None
+
+    def __post_init__(self):
+        if self.eff_spec and self.eff_spec.effect and not isinstance(self.eff_spec.effect, Resolver):
+            raise TypeError(f"Effects in AbilityPipeline must be type Resolver, was provided: {self.eff_spec.effect}")
 
     def __repr__(self):
         if self.eff_spec.is_spell:
@@ -50,13 +55,24 @@ class AbilityPipeline(Action):
         self.advance()
 
     def can_begin(self) -> bool:
-        if self.eff_spec and self.eff_spec.is_spell:
+        if self.eff_spec:
             if self.eff_spec.allowed_p_id_turn is not None:
                 if self.eff_spec.allowed_p_id_turn != self.gs.player_turn_idx:
                     return False
             if self.eff_spec.allowed_phases:
                 if self.gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
                     return False
+
+        if self.eff_spec.effect and not self.eff_spec.effect.can_cast(self.gs, self.source):
+            return False
+        if hasattr(self.eff_spec.effect, 'can_activate') and not self.eff_spec.effect.can_activate(self.gs, self.source):
+            return False
+
+        if self.eff_spec.is_aa:
+            if self.aa.activations_this_turn >= self.eff_spec.max_activations_per_turn:
+                return False
+            if self.source.has_summoning_sickness and 'T' in self.eff_spec.cost:
+                return False
 
         min_x, max_x = self.get_x_range()
         if max_x < min_x:
@@ -71,7 +87,7 @@ class AbilityPipeline(Action):
         if not self.gs.mana_pools[self.player_idx].can_pay(self.ability_cost):
             return False
 
-        for extra_cost in (self.eff_spec.extra_costs or []):
+        for extra_cost in self.eff_spec.extra_costs:
             if not extra_cost.can_pay(self.gs, self.source):
                 return False
 
@@ -98,9 +114,8 @@ class AbilityPipeline(Action):
             from models.choice_actions_all import TargetChoice2
             self.gs.pending_choice = TargetChoice2(self)
         elif self.needs_extra_cost_choices:
-            pass
-            # from models.choice_actions_all import ExtraCostChoice2
-            # self.gs.pending_choice = ExtraCostChoice2(self)
+            from models.choice_actions_all import ExtraCostChoice2
+            self.gs.pending_choice = ExtraCostChoice2(self)
         else:
             self.finish()
 
@@ -119,9 +134,8 @@ class AbilityPipeline(Action):
         mana_cost = mana_cost.replace('X', str(self.x_value)) if self.x_value else mana_cost
         if mana_cost:
             self.gs.mana_pools[self.player_idx].pay(mana_cost)
-        if self.eff_spec:
-            for extra_cost in (self.eff_spec.extra_costs or []):
-                extra_cost.pay(self.gs, self.source)
+        for extra_cost in self.selected_extra_costs:
+            extra_cost.pay(self.gs, self.source)
 
         action = AbilityAction(self.player_idx, self.gs, self)
         self.gs.action_stack.push(action, self.gs)
@@ -167,6 +181,14 @@ class AbilityPipeline(Action):
         return self.source.casting_cost if self.eff_spec.is_spell else self.eff_spec.cost
 
     @property
+    def aa(self) -> ActivatedAbility | None:
+        return next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
+
+    @property
+    def resolver_effect(self) -> Resolver:
+        return self.eff_spec.effect
+
+    @property
     def needs_x(self) -> bool:
         # if you have selected an x_value, you no longer need to be in this flow
         if self.x_value is not None:
@@ -190,7 +212,7 @@ class AbilityPipeline(Action):
     def needs_extra_cost_choices(self) -> bool:
         if not self.eff_spec.extra_costs:
             return False
-        return any(cost.requires_choice for cost in self.eff_spec.extra_costs)
+        return len(self.selected_extra_costs) < len(self.eff_spec.extra_costs)
 
     def get_x_range(self) -> tuple[int, int]:
         # TODO: the below line is a placeholder, using a random large number of "10", just to get through some tests

@@ -15,11 +15,7 @@ if TYPE_CHECKING:
     from models.systems.phase import Phase
 
 
-class Effect(ABC):
-    """Base class for all card effects."""
-    pass
-
-class Resolver(Effect):
+class Resolver:
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
         """Perform an explicit game action (ex: deal 3 damage)"""
         raise NotImplementedError()
@@ -30,7 +26,7 @@ class Resolver(Effect):
     def can_activate(self, gs: GameState, source: GameCard) -> bool:
         return True
 
-class Listener(Effect):
+class Listener:
     listens_to: type[Event] | None = None  # used by event listeners
     expires: str | None = None
     is_expired: bool = False
@@ -40,15 +36,14 @@ class Listener(Effect):
         raise NotImplementedError()
 
 
-# TODO: I thought this dataclass was supposed to be frozen?
-@dataclass
+@dataclass(frozen=True)
 class EffSpec:
     """Effect Specification; mapping slugs to Effects uses EffSpec"""
     activation_type: Literal['activated', 'spell', 'static', 'triggered']
     cost: str
-    effect: Effect | None  # this can be None if an aura needs EffSpec to create target_spec but has no resolver
+    effect: Resolver | Listener | None  # None if an aura needs EffSpec to create target_spec but has no resolver
     target_spec: Union[Callable, TargetSpec, None] = None
-    extra_costs: list[Cost | None] = None
+    extra_costs: list[Cost | None] = field(default_factory=list)
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_p_id_turn: int | None = None
     max_activations_per_turn: int = 999
@@ -80,21 +75,6 @@ class EffSpec:
             return TargetSpec(target_spec, 1, 1)
         raise TypeError(f"Invalid target type: {target_spec}")
 
-    @property
-    def costs(self) -> list[Cost | None]:
-        the_costs = []
-        if not self.cost:
-            pass
-        elif 'T' in self.cost:
-            the_costs.append(TapCost())
-            the_costs.append(ManaCost(self.cost[:-1]))
-        else:
-            the_costs.append(ManaCost(self.cost))
-        if self.extra_costs:
-            for extra_cost in self.extra_costs:
-                the_costs.append(extra_cost)
-        return the_costs
-
 
 @dataclass
 class ActivatedAbility:
@@ -104,31 +84,8 @@ class ActivatedAbility:
 
     def __post_init__(self):
         if not isinstance(self.eff_spec.effect, Resolver):
-            raise TypeError(f'{self.source.props.name} is trying to register an ActivatedAbility with an effect'
+            raise TypeError(f'{self.source.props.name} is trying to create an ActivatedAbility with an effect'
                             f'specification that is not a Resolver; the supplied effect spec is {self.eff_spec}')
-
-    def can_activate(self, gs: GameState) -> bool:
-        # card-specific restriction
-        if hasattr(self.eff_spec.effect, 'can_activate'):
-            if not self.eff_spec.effect.can_activate(gs, self.source):
-                print("B")
-                return False
-        if self.eff_spec.allowed_phases and gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
-            print("C")
-            return False
-        if self.eff_spec.allowed_p_id_turn and self.source.owner_id != self.eff_spec.allowed_p_id_turn:
-            print("D")
-            return False
-        if self.activations_this_turn >= self.eff_spec.max_activations_per_turn:
-            print("E")
-            return False
-        if self.source.has_summoning_sickness and self.source.is_creature and 'T' in self.eff_spec.cost:
-            print("F")
-            return False
-        if not all(cost.can_pay(gs, self.source) for cost in self.eff_spec.costs):
-            print("G")
-            return False
-        return True
 
 
 """

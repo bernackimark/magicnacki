@@ -4,6 +4,7 @@ from typing import Any
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.base import Action
+from models.cost import Cost
 
 
 # --- NEW PIPELINE APPROACH 7/13/26 ---
@@ -47,3 +48,10 @@ class SelectTargetAction2(Action):
 @dataclass
 class SelectExtraCostAction2(Action):
     pipeline: AbilityPipeline
+    cost: Cost
+
+    def __repr__(self):
+        return f'{self.pipeline}, add cost: {self.cost}'
+
+    def play(self) -> None:
+        self.pipeline.selected_extra_costs.append(self.cost)

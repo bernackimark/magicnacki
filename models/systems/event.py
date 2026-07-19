@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from models.effects.base import Effect
     from models.events_all import Event
     from models.game_card.game_card import GameCard
     from game_state import GameState
@@ -83,7 +82,7 @@ class EventManager:
             # Keep only effects whose source_card is not the leaving card
             self._event_listeners[event_type] = [entry for entry in entries if entry.source != card]
 
-    def unregister_specific_effect(self, effect: Effect):
+    def unregister_specific_effect(self, effect: Listener):
         """Used when an effect is neither unregistered when the source leaves the battlefield nor at EOT
         (ex: Abomination destroying a creature that blocked it at the end of combat)"""
         for event_type, entries in self._event_listeners.items():
