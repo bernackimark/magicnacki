@@ -53,17 +53,21 @@ class AddCreatureTypePTManaValue(Listener):
         elif event.query == 'pt':
             event.mods.append(PTMod(s=source, p_adj=event.card.props.mana_value, t_adj=event.card.props.mana_value))
 
-class PumpQuery(Listener):
-    """If card is in applies_to_func, return a PTMod for the provided pt_adj"""
+class PumpApplies(Listener):
+    """If card is in applies_to_func (and the optional condition isn't False), return a PTMod for the provided pt_adj"""
     listens_to = ModQueryEvent
     modifies = 'pt'
 
-    def __init__(self, applies_to_func: Callable, pt_adj: tuple[int, int]):
+    def __init__(self, applies_to_func: Callable, pt_adj: tuple[int, int],
+                 condition: Callable[[GameState, GameCard], bool] = None):
         self.applies_to_func = applies_to_func
         self.p_adj = pt_adj[0]
         self.t_adj = pt_adj[1]
+        self.condition = condition
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        if self.condition and not self.condition(gs, source):
+            return
         applies_to = self.applies_to_func(gs, source)
         if not isinstance(applies_to, list):
             applies_to = [applies_to]
@@ -136,17 +140,6 @@ class AspectOfWolfPT(Listener):
         t_adj = math.ceil(your_forest_cnt / 2)
         event.mods.append(PTMod(s=source, p_adj=p_adj, t_adj=t_adj))
 
-class BeastsOfBogardan(Listener):
-    """This creature gets +1/+1 as long as an opponent controls a nontoken white permanent"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        opp_id = flip(event.card.owner_id)
-        opp_non_token_white_perms = gs.card_filter.on_player_board(opp_id).non_token().white().permanents().result()
-        if opp_non_token_white_perms:
-            event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
-
 class BoneFluteEOT(Listener):
     """This will be called only by BoneFlute(); this effect is stored in GameState and cleared at EOT;
     All creatures get -1/-0 until end of turn"""
@@ -215,16 +208,6 @@ class GaeasLiegePT(Listener):
         else:
             cnt = len(gs.card_filter.on_player_board(event.card.owner_id).forests().result())
         event.mods.append(PTMod(s=source, p_adj=cnt, t_adj=cnt))
-
-class GiantTortoisePT(Listener):
-    """This creature gets +0/+3 as long as it's untapped"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source or event.card.is_tapped:
-            return
-        event.mods.append(PTMod(s=source, t_adj=3))
 
 class GoblinCaves(Listener):
     """As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2"""
@@ -333,14 +316,6 @@ class KeldonWarlordPT(Listener):
             return None
         your_non_wall_creat_cnt = len(gs.card_filter.on_player_board(event.card.owner_id).non_wall_creatures().result())
         event.mods.append(PTMod(s=source, p_adj=your_non_wall_creat_cnt, t_adj=your_non_wall_creat_cnt))
-
-class KirdApePT(Listener):
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if gs.card_filter.on_player_board(event.card.owner_id).forests().result():
-            event.mods.append(PTMod(s=event.card, p_adj=1, t_adj=2))
 
 class KoboldOverlord(Listener):
     """Other Kobold creatures you control have first strike"""
@@ -498,17 +473,6 @@ class RabidWombat(Listener):
             return
         event.mods.append(PTMod(s=source, p_adj=2 * aura_cnt, t_adj=2 * aura_cnt, expires='EOT'))
 
-class SedgeTrollPT(Listener):
-    """Gains +1/+1 if you control a swamp"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return
-        if gs.card_filter.on_player_board(event.card.owner_id).swamps().result():
-            event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
-
 class ShieldWallEOT(Listener):
     """This will be called only by ShieldWall(); this effect is stored in GameState and cleared at EOT;
     Creatures you control get +0/+2 until end of turn"""
@@ -548,17 +512,6 @@ class WallOfTombstonesPT(Listener):
             return
         cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
         event.mods.append(PTMod(s=source, t_adj=1 + cnt))
-
-class WaterWurmPT(Listener):
-    """This creature gets +0/+1 as long as an opponent controls an Island"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return
-        if gs.card_filter.on_player_board(flip(event.card.owner_id)).islands().result():
-            event.mods.append(PTMod(s=event.card, t_adj=1))
 
 class ZombieMasterWalk(Listener):
     """Other Zombie creatures gain Swampwalk"""

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from itertools import combinations
 
-from .card_filter_funcs import T_FUNCS
+from .card_filter_funcs import T_FUNCS, C_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
@@ -43,8 +43,8 @@ from models.effects.listeners_permission import CityInABottleCantCast, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    ArcadesSabbathPumpAll, AspectOfWolfPT, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
-    DakkonBlackbladePT, PumpQuery
+    ArcadesSabbathPumpAll, AspectOfWolfPT, ConcordantCrossroads, Conversion, \
+    DakkonBlackbladePT, PumpApplies
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -106,7 +106,7 @@ MAP: dict[str, list[EffSpec]] = {
     'aspect-of-wolf': [Static(AspectOfWolfPT())],
     'axelrod-gunnarson': [Triggered(AxelrodGunnarson())],
     'backfire': [Triggered(Backfire())],
-    'bad-moon': [Static(PumpQuery(T_FUNCS['black_creatures'], (1, 1)))],
+    'bad-moon': [Static(PumpApplies(T_FUNCS['black_creatures'], (1, 1)))],
     'badlands': dual_land_specs('BR'),
     'ball-lightning': [Triggered(DestroyAtEndStep(T_FUNCS['self']))],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'], max_x_func=max_x_from_printed_card)],
@@ -116,7 +116,7 @@ MAP: dict[str, list[EffSpec]] = {
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
-    'beasts-of-bogardan': [Static(BeastsOfBogardan())],
+    'beasts-of-bogardan': [Static(PumpApplies(T_FUNCS['self'], (1, 1), C_FUNCS['opp_has_non_token_white_perm']))],
     'berserk': [Triggered(Berserk(), T_FUNCS['creatures'])],
     'birds-of-paradise': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'black-lotus': [Activated('T', AddMana(c, 3), extra_costs=[SacSelfCost],
@@ -151,7 +151,7 @@ MAP: dict[str, list[EffSpec]] = {
                                        max_x_func=max_x_from_printed_card)],
     # TODO: if candelabra's owner has 0 mana, the effect should be offered, but it's putting game in infinite loop
     'carrion-ants': [self_pump('1', 1, 1)],
-    'castle': [Static(PumpQuery(T_FUNCS['your_untapped_white_creatures'], (0, 2)))],
+    'castle': [Static(PumpApplies(T_FUNCS['your_untapped_white_creatures'], (0, 2)))],
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self']),
                     Activated('1RRT', KWAModEffect('add', 'Mountainwalk', True), T_FUNCS['creatures'])],
     'celestial-prism': [Activated('2T', AddMana(c), T_FUNCS['card_owner'], text=f'Add 1 {c}') for c in COLOR_LETTERS],
@@ -203,7 +203,7 @@ MAP: dict[str, list[EffSpec]] = {
     'creature-bond': [Triggered(CreatureBond())],
     'crimson-manticore': [Activated('RT', DealDamage(1), T_FUNCS['combatants'])],
     'crumble': [Spell(Crumble(), T_FUNCS['artifacts'])],
-    'crusade': [Static(PumpQuery(T_FUNCS['white_creatures'], (1, 1)))],
+    'crusade': [Static(PumpApplies(T_FUNCS['white_creatures'], (1, 1)))],
     'crystal-rod': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('U'))],
     'curse-artifact': [Spell(None, T_FUNCS['artifacts']),
                        Triggered(CurseArtifact(), T_FUNCS['self'])],

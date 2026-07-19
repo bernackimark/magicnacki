@@ -5,10 +5,10 @@ from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCou
 from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
-from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GiantTortoisePT, GoblinCaves, \
+from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GoblinCaves, \
     GoblinShrinePump, GravitySphere, \
-    HiddenPath, IvoryGuardians, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, \
-    KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, NightmarePT, JihadPT, PumpQuery
+    HiddenPath, IvoryGuardians, KeldonWarlordPT, KoboldOverlord, KoboldTaskmaster, \
+    KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, NightmarePT, JihadPT, PumpApplies
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition
 from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
@@ -26,7 +26,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell, \
     RevealTopLibraryCard
 from models.systems.phase import Phase
-from .card_filter_funcs import T_FUNCS
+from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation
@@ -107,7 +107,7 @@ MAP: dict[str: list[EffSpec]] = {
     'giant-shark': [Triggered(GiantShark())],
     'giant-slug': [Activated('5', GiantSlug())],
     'giant-strength': [Spell(Pump(2, 2), T_FUNCS['creatures'])],
-    'giant-tortoise': [Static(GiantTortoisePT())],
+    'giant-tortoise': [Static(PumpApplies(T_FUNCS['self'], (0, 3), C_FUNCS['self_is_untapped']))],
     'giant-turtle': [Triggered(CantAttackIfAttackedLastTurn())],
     'glasses-of-urza': [Activated('T', GlassesOfUrza())],
     'gloom': [Static(Gloom())],
@@ -184,7 +184,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower())],
-    'jacques-le-vert': [Static(PumpQuery(T_FUNCS['your_green_creatures'], (0, 2)))],
+    'jacques-le-vert': [Static(PumpApplies(T_FUNCS['your_green_creatures'], (0, 2)))],
     # 'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],  # needs a multi-step target selection for source & target
     'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), T_FUNCS['self'],
                               allowed_phases=[Phase.MAIN])],
@@ -205,7 +205,7 @@ MAP: dict[str: list[EffSpec]] = {
     'khabal-ghoul': [AddCounterPerCreatureDeathAtEndStep(PLUS_ONE)],
     'killer-bees': [self_pump('G', 1, 1)],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
-    'kird-ape': [Static(KirdApePT())],
+    'kird-ape': [Static(PumpApplies(T_FUNCS['self'], (1, 2), C_FUNCS['you_have_a_forest']))],
     'kismet': [Static(Kismet())],
     'kobold-drill-sergeant': [Spell(KoboldDrillSergeant())],
     'kobold-overlord': [Static(KoboldOverlord())],
@@ -245,7 +245,7 @@ MAP: dict[str: list[EffSpec]] = {
     'living-wall': [Activated('1', Regenerate(), T_FUNCS['self'])],
     'livonya-silone': [Static(LivonyaSilone())],
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
-    'lord-of-atlantis': [Static(PumpQuery(T_FUNCS['other_merfolk'], (1, 1))), Static(LordOfAtlantisWalk())],
+    'lord-of-atlantis': [Static(PumpApplies(T_FUNCS['other_merfolk'], (1, 1))), Static(LordOfAtlantisWalk())],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep())],
     'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
     'lure': [Spell(None, T_FUNCS['creatures']), Triggered(Lure())],
@@ -270,7 +270,7 @@ MAP: dict[str: list[EffSpec]] = {
     'meekstone': [Static(Meekstone())],
     'merchant-ship': [Triggered(MerchantShip())],
     'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
-    'mightstone': [Static(PumpQuery(T_FUNCS['attackers'], (1, 0)))],
+    'mightstone': [Static(PumpApplies(T_FUNCS['attackers'], (1, 0)))],
     'mijae-djinn': [Triggered(MijaeDjinn())],
     'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
     'mind-twist': [Spell(MindTwist(), T_FUNCS['all_players'], max_x_func=max_x_from_printed_card)],
@@ -311,7 +311,7 @@ MAP: dict[str: list[EffSpec]] = {
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), T_FUNCS['all_creatures_and_players'])],
     'orcish-mechanics': [Activated('T', DealDamage(2), T_FUNCS['all_creatures_and_players'],
                                    extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
-    'orcish-oriflamme': [Static(PumpQuery(T_FUNCS['your_attackers'], (1, 0)))],
+    'orcish-oriflamme': [Static(PumpApplies(T_FUNCS['your_attackers'], (1, 0)))],
     'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION)),
                       Activated('', Pump(1, 1, True),
                                 extra_costs=[RemoveCounterCost(CARRION, 2)], text='Remove 2 counters for +1/+1')],

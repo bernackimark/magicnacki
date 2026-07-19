@@ -9,7 +9,19 @@ if TYPE_CHECKING:
 from models.constants import Target, ALL_PLAYER_INDICES
 from models.utils import flip
 
-"""Since 90% of lookups seek cards on battlefield, keys that don't specify will only return those on battlfield.
+C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
+    'self_is_untapped': lambda gs, s: not s.is_tapped,
+    'opp_has_island': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).islands().result(),
+    'opp_has_non_token_white_perm': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).non_token().white().permanents().result(),
+    'you_have_a_forest': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
+    'you_have_a_swamp': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
+}
+
+"""
+Maps string keys to lambda functions that simplifies slug-effect map;
+Always follows "lambda GameState, source: " and returns a list;
+Ex: T_FUNCS['black_creatures'] in 'bad-moon' -> lambda gs, s: gs.card_filter.in_play().creatures().black().result()
+Since 90% of lookups seek cards on battlefield, keys that don't specify will only return those on battlfield.
 Ex: 'artifacts' will only return artifact creatures currently on the battlefield.
 Ex: 'artifacts_in_graveyards' explicitly indicates that it's looking somewhere besides the battlefield."""
 T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action | int | None]]] = {

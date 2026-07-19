@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     voodoo_doll_x, max_x_from_printed_card
-from .card_filter_funcs import T_FUNCS
+from .card_filter_funcs import T_FUNCS, C_FUNCS
 from models.constants import COLOR_LETTERS, BASIC_LANDS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, DREAM, HATCHLING
@@ -50,8 +50,8 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     DestroyCombatantAtCombatEnd
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
-from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, SedgeTrollPT, WallOfTombstonesPT, \
-    WaterWurmPT, ZombieMasterWalk, AddCreatureTypePTManaValue, PumpQuery
+from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, WallOfTombstonesPT, \
+    ZombieMasterWalk, AddCreatureTypePTManaValue, PumpApplies
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -135,7 +135,7 @@ MAP: dict[str, list[EffSpec]] = {
                    Spell(RockHydraCast(), T_FUNCS['self'], max_x_func=max_x_from_printed_card)],
     'rocket-launcher': [Activated('2', RocketLauncher(), T_FUNCS['all_creatures_and_players'])],
     'rod-of-ruin': [Activated('3T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
-    'rohgahh-of-kher-keep': [Static(PumpQuery(T_FUNCS['your_kobolds_of_kher_keep'], (2, 2))),
+    'rohgahh-of-kher-keep': [Static(PumpApplies(T_FUNCS['your_kobolds_of_kher_keep'], (2, 2))),
                              Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'rubinia-soulsinger': [Activated('T', Steal(), T_FUNCS['opp_creatures']),
@@ -160,7 +160,8 @@ MAP: dict[str, list[EffSpec]] = {
     'scrubland': dual_land_specs('BW'),
     'sea-kings-blessing': [Spell(SetColor('U', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
     'season-of-the-witch': [Triggered(SeasonOfTheWitchUpkeep()), Triggered(SeasonOfTheWitchEndStep())],
-    'sedge-troll': [Static(SedgeTrollPT()), Activated('B', Regenerate(), T_FUNCS['self'])],
+    'sedge-troll': [Static(PumpApplies(T_FUNCS['self'], (1, 2), C_FUNCS['you_have_a_swamp'])),
+                    Activated('B', Regenerate(), T_FUNCS['self'])],
     'seeker': [Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['non_artifact_non_white_creatures']))],
     'sengir-vampire': [Triggered(SengirVampire())],
     'sentinel': [Activated('', Sentinel())],
@@ -209,7 +210,7 @@ MAP: dict[str, list[EffSpec]] = {
     'su-chi': [Triggered(SuChi())],
     'subdue': [Spell(Subdue(), T_FUNCS['creatures'])],
     'sunastian-falconer': [Activated('T', AddMana('C', 2))],
-    'sunken-city': [Static(PumpQuery(T_FUNCS['blue_creatures'], (1, 1))), Triggered(PayManaOrSacAtUpkeep('UU'))],
+    'sunken-city': [Static(PumpApplies(T_FUNCS['blue_creatures'], (1, 1))), Triggered(PayManaOrSacAtUpkeep('UU'))],
     'swords-to-plowshares': [Spell(SwordsToPlowshares(), T_FUNCS['creatures'])],
     'sylvan-paradise': [Spell(SetColor('G', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
     'syphon-soul': [Spell(SyphonSoul(), T_FUNCS['opponent'])],
@@ -318,9 +319,9 @@ MAP: dict[str, list[EffSpec]] = {
     'wand-of-ith': [Activated('3T', WandOfIth(), allowed_p_id_turn=T_FUNCS['card_owner'])],
     'wanderlust': [Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host_owner']), Spell(None, T_FUNCS['creatures'])],
     'warp-artifact': [Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host_owner']), Spell(None, T_FUNCS['artifacts'])],
-    'water-wurm': [Static(WaterWurmPT())],
+    'water-wurm': [Static(PumpApplies(T_FUNCS['self'], (0, 1), C_FUNCS['opp_has_island']))],
     'weakness': [Spell(Pump(-2, -1), T_FUNCS['creatures'])],
-    'weakstone': [Static(PumpQuery(T_FUNCS['attackers'], (-1, 0)))],
+    'weakstone': [Static(PumpApplies(T_FUNCS['attackers'], (-1, 0)))],
     'web': [Spell(Web(), T_FUNCS['creatures'])],
     'wheel-of-fortune': [Spell(WheelOfFortune())],
     'whirling-dervish': [Triggered(WhirlingDervish())],

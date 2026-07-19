@@ -18,6 +18,13 @@ class TestModQueries(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(white_creature.power, non_white_creature.power)  # 1 & 1
 
+    def test_giant_tortoise(self):
+        """This creature gets +0/+3 as long as it's untapped"""
+        card = self.g.battlefield('giant-tortoise')  # 1/1
+        self.assertEqual(4, card.toughness)
+        card.tap()
+        self.assertEqual(1, card.toughness)
+
 
 if __name__ == '__main__':
     unittest.main()
