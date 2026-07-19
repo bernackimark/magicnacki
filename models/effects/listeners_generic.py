@@ -18,10 +18,39 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, CanUntapQueryEvent, \
-    CanAttackQueryEvent, AttackEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, Event
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
+
+
+# -- BLOCK EVENT ---
+class DestroyCombatantAtCombatEnd(Listener):
+    """Ex: Destroying combatant func would return Cockatrice; destroyable func would return non-walls;
+    if such a combat is found, all matching creatures against Cockatrice would be destroyed at combat end"""
+    listens_to = BlockEvent
+
+    def __init__(self, destroying_combatant_func: Callable, destroyable_func: Callable | None = None):
+        self.destroying_combatant_func = destroying_combatant_func
+        self.destroyable_func = destroyable_func
+
+    def on_event(self, gs: GameState, source: GameCard, event: BlockEvent) -> None:
+        destroying_combatant = self.destroying_combatant_func(gs, source)
+        com = gs.combat_mgr.get_combat(destroying_combatant)
+        if not com:
+            return
+        combatants_against = gs.combat_mgr.get_combatants_against(destroying_combatant)
+        if not self.destroyable_func:
+            for combatant_against in combatants_against:
+                delayed = DestroyAtCombatEnd(source, combatant_against)
+                gs.event_mgr.register(delayed, source)
+                return
+        to_be_destroyed = self.destroyable_func(gs, source)
+        for combatant_against in combatants_against:
+            if combatant_against in to_be_destroyed:
+                delayed = DestroyAtCombatEnd(source, combatant_against)
+                gs.event_mgr.register(delayed, source)
+
 
 # --- CAN ATTACK QUERY EVENT ---
 class CantAttackIfAttackedLastTurn(Listener):

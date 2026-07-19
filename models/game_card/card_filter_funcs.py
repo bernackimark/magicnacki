@@ -89,6 +89,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
                                        gs.card_filter.in_play().non_token().permanents().by_set_code('AQ').result()
                                        if c.props.slug != 'golgothian-sylex'],
     'green': lambda gs, s: gs.card_filter.in_play().green().result(),
+    'green_and_white_creatures': lambda gs, s: [gs.card_filter.in_play().green().creatures().result()] +
+                                               [gs.card_filter.in_play().white().creatures().result()],
     'green_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_green],
     'host': lambda gs, s: s.host,
     'host_owner': lambda gs, s: s.host.owner_id,
@@ -104,6 +106,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
                                                        if 'B' not in c.colors and 'Artifact' not in c.card_types],
     'non_creature_artifacts': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'non_token_permanents': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
+    'non_wall_creatures': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().result(),
     'non_wall_creatures_wo_summoning_sickness': lambda gs, s: [c for c in gs.card_filter.in_play().non_wall_creatures().result()
                                                                if not c.has_summoning_sickness],
     'one_one_creatures': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()

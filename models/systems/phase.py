@@ -238,7 +238,7 @@ class PreCombatDamagePhase(PhaseState):
         from models.actions.combat import AssignCombatDamage
         actions: list[Action] = [AssignCombatDamage(gs.action_on_idx, gs)]
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.get_activated_abilities_from_board())
+        actions.extend(gs.add_activated_abilities_from_board())
 
         if all(isinstance(a, AssignCombatDamage) for a in actions):
             return None

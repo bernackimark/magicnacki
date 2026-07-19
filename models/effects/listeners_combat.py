@@ -57,40 +57,6 @@ class MijaeDjinn(Listener):
 
 
 # --- BLOCK EVENT ---
-class Abomination(Listener):
-    """Whenever this creature blocks or becomes blocked by a G or W creature, destroy that creature at combat end"""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.attacker == s:
-            other = event.blocker
-        elif event.blocker == s:
-            other = event.attacker
-        else:
-            return
-        if not any(c in other.colors for c in ('G', 'W')):
-            return
-        delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register(delayed, s)
-        # this will later get unregistered at combat end
-
-class CockatriceAndThicketBasilisk(Listener):
-    """Whenever this creature blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.attacker == s:
-            other = event.blocker
-        elif event.blocker == s:
-            other = event.attacker
-        else:
-            return
-        if 'Wall' in other.card_sub_types:
-            return
-        delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register(delayed, s)
-        # this will later get unregistered at combat end
-
 class ElderLandWurm(Listener):
     """When this creature blocks for the first time, it loses defender"""
     listens_to = BlockEvent
@@ -145,23 +111,6 @@ class Sentinel(Listener):
             return
         new_t = other.power + 1
         s.modifiers.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
-
-class Venom(Listener):
-    """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.attacker is s.host:
-            other = event.blocker
-        elif event.blocker is s.host:
-            other = event.attacker
-        else:
-            return
-        if 'Wall' in other.card_sub_types:
-            return
-        delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register(delayed, s)
-        # this will later get unregistered at combat end
 
 class AislingLeprechaun(Listener):
     """Whenever this creature blocks or becomes blocked, that creature becomes green indefinitely;

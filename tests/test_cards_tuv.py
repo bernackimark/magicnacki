@@ -4,7 +4,7 @@ from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.mana import PayMana
 from models.actions.special import Attach, PayManaToDrawCards
-from models.events_all import CastResolvedEvent, UpkeepEvent
+from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -107,6 +107,36 @@ class TestCardsTUV(unittest.TestCase):
         artifact = self.g.battlefield('sol-ring')
         self.gs.pile_mgr.destroy(artifact)
         self.assertTrue(any(isinstance(a, PayManaToDrawCards) for a in self.gs.pending_choice.get_actions()))
+
+    def test_venom_vs_non_wall(self):
+        """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
+        card = self.g.hand('venom')
+        host = self.g.battlefield('grizzly-bears')
+        self.g.cast_and_accept(card, host, card.abilities[0])
+        blocker = self.g.battlefield('shivan-dragon', owner=1)
+        self.g.next_turn()
+
+        self.gs.combat_mgr.create_combat(host)
+        com = self.gs.combat_mgr.get_combat(host)
+        com.blockers.append(blocker)
+        self.gs.phase_mgr.set_phase(Phase.PRE_COMBAT_DAMAGE)
+        self.gs.event_mgr.emit(CombatEndEvent(0))
+        self.assertIn(blocker, self.g.gy[1])
+
+    def test_venom_vs_wall(self):
+        """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""
+        card = self.g.hand('venom')
+        host = self.g.battlefield('grizzly-bears')
+        self.g.cast_and_accept(card, host, card.abilities[0])
+        blocker = self.g.battlefield('wall-of-brambles', owner=1)
+        self.g.next_turn()
+
+        self.gs.combat_mgr.create_combat(host)
+        com = self.gs.combat_mgr.get_combat(host)
+        com.blockers.append(blocker)
+        self.gs.phase_mgr.set_phase(Phase.PRE_COMBAT_DAMAGE)
+        self.gs.event_mgr.emit(CombatEndEvent(0))
+        self.assertNotIn(blocker, self.g.gy[1])
 
     def test_verduran_enchantress(self):
         """Whenever you cast an enchantment spell, you may draw a card"""

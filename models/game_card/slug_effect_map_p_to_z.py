@@ -40,13 +40,14 @@ from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVam
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, UncleIstvanPrevention, \
     VeteranBodyguard, SpiritLink
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
-from ..effects.listeners_combat import CockatriceAndThicketBasilisk, Sentinel, Venom, \
-    WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, TheWretchedSteal
+from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
+    TheWretchedSteal
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
-    AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep
+    AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
+    DestroyCombatantAtCombatEnd
 from models.effects.listeners_permission import Seeker, CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
@@ -233,7 +234,7 @@ MAP: dict[str, list[EffSpec]] = {
     'the-rack': [Static(TheRack())],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale())],
     'the-wretched': [Triggered(TheWretchedSteal()), Triggered(TheWretchedUnsteal())],
-    'thicket-basilisk': [Triggered(CockatriceAndThicketBasilisk())],
+    'thicket-basilisk': [Triggered(DestroyCombatantAtCombatEnd(T_FUNCS['self'], T_FUNCS['non_wall_creatures']))],
     'thoughtlace': [Spell(SetColor('U'), T_FUNCS['cards'])],
     'throne-of-bone': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('B'))],
     'time-elemental': [Triggered(TimeElementalAttackedOrBlocked()),
@@ -290,7 +291,8 @@ MAP: dict[str, list[EffSpec]] = {
     'vampire-bats': [Activated('B', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=2)],
     'venarian-gold': [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host'], SLEEP)), Static(VenarianGoldAtUntap()),
                       Spell(VenarianGoldCast(), T_FUNCS['creatures'], max_x_func=max_x_from_printed_card)],
-    'venom': [Spell(None, T_FUNCS['creatures']), Triggered(Venom())],
+    'venom': [Spell(None, T_FUNCS['creatures']),
+              Triggered(DestroyCombatantAtCombatEnd(T_FUNCS['host'], T_FUNCS['non_wall_creatures']))],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerUpkeep()), Spell(VesuvanDoppelgangerCast())],
     # TODO: despite being the same code, VesuvanDoppelgangerUpkeep doesn't trigger;

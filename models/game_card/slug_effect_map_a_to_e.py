@@ -4,7 +4,7 @@ from itertools import combinations
 from .card_filter_funcs import T_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
-from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, STUN
+from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
@@ -32,12 +32,12 @@ from ..effects.listeners_draw_discard import CursedRack
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
 from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, \
     Backfire, ElHajjaj
-from ..effects.listeners_combat import CavePeopleAttackPump, Abomination, \
-    CockatriceAndThicketBasilisk, ElderLandWurm, AislingLeprechaun, Arboria, ClockworkCombatEnd
+from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
+    ClockworkCombatEnd
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep, \
-    DestroyAtEndStep, DealDamageOnEveryUpkeep
+    DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd
 from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
     BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
@@ -49,7 +49,7 @@ from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, Ang
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
-    'abomination': [Triggered(Abomination())],
+    'abomination': [Triggered(DestroyCombatantAtCombatEnd(T_FUNCS['self'], T_FUNCS['green_and_white_creatures']))],
     'abu-jafar': [Triggered(AbuJafar())],
     'acid-rain': [Spell(DestroyAll(T_FUNCS['forests']))],
     'active-volcano': [Spell(ActiveVolcano(), T_FUNCS['active_volcano_targets'])],
@@ -184,7 +184,7 @@ MAP: dict[str, list[EffSpec]] = {
                         Spell(AddCounter(PLUS_ONE_ZERO, 7))],
     'clone': [Spell(Clone())],
     'coal-golem': [Activated('3', AddMana('R', 3), T_FUNCS['card_owner'], extra_costs=[SacSelfCost()])],
-    'cockatrice': [Triggered(CockatriceAndThicketBasilisk())],
+    'cockatrice': [Triggered(DestroyCombatantAtCombatEnd(T_FUNCS['self'], T_FUNCS['non_wall_creatures']))],
     'cocoon': [Spell(CocoonCast(), T_FUNCS['your_creatures']), Static(CocoonUntap()), Static(CocoonUpkeep())],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                            untap_for_mana_at_owner_upkeep('9', T_FUNCS['card_owner'])],
