@@ -51,7 +51,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, WallOfTombstonesPT, \
-    ZombieMasterWalk, AddCreatureTypePTManaValue, PumpApplies
+    ZombieMasterWalk, AddCreatureTypePTManaValue, PumpApplies, PlagueRatsPT, SelfPTEquals
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -63,7 +63,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pavel-maliki': [self_pump('BR', 1, 0)],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['card_owner']),
                     Activated('T', Pump(1, 2, True), T_FUNCS['one_one_creatures'])],
-    'people-of-the-woods': [Static(PeopleOfTheWoodsPT())],
+    'people-of-the-woods': [Static(SelfPTEquals(T_FUNCS['your_forests'], t_only=True))],
     'personal-incarnation': [Triggered(PersonalIncarnationDies()),
                              Activated('0', RedirectNextDamageToOwner(), T_FUNCS['self'])],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
@@ -76,6 +76,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter())],
     'pixie-queen': [Activated('GGGT', KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
+    'plague-rats': [Static(SelfPTEquals(T_FUNCS['plague_rats']))],
     'planar-gate': [Static(PlanarGate())],
     'plateau': dual_land_specs('RW'),
     'power-artifact': [Spell(None, T_FUNCS['artifacts']), Static(PowerArtifact())],

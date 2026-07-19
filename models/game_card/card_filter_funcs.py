@@ -152,6 +152,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'perms_you_own_and_control': lambda gs, s: [p for p in gs.card_filter.in_play().permanents().result()
                                                 if id(p) in {id(y) for y in gs.card_filter.on_player_board(s.owner_id).result()} &
                                                 {id(z) for z in gs.card_filter.on_player_board(s.owner_id).result()}],
+    'plague_rats': lambda gs, s: gs.card_filter.in_play().by_slug('plague-rats').result(),
     'plains': lambda gs, s: gs.card_filter.in_play().plains().result(),
     'red': lambda gs, s: gs.card_filter.in_play().red().result(),
     'red_permanents': lambda gs, s: gs.card_filter.in_play().permanents().red().result(),
@@ -180,7 +181,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().result(),
     'your_forests': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
     'your_green_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().green().result(),
-    'your_lands': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).lands().result(),
+    'your_lands': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).lands().result(),
+    'your_non_wall_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).non_wall_creatures().result(),
     'your_other_creatures':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result() if c is not s],
     'your_other_orcs':

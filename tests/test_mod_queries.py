@@ -25,6 +25,25 @@ class TestModQueries(unittest.TestCase):
         card.tap()
         self.assertEqual(1, card.toughness)
 
+    def test_nightmare(self):
+        """Nightmare's power and toughness are each equal to the number of Swamps you control"""
+        self.g.mana('BB')
+        card = self.g.battlefield('nightmare')
+        self.assertEqual(2, card.toughness)
+        swamp = self.g.battlefield('swamp')
+        self.assertEqual(3, card.power)
+        self.gs.pile_mgr.destroy(swamp)
+        self.assertEqual(2, card.power)
+
+    def test_plague_rats(self):
+        """PR's power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
+        card = self.g.battlefield('plague-rats')
+        self.assertEqual(1, card.toughness)
+        pr_2 = self.g.battlefield('plague-rats')
+        self.assertEqual(2, card.toughness)
+        self.gs.pile_mgr.destroy(pr_2)
+        self.assertEqual(1, card.toughness)
+
 
 if __name__ == '__main__':
     unittest.main()

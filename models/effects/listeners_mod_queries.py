@@ -53,8 +53,34 @@ class AddCreatureTypePTManaValue(Listener):
         elif event.query == 'pt':
             event.mods.append(PTMod(s=source, p_adj=event.card.props.mana_value, t_adj=event.card.props.mana_value))
 
+class SelfPTEquals(Listener):
+    """For that card, its pt = the len of the T_FUNC provided, append a PTMod for the len;
+    you may provide p_only or t_only to only affect that value"""
+    listens_to = ModQueryEvent
+    modifies = 'pt'
+
+    def __init__(self, card_cnt_func: Callable[[GameState, GameCard], list[GameCard]],
+                 p_only: bool = False, t_only: bool = False):
+        self.card_cnt_func = card_cnt_func
+        self.p_only = p_only
+        self.t_only = t_only
+
+        if self.p_only and self.t_only:
+            raise ValueError("Both p_only & t_only may not be True for SelfPTEquals")
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        if event.card is not source:
+            return
+        amt = len(self.card_cnt_func(gs, source))
+        if not self.p_only and not self.t_only:
+            event.mods.append(PTMod(s=source, p_adj=amt, t_adj=amt))
+        elif self.p_only:
+            event.mods.append(PTMod(s=source, p_adj=amt))
+        elif self.t_only:
+            event.mods.append(PTMod(s=source, t_adj=amt))
+
 class PumpApplies(Listener):
-    """If card is in applies_to_func (and the optional condition isn't False), return a PTMod for the provided pt_adj"""
+    """If card is in applies_to_func (and the optional condition isn't False), append a PTMod for the provided pt_adj"""
     listens_to = ModQueryEvent
     modifies = 'pt'
 
@@ -159,17 +185,6 @@ class Conversion(Listener):
         event.mods.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Plains'))
         event.mods.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type='Mountain'))
 
-class DakkonBlackbladePT(Listener):
-    """Dakkon Blackblade's power and toughness are each equal to the number of lands you control"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return None
-        your_land_cnt = len(gs.card_filter.on_player_board(source.owner_id).lands().result())
-        event.mods.append(PTMod(s=source, p_adj=your_land_cnt, t_adj=your_land_cnt))
-
 class GaeasAvengerPT(Listener):
     """Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control"""
     listens_to = ModQueryEvent
@@ -272,17 +287,6 @@ class JihadPT(Listener):
             event.mods.append(PTMod(s=source, p_adj=2, t_adj=1))
             return
 
-class KeldonWarlordPT(Listener):
-    """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return None
-        your_non_wall_creat_cnt = len(gs.card_filter.on_player_board(event.card.owner_id).non_wall_creatures().result())
-        event.mods.append(PTMod(s=source, p_adj=your_non_wall_creat_cnt, t_adj=your_non_wall_creat_cnt))
-
 class KoboldOverlord(Listener):
     """Other Kobold creatures you control have first strike"""
     listens_to = ModQueryEvent
@@ -346,8 +350,7 @@ class LivingPlane(Listener):
             event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
 
 class LordOfAtlantisWalk(Listener):
-    """All other Merfolk gain +1/+1 and Islandwalk"""
-    # TODO: I think this can be combined by LordOfAtlantisPT by having modifies be a tuple of ('pt', 'kwa')
+    """All other Merfolk gain ... Islandwalk"""
     listens_to = ModQueryEvent
     modifies = 'kwa'
 
@@ -381,28 +384,6 @@ class MoraleEOT(Listener):
             return
         event.mods.append(PTMod(s=source, p_adj=1, t_adj=1, expires='EOT'))
 
-class NightmarePT(Listener):
-    """Nightmare's power and toughness are each equal to the number of Swamps you control"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return
-        your_swamp_cnt = len(gs.card_filter.on_player_board(event.card.owner_id).swamps().result())
-        event.mods.append(PTMod(s=source, p_adj=your_swamp_cnt, t_adj=your_swamp_cnt))
-
-class PeopleOfTheWoodsPT(Listener):
-    """People of the Woods's toughness is equal to the number of Forests you control"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return None
-        your_forest_cnt = len(gs.card_filter.on_player_board(event.card.owner_id).forests().result())
-        event.mods.append(PTMod(s=source, t_adj=your_forest_cnt))
-
 class PietyEOT(Listener):
     """This will be called only by Piety(); this effect is stored in GameState and cleared at EOT;
     Blocking creatures get 0/+3 until end of turn"""
@@ -414,17 +395,6 @@ class PietyEOT(Listener):
         if event.card not in gs.card_filter.in_play().blockers().result():
             return
         event.mods.append(PTMod(s=source, t_adj=3, expires='EOT'))
-
-class PlagueRatsPT(Listener):
-    """Plague Rats' power & toughness are each equal to the number of creatures named Plague Rats on the battlefield"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return
-        cnt = len(gs.card_filter.in_play().by_slug('plague-rats').result())
-        event.mods.append(PTMod(s=source, p_adj=cnt, t_adj=cnt))
 
 class RabidWombat(Listener):
     """This creature gets +2/+2 for each Aura attached to it"""

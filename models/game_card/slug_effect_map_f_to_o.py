@@ -7,7 +7,7 @@ from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GravitySphere, \
     HiddenPath, IvoryGuardians, KeldonWarlordPT, KoboldOverlord, KoboldTaskmaster, \
-    KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, NightmarePT, JihadPT, PumpApplies
+    KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, NightmarePT, JihadPT, PumpApplies, SelfPTEquals
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition
 from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
@@ -201,7 +201,7 @@ MAP: dict[str: list[EffSpec]] = {
     'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures'])],
     'karma': [Triggered(Karma())],
     'kei-takahashi': [Activated('T', PreventNextDamageBy(2), T_FUNCS['creatures'])],
-    'keldon-warlord': [Static(KeldonWarlordPT())],
+    'keldon-warlord': [Static(SelfPTEquals(T_FUNCS['your_non_wall_creatures']))],
     'khabal-ghoul': [AddCounterPerCreatureDeathAtEndStep(PLUS_ONE)],
     'killer-bees': [self_pump('G', 1, 1)],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
@@ -298,7 +298,7 @@ MAP: dict[str: list[EffSpec]] = {
                          Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments']))],
     'niall-silvain': [Activated('GGGGT', Regenerate(), T_FUNCS['creatures'])],
     'nicol-bolas': [Triggered(PayManaOrSacAtUpkeep('UBR')), Triggered(NicolBolas())],
-    'nightmare': [Static(NightmarePT())],
+    'nightmare': [Static(SelfPTEquals(T_FUNCS['your_swamps']))],
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents'])],
     'oasis': [Activated('T', PreventNextDamageBy(1), T_FUNCS['creatures'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],

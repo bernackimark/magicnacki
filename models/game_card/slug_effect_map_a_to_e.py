@@ -43,7 +43,7 @@ from models.effects.listeners_permission import CityInABottleCantCast, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    AspectOfWolfPT, ConcordantCrossroads, Conversion, DakkonBlackbladePT, PumpApplies
+    AspectOfWolfPT, ConcordantCrossroads, Conversion, DakkonBlackbladePT, PumpApplies, SelfPTEquals
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -211,7 +211,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cursed-rack': [Triggered(CursedRack())],
     'cyclone': [Triggered(Cyclone())],
     'cyclopean-mummy': [Triggered(CyclopeanMummy())],
-    'dakkon-blackblade': [Static(DakkonBlackbladePT())],
+    'dakkon-blackblade': [Static(SelfPTEquals(T_FUNCS['your_lands']))],
     'damping-field': [Triggered(DampingField())],
     'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU'))],  # the rest of the card still needs coding
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests'])])],
