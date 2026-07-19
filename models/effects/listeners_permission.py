@@ -197,16 +197,6 @@ class LivonyaSilone(Listener):
         if gs.card_filter.on_player_board(event.blocker.owner_id).legendary().lands().result():
             event.permission = False
 
-
-class Meekstone(Listener):
-    """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
-    listens_to = CanUntapQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if event.card.is_creature and event.card.power >= 3:
-            event.permission = False
-
-
 class Moat(Listener):
     """Creatures without flying can't attack"""
     listens_to = CanAttackQueryEvent
@@ -241,17 +231,6 @@ class TowerOfCoireallEOT(Listener):
 
 
 # --- CAN UNTAP QUERY EVENT ---
-class CocoonUntap(Listener):
-    """Enchanted creature doesn't untap during your untap step if this Aura has a pupa counter on it"""
-    listens_to = CanUntapQueryEvent
-    query = 'can_untap'
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if event.card is not source.host:
-            return
-        if source.counters.get_count(PUPA):
-            event.permission = False
-
 class DampingField(Listener):
     """Players can't untap more than one artifact during their untap steps"""
     listens_to = CanUntapQueryEvent
@@ -306,12 +285,30 @@ class WinterOrb(Listener):
 
 
 # --- CAN UNTAP AT UNTAP QUERY EVENT ---
+class CocoonUntap(Listener):
+    """Host doesn't untap during its controller's untap step if it has a pupa counter on it."""
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if event.card != source.host or event.card != gs.player_turn_idx:
+            return
+        if source.host.counters.get_count(PUPA):
+            event.permission = False
+
+class Meekstone(Listener):
+    """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if event.card.owner_id == event.active_player and event.card.is_creature and event.card.power >= 3:
+            event.permission = False
+
 class VenarianGoldAtUntap(Listener):
     """Host doesn't untap during its controller's untap step if it has a sleep counter on it."""
     listens_to = CanUntapAtUntapPhaseQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
-        if event.card != source.host or event.card != gs.player_turn_idx:
+        if event.card != source.host or event.card.owner_id != event.active_player:
             return
         if source.host.counters.get_count(SLEEP):
             event.permission = False

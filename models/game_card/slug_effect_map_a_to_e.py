@@ -43,8 +43,8 @@ from models.effects.listeners_permission import CityInABottleCantCast, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    ArcadesSabbathPumpAll, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
-    Crusade, DakkonBlackbladePT, Castle
+    ArcadesSabbathPumpAll, AspectOfWolfPT, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
+    DakkonBlackbladePT, PumpQuery
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -106,7 +106,7 @@ MAP: dict[str, list[EffSpec]] = {
     'aspect-of-wolf': [Static(AspectOfWolfPT())],
     'axelrod-gunnarson': [Triggered(AxelrodGunnarson())],
     'backfire': [Triggered(Backfire())],
-    'bad-moon': [Static(BadMoon())],
+    'bad-moon': [Static(PumpQuery(T_FUNCS['black_creatures'], (1, 1)))],
     'badlands': dual_land_specs('BR'),
     'ball-lightning': [Triggered(DestroyAtEndStep(T_FUNCS['self']))],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'], max_x_func=max_x_from_printed_card)],
@@ -151,7 +151,7 @@ MAP: dict[str, list[EffSpec]] = {
                                        max_x_func=max_x_from_printed_card)],
     # TODO: if candelabra's owner has 0 mana, the effect should be offered, but it's putting game in infinite loop
     'carrion-ants': [self_pump('1', 1, 1)],
-    'castle': [Static(Castle())],
+    'castle': [Static(PumpQuery(T_FUNCS['your_untapped_white_creatures'], (0, 2)))],
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self']),
                     Activated('1RRT', KWAModEffect('add', 'Mountainwalk', True), T_FUNCS['creatures'])],
     'celestial-prism': [Activated('2T', AddMana(c), T_FUNCS['card_owner'], text=f'Add 1 {c}') for c in COLOR_LETTERS],
@@ -203,7 +203,7 @@ MAP: dict[str, list[EffSpec]] = {
     'creature-bond': [Triggered(CreatureBond())],
     'crimson-manticore': [Activated('RT', DealDamage(1), T_FUNCS['combatants'])],
     'crumble': [Spell(Crumble(), T_FUNCS['artifacts'])],
-    'crusade': [Static(Crusade())],
+    'crusade': [Static(PumpQuery(T_FUNCS['white_creatures'], (1, 1)))],
     'crystal-rod': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('U'))],
     'curse-artifact': [Spell(None, T_FUNCS['artifacts']),
                        Triggered(CurseArtifact(), T_FUNCS['self'])],

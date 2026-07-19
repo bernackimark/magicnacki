@@ -131,7 +131,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'opp_tapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).tapped().artifacts().result(),
     'opp_untapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).untapped().artifacts().result(),
     'opponent': lambda gs, s: flip(s.owner_id),
-    'other_creatures': lambda gs, s: [c for c in T_FUNCS['creatures'] if c != s],
+    'other_creatures': lambda gs, s: [c for c in T_FUNCS['creatures'] if c is not s],
+    'other_merfolk': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result()
+                                    if c is not s],
     'permanents': lambda gs, s: gs.card_filter.in_play().permanents().result(),
     'perms_you_own_and_control': lambda gs, s: [p for p in gs.card_filter.in_play().permanents().result()
                                                 if id(p) in {id(y) for y in gs.card_filter.on_player_board(s.owner_id).result()} &
@@ -159,8 +161,11 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'white_creatures': lambda gs, s: gs.card_filter.in_play().white().creatures().result(),
     'white': lambda gs, s: gs.card_filter.in_play().white().result(),
     'your_artifacts': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).artifacts().result(),
+    'your_attackers': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).attackers().result(),
+    'your_kobolds_of_kher_keep': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).by_slug('kobolds-of-kher-keep').result(),
     'your_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().result(),
     'your_forests': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
+    'your_green_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().green().result(),
     'your_lands': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).lands().result(),
     'your_other_creatures':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result() if c is not s],
@@ -171,6 +176,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_swamps': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).swamps().result(),
     'your_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).tapped().blue().creatures().result(),
     'your_untapped_creatures':
-        lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).creatures().untapped().result(),
+        lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().untapped().result(),
+    'your_untapped_white_creatures':
+        lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().untapped().white().result(),
     'your_walls': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).in_play().walls().result(),
 }
