@@ -92,7 +92,7 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.battlefield('unstable-mutation')
         host = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
         Attach(0, self.gs, card, host).play()
-        card.abilities[1].effect.resolve(self.gs, card, host)  # type: ignore
+        card.abilities[1].effect.resolve(self.gs, card, host)
         self.assertEqual(4, host.power)
 
         self.g.next_turn()

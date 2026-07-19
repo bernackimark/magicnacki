@@ -65,7 +65,7 @@ class AbilityPipeline(Action):
 
         if self.eff_spec.effect and not self.eff_spec.effect.can_cast(self.gs, self.source):
             return False
-        if hasattr(self.eff_spec.effect, 'can_activate') and not self.eff_spec.effect.can_activate(self.gs, self.source):
+        if self.eff_spec.effect and not self.eff_spec.effect.can_activate(self.gs, self.source):
             return False
 
         if self.eff_spec.is_aa:
@@ -183,10 +183,6 @@ class AbilityPipeline(Action):
     @property
     def aa(self) -> ActivatedAbility | None:
         return next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
-
-    @property
-    def resolver_effect(self) -> Resolver:
-        return self.eff_spec.effect
 
     @property
     def needs_x(self) -> bool:

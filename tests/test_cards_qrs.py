@@ -53,7 +53,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.activate_ability(aa, 0)
         self.g.activate_ability(aa, 0)
         bolt = self.g.hand('lightning-bolt', owner=1)
-        bolt.abilities[0].effect.resolve(self.gs, bolt, 0)  # type: ignore
+        bolt.abilities[0].effect.resolve(self.gs, bolt, 0)
         self.assertEqual(19, self.gs.life[0])
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(card, self.gs.pile_mgr.hands[0])
@@ -70,7 +70,7 @@ class TestCardsQRS(unittest.TestCase):
         island_1.tap()
         self.assertTrue(island_1.is_tapped)
         self.gs.phase_mgr.set_phase(Phase.MAIN)
-        card.abilities[0].effect.resolve(self.gs, card)  # type: ignore
+        card.abilities[0].effect.resolve(self.gs, card)
         self.assertFalse(island_1.is_tapped)
 
     def test_revelation(self):
@@ -140,7 +140,7 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.battlefield('rocket-launcher')
         aa = card.activated_abilities[0]
         self.g.mana('RR')
-        can_activate_effect = aa.eff_spec.effect.can_activate(self.gs, card)  # type: ignore
+        can_activate_effect = aa.eff_spec.effect.can_activate(self.gs, card)
         self.assertFalse(can_activate_effect)
 
         self.g.next_turn()
@@ -428,13 +428,13 @@ class TestCardsQRS(unittest.TestCase):
     def test_storm_seeker(self):
         """SS deals damage to target player equal to the number of cards in that player's hand"""
         card = self.g.hand('storm-seeker')
-        card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
+        card.abilities[0].effect.resolve(self.gs, card, 1)
         self.assertEqual(13, self.gs.life[1])
 
     def test_syphon_soul(self):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
         card = self.g.hand('syphon-soul')
-        card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
+        card.abilities[0].effect.resolve(self.gs, card, 1)
         # self.g.mana('BBB')
         # self.g.cast_and_accept(card, 1, card.abilities[0])
         self.assertEqual([22, 18], self.gs.life)

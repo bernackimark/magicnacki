@@ -224,7 +224,7 @@ class TestGame:
         if the caller is lazy & provides no spell, they are assumed to want the card's first spell ability"""
         if not spell:
             spell = next(_ for _ in card.spells)
-        spell.effect.resolve(self.gs, card, target)  # type: ignore
+        spell.effect.resolve(self.gs, card, target)
 
     @property
     def gy(self) -> list[list[GameCard | None]]:

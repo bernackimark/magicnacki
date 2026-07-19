@@ -109,7 +109,7 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.activate_ability(aa, target)
         self.assertEqual(0, target.owner_id)
         pump = self.g.hand('giant-growth')
-        pump.abilities[0].effect.resolve(self.gs, pump, card)  # type: ignore
+        pump.abilities[0].effect.resolve(self.gs, pump, card)
         # TODO: debug print statements are firing here from inside of OldManOfTheSeaPowerCheck, showing its power as 2
 
         # print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
@@ -138,7 +138,7 @@ class TestCardsMNOP(unittest.TestCase):
         host = self.g.battlefield('grizzly-bears', owner=1)
         self.g.mana('B')
         Attach(0, self.gs, card, host).play()
-        card.abilities[2].effect.resolve(self.gs, card, host)  # type: ignore
+        card.abilities[2].effect.resolve(self.gs, card, host)
         self.assertTrue(host.is_tapped)
 
         self.g.mana('GGGG', owner=1)

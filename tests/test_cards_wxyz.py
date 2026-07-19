@@ -39,7 +39,7 @@ class TestCardsWXYZ(unittest.TestCase):
         """Each player discards their hand, then draws seven cards"""
         original_card_ids = {c.id_ for c in list(self.gs.pile_mgr.hands[0])}
         wheel_of_fortune = self.g.card('wheel-of-fortune')
-        wheel_of_fortune.abilities[0].effect.resolve(self.gs, wheel_of_fortune, None)  # type: ignore
+        wheel_of_fortune.abilities[0].effect.resolve(self.gs, wheel_of_fortune, None)
         current_card_ids = {c.id_ for c in self.gs.pile_mgr.hands[0]}
         self.assertTrue(original_card_ids.isdisjoint(current_card_ids))
 

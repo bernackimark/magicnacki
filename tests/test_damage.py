@@ -13,7 +13,7 @@ class TestDamage(unittest.TestCase):
         red_source = self.g.card('goblin-hero')
         cop = self.g.battlefield('circle-of-protection-red', owner=1)
         self.g.mana('WW', owner=1)
-        cop.activated_abilities[0].eff_spec.effect.resolve(self.gs, cop, red_source)  # type: ignore
+        cop.activated_abilities[0].eff_spec.effect.resolve(self.gs, cop, red_source)
         self.gs.apply_damage(red_source, 5, 1, True)
         self.assertEqual(self.gs.life[1], 20)
 
