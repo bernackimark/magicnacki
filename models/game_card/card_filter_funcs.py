@@ -111,6 +111,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'non_wall_creatures': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().result(),
     'non_wall_creatures_wo_summoning_sickness': lambda gs, s: [c for c in gs.card_filter.in_play().non_wall_creatures().result()
                                                                if not c.has_summoning_sickness],
+    'non_wall_non_fliers': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().has('Flying', False).result(),
     'one_one_creatures': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                         if c.power == 1 and c.toughness == 1],
     'opp_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),

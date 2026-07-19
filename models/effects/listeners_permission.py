@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
     CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
-from models.utils import flip
 
 """
 These are Effects that listens for Events that are XXQueryEvent
@@ -168,16 +167,6 @@ class CityInABottleCantCast(Listener):
         if event.card in gs.card_filter.by_set_code('AN').result():
             event.permission = False
 
-class ElvenRidersCanBeBlocked(Listener):
-    """This creature can't be blocked except by Walls and/or creatures with flying"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source:
-            return
-        if 'Wall' not in event.blocker.card_sub_types or 'Flying' not in event.blocker.keyword_abilities:
-            event.permission = False
-
 class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Listener):
     """Non-Eye creatures you control can't attack."""
     listens_to = CanAttackQueryEvent
@@ -187,20 +176,6 @@ class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Listener):
         if source.owner_id != a.owner_id:
             return
         if a not in gs.card_filter.on_player_board(a.owner_id).creatures().by_sub_type('Eye').result():
-            event.permission = False
-
-
-class Fear(Listener):
-    """Enchanted creature has fear. (It can't be blocked except by artifact creatures and/or black creatures.)"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        a = event.attacker
-        if a.host is not source:
-            return
-        artifact_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).artifacts().creatures().result()
-        black_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).black().creatures().result()
-        if event.blocker not in artifact_creatures + black_creatures:
             event.permission = False
 
 class IronclawOrcs(Listener):

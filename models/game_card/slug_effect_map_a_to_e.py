@@ -38,7 +38,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd
-from models.effects.listeners_permission import ElvenRidersCanBeBlocked, CityInABottleCantCast, \
+from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
@@ -265,7 +265,7 @@ MAP: dict[str, list[EffSpec]] = {
     'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['red']))],
     'electric-eel': [Spell(DealDamage(1), T_FUNCS['card_owner']), Activated('RR', ElectricEel())],
     'elephant-graveyard': [Activated('T', AddMana('C')), Activated('T', Regenerate(), T_FUNCS['elephants'])],
-    'elven-riders': [Static(ElvenRidersCanBeBlocked())],
+    'elven-riders': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['non_wall_non_fliers']))],
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
     'enchanted-being': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'])],
