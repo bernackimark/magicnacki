@@ -149,6 +149,26 @@ class CardFilter:
         self._cards = [c for c in self._cards if 'G' in c.colors]
         return self
 
+    def non_white(self):
+        self._cards = [c for c in self._cards if 'W' not in c.colors]
+        return self
+
+    def non_black(self):
+        self._cards = [c for c in self._cards if 'B' not in c.colors]
+        return self
+
+    def non_blue(self):
+        self._cards = [c for c in self._cards if 'U' not in c.colors]
+        return self
+
+    def non_red(self):
+        self._cards = [c for c in self._cards if 'R' not in c.colors]
+        return self
+
+    def non_green(self):
+        self._cards = [c for c in self._cards if 'G' not in c.colors]
+        return self
+
     # -- land type ---
     def swamps(self):
         self._cards = [c for c in self._cards if 'Swamp' in c.card_sub_types]

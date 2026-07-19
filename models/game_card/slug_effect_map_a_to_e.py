@@ -38,11 +38,10 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd
-from models.effects.listeners_permission import AmrouKithkin, ArgothianPixiesCanBeBlocked, ArtifactWardCanBeBlocked, \
-    BogRats, ElderSpawnCanBeBlocked, ElvenRidersCanBeBlocked, EvilEyeOfOrmsByGoreCanBeBlocked, CityInABottleCantCast, \
+from models.effects.listeners_permission import ElvenRidersCanBeBlocked, CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
-    HostCanAttack
+    HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     ArcadesSabbathPumpAll, AspectOfWolfPT, BadMoon, BeastsOfBogardan, ConcordantCrossroads, Conversion, \
     Crusade, DakkonBlackbladePT, Castle
@@ -68,7 +67,7 @@ MAP: dict[str, list[EffSpec]] = {
     'alchors-tomb': [Activated('2T', SetColor(c), T_FUNCS['your_permanents'], text=f'Set color to {{{c}}}')
                      for c in COLOR_LETTERS],
     'amnesia': [Spell(Amnesia(), T_FUNCS['all_players'])],
-    'amrou-kithkin': [Static(AmrouKithkin())],
+    'amrou-kithkin': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['creatures_power_three_or_more']))],
     'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(1), T_FUNCS['all_creatures_and_players'])],
     'ancestral-recall': [Spell(DrawCards(3), T_FUNCS['all_players'])],
     'angelic-voices': [Static(AngelicVoices())],
@@ -87,14 +86,16 @@ MAP: dict[str, list[EffSpec]] = {
                               Spell(ArenaOfTheAncientsCast())],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures'])],
-    'argothian-pixies': [Static(ArgothianPixiesCanBeBlocked()), Static(ArgothianPixies())],
+    'argothian-pixies': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['artifact_creatures'])),
+                         Static(ArgothianPixies())],
     'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
     'armageddon': [Spell(DestroyAll(T_FUNCS['lands']))],
     'army-of-allah': [Spell(ArmyOfAllah())],
     'artifact-blast': [Spell(CounterSpell(), T_FUNCS['artifact_spells'])],
     'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),
                             Spell(None, T_FUNCS['artifacts'])],
-    'artifact-ward': [Spell(None, T_FUNCS['creatures']), Static(ArtifactWardCanBeBlocked()),
+    'artifact-ward': [Spell(None, T_FUNCS['creatures']),
+                      Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['artifact_creatures'])),
                       Static(ArtifactWardPrevention()), Static(ArtifactWardCanBeTargeted())],
     'ashes-to-ashes': [Spell(AshesToAshes(), TargetSpec(T_FUNCS['non_artifact_creatures'], 2, 2))],
     'ashnods-altar': [Activated('', AddMana('C', 2), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])])],
@@ -130,7 +131,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Spell(Destroy(), T_FUNCS['red_permanents'])],
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
     'blue-ward': [Spell(KWAModEffect('add', 'Protection From Blue'), T_FUNCS['creatures'])],
-    'bog-rats': [Static(BogRats())],
+    'bog-rats': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['walls']))],
     'bone-flute': [Activated('2T', BoneFlute())],
     'book-of-rass': [Activated('2', BookOfRass())],
     'boomerang': [Spell(Bounce(), T_FUNCS['permanents'])],
@@ -261,7 +262,7 @@ MAP: dict[str, list[EffSpec]] = {
     'ebony-horse': [Activated('2T', RemoveFromCombat(), T_FUNCS['attackers'])],
     'el-hajjaj': [Triggered(ElHajjaj(), T_FUNCS['self'])],
     'elder-land-wurm': [Triggered(ElderLandWurm())],
-    'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(ElderSpawnCanBeBlocked())],
+    'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['red']))],
     'electric-eel': [Spell(DealDamage(1), T_FUNCS['card_owner']), Activated('RR', ElectricEel())],
     'elephant-graveyard': [Activated('T', AddMana('C')), Activated('T', Regenerate(), T_FUNCS['elephants'])],
     'elven-riders': [Static(ElvenRidersCanBeBlocked())],
@@ -276,7 +277,7 @@ MAP: dict[str, list[EffSpec]] = {
     'erosion': [Triggered(ErosionUpkeep()), Spell(None, T_FUNCS['lands'])],
     'eternal-flame': [Spell(EternalFlame())],
     'eternal-warrior': [Spell(KWAModEffect('add', 'Vigilance'), T_FUNCS['creatures'])],
-    'evil-eye-of-orms-by-gore': [Static(EvilEyeOfOrmsByGoreCanBeBlocked()),
+    'evil-eye-of-orms-by-gore': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['non_wall_creatures'])),
                                  Static(EvilEyeOfOrmsByGoreMyNonEyeNoAttack())],
     'evil-presence': [Spell(EvilPresence(), T_FUNCS['lands'])],
     'exorcist': [Activated('1W', Destroy(), T_FUNCS['black_creatures'])],

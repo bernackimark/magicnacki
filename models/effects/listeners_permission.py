@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
-    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, Event
+    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
 from models.utils import flip
 
 """
@@ -111,6 +111,18 @@ class UnblockableEOT(Listener):
         if event.attacker is self.target:
             event.permission = False
 
+class UnblockableCondition(Listener):
+    """If attacker is in the attacker func & blocker is in the blocker func, block is illegal;
+    attacker func must return a single GameCard"""
+    listens_to = CanBlockQueryEvent
+
+    def __init__(self, attacker_func: Callable, blockable_func: Callable):
+        self.attacker_func = attacker_func
+        self.blocker_func = blockable_func
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker == self.attacker_func(gs, source) and event.blocker in self.blocker_func(gs, source):
+            event.permission = False
 
 class WalkRuleRemoved(Listener):
     """Creatures with a landwalk can be blocked as though they didn't have that landwalk."""
@@ -139,28 +151,6 @@ class AkronLegionnaire(Listener):
         if a not in artifact_creatures + akron_legionnaires:
             event.permission = False
 
-
-class AmrouKithkin(Listener):
-    """This creature can't be blocked by creatures with power 3 or greater"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source:
-            return
-        if event.blocker.power >= 3:
-            event.permission = False
-
-
-class ArtifactWardCanBeBlocked(Listener):
-    """Enchanted creature can't be blocked by artifact creatures"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source.host:
-            return
-        event.permission = False
-
-
 class ArtifactWardCanBeTargeted(Listener):
     """Enchanted creature can't be the target of abilities from artifact sources"""
     listens_to = CanTargetQueryEvent
@@ -170,28 +160,6 @@ class ArtifactWardCanBeTargeted(Listener):
             return
         event.permission = False
 
-
-class ArgothianPixiesCanBeBlocked(Listener):
-    """This creature can't be blocked by artifact creatures"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source or 'Artifact' not in event.blocker.card_types:
-            return
-        event.permission = False
-
-
-class BogRats(Listener):
-    """This creature can't be blocked by Walls"""
-    listens_to = CanBlockQueryEvent
-    query = 'can_block'
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source or 'Wall' not in event.blocker.card_types:
-            return
-        event.permission = False
-
-
 class CityInABottleCantCast(Listener):
     """Players can't cast spells or play lands with a name originally printed in the Arabian Nights expansion"""
     listens_to = CanCastQueryEvent
@@ -199,17 +167,6 @@ class CityInABottleCantCast(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
         if event.card in gs.card_filter.by_set_code('AN').result():
             event.permission = False
-
-
-class ElderSpawnCanBeBlocked(Listener):
-    """This creature can't be blocked by red creatures"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source or 'R' not in event.blocker.colors:
-            return
-        event.permission = False
-
 
 class ElvenRidersCanBeBlocked(Listener):
     """This creature can't be blocked except by Walls and/or creatures with flying"""
@@ -220,17 +177,6 @@ class ElvenRidersCanBeBlocked(Listener):
             return
         if 'Wall' not in event.blocker.card_sub_types or 'Flying' not in event.blocker.keyword_abilities:
             event.permission = False
-
-
-class EvilEyeOfOrmsByGoreCanBeBlocked(Listener):
-    """Can only be blocked by walls"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source or 'Wall' not in event.blocker.card_sub_types:
-            return
-        event.permission = False
-
 
 class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Listener):
     """Non-Eye creatures you control can't attack."""
@@ -257,17 +203,6 @@ class Fear(Listener):
         if event.blocker not in artifact_creatures + black_creatures:
             event.permission = False
 
-
-class Invisibility(Listener):
-    """Enchanted creature can't be blocked except by Walls"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker.host is not source or 'Wall' in event.blocker.card_sub_types:
-            return
-        event.permission = False
-
-
 class IronclawOrcs(Listener):
     """This creature can't block creatures with power 2 or greater"""
     listens_to = CanBlockQueryEvent
@@ -276,17 +211,6 @@ class IronclawOrcs(Listener):
         if event.blocker is not source or event.attacker.power < 2:
             return
         event.permission = False
-
-
-class JuggernautUnblockableByWalls(Listener):
-    """... This creature can't be blocked by Walls"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source or 'Wall' not in event.blocker.card_sub_types:
-            return
-        event.permission = False
-
 
 class LivonyaSilone(Listener):
     """Legendary landwalk (This creature can't be blocked as long as defending player controls a legendary land.)"""
@@ -315,20 +239,6 @@ class Moat(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
         if event.attacker in gs.card_filter.in_play().has('Flying').creatures().result():
-            event.permission = False
-
-
-class Seeker(Listener):
-    """Enchanted creature can't be blocked except by artifact creatures and/or white creatures"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        a = event.attacker
-        if source not in a.auras:
-            return
-        artifact_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).artifacts().creatures().result()
-        white_creatures = gs.card_filter.on_player_board(flip(a.owner_id)).white().creatures().result()
-        if event.blocker not in artifact_creatures + white_creatures:
             event.permission = False
 
 class SpectralCloak(Listener):

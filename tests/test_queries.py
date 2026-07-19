@@ -40,6 +40,20 @@ class TestCanAttack(unittest.TestCase):
         self.assertFalse(creature.has_summoning_sickness)
         self.assertFalse(self.gs.perm_querier.can_attack(creature))
 
+class CanBeBlocked(unittest.TestCase):
+    def setUp(self):
+        self.g = TestGame()
+        self.gs = self.g.gs
+
+    def test_amrou_kithkin(self):
+        """This creature can't be blocked by creatures with power 3 or greater"""
+        card = self.g.battlefield('amrou-kithkin')
+        legal_blocker = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+        illegal_blocker = self.g.battlefield('shivan-dragon', owner=1)
+        self.assertTrue(self.gs.perm_querier.can_block(legal_blocker, card))
+        self.assertFalse(self.gs.perm_querier.can_block(illegal_blocker, card))
+
+
 class TestCanBlock(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()

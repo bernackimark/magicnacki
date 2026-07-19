@@ -10,8 +10,8 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, G
     HiddenPath, IvoryGuardians, JacquesLeVert, KeldonWarlordPT, KirdApePT, KoboldOverlord, KoboldTaskmaster, \
     KormusBell, LivingLands, LivingPlane, LordOfAtlantisPT, LordOfAtlantisWalk, Mightstone, NightmarePT, \
     OrcishOriflamme, JihadPT
-from models.effects.listeners_permission import Moat, Meekstone, Invisibility, IronclawOrcs, Fear, \
-    JuggernautUnblockableByWalls, LivonyaSilone, WalkRuleRemoved, DoesntUntapAtUntap, GoblinRockSledUntap
+from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
+    DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition
 from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
     GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HellSwarm, \
     HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
@@ -61,7 +61,8 @@ MAP: dict[str: list[EffSpec]] = {
                   Activated('WW', GainLife(), T_FUNCS['host_owner'], allowed_phases=[Phase.UPKEEP],
                             allowed_p_id_turn=T_FUNCS['host_owner'], max_activations_per_turn=1)],
     'fasting': [Triggered(Fasting(), T_FUNCS['self']), Triggered(FastingDestroy())],
-    'fear': [Spell(None, T_FUNCS['creatures']), Static(Fear())],
+    'fear': [Spell(None, T_FUNCS['creatures']),
+             Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['non_artifact_non_black_creatures']))],
     'feedback': [Triggered(DealDamageOnHostUpkeep(1), T_FUNCS['host']), Spell(None, T_FUNCS['enchants'])],
     'feint': [Spell(Feint(), T_FUNCS['attackers'])],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
@@ -174,7 +175,8 @@ MAP: dict[str: list[EffSpec]] = {
     'instill-energy': [Spell(KWAModEffect('add', 'Haste'), T_FUNCS['creatures']),
                        Activated('', UntapCardEffect(), T_FUNCS['host'], allowed_p_id_turn=T_FUNCS['host_owner'],
                                  max_activations_per_turn=1)],
-    'invisibility': [Spell(None, T_FUNCS['creatures']), Static(Invisibility())],
+    'invisibility': [Spell(None, T_FUNCS['creatures']),
+                     Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['non_wall_creatures']))],
     'inquisition': [Spell(Inquisition(), T_FUNCS['all_players'])],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
@@ -193,7 +195,7 @@ MAP: dict[str: list[EffSpec]] = {
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jihad': [Static(JihadPT()), Static(JihadSac()), Spell(DeclareAColor())],
     'jovial-evil': [Spell(JovialEvil(), T_FUNCS['opponent'])],
-    'juggernaut': [Static(JuggernautUnblockableByWalls())],
+    'juggernaut': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['walls']))],
     'jump': [Spell(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'])],
     'junun-efreet': [Triggered(PayManaOrSacAtUpkeep('BB'))],
     'juzam-djinn': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'])],

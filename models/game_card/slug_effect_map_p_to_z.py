@@ -48,8 +48,8 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
     DestroyCombatantAtCombatEnd
-from models.effects.listeners_permission import Seeker, CantBeTargetedByAuras, SpectralCloak, \
-    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap
+from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
+    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
 from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, RohgahhOfKherKeepPump, SedgeTrollPT, \
     SunkenCity, WallOfTombstonesPT, WaterWurmPT, Weakstone, ZombieMasterWalk, AddCreatureTypePTManaValue
 from models.systems.phase import Phase
@@ -160,7 +160,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sea-kings-blessing': [Spell(SetColor('U', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
     'season-of-the-witch': [Triggered(SeasonOfTheWitchUpkeep()), Triggered(SeasonOfTheWitchEndStep())],
     'sedge-troll': [Static(SedgeTrollPT()), Activated('B', Regenerate(), T_FUNCS['self'])],
-    'seeker': [Static(Seeker())],
+    'seeker': [Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['non_artifact_non_white_creatures']))],
     'sengir-vampire': [Triggered(SengirVampire())],
     'sentinel': [Activated('', Sentinel())],
     'serendib-djinn': [Triggered(SerendibDjinn()), Triggered(SerendibDjinnNoLands())],

@@ -67,6 +67,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'creatures_and_players': lambda gs, s: gs.card_filter.in_play().creatures().result() + ALL_PLAYER_INDICES,
     'creatures_power_two_or_less': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                   if c.power <= 2],
+    'creatures_power_three_or_more': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
+                                                    if c.power >= 3],
     'creatures_with_first_strike': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result
                                                           if 'First Strike' in c.keyword_abilities],
     'creatures_with_swampwalk': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result
@@ -102,8 +104,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'lands': lambda gs, s: gs.card_filter.in_play().lands().result(),
     'legendary_creatures': lambda gs, s: gs.card_filter.in_play().legendary().creatures().result(),
     'non_artifact_creatures': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
-    'non_artifact_non_black_creatures': lambda gs, s: [c for c in gs.card_filter.creatures().in_play().result()
-                                                       if 'B' not in c.colors and 'Artifact' not in c.card_types],
+    'non_artifact_non_black_creatures': lambda gs, s: gs.card_filter.non_artifact_creatures().non_black().result(),
+    'non_artifact_non_white_creatures': lambda gs, s: gs.card_filter.non_artifact_creatures().non_white().result(),
     'non_creature_artifacts': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'non_token_permanents': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
     'non_wall_creatures': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().result(),
