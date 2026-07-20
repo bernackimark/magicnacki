@@ -28,6 +28,17 @@ class TestCardsDEF(unittest.TestCase):
         self.g.combat(attacker, host)
         self.assertIn(host, self.gs.pile_mgr.boards[0])
 
+    def test_dwarven_warriors(self):
+        """{T}: Target creature with power 2 or less can't be blocked this turn"""
+        card = self.g.battlefield('dwarven-warriors')
+        aa = card.activated_abilities[0]
+        attacker = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
+        blocker = self.g.battlefield('grizzly-bears', owner=1)
+
+        self.g.next_turn()
+        self.g.activate_ability(aa, attacker)
+        self.assertFalse(self.gs.perm_querier.can_block(blocker, attacker))
+
     def test_enchanted_being(self):
         """"Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
         card = self.g.battlefield('enchanted-being')  # 2/2

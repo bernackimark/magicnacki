@@ -48,7 +48,8 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
     DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
-    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
+    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
+    UnblockableEOT
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, AddCreatureTypePTManaValue, \
     PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
@@ -225,7 +226,7 @@ MAP: dict[str, list[EffSpec]] = {
                          Activated('2T', Pump(1, 1, True), T_FUNCS['creatures']),
                          (Triggered(UntapRemovesPumpFromAnotherCard(), None, UntapCardEffect))],
     'telekinesis': [Spell(Telekinesis(), T_FUNCS['creatures'])],
-    'teleport': [Spell(UnblockableThisTurn(), T_FUNCS['creatures'], allowed_phases=[Phase.DECLARE_COMBAT])],
+    'teleport': [Spell(UnblockableEOT(), T_FUNCS['creatures'], allowed_phases=[Phase.DECLARE_COMBAT])],
     'terror': [Spell(Destroy(allow_regen=False), T_FUNCS['non_artifact_non_black_creatures'])],
     'tetravus': [Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self'])],
     'tetsuo-umezawa': [Activated('UBBRT', Destroy(), T_FUNCS['tapped_or_blocking_creatures']),

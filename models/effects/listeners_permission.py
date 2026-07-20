@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Any
 
 from models.counter_tokens import PUPA, SLEEP
 
@@ -57,8 +57,14 @@ class DoesntUntapAtUntapIfItAttackedLastTurn(Listener):
 class HostCanAttack(Listener):
     listens_to = CanAttackQueryEvent
 
+    def __init__(self):
+        self.target: GameCard | None = None
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        self.target = targets[0]
+
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        if source.host is event.attacker:
+        if self.target is event.attacker:
             event.permission = True
 
 class HostCantAttack(Listener):
@@ -103,8 +109,11 @@ class UnblockableEOT(Listener):
     listens_to = CanBlockQueryEvent
     expires = 'EOT'
 
-    def __init__(self, target: GameCard):
-        self.target = target
+    def __init__(self, target: GameCard | None = None):
+        self.target: GameCard | None = target
+
+    def initialize(self, gs: GameState, source: GameCard, targets: list[GameCard | int | None]):
+        self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
         if event.attacker is self.target:

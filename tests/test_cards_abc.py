@@ -22,7 +22,7 @@ class TestCardsAtoC(unittest.TestCase):
 
         self.g.next_turn()
         self.assertFalse(self.gs.perm_querier.can_attack(host))
-        self.g.cast_and_accept(card, host, card.abilities[1])
+        self.g.cast_and_accept(card, host, card.abilities[0])
         self.assertTrue(self.gs.perm_querier.can_attack(host))
 
     def test_artifact_possession(self):

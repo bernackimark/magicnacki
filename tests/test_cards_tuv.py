@@ -20,6 +20,18 @@ class TestCardsTUV(unittest.TestCase):
         When TC leaves the battlefield or becomes untapped, return that exiled card to the battlefield under its owner's
         control tapped with the original counters & auras on it."""
 
+    def test_teleport(self):
+        """Cast this spell only during the declare attackers step. Target creature can't be blocked this turn."""
+        card = self.g.hand('teleport')
+        attacker = self.g.battlefield('grizzly-bears')
+        blocker = self.g.battlefield('scryb-sprites', owner=1)
+        different_attacker = self.g.battlefield('merfolk-of-the-pearl-trident')
+
+        self.g.next_turn()
+        self.g.cast_and_accept(card, attacker, card.abilities[0])
+        self.assertFalse(self.gs.perm_querier.can_block(blocker, attacker))
+        self.assertTrue(self.gs.perm_querier.can_block(blocker, different_attacker))
+
     def test_tetsuo_umezawa(self):
         """TU can't be the target of Aura spells. {UBBR}, {T}: Destroy target tapped or blocking creature."""
         card = self.g.card('tetsuo-umezawa')

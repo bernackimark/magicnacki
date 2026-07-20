@@ -75,7 +75,7 @@ MAP: dict[str, list[EffSpec]] = {
     'angry-mob': [Static(AngryMobPT())],
     'animate-artifact': [Spell(None, T_FUNCS['non_creature_artifacts']), Static(AddCreatureTypePTManaValue())],
     'animate-dead': [Spell(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'])],
-    'animate-wall': [Static(HostCanAttack()), Spell(None, T_FUNCS['walls'])],
+    'animate-wall': [Spell(HostCanAttack(), T_FUNCS['walls'])],
     'ankh-of-mishra': [Triggered(AnkhOfMishra())],
     'anti-magic-aura': [Static(HostCantBeTargetedByAuras()), Spell(RemoveHostAuras(), T_FUNCS['creatures'])],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['card_owner'])],

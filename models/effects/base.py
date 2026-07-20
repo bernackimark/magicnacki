@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass, field
 from functools import partial
-from typing import TYPE_CHECKING, Optional, Literal, Union, Callable
+from typing import TYPE_CHECKING, Optional, Literal, Union, Callable, Any
 
 from models.cost import Cost, TapCost, ManaCost
 from models.events_all import Event
@@ -30,6 +30,10 @@ class Listener:
     listens_to: type[Event] | None = None  # used by event listeners
     expires: str | None = None
     is_expired: bool = False
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        """Used when registering a Listener with a target; the selected targets are stored in self.target(s)"""
+        pass
 
     def on_event(self, gs: GameState, source: GameCard, event: Event) -> None:
         """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""
