@@ -191,6 +191,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_other_orcs':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Orc').result()
                        if c is not s],
+    'you_other_kobolds':
+        lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Kobold').result()
+                       if c is not s],
     'your_permanents': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).permanents().result(),
     'your_swamps': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).swamps().result(),
     'your_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).tapped().blue().creatures().result(),

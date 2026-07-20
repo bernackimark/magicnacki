@@ -298,17 +298,6 @@ class KoboldOverlord(Listener):
         if event.card in gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result():
             event.mods.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike'))
 
-class KoboldTaskmaster(Listener):
-    """Other Kobold creatures you control get +1/+0"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is source:
-            return
-        if event.card in gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result():
-            event.mods.append(PTMod(s=source, p_adj=1))
-
 class KormusBell(Listener):
     """All Swamps are 1/1 creatures that are still lands"""
     listens_to = ModQueryEvent

@@ -6,8 +6,7 @@ from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GravitySphere, \
-    HiddenPath, IvoryGuardians, KoboldOverlord, KoboldTaskmaster, \
-    KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, JihadPT, PumpApplies, SelfPTEquals
+    HiddenPath, IvoryGuardians, KoboldOverlord, KoboldTaskmaster, KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, JihadPT, PumpApplies, SelfPTEquals
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition
 from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
@@ -209,7 +208,7 @@ MAP: dict[str: list[EffSpec]] = {
     'kismet': [Static(Kismet())],
     'kobold-drill-sergeant': [Spell(KoboldDrillSergeant())],
     'kobold-overlord': [Static(KoboldOverlord())],
-    'kobold-taskmaster': [Static(KoboldTaskmaster())],
+    'kobold-taskmaster': [Static(PumpApplies(T_FUNCS['your_other_kobolds'], (0, 1)))],
     'kormus-bell': [Static(KormusBell())],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures'])],
     'kudzu': [Triggered(Kudzu()), Spell(None, T_FUNCS['lands'])],
