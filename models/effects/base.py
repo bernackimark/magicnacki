@@ -45,7 +45,7 @@ class EffSpec:
     target_spec: Union[Callable, TargetSpec, None] = None
     extra_costs: list[Cost | None] = field(default_factory=list)
     allowed_phases: list[Phase | None] = field(default_factory=list)
-    allowed_p_id_turn: int | None = None
+    allowed_p_turn_func: Callable[[GameState, GameCard], int] = None
     max_activations_per_turn: int = 999
     text: str = ''
     min_x_func: Callable = lambda gs, s: 1

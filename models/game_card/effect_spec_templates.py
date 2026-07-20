@@ -1,3 +1,5 @@
+from typing import Callable
+
 from models.cost import RemoveCounterCost
 from models.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
@@ -14,9 +16,9 @@ def self_pump(activation_cost: str, p: int, t: int):
     return Activated(activation_cost, Pump(power_adj=p, toughness_adj=t, eot=True), T_FUNCS['self'],
                      text=f'Pump +{p}/+{t}')
 
-def untap_for_mana_at_owner_upkeep(untap_cost: str, owner_id: int) -> EffSpec:
+def untap_for_mana_at_owner_upkeep(untap_cost: str, owner_id_func: Callable) -> EffSpec:
     return Activated(untap_cost, UntapForManaEffect(untap_cost), allowed_phases=[Phase.UPKEEP],
-                     allowed_p_id_turn=owner_id, text='Untap')
+                     allowed_p_turn_func=owner_id_func, text='Untap')
 
 def mana_battery_add_mana(color: str) -> EffSpec:
     return Activated('T', ManaBatteriesAddMana(color), extra_costs=[RemoveCounterCost(CHARGE)],
