@@ -225,17 +225,6 @@ class HandToBoard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.pile_mgr.cast(target)
 
-class PumpEOT(Resolver):
-    """Register a PTMod EOT listener"""
-    def __init__(self, applies_to_func: Callable, pt_adj: tuple[int, int],
-                 condition: Callable[[GameState, GameCard], bool] = None):
-        self.applies_to_func = applies_to_func
-        self.pt_adj = pt_adj
-        self.condition = condition
-
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(PumpAppliesEOT(self.applies_to_func, self.pt_adj, self.condition), source)
-
 class KWAModEffect(Resolver):
     def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):
         self.add_or_remove = add_or_remove
@@ -440,6 +429,8 @@ class Steal(Resolver):
 class TakeAnotherTurn(Resolver):
     """Take another turn after this one;
     register a PassTheTurnEvent listener that plays a PassTheTurn(next turn is opponent's = False) action"""
+    # TODO: decommission this since it only exists to register a Listener, which is now allowed
+    #  note: initial testing did fail; it may have to do w when it expires & when PassTheTurn happens after expiry
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.effects.listeners_generic import TakingAnotherTurnEOT
         gs.event_mgr.register(TakingAnotherTurnEOT(), source)

@@ -170,13 +170,6 @@ class Sandstorm(Resolver):
         for attacker in gs.card_filter.attackers().result():
             gs.apply_damage(source, 1, attacker)
 
-class Scarecrow(Resolver):
-    """(Activated Ability): Prevent all damage that would be dealt to you this turn by creatures with flying"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        from models.effects.listeners_damage import ScarecrowPrevention
-        gs.event_mgr.register(ScarecrowPrevention(protected_player=source.owner_id), source)
-
-
 class ShapeshifterCast(Resolver):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

@@ -6,22 +6,22 @@ from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, LivingLands, \
-    LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies
+    LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
-    DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition
-from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
+    DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT
+from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, JovialEvil, Millstone, \
     GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, \
-    HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, Festival, \
+    HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, GiantSlug
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell, \
-    RevealTopLibraryCard, PumpEOT
+    RevealTopLibraryCard
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
@@ -31,7 +31,7 @@ from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck,
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
-    HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep
+    HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep
 from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
@@ -63,7 +63,7 @@ MAP: dict[str: list[EffSpec]] = {
     'feint': [Spell(Feint(), T_FUNCS['attackers'])],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
     'fellwar-stone': [Activated('T', FellwarStone())],
-    'festival': [Spell(Festival(), None, allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=T_FUNCS['opponent'])],
+    'festival': [Spell(NoAttacksAllowedEOT(), None, allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=T_FUNCS['opp'])],
     'field-of-dreams': [Triggered(FieldOfDreams()), Spell(RevealTopLibraryCard())],
     'fire-and-brimstone': [Spell(FireAndBrimstone(),)],
     'fire-drake': [Activated('R', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
@@ -102,7 +102,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ghosts-of-the-damned': [Activated('T', Pump(-1, 0, True), T_FUNCS['creatures'])],
     'giant-growth': [Spell(Pump(3, 3, True), T_FUNCS['creatures'])],
     'giant-shark': [Triggered(GiantShark())],
-    'giant-slug': [Activated('5', GiantSlug())],
+    'giant-slug': [Activated('5', GiantSlugUpkeep())],
     'giant-strength': [Spell(Pump(2, 2), T_FUNCS['creatures'])],
     'giant-tortoise': [Static(PumpApplies(T_FUNCS['self'], (0, 3), C_FUNCS['self_is_untapped']))],
     'giant-turtle': [Triggered(CantAttackIfAttackedLastTurn())],
@@ -138,11 +138,10 @@ MAP: dict[str: list[EffSpec]] = {
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures'])],
     'hasran-ogress': [Triggered(HasranOgress())],
     'haunting-wind': [Triggered(HauntingWindActivation()), Triggered(HauntingWindTap())],
-    'hazezon-tamar': [Triggered(HazezonTamarTokenCreation(T_FUNCS['card_owner'])), Triggered(HazezonTamarLTB()),
-                      Spell(HazezonTamar())],
+    'hazezon-tamar': [Triggered(HazezonTamarTokenCreation(T_FUNCS['card_owner'])), Triggered(HazezonTamarLTB())],
     'healing-salve': [Spell(HealingSalve())],
     'heavens-gate': [Spell(SetColor('W', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
-    'hell-swarm': [Spell(PumpEOT(T_FUNCS['creatures'], (-1, 0)))],
+    'hell-swarm': [Spell(PumpAppliesEOT(T_FUNCS['creatures'], (-1, 0)))],
     'hells-caretaker': [Activated('T', Reanimate(), T_FUNCS['creatures_in_your_graveyard'],
                                   allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=T_FUNCS['card_owner'],
                                   extra_costs=SacCardCost(T_FUNCS['your_creatures']))],
@@ -150,7 +149,7 @@ MAP: dict[str: list[EffSpec]] = {
     'holy-armor': [Spell(Pump(0, 2), T_FUNCS['creatures']),
                    Activated('W', Pump(0, 1, True), T_FUNCS['host'])],
     'holy-day': [Spell(PreventAllDamageEOT(combat_only=True))],
-    'holy-light': [Spell(PumpEOT(T_FUNCS['non_white_creatures'], (-1, -1)))],
+    'holy-light': [Spell(PumpAppliesEOT(T_FUNCS['non_white_creatures'], (-1, -1)))],
     'holy-strength': [Spell(Pump(1, 2), T_FUNCS['creatures'])],
     'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True), T_FUNCS['creatures'])],
     'horror-of-horrors': [Activated('', Regenerate(), T_FUNCS['black_creatures'],
@@ -191,7 +190,7 @@ MAP: dict[str: list[EffSpec]] = {
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['card_owner'])],
     'jihad': [Static(JihadPT()), Static(JihadSac()), Spell(DeclareAColor())],
-    'jovial-evil': [Spell(JovialEvil(), T_FUNCS['opponent'])],
+    'jovial-evil': [Spell(JovialEvil(), T_FUNCS['opp'])],
     'juggernaut': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['walls']))],
     'jump': [Spell(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'])],
     'junun-efreet': [Triggered(PayManaOrSacAtUpkeep('BB'))],
@@ -263,7 +262,7 @@ MAP: dict[str: list[EffSpec]] = {
                     Static(GlobalSac(T_FUNCS['self'], C_FUNCS['no_lands']))],
     'marble-priest': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['walls'], combat_only=True)),
                       Static(MarblePriestForcesBlock())],
-    'marsh-gas': [Spell(PumpEOT(T_FUNCS['creatures'], (-2, 0)))],
+    'marsh-gas': [Spell(PumpAppliesEOT(T_FUNCS['creatures'], (-2, 0)))],
     'marsh-viper': [Triggered(AddPoisonCounter(2))],
     'martyrs-cry': [Spell(MartyrsCry())],
     'martyrs-of-korlis': [Static(MartyrsOfKorlis())],
@@ -283,7 +282,7 @@ MAP: dict[str: list[EffSpec]] = {
                         Activated('T', Pump(1, 1, True), T_FUNCS['assembly_workers'], text='Pump Assembly-Worker')],
     'moat': [Static(Moat())],
     'mold-demon': [Spell(MoldDemon())],
-    'morale': [Spell(PumpEOT(T_FUNCS['attackers'], (1, 1)))],
+    'morale': [Spell(PumpAppliesEOT(T_FUNCS['attackers'], (1, 1)))],
     'mox-emerald': mox_specs('G'),
     'mox-jet': mox_specs('B'),
     'mox-pearl': mox_specs('W'),

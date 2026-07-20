@@ -125,6 +125,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'non_artifact_non_black_creatures': lambda gs, s: gs.card_filter.non_artifact_creatures().non_black().result(),
     'non_artifact_non_white_creatures': lambda gs, s: gs.card_filter.non_artifact_creatures().non_white().result(),
     'non_creature_artifacts': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
+    'non_fliers': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying', False).result(),
     'non_token_permanents': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
     'non_wall_creatures': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().result(),
     'non_wall_creatures_wo_summoning_sickness': lambda gs, s: [c for c in gs.card_filter.in_play().non_wall_creatures().result()
@@ -133,6 +134,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'non_white_creatures': lambda gs, s: gs.card_filter.in_play().non_white().creatures().result(),
     'one_one_creatures': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                         if c.power == 1 and c.toughness == 1],
+    'opp': lambda gs, s: flip(s.owner_id),
     'opp_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),
     'opp_creatures': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result(),
     'opp_creatures_power_not_greater_than_source':
@@ -149,7 +151,6 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'opp_non_wall_creatures': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).non_wall_creatures().result(),
     'opp_tapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).tapped().artifacts().result(),
     'opp_untapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).untapped().artifacts().result(),
-    'opponent': lambda gs, s: flip(s.owner_id),
     'other_creatures': lambda gs, s: [c for c in T_FUNCS['creatures'] if c is not s],
     'other_merfolk': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result()
                                     if c is not s],

@@ -9,7 +9,7 @@ from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
-    DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, Berserk, BloodLust, \
+    DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, EnchantmentAlteration
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
@@ -17,7 +17,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, CounterSpell, \
-    PreventNextDamageTo, AddStunCounter, PumpEOT
+    PreventNextDamageTo, AddStunCounter
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -42,7 +42,7 @@ from models.effects.listeners_permission import CityInABottleCantCast, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies
+    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -53,6 +53,7 @@ MAP: dict[str, list[EffSpec]] = {
     'adun-oakenshield': [Activated('BRGT', Bounce(), T_FUNCS['creatures_in_your_graveyard'])],
     'aisling-leprechaun': [Triggered(AislingLeprechaun())],
     'akron-legionnaire': [Static(AkronLegionnaire())],
+    'al-abaras-carpet': [Activated('5T', PreventAllDamageEOT(T_FUNCS['card_owner'], T_FUNCS['non_fliers'], True))],
     'alabaster-potion': [Spell(GainLife(), T_FUNCS['all_players'], max_x_func=max_x_from_printed_card,
                                text="Target player gains X life"),
                          Spell(PreventNextDamageTo(), T_FUNCS['all_creatures_and_players'],
@@ -89,7 +90,7 @@ MAP: dict[str, list[EffSpec]] = {
                          Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifact_creatures']))],
     'argothian-treefolk': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifacts']))],
     'armageddon': [Spell(DestroyAll(T_FUNCS['lands']))],
-    'army-of-allah': [Spell(ArmyOfAllah())],
+    'army-of-allah': [Spell(PumpAppliesEOT(T_FUNCS['attackers'], (2, 0)))],
     'artifact-blast': [Spell(CounterSpell(), T_FUNCS['artifact_spells'])],
     'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),
                             Spell(None, T_FUNCS['artifacts'])],
@@ -131,7 +132,7 @@ MAP: dict[str, list[EffSpec]] = {
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
     'blue-ward': [Spell(KWAModEffect('add', 'Protection From Blue'), T_FUNCS['creatures'])],
     'bog-rats': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['walls']))],
-    'bone-flute': [Activated('2T', PumpEOT(T_FUNCS['creatures'], (-1, 0)))],
+    'bone-flute': [Activated('2T', PumpAppliesEOT(T_FUNCS['creatures'], (-1, 0)))],
     'book-of-rass': [Activated('2', BookOfRass())],
     'boomerang': [Spell(Bounce(), T_FUNCS['permanents'])],
     'boris-devilboon': [Activated('2BRTT', CreateTokenCreature('minor-demon'))],
@@ -241,7 +242,7 @@ MAP: dict[str, list[EffSpec]] = {
     'divine-transformation': [Spell(Pump(3, 3), T_FUNCS['creatures'])],
     'dragon-engine': [self_pump('2', 1, 0)],
     'dragon-whelp': [self_pump('R', 1, 0), Triggered(DragonWhelpEndStep())],
-    'drain-power': [Spell(DrainPower(), T_FUNCS['opponent'])],
+    'drain-power': [Spell(DrainPower(), T_FUNCS['opp'])],
     'dream-coat': [Spell(None, T_FUNCS['creatures'])] +
                   [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,
                              text=f'{{{combo}}}')

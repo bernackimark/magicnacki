@@ -27,12 +27,6 @@ class ActiveVolcano(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         gs.pile_mgr.bounce(t) if t.props.slug == 'island' else gs.pile_mgr.destroy(t)
 
-class AlAbarasCarpet(Resolver):
-    """(Activated Ability): Prevent all damage you would be dealt this turn by attacking creatures without flying"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        from models.effects.listeners_damage import AlAbarasCarpetPrevention
-        gs.event_mgr.register(AlAbarasCarpetPrevention(protected_player=source.owner_id), source)
-
 class Amnesia(Resolver):
     """Target player reveals their hand and discards all nonland cards"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
@@ -55,11 +49,6 @@ class ArenaOfTheAncientsCast(Resolver):
     def resolve(self, gs: GameState, _: GameCard, t: Optional[GameCard] = None):
         for c in gs.card_filter.in_play().creatures().untapped().legendary().result():
             c.tap()
-
-class ArmyOfAllah(Resolver):
-    """Attacking creatures get +2/0 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(ArmyOfAllahEOT(), source)
 
 class AshesToAshes(Resolver):
     """Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you."""

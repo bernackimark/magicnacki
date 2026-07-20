@@ -86,11 +86,6 @@ class FellwarStone(Resolver):
         if options:
             gs.pending_choice = ChoiceAction(options)
 
-class Festival(Resolver):
-    """... Creatures can't attack this turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(NoAttacksAllowedEOT(), source)
-
 class FireAndBrimstone(Resolver):
     """Fire and Brimstone deals 4 damage to opponent if they attacked this turn and 4 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
@@ -109,12 +104,6 @@ class Forcefield(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
         from models.effects.listeners_damage import ForcefieldPrevention
         gs.event_mgr.register(ForcefieldPrevention(creature=t, protected_player=s.owner_id), s)
-
-class GiantSlug(Resolver):
-    """At your next upkeep, this creature gains landwalk of your choice until the end of that turn."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
-        from models.effects.listeners_upkeep import GiantSlugUpkeep
-        gs.event_mgr.register(GiantSlugUpkeep(), source)
 
 class GlassesOfUrza(Resolver):
     """Look at opponent's hand"""
@@ -184,12 +173,6 @@ class GwendlynDiCorci(Resolver):
             return
         random_card: GameCard = gs.randomize_event(target, cards)
         gs.pile_mgr.discard(random_card, source)
-
-class HazezonTamar(Resolver):
-    """When HT enters, create X 1/1 Sand Warrior RGW creature tokens at your NEXT upkeep;
-    (from online rulings) whoever owns HT when cast will own the tokens, even if HT dies or transfers owners"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        gs.event_mgr.register(HazezonTamarTokenCreation(source.owner_id), source)
 
 class HealingSalve(Resolver):
     """Choose one - * You gain 3 life. * Prevent the next 3 damage that would be dealt to any target this turn."""

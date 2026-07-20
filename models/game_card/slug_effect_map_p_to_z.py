@@ -24,8 +24,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
-    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands, \
-    PumpEOT
+    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -51,7 +50,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, AddCreatureTypePTManaValue, \
-    PumpApplies, SelfPTEquals, KWAApplies
+    PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -72,7 +71,7 @@ MAP: dict[str, list[EffSpec]] = {
                                  text=f'convert to {land_type}') for land_type in BASIC_LANDS],
                                  # TODO: All 5 of these are getting registered, and I think that's causing problems
     'phyrexian-gremlins': [Triggered(OptionalUntap())],  # more to code
-    'piety': [Spell(PumpEOT(T_FUNCS['blockers'], (0, 3)))],
+    'piety': [Spell(PumpAppliesEOT(T_FUNCS['blockers'], (0, 3)))],
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter())],
     'pixie-queen': [Activated('GGGT', KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
@@ -101,7 +100,7 @@ MAP: dict[str, list[EffSpec]] = {
     'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures'])],
-    'rag-man': [Activated('BBBT', RagMan(), T_FUNCS['opponent'], allowed_p_turn_func=T_FUNCS['card_owner'])],
+    'rag-man': [Activated('BBBT', RagMan(), T_FUNCS['opp'], allowed_p_turn_func=T_FUNCS['card_owner'])],
     'ragnar': [Activated('GWUT', Regenerate(), T_FUNCS['creatures'])],
     'raise-dead': [Spell(Bounce(), T_FUNCS['creatures_in_your_graveyard'])],
     'rakalite': [Activated('2', Rakalite(), T_FUNCS['all_creatures_and_players'])],
@@ -122,7 +121,7 @@ MAP: dict[str, list[EffSpec]] = {
     'regrowth': [Spell(Bounce(), T_FUNCS['cards_in_your_graveyard'])],
     'relic-barrier': [Activated('T', TapCardEffect(), T_FUNCS['untapped_artifacts'])],
     'remove-soul': [Spell(CounterSpell(), T_FUNCS['creature_spells'])],
-    'reset': [Spell(Reset(), allowed_p_turn_func=T_FUNCS['opponent'],
+    'reset': [Spell(Reset(), allowed_p_turn_func=T_FUNCS['opp'],
                     allowed_phases=[p for p in Phase if p >= Phase.UPKEEP])],
     'resurrection': [Spell(Reanimate(), T_FUNCS['creatures_in_your_graveyard'])],
     'revelation': [Static(Revelation()), Spell(RevealHands())],
@@ -173,14 +172,14 @@ MAP: dict[str, list[EffSpec]] = {
     'shapeshifter': [Spell(ShapeshifterCast()), Static(ShapeshifterUpkeep())],
     'shatter': [Spell(Destroy(), T_FUNCS['artifacts'])],
     'shatterstorm': [Spell(DestroyAll(T_FUNCS['artifacts'], False))],
-    'shield-wall': [Spell(PumpEOT(T_FUNCS['your_creatures'], (0, 2)))],
+    'shield-wall': [Spell(PumpAppliesEOT(T_FUNCS['your_creatures'], (0, 2)))],
     'shivan-dragon': [self_pump('R', 1, 0)],
     'silhouette': [Triggered(PreventAllNoncombatDamageToThisTurn(), T_FUNCS['creatures'])],
     'simulacrum': [Spell(Simulacrum())],
     'sindbad': [Activated('T', Sindbad())],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
     'sinkhole': [Spell(Destroy(), T_FUNCS['lands'])],
-    'sirens-call': [Spell(SirensCall(), allowed_p_turn_func=T_FUNCS['opponent'],
+    'sirens-call': [Spell(SirensCall(), allowed_p_turn_func=T_FUNCS['opp'],
                           allowed_phases=[p for p in Phase if p < Phase.DECLARE_ATTACKERS])],
     'sisters-of-the-flame': [Activated('T', AddMana('R'), T_FUNCS['card_owner'])],
     'skull-of-orm': [Activated('5T', Bounce(), T_FUNCS['enchants_in_your_graveyard'])],
@@ -215,7 +214,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sunken-city': [Static(PumpApplies(T_FUNCS['blue_creatures'], (1, 1))), Triggered(PayManaOrSacAtUpkeep('UU'))],
     'swords-to-plowshares': [Spell(SwordsToPlowshares(), T_FUNCS['creatures'])],
     'sylvan-paradise': [Spell(SetColor('G', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
-    'syphon-soul': [Spell(SyphonSoul(), T_FUNCS['opponent'])],
+    'syphon-soul': [Spell(SyphonSoul(), T_FUNCS['opp'])],
     'tablet-of-epityr': [Triggered(TabletOfEpityr())],
     'taiga': dual_land_specs('RG'),
     'tangle-kelp': [Spell(TangleKelp(), T_FUNCS['creatures'])],
@@ -267,7 +266,7 @@ MAP: dict[str, list[EffSpec]] = {
     'tundra': dual_land_specs('WU'),
     'tunnel': [Spell(Destroy(False), T_FUNCS['walls'])],
     'twiddle': [Spell(Twiddle(), T_FUNCS['artifacts_creatures_lands'])],
-    'typhoon': [Spell(Typhoon(), T_FUNCS['opponent'])],
+    'typhoon': [Spell(Typhoon(), T_FUNCS['opp'])],
     'uncle-istvan': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['creatures']))],
     'undertow': [Static(WalkRuleRemoved('Islandwalk'))],
     'underground-sea': dual_land_specs('BU'),
