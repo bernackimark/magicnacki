@@ -13,11 +13,11 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, EnchantmentAlteration
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
-    DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
+    DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, CounterSpell, \
-    PreventNextDamageTo, PreventAllDamageBy, AddStunCounter, PumpEOT
+    PreventNextDamageTo, AddStunCounter, PumpEOT, PreventAllDamageRegisterEOT
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -69,7 +69,7 @@ MAP: dict[str, list[EffSpec]] = {
     'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(1), T_FUNCS['all_creatures_and_players'])],
     'ancestral-recall': [Spell(DrawCards(3), T_FUNCS['all_players'])],
     'angelic-voices': [Static(AngelicVoices())],
-    'angus-mackenzie': [Activated('GWUT', PreventAllCombatDamageThisTurn(),
+    'angus-mackenzie': [Activated('GWUT', PreventAllDamageRegisterEOT(combat_only=True),
                                   allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE])],
     'angry-mob': [Static(AngryMobPT())],
     'animate-artifact': [Spell(None, T_FUNCS['non_creature_artifacts']), Static(AddCreatureTypePTManaValue())],
@@ -217,7 +217,7 @@ MAP: dict[str, list[EffSpec]] = {
     'dark-ritual': [Spell(AddMana('B', 3))],
     'dark-sphere': [Activated('T', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts'],
                               extra_costs=[SacSelfCost()])],
-    'darkness': [Spell(PreventAllCombatDamageThisTurn())],
+    'darkness': [Spell(PreventAllDamageRegisterEOT(combat_only=True))],
     'davenant-archer': [Activated('T', DealDamage(1), T_FUNCS['combatants'])],
     'deadfall': [Static(WalkRuleRemoved('Forestwalk'))],
     'deathgrip': [Activated('BB', CounterSpell(), T_FUNCS['green_spells'])],
@@ -225,7 +225,7 @@ MAP: dict[str, list[EffSpec]] = {
     'death-ward': [Spell(Regenerate(), T_FUNCS['creatures'])],
     'demonic-hordes': [Activated('T', Destroy(), T_FUNCS['lands']), Triggered(DemonicHordesUpkeep())],
     'demonic-torment': [Spell(None, T_FUNCS['creatures']), Static(HostCantAttack()),
-                        Static(PreventAllDamageBy(combat_only=True), T_FUNCS['host'])],
+                        Static(PreventAllDamageRegisterEOT(dealer_func=T_FUNCS['host'], combat_only=True))],
     'demonic-tutor': [Spell(DemonicTutor())],
     'desert': [Activated('T', AddMana('C')),
                Activated('T', DealDamage(1), T_FUNCS['attackers'], allowed_phases=[Phase.COMBAT_END])],

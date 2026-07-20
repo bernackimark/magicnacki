@@ -255,10 +255,16 @@ class ManaBatteriesAddMana(Resolver):
         source.counters.remove_counter(CHARGE, x)
         gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x)
 
-class PreventAllCombatDamageThisTurn(Resolver):
+class PreventAllDamageRegisterEOT(Resolver):
+    # created 7/20/2026: trying to consolidate many micro-variations of damage prevention
+    def __init__(self, protected_func: Callable = None, dealer_func: Callable = None, combat_only: bool = False):
+        self.protected_func = protected_func
+        self.dealer_func = dealer_func
+        self.combay_only = combat_only
+
     def resolve(self, gs: GameState, source: GameCard, target=None):
         from models.effects.listeners_generic import PreventAllDamageEOT
-        gs.event_mgr.register(PreventAllDamageEOT(combat_only=True), source)
+        gs.event_mgr.register(PreventAllDamageEOT(self.protected_func, self.dealer_func, self.combay_only), source)
 
 class PreventAllDamageToThisTurn(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
@@ -284,16 +290,6 @@ class PreventNextDamageTo(Resolver):
         from models.effects.listeners_generic import PreventNextDamageToEOT
         gs.event_mgr.register(PreventNextDamageToEOT(target, self.prevent_amt, self.combat_only), source)
 
-class PreventNextDamageToCardEffect(Resolver):
-    def __init__(self, prevent_amt: int = None, combat_only: bool = False):
-        self.prevent_amt = prevent_amt
-        self.combat_only = combat_only
-
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        """target = the GameCard being protected"""
-        from models.effects.listeners_generic import PreventNextDamageToEOT
-        gs.event_mgr.register(PreventNextDamageToEOT(target, self.prevent_amt, self.combat_only), source)
-
 class PreventNextDamageToSourceOwner(Resolver):
     def __init__(self, amt: int = None, combat_only: bool = False):
         self.amt = amt
@@ -305,14 +301,13 @@ class PreventNextDamageToSourceOwner(Resolver):
 
 class PreventAllDamageBy(Resolver):
     """Prevent all damage that would be dealt by target this turn"""
-    def __init__(self, amt: int = None, combat_only: bool = False):
-        self.amt = amt
+    def __init__(self, combat_only: bool = False):
         self.combat_only = combat_only
 
     def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
         """target is the card dealing damage"""
-        from listeners_generic import PreventAllDamageByEOT
-        gs.event_mgr.register(PreventAllDamageByEOT(target, combat_only=True), s)
+        from listeners_generic import PreventAllDamageEOT
+        gs.event_mgr.register(PreventAllDamageEOT(dealer_func=target, combat_only=True), s)
 
 class PreventNextDamageBy(Resolver):
     def __init__(self, amt: int = None):

@@ -5,7 +5,6 @@ from models.actions.base import DoNothing
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife
-from models.systems.phase import Phase
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -17,8 +16,8 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, CanUntapQueryEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, Event
+    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
+    CanAttackQueryEvent, AttackEvent, BlockEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -114,19 +113,6 @@ class DestroyAtCombatEnd(Listener):
 
 
 # --- DAMAGE PROPOSED EVENT ---
-class PreventAllDamageEOT(Listener):
-    listens_to = DamageProposedEvent
-    expires = 'EOT'
-
-    def __init__(self, combat_only: bool = False):
-        self.combat_only = combat_only
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if self.combat_only and not event.is_combat:
-            return
-        event.prevented += event.remaining
-        event.remaining = 0
-
 class PreventCombatDamageFromItsAttackers(Listener):
     listens_to = DamageProposedEvent
 
@@ -146,6 +132,33 @@ class PreventAllDamage(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if self.combay_only and not event.is_combat:
+            return
+        protected = self.protected_func(gs, source)
+        if not isinstance(protected, list):
+            protected = [protected]
+        dealers = self.dealer_func(gs, source)
+        if not isinstance(dealers, list):
+            dealers = [dealers]
+        if event.source in dealers and event.target in protected:
+            event.prevented += event.remaining
+            event.remaining = 0
+
+class PreventAllDamageEOT(Listener):
+    # new: 7/16/2026: flexible class to consolidate micro-variations
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, protected_func: Callable = None, dealer_func: Callable = None, combat_only: bool = False):
+        self.protected_func = protected_func
+        self.dealer_func = dealer_func
+        self.combay_only = combat_only
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if self.combay_only and not event.is_combat:
+            return
+        if not self.protected_func and not self.dealer_func:
+            event.prevented += event.remaining
+            event.remaining = 0
             return
         protected = self.protected_func(gs, source)
         if not isinstance(protected, list):

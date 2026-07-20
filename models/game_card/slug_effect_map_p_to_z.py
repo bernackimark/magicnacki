@@ -17,15 +17,15 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Scarecrow, Sindbad, SirensCall, VenarianGoldCast
+    Twiddle, Sindbad, SirensCall, VenarianGoldCast
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, DealDamage, \
     DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
     DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
-    PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
+    Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
     PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands, \
-    PumpEOT
+    PumpEOT, PreventAllDamageRegisterEOT
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -132,7 +132,7 @@ MAP: dict[str, list[EffSpec]] = {
     'riptide': [Spell(Riptide())],
     'riven-turnbull': [Activated('T', AddMana('B'))],
     'rock-hydra': [Static(RockHydraAutoDamagePrevent()),
-                   Activated('R', PreventNextDamageToCardEffect(1), T_FUNCS['self']),
+                   Activated('R', PreventNextDamageTo(1), T_FUNCS['self']),
                    Activated('RRR', AddCounter(PLUS_ONE)),
                    Spell(RockHydraCast(), T_FUNCS['self'], max_x_func=max_x_from_printed_card)],
     'rocket-launcher': [Activated('2', RocketLauncher(), T_FUNCS['all_creatures_and_players'])],
@@ -153,7 +153,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sandstorm': [Spell(Sandstorm())],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],
     'savannah': dual_land_specs('GW'),
-    'scarecrow': [Activated('6T', Scarecrow())],
+    'scarecrow': [Activated('6T', PreventAllDamageRegisterEOT(T_FUNCS['card_owner'], T_FUNCS['fliers']))],
     'scarwood-hag': [Activated('GGGGT', KWAModEffect('add', 'Forestwalk', True), T_FUNCS['creatures_wo_forestwalk']),
                      Activated('T', KWAModEffect('remove', 'Forestwalk', True), T_FUNCS['forestwalkers'])],
     'scavenger-folk': [Activated('GT', Destroy(), T_FUNCS['artifacts'], extra_costs=[SacSelfCost()])],
