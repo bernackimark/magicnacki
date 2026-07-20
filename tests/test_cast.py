@@ -3,6 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.actions.stack_accept_counter import AcceptAction
+from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
 
@@ -10,6 +11,21 @@ class TestCast(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_allowed_turn_and_phase(self):
+        """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
+        reset = self.g.hand('reset')
+        self.g.mana('UU')
+        self.assertFalse(any(a.source is reset for a in self.gs.available_actions_from_hand()))
+        self.g.next_turn(True)
+        self.assertFalse(any(a.source is reset for a in self.gs.available_actions_from_hand()))
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+        self.gs.action_on_idx = 0
+        print()
+        print(self.gs.hands[0])
+        print(self.gs.available_actions_from_hand())
+        print()
+        self.assertTrue(any(a.source is reset for a in self.gs.available_actions_from_hand()))
 
     def test_cast_land_doesnt_reach_stack(self):
         self.gs.hands[0].clear()

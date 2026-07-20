@@ -56,8 +56,9 @@ class AbilityPipeline(Action):
 
     def can_begin(self) -> bool:
         if self.eff_spec:
+            print(self.source, self.eff_spec, self.eff_spec.allowed_p_id_turn, self.eff_spec.allowed_phases)
             if self.eff_spec.allowed_p_id_turn is not None:
-                if self.eff_spec.allowed_p_id_turn != self.gs.player_turn_idx:
+                if self.eff_spec.allowed_p_id_turn(self.gs, self.source) != self.gs.player_turn_idx:
                     return False
             if self.eff_spec.allowed_phases:
                 if self.gs.phase_mgr.phase not in self.eff_spec.allowed_phases:

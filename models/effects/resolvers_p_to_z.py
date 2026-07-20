@@ -21,7 +21,6 @@ from models.effects.listeners_mod_queries import TransmutationEOT
 from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn
 from models.effects.resolvers_generic import Reveal
 from models.modifiers import SubTypeMod, KWAMod, PTMod
-from models.systems.phase import Phase
 from models.utils import flip
 from models.zone import Zone
 
@@ -89,10 +88,6 @@ class RapidFire(Resolver):
 
 class Reset(Resolver):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
-    @staticmethod
-    def can_cast(gs: GameState, source: GameCard) -> bool:
-        return gs.player_turn_idx != source.owner_id and gs.phase_mgr.phase > Phase.UPKEEP
-
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for land in gs.card_filter.on_player_board(source.owner_id).lands().tapped().result():
             land.untap()
