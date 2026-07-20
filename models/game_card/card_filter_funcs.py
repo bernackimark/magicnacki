@@ -13,10 +13,13 @@ C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
     'host_is_basic_mountain': lambda gs, s: s.host.props.slug == 'mountain',
     'self_is_not_attacking': lambda gs, s: s not in gs.card_filter.attackers().result(),
     'self_is_untapped': lambda gs, s: not s.is_tapped,
+    'no_lands': lambda gs, s: len(T_FUNCS['lands'](gs, s)) == 0,
     'opp_has_island': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).islands().result(),
     'opp_has_non_token_white_perm': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).non_token().white().permanents().result(),
+    'you_have_a_dwarf': lambda gs, s: len(T_FUNCS['your_dwarves'](gs, s)) > 0,
     'you_have_a_forest': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
     'you_have_a_swamp': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
+    'you_have_no_lands': lambda gs, s: len(T_FUNCS['your_lands'](gs, s) == 0)
 }
 
 """
@@ -65,7 +68,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'cards': lambda gs, s: gs.card_filter.in_play().result(),
     'cards_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).result(),
     'city_in_a_bottle': lambda gs, s: [c for c in
-                                       gs.card_filter.in_play().non_token().permanents().by_set_code('AN').result()
+                                       gs.card_filter.in_play().non_token().permanents().by_set_code('arn').result()
                                        if c.props.slug != 'city-in-a-bottle'],
     'combatants': lambda gs, s: gs.card_filter.combatants().result(),
     'combating_against': lambda gs, s: gs.card_filter.combating_against(s).result(),
@@ -179,7 +182,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_attackers': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).attackers().result(),
     'your_kobolds_of_kher_keep': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).by_slug('kobolds-of-kher-keep').result(),
     'your_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().result(),
-    'your_forests': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
+    'your-dwarves': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).by_sub_type('Dwarf').result(),
     'your_green_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().green().result(),
     'your_lands': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).lands().result(),
     'your_non_wall_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).non_wall_creatures().result(),

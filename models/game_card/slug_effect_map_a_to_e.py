@@ -22,7 +22,7 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
-from ..effects.listeners_state_change import CityInABottle
+from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import AnkhOfMishra, CitanulDruid, DingusEgg
 from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, CurseArtifact, Cyclone, \
     DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
@@ -165,7 +165,7 @@ MAP: dict[str, list[EffSpec]] = {
     'circle-of-protection-red': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['red'])],
     'circle-of-protection-white': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['white'])],
     'citanul-druid': [Triggered(CitanulDruid())],
-    'city-in-a-bottle': [Static(CityInABottle()), Static(CityInABottleCantCast()),
+    'city-in-a-bottle': [Static(GlobalSac(T_FUNCS['city_in_a_bottle'])), Static(CityInABottleCantCast()),
                          Spell(SacAll(T_FUNCS['city_in_a_bottle']))],
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap())],

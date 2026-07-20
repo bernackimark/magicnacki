@@ -25,7 +25,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
     PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands
-from ..effects.listeners_state_change import SerendibDjinnNoLands
+from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
@@ -165,7 +165,7 @@ MAP: dict[str, list[EffSpec]] = {
     'seeker': [Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['non_artifact_non_white_creatures']))],
     'sengir-vampire': [Triggered(SengirVampire())],
     'sentinel': [Activated('', Sentinel())],
-    'serendib-djinn': [Triggered(SerendibDjinn()), Triggered(SerendibDjinnNoLands())],
+    'serendib-djinn': [Triggered(SerendibDjinn()), Static(GlobalSac(T_FUNCS['self'], C_FUNCS['you_have_no_lands']))],
     'serendib-efreet': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'])],
     'serpent-generator': [Activated('4T', CreateTokenCreature('snake'))],
     'shapeshifter': [Spell(ShapeshifterCast()), Static(ShapeshifterUpkeep())],
@@ -311,7 +311,7 @@ MAP: dict[str, list[EffSpec]] = {
     'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],
     'wall-of-dust': [Triggered(WallOfDust())],
     'wall-of-opposition': [self_pump('1', 1, 0)],
-    'wall-of-putrid-flesh': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['enchanted-creatures']))],
+    'wall-of-putrid-flesh': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['enchanted_creatures']))],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-vapor': [PreventCombatDamageFromItsAttackers()],
     'wall-of-water': [self_pump('U', 1, 0)],

@@ -6,7 +6,7 @@ from models.actions.special import Attach
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
-from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent
+from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -85,6 +85,14 @@ class TestCardsAtoC(unittest.TestCase):
     #     [effect_spec_templates.py] return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost)
     #     [mana.py] raise ValueError(f"X is not in the casting cost")
     #     """
+
+    def test_city_in_a_bottle(self):
+        """Whenever a nontoken permanent with a name originally printed in Arabian Nights is on battlefield, sac it"""
+        an_card = self.g.battlefield('serendib-efreet')
+        card = self.g.hand('city-in-a-bottle')
+        self.g.cast_and_accept(card, None, card.abilities[2])
+        self.gs.event_mgr.emit(StateBasedEvent())
+        self.assertNotIn(an_card, self.gs.boards[0])
 
     def test_city_of_shadows(self):
         """{T}, Exile a creature you control: Put a storage counter COS.

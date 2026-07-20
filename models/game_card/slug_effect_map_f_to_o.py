@@ -29,7 +29,7 @@ from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation
-from ..effects.listeners_state_change import GoblinsOfTheFlarg, JihadSac, OldManOfTheSeaPowerCheck, ManaVortexSac
+from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
@@ -122,7 +122,7 @@ MAP: dict[str: list[EffSpec]] = {
                       Triggered(GoblinShrineOnLeave())],
     'goblin-wizard': [Activated('T', HandToBoard(), T_FUNCS['goblin_permanents_in_your_hand']),
                       Activated('T', KWAModEffect('add', 'Protection From White', True), T_FUNCS['goblins'])],
-    'goblins-of-the-flarg': [Static(GoblinsOfTheFlarg())],
+    'goblins-of-the-flarg': [Static(GlobalSac(T_FUNCS['self'], C_FUNCS['you_have_a_dwarf']))],
     'golgothian-sylex': [Activated('1T', SacAll(T_FUNCS['golgothian_sylex']))],
     'gosta-dirk': [Static(WalkRuleRemoved('Islandwalk'))],
     'granite-gargoyle': [self_pump('R', 0, 1)],
@@ -260,7 +260,8 @@ MAP: dict[str: list[EffSpec]] = {
                    untap_for_mana_at_owner_upkeep('4', T_FUNCS['card_owner']),
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
                    Triggered(ManaVaultDamageIfTapped())],
-    'mana-vortex': [Spell(Destroy(), T_FUNCS['your_lands']), Static(ManaVortexUpkeep()), Static(ManaVortexSac())],
+    'mana-vortex': [Spell(Destroy(), T_FUNCS['your_lands']), Static(ManaVortexUpkeep()),
+                    Static(GlobalSac(T_FUNCS['self'], C_FUNCS['no_lands']))],
     'marble-priest': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['walls'], combat_only=True)),
                       Static(MarblePriestForcesBlock())],
     'marsh-gas': [Spell(MarshGas())],
