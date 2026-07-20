@@ -41,9 +41,9 @@ class AbilityPipeline(Action):
     # information produced by paying costs
     cost_result: Union["CostResult", None] = None
 
-    def __post_init__(self):
-        if self.eff_spec and self.eff_spec.effect and not isinstance(self.eff_spec.effect, Resolver):
-            raise TypeError(f"Effects in AbilityPipeline must be type Resolver, was provided: {self.eff_spec.effect}")
+    # def __post_init__(self):
+    #     if self.eff_spec and self.eff_spec.effect and not isinstance(self.eff_spec.effect, Resolver):
+    #         raise TypeError(f"Effects in AbilityPipeline must be type Resolver, was provided: {self.eff_spec.effect}")
 
     def __repr__(self):
         if self.eff_spec.is_spell:

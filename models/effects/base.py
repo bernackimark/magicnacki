@@ -82,10 +82,10 @@ class ActivatedAbility:
     eff_spec: EffSpec
     activations_this_turn: int = 0
 
-    def __post_init__(self):
-        if not isinstance(self.eff_spec.effect, Resolver):
-            raise TypeError(f'{self.source.props.name} is trying to create an ActivatedAbility with an effect'
-                            f'specification that is not a Resolver; the supplied effect spec is {self.eff_spec}')
+    # def __post_init__(self):
+    #     if not isinstance(self.eff_spec.effect, Resolver):
+    #         raise TypeError(f'{self.source.props.name} is trying to create an ActivatedAbility with an effect'
+    #                         f'specification that is not a Resolver; the supplied effect spec is {self.eff_spec}')
 
 
 """

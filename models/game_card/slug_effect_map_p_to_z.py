@@ -25,7 +25,7 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
     PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands, \
-    PumpEOT, PreventAllDamageRegisterEOT
+    PumpEOT
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -47,7 +47,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, \
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
-    DestroyCombatantAtCombatEnd, PreventAllDamage
+    DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, AddCreatureTypePTManaValue, \
@@ -153,7 +153,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sandstorm': [Spell(Sandstorm())],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],
     'savannah': dual_land_specs('GW'),
-    'scarecrow': [Activated('6T', PreventAllDamageRegisterEOT(T_FUNCS['card_owner'], T_FUNCS['fliers']))],
+    'scarecrow': [Activated('6T', PreventAllDamageEOT(T_FUNCS['card_owner'], T_FUNCS['fliers']))],
     'scarwood-hag': [Activated('GGGGT', KWAModEffect('add', 'Forestwalk', True), T_FUNCS['creatures_wo_forestwalk']),
                      Activated('T', KWAModEffect('remove', 'Forestwalk', True), T_FUNCS['forestwalkers'])],
     'scavenger-folk': [Activated('GT', Destroy(), T_FUNCS['artifacts'], extra_costs=[SacSelfCost()])],

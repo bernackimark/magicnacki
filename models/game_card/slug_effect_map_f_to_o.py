@@ -21,7 +21,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell, \
-    RevealTopLibraryCard, PumpEOT, PreventAllDamageRegisterEOT
+    RevealTopLibraryCard, PumpEOT
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
@@ -45,7 +45,7 @@ from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTappe
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
-    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage
+    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -78,7 +78,7 @@ MAP: dict[str: list[EffSpec]] = {
     'flood': [Activated('UU', TapCardEffect(), T_FUNCS['untapped_creatures_without_flying'])],
     'floral-spuzzem': [Triggered(FloralSpuzzem())],
     'flying-carpet': [Activated('2T', KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'])],
-    'fog': [Spell(PreventAllDamageRegisterEOT(combat_only=True))],
+    'fog': [Spell(PreventAllDamageEOT(combat_only=True))],
     'force-of-nature': [Triggered(ForceOfNatureUpkeep())],
     'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
     'forethought-amulet': [Triggered(PayManaOrSacAtUpkeep('3')), Static(ForethoughtAmulet())],
@@ -149,7 +149,7 @@ MAP: dict[str: list[EffSpec]] = {
     'hidden-path': [Static(KWAApplies(T_FUNCS['green_creatures'], 'add', 'Forestwalk'))],
     'holy-armor': [Spell(Pump(0, 2), T_FUNCS['creatures']),
                    Activated('W', Pump(0, 1, True), T_FUNCS['host'])],
-    'holy-day': [Spell(PreventAllDamageRegisterEOT(combat_only=True))],
+    'holy-day': [Spell(PreventAllDamageEOT(combat_only=True))],
     'holy-light': [Spell(PumpEOT(T_FUNCS['non_white_creatures'], (-1, -1)))],
     'holy-strength': [Spell(Pump(1, 2), T_FUNCS['creatures'])],
     'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True), T_FUNCS['creatures'])],

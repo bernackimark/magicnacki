@@ -122,6 +122,25 @@ class TestCardsDEF(unittest.TestCase):
         top_card = self.gs.pile_mgr.libraries[0][0]
         self.assertTrue(top_card.is_face_up)
 
+    def test_fog(self):
+        """Prevent all combat damage this turn"""
+        card = self.g.hand('fog')
+        attacker = self.g.battlefield('grizzly-bears', owner=1)  #2/2
+        bolt = self.g.hand('lightning-bolt', owner=1)
+
+        self.g.next_turn(True)
+        self.g.cast_and_accept(card, None, card.abilities[0])
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+        self.g.combat(attacker, None)
+        self.assertEqual(20, self.gs.life[0])
+
+        self.g.cast_and_accept(bolt, 0, bolt.abilities[0], owner=1)
+        self.assertEqual(17, self.gs.life[0])  # doesn't prevent non-combat damage
+
+        self.g.next_turn()
+        self.g.combat(attacker, None)
+        self.assertEqual(15, self.gs.life[0])  # effect wears off EOT
+
     def test_force_of_nature(self):
         """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
         self.g.battlefield('force-of-nature')
