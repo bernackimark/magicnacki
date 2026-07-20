@@ -30,20 +30,19 @@ from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, Artifa
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
-from ..effects.listeners_damage import ArgothianPixies, ArgothianTreefolkPrevention, ArtifactWardPrevention, \
-    Backfire, ElHajjaj
+from ..effects.listeners_damage import Backfire, ElHajjaj
 from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
     ClockworkCombatEnd
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     UntapRemovesPumpFromAnotherCard, OptionalUntap, \
-    DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, PayManaOrSacAtUpkeep, \
-    DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd
+    DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PayManaOrSacAtUpkeep, \
+    DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage
 from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    AspectOfWolfPT, ConcordantCrossroads, Conversion, DakkonBlackbladePT, PumpApplies, SelfPTEquals
+    AspectOfWolfPT, ConcordantCrossroads, Conversion, PumpApplies, SelfPTEquals
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -87,16 +86,16 @@ MAP: dict[str, list[EffSpec]] = {
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures'])],
     'argothian-pixies': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['artifact_creatures'])),
-                         Static(ArgothianPixies())],
-    'argothian-treefolk': [Static(ArgothianTreefolkPrevention())],
+                         Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifact_creatures']))],
+    'argothian-treefolk': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifacts']))],
     'armageddon': [Spell(DestroyAll(T_FUNCS['lands']))],
     'army-of-allah': [Spell(ArmyOfAllah())],
     'artifact-blast': [Spell(CounterSpell(), T_FUNCS['artifact_spells'])],
     'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),
                             Spell(None, T_FUNCS['artifacts'])],
-    'artifact-ward': [Spell(None, T_FUNCS['creatures']),
+    'artifact-ward': [Spell(None, T_FUNCS['creatures']), Static(ArtifactWardCanBeTargeted()),
                       Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['artifact_creatures'])),
-                      Static(ArtifactWardPrevention()), Static(ArtifactWardCanBeTargeted())],
+                      Static(PreventAllDamage(T_FUNCS['host'], T_FUNCS['artifacts']))],
     'ashes-to-ashes': [Spell(AshesToAshes(), TargetSpec(T_FUNCS['non_artifact_creatures'], 2, 2))],
     'ashnods-altar': [Activated('', AddMana('C', 2), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])])],
     'ashnods-battle-gear': [Activated('2T', Pump(2, -2), T_FUNCS['your_creatures']),
@@ -268,7 +267,7 @@ MAP: dict[str, list[EffSpec]] = {
     'elven-riders': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['non_wall_non_fliers']))],
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
-    'enchanted-being': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'])],
+    'enchanted-being': [Static(PreventAllDamage(T_FUNCS['host'], T_FUNCS['enchanted_creatures'], combat_only=True))],
     'enchantment-alteration': [Spell(EnchantmentAlteration(), T_FUNCS['auras_on_creatures_or_lands'])],
     'energy-flux': [Triggered(EnergyFlux())],
     'energy-tap': [Spell(EnergyTap(), T_FUNCS['your_untapped_creatures'])],

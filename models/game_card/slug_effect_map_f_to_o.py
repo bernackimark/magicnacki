@@ -6,8 +6,8 @@ from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GravitySphere, \
-    HiddenPath, IvoryGuardians, KeldonWarlordPT, KoboldOverlord, KoboldTaskmaster, \
-    KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, NightmarePT, JihadPT, PumpApplies, SelfPTEquals
+    HiddenPath, IvoryGuardians, KoboldOverlord, KoboldTaskmaster, \
+    KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, JihadPT, PumpApplies, SelfPTEquals
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition
 from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
@@ -40,14 +40,14 @@ from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, Inf
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, MerchantShip, \
     MurkDwellers
 from ..effects.listeners_cost import Gloom, ManaMatrix
-from ..effects.listeners_damage import GaseousForm, MarblePriestPrevention, MartyrsOfKorlis, \
+from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, \
     FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet
 from ..effects.listeners_dies import Onulet
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
-    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied
+    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -261,7 +261,8 @@ MAP: dict[str: list[EffSpec]] = {
                    Activated('T', AddMana('C', 3), T_FUNCS['card_owner']),
                    Triggered(ManaVaultDamageIfTapped())],
     'mana-vortex': [Spell(Destroy(), T_FUNCS['your_lands']), Static(ManaVortexUpkeep()), Static(ManaVortexSac())],
-    'marble-priest': [Static(MarblePriestPrevention()), Static(MarblePriestForcesBlock())],
+    'marble-priest': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['walls'], combat_only=True)),
+                      Static(MarblePriestForcesBlock())],
     'marsh-gas': [Spell(MarshGas())],
     'marsh-viper': [Triggered(AddPoisonCounter(2))],
     'martyrs-cry': [Spell(MartyrsCry())],

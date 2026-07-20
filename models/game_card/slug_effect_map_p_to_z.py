@@ -37,21 +37,20 @@ from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndS
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
-from ..effects.listeners_damage import RockHydraAutoDamagePrevent, UncleIstvanPrevention, \
-    VeteranBodyguard, SpiritLink
+from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
     TheWretchedSteal
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
-    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PreventCombatDamageFromEnchantedCreatures, \
+    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, \
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
-    DestroyCombatantAtCombatEnd
+    DestroyCombatantAtCombatEnd, PreventAllDamage
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
-from models.effects.listeners_mod_queries import PeopleOfTheWoodsPT, RabidWombat, WallOfTombstonesPT, \
-    ZombieMasterWalk, AddCreatureTypePTManaValue, PumpApplies, PlagueRatsPT, SelfPTEquals
+from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, \
+    ZombieMasterWalk, AddCreatureTypePTManaValue, PumpApplies, SelfPTEquals
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -267,7 +266,7 @@ MAP: dict[str, list[EffSpec]] = {
     'tunnel': [Spell(Destroy(False), T_FUNCS['walls'])],
     'twiddle': [Spell(Twiddle(), T_FUNCS['artifacts_creatures_lands'])],
     'typhoon': [Spell(Typhoon(), T_FUNCS['opponent'])],
-    'uncle-istvan': [Static(UncleIstvanPrevention())],
+    'uncle-istvan': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['creatures']))],
     'undertow': [Static(WalkRuleRemoved('Islandwalk'))],
     'underground-sea': dual_land_specs('BU'),
     'unholy-strength': [Spell(Pump(2, 1), T_FUNCS['creatures'])],
@@ -312,7 +311,7 @@ MAP: dict[str, list[EffSpec]] = {
     'wall-of-brambles': [Activated('G', Regenerate(), T_FUNCS['self'])],
     'wall-of-dust': [Triggered(WallOfDust())],
     'wall-of-opposition': [self_pump('1', 1, 0)],
-    'wall-of-putrid-flesh': [Triggered(PreventCombatDamageFromEnchantedCreatures(), T_FUNCS['self'])],
+    'wall-of-putrid-flesh': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['enchanted-creatures']))],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-vapor': [PreventCombatDamageFromItsAttackers()],
     'wall-of-water': [self_pump('U', 1, 0)],

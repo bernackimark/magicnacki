@@ -9,6 +9,14 @@ class TestDamage(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_prevent_all_damage_1(self):
+        """Prevent all damage that would be dealt to AP by artifact creatures"""
+        protected = self.g.battlefield('argothian-pixies')
+        dealer = self.g.battlefield('juggernaut', owner=1)
+        self.g.next_turn(True)
+        self.g.combat(dealer, protected)
+        self.assertIn(protected, self.gs.boards[0])
+
     def test_cop(self):
         red_source = self.g.card('goblin-hero')
         cop = self.g.battlefield('circle-of-protection-red', owner=1)

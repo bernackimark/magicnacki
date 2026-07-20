@@ -136,15 +136,26 @@ class PreventCombatDamageFromItsAttackers(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
-class PreventCombatDamageFromEnchantedCreatures(Listener):
-    """Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
+class PreventAllDamage(Listener):
     listens_to = DamageProposedEvent
 
+    def __init__(self, protected_func: Callable, dealer_func: Callable, combat_only: bool = False):
+        self.protected_func = protected_func
+        self.dealer_func = dealer_func
+        self.combay_only = combat_only
+
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not source.host or not event.is_combat or not event.source.is_enchanted:
+        if self.combay_only and not event.is_combat:
             return
-        event.prevented += event.remaining
-        event.remaining = 0
+        protected = self.protected_func(gs, source)
+        if not isinstance(protected, list):
+            protected = [protected]
+        dealers = self.dealer_func(gs, source)
+        if not isinstance(dealers, list):
+            dealers = [dealers]
+        if event.source in dealers and event.target in protected:
+            event.prevented += event.remaining
+            event.remaining = 0
 
 class PreventAllDamageByEOT(Listener):
     listens_to = DamageProposedEvent
