@@ -18,7 +18,6 @@ from models.effects.listeners_combat import GlyphOfDoomListener
 from models.effects.listeners_damage import GlyphOfLifeListener
 from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNextDamageToEOT, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
-from models.effects.listeners_mod_queries import HellSwarmEOT, HolyLightEOT, MarshGasEOT, MoraleEOT
 from models.effects.listeners_permission import NoAttacksAllowedEOT
 from models.effects.resolvers_generic import GraveyardToExile
 from models.modifiers import PTMod, KWAMod
@@ -199,16 +198,6 @@ class HealingSalve(Resolver):
         options = [HealingSalveA(s.owner_id, gs, s)] + [HealingSalveB(s.owner_id, gs, s, t) for t in all_targets]
         gs.pending_choice = ChoiceAction(options)
 
-class HellSwarm(Resolver):
-    """All creatures get -1/-0 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(HellSwarmEOT(), source)
-
-class HolyLight(Resolver):
-    """Nonwhite creatures get -1/-1 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(HolyLightEOT(), source)
-
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -327,11 +316,6 @@ class ManaShort(Resolver):
             land.tap()
         print(f"Mana Short taps {len(player_lands)} lands belonging to player {target}.")
 
-class MarshGas(Resolver):
-    """All creatures get -2/-0 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(MarshGasEOT(), source)
-
 class MartyrsCry(Resolver):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -383,11 +367,6 @@ class MoldDemon(Resolver):
         two_swamp_combos = list(combinations(your_swamps, 2))
         options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in two_swamp_combos]
         gs.pending_choice = ChoiceAction(options)
-
-class Morale(Resolver):
-    """Attacking creatures get +1/+1 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(MoraleEOT(), source)
 
 class NamelessRace(Resolver):
     """Upon ETB, pay any amount of life (max = # of white nontoken permanents your opponents control +

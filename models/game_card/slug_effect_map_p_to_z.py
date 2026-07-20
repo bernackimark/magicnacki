@@ -12,8 +12,8 @@ from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
-    UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEgg, Piety, \
-    ShieldWall, SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncher, \
+    UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEgg, \
+    SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
@@ -24,7 +24,8 @@ from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, De
     PreventNextDamageToCardEffect, Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
     SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
     CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
-    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands
+    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands, \
+    PumpEOT
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -49,8 +50,8 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     DestroyCombatantAtCombatEnd, PreventAllDamage
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition
-from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, \
-    ZombieMasterWalk, AddCreatureTypePTManaValue, PumpApplies, SelfPTEquals
+from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, AddCreatureTypePTManaValue, \
+    PumpApplies, SelfPTEquals, KWAApplies
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -71,7 +72,7 @@ MAP: dict[str, list[EffSpec]] = {
                                  text=f'convert to {land_type}') for land_type in BASIC_LANDS],
                                  # TODO: All 5 of these are getting registered, and I think that's causing problems
     'phyrexian-gremlins': [Triggered(OptionalUntap())],  # more to code
-    'piety': [Spell(Piety())],
+    'piety': [Spell(PumpEOT(T_FUNCS['blockers'], (0, 3)))],
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter())],
     'pixie-queen': [Activated('GGGT', KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
@@ -171,7 +172,7 @@ MAP: dict[str, list[EffSpec]] = {
     'shapeshifter': [Spell(ShapeshifterCast()), Static(ShapeshifterUpkeep())],
     'shatter': [Spell(Destroy(), T_FUNCS['artifacts'])],
     'shatterstorm': [Spell(DestroyAll(T_FUNCS['artifacts'], False))],
-    'shield-wall': [Spell(ShieldWall())],
+    'shield-wall': [Spell(PumpEOT(T_FUNCS['your_creatures'], (0, 2)))],
     'shivan-dragon': [self_pump('R', 1, 0)],
     'silhouette': [Triggered(PreventAllNoncombatDamageToThisTurn(), T_FUNCS['creatures'])],
     'simulacrum': [Spell(Simulacrum())],
@@ -349,5 +350,6 @@ MAP: dict[str, list[EffSpec]] = {
     'ydwen-efreet': [Static(YdwenEfreet())],
     'xenic-poltergeist': [Activated('T', AddCreatureTypePTManaValue(), T_FUNCS['non_creature_artifacts']),
                           Triggered(XenicPoltergeistRelease())],
-    'zombie-master': [Static(ZombieMasterWalk())],  # TODO: giving other zombies an activated ability
+    'zombie-master': [Static(KWAApplies(T_FUNCS['other_zombies'], 'add', 'Swampwalk'))],
+    # TODO: giving other zombies an activated ability
 }

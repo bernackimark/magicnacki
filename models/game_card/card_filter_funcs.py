@@ -110,6 +110,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'green': lambda gs, s: gs.card_filter.in_play().green().result(),
     'green_and_white_creatures': lambda gs, s: [gs.card_filter.in_play().green().creatures().result()] +
                                                [gs.card_filter.in_play().white().creatures().result()],
+    'green_creatures': lambda gs, s: gs.card_filter.in_play().creatures().green().result(),
     'green_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_green],
     'host': lambda gs, s: s.host,
     'host_owner': lambda gs, s: s.host.owner_id,
@@ -129,6 +130,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'non_wall_creatures_wo_summoning_sickness': lambda gs, s: [c for c in gs.card_filter.in_play().non_wall_creatures().result()
                                                                if not c.has_summoning_sickness],
     'non_wall_non_fliers': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().has('Flying', False).result(),
+    'non_white_creatures': lambda gs, s: gs.card_filter.in_play().non_white().creatures().result(),
     'one_one_creatures': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                         if c.power == 1 and c.toughness == 1],
     'opp_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),
@@ -150,6 +152,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'opponent': lambda gs, s: flip(s.owner_id),
     'other_creatures': lambda gs, s: [c for c in T_FUNCS['creatures'] if c is not s],
     'other_merfolk': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result()
+                                    if c is not s],
+    'other_zombies': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().by_sub_type('Zombie').result()
                                     if c is not s],
     'permanents': lambda gs, s: gs.card_filter.in_play().permanents().result(),
     'perms_you_own_and_control': lambda gs, s: [p for p in gs.card_filter.in_play().permanents().result()
@@ -184,6 +188,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().result(),
     'your-dwarves': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).by_sub_type('Dwarf').result(),
     'your_green_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().green().result(),
+    'your_forests': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
     'your_lands': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).lands().result(),
     'your_non_wall_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).non_wall_creatures().result(),
     'your_other_creatures':
@@ -191,7 +196,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_other_orcs':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Orc').result()
                        if c is not s],
-    'you_other_kobolds':
+    'your_other_kobolds':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Kobold').result()
                        if c is not s],
     'your_permanents': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).permanents().result(),

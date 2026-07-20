@@ -10,14 +10,14 @@ from models.actions.destroy_sac_regen import ReanimateAction
 from models.actions.draw_discard import DiscardCards, DrawCard
 from models.actions.piles import Tutor, Shuffle, HandToBattlefield
 from models.actions.pump import VariablePTMod
-from models.actions.special import SacCreatureAndAddMana, CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
+from models.actions.special import CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageByEOT, \
     BounceAtEndStep, PreventNextDamageToEOT, DestroyAtEndStepIfItDidntAttack
-from models.effects.listeners_mod_queries import PietyEOT, ShieldWallEOT, TransmutationEOT
+from models.effects.listeners_mod_queries import TransmutationEOT
 from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn
 from models.effects.resolvers_generic import Reveal
 from models.modifiers import SubTypeMod, KWAMod, PTMod
@@ -42,11 +42,6 @@ class PhantasmalTerrain(Resolver):
         target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.land_type))
         for sub_type in sub_types:
             target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
-
-class Piety(Resolver):
-    """Blocking creatures get 0/+3 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(PietyEOT(), source)
 
 class PrimalClay(Resolver):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,
@@ -192,11 +187,6 @@ class ShapeshifterCast(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         options = [VariablePTMod(source.owner_id, gs, source, source, i, 7 - i) for i in range(8)]
         gs.pending_choice = ChoiceAction(options)
-
-class ShieldWall(Resolver):
-    """Creatures you control get +0/+2 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(ShieldWallEOT(), source)
 
 class Simulacrum(Resolver):
     """You gain life equal to the damage already dealt to you this turn. If you control a creature,

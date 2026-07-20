@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
-from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.draw_discard import DiscardCards
 from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
@@ -9,6 +8,7 @@ from models.choice_actions_all import ChoiceAction
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
+from models.effects.listeners_mod_queries import PumpAppliesEOT
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
 from models.utils import flip
@@ -224,6 +224,17 @@ class GraveyardToExileInItsEntirety(Resolver):
 class HandToBoard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         gs.pile_mgr.cast(target)
+
+class PumpEOT(Resolver):
+    """Register a PTMod EOT listener"""
+    def __init__(self, applies_to_func: Callable, pt_adj: tuple[int, int],
+                 condition: Callable[[GameState, GameCard], bool] = None):
+        self.applies_to_func = applies_to_func
+        self.pt_adj = pt_adj
+        self.condition = condition
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        gs.event_mgr.register(PumpAppliesEOT(self.applies_to_func, self.pt_adj, self.condition), source)
 
 class KWAModEffect(Resolver):
     def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):

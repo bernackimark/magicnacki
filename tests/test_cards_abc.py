@@ -66,6 +66,19 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertEqual(small_creature.power, 5)
         self.assertEqual(small_creature.toughness, 1)
 
+    def test_bone_flute(self):
+        """2T: All creatures get -1/-0 until end of turn"""
+        creature = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
+        card = self.g.battlefield('bone-flute')
+        aa = card.activated_abilities[0]
+        self.g.mana('RRRR')
+        self.g.activate_ability(aa)
+        self.assertEqual(0, creature.power)
+
+        self.g.next_turn()
+        self.assertEqual(1, creature.power)
+
+
     # def test_candelabra_of_tawnos(self):
     #     """{X}, {T}: Untap X target lands"""
     #     card = self.g.battlefield('candelabra-of-tawnos')
@@ -177,6 +190,13 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertIn(card, self.g.gy[0])
         self.assertEqual(3, host.power)
         self.assertIn('Flying', host.keyword_abilities)
+
+    def test_concordant_crossroads(self):
+        """All creatures have haste"""
+        creature = self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.assertFalse(self.gs.perm_querier.can_attack(creature))
+        self.g.battlefield('concordant-crossroads')
+        self.assertTrue(self.gs.perm_querier.can_attack(creature))
 
     def test_consecrate_land(self):
         """Host has indestructible and can't be enchanted by other Auras"""

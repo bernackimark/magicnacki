@@ -5,13 +5,13 @@ from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCou
 from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
-from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, GravitySphere, \
-    HiddenPath, IvoryGuardians, KoboldOverlord, KoboldTaskmaster, KormusBell, LivingLands, LivingPlane, LordOfAtlantisWalk, JihadPT, PumpApplies, SelfPTEquals
+from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, LivingLands, \
+    LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition
 from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, HazezonTamar, JovialEvil, Millstone, \
-    GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HellSwarm, \
-    HolyLight, HowlFromBeyond, LesserWerewolf, MarshGas, Morale, FallingStar, Feint, FeldonsCane, Festival, \
+    GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, \
+    HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, Festival, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
     FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, GiantSlug
@@ -22,7 +22,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
     PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell, \
-    RevealTopLibraryCard
+    RevealTopLibraryCard, PumpEOT
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
@@ -127,7 +127,7 @@ MAP: dict[str: list[EffSpec]] = {
     'granite-gargoyle': [self_pump('R', 0, 1)],
     'grapeshot-catapult': [Activated('T', DealDamage(4), T_FUNCS['fliers'])],
     'grave-robbers': [Activated('BT', GraveRobbersAA(), T_FUNCS['artifacts_in_graveyards'])],
-    'gravity-sphere': [Static(GravitySphere())],
+    'gravity-sphere': [Static(KWAApplies(T_FUNCS['creatures'], 'remove', 'Flying'))],
     'great-defender': [Spell(GreatDefender(), T_FUNCS['creatures'])],
     'great-wall': [Static(WalkRuleRemoved('Plainswalk'))],
     'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(), T_FUNCS['black_and_red'])],
@@ -143,15 +143,15 @@ MAP: dict[str: list[EffSpec]] = {
                       Spell(HazezonTamar())],
     'healing-salve': [Spell(HealingSalve())],
     'heavens-gate': [Spell(SetColor('W', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
-    'hell-swarm': [Spell(HellSwarm())],
+    'hell-swarm': [Spell(PumpEOT(T_FUNCS['creatures'], (-1, 0)))],
     'hells-caretaker': [Activated('T', Reanimate(), T_FUNCS['creatures_in_your_graveyard'],
                                   allowed_phases=[Phase.UPKEEP], allowed_p_id_turn=T_FUNCS['card_owner'],
                                   extra_costs=SacCardCost(T_FUNCS['your_creatures']))],
-    'hidden-path': [Static(HiddenPath())],
+    'hidden-path': [Static(KWAApplies(T_FUNCS['green_creatures'], 'add', 'Forestwalk'))],
     'holy-armor': [Spell(Pump(0, 2), T_FUNCS['creatures']),
                    Activated('W', Pump(0, 1, True), T_FUNCS['host'])],
     'holy-day': [Spell(PreventAllCombatDamageThisTurn())],
-    'holy-light': [Spell(HolyLight())],
+    'holy-light': [Spell(PumpEOT(T_FUNCS['non_white_creatures'], (-1, -1)))],
     'holy-strength': [Spell(Pump(1, 2), T_FUNCS['creatures'])],
     'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True), T_FUNCS['creatures'])],
     'horror-of-horrors': [Activated('', Regenerate(), T_FUNCS['black_creatures'],
@@ -207,7 +207,7 @@ MAP: dict[str: list[EffSpec]] = {
     'kird-ape': [Static(PumpApplies(T_FUNCS['self'], (1, 2), C_FUNCS['you_have_a_forest']))],
     'kismet': [Static(Kismet())],
     'kobold-drill-sergeant': [Spell(KoboldDrillSergeant())],
-    'kobold-overlord': [Static(KoboldOverlord())],
+    'kobold-overlord': [Static(KWAApplies(T_FUNCS['your_other_kobolds'], 'add', 'First Strike'))],
     'kobold-taskmaster': [Static(PumpApplies(T_FUNCS['your_other_kobolds'], (0, 1)))],
     'kormus-bell': [Static(KormusBell())],
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures'])],
@@ -244,7 +244,8 @@ MAP: dict[str: list[EffSpec]] = {
     'living-wall': [Activated('1', Regenerate(), T_FUNCS['self'])],
     'livonya-silone': [Static(LivonyaSilone())],
     'llanowar-elves': [Activated('T', AddMana('G'), T_FUNCS['card_owner'])],
-    'lord-of-atlantis': [Static(PumpApplies(T_FUNCS['other_merfolk'], (1, 1))), Static(LordOfAtlantisWalk())],
+    'lord-of-atlantis': [Static(PumpApplies(T_FUNCS['other_merfolk'], (1, 1))),
+                         Static(KWAApplies(T_FUNCS['other_merfolk'], 'add', 'Islandwalk'))],
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep())],
     'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
     'lure': [Spell(None, T_FUNCS['creatures']), Triggered(Lure())],
@@ -263,7 +264,7 @@ MAP: dict[str: list[EffSpec]] = {
                     Static(GlobalSac(T_FUNCS['self'], C_FUNCS['no_lands']))],
     'marble-priest': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['walls'], combat_only=True)),
                       Static(MarblePriestForcesBlock())],
-    'marsh-gas': [Spell(MarshGas())],
+    'marsh-gas': [Spell(PumpEOT(T_FUNCS['creatures'], (-2, 0)))],
     'marsh-viper': [Triggered(AddPoisonCounter(2))],
     'martyrs-cry': [Spell(MartyrsCry())],
     'martyrs-of-korlis': [Static(MartyrsOfKorlis())],
@@ -283,7 +284,7 @@ MAP: dict[str: list[EffSpec]] = {
                         Activated('T', Pump(1, 1, True), T_FUNCS['assembly_workers'], text='Pump Assembly-Worker')],
     'moat': [Static(Moat())],
     'mold-demon': [Spell(MoldDemon())],
-    'morale': [Spell(Morale())],
+    'morale': [Spell(PumpEOT(T_FUNCS['attackers'], (1, 1)))],
     'mox-emerald': mox_specs('G'),
     'mox-jet': mox_specs('B'),
     'mox-pearl': mox_specs('W'),

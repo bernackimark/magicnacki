@@ -10,14 +10,14 @@ from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, ArmyOfAllah, Berserk, BloodLust, \
-    BoneFlute, AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
+    AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, EnchantmentAlteration
 from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
     DealDamage, DealDamageToTargetAndYou, PreventAllCombatDamageThisTurn, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
     PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, CounterSpell, \
-    PreventNextDamageTo, PreventAllDamageBy, AddStunCounter
+    PreventNextDamageTo, PreventAllDamageBy, AddStunCounter, PumpEOT
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -42,7 +42,7 @@ from models.effects.listeners_permission import CityInABottleCantCast, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
-    AspectOfWolfPT, ConcordantCrossroads, Conversion, PumpApplies, SelfPTEquals
+    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -131,7 +131,7 @@ MAP: dict[str, list[EffSpec]] = {
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
     'blue-ward': [Spell(KWAModEffect('add', 'Protection From Blue'), T_FUNCS['creatures'])],
     'bog-rats': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['walls']))],
-    'bone-flute': [Activated('2T', BoneFlute())],
+    'bone-flute': [Activated('2T', PumpEOT(T_FUNCS['creatures'], (-1, 0)))],
     'book-of-rass': [Activated('2', BookOfRass())],
     'boomerang': [Spell(Bounce(), T_FUNCS['permanents'])],
     'boris-devilboon': [Activated('2BRTT', CreateTokenCreature('minor-demon'))],
@@ -188,7 +188,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cocoon': [Spell(CocoonCast(), T_FUNCS['your_creatures']), Static(CocoonUntap()), Static(CocoonUpkeep())],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                            untap_for_mana_at_owner_upkeep('9', T_FUNCS['card_owner'])],
-    'concordant-crossroads': [Static(ConcordantCrossroads())],
+    'concordant-crossroads': [Static(KWAApplies(T_FUNCS['creatures'], 'add', 'Haste'))],
     'consecrate-land': [Spell(None, T_FUNCS['lands']), Static(HostCantBeTargetedByAuras())],
     'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
     'control-magic': [Spell(Steal(), T_FUNCS['opp_creatures']), Triggered(ReturnToOwnerOnLTB())],

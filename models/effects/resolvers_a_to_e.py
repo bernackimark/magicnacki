@@ -10,7 +10,7 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked
-from models.effects.listeners_mod_queries import ArmyOfAllahEOT, BoneFluteEOT
+from models.effects.listeners_mod_queries import ArmyOfAllahEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
 from models.systems.phase import Phase
@@ -126,11 +126,6 @@ class BloodLust(Resolver):
         new_toughness = max(1, target.toughness - 4)
         toughness_mod = new_toughness - target.toughness
         target.modifiers.append(PTMod(s=source, p_adj=4, t_adj=toughness_mod, expires='EOT'))
-
-class BoneFlute(Resolver):
-    """All creatures get -1/-0 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.event_mgr.register(BoneFluteEOT(), source)
 
 class BookOfRass(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
