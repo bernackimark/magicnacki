@@ -257,6 +257,12 @@ class ManaBatteriesAddMana(Resolver):
 
 class PreventAllDamageRegisterEOT(Resolver):
     # created 7/20/2026: trying to consolidate many micro-variations of damage prevention
+
+    # TODO: NEXT: let the slug map directly to PreventAllDamageEOT
+    #  I think it's already getting added via AP.resolve_ability() ... event_mgr.register_card(self.source) line 170
+    #  For such Listeners whose targets are identified during AP, bind them to the listener before registration
+    #  Already a test setup for Fog.  Use as a possible test case ...
+
     def __init__(self, protected_func: Callable = None, dealer_func: Callable = None, combat_only: bool = False):
         self.protected_func = protected_func
         self.dealer_func = dealer_func
