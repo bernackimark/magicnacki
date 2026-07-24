@@ -299,9 +299,9 @@ class CocoonUntap(Listener):
     listens_to = CanUntapAtUntapPhaseQueryEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
-        if event.card != source.host or event.card != gs.player_turn_idx:
+        if event.card != source.host or event.card.owner_id != gs.player_turn_idx:
             return
-        if source.host.counters.get_count(PUPA):
+        if source.counters.get_count(PUPA):
             event.permission = False
 
 class Meekstone(Listener):

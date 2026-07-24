@@ -6,7 +6,8 @@ from models.actions.special import Attach
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
-from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent
+from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
+    UntapPhaseEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -183,8 +184,8 @@ class TestCardsAtoC(unittest.TestCase):
         for i in range(1, 4):
             self.g.next_turn()
             self.gs.event_mgr.emit(UpkeepEvent(0))
-            self.assertTrue(host.is_tapped)
             self.assertEqual(3 - i, card.counters.get_count(PUPA))
+            self.assertTrue(host.is_tapped)
 
         self.g.next_turn()
         self.gs.event_mgr.emit(UpkeepEvent(0))
