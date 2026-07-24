@@ -64,7 +64,6 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'blue_creatures': lambda gs, s: gs.card_filter.in_play().creatures().blue().result(),
     'blue_permanents': lambda gs, s: gs.card_filter.in_play().permanents().blue().result(),
     'blue_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_blue],
-    'card_owner': lambda gs, s: s.owner_id,
     'cards': lambda gs, s: gs.card_filter.in_play().result(),
     'cards_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).result(),
     'city_in_a_bottle': lambda gs, s: [c for c in
@@ -156,6 +155,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
                                     if c is not s],
     'other_zombies': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().by_sub_type('Zombie').result()
                                     if c is not s],
+    'owner': lambda gs, s: s.owner_id,
     'permanents': lambda gs, s: gs.card_filter.in_play().permanents().result(),
     'perms_you_own_and_control': lambda gs, s: [p for p in gs.card_filter.in_play().permanents().result()
                                                 if id(p) in {id(y) for y in gs.card_filter.on_player_board(s.owner_id).result()} &

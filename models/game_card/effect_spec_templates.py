@@ -9,7 +9,7 @@ from models.systems.phase import Phase
 
 
 def dual_land_specs(colors: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), T_FUNCS['card_owner'], text=f'Add {{{color}}}') for color in colors]
+    return [Activated('T', AddMana(color), T_FUNCS['owner'], text=f'Add {{{color}}}') for color in colors]
 
 def self_pump(activation_cost: str, p: int, t: int):
     """Returns an Activated EffSpec; it is EOT=True, target is the card itself"""
@@ -27,7 +27,7 @@ def mana_battery_add_mana(color: str) -> EffSpec:
                           f'then add an additional {color} for each charge counter removed this way')
 
 def mox_specs(color: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), T_FUNCS['card_owner'], text=f'Add {{{color}}}')]
+    return [Activated('T', AddMana(color), T_FUNCS['owner'], text=f'Add {{{color}}}')]
 
 
 MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
