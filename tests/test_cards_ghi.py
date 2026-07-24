@@ -154,10 +154,11 @@ class TestCardsGHI(unittest.TestCase):
         """Enchanted creature can attack as though it had haste.
         {0}: Untap enchanted creature. Activate only during your turn and only once each turn."""
         host = self.g.battlefield('merfolk-of-the-pearl-trident')
-        card = self.g.battlefield('instill-energy')
+        card = self.g.hand('instill-energy')
+        self.g.cast_and_accept(card, host)
         give_haste_eff_spec = card.abilities[0]
         aa = card.activated_abilities[0]
-        give_haste_eff_spec.effect.resolve(self.gs, card, host)  # type: ignore
+        give_haste_eff_spec.effect.resolve(self.gs, card, host)
         self.assertTrue(self.gs.perm_querier.can_attack(host))
 
         card.tap()

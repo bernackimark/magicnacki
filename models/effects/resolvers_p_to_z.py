@@ -72,7 +72,7 @@ class Rakalite(Resolver):
         """target is the card dealing damage"""
         if target is None:
             raise ValueError(f'{s.props.name} needs a target')
-        gs.event_mgr.register(PreventNextDamageTo(target, 1), s)
+        gs.event_mgr.register(PreventNextDamageTo(1, protected=target), s)
         gs.event_mgr.register(BounceAtEndStep(s), s)
 
 class RapidFire(Resolver):

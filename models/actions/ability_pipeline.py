@@ -147,9 +147,9 @@ class AbilityPipeline(Action):
                 self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
 
             if self.eff_spec.is_aa:
-                print(f"Successfully activated ability for {self.source.props.name}")
                 aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
                 aa.activations_this_turn += 1
+                print(f"Successfully activated ability for {self.source.props.name}")
                 self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa))
 
             if isinstance(self.eff_spec.effect, Listener):
