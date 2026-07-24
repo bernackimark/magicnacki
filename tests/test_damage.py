@@ -1,6 +1,6 @@
 import unittest
 
-from models.effects.listeners_generic import PreventNextDamageToEOT
+from models.effects.listeners_generic import PreventNextDamageTo
 from tests.setup_helpers import TestGame
 
 
@@ -21,7 +21,8 @@ class TestDamage(unittest.TestCase):
         red_source = self.g.card('goblin-hero')
         cop = self.g.battlefield('circle-of-protection-red', owner=1)
         self.g.mana('WW', owner=1)
-        cop.activated_abilities[0].eff_spec.effect.resolve(self.gs, cop, red_source)
+        eff = PreventNextDamageTo(protected=1)
+        self.gs.event_mgr.register(eff, cop)
         self.gs.apply_damage(red_source, 5, 1, True)
         self.assertEqual(self.gs.life[1], 20)
 
@@ -32,8 +33,10 @@ class TestDamage(unittest.TestCase):
 
     def test_multiple_damage_reducers(self):
         card = self.g.card('rakalite')
-        self.gs.event_mgr.register(PreventNextDamageToEOT(protected_target=0, preventable_amt=1), card)
-        self.gs.event_mgr.register(PreventNextDamageToEOT(protected_target=0, preventable_amt=1), card)
+        eff = PreventNextDamageTo(protected=0, preventable_amt=1)
+        self.gs.event_mgr.register(eff, card)
+        eff = PreventNextDamageTo(protected=0, preventable_amt=1)
+        self.gs.event_mgr.register(eff, card)
         bolt = self.g.hand('lightning-bolt', owner=1)
         self.gs.apply_damage(bolt, 3, 0)
         self.assertEqual(19, self.gs.life[0])

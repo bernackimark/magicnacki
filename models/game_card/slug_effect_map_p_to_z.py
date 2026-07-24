@@ -13,18 +13,16 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEgg, \
-    SingingTree, Transmutation, Rakalite, ReverseDamage, RocketLauncher, \
+    SingingTree, Rakalite, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
     Twiddle, Sindbad, SirensCall, VenarianGoldCast
-from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, DealDamage, \
-    DealOneDamageToTargetList, DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, \
-    DealDamageToTargetAndYou, PreventNextDamageBy, TakeAnotherTurn, \
-    Destroy, DestroyAll, ExileAllCreatures, Regenerate, DrawCards, \
-    SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, GraveyardToExileInItsEntirety, Pump, \
-    CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, DeclareAColor, \
-    PreventAllNoncombatDamageToThisTurn, RedirectNextDamageToOwner, CounterSpell, PreventNextDamageTo, RevealHands
+from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
+    DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
+    ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
+    GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, \
+    DeclareAColor, CounterSpell, RevealHands
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -37,7 +35,7 @@ from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndS
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter
-from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink
+from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
     TheWretchedSteal
@@ -46,12 +44,13 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, \
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
-    DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT
+    DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, PreventAllDamageToEOT, PreventNextDamageTo, \
+    PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
     UnblockableEOT
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, AddCreatureTypePTManaValue, \
-    PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
+    PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, Transmutation
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -65,7 +64,7 @@ MAP: dict[str, list[EffSpec]] = {
                     Activated('T', Pump(1, 2, True), T_FUNCS['one_one_creatures'])],
     'people-of-the-woods': [Static(SelfPTEquals(T_FUNCS['your_forests'], t_only=True))],
     'personal-incarnation': [Triggered(PersonalIncarnationDies()),
-                             Activated('0', RedirectNextDamageToOwner(), T_FUNCS['self'])],
+                             Activated('0', RedirectNextDamageFromCardToOwnerEOT(T_FUNCS['self'], 1))],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
     'phantasmal-forces': [Triggered(PayManaOrSacAtUpkeep('U'))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(land_type), T_FUNCS['lands'],
@@ -148,7 +147,7 @@ MAP: dict[str, list[EffSpec]] = {
     'safe-haven': [Activated('2T', SafeHaven(), T_FUNCS['your_creatures']), Triggered(SafeHavenUpkeep())],
     'sage-of-lat-nam': [Activated('T', DrawCards(), T_FUNCS['card_owner'],
                                   extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
-    'samite-healer': [Activated('T', PreventNextDamageBy(1), T_FUNCS['cards'])],
+    'samite-healer': [Activated('T', PreventNextDamageBy(preventable_amt=1), T_FUNCS['cards'])],
     'sandals-of-abdallah': [Activated('2', SandalsOfAbdallahIslandWalk(), T_FUNCS['creatures'])],
     'sandstorm': [Spell(Sandstorm())],
     'savaen-elves': [Activated('GGT', Destroy(), T_FUNCS['auras_on_lands'])],
@@ -175,7 +174,7 @@ MAP: dict[str, list[EffSpec]] = {
     'shatterstorm': [Spell(DestroyAll(T_FUNCS['artifacts'], False))],
     'shield-wall': [Spell(PumpAppliesEOT(T_FUNCS['your_creatures'], (0, 2)))],
     'shivan-dragon': [self_pump('R', 1, 0)],
-    'silhouette': [Triggered(PreventAllNoncombatDamageToThisTurn(), T_FUNCS['creatures'])],
+    'silhouette': [Triggered(PreventAllDamageToEOT(combat_only=True), T_FUNCS['creatures'])],
     'simulacrum': [Spell(Simulacrum())],
     'sindbad': [Activated('T', Sindbad())],
     'singing-tree': [Activated('T', SingingTree(), T_FUNCS['attackers'])],
@@ -221,7 +220,7 @@ MAP: dict[str, list[EffSpec]] = {
     'tangle-kelp': [Spell(TangleKelp(), T_FUNCS['creatures'])],
     'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()),
                        Triggered(TawnossCoffinZoneChange())],  # TODO: code the actual exiling part
-    'tawnoss-wand': [Activated('2T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
+    'tawnoss-wand': [Activated('2T', UnblockableEOT(), T_FUNCS['creatures_power_two_or_less'])],
     'tawnoss-weaponry': [Triggered(OptionalUntap()),
                          Activated('2T', Pump(1, 1, True), T_FUNCS['creatures']),
                          (Triggered(UntapRemovesPumpFromAnotherCard(), None, UntapCardEffect))],

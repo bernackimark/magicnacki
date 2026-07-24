@@ -74,9 +74,9 @@ class DestroyAndForegoCombatDamage(Action):
         return f'Destroy {self.target} & forego combat damage assigned by {self.source.props.name}'
 
     def play(self):
-        from models.effects.listeners_generic import PreventNextDamageByEOT
+        from models.effects.listeners_generic import PreventNextDamageBy
         self.gs.pile_mgr.destroy(self.target)
-        self.gs.event_mgr.register(PreventNextDamageByEOT(self.source, combat_only=True))
+        self.gs.event_mgr.register(PreventNextDamageBy(self.source, combat_only=True))
         self.gs.action_stack.pop()
 
 class PayManaAndOrTakeDamage(Action):
@@ -227,8 +227,8 @@ class HealingSalveB(Action):
         return 'Prevent the next 3 damage that would be dealt to any target this turn'
 
     def play(self) -> None:
-        from models.effects.listeners_generic import PreventNextDamageToEOT
-        self.gs.event_mgr.register(PreventNextDamageToEOT(self.target, 3))
+        from models.effects.listeners_generic import PreventNextDamageTo
+        self.gs.event_mgr.register(PreventNextDamageTo(self.target, 3))
         self.gs.action_stack.pop()
 
 class NamelessRaceETBAction(Action):

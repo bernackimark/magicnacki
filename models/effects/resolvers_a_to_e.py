@@ -325,10 +325,3 @@ class ExchangeLifeTotals(Resolver):
         your_life = gs.life[s.owner_id]
         opp_life = gs.life[flip(s.owner_id)]
         gs.life[s.owner_id], gs.life[flip(s.owner_id)] = opp_life, your_life
-
-class EyeForAnEye(Resolver):
-    """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        """target = the GameCard doing the original damage"""
-        from models.effects.listeners_damage import EyeForAnEyeEOT
-        gs.event_mgr.register(EyeForAnEyeEOT(damage_dealer=t, damage_receiving_player=s.owner_id), s)

@@ -152,6 +152,11 @@ class AbilityPipeline(Action):
                 aa.activations_this_turn += 1
                 self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa))
 
+            if isinstance(self.eff_spec.effect, Listener):
+                print(f"Initializing Listener for {self.source}")
+                self.eff_spec.effect.initialize(self.gs, self.source, self.targets)
+                self.gs.event_mgr.register(self.eff_spec.effect, self.source)
+
         if self.source.zone != Zone.HAND:
             print(f"Successfully executed ability for {self.source.props.name}")
 
@@ -168,16 +173,15 @@ class AbilityPipeline(Action):
                 host.auras.append(self.source)
 
             # TODO: to support Listeners w a target, we must get the target onto the Listener here via .initialize()
-            #  This failed for dwarven-warriors (possibly because it's an Activated Ability who is expecting a Resolver
-            #  Testing for 'teleport' (an instant) WAS successful
             #  NEXT STEPS:
             #   1) replace non-complex effects using 'gs.event_mgr.register(' to directly tie slug to Listener
             #   2) Auras with no spell effect should be updated to follow this pattern (see successful animate-wall)
             #   3) Once all auras updated, Ability Pipeline should expect Spell w eff_spec has eff_spec.effect
             for eff_spec in self.source.abilities:
+                if eff_spec is self.eff_spec:
+                    continue
                 if not isinstance(eff_spec.effect, Listener):
                     continue
-                print(eff_spec, self.eff_spec)
                 if eff_spec is self.eff_spec:
                     print(f"Initializing Listener for {self.source}")
                     eff_spec.effect.initialize(self.gs, self.source, self.targets)

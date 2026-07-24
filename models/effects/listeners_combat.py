@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from models.actions.base import DoNothing
 from models.actions.damage import DealDamageToYou
@@ -221,20 +221,21 @@ class ClockworkCombatEnd(Listener):
         if source in gs.card_filter.combatants().result():
             source.counters.remove_counter(PLUS_ONE_ZERO)
 
-class GlyphOfDoomListener(Listener):
-    """Registered by GlyphOfDoom. At this turn's combat end, destroy creature blocked by that wall this turn."""
+class GlyphOfDoom(Listener):
+    """At combat end, destroy creature blocked by target wall this turn."""
     listens_to = CombatEndEvent
     expires = 'EOT'
 
-    def __init__(self, the_wall: GameCard):
-        self.the_wall = the_wall
+    def __init__(self):
+        self.target: GameCard | None = None
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        self.target = targets[0]
 
     def on_event(self, gs: GameState, s: GameCard, event: CombatEndEvent):
-        attacker = next((c for c in gs.combat_mgr.get_combatants_against(self.the_wall)), None)
-        if not attacker:
-            return
-        gs.pile_mgr.destroy(attacker)
-        self.is_expired = True
+        if attacker := next((c for c in gs.combat_mgr.get_combatants_against(self.target)), None):
+            gs.pile_mgr.destroy(attacker)
+            self.is_expired = True
 
 class InfiniteAuthorityCombatEnd(Listener):
     """At combat end, if host is in combat with a creature with toughness <= 3, destroy the other creature ..."""

@@ -15,9 +15,8 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
-from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageByEOT, \
-    BounceAtEndStep, PreventNextDamageToEOT, DestroyAtEndStepIfItDidntAttack
-from models.effects.listeners_mod_queries import TransmutationEOT
+from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageBy, \
+    BounceAtEndStep, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack
 from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn
 from models.effects.resolvers_generic import Reveal
 from models.modifiers import SubTypeMod, KWAMod, PTMod
@@ -73,7 +72,7 @@ class Rakalite(Resolver):
         """target is the card dealing damage"""
         if target is None:
             raise ValueError(f'{s.props.name} needs a target')
-        gs.event_mgr.register(PreventNextDamageToEOT(target, 1), s)
+        gs.event_mgr.register(PreventNextDamageTo(target, 1), s)
         gs.event_mgr.register(BounceAtEndStep(s), s)
 
 class RapidFire(Resolver):
@@ -91,14 +90,6 @@ class Reset(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for land in gs.card_filter.on_player_board(source.owner_id).lands().tapped().result():
             land.untap()
-
-class ReverseDamage(Resolver):
-    """The next time a source of your choice would deal damage to you this turn, prevent that damage.
-    You gain life equal to the damage prevented this way."""
-    def resolve(self, gs: GameState, s: GameCard, target: Optional[GameCard] = None):
-        """target = the GameCard doing the damage"""
-        from models.effects.listeners_damage import ReverseDamageEOT
-        gs.event_mgr.register(ReverseDamageEOT(damage_dealer=target), s)
 
 class ReversePolarity(Resolver):
     """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts"""
@@ -240,7 +231,7 @@ class Subdue(Resolver):
     """Prevent all combat damage that would be dealt by target creature this turn.
     That creature gets +0/+X until end of turn, where X is its mana value."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        gs.event_mgr.register(PreventNextDamageByEOT(t, combat_only=True), s)
+        gs.event_mgr.register(PreventNextDamageBy(t, combat_only=True), s)
         t.modifiers.append(PTMod(s=s, p_adj=0, t_adj=t.props.mana_value))
 
 class SwordsToPlowshares(Resolver):
@@ -326,13 +317,6 @@ class Tracker(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         gs.apply_damage(source, source.power, target)
         gs.apply_damage(target, target.power, source)
-
-class Transmutation(Resolver):
-    """Switch target creature's power and toughness until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(TransmutationEOT(target), source)
 
 class TriassicEgg(Resolver):
     """Choose one (activate only if there are two or more hatchling counters on this artifact.):

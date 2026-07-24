@@ -5,7 +5,7 @@ from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
 from models.actions.tap_untap import Untap
 from models.counter_tokens import PLUS_ONE
-from models.effects.listeners_damage import ReverseDamageEOT
+from models.effects.listeners_damage import ReverseDamage
 from models.effects.resolvers_generic import Destroy, RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
@@ -89,7 +89,7 @@ class TestCardsQRS(unittest.TestCase):
         damage_dealer = self.g.battlefield('grizzly-bears', owner=1)
         PassTheTurn(0, self.gs).play()
         card = self.g.card('reverse-damage')
-        self.gs.event_mgr.register(ReverseDamageEOT(damage_dealer=damage_dealer), card)
+        self.g.cast_and_accept(card, damage_dealer, card.abilities[0])
         self.g.combat(damage_dealer, None)
         self.assertEqual(22, self.gs.life[0])
 

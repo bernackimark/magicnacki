@@ -8,16 +8,14 @@ from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
-    Earthquake, EternalFlame, EyeForAnEye, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
+    Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, EnchantmentAlteration
-from models.effects.resolvers_generic import UnblockableThisTurn, AddCounter, \
-    DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
+from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
-    Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, \
-    PreventNextDamageToSourceOwner, PreventNextDamageBy, RemoveFromCombat, CounterSpell, \
-    PreventNextDamageTo, AddStunCounter
+    Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
+    CounterSpell, AddStunCounter
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -30,17 +28,18 @@ from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, Artifa
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
-from ..effects.listeners_damage import Backfire, ElHajjaj
+from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye
 from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
     ClockworkCombatEnd
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PayManaOrSacAtUpkeep, \
-    DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT
+    DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
+    PreventNextDamageTo, PreventNextDamageBy
 from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
-    HostCanAttack, UnblockableCondition
+    HostCanAttack, UnblockableCondition, UnblockableEOT
 from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
     AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
@@ -67,7 +66,7 @@ MAP: dict[str, list[EffSpec]] = {
                      for c in COLOR_LETTERS],
     'amnesia': [Spell(Amnesia(), T_FUNCS['all_players'])],
     'amrou-kithkin': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['creatures_power_three_or_more']))],
-    'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(1), T_FUNCS['all_creatures_and_players'])],
+    'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(preventable_amt=1), T_FUNCS['all_creatures_and_players'])],
     'ancestral-recall': [Spell(DrawCards(3), T_FUNCS['all_players'])],
     'angelic-voices': [Static(AngelicVoices())],
     'angus-mackenzie': [Activated('GWUT', PreventAllDamageEOT(combat_only=True),
@@ -85,7 +84,7 @@ MAP: dict[str, list[EffSpec]] = {
     'arena-of-the-ancients': [Triggered(DoesntUntapAtUntap(T_FUNCS['legendary_creatures'])),
                               Spell(ArenaOfTheAncientsCast())],
     'argivian-archaeologist': [Activated('WWT', Bounce(), T_FUNCS['artifacts_in_your_graveyard'])],
-    'argivian-blacksmith': [Activated('T', PreventNextDamageBy(2), T_FUNCS['artifact_creatures'])],
+    'argivian-blacksmith': [Activated('T', PreventNextDamageBy(preventable_amt=2), T_FUNCS['artifact_creatures'])],
     'argothian-pixies': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['artifact_creatures'])),
                          Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifact_creatures']))],
     'argothian-treefolk': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifacts']))],
@@ -159,12 +158,12 @@ MAP: dict[str, list[EffSpec]] = {
                             text='If random di roll is 1-4, destroy target')],
     'chaoslace': [Spell(SetColor('R'), T_FUNCS['cards'])],
     'chromium': [Triggered(PayManaOrSacAtUpkeep('WUB'))],
-    'circle-of-protection-artifacts': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts'])],
-    'circle-of-protection-black': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['black'])],
-    'circle-of-protection-blue': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['blue'])],
-    'circle-of-protection-green': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['green'])],
-    'circle-of-protection-red': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['red'])],
-    'circle-of-protection-white': [Activated('1', PreventNextDamageToSourceOwner(), T_FUNCS['white'])],
+    'circle-of-protection-artifacts': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['card_owner']), T_FUNCS['artifacts'])],
+    'circle-of-protection-black': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['card_owner']), T_FUNCS['black'])],
+    'circle-of-protection-blue': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['card_owner']), T_FUNCS['blue'])],
+    'circle-of-protection-green': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['card_owner']), T_FUNCS['green'])],
+    'circle-of-protection-red': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['card_owner']), T_FUNCS['red'])],
+    'circle-of-protection-white': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['card_owner']), T_FUNCS['white'])],
     'citanul-druid': [Triggered(CitanulDruid())],
     'city-in-a-bottle': [Static(GlobalSac(T_FUNCS['city_in_a_bottle'])), Static(CityInABottleCantCast()),
                          Spell(SacAll(T_FUNCS['city_in_a_bottle']))],
@@ -191,7 +190,7 @@ MAP: dict[str, list[EffSpec]] = {
                            untap_for_mana_at_owner_upkeep('9', T_FUNCS['card_owner'])],
     'concordant-crossroads': [Static(KWAApplies(T_FUNCS['creatures'], 'add', 'Haste'))],
     'consecrate-land': [Spell(None, T_FUNCS['lands']), Static(HostCantBeTargetedByAuras())],
-    'conservator': [Activated('3T', PreventNextDamageToSourceOwner(2))],
+    'conservator': [Activated('3T', PreventNextDamageTo(protected=T_FUNCS['card_owner']))],
     'control-magic': [Spell(Steal(), T_FUNCS['opp_creatures']), Triggered(ReturnToOwnerOnLTB())],
     'conversion': [Triggered(PayManaOrSacAtUpkeep('WW')), Static(Conversion())],
     'copper-tablet': [Static(DealDamageOnEveryUpkeep(T_FUNCS['in_turn_player'], 1))],
@@ -216,7 +215,7 @@ MAP: dict[str, list[EffSpec]] = {
     'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU'))],  # the rest of the card still needs coding
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests'])])],
     'dark-ritual': [Spell(AddMana('B', 3))],
-    'dark-sphere': [Activated('T', PreventNextDamageToSourceOwner(), T_FUNCS['artifacts'],
+    'dark-sphere': [Activated('T', PreventNextDamageTo(protected=T_FUNCS['card_owner']), T_FUNCS['artifacts'],
                               extra_costs=[SacSelfCost()])],
     'darkness': [Spell(PreventAllDamageEOT(combat_only=True))],
     'davenant-archer': [Activated('T', DealDamage(1), T_FUNCS['combatants'])],
@@ -253,7 +252,7 @@ MAP: dict[str, list[EffSpec]] = {
     'dust-to-dust': [Spell(DustToDust(), TargetSpec(T_FUNCS['artifacts'], 2, 2))],
     'dwarven-demolition-team': [Activated('T', Destroy(), T_FUNCS['walls'])],
     'dwarven-song': [Spell(SetColor('R', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
-    'dwarven-warriors': [Activated('T', UnblockableThisTurn(), T_FUNCS['creatures_power_two_or_less'])],
+    'dwarven-warriors': [Activated('T', UnblockableEOT(), T_FUNCS['creatures_power_two_or_less'])],
     'dwarven-weaponsmith': [Activated('T', AddCounter(PLUS_ONE), T_FUNCS['creatures'],
                                       extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])],
                                       allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=T_FUNCS['card_owner'])],

@@ -4,7 +4,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.base import DoNothing, Action
+from models.actions.base import DoNothing
 from models.actions.combat import AssignBlocker
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.draw_discard import DiscardCards
@@ -13,12 +13,8 @@ from models.actions.special import RemoveCounterGainLife, HealingSalveA, Healing
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import MINUS_ZERO_ONE, VITALITY
 from models.effects.base import Resolver
-from models.effects.listeners_upkeep import HazezonTamarTokenCreation
-from models.effects.listeners_combat import GlyphOfDoomListener
-from models.effects.listeners_damage import GlyphOfLifeListener
-from models.effects.listeners_generic import PreventNextDamageByEOT, PreventNextDamageToEOT, \
+from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
-from models.effects.listeners_permission import NoAttacksAllowedEOT
 from models.effects.resolvers_generic import GraveyardToExile
 from models.modifiers import PTMod, KWAMod
 from models.systems.phase import Phase
@@ -61,9 +57,9 @@ class Feint(Resolver):
         if not the_combat:
             return
         the_combat = the_combat[0]
-        gs.event_mgr.register(PreventNextDamageByEOT(s, combat_only=True))
+        gs.event_mgr.register(PreventNextDamageBy(s, combat_only=True))
         for b in the_combat.blockers:
-            gs.event_mgr.register(PreventNextDamageToEOT(b, combat_only=True))
+            gs.event_mgr.register(PreventNextDamageTo(b, combat_only=True))
             b.tap()
 
 class FeldonsCane(Resolver):
@@ -99,12 +95,6 @@ class FlashFlood(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         gs.pile_mgr.bounce(t) if t.props.slug == 'mountain' else gs.pile_mgr.destroy(t)
 
-class Forcefield(Resolver):
-    """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        from models.effects.listeners_damage import ForcefieldPrevention
-        gs.event_mgr.register(ForcefieldPrevention(creature=t, protected_player=s.owner_id), s)
-
 class GlassesOfUrza(Resolver):
     """Look at opponent's hand"""
     def resolve(self, gs: GameState, source: GameCard, target: int = None):
@@ -118,20 +108,6 @@ class GlyphOfDestruction(Resolver):
         t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
         gs.event_mgr.register(PreventAllDamageToEOT(t), s)
         gs.event_mgr.register(DestroyAtEndStep(t), s)
-
-class GlyphOfDoom(Resolver):
-    """On cast, select a wall.  Register GlyphOfDoomListener."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(GlyphOfDoomListener(target), source)
-
-class GlyphOfLife(Resolver):
-    """On cast, select a wall.  Register GlyphOfLifeListener."""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(GlyphOfLifeListener(target), source)
 
 class GoblinKing(Resolver):
     """All of your other Goblins gain +1+/+1 and Mountainwalk"""
@@ -234,7 +210,7 @@ class KryShield(Resolver):
     """Prevent all damage that would be dealt this turn by target creature you control.
     That creature gets +0/+X until end of turn, where X is its mana value"""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        gs.event_mgr.register(PreventNextDamageByEOT(t), s)
+        gs.event_mgr.register(PreventNextDamageBy(t), s)
         t.modifiers.append(PTMod(s=s, t_adj=t.props.mana_value, expires='EOT'))
 
 class LesserWerewolf(Resolver):
@@ -311,9 +287,9 @@ class MazeOfIth(Resolver):
         the_combat = next((com for com in gs.combat_mgr.combats if com.attacker is t), None)
         if not the_combat:
             return
-        gs.event_mgr.register(PreventNextDamageByEOT(the_combat.attacker, combat_only=True))
+        gs.event_mgr.register(PreventNextDamageBy(the_combat.attacker, combat_only=True))
         for b in the_combat.blockers:
-            gs.event_mgr.register(PreventNextDamageToEOT(b, combat_only=True))
+            gs.event_mgr.register(PreventNextDamageTo(b, combat_only=True))
         t.untap()
 
 class Millstone(Resolver):

@@ -1,6 +1,6 @@
 from __future__ import annotations
 import math
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Any
 
 from models.events_all import ModQueryEvent
 
@@ -313,14 +313,17 @@ class RabidWombat(Listener):
             return
         event.mods.append(PTMod(s=source, p_adj=2 * aura_cnt, t_adj=2 * aura_cnt, expires='EOT'))
 
-class TransmutationEOT(Listener):
-    """Stored in GameState & cleared EOT; how does this class know who the target is?"""
+class Transmutation(Listener):
+    """Switch target creature's power and toughness EOT"""
     listens_to = ModQueryEvent
     modifies = 'pt'
     expires = 'EOT'
 
-    def __init__(self, target: GameCard):
-        self.target = target
+    def __init__(self):
+        self.target: GameCard | None = None
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         if event.card is not self.target:

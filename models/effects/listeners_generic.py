@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Any
 
 from models.actions.base import DoNothing
 from models.actions.destroy_sac_regen import Sac
@@ -171,12 +171,18 @@ class PreventAllDamageEOT(Listener):
             event.remaining = 0
 
 class PreventAllDamageByEOT(Listener):
+    """Declare damage_dealer at initialization if known by the spec;
+     if targeted, ability pipeline will append via the secondary initializer"""
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, damage_dealer: GameCard, combat_only: bool = False):
+    def __init__(self, damage_dealer: GameCard = None, combat_only: bool = False):
         self.damage_dealer = damage_dealer
         self.combat_only = combat_only
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if not self.damage_dealer:
+            self.damage_dealer = target[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if event.source is not self.damage_dealer or (self.combat_only and not event.is_combat):
@@ -188,53 +194,36 @@ class PreventAllDamageToEOT(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, damage_receiver: GameCard, combat_only: bool = False):
-        self.damage_receiver = damage_receiver
+    def __init__(self, combat_only: bool = False):
         self.combat_only = combat_only
+        self.target: GameCard | None = None
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not self.damage_receiver or (self.combat_only and not event.is_combat):
+        if event.target is not self.target or (self.combat_only and not event.is_combat):
             return
         event.prevented += event.remaining
         event.remaining = 0
 
-class PreventAllNoncombatDamageToEOT(Listener):
+class PreventNextDamageBy(Listener):
+    """Declare damage_dealer at initialization if known by the spec;
+     if targeted, ability pipeline will append via the secondary initializer"""
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, damage_receiver: GameCard):
-        self.damage_receiver = damage_receiver
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not self.damage_receiver or event.is_combat:
-            return
-        event.prevented += event.remaining
-        event.remaining = 0
-
-class PreventNextDamageByEOT(Listener):
-    listens_to = DamageProposedEvent
-
-    def __init__(self, damage_dealer: GameCard, combat_only: bool = False):
+    def __init__(self, damage_dealer: GameCard = None, combat_only: bool = False, preventable_amt: int | None = None):
         self.damage_dealer = damage_dealer
         self.combat_only = combat_only
+        self.preventable_amt = preventable_amt
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if not self.damage_dealer:
+            self.damage_dealer = target[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if event.source is not self.damage_dealer or (self.combat_only and not event.is_combat):
-            return
-        event.prevented += event.remaining
-        event.remaining = 0
-        self.is_expired = True
-
-class PreventNextDamageToSourceOwnerEOT(Listener):
-    listens_to = DamageProposedEvent
-    expires = 'EOT'
-
-    def __init__(self, preventable_amt: int | None = None, combat_only: bool = False):
-        self.preventable_amt = preventable_amt
-        self.combat_only = combat_only
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not source.owner_id or (self.combat_only and not event.is_combat):
             return
         if self.preventable_amt is None:
             event.prevented += 999999
@@ -243,17 +232,24 @@ class PreventNextDamageToSourceOwnerEOT(Listener):
         event.remaining = event.amt - event.prevented
         self.is_expired = True
 
-class PreventNextDamageToEOT(Listener):
+class PreventNextDamageTo(Listener):
+    """If the protected entity is part of the spec (COP would be the source's owner), then provide in the initializer;
+    if a target is selected, then it will be known in the ability pipeline and appended via the seconary initializer."""
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, protected_target: GameCard | int, preventable_amt: int | None = None, combat_only: bool = False):
-        self.protected_target = protected_target
+    def __init__(self, preventable_amt: int | None = None, combat_only: bool = False,
+                 protected: Any = None):
         self.preventable_amt = preventable_amt
         self.combat_only = combat_only
+        self.protected = protected
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if not self.protected:
+            self.protected = target[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not self.protected_target or (self.combat_only and not event.is_combat):
+        if event.target is not self.protected or (self.combat_only and not event.is_combat):
             return
         if self.preventable_amt is None:
             event.prevented += 999999
@@ -266,17 +262,18 @@ class RedirectNextDamageFromCardToOwnerEOT(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, protected_card: GameCard, redirectable_amt: int | None = None):
-        self.protected_card = protected_card
+    def __init__(self, protected_card_func: Callable, redirectable_amt: int | None = None):
+        self.protected_card_func = protected_card_func
         self.redirectable_amt = redirectable_amt
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not self.protected_card:
+        protected_card = self.protected_card_func(gs, source)
+        if event.target is not protected_card:
             return
         redirected_amt = min(self.redirectable_amt, event.remaining)
         event.prevented += redirected_amt
         event.remaining = event.amt - event.prevented
-        damage_event_to_owner = DamageProposedEvent(event.source, self.protected_card.owner_id,
+        damage_event_to_owner = DamageProposedEvent(event.source, protected_card.owner_id,
                                                     redirected_amt, redirected_amt)
         gs.event_mgr.register(damage_event_to_owner, source)
 
@@ -397,7 +394,7 @@ class DestroyAtEndStepIfItDidntAttack(Listener):
         self.is_expired = True
 
 # --- PASS THE TURN EVENT ---
-class TakingAnotherTurnEOT(Listener):
+class TakeAnotherTurn(Listener):
     listens_to = PassTheTurnEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: PassTheTurnEvent) -> None:

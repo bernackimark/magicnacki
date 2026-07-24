@@ -244,60 +244,6 @@ class ManaBatteriesAddMana(Resolver):
         source.counters.remove_counter(CHARGE, x)
         gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x)
 
-class PreventAllDamageToThisTurn(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
-        from models.effects.listeners_generic import PreventAllDamageToEOT
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(PreventAllDamageToEOT(target), source)
-
-class PreventAllNoncombatDamageToThisTurn(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
-        from models.effects.listeners_generic import PreventAllNoncombatDamageToEOT
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(PreventAllNoncombatDamageToEOT(target), source)
-
-class PreventNextDamageTo(Resolver):
-    def __init__(self, prevent_amt: int = None, combat_only: bool = False):
-        self.prevent_amt = prevent_amt
-        self.combat_only = combat_only
-
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        """target = the GameCard | int being protected"""
-        from models.effects.listeners_generic import PreventNextDamageToEOT
-        gs.event_mgr.register(PreventNextDamageToEOT(target, self.prevent_amt, self.combat_only), source)
-
-class PreventNextDamageToSourceOwner(Resolver):
-    def __init__(self, amt: int = None, combat_only: bool = False):
-        self.amt = amt
-        self.combat_only = combat_only
-
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        from models.effects.listeners_generic import PreventNextDamageToEOT
-        gs.event_mgr.register(PreventNextDamageToEOT(s.owner_id, self.amt, self.combat_only), s)
-
-class PreventAllDamageBy(Resolver):
-    """Prevent all damage that would be dealt by target this turn"""
-    def __init__(self, combat_only: bool = False):
-        self.combat_only = combat_only
-
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        """target is the card dealing damage"""
-        from listeners_generic import PreventAllDamageEOT
-        gs.event_mgr.register(PreventAllDamageEOT(dealer_func=target, combat_only=True), s)
-
-class PreventNextDamageBy(Resolver):
-    def __init__(self, amt: int = None):
-        self.amt = amt
-
-    def resolve(self, gs: GameState, s: GameCard, target: GameCard = None):
-        """target is the card dealing damage"""
-        if not target:
-            raise RuntimeError(f'{s.props.name} needs a target')
-        from listeners_generic import PreventNextDamageByEOT
-        gs.event_mgr.register(PreventNextDamageByEOT(target), s)
-
 class Pump(Resolver):
     def __init__(self, power_adj: int, toughness_adj: int, eot: bool = False):
         self.p_adj = power_adj
@@ -314,11 +260,6 @@ class Reanimate(Resolver):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         gs.pile_mgr.reanimate(target)
-
-class RedirectNextDamageToOwner(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        from models.effects.listeners_generic import RedirectNextDamageFromCardToOwnerEOT
-        gs.event_mgr.register(RedirectNextDamageFromCardToOwnerEOT(source), source)
 
 class Regenerate(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -426,15 +367,6 @@ class Steal(Resolver):
             gs.pile_mgr.move_card(target, self.new_zone, cause='steal')
         gs.event_mgr.emit(StateBasedEvent())
 
-class TakeAnotherTurn(Resolver):
-    """Take another turn after this one;
-    register a PassTheTurnEvent listener that plays a PassTheTurn(next turn is opponent's = False) action"""
-    # TODO: decommission this since it only exists to register a Listener, which is now allowed
-    #  note: initial testing did fail; it may have to do w when it expires & when PassTheTurn happens after expiry
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
-        from models.effects.listeners_generic import TakingAnotherTurnEOT
-        gs.event_mgr.register(TakingAnotherTurnEOT(), source)
-
 class TapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         target.tap()
@@ -446,14 +378,6 @@ class TapCardsEffect(Resolver):
             raise ValueError(f'{source.props.name} needs a list of targets')
         for t in target:
             t.tap()
-
-class UnblockableThisTurn(Resolver):
-    """Target creature can't be blocked this turn"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        from models.effects.listeners_permission import UnblockableEOT
-        if not target:
-            raise ValueError(f'{source.props.name} needs a target')
-        gs.event_mgr.register(UnblockableEOT(target), source)
 
 class UntapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):

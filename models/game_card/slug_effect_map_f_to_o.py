@@ -9,19 +9,17 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, I
     LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT
-from ..effects.resolvers_f_to_o import FalseOrders, GlyphOfDoom, GlyphOfLife, JovialEvil, Millstone, \
+from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, \
     GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, \
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
-    KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, Forcefield, \
+    KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, \
     FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
-    Pump, TapCardEffect, UntapCardEffect, PreventNextDamageToSourceOwner, \
-    PreventAllDamageBy, PreventNextDamageBy, PreventAllDamageToThisTurn, DeclareAColor, CounterSpell, \
-    RevealTopLibraryCard
+    Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
@@ -36,16 +34,17 @@ from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWin
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, MerchantShip, \
-    MurkDwellers
+    MurkDwellers, GlyphOfDoom
 from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, \
-    FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet
+    FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import Onulet
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
-    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT
+    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
+    PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -129,7 +128,8 @@ MAP: dict[str: list[EffSpec]] = {
     'gravity-sphere': [Static(KWAApplies(T_FUNCS['creatures'], 'remove', 'Flying'))],
     'great-defender': [Spell(GreatDefender(), T_FUNCS['creatures'])],
     'great-wall': [Static(WalkRuleRemoved('Plainswalk'))],
-    'greater-realm-of-preservation': [Activated('1W', PreventNextDamageToSourceOwner(), T_FUNCS['black_and_red'])],
+    'greater-realm-of-preservation': [Activated('1W', PreventNextDamageTo(protected=T_FUNCS['card_owner']),
+                                                T_FUNCS['black_and_red'])],
     'greed': [Activated('B', Greed(), T_FUNCS['card_owner'])],
     'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', 'Protection From Green'), T_FUNCS['creatures'])],
@@ -151,7 +151,8 @@ MAP: dict[str: list[EffSpec]] = {
     'holy-day': [Spell(PreventAllDamageEOT(combat_only=True))],
     'holy-light': [Spell(PumpAppliesEOT(T_FUNCS['non_white_creatures'], (-1, -1)))],
     'holy-strength': [Spell(Pump(1, 2), T_FUNCS['creatures'])],
-    'horn-of-deafening': [Activated('2T', PreventNextDamageToSourceOwner(combat_only=True), T_FUNCS['creatures'])],
+    'horn-of-deafening': [Activated('2T', PreventNextDamageTo(protected=T_FUNCS['card_owner'], combat_only=True),
+                                    T_FUNCS['creatures'])],
     'horror-of-horrors': [Activated('', Regenerate(), T_FUNCS['black_creatures'],
                                     extra_costs=[SacCardCost(T_FUNCS['your_swamps'])])],
     'howl-from-beyond': [Spell(HowlFromBeyond(), T_FUNCS['creatures'])],
@@ -164,7 +165,7 @@ MAP: dict[str: list[EffSpec]] = {
     'icy-manipulator': [Activated('1T', TapCardEffect(), T_FUNCS['untapped_artifacts_creatures_lands'])],
     'ice-storm': [Spell(Destroy(), T_FUNCS['lands'])],
     'immolation': [Spell(Pump(2, -2), T_FUNCS['creatures'])],
-    'indestructible-aura': [Spell(PreventAllDamageToThisTurn(), T_FUNCS['creatures'])],
+    'indestructible-aura': [Spell(PreventAllDamageToEOT(), T_FUNCS['creatures'])],
     'infernal-medusa': [Triggered(InfernalMedusa())],
     'inferno': [Spell(DealDamageToAllCreaturesAndPlayers(6))],
     'infinite-authority': [Triggered(InfiniteAuthorityCombatEnd()), Triggered(InfiniteAuthorityEndStep())],
@@ -197,7 +198,7 @@ MAP: dict[str: list[EffSpec]] = {
     'juzam-djinn': [Triggered(DealDamageToOwnerOnUpkeep(1), T_FUNCS['self'])],
     'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures'])],
     'karma': [Triggered(Karma())],
-    'kei-takahashi': [Activated('T', PreventNextDamageBy(2), T_FUNCS['creatures'])],
+    'kei-takahashi': [Activated('T', PreventNextDamageBy(preventable_amt=2), T_FUNCS['creatures'])],
     'keldon-warlord': [Static(SelfPTEquals(T_FUNCS['your_non_wall_creatures']))],
     'khabal-ghoul': [AddCounterPerCreatureDeathAtEndStep(PLUS_ONE)],
     'killer-bees': [self_pump('G', 1, 1)],
@@ -211,7 +212,7 @@ MAP: dict[str: list[EffSpec]] = {
     'kry-shield': [Activated('2T', KryShield(), T_FUNCS['your_creatures'])],
     'kudzu': [Triggered(Kudzu()), Spell(None, T_FUNCS['lands'])],
     'lady-caleria': [Activated('T', DealDamage(3), T_FUNCS['combatants'])],
-    'lady-evangela': [Activated('WBT', PreventAllDamageBy(combat_only=True), T_FUNCS['creatures'])],
+    'lady-evangela': [Activated('WBT', PreventAllDamageByEOT(combat_only=True), T_FUNCS['creatures'])],
     'lance': [Spell(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures'])],
     'land-equilibrium': [Static(LandEquilibrium())],
     'land-tax': [Triggered(LandTax())],
@@ -300,7 +301,7 @@ MAP: dict[str: list[EffSpec]] = {
     'nicol-bolas': [Triggered(PayManaOrSacAtUpkeep('UBR')), Triggered(NicolBolas())],
     'nightmare': [Static(SelfPTEquals(T_FUNCS['your_swamps']))],
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents'])],
-    'oasis': [Activated('T', PreventNextDamageBy(1), T_FUNCS['creatures'])],
+    'oasis': [Activated('T', PreventNextDamageBy(preventable_amt=1), T_FUNCS['creatures'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
     'old-man-of-the-sea': [Activated('T', Steal(), T_FUNCS['opp_creatures_power_not_greater_than_source']),
                            Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap()),

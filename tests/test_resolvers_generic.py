@@ -2,7 +2,8 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.counter_tokens import STUN
-from models.effects.resolvers_generic import PreventNextDamageTo, GraveyardToExileInItsEntirety, TakeAnotherTurn
+from models.effects.listeners_generic import PreventNextDamageTo, TakeAnotherTurn
+from models.effects.resolvers_generic import GraveyardToExileInItsEntirety
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -61,21 +62,27 @@ class TestResolversGeneric(unittest.TestCase):
     def test_prevents_all_damage_when_amount_is_none(self):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
-        PreventNextDamageTo().resolve(self.gs, target, target)
+        eff = PreventNextDamageTo()
+        eff.target = target
+        self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 5, target)
         self.assertEqual(target.damage_received_this_turn, 0)
 
     def test_prevents_specified_amount(self):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
-        PreventNextDamageTo(3).resolve(self.gs, target, target)
+        eff = PreventNextDamageTo(3)
+        eff.target = target
+        self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 5, target)
         self.assertEqual(target.damage_received_this_turn, 2)
 
     def test_only_prevents_first_damage_event(self):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
-        PreventNextDamageTo(3).resolve(self.gs, target, target)
+        eff = PreventNextDamageTo(3)
+        eff.target = target
+        self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 2, target)
         self.gs.apply_damage(attacker, 2, target)
         self.assertEqual(target.damage_received_this_turn, 2)
@@ -83,14 +90,18 @@ class TestResolversGeneric(unittest.TestCase):
     def test_combat_only_does_not_prevent_noncombat_damage(self):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
-        PreventNextDamageTo(3, combat_only=True).resolve(self.gs, target, target)
+        eff = PreventNextDamageTo(3, combat_only=True)
+        eff.target = target
+        self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 3, target, is_combat=False)
         self.assertEqual(target.damage_received_this_turn, 3)
 
     def test_combat_only_prevents_combat_damage(self):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
-        PreventNextDamageTo(3, combat_only=True).resolve(self.gs, target, target)
+        eff = PreventNextDamageTo(3, combat_only=True)
+        eff.target = target
+        self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 3, target, is_combat=True)
         self.assertEqual(target.damage_received_this_turn, 0)
 
