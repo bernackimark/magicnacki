@@ -212,11 +212,12 @@ class TestCanUntap(unittest.TestCase):
         self.assertTrue(self.gs.perm_querier.can_untap(creature))
 
     def test_meekstone_prevents_large_creature_from_untapping(self):
-        meekstone = self.g.battlefield('meekstone')
-        large_creature = self.g.card('craw-wurm', 1)
-        self.gs.event_mgr.register(Meekstone(), meekstone)
-        add_to_battlefield(large_creature, self.gs)
-        self.assertFalse(self.gs.perm_querier.can_untap(large_creature))
+        self.g.battlefield('meekstone')
+        large_creature = self.g.battlefield('craw-wurm', owner=1)
+        large_creature.tap()
+
+        self.g.next_turn(True)
+        self.assertTrue(large_creature.is_tapped)
 
     def test_meekstone_allows_small_creature_to_untap(self):
         meekstone = self.g.battlefield('meekstone')
