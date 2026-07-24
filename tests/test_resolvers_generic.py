@@ -63,7 +63,7 @@ class TestResolversGeneric(unittest.TestCase):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
         eff = PreventNextDamageTo()
-        eff.target = target
+        eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 5, target)
         self.assertEqual(target.damage_received_this_turn, 0)
@@ -72,7 +72,7 @@ class TestResolversGeneric(unittest.TestCase):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
         eff = PreventNextDamageTo(3)
-        eff.target = target
+        eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 5, target)
         self.assertEqual(target.damage_received_this_turn, 2)
@@ -81,7 +81,7 @@ class TestResolversGeneric(unittest.TestCase):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
         eff = PreventNextDamageTo(3)
-        eff.target = target
+        eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 2, target)
         self.gs.apply_damage(attacker, 2, target)
@@ -91,7 +91,7 @@ class TestResolversGeneric(unittest.TestCase):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
         eff = PreventNextDamageTo(3, combat_only=True)
-        eff.target = target
+        eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 3, target, is_combat=False)
         self.assertEqual(target.damage_received_this_turn, 3)
@@ -100,7 +100,7 @@ class TestResolversGeneric(unittest.TestCase):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)
         eff = PreventNextDamageTo(3, combat_only=True)
-        eff.target = target
+        eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 3, target, is_combat=True)
         self.assertEqual(target.damage_received_this_turn, 0)
@@ -114,7 +114,8 @@ class TestResolversGeneric(unittest.TestCase):
 
     def test_take_another_turn(self):
         time_walk = self.g.card('time-walk')
-        TakeAnotherTurn().resolve(self.gs, time_walk, None)
+        eff = TakeAnotherTurn()
+        self.gs.event_mgr.register(eff, time_walk)
         self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)
 
 
