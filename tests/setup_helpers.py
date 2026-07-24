@@ -121,7 +121,7 @@ class TestGame:
                     self.gs.turn_mgr.has_played_land = True
                 from models.effects.base import Listener
                 for eff_spec in card.abilities:
-                    if isinstance(eff_spec.effect, Listener):
+                    if not eff_spec.is_aa and isinstance(eff_spec.effect, Listener):
                         self.gs.event_mgr.register(eff_spec.effect, card)
                         print(f"Registered listener for {card.props.name}: {eff_spec.effect}")
                 if len(slugs) == 1 and cnt == 1:

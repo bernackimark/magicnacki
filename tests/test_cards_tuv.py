@@ -79,7 +79,7 @@ class TestCardsTUV(unittest.TestCase):
         skip_turn_and_untap_tv = self.gs.pending_choice.options[0]
         skip_turn_and_untap_tv.play()
         self.g.activate_ability(card.activated_abilities[0])
-        PassTheTurn(0, self.gs).play()
+        self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)
         self.assertEqual(0, self.gs.player_turn_idx)
         self.assertTrue(card.is_tapped)
 

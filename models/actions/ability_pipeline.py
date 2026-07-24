@@ -180,10 +180,10 @@ class AbilityPipeline(Action):
             for eff_spec in self.source.abilities:
                 if eff_spec is self.eff_spec:
                     continue
-                if not isinstance(eff_spec.effect, Listener):
+                if eff_spec.is_aa or not isinstance(eff_spec.effect, Listener):
                     continue
                 if eff_spec is self.eff_spec:
-                    print(f"Initializing Listener for {self.source}")
+                    print(f"AbilityPipeline.resolve_ability() is initializing Listener for {self.source}")
                     eff_spec.effect.initialize(self.gs, self.source, self.targets)
                 self.gs.event_mgr.register(eff_spec.effect, self.source)
 

@@ -268,7 +268,7 @@ MAP: dict[str, list[EffSpec]] = {
     'elven-riders': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['non_wall_non_fliers']))],
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
-    'enchanted-being': [Static(PreventAllDamage(T_FUNCS['host'], T_FUNCS['enchanted_creatures'], combat_only=True))],
+    'enchanted-being': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['enchanted_creatures'], combat_only=True))],
     'enchantment-alteration': [Spell(EnchantmentAlteration(), T_FUNCS['auras_on_creatures_or_lands'])],
     'energy-flux': [Triggered(EnergyFlux())],
     'energy-tap': [Spell(EnergyTap(), T_FUNCS['your_untapped_creatures'])],

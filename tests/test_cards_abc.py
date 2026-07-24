@@ -68,6 +68,7 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_bone_flute(self):
         """2T: All creatures get -1/-0 until end of turn"""
+        # TODO: Bone Flute has a Listener, but it shouldn't be active until its ability is triggered
         creature = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
         card = self.g.battlefield('bone-flute')
         aa = card.activated_abilities[0]
