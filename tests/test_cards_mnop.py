@@ -193,6 +193,15 @@ class TestCardsMNOP(unittest.TestCase):
         # AcceptAction(0, self.gs).play()
         # self.assertEqual(18, self.gs.life[0])
 
+    def test_phantasmal_terrain(self):
+        """As this Aura enters, choose a basic land type. Host is the chosen type."""
+        card = self.g.hand('phantasmal-terrain')
+        target = self.g.battlefield('mountain', owner=1)
+        self.g.cast_and_accept(card, target, card.abilities[0])
+        convert_to_swamp = self.gs.pending_choice.get_actions()[4]
+        convert_to_swamp.play()
+        self.assertIn(target, self.gs.card_filter.on_player_board(1).swamps().result())
+
     def test_power_leak(self):
         """At host's upkeep, PL deals 2 damage to host owner. Host may pay X mana to prevent X of that damage."""
         card = self.g.battlefield('power-leak')

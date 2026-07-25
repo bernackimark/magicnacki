@@ -4,7 +4,7 @@ import copy
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import CounterType, WIND
-from models.modifiers import OwnershipMod
+from models.modifiers import OwnershipMod, SubTypeMod
 from models.systems.phase import Phase
 from models.utils import flip
 
@@ -211,6 +211,24 @@ class StoreColorOnCard(Action):
     def play(self) -> None:
         self.card.extras['color_declaration'] = self.color_letter
         # TODO: make presentation request, as this selection is public
+        self.gs.pending_choice = None
+
+class SubTypeReplacement(Action):
+    """In the target's modifiers, add a specific sub_type & remove all of its existing sub_types"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard, sub_type: str):
+        super().__init__(p_id, gs)
+        self.s = source
+        self.target = target
+        self.sub_type = sub_type.capitalize()
+
+    def __repr__(self):
+        return f"Turn {self.target} into a {self.sub_type}"
+
+    def play(self) -> None:
+        sub_types = self.target.card_sub_types.copy()
+        self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='add', card_sub_type=self.sub_type))
+        for sub_type in sub_types:
+            self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='remove', card_sub_type=sub_type))
         self.gs.pending_choice = None
 
 # --- CARD-SPECIFIC ---

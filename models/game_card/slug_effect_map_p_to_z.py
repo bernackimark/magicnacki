@@ -67,9 +67,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Activated('0', RedirectNextDamageFromCardToOwnerEOT(T_FUNCS['self'], 1))],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
     'phantasmal-forces': [Triggered(PayManaOrSacAtUpkeep('U'))],
-    'phantasmal-terrain': [Spell(PhantasmalTerrain(land_type), T_FUNCS['lands'],
-                                 text=f'convert to {land_type}') for land_type in BASIC_LANDS],
-                                 # TODO: All 5 of these are getting registered, and I think that's causing problems
+    'phantasmal-terrain': [Spell(PhantasmalTerrain(), T_FUNCS['lands'])],
     'phyrexian-gremlins': [Triggered(OptionalUntap())],  # more to code
     'piety': [Spell(PumpAppliesEOT(T_FUNCS['blockers'], (0, 3)))],
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],

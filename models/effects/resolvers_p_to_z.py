@@ -10,8 +10,9 @@ from models.actions.destroy_sac_regen import ReanimateAction
 from models.actions.draw_discard import DiscardCards, DrawCard
 from models.actions.piles import Tutor, Shuffle, HandToBattlefield
 from models.actions.pump import VariablePTMod
-from models.actions.special import CopyCard, PrimalClayA, PrimalClayB, PrimalClayC
+from models.actions.special import CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement
 from models.choice_actions_all import ChoiceAction
+from models.constants import BASIC_LANDS
 from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
@@ -29,17 +30,10 @@ if TYPE_CHECKING:
 
 
 class PhantasmalTerrain(Resolver):
-    """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type"""
-    def __init__(self, land_type: str):
-        self.land_type = land_type
-
+    """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type."""
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
-        if target is None:
-            raise ValueError(f'{source.props.name} needs a target')
-        sub_types = target.card_sub_types.copy()
-        target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.land_type))
-        for sub_type in sub_types:
-            target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
+        options = [SubTypeReplacement(source.owner_id, gs, source, target, land_type) for land_type in BASIC_LANDS]
+        gs.pending_choice = ChoiceAction(options)
 
 class PrimalClay(Resolver):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,

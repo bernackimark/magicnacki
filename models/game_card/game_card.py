@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
 from models.counter_tokens import Counters
-from models.modifiers import Modifiers, KWAMod
+from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod
 from models.zone import Zone
 
 
@@ -129,10 +129,12 @@ class GameCard:
             # SAFE PATH: no event emission
             return list(self._card_types)
 
+        on_card_mods = [mod for mod in self.modifiers.iter_type(TypeMod)]
+
         event = ModQueryEvent(query='type', card=self)
         self.game_state.event_mgr.emit(event)
         adds, removes = set(), set()
-        for mod in event.mods:
+        for mod in on_card_mods + event.mods:
             adds.add(mod.card_type) if mod.add_or_remove == 'add' else removes.add(mod.card_type)
 
         return list((set(self._card_types) | adds) - removes)
@@ -145,11 +147,13 @@ class GameCard:
             # SAFE PATH: no event emission
             return list(self._card_sub_types)
 
+        on_card_mods = [mod for mod in self.modifiers.iter_type(SubTypeMod)]
+
         event = ModQueryEvent(query='sub_type', card=self)
         self.game_state.event_mgr.emit(event)
         adds, removes = set(), set()
-        for mod in event.mods:
-            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
+        for mod in on_card_mods + event.mods:
+            adds.add(mod.card_sub_type) if mod.add_or_remove == 'add' else removes.add(mod.card_sub_type)
 
         return list((set(self._card_sub_types) | adds) - removes)
 
