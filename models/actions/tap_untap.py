@@ -46,7 +46,10 @@ class PayManaToUntapAction(Action):
     def play(self):
         self.gs.mana_pools[self.target.owner_id].pay(self.mana_cost)
         self.target.untap()
-        self.gs.action_stack.pop()
+        if self.gs.action_stack.actions:
+            self.gs.action_stack.pop()
+        elif self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 class LeaveTapped(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):

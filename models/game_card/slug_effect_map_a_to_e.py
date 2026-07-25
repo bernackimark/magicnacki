@@ -16,9 +16,8 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageT
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
     CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver
-from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
-    untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
-    max_x_from_printed_card, your_tapped_land_cnt_and_max_x
+from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
+    clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import AnkhOfMishra, CitanulDruid, DingusEgg
@@ -35,7 +34,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
-    PreventNextDamageTo, PreventNextDamageBy
+    PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
 from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
@@ -141,7 +140,7 @@ MAP: dict[str, list[EffSpec]] = {
         # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
         [Spell(HostCantAttack(), T_FUNCS['creatures']), Activated('3', HostCanAttack(T_FUNCS['host']))],
     'brass-man': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
-                  untap_for_mana_at_owner_upkeep('1', T_FUNCS['owner'])],
+                  Triggered(PayManaToUntapUpkeep('1', T_FUNCS['self']))],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing': [Spell(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'])],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['your_tapped_lands'], 1, None),
@@ -183,7 +182,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cockatrice': [Triggered(DestroyCombatantAtCombatEnd(T_FUNCS['self'], T_FUNCS['non_wall_creatures']))],
     'cocoon': [Spell(CocoonCast(), T_FUNCS['your_creatures']), Static(CocoonUntap()), Static(CocoonUpkeep())],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
-                           untap_for_mana_at_owner_upkeep('9', T_FUNCS['owner'])],
+                           Triggered(PayManaToUntapUpkeep('9', T_FUNCS['self']))],
     'concordant-crossroads': [Static(KWAApplies(T_FUNCS['creatures'], 'add', 'Haste'))],
     'consecrate-land': [Spell(HostCantBeTargetedByAuras(), T_FUNCS['lands'])],
     'conservator': [Activated('3T', PreventNextDamageTo(protected=T_FUNCS['owner']))],

@@ -22,8 +22,8 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS
-from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
-    mox_specs, self_pump, max_x_from_printed_card
+from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
+    max_x_from_printed_card
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
@@ -45,7 +45,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
-    PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy
+    PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -178,7 +178,7 @@ MAP: dict[str: list[EffSpec]] = {
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
     'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
-                              untap_for_mana_at_owner_upkeep('UUU', T_FUNCS['owner'])],
+                              Triggered(PayManaToUntapUpkeep('UU', T_FUNCS['self']))],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower())],
@@ -249,7 +249,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Spell(ManaShort(), T_FUNCS['all_players'])],
     'mana-vault': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
-                   untap_for_mana_at_owner_upkeep('4', T_FUNCS['owner']),
+                   Triggered(PayManaToUntapUpkeep('4', T_FUNCS['self'])),
                    Activated('T', AddMana('C', 3), T_FUNCS['owner']),
                    Triggered(ManaVaultDamageIfTapped())],
     'mana-vortex': [Spell(Destroy(), T_FUNCS['your_lands']), Static(ManaVortexUpkeep()),

@@ -1,10 +1,11 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
-from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent
+from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -12,6 +13,23 @@ class TestCardsMNOP(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_mana_vault(self):
+        """... MV doesn't untap during your untap step. At your upkeep, you may pay {4} to untap this artifact.
+        At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
+        card = self.g.battlefield('mana-vault')
+        card.tap()
+        self.g.mana('RRRR')
+
+        self.g.next_turn()
+        self.assertTrue(card.is_tapped)
+        self.gs.event_mgr.emit(DrawStepEvent(0))
+        self.assertTrue(19, self.gs.life[0])
+
+        self.gs.event_mgr.emit(UpkeepEvent(0))
+        pay_to_untap = self.gs.pending_choice.get_actions()[0]
+        pay_to_untap.play()
+        self.assertFalse(card.is_tapped)
 
     def test_mana_vortex(self):
         """When you cast MV, counter it unless you sacrifice a land.
@@ -48,6 +66,12 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.combat(juggernaut, None)
         self.assertEqual(0, card.damage_received_this_turn)
         self.assertEqual(15, self.gs.life[0], 'Damage should not have been redirected to MOK')
+
+    def test_mold_demon(self):
+        card = self.g.card('mold-demon')
+        self.g.battlefield('swamp', cnt=7)
+        self.g.cast_and_accept(card, None, card.abilities[0], add_lots_of_mana=False)
+        self.assertTrue(any(isinstance(a, SacCards) for a in self.gs.pending_choice.get_actions()))
 
     def test_nettling_imp(self):
         """{T}: Choose target non-Wall creature the active player has controlled continuously since BOT.

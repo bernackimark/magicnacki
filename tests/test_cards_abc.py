@@ -25,6 +25,21 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertTrue(self.g.card_has_a_registered_listener(card))
         self.assertEqual(1, host.power)
 
+    def test_animate_dead(self):
+        card = self.g.hand('animate-dead')
+        target = self.g.battlefield('grizzly-bears')  # 2/2
+        bolt = self.g.hand('lightning-bolt')
+        self.g.mana('BBB')
+        self.g.cast_and_accept(bolt, target, bolt.abilities[0])
+        self.assertIn(target, self.g.gy[0])
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.targets.append(target)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(target, self.gs.boards[0])
+        self.assertEqual(1, target.power)  # -1/0
+
     def test_animate_wall(self):
         card = self.g.hand('animate-wall')
         host = self.g.battlefield('wall-of-brambles')
