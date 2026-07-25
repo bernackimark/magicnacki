@@ -55,13 +55,12 @@ class AbilityPipeline(Action):
         self.advance()
 
     def can_begin(self) -> bool:
-        if self.eff_spec:
-            if self.eff_spec.allowed_p_turn_func is not None:
-                if self.eff_spec.allowed_p_turn_func(self.gs, self.source) != self.gs.player_turn_idx:
-                    return False
-            if self.eff_spec.allowed_phases:
-                if self.gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
-                    return False
+        if self.eff_spec.allowed_p_turn_func is not None:
+            if self.eff_spec.allowed_p_turn_func(self.gs, self.source) != self.gs.player_turn_idx:
+                return False
+        if self.eff_spec.allowed_phases:
+            if self.gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
+                return False
 
         if self.eff_spec.effect and isinstance(self.eff_spec.effect, Resolver):
             if not self.eff_spec.effect.can_cast(self.gs, self.source):
@@ -101,7 +100,7 @@ class AbilityPipeline(Action):
                 2. Continues automatically if no user input is required."""
         print('Entering .advance()')
         # unique to auras who use the pipeline to find a target & attach but only have listeners & no resolver
-        if self.eff_spec is None or self.eff_spec.effect is None:
+        if self.eff_spec.effect is None:
             self.finish()
             return
 
@@ -129,7 +128,7 @@ class AbilityPipeline(Action):
         """Pay costs; if casting a cast, CastPermanentAction.play() else create AbilityAction & push onto stack"""
         print('Entering .finish()')
         from models.actions.ability_pipeline_support import AbilityAction
-        if self.eff_spec and (self.eff_spec.is_aa and 'T' in self.eff_spec.cost):
+        if self.eff_spec.is_aa and 'T' in self.eff_spec.cost:
             self.source.tap()
         mana_cost = self.ability_cost[::]
         mana_cost = mana_cost.replace('X', str(self.x_value)) if self.x_value else mana_cost
@@ -143,20 +142,19 @@ class AbilityPipeline(Action):
         self.gs.event_mgr.emit(StateBasedEvent())
 
     def resolve_ability(self):
-        if self.eff_spec:
-            if isinstance(self.eff_spec.effect, Resolver):
-                self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
+        if isinstance(self.eff_spec.effect, Resolver):
+            self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
 
-            if self.eff_spec.is_aa:
-                aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
-                aa.activations_this_turn += 1
-                print(f"Successfully activated ability for {self.source.props.name}")
-                self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa))
+        if self.eff_spec.is_aa:
+            aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
+            aa.activations_this_turn += 1
+            print(f"Successfully activated ability for {self.source.props.name}")
+            self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa))
 
-            if isinstance(self.eff_spec.effect, Listener):
-                print(f"Initializing Listener for {self.source}")
-                self.eff_spec.effect.initialize(self.gs, self.source, self.targets)
-                self.gs.event_mgr.register(self.eff_spec.effect, self.source)
+        if isinstance(self.eff_spec.effect, Listener):
+            print(f"Initializing Listener for {self.source}")
+            self.eff_spec.effect.initialize(self.gs, self.source, self.targets)
+            self.gs.event_mgr.register(self.eff_spec.effect, self.source)
 
         if self.source.zone != Zone.HAND:
             print(f"Successfully executed ability for {self.source.props.name}")
@@ -194,8 +192,6 @@ class AbilityPipeline(Action):
 
     @property
     def ability_cost(self) -> str:
-        if self.eff_spec is None:
-            return ''
         return self.source.casting_cost if self.eff_spec.is_spell else self.eff_spec.cost
 
     @property

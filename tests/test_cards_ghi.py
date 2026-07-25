@@ -155,7 +155,7 @@ class TestCardsGHI(unittest.TestCase):
         {0}: Untap enchanted creature. Activate only during your turn and only once each turn."""
         host = self.g.battlefield('merfolk-of-the-pearl-trident')
         card = self.g.hand('instill-energy')
-        self.g.cast_and_accept(card, host)
+        self.g.cast_and_accept(card, host, card.abilities[0])
         give_haste_eff_spec = card.abilities[0]
         aa = card.activated_abilities[0]
         give_haste_eff_spec.effect.resolve(self.gs, card, host)

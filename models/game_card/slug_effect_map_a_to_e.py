@@ -15,7 +15,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
-    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue
+    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -92,8 +92,8 @@ MAP: dict[str, list[EffSpec]] = {
     'army-of-allah': [Spell(PumpAppliesEOT(T_FUNCS['attackers'], (2, 0)))],
     'artifact-blast': [Spell(CounterSpell(), T_FUNCS['artifact_spells'])],
     'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),
-                            Spell(None, T_FUNCS['artifacts'])],
-    'artifact-ward': [Spell(None, T_FUNCS['creatures']), Static(ArtifactWardCanBeTargeted()),
+                            Spell(EmptyResolver(), T_FUNCS['artifacts'])],
+    'artifact-ward': [Spell(EmptyResolver(), T_FUNCS['creatures']), Static(ArtifactWardCanBeTargeted()),
                       Static(UnblockableCondition(T_FUNCS['host'], T_FUNCS['artifact_creatures'])),
                       Static(PreventAllDamage(T_FUNCS['host'], T_FUNCS['artifacts']))],
     'ashes-to-ashes': [Spell(AshesToAshes(), TargetSpec(T_FUNCS['non_artifact_creatures'], 2, 2))],
@@ -239,7 +239,7 @@ MAP: dict[str, list[EffSpec]] = {
     'dragon-engine': [self_pump('2', 1, 0)],
     'dragon-whelp': [self_pump('R', 1, 0), Triggered(DragonWhelpEndStep())],
     'drain-power': [Spell(DrainPower(), T_FUNCS['opp'])],
-    'dream-coat': [Spell(None, T_FUNCS['creatures'])] +
+    'dream-coat': [Spell(EmptyResolver(), T_FUNCS['creatures'])] +
                   [Activated('', SetColor(''.join(combo)), T_FUNCS['host'], max_activations_per_turn=1,
                              text=f'{{{combo}}}')
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],

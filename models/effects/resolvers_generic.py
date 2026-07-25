@@ -203,6 +203,11 @@ class DrawCards(Resolver):
             return
         gs.pile_mgr.draw(target, self.card_cnt)
 
+class EmptyResolver(Resolver):
+    """Used by auras that have complex Listeners but no resolver"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        pass
+
 class ExileAllCreatures(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         for c in gs.card_filter.in_play().creatures().result():

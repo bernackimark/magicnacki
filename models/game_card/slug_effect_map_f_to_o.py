@@ -19,7 +19,7 @@ from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
-    Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard
+    Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
@@ -52,7 +52,7 @@ MAP: dict[str: list[EffSpec]] = {
     'falling-star': [Spell(FallingStar(), T_FUNCS['opp_creatures'],
                            text='If a di roll is 1-5, deal 3 damage to it')],
     'false-orders': [Spell(FalseOrders(), T_FUNCS['blockers'], allowed_phases=[Phase.DECLARE_BLOCKERS])],
-    'farmstead': [Spell(None, T_FUNCS['lands']),
+    'farmstead': [Spell(EmptyResolver(), T_FUNCS['lands']),
                   Activated('WW', GainLife(), T_FUNCS['host_owner'], allowed_phases=[Phase.UPKEEP],
                             allowed_p_turn_func=T_FUNCS['host_owner'], max_activations_per_turn=1)],
     'fasting': [Triggered(Fasting(), T_FUNCS['self']), Triggered(FastingDestroy())],
@@ -67,7 +67,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fire-and-brimstone': [Spell(FireAndBrimstone(),)],
     'fire-drake': [Activated('R', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['owner'])],
-    'firebreathing': [Spell(None, T_FUNCS['creatures']), self_pump('R', 1, 0)],
+    'firebreathing': [Spell(EmptyResolver(), T_FUNCS['creatures']), self_pump('R', 1, 0)],
     'fishliver-oil': [Spell(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures'])],
     'fissure': [Spell(Destroy(False), T_FUNCS['creatures_and_lands'])],
     'flash-counter': [Spell(CounterSpell(), T_FUNCS['instant_spells'])],
@@ -235,7 +235,7 @@ MAP: dict[str: list[EffSpec]] = {
     'lightning-bolt': [Spell(DealDamage(3), T_FUNCS['all_creatures_and_players'])],
     'living-armor':
         [Activated('T', XZeroOneCountersByManaValue(), T_FUNCS['creatures'], extra_costs=[SacSelfCost()])],
-    'living-artifact': [Spell(None, T_FUNCS['artifacts']), Triggered(LivingArtifactOnDamage()),
+    'living-artifact': [Spell(EmptyResolver(), T_FUNCS['artifacts']), Triggered(LivingArtifactOnDamage()),
                         Triggered(LivingArtifactUpkeep())],
     'living-lands': [Static(LivingLands())],
     'living-plane': [Static(LivingPlane())],
