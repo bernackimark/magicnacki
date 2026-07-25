@@ -16,6 +16,9 @@ if TYPE_CHECKING:
 
 
 class Resolver:
+    def __repr__(self):
+        return self.__class__.__name__
+
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
         """Perform an explicit game action (ex: deal 3 damage)"""
         raise NotImplementedError()
@@ -31,6 +34,9 @@ class Listener:
     expires: str | None = None
     is_expired: bool = False
 
+    def __repr__(self):
+        return self.__class__.__name__
+
     def initialize(self, gs: GameState, source: GameCard, target: Any):
         """Used when registering a Listener with a target; the selected targets are stored in self.target(s)"""
         pass
@@ -45,7 +51,7 @@ class EffSpec:
     """Effect Specification; mapping slugs to Effects uses EffSpec"""
     activation_type: Literal['activated', 'spell', 'static', 'triggered']
     cost: str
-    effect: Resolver | Listener | None  # None if an aura needs EffSpec to create target_spec but has no resolver
+    effect: Resolver | Listener
     target_spec: Union[Callable, TargetSpec, None] = None
     extra_costs: list[Cost | None] = field(default_factory=list)
     allowed_phases: list[Phase | None] = field(default_factory=list)
