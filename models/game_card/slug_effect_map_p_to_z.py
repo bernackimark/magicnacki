@@ -12,12 +12,12 @@ from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
-    UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEgg, \
+    UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEggA, \
     SingingTree, Rakalite, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Sindbad, SirensCall, VenarianGoldCast
+    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
@@ -253,7 +253,10 @@ MAP: dict[str, list[EffSpec]] = {
     'tranquility': [Spell(DestroyAll(T_FUNCS['enchants']))],
     'transmutation': [Spell(Transmutation(), T_FUNCS['creatures'])],
     'triassic-egg': [Activated('3T', AddCounter(HATCHLING)),
-                     Activated('', TriassicEgg(), extra_costs=[SacSelfCost()])],
+                     Activated('', TriassicEggA(), extra_costs=[SacSelfCost()],
+                               text='Sac to move a creature card from your hand to the battlefield'),
+                     Activated('', TriassicEggB(), extra_costs=[SacSelfCost()],
+                               text='Sac to reanimate a creature card from your graveyard')],
     'triskelion': [Activated('', DealDamage(1), T_FUNCS['all_creatures_and_players'],
                              extra_costs=[RemoveCounterCost(PLUS_ONE)]),
                    Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self'])],

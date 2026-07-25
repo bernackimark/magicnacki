@@ -312,24 +312,31 @@ class Tracker(Resolver):
         gs.apply_damage(source, source.power, target)
         gs.apply_damage(target, target.power, source)
 
-class TriassicEgg(Resolver):
+class TriassicEggA(Resolver):
     """Choose one (activate only if there are two or more hatchling counters on this artifact.):
-    * You may put a creature card from your hand onto the battlefield.
-    * Return target creature card from your graveyard to the battlefield."""
-    def can_activate(self, _: GameState, source: GameCard) -> bool:
-        return source.counters.get_count(HATCHLING) >= 2
+    * You may put a creature card from your hand onto the battlefield ... """
+    def can_activate(self, gs: GameState, s: GameCard) -> bool:
+        ctr_cnt_condition = s.counters.get_count(HATCHLING) >= 2
+        has_creature_in_hand = len([c for c in gs.pile_mgr.hands[s.owner_id] if c.is_creature]) > 0
+        return ctr_cnt_condition and has_creature_in_hand
 
-    def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
-        options = []
-        for card_in_hand in gs.pile_mgr.hands[source.owner_id]:
-            if card_in_hand.is_creature:
-                options.append(HandToBattlefield(source.owner_id, gs, card_in_hand))
-        for card_in_graveyard in gs.pile_mgr.graveyards[source.owner_id]:
-            if card_in_graveyard.is_creature:
-                options.append(ReanimateAction(source.owner_id, gs, source, card_in_graveyard))
-        if not options:
-            return
-        gs.pending_choice = ChoiceAction(options)
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.pile_mgr.move_card(target, Zone.BATTLEFIELD)
+
+class TriassicEggB(Resolver):
+    """Choose one (activate only if there are two or more hatchling counters on this artifact.):
+    ... * Return target creature card from your graveyard to the battlefield."""
+    def can_activate(self, gs: GameState, s: GameCard) -> bool:
+        ctr_cnt_condition = s.counters.get_count(HATCHLING) >= 2
+        creatures_in_your_gy = len([c for c in gs.graveyards[s.owner_id] if c.is_creature]) > 0
+        return ctr_cnt_condition and creatures_in_your_gy
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.pile_mgr.move_card(target, Zone.BATTLEFIELD)
 
 class Twiddle(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):

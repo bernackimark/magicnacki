@@ -4,6 +4,7 @@ from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.mana import PayMana
 from models.actions.special import Attach, PayManaToDrawCards
+from models.counter_tokens import HATCHLING
 from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -101,6 +102,24 @@ class TestCardsTUV(unittest.TestCase):
         self.assertTrue(7, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
         self.assertNotEqual(hand_snapshot, self.gs.pile_mgr.hands[0])
+
+    def test_triassic_egg(self):
+        """... Sac TE: Choose one. Activate only if there are two or more hatchling counters on this artifact.
+        * You may put a creature card from your hand onto the battlefield.
+        * Return target creature card from your graveyard to the battlefield."""
+        self.gs.hands[0].clear()
+        card = self.g.battlefield('triassic-egg')
+        card.counters.add_counter(HATCHLING, 2)
+        self.assertFalse(any(a.source is card for a in self.gs.add_activated_abilities_from_board()))
+
+        card_in_hand = self.g.hand('grizzly-bears')
+        self.g.graveyard('merfolk-of-the-pearl-trident')
+        self.assertEqual(2, len(self.gs.add_activated_abilities_from_board()))
+
+        hand_to_battlefield = self.gs.add_activated_abilities_from_board()[0]
+        self.g.activate_ability(hand_to_battlefield, card_in_hand)
+        self.assertIn(card, self.g.gy[0])
+        self.assertIn(card_in_hand, self.gs.boards[0])
 
     def test_unstable_mutation(self):
         """Host gets +3/+3. At host's upkeep, put a -1/-1 counter on host."""
