@@ -271,10 +271,11 @@ class TestCardsAtoC(unittest.TestCase):
         """Opponent's maximum hand size is four [at their discard phase]"""
         self.g.battlefield('cursed-rack')
         opp_hand = self.gs.hands[1]
-        self.assertTrue(len(opp_hand) > 4)
+        opp_hand.pop()
+        self.assertTrue(len(opp_hand) == 6)
         self.g.next_turn(True)
         self.gs.event_mgr.emit(DiscardStepEvent(1))
-        self.assertEqual(35, len(self.gs.pending_choice.get_actions()))  # 7 card hand x 3 selections = 35 combos
+        self.assertEqual(15, len(self.gs.pending_choice.get_actions()))  # 6 card hand x 2 selections = 15 combos
 
 
 if __name__ == '__main__':

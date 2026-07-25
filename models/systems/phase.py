@@ -235,30 +235,37 @@ class PreCombatDamagePhase(PhaseState):
                 gs.event_mgr.emit(BlockEvent(com.attacker, blocker))
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.actions.combat import AssignCombatDamage
-        actions: list[Action] = [AssignCombatDamage(gs.action_on_idx, gs)]
+        actions = []
         actions.extend(gs.available_actions_from_hand())
         actions.extend(gs.add_activated_abilities_from_board())
-
-        if all(isinstance(a, AssignCombatDamage) for a in actions):
-            return None
-
-        return actions
+        return actions or None
 
     def next(self, gs: GameState):
-        return AssignCombatDamagePhase()
+        if gs.combat_mgr.has_first_strike_step:
+            return FirstStrikeDamagePhase()
+        return CombatDamagePhase()
 
-class AssignCombatDamagePhase(PhaseState):
-    phase = Phase.ASSIGN_COMBAT_DAMAGE
+class FirstStrikeDamagePhase(PhaseState):
+    phase = Phase.FIRST_STRIKE_DAMAGE
+
+    def on_enter(self, gs: GameState):
+        gs.combat_mgr.handle_damage_step(is_first_strike=True)
+
+    def get_actions(self, p_id: int, gs: GameState):
+        return None
+
+    def next(self, gs: GameState):
+        return CombatDamagePhase()
+
+class CombatDamagePhase(PhaseState):
+    phase = Phase.COMBAT_DAMAGE
 
     def on_enter(self, gs: GameState):
         from models.events_all import UnblockedAttackerEvent
-        for com in gs.combat_mgr.combats:
-            if not com.blockers:
-                event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
-                gs.event_mgr.emit(event)
-            com.handle_damage()
-        # gs.event_mgr.emit(CombatEndEvent(active_player=gs.player_turn_idx))
+        for combat in gs.combat_mgr.combats:
+            if not combat.is_blocked:
+                gs.event_mgr.emit(UnblockedAttackerEvent(combat.attacker, flip(combat.attacker.owner_id)))
+        gs.combat_mgr.handle_damage_step(is_first_strike=False)
 
     def get_actions(self, p_id: int, gs: GameState):
         return None
@@ -403,7 +410,8 @@ PHASE_MAP = {
     Phase.DECLARE_ATTACKERS: DeclareAttackersPhase,  # declare who is attacking; tap those w/o vigil
     Phase.DECLARE_BLOCKERS: DeclareBlockersPhase,  # declare who's blocking whom
     Phase.PRE_COMBAT_DAMAGE: PreCombatDamagePhase,  # CIAA
-    Phase.ASSIGN_COMBAT_DAMAGE: AssignCombatDamagePhase,
+    Phase.FIRST_STRIKE_DAMAGE: FirstStrikeDamagePhase,
+    Phase.COMBAT_DAMAGE: CombatDamagePhase,
     Phase.COMBAT_END: CombatEndPhase,
     Phase.SECOND_MAIN: SecondMainPhase,
     Phase.END_STEP: EndStepPhase,

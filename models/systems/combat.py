@@ -3,9 +3,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from models.events_all import StateBasedEvent
-from models.modifiers import PTMod
 from models.utils import flip
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -34,82 +32,91 @@ if TYPE_CHECKING:
 
 @dataclass
 class Combat:
-    _gs: GameState
     attacker: GameCard
     blockers: list[GameCard] = field(default_factory=list)
+    is_blocked: bool = False  # Once a blocker has been declared, this never becomes False
 
     def __repr__(self):
         return f"{self.attacker} attacking {self.blockers}"
 
-    @property
-    def contains_first_strike(self) -> bool:
-        return any('First Strike' in self.attacker.keyword_abilities or
-                   'First Strike' in b.keyword_abilities for b in self.blockers)
+    def add_blocker(self, blocker: GameCard):
+        self.blockers.append(blocker)
+        self.is_blocked = True
 
-    @property
-    def attacking_player(self) -> int:
-        return self.attacker.owner_id
-
-    @property
-    def defending_player(self) -> int:
-        return flip(self.attacker.owner_id)
-
-    def handle_damage(self):
-        """Main entry point for combat damage resolution. Handles first strike & normal damage & unblocked attackers.
-        Currently, all attacker damage is assigned to the first blocker, no damage splitting supported yet"""
-        if self.contains_first_strike:
-            # First strike phase
-            self._combat_phase(first_strike=True)
-
-        # Normal damage phase (skip assigning damage by first strikers, who already dealt damage)
-        self._combat_phase(first_strike=False)
-
-    def _combat_phase(self, first_strike: bool):
-        """Resolves damage for a phase (first strike or normal)"""
-        damage_assignments = []  # (source, amount, target)
-
-        # --- No blockers ---
-        if not self.blockers:
-            if not first_strike:
-                damage_assignments.append((self.attacker, self.attacker.power, self.defending_player))
-
-        else:
-            # --- Attacker → blocker ---
-            a = self.attacker
-            if self._phase_applicable(a, first_strike):
-                if len(self.blockers) > 1 and a.rampage_amt:
-                    multiplier = len(self.blockers) - 1
-                    a.modifiers.append(PTMod(s=a, p_adj=a.rampage_amt * multiplier,
-                                             t_adj=a.rampage_amt * multiplier, expires='EOT'))
-
-                target = self.blockers[0]
-                # If blocker is not on the battlefield (destroyed/bounced), it will not receive a damage assignment
-                if target.zone == Zone.BATTLEFIELD:
-                    if self._gs.perm_querier.can_damage(target, a):
-                        damage_assignments.append((a, a.power, target))
-
-            # --- Blockers → attacker ---
-            for blocker in self.blockers:
-                if self._phase_applicable(blocker, first_strike):
-                    if self._gs.perm_querier.can_damage(self.attacker, blocker):
-                        damage_assignments.append((blocker, blocker.power, self.attacker))
-
-        # --- apply damage ---
-        for source, amount, target in damage_assignments:
-            self._gs.apply_damage(source, amount, target, is_combat=True)
-
-        # --- run SBAs ---
-        self._gs.event_mgr.emit(StateBasedEvent())
-        # self.gs.check_state_based_actions()
-
-    @staticmethod
-    def _phase_applicable(creature: GameCard, first_strike: bool) -> bool:
-        """Returns True if this creature should deal damage in the current phase."""
-        if not first_strike and 'First Strike' not in creature.keyword_abilities:
-            return True
-        if first_strike and 'First Strike' in creature.keyword_abilities:
-            return True
-        return False
+# @dataclass
+# class Combat:
+#     _gs: GameState
+#     attacker: GameCard
+#     blockers: list[GameCard] = field(default_factory=list)
+#
+#     def __repr__(self):
+#         return f"{self.attacker} attacking {self.blockers}"
+#
+#     @property
+#     def contains_first_strike(self) -> bool:
+#         return any('First Strike' in self.attacker.keyword_abilities or
+#                    'First Strike' in b.keyword_abilities for b in self.blockers)
+#
+#     @property
+#     def defending_player(self) -> int:
+#         return flip(self.attacker.owner_id)
+#
+#     def handle_damage(self):
+#         """Main entry point for combat damage resolution. Handles first strike & normal damage & unblocked attackers.
+#         Currently, all attacker damage is assigned to the first blocker, no damage splitting supported yet"""
+#         if self.contains_first_strike:
+#             # First strike phase
+#             self._combat_phase(first_strike=True)
+#
+#         # Normal damage phase (skip assigning damage by first strikers, who already dealt damage)
+#         self._combat_phase(first_strike=False)
+#
+#     def _combat_phase(self, first_strike: bool):
+#         """Resolves damage for a phase (first strike or normal)"""
+#         damage_assignments = []  # (source, amount, target)
+#
+#         # --- No blockers ---
+#         if not self.blockers:
+#             if not first_strike:
+#                 damage_assignments.append((self.attacker, self.attacker.power, self.defending_player))
+#
+#         else:
+#             # --- Attacker → blocker ---
+#             a = self.attacker
+#             if self._phase_applicable(a, first_strike):
+#                 if len(self.blockers) > 1 and a.rampage_amt:
+#                     multiplier = len(self.blockers) - 1
+#                     a.modifiers.append(PTMod(s=a, p_adj=a.rampage_amt * multiplier,
+#                                              t_adj=a.rampage_amt * multiplier, expires='EOT'))
+#
+#                 target = self.blockers[0]
+#                 # If blocker is not on the battlefield (destroyed/bounced), it will not receive a damage assignment
+#                 if target.zone == Zone.BATTLEFIELD:
+#                     if self._gs.perm_querier.can_damage(target, a):
+#                         damage_assignments.append((a, a.power, target))
+#
+#             # --- Blockers → attacker ---
+#             for blocker in self.blockers:
+#                 if self._phase_applicable(blocker, first_strike):
+#                     if self._gs.perm_querier.can_damage(self.attacker, blocker):
+#                         damage_assignments.append((blocker, blocker.power, self.attacker))
+#
+#         # --- apply damage ---
+#         for source, amount, target in damage_assignments:
+#             self._gs.apply_damage(source, amount, target, is_combat=True)
+#
+#         # --- run SBEs ---
+#         self._gs.event_mgr.emit(StateBasedEvent())
+#         # self.gs.check_state_based_actions()
+#
+#     @staticmethod
+#     def _phase_applicable(creature: GameCard, first_strike: bool) -> bool:
+#         """Returns True if this creature should deal damage in the current phase."""
+#         if not first_strike and 'First Strike' not in creature.keyword_abilities:
+#             return True
+#         if first_strike and 'First Strike' in creature.keyword_abilities:
+#             return True
+#         return False
 
 
 class CombatManager:
@@ -125,17 +132,23 @@ class CombatManager:
     def blockers(self) -> list[GameCard | None]:
         return [b for com in self.combats for b in com.blockers]
 
-    @property
-    def has_a_first_strike_phase(self) -> bool:
-        return any(c.contains_first_strike for c in self.combats)
+    def create_combat(self, attacker: GameCard) -> None:
+        self.combats.append(Combat(attacker))
 
-    def create_combat(self, c: GameCard) -> None:
-        self.combats.append(Combat(self._gs, c))
+    def add_blocker(self, attacker: GameCard, blocker: GameCard):
+        combat = self.get_combat(attacker)
+        if not combat:
+            raise ValueError(f"Combat featuring {attacker} not found")
+        combat.add_blocker(blocker)
 
     def get_combat(self, c: GameCard) -> Combat | None:
         for com in self.combats:
             if c is com.attacker or c in com.blockers:
                 return com
+
+    def handle_damage_step(self, is_first_strike: bool):
+        """Resolve one combat damage step"""
+        self._handle_damage(is_first_strike)
 
     def get_combatants_against(self, c: GameCard) -> list[GameCard | None]:
         com = self.get_combat(c)
@@ -150,8 +163,86 @@ class CombatManager:
         """If attacker, delete that combat object, untap attacker;
         If a blocking creature is destroyed/bounced after it is declared as a blocker, the attacking creature remains
         blocked and will deal no damage, unless it has trample"""
-        for com in self.combats:
-            if com.attacker is c:
-                com.attacker.untap()
-                self.combats.remove(com)
+        for combat in list(self.combats):
+            if combat.attacker is c:
+                combat.attacker.untap()
+                self.combats.remove(combat)
                 return
+            if c in combat.blockers:
+                combat.blockers.remove(c)
+                return
+
+    def is_in_combat(self, creature: GameCard):
+        for combat in self.combats:
+            if combat.attacker is creature:
+                return True
+            if creature in combat.blockers:
+                return True
+        return False
+
+    @staticmethod
+    def _deals_damage_this_step(creature: GameCard, first_strike: bool) -> bool:
+        has_fs = 'First Strike' in creature.keyword_abilities
+        return has_fs if first_strike else not has_fs
+
+    @property
+    def has_first_strike_step(self):
+        for combat in self.combats:
+            if 'First Strike' in combat.attacker.keyword_abilities:
+                return True
+            for blocker in combat.blockers:
+                if 'First Strike' in blocker.keyword_abilities:
+                    return True
+        return False
+
+    def _handle_damage(self, first_strike: bool):
+        assignments: list[tuple[GameCard, int, GameCard | int]] = []
+        for combat in self.combats:
+            attacker = combat.attacker
+            # attacker removed from combat
+            if not self.is_in_combat(attacker):
+                continue
+
+            # attacker -> blocker/player
+            if self._deals_damage_this_step(attacker, first_strike):
+                attacker_power = attacker.power
+
+                # Rampage
+                if attacker.rampage_amt and len(combat.blockers) > 1:
+                    bonus = attacker.rampage_amt * (len(combat.blockers) - 1)
+                    attacker_power += bonus
+
+                if combat.blockers:
+                    blocker = combat.blockers[0]
+                    if self.is_in_combat(blocker):
+                        # handle trample
+                        if 'Trample' in attacker.keyword_abilities:
+                            lethal = max(0, blocker.toughness - blocker.damage_received_this_turn)
+                            damage_to_blocker = min(attacker_power, lethal)
+                            assignments.append((attacker, damage_to_blocker, blocker))
+                            excess = attacker_power - damage_to_blocker
+                            if excess > 0:
+                                assignments.append((attacker, excess, flip(attacker.owner_id)))
+                        else:
+                            assignments.append((attacker, attacker.power, blocker))
+                    else:
+                        # Trample still hits player even if blockers are gone
+                        if 'Trample' in attacker.keyword_abilities:
+                            assignments.append((attacker, attacker_power, flip(attacker.owner_id)))
+
+                elif not combat.is_blocked:
+                    assignments.append((attacker, attacker.power, flip(attacker.owner_id)))
+
+            # blockers -> attacker
+            for blocker in combat.blockers:
+                if not self.is_in_combat(blocker):
+                    continue
+                if self._deals_damage_this_step(blocker, first_strike):
+                    assignments.append((blocker, blocker.power, attacker))
+
+        # deal damage
+        for source, amount, target in assignments:
+            if self._gs.perm_querier.can_damage(target, source):
+                self._gs.apply_damage(source, amount, target, is_combat=True)
+
+        self._gs.event_mgr.emit(StateBasedEvent())

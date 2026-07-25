@@ -1,6 +1,7 @@
 import unittest
 
 from models.modifiers import KWAMod
+from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
 
@@ -25,8 +26,8 @@ class TestCombat(unittest.TestCase):
         self.assertEqual([attacker], self.gs.combat_mgr.get_combatants_against(blocker))
 
     def test_blocked_combat_assigns_damage(self):
-        attacker = self.g.battlefield('grizzly-bears')  # 2/2
-        blocker = self.g.battlefield('hill-giant', owner=1)  # 3/3
+        attacker = self.g.battlefield('azure-drake')  # 2/4
+        blocker = self.g.battlefield('giant-spider', owner=1)  # 2/4
         self.g.combat(attacker, blocker)
         self.assertEqual(attacker.damage_received_this_turn, blocker.power)
         self.assertEqual(blocker.damage_received_this_turn, attacker.power)
@@ -47,20 +48,12 @@ class TestCombat(unittest.TestCase):
         self.g.mana('U', 1)
         self.gs.combat_mgr.create_combat(attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
-        combat.blockers.append(blocker)
+        combat.add_blocker(blocker)
         self.gs.combat_mgr.remove_from_combat(blocker)
         self.g.cast_and_accept(unsummon, blocker, unsummon.abilities[0], owner=1)
         self.assertNotIn(blocker, self.gs.card_filter.in_play().result())
-        combat.handle_damage()
-        self.assertEqual(self.gs.life[1], 20)
-
-    def test_remove_attacker_from_combat(self):
-        attacker = self.g.card('grizzly-bears')
-        attacker.tap()
-        self.gs.combat_mgr.create_combat(attacker)
-        self.gs.combat_mgr.remove_from_combat(attacker)
-        self.assertEqual([], self.gs.combat_mgr.combats)
-        self.assertFalse(attacker.is_tapped)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertEqual(20, self.gs.life[1])
 
     def test_get_combat_returns_none_when_card_not_in_combat(self):
         creature = self.g.card('grizzly-bears')
@@ -85,6 +78,24 @@ class TestCombat(unittest.TestCase):
         blocker = self.g.battlefield('phantom-monster', owner=1)  # 3/3
         self.g.combat(attacker, blocker)
         self.assertIn(blocker, self.gs.pile_mgr.boards[1], 'First Striker appears to have dealt damage 2x')
+
+    def test_remove_from_combat(self):
+        attacker = self.g.battlefield('sengir-vampire', owner=1)  # 4/4
+        blocker = self.g.battlefield('serra-angel')  # 4/4
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(attacker)
+        com = self.gs.combat_mgr.get_combat(attacker)
+        com.add_blocker(blocker)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)
+        self.gs.combat_mgr.remove_from_combat(attacker)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertFalse(attacker.is_tapped)
+        self.assertEqual(0, attacker.damage_received_this_turn)
+        self.assertEqual(0, blocker.damage_received_this_turn)
+        self.assertIn(attacker, self.gs.boards[1])
+        self.assertIn(blocker, self.gs.boards[0])
+        self.assertIn(attacker, self.gs.card_filter.attackers().result())
 
     def test_unblocked_attacker_damage(self):
         attacker = self.g.battlefield('white-knight')  # 2/2 First Strike

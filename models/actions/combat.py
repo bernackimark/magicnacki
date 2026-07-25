@@ -60,11 +60,3 @@ class FinishBlocking(Action):
 
     def play(self) -> None:
         self.gs.phase_mgr.set_phase(Phase.PRE_COMBAT_DAMAGE)
-
-@dataclass
-class AssignCombatDamage(Action):
-    def __repr__(self):
-        return "Assign Combat Damage"
-
-    def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.ASSIGN_COMBAT_DAMAGE)

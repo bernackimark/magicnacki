@@ -202,12 +202,15 @@ class TestGame:
         if blockers is None:
             pass
         elif isinstance(blockers, GameCard):
-            AssignBlocker(1, self.gs, blockers, attacker).play()
+            self.gs.combat_mgr.add_blocker(attacker, blockers)
         else:
             for blocker in blockers:
-                AssignBlocker(1, self.gs, blocker, attacker).play()
-        combat = self.gs.combat_mgr.get_combat(attacker)
-        combat.handle_damage()
+                self.gs.combat_mgr.add_blocker(attacker, blocker)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)
+        self.gs.phase_mgr.set_phase(Phase.PRE_COMBAT_DAMAGE)
+        if self.gs.combat_mgr.has_first_strike_step:
+            self.gs.phase_mgr.set_phase(Phase.FIRST_STRIKE_DAMAGE)
+        self.gs.phase_mgr.set_phase(Phase.COMBAT_DAMAGE)
 
     def next_turn(self, go_to_opp_turn: bool = False):
         """Passes the current turn; passes the next turn; returning action back to the original player"""

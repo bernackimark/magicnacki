@@ -1,6 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.events_all import AttackEvent, BlockEvent
+
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
@@ -201,13 +203,12 @@ class CardFilter:
 
     # --- Attackers/Blockers ---
     def attackers(self):
-        attackers = [combat.attacker for combat in self._gs.combat_mgr.combats]
+        attackers = [e.attacker for e in self._gs.event_mgr.get_events(self._gs.turn_mgr.turn_number, AttackEvent)]
         self._cards = [c for c in self._cards if c in attackers]
         return self
 
     def blockers(self):
-        blockers = [b for combat in self._gs.combat_mgr.combats
-                    for b in combat.blockers]
+        blockers = [e.blocker for e in self._gs.event_mgr.get_events(self._gs.turn_mgr.turn_number, BlockEvent)]
         self._cards = [c for c in self._cards if c in blockers]
         return self
 

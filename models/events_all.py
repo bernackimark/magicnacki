@@ -88,6 +88,10 @@ class CastResolvedEvent(Event):
     owner_id: int
     target: GameCard | None = None
 
+@dataclass
+class CombatDamageEvent(Event):
+    is_first_strike: bool = False
+
 @dataclass(frozen=True)
 class CombatEndEvent(Event):
     active_player: int

@@ -148,6 +148,7 @@ class PileManager:
     def _leave_battlefield(self, card: GameCard, to_zone: Zone):
         """Emit ZoneChangeEvent before unregistering its effects, doing so for the subject card;
         detach all attached GameCard auras; call GameCard.clear_all_mods()"""
+        self._gs.combat_mgr.remove_from_combat(card)
         self._gs.event_mgr.emit(ZoneChangeEvent(card, card.zone, to_zone, cause='leave'))
         self._gs.event_mgr.unregister_effects(card)
 
