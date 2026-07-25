@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import copy
 from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING, Union
 
@@ -153,8 +155,9 @@ class AbilityPipeline(Action):
 
         if isinstance(self.eff_spec.effect, Listener):
             print(f"Initializing Listener for {self.source}")
-            self.eff_spec.effect.initialize(self.gs, self.source, self.targets)
-            self.gs.event_mgr.register(self.eff_spec.effect, self.source)
+            listener = copy.deepcopy(self.eff_spec.effect)
+            listener.initialize(self.gs, self.source, self.targets)
+            self.gs.event_mgr.register(listener, self.source)
 
         if self.source.zone != Zone.HAND:
             print(f"Successfully executed ability for {self.source.props.name}")
@@ -178,8 +181,11 @@ class AbilityPipeline(Action):
                     continue
                 if eff_spec is self.eff_spec:
                     print(f"AbilityPipeline.resolve_ability() is initializing Listener for {self.source}")
-                    eff_spec.effect.initialize(self.gs, self.source, self.targets)
-                self.gs.event_mgr.register(eff_spec.effect, self.source)
+                    listener = copy.deepcopy(self.eff_spec.effect)
+                    listener.initialize(self.gs, self.source, self.targets)
+                    self.gs.event_mgr.register(listener, self.source)
+                else:
+                    self.gs.event_mgr.register(eff_spec.effect, self.source)
 
             if not self.source.props.is_permanent:
                 self.gs.pile_mgr.move_card(self.source, Zone.GRAVEYARD, cause='cast')

@@ -173,9 +173,8 @@ class TestCardsDEF(unittest.TestCase):
         self.g.mana('U', owner=1)
         attacker = self.g.battlefield('grizzly-bears')  # 2/2
         self.gs.combat_mgr.create_combat(attacker)
-        combat = self.gs.combat_mgr.get_combat(attacker)
         self.g.activate_ability(ff.activated_abilities[0], attacker, 1)
-        combat.handle_damage()
+        self.gs.combat_mgr.handle_damage_step(False)
         self.assertEqual(19, self.gs.life[1])
 
     def test_forethought_amulet(self):

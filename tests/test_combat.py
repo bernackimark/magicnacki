@@ -21,7 +21,7 @@ class TestCombat(unittest.TestCase):
         blocker = self.g.card('hill-giant', 1)
         self.gs.combat_mgr.create_combat(attacker)
         combat = self.gs.combat_mgr.get_combat(attacker)
-        combat.blockers.append(blocker)
+        combat.add_blocker(blocker)
         self.assertEqual([blocker], self.gs.combat_mgr.get_combatants_against(attacker))
         self.assertEqual([attacker], self.gs.combat_mgr.get_combatants_against(blocker))
 
@@ -79,7 +79,7 @@ class TestCombat(unittest.TestCase):
         self.g.combat(attacker, blocker)
         self.assertIn(blocker, self.gs.pile_mgr.boards[1], 'First Striker appears to have dealt damage 2x')
 
-    def test_remove_from_combat(self):
+    def test_remove_attacker_from_combat(self):
         attacker = self.g.battlefield('sengir-vampire', owner=1)  # 4/4
         blocker = self.g.battlefield('serra-angel')  # 4/4
 

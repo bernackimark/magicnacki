@@ -74,8 +74,8 @@ class TestResolversGeneric(unittest.TestCase):
         eff = PreventNextDamageTo(3)
         eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
-        self.gs.apply_damage(attacker, 5, target)
-        self.assertEqual(target.damage_received_this_turn, 2)
+        self.gs.apply_damage(attacker, 4, target)
+        self.assertEqual(1, target.damage_received_this_turn)
 
     def test_only_prevents_first_damage_event(self):
         attacker = self.g.card('goblin-hero')
@@ -84,8 +84,9 @@ class TestResolversGeneric(unittest.TestCase):
         eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 2, target)
+        self.assertIn(target, self.gs.boards[1])
         self.gs.apply_damage(attacker, 2, target)
-        self.assertEqual(target.damage_received_this_turn, 2)
+        self.assertIn(target, self.g.gy[1])
 
     def test_combat_only_does_not_prevent_noncombat_damage(self):
         attacker = self.g.card('goblin-hero')
@@ -94,7 +95,7 @@ class TestResolversGeneric(unittest.TestCase):
         eff.protected = target
         self.gs.event_mgr.register(eff, attacker)
         self.gs.apply_damage(attacker, 3, target, is_combat=False)
-        self.assertEqual(target.damage_received_this_turn, 3)
+        self.assertIn(target, self.g.gy[1])
 
     def test_combat_only_prevents_combat_damage(self):
         attacker = self.g.card('goblin-hero')

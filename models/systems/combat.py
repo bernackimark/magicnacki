@@ -33,14 +33,35 @@ if TYPE_CHECKING:
 @dataclass
 class Combat:
     attacker: GameCard
-    blockers: list[GameCard] = field(default_factory=list)
+    _blockers: list[GameCard] = field(default_factory=list)
     is_blocked: bool = False  # Once a blocker has been declared, this never becomes False
+    _declared_attacker: GameCard | None = None  # logs the attacker even if it's been removed later
+    _all_declared_blockers: list[GameCard] = field(default_factory=list)  # logs ALL blockers added
+
+    def __post_init__(self):
+        self._declared_attacker = self.attacker
 
     def __repr__(self):
         return f"{self.attacker} attacking {self.blockers}"
 
+    @property
+    def blockers(self) -> list[GameCard | None]:
+        """The current blockers in this combat; doesn't include those who have been removed through damage or removal"""
+        return self._blockers
+
+    @property
+    def declared_attacker(self) -> GameCard:
+        """Always returns this combat's attacker, even if it's been removed"""
+        return self._declared_attacker
+
+    @property
+    def all_declared_blockers(self) -> list[GameCard | None]:
+        """All blockers ever in this combat, including those removed through damage or removal"""
+        return self._all_declared_blockers
+
     def add_blocker(self, blocker: GameCard):
-        self.blockers.append(blocker)
+        self._blockers.append(blocker)
+        self.all_declared_blockers.append(blocker)
         self.is_blocked = True
 
 # @dataclass
@@ -143,7 +164,7 @@ class CombatManager:
 
     def get_combat(self, c: GameCard) -> Combat | None:
         for com in self.combats:
-            if c is com.attacker or c in com.blockers:
+            if c is com.declared_attacker or c in com.all_declared_blockers:
                 return com
 
     def handle_damage_step(self, is_first_strike: bool):
@@ -154,19 +175,19 @@ class CombatManager:
         com = self.get_combat(c)
         if not com:
             return []
-        if com.attacker is c:
-            return [b for b in com.blockers]
-        if c in com.blockers:
-            return [com.attacker]
+        if com.declared_attacker is c:
+            return [b for b in com.all_declared_blockers]
+        if c in com.all_declared_blockers:
+            return [com.declared_attacker]
 
     def remove_from_combat(self, c: GameCard):
-        """If attacker, delete that combat object, untap attacker;
+        """If attacker, untap attacker & set combat.attacker to None;
         If a blocking creature is destroyed/bounced after it is declared as a blocker, the attacking creature remains
         blocked and will deal no damage, unless it has trample"""
         for combat in list(self.combats):
             if combat.attacker is c:
                 combat.attacker.untap()
-                self.combats.remove(combat)
+                combat.attacker = None
                 return
             if c in combat.blockers:
                 combat.blockers.remove(c)
@@ -204,7 +225,7 @@ class CombatManager:
                 continue
 
             # attacker -> blocker/player
-            if self._deals_damage_this_step(attacker, first_strike):
+            if attacker and self._deals_damage_this_step(attacker, first_strike):
                 attacker_power = attacker.power
 
                 # Rampage
@@ -242,7 +263,8 @@ class CombatManager:
 
         # deal damage
         for source, amount, target in assignments:
-            if self._gs.perm_querier.can_damage(target, source):
-                self._gs.apply_damage(source, amount, target, is_combat=True)
+            if source is not None and target is not None:
+                if self._gs.perm_querier.can_damage(target, source):
+                    self._gs.apply_damage(source, amount, target, is_combat=True)
 
         self._gs.event_mgr.emit(StateBasedEvent())

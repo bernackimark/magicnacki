@@ -298,8 +298,7 @@ class TestCardsQRS(unittest.TestCase):
         PassTheTurn(0, self.gs).play()
         PassTheTurn(1, self.gs).play()
         self.gs.combat_mgr.create_combat(snake)
-        combat = self.gs.combat_mgr.get_combat(snake)
-        combat.handle_damage()
+        self.gs.combat_mgr.handle_damage_step(False)
         self.assertEqual(1, self.gs.score_mgr.poison_counters[1])
         # TODO: The above fails ... Am I ever looking up 'snake' in slug-effect map??
 

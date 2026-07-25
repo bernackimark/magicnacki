@@ -276,15 +276,13 @@ class RedirectNextDamageFromCardToOwnerEOT(Listener):
         protected_card = self.target or self.protected_card_func(gs, source)
         if event.target is not protected_card:
             return
-        if self.redirectable_amt is None:
-            event.prevented += 999999
-        else:
-            event.prevented += min(self.redirectable_amt, event.remaining)
-        redirected_amt = min(event.prevented, event.remaining)
-        event.prevented += redirected_amt
-        event.remaining = event.amt - event.prevented
+        redirect_amt = min(self.redirectable_amt or 9999, event.remaining)
+        event.remaining -= redirect_amt
+        event.prevented += redirect_amt
+        gs.apply_damage(source, redirect_amt, source.owner_id)
+        if self.redirectable_amt is not None:
+            self.redirectable_amt -= redirect_amt
         self.is_expired = True
-        gs.apply_damage(source, redirected_amt, source.owner_id)
 
 # --- DAMAGE RESOLVED EVENT ---
 class AddPoisonCounter(Listener):

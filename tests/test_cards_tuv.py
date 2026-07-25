@@ -152,7 +152,7 @@ class TestCardsTUV(unittest.TestCase):
 
         self.gs.combat_mgr.create_combat(host)
         com = self.gs.combat_mgr.get_combat(host)
-        com.blockers.append(blocker)
+        com.add_blocker(blocker)
         self.gs.phase_mgr.set_phase(Phase.PRE_COMBAT_DAMAGE)
         self.gs.event_mgr.emit(CombatEndEvent(0))
         self.assertIn(blocker, self.g.gy[1])
