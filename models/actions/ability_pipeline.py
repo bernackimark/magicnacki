@@ -175,7 +175,6 @@ class AbilityPipeline(Action):
 
             # TODO: to support Listeners w a target, we must get the target onto the Listener here via .initialize()
             #  NEXT STEPS:
-            #   1) replace non-complex effects using 'gs.event_mgr.register(' to directly tie slug to Listener
             #   2) Auras with no spell effect should be updated to follow this pattern (see successful animate-wall)
             #   3) Once all auras updated, Ability Pipeline should expect Spell w eff_spec has eff_spec.effect
             for eff_spec in self.source.abilities:

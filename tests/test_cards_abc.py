@@ -17,6 +17,14 @@ class TestCardsAtoC(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_animate_artifact(self):
+        card = self.g.hand('animate-artifact')
+        host = self.g.battlefield('sol-ring')
+        self.g.mana('UUUU')
+        self.g.cast_and_accept(card, host, card.abilities[0])
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+        self.assertEqual(1, host.power)
+
     def test_animate_wall(self):
         card = self.g.hand('animate-wall')
         host = self.g.battlefield('wall-of-brambles')

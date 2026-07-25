@@ -22,35 +22,36 @@ They exist because not all modifications are stored on the GameCard itself (ex: 
 class AddCreatureType(Listener):
     """Turns the card into a creature"""
     listens_to = ModQueryEvent
-    modifies = ('type', 'sub_type', 'pt')
+    modifies = 'type'
 
-    def __init__(self, power: int, toughness: int, sub_type: str = None):
-        self.power = power
-        self.toughness = toughness
-        self.sub_type = sub_type
+    def __init__(self, target: GameCard | None = None):
+        self.target = target
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        if self.target is None:
+            self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
+        if event.card is not self.target:
             return
-        if event.query == 'type':
-            event.mods.append(TypeMod(s=source, add_or_remove='add', card_type='Creature'))
-        elif event.query == 'sub_type':
-            event.mods.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type))
-        elif event.query == 'pt':
-            event.mods.append(PTMod(s=source, p_adj=self.power, t_adj=self.toughness))
+        event.mods.append(TypeMod(s=source, add_or_remove='add', card_type='Creature'))
 
-class AddCreatureTypePTManaValue(Listener):
-    """Turns card into a creature with power and toughness each equal to its mana value"""
+class PTModEqualsManaValue(Listener):
+    """Power and toughness mod each equal its mana value"""
     listens_to = ModQueryEvent
-    modifies = ('type', 'pt')
+    modifies = 'pt'
+
+    def __init__(self, target: GameCard | None = None):
+        self.target = target
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        if self.target is None:
+            self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
+        if event.card is not self.target:
             return
-        if event.query == 'type':
-            event.mods.append(TypeMod(s=source, add_or_remove='add', card_type='Creature'))
-        elif event.query == 'pt':
-            event.mods.append(PTMod(s=source, p_adj=event.card.props.mana_value, t_adj=event.card.props.mana_value))
+        event.mods.append(PTMod(s=source, p_adj=event.card.props.mana_value, t_adj=event.card.props.mana_value))
 
 class KWAApplies(Listener):
     """If card is in applies_to_func (and the optional condition isn't False), KWAMod append/remove provided keyword"""

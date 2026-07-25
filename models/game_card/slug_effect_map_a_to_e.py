@@ -15,7 +15,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
-    CounterSpell, AddStunCounter
+    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
     max_x_from_printed_card
@@ -40,7 +40,7 @@ from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
     HostCanAttack, UnblockableCondition, UnblockableEOT
-from models.effects.listeners_mod_queries import AddCreatureTypePTManaValue, AngelicVoices, AngryMobPT, \
+from models.effects.listeners_mod_queries import PTModEqualsManaValue, AngelicVoices, AngryMobPT, \
     AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
 
@@ -72,7 +72,7 @@ MAP: dict[str, list[EffSpec]] = {
     'angus-mackenzie': [Activated('GWUT', PreventAllDamageEOT(combat_only=True),
                                   allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE])],
     'angry-mob': [Static(AngryMobPT())],
-    'animate-artifact': [Spell(None, T_FUNCS['non_creature_artifacts']), Static(AddCreatureTypePTManaValue())],
+    'animate-artifact': [Spell(BecomeCreaturePTEqualsManaValue(), T_FUNCS['non_creature_artifacts'])],
     'animate-dead': [Spell(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'])],
     'animate-wall': [Spell(HostCanAttack(), T_FUNCS['walls'])],
     'ankh-of-mishra': [Triggered(AnkhOfMishra())],

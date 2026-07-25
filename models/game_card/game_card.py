@@ -133,7 +133,7 @@ class GameCard:
         self.game_state.event_mgr.emit(event)
         adds, removes = set(), set()
         for mod in event.mods:
-            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
+            adds.add(mod.card_type) if mod.add_or_remove == 'add' else removes.add(mod.card_type)
 
         return list((set(self._card_types) | adds) - removes)
 

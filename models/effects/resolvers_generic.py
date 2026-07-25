@@ -2,13 +2,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
 from models.actions.ability_pipeline_support import AbilityAction
+from models.actions.base import Action
 from models.actions.draw_discard import DiscardCards
 from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
 from models.choice_actions_all import ChoiceAction
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
-from models.effects.listeners_mod_queries import PumpAppliesEOT
+from models.effects.listeners_mod_queries import PumpAppliesEOT, AddCreatureType, PTModEqualsManaValue
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
 from models.utils import flip
@@ -74,10 +75,19 @@ class BecomeCreature(Resolver):
             target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type,
                                                expires='EOT' if self.until_eot else None))
 
+class BecomeCreaturePTEqualsManaValue(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        add_creature_mod_query = AddCreatureType(target)
+        pt_mod_query = PTModEqualsManaValue(target)
+        gs.event_mgr.register(add_creature_mod_query, source)
+        gs.event_mgr.register(pt_mod_query, source)
+
 class Bounce(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
+            raise ValueError(f'{source.props.name} needs a target')
         gs.pile_mgr.bounce(target)
 
 class CounterSpell(Resolver):

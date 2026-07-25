@@ -22,7 +22,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDama
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, \
-    DeclareAColor, CounterSpell, RevealHands
+    DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -49,7 +49,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
     UnblockableEOT
-from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, AddCreatureTypePTManaValue, \
+from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PTModEqualsManaValue, \
     PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, Transmutation
 from models.systems.phase import Phase
 
@@ -348,7 +348,7 @@ MAP: dict[str, list[EffSpec]] = {
     'xira-arien': [Activated('BRGT', DrawCards(3), T_FUNCS['all_players'])],
     'yawgmoth-demon': [Static(YawgmothDemon())],
     'ydwen-efreet': [Static(YdwenEfreet())],
-    'xenic-poltergeist': [Activated('T', AddCreatureTypePTManaValue(), T_FUNCS['non_creature_artifacts']),
+    'xenic-poltergeist': [Activated('T', BecomeCreaturePTEqualsManaValue(), T_FUNCS['non_creature_artifacts']),
                           Triggered(XenicPoltergeistRelease())],
     'zombie-master': [Static(KWAApplies(T_FUNCS['other_zombies'], 'add', 'Swampwalk'))],
     # TODO: giving other zombies an activated ability
