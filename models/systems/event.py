@@ -17,6 +17,9 @@ class ListenerEntry:
     effect: Listener
     source: GameCard
 
+    def __repr__(self):
+        return f"{self.source.props.name}'s {self.effect.__repr__()}"
+
 class EventManager:
     """Handles all Listener effects who method is 'on_event' -- both base rules & card-based effects"""
     def __init__(self, gs: GameState):
