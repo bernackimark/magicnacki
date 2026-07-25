@@ -57,11 +57,12 @@ class DoesntUntapAtUntapIfItAttackedLastTurn(Listener):
 class HostCanAttack(Listener):
     listens_to = CanAttackQueryEvent
 
-    def __init__(self):
-        self.target: GameCard | None = None
+    def __init__(self, target: GameCard | None = None):
+        self.target = target
 
     def initialize(self, gs: GameState, source: GameCard, targets: Any):
-        self.target = targets[0]
+        if self.target is None:
+            self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
         if self.target is event.attacker:
