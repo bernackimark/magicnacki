@@ -1,6 +1,6 @@
 import unittest
 
-from models.mana import ManaCost
+from models.systems.mana import ManaCost
 from tests.setup_helpers import TestGame
 
 

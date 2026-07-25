@@ -14,7 +14,7 @@ class Gloom(Listener):
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import ManaCost
+        from models.systems.mana import ManaCost
         if (not (event.query == 'cast' and 'W' in event.card.colors) and not
            ('W' in event.card.colors and 'Enchantment' in event.card.card_types)):
             return
@@ -26,7 +26,7 @@ class ManaMatrix(Listener):
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import ManaCost
+        from models.systems.mana import ManaCost
         if event.query != 'cast' or event.player_id != s.owner_id:
             return
         if 'Instant' not in event.card.card_types and 'Enchantment' not in event.card.card_types:
@@ -39,7 +39,7 @@ class PlanarGate(Listener):
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import ManaCost
+        from models.systems.mana import ManaCost
         if event.query != 'cast' or event.player_id != s.owner_id or not event.card.is_creature:
             return
         event.cost = ManaCost(event.cost) - ManaCost('2')
@@ -51,7 +51,7 @@ class PowerArtifact(Listener):
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import ManaCost
+        from models.systems.mana import ManaCost
         if event.query != 'activate' or event.card.host is not s:
             return
         event.cost = ManaCost(event.cost) - ManaCost('2')  # TODO: minimum '1' or a colored equivalent
@@ -62,7 +62,7 @@ class StoneCalendar(Listener):
     listens_to = CostQueryEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: CostQueryEvent):
-        from models.mana import ManaCost
+        from models.systems.mana import ManaCost
         if event.query != 'cast' or event.player_id != s.owner_id:
             return
         event.cost = ManaCost(event.cost) - ManaCost('1')

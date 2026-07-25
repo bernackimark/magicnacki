@@ -14,12 +14,12 @@ from models.actions.stack_accept_counter import AcceptAction
 from models.systems.event import EventManager
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
-from models.combat import CombatManager
+from models.systems.combat import CombatManager
 from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent, StateBasedEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
-from models.mana import ManaPool
+from models.systems.mana import ManaPool
 from models.mulligan import MulliganChoice
 from models.systems.pile import PileManager
 from models.presentation_request import PresentationRequest
