@@ -22,7 +22,9 @@ class TestCardsAtoC(unittest.TestCase):
         host = self.g.battlefield('sol-ring')
         self.g.mana('UUUU')
         self.g.cast_and_accept(card, host, card.abilities[0])
+        print('A')
         self.assertTrue(self.g.card_has_a_registered_listener(card))
+        print('B')
         self.assertEqual(1, host.power)
 
     def test_animate_dead(self):

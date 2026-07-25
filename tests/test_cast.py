@@ -60,8 +60,7 @@ class TestCast(unittest.TestCase):
         cast_action = next(a for a in available_actions if isinstance(a, CastWithNoSpellEffect) and a.source is card)
         cast_action.play()
         AcceptAction(1, self.gs).play()
-        self.assertTrue(any(e.source is card for _, effects in self.gs.event_mgr._event_listeners.items()
-                            for e in effects))
+        self.assertTrue(any(e.source is card for effs in self.gs.event_mgr.event_listeners.values() for e in effs))
 
     def test_cast_card_with_spell_with_no_effect(self):
         card = self.g.hand('animate-wall')

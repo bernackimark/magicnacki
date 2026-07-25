@@ -35,6 +35,10 @@ class EventManager:
     def events(self) -> list[Event | None]:
         return [event for event, _ in self._events]
 
+    @property
+    def event_listeners(self) -> dict[type[Event], list[ListenerEntry]]:
+        return self._event_listeners
+
     def get_events(self, turn_number: int | None = None, event: Event | None = None) -> list[Event | None]:
         if not turn_number and not event:
             return self.events
