@@ -43,6 +43,11 @@ def clockwork_beast_x(_, s):
 def max_x_from_printed_card(gs, s):
     return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost) // s.casting_cost.count('X')
 
+def your_tapped_land_cnt_and_max_x(gs, s):
+    your_tapped_land_cnt = len(gs.card_filter.on_player_board(s.owner_id).tapped().lands().result())
+    produceable_mana_cnt = gs.mana_pools[s.owner_id].get_max_x('')
+    return min(your_tapped_land_cnt, produceable_mana_cnt)
+
 def voodoo_doll_x(_, source):
     return source.counters.get_count(PIN) // 2
 

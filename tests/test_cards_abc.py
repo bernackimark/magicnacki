@@ -88,26 +88,30 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.next_turn()
         self.assertEqual(1, creature.power)
 
+    def test_candelabra_of_tawnos(self):
+        """{X}, {T}: Untap X target lands"""
+        card = self.g.battlefield('candelabra-of-tawnos')
+        aa = card.activated_abilities[0]
+        swamp = self.g.battlefield('swamp')
+        forest = self.g.battlefield('forest')
+        self.assertFalse(aa.eff_spec.target_spec.get_targets(self.gs, card))
+        swamp.tap()
+        forest.tap()
+        self.assertEqual(2, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
 
-    # def test_candelabra_of_tawnos(self):
-    #     """{X}, {T}: Untap X target lands"""
-    #     card = self.g.battlefield('candelabra-of-tawnos')
-    #     aa = card.activated_abilities[0]
-    #     self.g.mana('BGRUW')
-    #     self.assertFalse(aa.eff_spec.target_spec.get_targets(self.gs, card))
-    #
-    #     for land in self.gs.card_filter.in_play().lands().result():
-    #         land.tap()
-    #     self.assertEqual(5, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
-    #
-    #     self.g.mana('BB')
-    #     pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
-    #     pipeline.advance()
-    #     """ ^ Traceback - NOTE: this traceback is from the previous ability pipeline model
-    #     [activate_ability.py] max_x = self.aa.eff_spec.max_x_func(self.gs, self.card) // ...
-    #     [effect_spec_templates.py] return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost)
-    #     [mana.py] raise ValueError(f"X is not in the casting cost")
-    #     """
+        mountain = self.g.battlefield('mountain')
+        plains = self.g.battlefield('plains')
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        pipeline.x_value = 2
+        pipeline.targets.append(swamp)
+        pipeline.targets.append(forest)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertFalse(swamp.is_tapped)
+        self.assertTrue(plains.is_tapped)
+
+        self.g.next_turn()
+        self.assertEqual(0, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
 
     def test_city_in_a_bottle(self):
         """Whenever a nontoken permanent with a name originally printed in Arabian Nights is on battlefield, sac it"""
@@ -126,7 +130,7 @@ class TestCardsAtoC(unittest.TestCase):
 
         aa1 = card.activated_abilities[0]
         creature = self.g.battlefield('savannah-lions')
-        self.g.activate_ability(aa1)  # TODO: this fails, because gs.pending_choice is implemented by
+        self.g.activate_ability(aa1)
         self.gs.pending_choice.get_actions()[0].play()  # Sac the creature
         self.assertEqual(1, card.counters.get_count(STORAGE))
         self.assertIn(creature, self.g.gy[0])

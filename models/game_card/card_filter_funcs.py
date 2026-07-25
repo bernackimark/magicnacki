@@ -203,6 +203,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_permanents': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).permanents().result(),
     'your_swamps': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).swamps().result(),
     'your_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).tapped().blue().creatures().result(),
+    'your_tapped_lands': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).lands().tapped().result(),
     'your_untapped_creatures':
         lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().untapped().result(),
     'your_untapped_non_attacking_creatures':

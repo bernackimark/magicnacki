@@ -198,7 +198,7 @@ class ManaPool:
     def get_max_x(self, casting_cost: str) -> int:
         """Return the maximum X value the player can pay for a card with X in its casting cost."""
         if 'X' not in casting_cost:
-            raise ValueError(f"X is not in the casting cost")
+            print("Warning: X not found in the cost")
         cost = parse_casting_cost(casting_cost)  # {'X': 0, 'U': 2, ...}
         cost['X'] = 0  # since 'X' is in the cast cost, it's being treated as {'X': 1 ...}
         non_x_casting_weight = sum(cost.values())

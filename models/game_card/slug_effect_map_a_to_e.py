@@ -18,7 +18,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageT
     CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, \
     untap_for_mana_at_owner_upkeep, mana_battery_add_mana, self_pump, clockwork_avian_x, clockwork_beast_x, \
-    max_x_from_printed_card
+    max_x_from_printed_card, your_tapped_land_cnt_and_max_x
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import AnkhOfMishra, CitanulDruid, DingusEgg
@@ -144,9 +144,8 @@ MAP: dict[str, list[EffSpec]] = {
                   untap_for_mana_at_owner_upkeep('1', T_FUNCS['owner'])],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing': [Spell(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'])],
-    'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['tapped_lands'], 1, None),
-                                       max_x_func=max_x_from_printed_card)],
-    # TODO: if candelabra's owner has 0 mana, the effect should be offered, but it's putting game in infinite loop
+    'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['your_tapped_lands'], 1, None),
+                                       max_x_func=your_tapped_land_cnt_and_max_x)],
     'carrion-ants': [self_pump('1', 1, 1)],
     'castle': [Static(PumpApplies(T_FUNCS['your_untapped_white_creatures'], (0, 2)))],
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self']),
@@ -169,7 +168,6 @@ MAP: dict[str, list[EffSpec]] = {
                      [Triggered(CityOfBrassDamageOnTap())],
     'city-of-shadows': [Activated('T', CityOfShadowsAddCounter(), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])]),
                         Activated('T', CityOfShadowsAddMana())],
-                        # TODO: I have no way of selecting a target to exile in Cost
     'clay-statue': [Activated('2', Regenerate(), T_FUNCS['self'])],
     'cleanse': [Spell(DestroyAll(T_FUNCS['black_creatures']))],
     'clockwork-avian': [Static(ClockworkCombatEnd()),
