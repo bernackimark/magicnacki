@@ -19,7 +19,7 @@ C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
     'you_have_a_dwarf': lambda gs, s: len(T_FUNCS['your_dwarves'](gs, s)) > 0,
     'you_have_a_forest': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
     'you_have_a_swamp': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
-    'you_have_no_lands': lambda gs, s: len(T_FUNCS['your_lands'](gs, s) == 0)
+    'you_have_no_lands': lambda gs, s: len(T_FUNCS['your_lands'](gs, s)) == 0
 }
 
 """

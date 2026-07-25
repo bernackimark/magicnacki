@@ -103,6 +103,7 @@ class CreateTokenCreature(Resolver):
         game_card.zone = Zone.BATTLEFIELD
         game_card.game_state = gs
         gs.pile_mgr.boards[source.owner_id].append(game_card)
+        gs.event_mgr.register_card(game_card)
 
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""

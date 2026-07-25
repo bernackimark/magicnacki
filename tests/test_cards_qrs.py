@@ -101,14 +101,13 @@ class TestCardsQRS(unittest.TestCase):
         {RRR}: Add a +1/+1 counter on this creature. Activate only during your upkeep."""
         card = self.g.hand('rock-hydra')
         self.g.mana('RRRRRR')
-        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[3])
         pipeline.advance()
-        # TODO: this didn't get to sending the x choices to self.gs.pending_choice()
         possible_actions = self.gs.pending_choice.get_actions()
-        self.assertEqual({1, 2, 3, 4}, {a.x_value for a in possible_actions})
+        self.assertEqual({1, 2, 3, 4}, {a.x for a in possible_actions})
 
         card.extras['x'] = 4
-        self.g.cast_and_accept(card, card, card.abilities[3])  # RH = 4/4
+        pipeline.resolve_ability()  # RH = 4/4
         self.assertEqual(4, card.counters.get_count(PLUS_ONE))
 
         bolt = self.g.hand('lightning-bolt', owner=1)
