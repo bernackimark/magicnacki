@@ -155,7 +155,7 @@ class MainPhase(PhaseState):
 
         # hand actions + abilities
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.get_activated_abilities_from_board())
+        actions.extend(gs.add_activated_abilities_from_board())
 
         # combat option
         if any(gs.perm_querier.can_attack(c) for c in gs.pile_mgr.boards[gs.player_turn_idx]):
@@ -214,7 +214,7 @@ class DeclareBlockersPhase(PhaseState):
                     actions.append(AssignBlocker(gs.action_on_idx, gs, blocker, com.attacker))
 
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.get_activated_abilities_from_board())
+        actions.extend(gs.add_activated_abilities_from_board())
 
         # only "finish blocking" exists → auto advance
         if all(isinstance(a, FinishBlocking) for a in actions):
@@ -252,7 +252,7 @@ class AssignCombatDamagePhase(PhaseState):
     phase = Phase.ASSIGN_COMBAT_DAMAGE
 
     def on_enter(self, gs: GameState):
-        from models.events_all import UnblockedAttackerEvent, CombatEndEvent
+        from models.events_all import UnblockedAttackerEvent
         for com in gs.combat_mgr.combats:
             if not com.blockers:
                 event = UnblockedAttackerEvent(com.attacker, flip(com.attacker.owner_id))
@@ -289,7 +289,7 @@ class SecondMainPhase(PhaseState):
 
         # hand actions + abilities
         actions.extend(gs.available_actions_from_hand())
-        actions.extend(gs.get_activated_abilities_from_board())
+        actions.extend(gs.add_activated_abilities_from_board())
 
         # auto-advance safety:
         if all(isinstance(a, MoveToEndStep) for a in actions):

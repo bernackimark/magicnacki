@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from models.actions.base import DoNothing
 from models.actions.draw_discard import DrawCard
+from models.actions.special import SacTwoIslandsToAttack
 from models.choice_actions_all import ChoiceAction
 
 if TYPE_CHECKING:
@@ -93,6 +94,21 @@ class AliFromCairo(Listener):
             event.amt = max(current_life - 1, 0)
 
 # --- MAIN PHASE ---
+class LeviathanAttack(Listener):
+    """When attackers are declared (here MainPhase), you may sac 2 Islands to permit Leviathan to attack this turn."""
+    listens_to = MainPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: MainPhaseEvent):
+        if source.owner_id != event.active_p_id or source.is_tapped:
+            return
+
+        your_islands = gs.card_filter.on_player_board(source.owner_id).islands().result()
+        if len(your_islands) < 2:
+            return
+
+        options = [SacTwoIslandsToAttack(event.active_p_id, gs, source, source), DoNothing(event.active_p_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
+
 class ManaDrainMainPhase(Listener):
     """... At your next main phase, add an amount of {C} equal to that spell's mana value"""
     # TODO: Create ManaDrain(Resolver), which would create & register an instance of this class

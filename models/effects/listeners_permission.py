@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
-    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
+    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, Event
 
 """
 These are Effects that listens for Events that are XXQueryEvent
@@ -19,6 +19,34 @@ It may set the event.permission = False
 
 
 # --- GENERICS ---
+class CanAttackEOT(Listener):
+    """Card, which may otherwise not be permitted to attack, can attack this turn"""
+    listens_to = CanAttackQueryEvent
+    expires = 'EOT'
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if event.attacker is not self.target:
+            return
+        event.permission = True
+
+class CantAttack(Listener):
+    listens_to = CanAttackQueryEvent
+
+    def __init__(self, target: GameCard):
+        self.target = target
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if self.target is None:
+            self.target = target[0]
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if event.attacker is not self.target:
+            return
+        event.permission = False
+
 class CantBeTargetedByAuras(Listener):
     """Card can't host an aura"""
     listens_to = CanTargetQueryEvent

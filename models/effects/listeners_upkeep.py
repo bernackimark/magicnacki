@@ -13,7 +13,7 @@ from models.actions.mana import PayMana
 from models.actions.piles import TutorMultipleCards
 from models.actions.pump import VariablePTMod
 from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePayManaPerCounterDealDamage, \
-    SkipDrawPhaseGainLife, PayManaAndOrTakeDamage, SacTwoIslands, YawgmothDemonUnpaidUpkeep
+    SkipDrawPhaseGainLife, PayManaAndOrTakeDamage, YawgmothDemonUnpaidUpkeep, SacTwoIslandsToUntap, SacTwoIslands
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
@@ -326,6 +326,19 @@ class LandTax(Listener):
         combo_set = {combo for r in range(1, 4) for combo in combinations(basic_lands, r)}
         options = ([TutorMultipleCards(s.owner_id, gs, list(combo), Zone.HAND) for combo in combo_set] +
                    [DoNothing(s.owner_id, gs)])
+        gs.pending_choice = ChoiceAction(options)
+
+class LeviathanUpkeep(Listener):
+    """At your upkeep, you may sacrifice two Islands to untap this creature"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        your_islands = gs.card_filter.on_player_board(source.owner_id).islands().result()
+        if len(your_islands) < 2:
+            return
+        options = [SacTwoIslandsToUntap(event.active_player, gs, source, source), DoNothing(event.active_player, gs)]
         gs.pending_choice = ChoiceAction(options)
 
 class LordOfThePitUpkeep(Listener):

@@ -8,7 +8,7 @@ from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, LivingLands, \
     LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
-    DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT
+    DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, \
     GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, \
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, \
@@ -24,12 +24,13 @@ from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from .effect_spec_templates import untap_for_mana_at_owner_upkeep, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, \
     mox_specs, self_pump, max_x_from_printed_card
-from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation
+from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
-    HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep
+    HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, \
+    LeviathanUpkeep
 from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
@@ -217,15 +218,8 @@ MAP: dict[str: list[EffSpec]] = {
     'land-tax': [Triggered(LandTax())],
     'lesser-werewolf': [Activated('B', LesserWerewolf(), T_FUNCS['combating_against'],
                                   allowed_phases=[Phase.DECLARE_BLOCKERS])],
-    'leviathan':
-        [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
-         # TODO: this is wrong, should be a Triggered(..., ..., UpkeepEvent)
-         Activated(None, UntapCardEffect(), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
-                   allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=T_FUNCS['owner']),
-         # TODO: handle this via CanAttackQueryEvent
-         Activated(None, KWAModEffect('add', 'Attack'), T_FUNCS['self'], extra_costs=[SacTwoIslandsCost()],
-                   allowed_phases=[Phase.DECLARE_ATTACKERS], allowed_p_turn_func=T_FUNCS['owner']),
-         Spell(TapCardEffect(), T_FUNCS['self'])],
+    'leviathan': [Static(DoesntUntapAtUntap(T_FUNCS['self'])), Static(CantAttack(T_FUNCS['self'])),
+                  Triggered(LeviathanUpkeep()), Triggered(LeviathanAttack()), Spell(TapCardEffect(), T_FUNCS['self'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
     'library-of-alexandria': [Activated('T', AddMana('C')), Activated('T', LibraryOfAlexandria())],
     'lifeblood': [Triggered(Lifeblood())],

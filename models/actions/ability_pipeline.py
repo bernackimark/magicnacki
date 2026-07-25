@@ -171,10 +171,6 @@ class AbilityPipeline(Action):
                 self.source.host = host
                 host.auras.append(self.source)
 
-            # TODO: to support Listeners w a target, we must get the target onto the Listener here via .initialize()
-            #  NEXT STEPS:
-            #   2) Auras with no spell effect should be updated to follow this pattern (see successful animate-wall)
-            #   3) Once all auras updated, Ability Pipeline should expect Spell w eff_spec has eff_spec.effect
             for eff_spec in self.source.abilities:
                 if eff_spec is self.eff_spec:
                     continue

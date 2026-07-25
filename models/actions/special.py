@@ -153,10 +153,37 @@ class SacTwoIslands(Action):
         super().__init__(p_id, gs)
         self.s = s
 
+    def play(self) -> None:
+        your_islands = self.gs.card_filter.on_player_board(self.s.owner_id).islands().result()
+        for island in your_islands[:2]:
+            self.gs.pile_mgr.destroy(island)
+        self.gs.action_stack.pop()
+
+class SacTwoIslandsToAttack(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.target = target
+
+    def play(self) -> None:
+        from models.effects.listeners_permission import CanAttackEOT
+        your_islands = self.gs.card_filter.on_player_board(self.s.owner_id).islands().result()
+        for island in your_islands[:2]:
+            self.gs.pile_mgr.destroy(island)
+        self.gs.event_mgr.register(CanAttackEOT(self.target), self.s)
+        self.gs.action_stack.pop()
+
+class SacTwoIslandsToUntap(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.target = target
+
     def play(self):
         your_islands = self.gs.card_filter.on_player_board(self.s.owner_id).islands().result()
         for island in your_islands[:2]:
             self.gs.pile_mgr.destroy(island)
+        self.target.untap()
         self.gs.action_stack.pop()
 
 class SkipDrawPhaseGainLife(Action):
