@@ -64,7 +64,7 @@ MAP: dict[str, list[EffSpec]] = {
                     Activated('T', Pump(1, 2, True), T_FUNCS['one_one_creatures'])],
     'people-of-the-woods': [Static(SelfPTEquals(T_FUNCS['your_forests'], t_only=True))],
     'personal-incarnation': [Triggered(PersonalIncarnationDies()),
-                             Activated('0', RedirectNextDamageFromCardToOwnerEOT(T_FUNCS['self'], 1))],
+                             Activated('', RedirectNextDamageFromCardToOwnerEOT(T_FUNCS['self'], 1))],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
     'phantasmal-forces': [Triggered(PayManaOrSacAtUpkeep('U'))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(), T_FUNCS['lands'])],

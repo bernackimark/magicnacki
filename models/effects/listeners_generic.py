@@ -273,9 +273,8 @@ class RedirectNextDamageFromCardToOwnerEOT(Listener):
         redirected_amt = min(self.redirectable_amt, event.remaining)
         event.prevented += redirected_amt
         event.remaining = event.amt - event.prevented
-        damage_event_to_owner = DamageProposedEvent(event.source, protected_card.owner_id,
-                                                    redirected_amt, redirected_amt)
-        gs.event_mgr.register(damage_event_to_owner, source)
+        self.is_expired = True
+        gs.apply_damage(source, redirected_amt, source.owner_id)
 
 # --- DAMAGE RESOLVED EVENT ---
 class AddPoisonCounter(Listener):

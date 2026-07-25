@@ -151,7 +151,7 @@ class TestCardsMNOP(unittest.TestCase):
         """[casting cost XXU] X target creatures gain islandwalk until end of turn."""
         card = self.g.hand('part-water')
         c_1 = self.g.battlefield('savannah-lions')
-        c_2 = self.g.battlefield('serendib-efreet')
+        self.g.battlefield('serendib-efreet')
         self.g.mana('U')
         self.assertFalse(any(a for a in self.gs.available_actions_from_hand()
                              if isinstance(a, AbilityPipeline) and a.source is card))
@@ -160,11 +160,15 @@ class TestCardsMNOP(unittest.TestCase):
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
         pipeline.advance()
         possible_actions = self.gs.pending_choice.get_actions()
-        self.assertEqual(1, len(possible_actions))
+        self.assertEqual(1, len(possible_actions))  # 'UUU' -> X=1 only
+        self.gs.pending_choice = None
 
-        # TODO: mana.py "paid = min(self._floating_mana[c], cost[c])" self._floating_mana[c] KeyError: 'X'
-        # self.g.cast_and_accept(card, c_1, card.abilities[0])
-        # self.assertIn('Islandwalk', c_1)
+        self.g.next_turn()
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.targets.append(c_1)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn('Islandwalk', c_1.keyword_abilities)
 
     def test_pendelhaven(self):
         """{T}: Add {G}. {T}: Target 1/1 creature gets +1/+2 until end of turn."""
@@ -182,16 +186,18 @@ class TestCardsMNOP(unittest.TestCase):
         When PA dies, its owner loses half their life, rounded up."""
         card = self.g.battlefield('personal-incarnation')  # 6/6
         aa = card.activated_abilities[0]
+        self.g.activate_ability(aa, card)
+        self.g.activate_ability(aa, card)
+        self.gs.action_stack.clear_()
+
         bolt = self.g.hand('lightning-bolt', owner=1)
         self.g.mana('R', owner=1)
         pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0])
-        pipeline.targets.append(bolt)
+        pipeline.targets.append(card)
         pipeline.advance()
-        self.g.activate_ability(aa)
-
-        # # TODO: Cast Action then Activated Ability; AcceptAction is confused about what it's accepting
-        # AcceptAction(0, self.gs).play()
-        # self.assertEqual(18, self.gs.life[0])
+        pipeline.resolve_ability()
+        self.assertEqual(1, card.damage_received_this_turn)
+        self.assertEqual(18, self.gs.life[0])
 
     def test_phantasmal_terrain(self):
         """As this Aura enters, choose a basic land type. Host is the chosen type."""
