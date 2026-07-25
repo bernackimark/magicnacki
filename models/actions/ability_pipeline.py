@@ -63,10 +63,11 @@ class AbilityPipeline(Action):
                 if self.gs.phase_mgr.phase not in self.eff_spec.allowed_phases:
                     return False
 
-        if self.eff_spec.effect and not self.eff_spec.effect.can_cast(self.gs, self.source):
-            return False
-        if self.eff_spec.effect and not self.eff_spec.effect.can_activate(self.gs, self.source):
-            return False
+        if self.eff_spec.effect and isinstance(self.eff_spec.effect, Resolver):
+            if not self.eff_spec.effect.can_cast(self.gs, self.source):
+                return False
+            if not self.eff_spec.effect.can_activate(self.gs, self.source):
+                return False
 
         if self.eff_spec.is_aa:
             if self.aa.activations_this_turn >= self.eff_spec.max_activations_per_turn:

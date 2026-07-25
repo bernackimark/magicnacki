@@ -1,5 +1,6 @@
 import unittest
 
+from models.actions.cast import CastPermanentAction
 from tests.setup_helpers import TestGame
 
 
@@ -31,7 +32,10 @@ class TestAvailableActionsFromHand(unittest.TestCase):
     def test_cannot_cast_multiple_lands(self):
         land_1 = self.g.hand('plains')
         land_2 = self.g.hand('mountain')
-        self.g.cast_and_accept(land_1)
+        CastPermanentAction(0, self.gs, land_1).play()
+        print(self.gs.turn_mgr.has_played_land)
+        for a in self.gs.available_actions_from_hand():
+            print(a, type(a))
         self.assertFalse(any(a for a in self.gs.available_actions_from_hand() if a.source is land_2))
 
     def test_cards_w_multiple_spells(self):

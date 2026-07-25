@@ -189,11 +189,12 @@ class GameState:
 
         for c in self.pile_mgr.hands[self.action_on_idx]:
             if c.is_land:
-                # its .play() will bypass the stack
-                actions.append(CastPermanentAction(c.owner_id, self, c))
-                continue
+                if not self.turn_mgr.has_played_land:
+                    # its .play() will bypass the stack
+                    actions.append(CastPermanentAction(c.owner_id, self, c))
+                    continue
 
-            if c.props.is_permanent and not c.spells:
+            elif c.props.is_permanent and not c.spells:
                 # its .play() will add it to the stack
                 actions.append(CastWithNoSpellEffect(c.owner_id, self, c))
                 continue
