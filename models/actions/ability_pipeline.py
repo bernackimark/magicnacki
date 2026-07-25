@@ -223,5 +223,4 @@ class AbilityPipeline(Action):
     def get_x_range(self) -> tuple[int, int]:
         # TODO: the below line is a placeholder, using a random large number of "10", just to get through some tests
         max_x = 10 if not self.eff_spec.max_x_func else self.eff_spec.max_x_func(self.gs, self.source)
-        print('My max X is', max_x)
         return self.eff_spec.min_x_func(self.gs, self.source), max_x

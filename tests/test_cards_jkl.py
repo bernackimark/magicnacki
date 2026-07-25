@@ -11,6 +11,22 @@ class TestCardsJKL(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_jade_monolith(self):
+        """{1}: The next time a source of your choice would deal damage to target creature this turn,
+        that source deals that damage to you instead"""
+        # WARNING: I'm not actually checking for the source, it's any next damage to the protected target creature
+        card = self.g.battlefield('jade-monolith')
+        target = self.g.battlefield('grizzly-bears')
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('B')
+        self.g.mana('R', owner=1)
+        bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[target])
+        bolt_pipeline.advance()
+        self.g.activate_ability(card.activated_abilities[0], target)
+        bolt_pipeline.resolve_ability()
+        self.assertIn(target, self.gs.boards[0])
+        self.assertEqual(17, self.gs.life[0])
+
     def test_jovial_evil(self):
         """JE deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
         self.g.battlefield('savannah-lions', owner=1)

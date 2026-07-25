@@ -26,7 +26,7 @@ from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, Cu
 from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack
-from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy
+from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, BlazingEffigy
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye
 from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
     ClockworkCombatEnd
@@ -122,6 +122,7 @@ MAP: dict[str, list[EffSpec]] = {
     'black-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('B')],
     'black-vise': [Triggered(BlackVise())],
     'black-ward': [Spell(KWAModEffect('add', 'Protection From Black'), T_FUNCS['creatures'])],
+    'blazing-effigy': [Triggered(BlazingEffigy())],
     'blessing': [Activated('W', Pump(1, 1, True), T_FUNCS['host'])],
     'blight': [Spell(Blight(), T_FUNCS['lands'])],
     'blood-lust': [Spell(BloodLust(), T_FUNCS['creatures'])],

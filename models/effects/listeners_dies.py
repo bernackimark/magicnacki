@@ -4,6 +4,7 @@ import math
 from typing import TYPE_CHECKING
 
 from models.actions.base import DoNothing
+from models.actions.damage import DealDamageTo
 from models.actions.special import PayManaToDrawCards, PayManaForLife
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE
@@ -37,7 +38,6 @@ class AxelrodGunnarson(Listener):
             gs.apply_damage(source, 1, event.card.owner_id)
             return
 
-
 class BlazingEffigy(Listener):
     """When this creature dies, it deals X damage to target creature.
     X is 3 plus the amount of damage dealt to this creature this turn by other sources named Blazing Effigy."""
@@ -51,8 +51,8 @@ class BlazingEffigy(Listener):
             return
         total_damage = 3 + sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)
                                 if e.target is source and e.source.props.slug == 'blazing-effigy'])
-        # TODO: How do I get the target creature from the user?
-
+        options = [DealDamageTo(source.owner_id, gs, source, total_damage, target) for target in all_creatures]
+        gs.pending_choice = ChoiceAction(options)
 
 class CreatureBond(Listener):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""

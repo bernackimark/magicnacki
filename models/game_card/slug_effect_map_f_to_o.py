@@ -45,7 +45,8 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
-    PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep
+    PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
+    RedirectNextDamageFromCardToOwnerEOT
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -183,7 +184,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower())],
     'jacques-le-vert': [Static(PumpApplies(T_FUNCS['your_green_creatures'], (0, 2)))],
-    # 'jade-monolith': [Activated('1', JadeMonolith(), T_FUNCS['all_creatures_and_players'])],  # needs a multi-step target selection for source & target
+    'jade-monolith': [Activated('1', RedirectNextDamageFromCardToOwnerEOT(), T_FUNCS['creatures'])],
     'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), T_FUNCS['self'],
                               allowed_phases=[Phase.MAIN])],
     'jalum-tome': [Activated('2T', JalumTome(), text='Draw one card; discard one card')],

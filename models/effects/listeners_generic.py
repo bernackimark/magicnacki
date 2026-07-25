@@ -259,18 +259,28 @@ class PreventNextDamageTo(Listener):
         self.is_expired = True
 
 class RedirectNextDamageFromCardToOwnerEOT(Listener):
+    """Protected card may be initialized in the EffSpec or via AbilityPipeline in the secondary initializer"""
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, protected_card_func: Callable, redirectable_amt: int | None = None):
+    def __init__(self, protected_card_func: Callable | None = None, redirectable_amt: int | None = None):
         self.protected_card_func = protected_card_func
         self.redirectable_amt = redirectable_amt
+        self.target = None
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if self.target is None:
+            self.target = target[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        protected_card = self.protected_card_func(gs, source)
+        protected_card = self.target or self.protected_card_func(gs, source)
         if event.target is not protected_card:
             return
-        redirected_amt = min(self.redirectable_amt, event.remaining)
+        if self.redirectable_amt is None:
+            event.prevented += 999999
+        else:
+            event.prevented += min(self.redirectable_amt, event.remaining)
+        redirected_amt = min(event.prevented, event.remaining)
         event.prevented += redirected_amt
         event.remaining = event.amt - event.prevented
         self.is_expired = True

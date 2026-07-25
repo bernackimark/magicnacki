@@ -77,6 +77,18 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(target, self.g.gy[0])
 
+    def test_blazing_effigy(self):
+        """When BE dies, it deals X damage to target creature.
+        X = 3 + the amount of damage dealt to BE this turn by other sources named 'Blazing Effigy'."""
+        card = self.g.battlefield('blazing-effigy')
+        be2 = self.g.battlefield('blazing-effigy')
+        target = self.g.battlefield('craw-wurm')  # 6/4
+        self.gs.apply_damage(be2, 1, card)
+        self.gs.pile_mgr.destroy(card)
+        deal_4_damage_to_craw_wurm = self.gs.pending_choice.get_actions()[2]
+        deal_4_damage_to_craw_wurm.play()
+        self.assertIn(target, self.g.gy[0])
+
     def test_blood_lust(self):
         """If target creature has toughness 5 or greater, it gets +4/-4 until end of turn.
         Otherwise, it gets +4/-X until end of turn, where X is its toughness minus 1."""
