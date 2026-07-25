@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from models.cost import SacSelfCost, ExileSelfCost, SacTwoIslandsCost, RemoveCounterCost, \
-    SacCardCost, DiscardLastCardDrawnThisTurn
+from models.cost import SacSelfCost, ExileSelfCost, RemoveCounterCost, SacCardCost, DiscardLastCardDrawnThisTurn, \
+    ExileCreatureFromYourGraveyardCost
 from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
@@ -285,8 +285,8 @@ MAP: dict[str: list[EffSpec]] = {
     'murk-dwellers': [Triggered(MurkDwellers())],
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), T_FUNCS['all_players'])],
-    'necropolis': [Activated('', XZeroOneCountersByManaValue(), T_FUNCS['creatures_in_your_graveyard'])],
-    # TODO: needs an extra cost of "Exile a creature card from your graveyard"
+    'necropolis': [Activated('', XZeroOneCountersByManaValue(),
+                             extra_costs=[ExileCreatureFromYourGraveyardCost(T_FUNCS['creatures_in_your_graveyard'])])],
     'nettling-imp': [Activated('T', NettlingImp(), T_FUNCS['non_wall_creatures_wo_summoning_sickness'])],
     'nevinyrrals-disk': [Spell(TapCardEffect(), T_FUNCS['self']),
                          Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments']))],
