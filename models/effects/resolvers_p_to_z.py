@@ -6,21 +6,20 @@ from typing import TYPE_CHECKING, Optional
 
 from models.actions.base import DoNothing, Action
 from models.actions.damage import DealDamageTo, PayLife
-from models.actions.destroy_sac_regen import ReanimateAction
 from models.actions.draw_discard import DiscardCards, DrawCard
-from models.actions.piles import Tutor, Shuffle, HandToBattlefield
+from models.actions.piles import Tutor, Shuffle
 from models.actions.pump import VariablePTMod
-from models.actions.special import CopyCard, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement
+from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement
 from models.choice_actions_all import ChoiceAction
 from models.constants import BASIC_LANDS
 from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageBy, \
-    BounceAtEndStep, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack
+    BounceAtEndStep, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack, LTBTandem
 from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn
-from models.effects.resolvers_generic import Reveal
-from models.modifiers import SubTypeMod, KWAMod, PTMod
+from models.effects.resolvers_generic import Reveal, CreateTokenCreature
+from models.modifiers import KWAMod, PTMod
 from models.utils import flip
 from models.zone import Zone
 
@@ -202,6 +201,16 @@ class SirensCall(Resolver):
             if not creature.has_summoning_sickness:
                 creature.modifiers.append(KWAMod('add', 'Goad', s=source, expires='EOT'))
                 gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(creature), source)
+
+class Stangg(Resolver):
+    """When S ETB, create Stangg Twin, a legendary 3/4 red & green Human Warrior creature token.
+    Exile that token when S LTB. Sac S when that token LTB"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        existing_stangg_twins = gs.card_filter.in_play().by_slug('stangg-twin').result()
+        CreateTokenCreature('stangg-twin').resolve(gs, source)
+        this_stangg_twin = next(c for c in gs.card_filter.in_play().by_slug('stangg-twin').result()
+                                if c not in existing_stangg_twins)
+        gs.event_mgr.register(LTBTandem([source, this_stangg_twin]), source)
 
 class StoneGiant(Resolver):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
@@ -426,7 +435,7 @@ class VesuvanDoppelgangerCast(Resolver):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        options = [CopyCard(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
+        options = [CopyCardAction(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
         gs.pending_choice = ChoiceAction(options)
 
 class Visions(Resolver):

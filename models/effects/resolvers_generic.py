@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+import copy
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
 from models.actions.ability_pipeline import AbilityPipeline

@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING, Optional
 
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor
-from models.actions.special import CopyCard
+from models.actions.special import CopyCardAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
-from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked
+from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
@@ -170,7 +170,7 @@ class Clone(Resolver):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        options = [CopyCard(s.owner_id, gs, s, card) for card in card_options]
+        options = [CopyCardAction(s.owner_id, gs, s, card) for card in card_options]
         gs.pending_choice = ChoiceAction(options)
 
 class CocoonCast(Resolver):
@@ -187,7 +187,7 @@ class CopyArtifact(Resolver):
         card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
         if not card_options:
             return
-        options = [CopyCard(s.owner_id, gs, s, card) for card in card_options]
+        options = [CopyCardAction(s.owner_id, gs, s, card) for card in card_options]
         gs.pending_choice = ChoiceAction(options)
 
 class Crumble(Resolver):
@@ -195,6 +195,21 @@ class Crumble(Resolver):
         if target:
             gs.pile_mgr.destroy(target, allow_regeneration=False)
             gs.score_mgr.increment_life(target.owner_id, target.props.mana_value, source, gs)
+
+class DanceOfMany(Resolver):
+    """When DOM ETB, create a token copy of target nontoken creature -- copies its original props w/o mods ...
+    When DOM LTB, exile the token. When the token LTB, sac DOM"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+        from models.game_card.game_card import GameCard
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        the_copy = GameCard(target.props, source.owner_id, is_token=True)
+        the_copy.game_state = gs
+        the_copy.zone = target.zone
+        the_copy.turn_entered_for_owner = gs.turn_mgr.turn_number
+        gs.pile_mgr.boards[source.owner_id].append(the_copy)
+        gs.event_mgr.register_card(the_copy)
+        gs.event_mgr.register(LTBTandem([source, the_copy]), source)
 
 class DemonicTutor(Resolver):
     """Search your library for a card, put that card into your hand, then shuffle"""

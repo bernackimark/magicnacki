@@ -11,7 +11,8 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
-    Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, EnchantmentAlteration
+    Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
+    EnchantmentAlteration, DanceOfMany
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
@@ -220,7 +221,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cyclopean-mummy': [Triggered(CyclopeanMummy())],
     'dakkon-blackblade': [Static(SelfPTEquals(T_FUNCS['your_lands']))],
     'damping-field': [Triggered(DampingField())],
-    'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU'))],  # the rest of the card still needs coding
+    'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU')), Spell(DanceOfMany(), T_FUNCS['non_token_creatures'])],
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests'])])],
     'dark-ritual': [Spell(AddMana('B', 3))],
     'dark-sphere': [Activated('T', PreventNextDamageTo(protected=T_FUNCS['owner']), T_FUNCS['artifacts'],

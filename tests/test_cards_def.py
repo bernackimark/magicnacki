@@ -7,6 +7,7 @@ from models.actions.special import Attach
 from models.counter_tokens import HUNGER
 from models.events_all import UpkeepEvent
 from models.systems.phase import Phase
+from models.zone import Zone
 from tests.setup_helpers import TestGame
 
 
@@ -14,6 +15,26 @@ class TestCardsDEF(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_dance_of_many(self):
+        """... When DOM ETB, create a token copy of target nontoken creature -- copies its original props w/o mods ...
+        When DOM LTB, exile the token. When the token LTB, sac DOM"""
+        card = self.g.hand('dance-of-many')
+        target = self.g.battlefield('grizzly-bears')  # 2/2
+        aura = self.g.hand('holy-strength')  # +1/+2
+        self.g.cast_and_accept(aura, target, aura.abilities[0])
+        self.assertEqual(3, target.power)
+
+        self.g.cast_and_accept(card, target, card.abilities[1])
+        the_copy = next(c for c in self.gs.boards[0] if not c.is_land and c not in (card, target, aura))
+        self.assertEqual(Zone.BATTLEFIELD, the_copy.zone)
+        self.assertEqual(2, the_copy.power)
+
+        self.g.next_turn()
+        self.assertTrue(self.gs.perm_querier.can_attack(the_copy))
+
+        self.gs.pile_mgr.destroy(card, allow_regeneration=False)
+        self.assertNotIn(the_copy, self.gs.boards[0])
 
     def test_demonic_torment(self):
         """Host can't attack. Prevent all combat damage that would be dealt by host."""

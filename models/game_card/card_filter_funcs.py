@@ -132,6 +132,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'non_artifact_non_white_creatures': lambda gs, s: gs.card_filter.non_artifact_creatures().non_white().result(),
     'non_creature_artifacts': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'non_fliers': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying', False).result(),
+    'non_token_creatures': lambda gs, s: gs.card_filter.in_play().non_token().creatures().result(),
     'non_token_permanents': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
     'non_wall_creatures': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().result(),
     'non_wall_creatures_wo_summoning_sickness': lambda gs, s: [c for c in gs.card_filter.in_play().non_wall_creatures().result()

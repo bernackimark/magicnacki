@@ -19,7 +19,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, Event
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -596,6 +596,25 @@ class RemoveCounterAtTargetUpkeep(Listener):
         self.target.counters.remove_counter(self.counter_type, self.amt)
 
 # --- ZONE CHANGE ---
+class LTBTandem(Listener):
+    """When any card in the initialized tandem_cards LTB, all others are be destroyed w/o regeneration"""
+    listens_to = ZoneChangeEvent
+
+    def __init__(self, tandem_cards: list[GameCard]):
+        self.tandem_cards = tandem_cards
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent) -> None:
+        if event.card not in self.tandem_cards or event.from_zone != Zone.BATTLEFIELD or \
+                event.to_zone == Zone.BATTLEFIELD:
+            return
+        gs.event_mgr.unregister_specific_effect(self)
+        for tandem_card in self.tandem_cards:
+            if tandem_card is event.card:
+                continue
+            if tandem_card not in gs.card_filter.in_play().result():
+                continue
+            gs.pile_mgr.destroy(tandem_card, allow_regeneration=False)
+
 class ReturnToOwnerOnLTB(Listener):
     """Although the OnwershipMod will be removed upon LTB; need to transfer the stolen GameCard across boards"""
     listens_to = ZoneChangeEvent

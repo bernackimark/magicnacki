@@ -579,8 +579,8 @@ class VesuvanDoppelgangerUpkeep(Listener):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        from models.actions.special import CopyCard
-        options = [CopyCard(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
+        from models.actions.special import CopyCardAction
+        options = [CopyCardAction(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
         gs.pending_choice = ChoiceAction(options)
 
 

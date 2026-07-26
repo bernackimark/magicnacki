@@ -17,7 +17,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB
+    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB, Stangg
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
@@ -196,7 +196,7 @@ MAP: dict[str, list[EffSpec]] = {
     'staff-of-zegon': [Activated('3T', Pump(-2, 0, True), T_FUNCS['creatures'])],
     'standing-stones': [Activated('1T', AddMana(c), text=f'Add {{{c}}}', extra_costs=PayLifeCost())
                         for c in COLOR_LETTERS],
-    'stangg': [Spell(CreateTokenCreature('stangg-twin')), Static(StanggOnLeave())],
+    'stangg': [Spell(Stangg())],
     'stasis': [Triggered(PayManaOrSacAtUpkeep('U')), Static(SkipUntapPhase())],
     'steal-artifact': [Triggered(ReturnToOwnerOnLTB()), Spell(Steal(), T_FUNCS['opp_artifacts'])],
     'stone-calendar': [Static(StoneCalendar())],

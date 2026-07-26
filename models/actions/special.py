@@ -35,7 +35,7 @@ class Attach(Action):
             if self.gs.action_stack:
                 self.gs.action_stack.pop()
 
-class CopyCard(Action):
+class CopyCardAction(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard,
                  addtional_types: list[str] = None, copy_color: bool = True):
         super().__init__(p_id, gs)
