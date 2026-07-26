@@ -117,12 +117,33 @@ class PayManaToPreventCounter(Action):
         self.counter_spell = counter_spell
         self.mana_cost = mana_cost
 
+    def __repr__(self):
+        return f'Pay {{{self.mana_cost}}} to prevent counterspell by {self.counter_spell.source.props.name}'
+
     def play(self):
         if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
             self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
         self.gs.action_stack.remove(self.counter_spell)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
+
+class PayManaToPreventDamage(Action):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, protected: GameCard, mana_cost: str,
+                 preventable_amt: int | None = None):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.protected = protected
+        self.mana_cost = mana_cost
+        self.preventable_amt = preventable_amt
+
+    def __repr__(self):
+        return f'Pay {{{self.mana_cost}}} to prevent {self.preventable_amt} damage to {self.protected}'
+
+    def play(self) -> None:
+        from models.effects.listeners_generic import PreventNextDamageTo
+        if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
+            self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
+        self.gs.event_mgr.register(PreventNextDamageTo(self.preventable_amt, protected=self.protected), self.source)
 
 class PayManaToDrawCards(Action):
     def __init__(self, p_id: int, gs: GameState, mana_cost: str, card_cnt: int):
@@ -290,6 +311,22 @@ class HealingSalveB(Action):
         from models.effects.listeners_generic import PreventNextDamageTo
         self.gs.event_mgr.register(PreventNextDamageTo(3, False, self.target))
         self.gs.action_stack.pop()
+
+class IslandSanctuaryAction(Action):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+
+    def __repr__(self):
+        return 'Skip your draw & until your next turn, you can only be attacked by fliers and/or islandwalkers'
+
+    def play(self) -> None:
+        from models.effects.listeners_permission import IslandSanctuaryRestriction
+        from models.effects.listeners_generic import UnregisterListenerOnYourNextTurn
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+        listener = IslandSanctuaryRestriction()
+        self.gs.event_mgr.register(listener, self.source)
+        self.gs.event_mgr.register(UnregisterListenerOnYourNextTurn(listener), self.source)
 
 class NamelessRaceETBAction(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, amt: int):

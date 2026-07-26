@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Optional
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.base import DoNothing, Action
 from models.actions.combat import AssignBlocker
-from models.actions.destroy_sac_regen import SacCards
+from models.actions.destroy_sac_regen import SacCards, ReanimateAction
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction
-from models.counter_tokens import MINUS_ZERO_ONE, VITALITY
+from models.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
@@ -101,13 +101,40 @@ class GlassesOfUrza(Resolver):
         for c in gs.pile_mgr.hands[flip(source.owner_id)]:
             c.reveal()
 
+class GlyphOfDelusion(Resolver):
+    """Put X glyph counters on target creature that target Wall blocked this turn, X = power of that blocked creature"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        com = gs.combat_mgr.get_combat(target)
+        com.declared_attacker.counters.add_counter(STUN, com.declared_attacker.power)
+
 class GlyphOfDestruction(Resolver):
     """Target blocking Wall you control gets +10/+0 until end of combat.
     Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
+        # TODO: there is a type error in PreventAllDamageToEOT parameter
         t.modifiers.append(PTMod(s=s, p_adj=10, expires='EOT'))
         gs.event_mgr.register(PreventAllDamageToEOT(t), s)
         gs.event_mgr.register(DestroyAtEndStep(t), s)
+
+class GlyphOfReincarnation(Resolver):
+    """Cast this spell only after combat. Destroy attacker blocked by target Wall this turn. It can't be regenerated.
+    You put a different creature from the attacker's graveyard onto the battlefield under its owner's control."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        com = gs.combat_mgr.get_combat(target)
+        attacker = com.declared_attacker
+        creatures_in_attackers_gy = list(gs.card_filter.in_player_graveyard(attacker.owner_id).creatures().result())
+        gs.pile_mgr.destroy(attacker, allow_regeneration=False)
+        if not creatures_in_attackers_gy:
+            return
+        elif len(creatures_in_attackers_gy) == 1:
+            gs.pile_mgr.reanimate(creatures_in_attackers_gy[0])
+        else:
+            options = [ReanimateAction(source.owner_id, gs, source, t) for t in creatures_in_attackers_gy]
+            gs.pending_choice = ChoiceAction(options)
 
 class GoblinKing(Resolver):
     """All of your other Goblins gain +1+/+1 and Mountainwalk"""
@@ -135,6 +162,17 @@ class Greed(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.apply_damage(source, 2, source.owner_id)
         gs.pile_mgr.draw(source.owner_id)
+
+class GuardianAngel(Resolver):
+    """Prevent the next X damage that would be dealt to any target (permanent or player) this turn.
+    Until EOT, you may pay {1} at any time to prevent the next 1 damage that would be dealt to that target this turn."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        from models.effects.listeners_generic import PreventNextDamageTo
+        gs.event_mgr.register(PreventNextDamageTo(source.extras['x'], protected=target), source)
+        # TODO: the above handles the FIRST next damage;
+        #  need to handle subsequent damages via actions.special PayManaToPreventDamage
 
 class GwendlynDiCorci(Resolver):
     """{T}: Target player discards a card at random. Activate only during your turn"""

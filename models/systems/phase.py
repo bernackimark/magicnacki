@@ -72,7 +72,7 @@ class UntapPhase(PhaseState):
                 continue
 
             if c.counters.get_count(STUN):
-                print('Removing counter from', c)
+                print('Removing stun counter from', c)
                 c.counters.remove_counter(STUN)
                 continue
 

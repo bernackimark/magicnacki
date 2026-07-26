@@ -3,7 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.special import Attach
 from models.cost import SacSelfCost
-from models.events_all import EndStepEvent, CombatEndEvent
+from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent
 from models.systems.phase import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
@@ -165,6 +165,36 @@ class TestCardsGHI(unittest.TestCase):
         card.tap()
         ability = AbilityPipeline(0, self.gs, card, aa.eff_spec)
         self.assertFalse(ability.can_begin(), 'Should not be able to activate 2x in a turn')
+
+    def test_island_sanctuary(self):
+        """At your draw step, you may skip your draw and until your next turn,
+        you can only be attacked by creatures with flying and/or islandwalk"""
+        self.g.battlefield('island-sanctuary')
+        illegal_attacker = self.g.battlefield('grizzly-bears', owner=1)
+        legal_attacker = self.g.battlefield('scryb-sprites', owner=1)
+        hand_len = len(self.gs.hands[0])
+
+        self.g.next_turn()
+        self.gs.event_mgr.emit(DrawStepEvent(0))
+        self.assertEqual(hand_len, len(self.gs.hands[0]))
+        skip_draw_and_gain_protection_action = self.gs.pending_choice.get_actions()[0]
+        skip_draw_and_gain_protection_action.play()
+
+        self.g.next_turn(True)
+        self.assertTrue(self.gs.perm_querier.can_attack(legal_attacker))
+        self.assertFalse(self.gs.perm_querier.can_attack(illegal_attacker))
+
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.DRAW)
+        do_nothing_action = self.gs.pending_choice.get_actions()[1]
+        do_nothing_action.play()
+        self.assertEqual(8, len(self.gs.hands[0]))
+        self.gs.hands[0].clear()
+
+        self.g.next_turn(True)
+        self.assertTrue(self.gs.perm_querier.can_attack(legal_attacker))
+        self.assertTrue(self.gs.perm_querier.can_attack(illegal_attacker))
+
 
 
 if __name__ == '__main__':

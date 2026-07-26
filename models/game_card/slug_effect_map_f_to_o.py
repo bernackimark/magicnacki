@@ -15,7 +15,8 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, \
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, \
+    GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
@@ -42,7 +43,7 @@ from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, \
     FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import Onulet, FirestormPhoenix
-from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy
+from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy, IslandSanctuary
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
@@ -113,9 +114,12 @@ MAP: dict[str: list[EffSpec]] = {
     'giant-turtle': [Triggered(CantAttackIfAttackedLastTurn())],
     'glasses-of-urza': [Activated('T', GlassesOfUrza())],
     'gloom': [Static(Gloom())],
+    'glyph-of-delusion': [Spell(GlyphOfDelusion(), T_FUNCS['walls'])],
     'glyph-of-destruction': [Spell(GlyphOfDestruction(), T_FUNCS['your_walls'])],
     'glyph-of-doom': [Spell(GlyphOfDoom(), T_FUNCS['walls'])],
     'glyph-of-life': [Spell(GlyphOfLife(), T_FUNCS['walls'])],
+    'glyph-of-reincarnation': [Spell(GlyphOfReincarnation(), T_FUNCS['walls'],
+                                     allowed_phases=[p for p in Phase if p >= Phase.COMBAT_END])],
     'goblin-balloon-brigade': [Activated('R', KWAModEffect('add', 'Flying', True), T_FUNCS['self'])],
     'goblin-caves': [Static(PumpApplies(T_FUNCS['goblins'], (0, 2), C_FUNCS['host_is_basic_mountain']))],
     'goblin-digging-team': [Activated('T', Destroy(), T_FUNCS['walls'], extra_costs=[SacSelfCost()])],
@@ -139,6 +143,7 @@ MAP: dict[str: list[EffSpec]] = {
     'greed': [Activated('B', Greed(), T_FUNCS['owner'])],
     'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', 'Protection From Green'), T_FUNCS['creatures'])],
+    'guardian-angel': [Spell(GuardianAngel(), T_FUNCS['all_creatures_and_players'])],  # partial
     'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), T_FUNCS['all_players'])],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures'])],
@@ -186,6 +191,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ironclaw-orcs': [Static(IronclawOrcs())],
     'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                               Triggered(PayManaToUntapUpkeep('UU', T_FUNCS['self']))],
+    'island-sanctuary': [Static(IslandSanctuary())],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
     'ivory-tower': [Triggered(IvoryTower())],

@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
     CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, \
-    Event, CanRegenerateQueryEvent
+    CanRegenerateQueryEvent
 
 """
 These are Effects that listens for Events that are XXQueryEvent
@@ -259,6 +259,19 @@ class IronclawOrcs(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
         if event.blocker is not source or event.attacker.power < 2:
+            return
+        event.permission = False
+
+class IslandSanctuaryRestriction(Listener):
+    """You can only be attacked fliers or Islandwalkers"""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if event.attacker == source.owner_id:
+            return
+        if 'Flying' in event.attacker.keyword_abilities:
+            return
+        if 'Islandwalk' in event.attacker.keyword_abilities:
             return
         event.permission = False
 

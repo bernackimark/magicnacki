@@ -3,7 +3,9 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
+from models.actions.base import DoNothing
 from models.actions.draw_discard import DiscardCards
+from models.actions.special import IslandSanctuaryAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import DOOM
 from models.effects.base import Listener
@@ -82,6 +84,17 @@ class HowlingMine(Listener):
         if source.is_tapped:
             return
         gs.pile_mgr.draw(event.active_player)
+
+class IslandSanctuary(Listener):
+    """At your draw step, you may skip your draw and until your next turn,
+    you can only be attacked by creatures with flying and/or islandwalk"""
+    listens_to = DrawStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        options = [IslandSanctuaryAction(source.owner_id, gs, source), DoNothing(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options)
 
 class ManaVaultDamageIfTapped(Listener):
     """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""

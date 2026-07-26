@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Callable, Any
 
 from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.base import DoNothing
-from models.actions.cast import CastPermanentAction
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife, PayManaToPreventCounter
@@ -20,7 +19,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, Event, DiesEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -486,6 +485,16 @@ class OptionalUntap(Listener):
         options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
         gs.pending_choice = ChoiceAction(options)
 
+class UnregisterListenerOnYourNextTurn(Listener):
+    listens_to = UntapPhaseEvent
+
+    def __init__(self, listener: Listener):
+        self.listener = listener
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        gs.event_mgr.unregister_specific_effect(self.listener)
 
 # --- UPKEEP ---
 class AddCounterAtTargetUpkeep(Listener):
