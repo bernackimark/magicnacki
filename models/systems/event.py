@@ -63,7 +63,7 @@ class EventManager:
                 if hasattr(e.effect, "modifies"):
                     if e.effect.modifies != event.query:
                         continue
-            print(f'{e} emits to {type(event)} listeners')
+            print(f'Emitting {type(event).__name__}, possible responder {e}')
             e.effect.on_event(self._gs, e.source, event)
 
         self.cleanup_expired()
