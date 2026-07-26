@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    from models.events_all import DamageProposedEvent
     from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
@@ -65,3 +66,16 @@ class PayLife(Action):
             self.gs.action_stack.pop()
         elif self.gs.pending_choice:
             self.gs.pending_choice = None
+
+class RedirectDamageToYouAction(Action):
+    def __init__(self, p_id, gs, source: GameCard, event: DamageProposedEvent):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.event = event
+
+    def __repr__(self):
+        return f'Redirect all damage from {self.event.target} to you'
+
+    def play(self) -> None:
+        self.event.target = self.source.owner_id
+        self.gs.pending_choice = None

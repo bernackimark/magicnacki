@@ -167,6 +167,19 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.next_turn()
         self.assertEqual(0, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
 
+    def test_caverns_of_despair(self):
+        """No more than two creatures can attack each combat. No more than two creatures can block each combat."""
+        self.g.battlefield('caverns-of-despair')
+        a1 = self.g.battlefield('scryb-sprites')
+        a2 = self.g.battlefield('savannah-lions')
+        a3 = self.g.battlefield('tundra-wolves')
+
+        self.g.next_turn()
+        self.gs.combat_mgr.create_combat(a1)
+        self.assertTrue(self.gs.perm_querier.can_attack(a2))
+        self.gs.combat_mgr.create_combat(a2)
+        self.assertFalse(self.gs.perm_querier.can_attack(a3))
+
     def test_city_in_a_bottle(self):
         """Whenever a nontoken permanent with a name originally printed in Arabian Nights is on battlefield, sac it"""
         an_card = self.g.battlefield('serendib-efreet')

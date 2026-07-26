@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
     CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, \
-    CanRegenerateQueryEvent
+    CanRegenerateQueryEvent, Event
 
 """
 These are Effects that listens for Events that are XXQueryEvent
@@ -20,6 +20,28 @@ It may set the event.permission = False
 
 
 # --- GENERICS ---
+class AttackerCountMax(Listener):
+    """Only allows X attackers per turn"""
+    listens_to = CanAttackQueryEvent
+
+    def __init__(self, max_cnt: int):
+        self.max_cnt = max_cnt
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if len(gs.card_filter.attackers().result()) >= self.max_cnt:
+            event.permission = False
+
+class BlockerCountMax(Listener):
+    """Only allows X blockers per turn"""
+    listens_to = CanBlockQueryEvent
+
+    def __init__(self, max_cnt: int):
+        self.max_cnt = max_cnt
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if len(gs.card_filter.blockers().result()) >= self.max_cnt:
+            event.permission = False
+
 class CanAttackEOT(Listener):
     """Card, which may otherwise not be permitted to attack, can attack this turn"""
     listens_to = CanAttackQueryEvent
@@ -358,19 +380,6 @@ class Smoke(Listener):
         if [e for e in events if e.card.is_creature]:
             event.permission = False
 
-class WinterOrb(Listener):
-    """As long as this artifact is untapped, players can't untap more than one land during their untap steps"""
-    listens_to = CanUntapQueryEvent
-    query = 'can_untap'
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if source.is_tapped or 'Land' not in event.card.card_types:
-            return
-        # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
-        if [e for e in events if e.card.is_land]:
-            event.permission = False
-
 
 # --- CAN UNTAP AT UNTAP QUERY EVENT ---
 class CocoonUntap(Listener):
@@ -399,4 +408,17 @@ class VenarianGoldAtUntap(Listener):
         if event.card != source.host or event.card.owner_id != event.active_player:
             return
         if source.host.counters.get_count(SLEEP):
+            event.permission = False
+
+class WinterOrb(Listener):
+    """As long as this artifact is untapped, players can't untap more than one land during their untap steps"""
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+    query = 'can_untap'
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if source.is_tapped or 'Land' not in event.card.card_types:
+            return
+        # TODO: this should probably enter a flow where user can declare which one card they want to untap
+        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
+        if [e for e in events if e.card.is_land]:
             event.permission = False

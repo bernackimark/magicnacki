@@ -27,7 +27,7 @@ from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, Artifa
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, BlazingEffigy
-from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye
+from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
 from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
     ClockworkCombatEnd
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
@@ -38,7 +38,8 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
 from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
-    HostCanAttack, UnblockableCondition, UnblockableEOT, PreventRegenerationEOT, RegenerateSelf
+    HostCanAttack, UnblockableCondition, UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, \
+    BlockerCountMax
 from models.effects.listeners_mod_queries import PTModEqualsManaValue, AngelicVoices, AngryMobPT, \
     AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
@@ -133,6 +134,7 @@ MAP: dict[str, list[EffSpec]] = {
     'blessing': [Activated('W', Pump(1, 1, True), T_FUNCS['host'])],
     'blight': [Spell(Blight(), T_FUNCS['lands'])],
     'blood-lust': [Spell(BloodLust(), T_FUNCS['creatures'])],
+    'blood-of-the-martyr': [Triggered(BloodOfTheMartyr())],
     'blue-elemental-blast': [Spell(CounterSpell(), T_FUNCS['red_spells']),
                              Spell(Destroy(), T_FUNCS['red_permanents'])],
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
@@ -157,6 +159,7 @@ MAP: dict[str, list[EffSpec]] = {
     'castle': [Static(PumpApplies(T_FUNCS['your_untapped_white_creatures'], (0, 2)))],
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self']),
                     Activated('1RRT', KWAModEffect('add', 'Mountainwalk', True), T_FUNCS['creatures'])],
+    'caverns-of-despair': [Static(AttackerCountMax(2)), Static(BlockerCountMax(2))],
     'celestial-prism': [Activated('2T', AddMana(c), T_FUNCS['owner'], text=f'Add 1 {c}') for c in COLOR_LETTERS],
     'chaos-orb': [Activated('1T', ChaosOrb(), T_FUNCS['opp_non_token_perms'], extra_costs=[SacSelfCost()],
                             text='If random di roll is 1-4, destroy target')],
