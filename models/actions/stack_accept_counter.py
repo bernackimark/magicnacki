@@ -6,6 +6,7 @@ from models.zone import Zone
 
 if TYPE_CHECKING:
     from models.actions.ability_pipeline import AbilityPipeline
+    from models.actions.ability_pipeline_support import AbilityAction
     from models.actions.cast import CastPermanentAction
     from game_state import GameState
 
@@ -30,7 +31,7 @@ class AcceptAction(Action):
 
 @dataclass
 class CounterSpellAction(Action):
-    def __init__(self, p_id: int, gs: GameState, target_spell: AbilityPipeline):
+    def __init__(self, p_id: int, gs: GameState, target_spell: AbilityAction | CastPermanentAction):
         super().__init__(p_id, gs)
         self.target_spell = target_spell
 

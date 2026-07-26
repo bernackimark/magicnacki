@@ -1,10 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any
 
+from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.base import DoNothing
+from models.actions.cast import CastPermanentAction
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import PayMana
-from models.actions.special import PayManaForLife
+from models.actions.special import PayManaForLife, PayManaToPreventCounter
+from models.actions.stack_accept_counter import CounterSpellAction
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -17,7 +20,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, Event
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -409,6 +412,27 @@ class TakeAnotherTurn(Listener):
         from models.actions.end_step_pass_turn import PassTheTurn
         gs.event_mgr.unregister_specific_effect(self)
         PassTheTurn(source.owner_id, gs, pass_turn_to_opp=False).play()
+
+# --- STACK ADDITION EVENT ---
+class PayManaOrCounterSpellListener(Listener):
+    """Listens for when something is added to the stack"""
+    listens_to = StackAdditionEvent
+
+    def __init__(self, mana_cost: str):
+        self.mana_cost = mana_cost
+
+    def on_event(self, gs: GameState, source: GameCard, event: StackAdditionEvent) -> None:
+        if isinstance(event.action, AbilityAction) and not event.action.pipeline.eff_spec.is_spell:
+            return
+        target_spell = event.action
+        p_id = target_spell.player_idx
+        if not gs.mana_pools[p_id].can_pay(self.mana_cost):
+            gs.action_stack.remove(event.action)
+            gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+            return
+        options = [PayManaToPreventCounter(p_id, gs, target_spell, self.mana_cost),
+                   CounterSpellAction(p_id, gs, target_spell)]
+        gs.pending_choice = ChoiceAction(options)
 
 # --- UNTAP CARD EVENT ---
 class ReturnToOwnerOnUntap(Listener):

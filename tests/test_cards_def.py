@@ -167,8 +167,8 @@ class TestCardsDEF(unittest.TestCase):
         card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_pipeline])
         card_pipeline.advance()
         card_pipeline.resolve_ability()
-        allow_bolt_countered = self.gs.pending_choice.get_actions()[0]
-        allow_bolt_countered.play()
+        pay_mana_to_prevent_counter_action = self.gs.pending_choice.get_actions()[0]
+        pay_mana_to_prevent_counter_action.play()
         self.assertTrue(17, self.gs.life[1])
         self.assertTrue(self.gs.pending_choice is None)
 

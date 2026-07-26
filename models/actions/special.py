@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
-from models.actions.ability_pipeline import AbilityPipeline
 from models.counter_tokens import CounterType, WIND
 from models.modifiers import OwnershipMod, SubTypeMod
 from models.systems.phase import Phase
@@ -11,6 +10,8 @@ from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
+    from models.actions.ability_pipeline_support import AbilityAction
+    from models.actions.cast import CastPermanentAction
     from models.game_card.game_card import GameCard
 
 
@@ -111,7 +112,7 @@ class PayManaForLife(Action):
             self.gs.pending_choice = None
 
 class PayManaToPreventCounter(Action):
-    def __init__(self, p_id: int, gs: GameState, counter_spell: AbilityPipeline, mana_cost: str):
+    def __init__(self, p_id: int, gs: GameState, counter_spell: AbilityAction | CastPermanentAction, mana_cost: str):
         super().__init__(p_id, gs)
         self.counter_spell = counter_spell
         self.mana_cost = mana_cost
@@ -287,7 +288,7 @@ class HealingSalveB(Action):
 
     def play(self) -> None:
         from models.effects.listeners_generic import PreventNextDamageTo
-        self.gs.event_mgr.register(PreventNextDamageTo(self.target, 3))
+        self.gs.event_mgr.register(PreventNextDamageTo(3, False, self.target))
         self.gs.action_stack.pop()
 
 class NamelessRaceETBAction(Action):

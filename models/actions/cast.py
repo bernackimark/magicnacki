@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
-from models.events_all import StateBasedEvent, CastResolvedEvent
+from models.events_all import StateBasedEvent, CastResolvedEvent, StackAdditionEvent
 from models.zone import Zone
 
 @dataclass
@@ -22,6 +22,7 @@ class CastWithNoSpellEffect(Action):
         self.gs.mana_pools[self.player_idx].pay(self.source.casting_cost)
         action = CastPermanentAction(self.source.owner_id, self.gs, self.source)
         self.gs.action_stack.push(action, self.gs)
+        self.gs.event_mgr.emit(StackAdditionEvent(self.player_idx, action))
 
 
 @dataclass

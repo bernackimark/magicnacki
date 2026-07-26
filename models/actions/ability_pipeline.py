@@ -7,7 +7,7 @@ from typing import Any, TYPE_CHECKING, Union
 from models.actions.base import Action
 from models.cost import Cost
 from models.effects.base import Resolver, ActivatedAbility, Listener
-from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent
+from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent, StackAdditionEvent
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -141,7 +141,7 @@ class AbilityPipeline(Action):
 
         action = AbilityAction(self.player_idx, self.gs, self)
         self.gs.action_stack.push(action, self.gs)
-        self.gs.event_mgr.emit(StateBasedEvent())
+        self.gs.event_mgr.emit(StackAdditionEvent(self.player_idx, action))
 
     def resolve_ability(self):
         if isinstance(self.eff_spec.effect, Resolver):

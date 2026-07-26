@@ -48,7 +48,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
     PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
-    RedirectNextDamageFromCardToOwnerEOT
+    RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), T_FUNCS['self'],
@@ -293,6 +293,7 @@ MAP: dict[str: list[EffSpec]] = {
     'natural-selection': [Spell(NaturalSelection(), T_FUNCS['all_players'])],
     'necropolis': [Activated('', XZeroOneCountersByManaValue(),
                              extra_costs=[ExileCreatureFromYourGraveyardCost(T_FUNCS['creatures_in_your_graveyard'])])],
+    'nether-void': [Triggered(PayManaOrCounterSpellListener('3'))],
     'nettling-imp': [Activated('T', NettlingImp(), T_FUNCS['non_wall_creatures_wo_summoning_sickness'])],
     'nevinyrrals-disk': [Spell(TapCardEffect(), T_FUNCS['self']),
                          Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments']))],

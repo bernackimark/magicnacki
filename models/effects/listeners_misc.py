@@ -11,8 +11,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.effects.base import Listener
-from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, Event, \
-    ZoneChangeEvent
+from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent
 from models.utils import flip
 
 

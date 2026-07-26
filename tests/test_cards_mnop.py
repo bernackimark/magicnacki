@@ -1,6 +1,8 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline_support import AbilityAction
+from models.actions.cast import CastWithNoSpellEffect
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
@@ -73,6 +75,27 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.battlefield('swamp', cnt=7)
         self.g.cast_and_accept(card, None, card.abilities[0], add_lots_of_mana=False)
         self.assertTrue(any(isinstance(a, SacCards) for a in self.gs.pending_choice.get_actions()))
+
+    def test_nether_void(self):
+        """Whenever a player casts a spell, counter it unless that player pays {3}"""
+        self.g.battlefield('nether-void')
+        target1 = self.g.hand('merfolk-of-the-pearl-trident')
+        self.g.mana('U')
+        add_to_stack_action = CastWithNoSpellEffect(0, self.gs, target1)
+        add_to_stack_action.play()
+        self.assertIn(target1, self.g.gy[0])  # not enough mana to prevent nether-void counter
+        self.assertFalse(len(self.gs.action_stack.actions))
+
+        target2 = self.g.hand('lightning-bolt')
+        self.g.mana('RRRR')
+        ap = AbilityPipeline(0, self.gs, target2, target2.abilities[0], targets=[1])
+        ap.finish()
+        ap.resolve_ability()
+        pay_mana_to_prevent_counter_action = self.gs.pending_choice.get_actions()[0]
+        pay_mana_to_prevent_counter_action.play()
+
+        self.assertEqual(17, self.gs.life[1])
+        self.assertTrue(all(c.is_tapped for c in self.gs.card_filter.on_player_board(0).mountains().result()))
 
     def test_nettling_imp(self):
         """{T}: Choose target non-Wall creature the active player has controlled continuously since BOT.
