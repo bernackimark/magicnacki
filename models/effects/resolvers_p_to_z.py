@@ -467,6 +467,14 @@ class WandOfIth(Resolver):
         options = [PayLife(opp, gs, source, life_payment_amt), DiscardCards(opp, gs, the_card)]
         gs.pending_choice = ChoiceAction(options)
 
+class WarBarge(Resolver):
+    """{3}: Target creature gains islandwalk EOT. When WB LTB this turn, destroy that creature, no regen allowed"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.modifiers.append(KWAMod('add', 'Islandwalk', s=source, expires='EOT'))
+        gs.event_mgr.register(LTBTandem([source, target], until_eot=True), source)
+
 class Web(Resolver):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:

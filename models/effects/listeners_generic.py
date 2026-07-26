@@ -599,8 +599,10 @@ class LTBTandem(Listener):
     """When any card in the initialized tandem_cards LTB, all others are be destroyed w/o regeneration"""
     listens_to = ZoneChangeEvent
 
-    def __init__(self, tandem_cards: list[GameCard]):
+    def __init__(self, tandem_cards: list[GameCard], until_eot: bool = False):
         self.tandem_cards = tandem_cards
+        if until_eot:
+            self.expires = 'EOT'
 
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent) -> None:
         if event.card not in self.tandem_cards or event.from_zone != Zone.BATTLEFIELD or \

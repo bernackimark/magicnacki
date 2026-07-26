@@ -36,12 +36,11 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
     PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep, AddCounterAtTargetUpkeep
-from models.effects.listeners_permission import CityInABottleCantCast, \
-    ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
-    HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
-    HostCanAttack, UnblockableCondition, UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, \
-    BlockerCountMax
-from models.effects.listeners_mod_queries import PTModEqualsManaValue, AngelicVoices, AngryMobPT, \
+from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
+    EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantBeTargetedByAuras, HostCantAttack, \
+    WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, HostCanAttack, UnblockableCondition, \
+    UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo
+from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \
     AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
 
@@ -173,7 +172,8 @@ MAP: dict[str, list[EffSpec]] = {
     'circle-of-protection-red': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['owner']), T_FUNCS['red'])],
     'circle-of-protection-white': [Activated('1', PreventNextDamageTo(protected=T_FUNCS['owner']), T_FUNCS['white'])],
     'citanul-druid': [Triggered(CitanulDruid())],
-    'city-in-a-bottle': [Static(GlobalSac(T_FUNCS['city_in_a_bottle'])), Static(CityInABottleCantCast()),
+    'city-in-a-bottle': [Static(GlobalSac(T_FUNCS['city_in_a_bottle'])),
+                         Static(CantCastAppliesTo(T_FUNCS['city_in_a_bottle'])),
                          Spell(SacAll(T_FUNCS['city_in_a_bottle']))],
     'city-of-brass': [Activated('T', AddMana(c), text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap())],

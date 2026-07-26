@@ -35,7 +35,10 @@ class DealDamageToYou(Action):
 
     def play(self):
         self.gs.apply_damage(self.source, self.damage_amt, self.source.owner_id)
-        self.gs.action_stack.pop()  # remove choice
+        if self.gs.action_stack.actions:
+            self.gs.action_stack.pop()  # remove choice
+        elif self.gs.pending_choice:
+            self.gs.pending_choice = None
 
 class GainLife(Action):
     def __init__(self, p_id, gs, source: GameCard, amt: int, target_p_id: int):

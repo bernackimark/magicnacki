@@ -439,6 +439,34 @@ class WoodElementalETBAction(Action):
         for card in self.cards_to_sac:
             self.gs.pile_mgr.destroy(card, allow_regeneration=False)
 
+class WormsOfTheEarthSacTwoLands(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+
+    def __repr__(self):
+        return f'Sac two lands and destroy Worms Of The Earth'
+
+    def play(self) -> None:
+        your_islands = self.gs.card_filter.on_player_board(self.player_idx).lands().result()
+        for island in your_islands[:2]:
+            self.gs.pile_mgr.destroy(island)
+        self.gs.pile_mgr.destroy(self.s)
+        self.gs.pending_choice = None
+
+class WormsOfTheEarthTake5Damage(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+
+    def __repr__(self):
+        return f'Take 5 damage and destroy Worms Of The Earth'
+
+    def play(self) -> None:
+        self.gs.apply_damage(self.s, 5, self.player_idx)
+        self.gs.pile_mgr.destroy(self.s)
+        self.gs.pending_choice = None
+
 class YawgmothDemonUnpaidUpkeep(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
         super().__init__(p_id, gs)

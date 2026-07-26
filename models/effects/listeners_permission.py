@@ -79,6 +79,18 @@ class CantBeTargetedByAuras(Listener):
             return
         event.permission = False
 
+class CantCastAppliesTo(Listener):
+    """A card matching the applies to func cannot be cast"""
+    listens_to = CanCastQueryEvent
+
+    def __init__(self, applies_to_func: Callable[[GameState, GameCard], list[GameCard | None]]):
+        self.applies_to_func = applies_to_func
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
+        applies_to_cards = self.applies_to_func(gs, source)
+        if event.card in applies_to_cards:
+            event.permission = False
+
 class CantCastEOT(Listener):
     listens_to = CanCastQueryEvent
     expires = 'EOT'

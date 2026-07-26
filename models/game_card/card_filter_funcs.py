@@ -41,6 +41,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'active_volcano_targets': lambda gs, s: gs.card_filter.in_play().blue().permanents().result() +
                                  gs.card_filter.in_play().islands().result(),
     'all_creatures_and_players': lambda gs, s: gs.card_filter.in_play().creatures().result() + [0, 1],
+    'all_lands_in_game': lambda gs, s: gs.card_filter.lands().result(),
     'all_players': lambda gs, s: [0, 1],
     'another_orc_or_goblin':
         lambda gs, s: [c for c in gs.card_filter.in_play().by_sub_type(['Orc', 'Golbin']).result() if c is not s],

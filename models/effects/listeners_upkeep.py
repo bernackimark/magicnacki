@@ -12,7 +12,8 @@ from models.actions.mana import PayMana
 from models.actions.piles import TutorMultipleCards
 from models.actions.pump import VariablePTMod
 from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePayManaPerCounterDealDamage, \
-    SkipDrawPhaseGainLife, PayManaAndOrTakeDamage, YawgmothDemonUnpaidUpkeep, SacTwoIslandsToUntap, SacTwoIslands
+    SkipDrawPhaseGainLife, PayManaAndOrTakeDamage, YawgmothDemonUnpaidUpkeep, SacTwoIslandsToUntap, SacTwoIslands, \
+    WormsOfTheEarthSacTwoLands, WormsOfTheEarthTake5Damage
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
@@ -581,7 +582,6 @@ class VesuvanDoppelgangerUpkeep(Listener):
         options = [CopyCardAction(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
         gs.pending_choice = ChoiceAction(options)
 
-
 class XenicPoltergeistRelease(Listener):
     """{T}: Until your NEXT upkeep, target noncreature artifact becomes an artifact creature with PT each = its MV.
     This effect removes the registered listener at the next upkeep"""
@@ -592,7 +592,6 @@ class XenicPoltergeistRelease(Listener):
         if gs.player_turn_idx != source.owner_id:
             return
         gs.event_mgr.unregister_effects(source)
-
 
 class YawgmothDemon(Listener):
     """At your upkeep, Sac an artifact, or tap this creature & it deals 2 damage to you"""
@@ -608,3 +607,15 @@ class YawgmothDemon(Listener):
             return
         options = [Sac(s.owner_id, gs, a) for a in your_artifacts] + [YawgmothDemonUnpaidUpkeep(s.owner_id, gs, s)]
         gs.pending_choice = ChoiceAction(options)
+
+class WormsOfTheEarthUpkeep(Listener):
+    """... At each upkeep, any player may: do nothing, sac two choice lands, or WOTE deals 5 damage to that player.
+    If sac or take the 5 damage, destroy this enchantment."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        options = [WormsOfTheEarthTake5Damage(event.active_player, gs, source)]
+        your_land_cnt = len(gs.card_filter.on_player_board(event.active_player).lands().result())
+        if your_land_cnt >= 2:
+            options.append(WormsOfTheEarthSacTwoLands(event.active_player, gs, source))
+        gs.pending_choice = ChoiceAction(options, may=True)

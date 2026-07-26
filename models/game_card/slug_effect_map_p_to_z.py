@@ -17,7 +17,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB, Stangg
+    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB, Stangg, WarBarge
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
@@ -28,7 +28,7 @@ from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCo
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
-    PowerLeak, SerendibDjinn, ShapeshifterUpkeep
+    PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
     RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, VoodooDollEndStep, WhirlingDervish
@@ -48,7 +48,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
-    UnblockableEOT
+    UnblockableEOT, CantCastAppliesTo
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PTModEqualsManaValue, \
     PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, Transmutation
 from models.systems.phase import Phase
@@ -320,6 +320,7 @@ MAP: dict[str, list[EffSpec]] = {
     'wall-of-wonder': [Activated('2UU', WallOfWonder())],
     'wand-of-ith': [Activated('3T', WandOfIth(), allowed_p_turn_func=T_FUNCS['owner'])],
     'wanderlust': [Spell(DealDamageOnHostUpkeep(1), T_FUNCS['creatures'])],
+    'war-barge': [Activated('3', WarBarge(), T_FUNCS['creatures'])],
     'warp-artifact': [Spell(DealDamageOnHostUpkeep(1), T_FUNCS['artifacts'])],
     'water-wurm': [Static(PumpApplies(T_FUNCS['self'], (0, 1), C_FUNCS['opp_has_island']))],
     'weakness': [Spell(Pump(-2, -1), T_FUNCS['creatures'])],
@@ -343,6 +344,8 @@ MAP: dict[str, list[EffSpec]] = {
     'wooden-sphere': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('G'))],
     'word-of-binding': [Spell(TapCardsEffect(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None),
                               max_x_func=max_x_from_printed_card)],
+    'worms-of-the-earth': [Static(CantCastAppliesTo(T_FUNCS['all_lands_in_game'])),
+                           Static(GlobalSac(T_FUNCS['all_lands_in_game'])), Triggered(WormsOfTheEarthUpkeep())],
     'wormwood-treefolk': [Activated('GG', WormwoodTreefolkForestwalk()), Activated('BB', WormwoodTreefolkSwampwalk())],
     'wrath-of-god': [Spell(ExileAllCreatures())],
     'wyluli-wolf': [Activated('T', Pump(1, 1, True), T_FUNCS['creatures'])],

@@ -35,6 +35,21 @@ class TestCardsWXYZ(unittest.TestCase):
         discard_option.play()
         self.assertEqual(discard_card.zone, Zone.GRAVEYARD)
 
+    def test_war_barge(self):
+        """{3}: Target creature gains islandwalk EOT. When WB LTB EOT, destroy that creature, no regen allowed"""
+        card = self.g.battlefield('war-barge')
+        aa = card.activated_abilities[0]
+        self.g.mana('UUUUUUUU')
+        target = self.g.battlefield('scryb-sprites')
+        self.g.activate_ability(aa, target)
+        self.assertIn('Islandwalk', target.keyword_abilities)
+
+        self.g.next_turn()
+        self.assertNotIn('Islandwalk', target.keyword_abilities)
+        self.g.activate_ability(aa, target)
+        self.gs.pile_mgr.destroy(target, allow_regeneration=False)
+        self.assertIn(card, self.g.gy[0])
+
     def test_wheel_of_fortune(self):
         """Each player discards their hand, then draws seven cards"""
         original_card_ids = {c.id_ for c in list(self.gs.pile_mgr.hands[0])}
@@ -50,6 +65,30 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g.combat(wd, None)
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertEqual(2, wd.power)
+
+    def test_worms_of_the_earth(self):
+        """Players can't play lands. Lands can't ETB.
+        At each upkeep, any player may: do nothing, sac two choice lands, or WOTE deals 5 damage to that player.
+        If sac or take the 5 damage, destroy this enchantment."""
+        self.g.mana('UU')
+        self.g.battlefield('worms-of-the-earth')
+        unplayable_land = self.g.hand('swamp')
+        self.assertFalse(self.gs.perm_querier.can_cast(unplayable_land, 0))
+
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(3, len(self.gs.pending_choice.get_actions()))
+        sac_two_lands = self.gs.pending_choice.get_actions()[1]
+        sac_two_lands.play()
+        self.assertFalse(any(c.is_land for c in self.gs.boards[0]))
+
+        self.g.next_turn(True)
+        card = self.g.battlefield('worms-of-the-earth')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(2, len(self.gs.pending_choice.get_actions()))
+        take_5_damage = self.gs.pending_choice.get_actions()[0]
+        take_5_damage.play()
+        self.assertEqual(15, self.gs.life[1])
+        self.assertIn(card, self.g.gy[0])
 
 
 if __name__ == '__main__':

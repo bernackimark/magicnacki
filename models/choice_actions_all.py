@@ -3,9 +3,11 @@ from abc import ABC
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from models.actions.base import Action
+
 if TYPE_CHECKING:
     from models.actions.ability_pipeline import AbilityPipeline
-    from models.actions.base import Action
+
     from models.game_card.game_card import GameCard
 
 
