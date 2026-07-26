@@ -4,7 +4,6 @@ from collections import defaultdict
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.base import DoNothing
 from models.actions.damage import PayLife, DealDamageTo, DealDamageToYou
 from models.actions.destroy_sac_regen import (DestroyAction, Sac, AllowOpponentToDestroyALand,
                                               SacToReturnAllCardsExiledBy)
@@ -211,8 +210,8 @@ class Fasting(Listener):
         source.counters.add_counter(HUNGER)
         if source.counters.get_count(HUNGER) > 4:
             gs.pile_mgr.destroy(source)
-        options = [SkipDrawPhaseGainLife(source.owner_id, gs, 2), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [SkipDrawPhaseGainLife(source.owner_id, gs, 2)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class ForceOfNatureUpkeep(Listener):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
@@ -324,9 +323,8 @@ class LandTax(Listener):
                 basic_slug_lands[c.props.slug].append(c)
         basic_lands = [c for slug, cards in basic_slug_lands.items() for c in cards]
         combo_set = {combo for r in range(1, 4) for combo in combinations(basic_lands, r)}
-        options = ([TutorMultipleCards(s.owner_id, gs, list(combo), Zone.HAND) for combo in combo_set] +
-                   [DoNothing(s.owner_id, gs)])
-        gs.pending_choice = ChoiceAction(options)
+        options = [TutorMultipleCards(s.owner_id, gs, list(combo), Zone.HAND) for combo in combo_set]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class LeviathanUpkeep(Listener):
     """At your upkeep, you may sacrifice two Islands to untap this creature"""
@@ -338,8 +336,8 @@ class LeviathanUpkeep(Listener):
         your_islands = gs.card_filter.on_player_board(source.owner_id).islands().result()
         if len(your_islands) < 2:
             return
-        options = [SacTwoIslandsToUntap(event.active_player, gs, source, source), DoNothing(event.active_player, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [SacTwoIslandsToUntap(event.active_player, gs, source, source)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class LordOfThePitUpkeep(Listener):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
@@ -462,8 +460,8 @@ class SafeHavenUpkeep(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
         if event.active_player != source.owner_id:
             return
-        options = [SacToReturnAllCardsExiledBy(source.owner_id, gs, source, source), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [SacToReturnAllCardsExiledBy(source.owner_id, gs, source, source)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class SeasonOfTheWitchUpkeep(Listener):
     """At your upkeep, sacrifice this enchantment unless you pay 2 life"""

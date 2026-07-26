@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.actions.base import DoNothing
 from models.actions.damage import DealDamageTo
 from models.actions.special import PayManaToDrawCards, PayManaForLife
 from models.choice_actions_all import ChoiceAction
@@ -162,8 +161,8 @@ class SoulNet(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not event.card.is_creature:
             return
-        options = [PayManaForLife(source.owner_id, gs, '1', 1), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [PayManaForLife(source.owner_id, gs, '1', 1)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 
 class TabletOfEpityr(Listener):
@@ -173,8 +172,8 @@ class TabletOfEpityr(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not event.card.is_artifact or event.card.owner_id != source.owner_id:
             return
-        options = [PayManaForLife(source.owner_id, gs, '1', 1), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [PayManaForLife(source.owner_id, gs, '1', 1)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 
 class UrzasMiter(Listener):
@@ -184,5 +183,5 @@ class UrzasMiter(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if event.card.owner_id != source.owner_id or 'Artifact' not in event.card.card_types:
             return
-        options = [PayManaToDrawCards(source.owner_id, gs, '3', 1), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [PayManaToDrawCards(source.owner_id, gs, '3', 1)]
+        gs.pending_choice = ChoiceAction(options, may=True)

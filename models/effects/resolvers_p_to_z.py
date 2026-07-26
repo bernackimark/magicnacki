@@ -4,7 +4,7 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
-from models.actions.base import DoNothing, Action
+from models.actions.base import Action
 from models.actions.damage import DealDamageTo, PayLife
 from models.actions.draw_discard import DiscardCards, DrawCard
 from models.actions.piles import Tutor, Shuffle
@@ -249,8 +249,8 @@ class SylvanLibrary(Resolver):
     For each of those cards, pay 4 life or put the card on top of your library."""
     # TODO: Once player opts to draw, control needs to be returned back to player to then make subsequent choices.
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        options = [DrawCard(source.owner_id, gs), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [DrawCard(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class SyphonSoul(Resolver):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
@@ -444,8 +444,8 @@ class Visions(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target player')
         gs.add_presentation_request(source.owner_id, 'view_library', {'cards': gs.pile_mgr.libraries[target][:5]})
-        options = [Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[target]), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[target])]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""

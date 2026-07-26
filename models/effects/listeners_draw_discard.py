@@ -3,13 +3,12 @@ from __future__ import annotations
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.base import DoNothing
 from models.actions.draw_discard import DiscardCards
 from models.actions.special import IslandSanctuaryAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import DOOM
 from models.effects.base import Listener
-from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent, Event
+from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -93,8 +92,8 @@ class IslandSanctuary(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent) -> None:
         if event.active_player != source.owner_id:
             return
-        options = [IslandSanctuaryAction(source.owner_id, gs, source), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [IslandSanctuaryAction(source.owner_id, gs, source)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class ManaVaultDamageIfTapped(Listener):
     """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""

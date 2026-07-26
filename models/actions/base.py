@@ -17,15 +17,3 @@ class Action(ABC):
     @abc.abstractmethod
     def play(self) -> None:
         ...
-
-
-@dataclass
-class DoNothing(Action):
-    def __repr__(self):
-        return 'Do Nothing'
-
-    def play(self) -> None:
-        if self.gs.action_stack:
-            self.gs.action_stack.pop()
-        elif self.gs.pending_choice:
-            self.gs.pending_choice = None

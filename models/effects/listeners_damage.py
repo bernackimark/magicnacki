@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-from models.actions.base import DoNothing
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE, VITALITY
 from models.effects.base import Listener
@@ -36,8 +35,8 @@ class BloodOfTheMartyr(Listener):
         if not event.target.is_creature:
             return
         from models.actions.damage import RedirectDamageToYouAction
-        options = [RedirectDamageToYouAction(source.owner_id, gs, source, event), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [RedirectDamageToYouAction(source.owner_id, gs, source, event)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class Forcefield(Listener):
     """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""

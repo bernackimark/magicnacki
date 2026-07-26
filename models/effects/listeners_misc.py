@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.actions.base import DoNothing
 from models.actions.draw_discard import DrawCard
 from models.actions.special import SacTwoIslandsToAttack
 from models.choice_actions_all import ChoiceAction
@@ -75,8 +74,8 @@ class VerduranEnchantress(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent):
         if source.owner_id != event.card.owner_id or not event.card.is_enchantment:
             return
-        options = [DrawCard(source.owner_id, gs), DoNothing(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [DrawCard(source.owner_id, gs)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 # --- LIFE LOSS ---
 class AliFromCairo(Listener):
@@ -105,8 +104,8 @@ class LeviathanAttack(Listener):
         if len(your_islands) < 2:
             return
 
-        options = [SacTwoIslandsToAttack(event.active_p_id, gs, source, source), DoNothing(event.active_p_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [SacTwoIslandsToAttack(event.active_p_id, gs, source, source)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class ManaDrainMainPhase(Listener):
     """... At your next main phase, add an amount of {C} equal to that spell's mana value"""

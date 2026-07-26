@@ -1,7 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-from models.actions.base import DoNothing
 from models.actions.damage import DealDamageToYou
 from models.actions.mana import PayMana
 from models.actions.special import DestroyAndForegoCombatDamage
@@ -9,7 +8,7 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
-from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, Event, \
+from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, \
     CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent
 from models.modifiers import PTMod, KWAMod
 from models.utils import flip
@@ -283,9 +282,8 @@ class FloralSpuzzem(Listener):
         opp_artifacts = gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result()
         if not opp_artifacts:
             return
-        options = ([DestroyAndForegoCombatDamage(s.owner_id, gs, s, t) for t in opp_artifacts] +
-                   [DoNothing(s.owner_id, gs)])
-        gs.pending_choice = ChoiceAction(options)
+        options = [DestroyAndForegoCombatDamage(s.owner_id, gs, s, t) for t in opp_artifacts]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 
 class MerchantShip(Listener):

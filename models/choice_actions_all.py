@@ -13,6 +13,24 @@ if TYPE_CHECKING:
 @dataclass
 class ChoiceAction(ABC):
     options: list[Action | None] = field(default_factory=list)
+    may: bool = False
+
+    @dataclass
+    class _Decline(Action):
+        def __repr__(self):
+            return 'Decline'
+
+        def play(self) -> None:
+            if self.gs.action_stack:
+                self.gs.action_stack.pop()
+            elif self.gs.pending_choice:
+                self.gs.pending_choice = None
+
+    def __post_init__(self):
+        if self.may:
+            p_idx = self.options[0].player_idx
+            gs = self.options[0].gs
+            self.options.append(ChoiceAction._Decline(p_idx, gs))
 
     def choose_target(self, target):
         raise NotImplementedError

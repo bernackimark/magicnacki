@@ -4,7 +4,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.base import DoNothing, Action
+from models.actions.base import Action
 from models.actions.combat import AssignBlocker
 from models.actions.destroy_sac_regen import SacCards, ReanimateAction
 from models.actions.draw_discard import DiscardCards
@@ -44,9 +44,8 @@ class FalseOrders(Resolver):
         gs.combat_mgr.remove_from_combat(target)
         other_combats = [com for com in gs.combat_mgr.combats if target not in com.blockers]
         if other_combats:
-            options = ([AssignBlocker(source.owner_id, gs, target, com.attacker) for com in other_combats] +
-                       [DoNothing(source.owner_id, gs)])
-            gs.pending_choice = ChoiceAction(options)
+            options = [AssignBlocker(source.owner_id, gs, target, com.attacker) for com in other_combats]
+            gs.pending_choice = ChoiceAction(options, may=True)
 
 class Feint(Resolver):
     """Tap all creatures blocking target attacking creature.
@@ -281,8 +280,8 @@ class LivingArtifactUpkeep(Resolver):
     def resolve(self, gs: GameState, s: GameCard, target=None):
         if gs.player_turn_idx != s.owner_id:
             return
-        options = [RemoveCounterGainLife(s.owner_id, gs, s, VITALITY), DoNothing(s.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options)
+        options = [RemoveCounterGainLife(s.owner_id, gs, s, VITALITY)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class ManaClash(Resolver):
     """You and target opponent each flip a coin. Mana Clash deals 1 damage to each player whose coin comes up tails.
