@@ -181,15 +181,15 @@ class TestGame:
             casting_colors = {color for color in card.casting_cost if color in {'B', 'G', 'R', 'U', 'W'}}
             if casting_colors:
                 for color in casting_colors:
-                    self.mana(color * 10, owner=owner)
+                    self.mana(color * 6, owner=owner)
             else:
-                self.mana('U' * 10, owner=owner)
+                self.mana('U' * 6, owner=owner)
 
         pipeline = AbilityPipeline(owner, self.gs, card, eff_spec)
         if target is not None:
             pipeline.targets.append(target)
         pipeline.advance()
-        AcceptAction(flip(owner), self.gs).play()
+        pipeline.resolve_ability()
 
     def card_has_a_registered_listener(self, card: GameCard) -> bool:
         return any(e.source is card for entries in self.gs.event_mgr.event_listeners.values() for e in entries)
