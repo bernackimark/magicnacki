@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING
 
 from models.actions.draw_discard import DiscardCards
 from models.choice_actions_all import ChoiceAction
+from models.counter_tokens import DOOM
 from models.effects.base import Listener
-from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
+from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent, Event
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -62,6 +63,17 @@ class UnderworldDreams(Listener):
 
 
 # --- DRAW STEP EVENT ---
+class ArmageddonClockDrawStep(Listener):
+    """... At your draw step, AC deals damage = its doom counters to each player ... """
+    listens_to = DrawStepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        if ctr_cnt := source.counters.get_count(DOOM):
+            gs.apply_damage(source, ctr_cnt, source.owner_id)
+            gs.apply_damage(source, ctr_cnt, flip(source.owner_id))
+
 class HowlingMine(Listener):
     """At each player's draw step, if this artifact is untapped, that player draws an additional card"""
     listens_to = DrawStepEvent

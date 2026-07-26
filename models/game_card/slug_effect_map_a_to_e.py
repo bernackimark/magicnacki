@@ -1,10 +1,10 @@
 from __future__ import annotations
 from itertools import combinations
 
-from .card_filter_funcs import T_FUNCS, C_FUNCS
+from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
-from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE
+from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
@@ -15,7 +15,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
-    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver
+    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
@@ -25,7 +25,7 @@ from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, Cu
     DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
 from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
-from ..effects.listeners_draw_discard import CursedRack
+from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
 from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, BlazingEffigy
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye
 from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
@@ -34,7 +34,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
-    PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
+    PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep, AddCounterAtTargetUpkeep
 from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
@@ -88,6 +88,10 @@ MAP: dict[str, list[EffSpec]] = {
                          Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifact_creatures']))],
     'argothian-treefolk': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['artifacts']))],
     'armageddon': [Spell(DestroyAll(T_FUNCS['lands']))],
+    'armageddon-clock': [Activated('4', RemoveCounter(DOOM),
+                                   allowed_phases=[Phase.UPKEEP], allowed_activators=A_FUNCS['all_players']),
+                         Triggered(AddCounterAtTargetUpkeep(T_FUNCS['self'], DOOM)),
+                         Triggered(ArmageddonClockDrawStep())],
     'army-of-allah': [Spell(PumpAppliesEOT(T_FUNCS['attackers'], (2, 0)))],
     'artifact-blast': [Spell(CounterSpell(), T_FUNCS['artifact_spells'])],
     'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),

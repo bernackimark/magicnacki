@@ -9,6 +9,11 @@ if TYPE_CHECKING:
 from models.constants import Target, ALL_PLAYER_INDICES
 from models.utils import flip
 
+A_FUNCS: [str, Callable[[GameState, GameCard], tuple[int | None]]] = {
+    'all_players': lambda gs, s: (0, 1),
+    'opponent': lambda gs, s: (flip(s.owner_id), ),
+}
+
 C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
     'host_is_basic_mountain': lambda gs, s: s.host.props.slug == 'mountain',
     'self_is_not_attacking': lambda gs, s: s not in gs.card_filter.attackers().result(),

@@ -283,15 +283,14 @@ class Regenerate(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.append(RegenerationMod(s=source, expires='EOT'))
 
-class RemoveCountersOnHostTurn(Resolver):
-    def __init__(self, counter_type: CounterType, cnt: int = 1):
+class RemoveCounter(Resolver):
+    def __init__(self, counter_type: CounterType):
         self.counter_type = counter_type
-        self.cnt = cnt
 
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        if gs.player_turn_idx != source.host.owner_id:
-            return
-        source.host.counters.remove_counter(self.counter_type, self.cnt)
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.counters.remove_counter(self.counter_type)
 
 class RemoveFromCombat(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):

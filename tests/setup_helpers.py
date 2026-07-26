@@ -215,7 +215,6 @@ class TestGame:
     def next_turn(self, go_to_opp_turn: bool = False):
         """Passes the current turn; passes the next turn; returning action back to the original player"""
         self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS)
-        print(self.gs.phase_mgr.phase.name)
         PassTheTurn(self.gs.player_turn_idx, self.gs).play()
         if go_to_opp_turn:
             return

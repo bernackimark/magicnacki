@@ -3,10 +3,11 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.special import Attach
-from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
+from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
-from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent
+from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
+    DrawStepEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -47,6 +48,33 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertFalse(self.gs.perm_querier.can_attack(host))
         self.g.cast_and_accept(card, host, card.abilities[0])
         self.assertTrue(self.gs.perm_querier.can_attack(host))
+
+    def test_armageddon_clock(self):
+        """At your upkeep, put a doom counter on AC.
+        At your draw step, AC deals damage = its doom counters to each player.
+        {4}: Remove a doom counter from AC. Any player may activate this ability but only during any upkeep step."""
+        card = self.g.battlefield('armageddon-clock')
+        self.gs.event_mgr.emit(UpkeepEvent(0))
+        self.assertEqual(1, card.counters.get_count(DOOM))
+
+        self.g.next_turn()
+        self.gs.event_mgr.emit(DrawStepEvent(0))
+        self.assertEqual([19, 19], self.gs.life)
+        self.gs.event_mgr.emit(UpkeepEvent(0))
+
+        self.g.next_turn()
+        self.gs.event_mgr.emit(DrawStepEvent(0))
+        self.assertEqual([17, 17], self.gs.life)
+        self.g.mana('RRRR')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(0, self.gs.action_on_idx)
+        self.assertTrue(any(a.source is card for a in self.gs.add_activated_abilities_from_board()))
+
+        self.g.next_turn(True)
+        self.g.mana('WWWW', owner=1)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(1, self.gs.action_on_idx)
+        self.assertTrue(any(a.source is card for a in self.gs.add_activated_abilities_from_board()))
 
     def test_artifact_possession(self):
         """Whenever enchanted artifact becomes tapped or a player activates an ability of enchanted artifact without {T}

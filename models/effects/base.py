@@ -56,6 +56,7 @@ class EffSpec:
     extra_costs: list[Cost | None] = field(default_factory=list)
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_p_turn_func: Callable[[GameState, GameCard], int] = None
+    allowed_activators: Callable[[GameState, GameCard], tuple[int] | None] = None
     max_activations_per_turn: int = 999
     text: str = ''
     min_x_func: Callable = lambda gs, s: 1

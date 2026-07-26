@@ -5,6 +5,7 @@ from typing import Any, Sequence, TYPE_CHECKING
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.effects.base import Activated
+from models.utils import flip
 
 if TYPE_CHECKING:
     from models.game_card.card import Card
@@ -172,7 +173,18 @@ class GameState:
         return actions
 
     def add_activated_abilities_from_board(self) -> list[AbilityPipeline | None]:
-        return [a for c in self.pile_mgr.boards[self.action_on_idx] for a in self.get_available_activated_abilities(c)]
+        aas = []
+        for c in self.pile_mgr.boards[self.action_on_idx]:
+            for a in self.get_available_activated_abilities(c):
+                # i'm performing this check here, because I think the caller is gs.action_on_idx
+                if a.eff_spec.allowed_activators is not None and self.action_on_idx not in a.eff_spec.allowed_activators(self, c):
+                    continue
+                aas.append(a)
+        for c in self.pile_mgr.boards[flip(self.action_on_idx)]:
+            for a in self.get_available_activated_abilities(c):
+                if a.eff_spec.allowed_activators and self.action_on_idx in a.eff_spec.allowed_activators(self, c):
+                    aas.append(a)
+        return aas
 
     def available_actions_from_hand(self) -> list[AbilityPipeline | CastPermanentAction | CastWithNoSpellEffect | None]:
         """For each card in hand for the in-scope player ...

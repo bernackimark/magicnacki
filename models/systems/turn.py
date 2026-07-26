@@ -39,6 +39,7 @@ class TurnManager:
             self.player_turn_idx = flip(self.player_turn_idx)
         self.turns.append(Turn(self.turn_number, self.player_turn_idx))
         gs.action_on_idx = self.player_turn_idx
+        print('Action now on', gs.action_on_idx)
         self.most_recent_turn_started[self.player_turn_idx] = self._turn_number
         self.has_played_land = False
         self.cards_that_died.clear()
