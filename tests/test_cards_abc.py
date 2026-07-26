@@ -193,6 +193,24 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.activate_ability(aa2)
         self.assertEqual(1, self.gs.mana_pools[0].available_mana.get('C'))
 
+    def test_clergy_of_the_nimbus(self):
+        """If COTN would be destroyed, regenerate it.
+        {1}: COTN can't be regenerated this turn. Only your opponents may activate this ability."""
+        card = self.g.battlefield('clergy-of-the-holy-nimbus')
+        self.gs.pile_mgr.destroy(card)
+        self.assertIn(card, self.gs.boards[0])
+
+        self.gs.pile_mgr.destroy(card, allow_regeneration=False)
+        self.assertIn(card, self.g.gy[0])
+
+        card = self.g.battlefield('clergy-of-the-holy-nimbus')
+        aa = card.activated_abilities[0]
+        self.g.next_turn(True)
+        self.g.mana('G', owner=1)
+        self.g.activate_ability(aa, card, owner=1)
+        self.gs.pile_mgr.destroy(card)
+        self.assertIn(card, self.g.gy[0])
+
     def test_clockwork_avian(self):
         """CA enters with four +1/+0 counters. At combat end, if CA attacked or blocked, remove a +1/+0 counter from it.
         {X}, {T}: Put up to X +1/+0 counters on CA. Can't exceed 4 such counters. Activate only during your upkeep."""

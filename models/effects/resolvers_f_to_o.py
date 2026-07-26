@@ -4,7 +4,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.base import DoNothing
+from models.actions.base import DoNothing, Action
 from models.actions.combat import AssignBlocker
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.draw_discard import DiscardCards
@@ -171,6 +171,14 @@ class HurkylsRecall(Resolver):
             raise ValueError(f"{source.props.name} needs a target player")
         for artifact in gs.card_filter.on_player_board(target).artifacts().result():
             gs.pile_mgr.bounce(artifact)
+
+class IfhBiffEfreet(Resolver):
+    """{G}: IBE deals 1 damage to each creature with flying and each player. Any player may activate this ability."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        for i in range(2):
+            gs.apply_damage(source, 1, i)
+        for flier in list(gs.card_filter.in_play().creatures().has('Flying').result()):
+            gs.apply_damage(source, 1, flier)
 
 class Inquisition(Resolver):
     """Target player reveals their hand. Deal damage to that player = number of white cards in their hand."""

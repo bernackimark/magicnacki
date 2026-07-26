@@ -9,7 +9,8 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
-    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, Event
+    CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, \
+    Event, CanRegenerateQueryEvent
 
 """
 These are Effects that listens for Events that are XXQueryEvent
@@ -120,6 +121,30 @@ class NoAttacksAllowedEOT(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
         event.permission = False
+
+class PreventRegenerationEOT(Listener):
+    """Target creature can't regenerate this turn."""
+    listens_to = CanRegenerateQueryEvent
+    expires = 'EOT'
+
+    def __init__(self):
+        self.target: GameCard | None = None
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        if not self.target:
+            self.target = targets[0]
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanRegenerateQueryEvent):
+        if event.card is self.target:
+            event.permission = False
+
+class RegenerateSelf(Listener):
+    """This creature explicitly regenerates upon destroy() entry. This is rare."""
+    listens_to = CanRegenerateQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanRegenerateQueryEvent):
+        if event.card is source:
+            event.permission = True
 
 class SkipUntapPhase(Listener):
     """Player skips their untap phase"""

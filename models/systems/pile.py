@@ -2,7 +2,8 @@ from __future__ import annotations
 from copy import copy
 from typing import TYPE_CHECKING
 
-from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, StateBasedEvent
+from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, StateBasedEvent, \
+    CanRegenerateQueryEvent
 from models.modifiers import RegenerationMod
 from models.zone import Zone
 
@@ -56,14 +57,19 @@ class PileManager:
         # ask replacement system if destruction is prevented
         # as of now, this destruction replacement & damage are handled separately but could be unified later
         if allow_regeneration:
-            shield = next(card.modifiers.iter_type(RegenerationMod), None)
-            if shield:
-                card.modifiers.remove(shield)
-                card.tapped = True
-                card.damage_received_this_turn = 0
-                self._gs.combat_mgr.remove_from_combat(card)
-                print(f'{card} is regenerated')
-                return
+            event = CanRegenerateQueryEvent(card)
+            self._gs.event_mgr.emit(event)
+            if event.permission is not False:
+                if event.permission is True:  # hard permission is rare, only used by clergy-of-the-nimbus
+                    return
+                shield = next(card.modifiers.iter_type(RegenerationMod), None)
+                if shield:
+                    card.modifiers.remove(shield)
+                    card.tapped = True
+                    card.damage_received_this_turn = 0
+                    self._gs.combat_mgr.remove_from_combat(card)
+                    print(f'{card} is regenerated')
+                    return
 
         self._gs.event_mgr.emit(DiesEvent(card))
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")

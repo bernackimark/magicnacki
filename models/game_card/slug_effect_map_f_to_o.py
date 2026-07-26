@@ -8,20 +8,21 @@ from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, LivingLands, \
     LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
-    DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack
+    DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
+    PreventRegenerationEOT
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, \
     GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, \
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, \
     FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
     KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain
+    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver
 from models.systems.phase import Phase
-from .card_filter_funcs import T_FUNCS, C_FUNCS
+from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
     max_x_from_printed_card
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack
@@ -160,12 +161,14 @@ MAP: dict[str: list[EffSpec]] = {
     'howl-from-beyond': [Spell(HowlFromBeyond(), T_FUNCS['creatures'])],
     'howling-mine': [Triggered(HowlingMine())],
     'hurkyls-recall': [Spell(HurkylsRecall(), T_FUNCS['all_players'])],
+    'hurr-jackal': [Activated('T', PreventRegenerationEOT(), T_FUNCS['creatures'])],
     'hyperion-blacksmith': [Activated('T', TapCardEffect(), T_FUNCS['opp_untapped_artifacts']),
                             Activated('T', UntapCardEffect(), T_FUNCS['opp_tapped_artifacts'])],
     'hypnotic-specter': [Triggered(HypnoticSpecter())],
     'ichneumon-druid': [Triggered(IchneumonDruid())],
     'icy-manipulator': [Activated('1T', TapCardEffect(), T_FUNCS['untapped_artifacts_creatures_lands'])],
     'ice-storm': [Spell(Destroy(), T_FUNCS['lands'])],
+    'ifh-biff-efreet': [Activated('G', IfhBiffEfreet(), allowed_activators=A_FUNCS['all_players'])],
     'immolation': [Spell(Pump(2, -2), T_FUNCS['creatures'])],
     'indestructible-aura': [Spell(PreventAllDamageToEOT(), T_FUNCS['creatures'])],
     'infernal-medusa': [Triggered(InfernalMedusa())],

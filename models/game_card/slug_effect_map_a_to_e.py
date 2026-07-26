@@ -38,7 +38,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
 from models.effects.listeners_permission import CityInABottleCantCast, \
     ArtifactWardCanBeTargeted, AkronLegionnaire, EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, \
     HostCantBeTargetedByAuras, HostCantAttack, WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, \
-    HostCanAttack, UnblockableCondition, UnblockableEOT
+    HostCanAttack, UnblockableCondition, UnblockableEOT, PreventRegenerationEOT, RegenerateSelf
 from models.effects.listeners_mod_queries import PTModEqualsManaValue, AngelicVoices, AngryMobPT, \
     AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
@@ -174,6 +174,9 @@ MAP: dict[str, list[EffSpec]] = {
                         Activated('T', CityOfShadowsAddMana())],
     'clay-statue': [Activated('2', Regenerate(), T_FUNCS['self'])],
     'cleanse': [Spell(DestroyAll(T_FUNCS['black_creatures']))],
+    'clergy-of-the-holy-nimbus': [Static(RegenerateSelf()),
+                                  Activated('1', PreventRegenerationEOT(), T_FUNCS['self'],
+                                            allowed_activators=A_FUNCS['opponent'])],
     'clockwork-avian': [Static(ClockworkCombatEnd()),
                         Activated('XT', AddCounter(PLUS_ONE_ZERO), T_FUNCS['self'], allowed_phases=[Phase.UPKEEP],
                                   allowed_p_turn_func=T_FUNCS['owner'], max_x_func=clockwork_avian_x),
