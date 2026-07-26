@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
+from models.actions.ability_pipeline import AbilityPipeline
 from models.counter_tokens import CounterType, WIND
 from models.modifiers import OwnershipMod, SubTypeMod
 from models.systems.phase import Phase
@@ -107,6 +108,19 @@ class PayManaForLife(Action):
         if self.gs.action_stack:
             self.gs.action_stack.pop()
         elif self.gs.pending_choice:
+            self.gs.pending_choice = None
+
+class PayManaToPreventCounter(Action):
+    def __init__(self, p_id: int, gs: GameState, counter_spell: AbilityPipeline, mana_cost: str):
+        super().__init__(p_id, gs)
+        self.counter_spell = counter_spell
+        self.mana_cost = mana_cost
+
+    def play(self):
+        if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
+            self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
+        self.gs.action_stack.remove(self.counter_spell)
+        if self.gs.pending_choice:
             self.gs.pending_choice = None
 
 class PayManaToDrawCards(Action):

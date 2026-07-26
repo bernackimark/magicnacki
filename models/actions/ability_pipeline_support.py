@@ -13,8 +13,9 @@ class AbilityAction(Action):
     pipeline: AbilityPipeline
 
     def __repr__(self):
-        eff_text = self.pipeline.eff_spec.effect if self.pipeline.eff_spec else '[card only, no ability]'
-        return f'Card/Ability on stack. Card: {self.pipeline.source} Ability: {eff_text}'
+        pl = self.pipeline
+        eff_text = pl.eff_spec.effect if pl.eff_spec else '[card only, no ability]'
+        return f'Card/Ability on stack. Card: {pl.source} Ability: {eff_text} Target: {pl.targets}'
 
     def play(self) -> None:
         self.pipeline.resolve_ability()

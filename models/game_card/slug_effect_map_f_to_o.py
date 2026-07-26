@@ -20,7 +20,8 @@ from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
-    Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver
+    Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
+    CounterSpellUnlessManaPaid
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -82,6 +83,7 @@ MAP: dict[str: list[EffSpec]] = {
     'flying-carpet': [Activated('2T', KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'])],
     'fog': [Spell(PreventAllDamageEOT(combat_only=True))],
     'force-of-nature': [Triggered(ForceOfNatureUpkeep())],
+    'force-spike': [Spell(CounterSpellUnlessManaPaid('1'), T_FUNCS['spells'])],
     'forcefield': [Activated('1', Forcefield(), T_FUNCS['unblocked_attackers'])],
     'forethought-amulet': [Triggered(PayManaOrSacAtUpkeep('3')), Static(ForethoughtAmulet())],
     'fountain-of-youth': [Activated('2T', GainLife(), T_FUNCS['owner'])],

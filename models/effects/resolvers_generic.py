@@ -1,9 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.base import Action
 from models.actions.draw_discard import DiscardCards
+from models.actions.special import PayManaToPreventCounter
+from models.actions.stack_accept_counter import CounterSpellAction
 from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
 from models.choice_actions_all import ChoiceAction
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
@@ -97,6 +100,21 @@ class CounterSpell(Resolver):
             raise TypeError(f'{source.props.name} needs an Action for a target')
         gs.action_stack.remove(target)
         gs.pile_mgr.move_card(target.pipeline.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+
+class CounterSpellUnlessManaPaid(Resolver):
+    def __init__(self, mana_cost: str):
+        self.mana_cost = mana_cost
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not isinstance(target, AbilityPipeline):
+            raise ValueError(f"{source.props.name} needs a spell target")
+        p_id = target.player_idx
+        if not gs.mana_pools[p_id].can_pay(self.mana_cost):
+            gs.action_stack.remove(target)
+            gs.pile_mgr.move_card(target.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+            return
+        options = [PayManaToPreventCounter(p_id, gs, target, self.mana_cost), CounterSpellAction(p_id, gs, target)]
+        gs.pending_choice = ChoiceAction(options)
 
 class CreateTokenCreature(Resolver):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""

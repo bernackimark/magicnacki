@@ -1,6 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.mana import PayMana
 from models.actions.special import Attach
 from models.counter_tokens import HUNGER
@@ -132,6 +133,44 @@ class TestCardsDEF(unittest.TestCase):
         self.gs.pile_mgr.draw(0)
         top_card = self.gs.pile_mgr.libraries[0][0]
         self.assertTrue(top_card.is_face_up)
+
+    def test_force_spike_1(self):
+        """Counter target spell unless its controller pays {1} ... This is the counter test"""
+        card = self.g.hand('force-spike')
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('U')
+        self.g.mana('RR', owner=1)
+
+        bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
+        bolt_pipeline.advance()
+        self.assertIn(bolt_pipeline, [a.pipeline for a in self.gs.action_stack.actions if isinstance(a, AbilityAction)])
+
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_pipeline])
+        card_pipeline.advance()
+        card_pipeline.resolve_ability()
+        allow_bolt_countered = self.gs.pending_choice.get_actions()[1]
+        allow_bolt_countered.play()
+        self.assertTrue(20, self.gs.life[1])
+        self.assertTrue(self.gs.pending_choice is None)
+
+    def test_force_spike_2(self):
+        """Counter target spell unless its controller pays {1} ... This is the pay mana test"""
+        card = self.g.hand('force-spike')
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('U')
+        self.g.mana('RR', owner=1)
+
+        bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
+        bolt_pipeline.advance()
+        self.assertIn(bolt_pipeline, [a.pipeline for a in self.gs.action_stack.actions if isinstance(a, AbilityAction)])
+
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_pipeline])
+        card_pipeline.advance()
+        card_pipeline.resolve_ability()
+        allow_bolt_countered = self.gs.pending_choice.get_actions()[0]
+        allow_bolt_countered.play()
+        self.assertTrue(17, self.gs.life[1])
+        self.assertTrue(self.gs.pending_choice is None)
 
     def test_fog(self):
         """Prevent all combat damage this turn"""

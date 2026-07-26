@@ -125,6 +125,7 @@ MAP: dict[str, list[EffSpec]] = {
     'revelation': [Static(Revelation()), Spell(RevealHands())],
     'reverse-damage': [Spell(ReverseDamage(), T_FUNCS['cards'])],
     'reverse-polarity': [Spell(ReversePolarity())],
+    'ring-of-immortals': [Activated('3T', CounterSpell(), T_FUNCS['spells_aura_or_instant_targeting_your_perm'])],
     'righteousness': [Spell(Pump(7, 7, True), T_FUNCS['blockers'])],
     'riptide': [Spell(Riptide())],
     'riven-turnbull': [Activated('T', AddMana('B'))],

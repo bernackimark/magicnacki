@@ -100,7 +100,7 @@ class AbilityPipeline(Action):
             Each branch either:
                 1. Creates a pending ChoiceAction and returns, or
                 2. Continues automatically if no user input is required."""
-        print('Entering .advance()')
+        print('Entering .advance() for', self.source)
         # unique to auras who use the pipeline to find a target & attach but only have listeners & no resolver
         if self.eff_spec.effect is None:
             self.finish()
@@ -128,7 +128,7 @@ class AbilityPipeline(Action):
 
     def finish(self):
         """Pay costs; if casting a cast, CastPermanentAction.play() else create AbilityAction & push onto stack"""
-        print('Entering .finish()')
+        print('Entering .finish() for', self.source)
         from models.actions.ability_pipeline_support import AbilityAction
         if self.eff_spec.is_aa and 'T' in self.eff_spec.cost:
             self.source.tap()
