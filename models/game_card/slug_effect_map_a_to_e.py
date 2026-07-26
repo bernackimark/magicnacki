@@ -106,6 +106,8 @@ MAP: dict[str, list[EffSpec]] = {
     'ashnods-transmogrant': [Activated('T', AshnodsTransmogrant(), T_FUNCS['non_artifact_creatures'],
                                        extra_costs=[SacSelfCost()])],
     'aspect-of-wolf': [Static(AspectOfWolfPT())],
+    'atog': [Activated('', Pump(2, 2), T_FUNCS['self'],
+             extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
     'avoid-fate': [Spell(CounterSpell(), T_FUNCS['spells_aura_or_instant_targeting_your_perm'])],
     'axelrod-gunnarson': [Triggered(AxelrodGunnarson())],
     'backfire': [Triggered(Backfire())],

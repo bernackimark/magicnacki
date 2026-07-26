@@ -134,6 +134,18 @@ class TestCardsDEF(unittest.TestCase):
         top_card = self.gs.pile_mgr.libraries[0][0]
         self.assertTrue(top_card.is_face_up)
 
+    def test_firestorm_phoenix(self):
+        """If this card would die, bounce it instead; it cannot be re-summoned this turn"""
+        card = self.g.battlefield('firestorm-phoenix')  # 3/2
+        bolt = self.g.hand('lightning-bolt')
+        self.g.mana('RRRRRRRRRRRRR')
+        self.g.cast_and_accept(bolt, card, bolt.abilities[0])
+        self.assertIn(card, self.gs.hands[0])
+        self.assertFalse(any(a.source is card for a in self.gs.available_actions_from_hand()))
+
+        self.g.next_turn()
+        self.assertTrue(any(a.source is card for a in self.gs.available_actions_from_hand()))
+
     def test_force_spike_1(self):
         """Counter target spell unless its controller pays {1} ... This is the counter test"""
         card = self.g.hand('force-spike')

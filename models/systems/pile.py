@@ -72,6 +72,8 @@ class PileManager:
                     return
 
         self._gs.event_mgr.emit(DiesEvent(card))
+        if card.zone != Zone.BATTLEFIELD:
+            return  # a DiesEvent Listener may have sent the card somewhere else
         self.move_card(card, Zone.GRAVEYARD, cause="destroy")
         self._gs.turn_mgr.cards_that_died.append(card)
         print(f'{card} is destroyed')

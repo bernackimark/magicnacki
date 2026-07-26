@@ -57,6 +57,18 @@ class CantBeTargetedByAuras(Listener):
             return
         event.permission = False
 
+class CantCastEOT(Listener):
+    listens_to = CanCastQueryEvent
+    expires = 'EOT'
+
+    def __init__(self, card: GameCard):
+        self.card = card
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanCastQueryEvent) -> None:
+        if event.card is not self.card:
+            return
+        event.permission = False
+
 class DoesntUntapAtUntap(Listener):
     """Card does not untap during its owner's untap phase"""
     listens_to = CanUntapAtUntapPhaseQueryEvent

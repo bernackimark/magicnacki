@@ -73,6 +73,16 @@ class CyclopeanMummy(Listener):
             return
         gs.pile_mgr.exile(source)
 
+class FirestormPhoenix(Listener):
+    """If this card would die, bounce it instead; it cannot be re-summoned this turn"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if event.card is not source:
+            return
+        gs.pile_mgr.bounce(source)
+        from models.effects.listeners_permission import CantCastEOT
+        gs.event_mgr.register(CantCastEOT(source), source)
 
 class Onulet(Listener):
     """When this creature dies, you gain 2 life"""

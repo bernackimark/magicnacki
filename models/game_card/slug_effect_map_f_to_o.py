@@ -41,7 +41,7 @@ from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, Inf
 from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, \
     FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
-from ..effects.listeners_dies import Onulet
+from ..effects.listeners_dies import Onulet, FirestormPhoenix
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
@@ -72,6 +72,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fire-drake': [Activated('R', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), T_FUNCS['owner'])],
     'firebreathing': [Spell(EmptyResolver(), T_FUNCS['creatures']), self_pump('R', 1, 0)],
+    'firestorm-phoenix': [Triggered(FirestormPhoenix())],
     'fishliver-oil': [Spell(KWAModEffect('add', 'Islandwalk'), T_FUNCS['creatures'])],
     'fissure': [Spell(Destroy(False), T_FUNCS['creatures_and_lands'])],
     'flash-counter': [Spell(CounterSpell(), T_FUNCS['instant_spells'])],
