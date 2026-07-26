@@ -40,8 +40,6 @@ class GameState:
         self.tokens = tokens
         self.all_player_cards = cards.copy()
 
-        self._query_depth = 0  # temp solution
-
         self.event_mgr = EventManager(self)  # houses, emits, registers, unregisters Listener(Effect)
         self.phase_mgr = PhaseManager(self)
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)

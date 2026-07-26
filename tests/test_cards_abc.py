@@ -6,8 +6,7 @@ from models.actions.special import Attach
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
-from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
-    UntapPhaseEvent
+from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 

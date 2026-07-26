@@ -111,9 +111,6 @@ class GameCard:
         power = base_power + self.modifiers.power_delta + self.counters.power_delta
         toughness = base_t + self.modifiers.toughness_delta + self.counters.toughness_delta
 
-        if self.game_state._query_depth > 0:  # temp solution while unifying event system
-            return power, toughness
-
         event = ModQueryEvent(query='pt', card=self)
         self.game_state.event_mgr.emit(event)
         for mod in event.mods:
@@ -125,10 +122,6 @@ class GameCard:
     def card_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_types, 2) self.modifiers.type_delta,
         3) GameState's query system for 'type'"""
-        if self.game_state._query_depth > 0:  # temp solution while unifying event system
-            # SAFE PATH: no event emission
-            return list(self._card_types)
-
         on_card_mods = [mod for mod in self.modifiers.iter_type(TypeMod)]
 
         event = ModQueryEvent(query='type', card=self)
@@ -143,10 +136,6 @@ class GameCard:
     def card_sub_types(self) -> list[str]:
         """Anytime this property is requested, it calls: 1) its own base _card_sub_types,
         2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type'"""
-        if self.game_state._query_depth > 0:  # temp solution while unifying event system
-            # SAFE PATH: no event emission
-            return list(self._card_sub_types)
-
         on_card_mods = [mod for mod in self.modifiers.iter_type(SubTypeMod)]
 
         event = ModQueryEvent(query='sub_type', card=self)
@@ -163,10 +152,6 @@ class GameCard:
         returns ['Flying', 'Trample'] ...
         Anytime this prioerty is requested, it calls: 1) its own base _base_kwa,
         2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa'"""
-        if self.game_state._query_depth > 0:  # temp solution while unifying event system
-            # SAFE PATH: no event emission
-            return list(self._base_kwa)
-
         event = ModQueryEvent(query='kwa', card=self)
         self.game_state.event_mgr.emit(event)
         adds, removes = set(), set()
