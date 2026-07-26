@@ -414,6 +414,20 @@ class TakeAnotherTurn(Listener):
         PassTheTurn(source.owner_id, gs, pass_turn_to_opp=False).play()
 
 # --- STACK ADDITION EVENT ---
+class CounterEnchantments(Listener):
+    """Listens for when something is added to the stack"""
+    listens_to = StackAdditionEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StackAdditionEvent) -> None:
+        print('A', type(event.action), event.action.pipeline.eff_spec, event.action.pipeline.eff_spec.is_spell)
+        if isinstance(event.action, AbilityAction) and event.action.pipeline.eff_spec.is_aa:
+            return
+        source_card = event.action.pipeline.source if isinstance(event.action, AbilityAction) else event.action.source
+        if not source_card.is_enchantment:
+            return
+        gs.action_stack.remove(event.action)
+        gs.pile_mgr.move_card(source_card, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+
 class PayManaOrCounterSpellListener(Listener):
     """Listens for when something is added to the stack"""
     listens_to = StackAdditionEvent

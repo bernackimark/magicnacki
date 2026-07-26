@@ -285,6 +285,15 @@ class TestCardsMNOP(unittest.TestCase):
         not_an_artifact.tap()
         self.assertEqual(22, self.gs.life[0])
 
+    def test_presence_of_the_master(self):
+        """Whenever a player casts an enchantment spell, counter it"""
+        self.g.battlefield('presence-of-the-master')
+        enchantment = self.g.hand('crusade', owner=1)
+        self.g.mana('WW')
+        ap = AbilityPipeline(1, self.gs, enchantment, enchantment.abilities[0])
+        ap.advance()
+        self.assertIn(enchantment, self.g.gy[1])
+
     # def test_psychic_purge(self):
     #     """... When a spell or ability an opp controls causes you to discard this card, that player loses 5 life."""
     #     # TODO: this card needs to be registered upon entry to hand and de-registered upon exit from hand

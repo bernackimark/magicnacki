@@ -45,7 +45,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
     DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, PreventAllDamageToEOT, PreventNextDamageTo, \
-    PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn
+    PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
     UnblockableEOT
@@ -83,6 +83,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), T_FUNCS['creatures'])],
     'preacher': [Activated('T', Steal(), T_FUNCS['opp_creatures']), Triggered(OptionalUntap()),
                  Triggered(ReturnToOwnerOnUntap())],
+    'presence-of-the-master': [Static(CounterEnchantments())],
     'primal-clay': [Spell(PrimalClay())],
     'primordial-ooze': [Static(AddCounterAtTargetUpkeep(T_FUNCS['self'], PLUS_ONE))],  # more to code
     'princess-lucrezia': [Activated('T', AddMana('U'))],
