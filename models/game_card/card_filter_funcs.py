@@ -144,6 +144,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
                                         if c.power == 1 and c.toughness == 1],
     'opp': lambda gs, s: flip(s.owner_id),
     'opp_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result(),
+    'opp_attackers': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).attackers().result(),
     'opp_creatures': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result(),
     'opp_creatures_power_not_greater_than_source':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(flip(s.owner_id)).creatures().result()

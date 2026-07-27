@@ -304,6 +304,17 @@ class TestCardsMNOP(unittest.TestCase):
     #     AcceptAction(0, self.gs).play()
     #     self.assertEqual(15, self.gs.life[1])
 
+    def test_puppet_master(self):
+        """When host dies, bounce host instead. You may pay {UUU} to bounce this aura."""
+        card = self.g.hand('puppet-master')
+        host = self.g.battlefield('grizzly-bears')
+        self.g.cast_and_accept(card, host, card.abilities[0])
+        self.gs.pile_mgr.destroy(host)
+        bounce_aura = self.gs.pending_choice.get_actions()[0]
+        bounce_aura.play()
+        self.assertIn(host, self.gs.hands[0])
+        self.assertIn(card, self.gs.hands[0])
+
 
 if __name__ == '__main__':
     unittest.main()

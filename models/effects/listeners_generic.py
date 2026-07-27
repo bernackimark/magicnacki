@@ -18,7 +18,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, Event
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -257,6 +257,40 @@ class PreventNextDamageTo(Listener):
         else:
             event.prevented += min(self.preventable_amt, event.remaining)
         event.remaining = event.amt - event.prevented
+        self.is_expired = True
+
+class RedirectNextDamageToTarget(Listener):
+    """You may declare a damage_dealer_func or inject a known damage_dealer GameCard upon secondary initialization"""
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, protected_func: Callable, new_target_func: Callable, damage_dealer_func: Callable | None = None,
+                 redirectable_amt: int | None = None):
+        self.protected_func = protected_func
+        self.new_target_func = new_target_func
+        self.damage_dealer_func = damage_dealer_func
+        self.redirectable_amt = redirectable_amt
+        self.damage_dealer = None
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if not self.damage_dealer_func:
+            self.damage_dealer = target[0]
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.remaining < 1:
+            return
+        if self.damage_dealer_func:
+            self.damage_dealer = self.damage_dealer_func(gs, source)
+        protected = self.protected_func(gs, source)
+        if event.target is not protected:
+            return
+        new_target = self.new_target_func(gs, source)
+        redirect_amt = min(self.redirectable_amt or 9999, event.remaining)
+        event.remaining -= redirect_amt
+        event.prevented += redirect_amt
+        gs.apply_damage(event.source, redirect_amt, new_target)
+        if self.redirectable_amt is not None:
+            self.redirectable_amt -= redirect_amt
         self.is_expired = True
 
 class RedirectNextDamageFromCardToOwnerEOT(Listener):

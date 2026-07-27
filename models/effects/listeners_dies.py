@@ -4,11 +4,11 @@ import math
 from typing import TYPE_CHECKING
 
 from models.actions.damage import DealDamageTo
-from models.actions.special import PayManaToDrawCards, PayManaForLife
+from models.actions.special import PayManaToDrawCards, PayManaForLife, PayManaToBounce
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
-from models.events_all import DiesEvent, DamageResolvedEvent
+from models.events_all import DiesEvent, DamageResolvedEvent, Event
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -103,6 +103,17 @@ class PersonalIncarnationDies(Listener):
         reduce_life_by = math.ceil(gs.life[source.owner_id] / 2)
         gs.apply_damage(source, reduce_life_by, source.owner_id)
 
+class PuppetMaster(Listener):
+    """When host dies, bounce host instead. You may pay {UUU} to bounce this aura."""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if event.card is not source.host:
+            return
+        gs.pile_mgr.bounce(event.card)
+        if gs.mana_pools[source.owner_id].can_pay('UUU'):
+            options = [PayManaToBounce(source.owner_id, gs, source, source, 'UUU')]
+            gs.pending_choice = ChoiceAction(options, may=True)
 
 class RukhEgg(Listener):
     """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""

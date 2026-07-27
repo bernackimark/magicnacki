@@ -111,6 +111,22 @@ class PayManaForLife(Action):
         elif self.gs.pending_choice:
             self.gs.pending_choice = None
 
+class PayManaToBounce(Action):
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard, mana_cost: str):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.target = target
+        self.mana_cost = mana_cost
+
+    def __repr__(self):
+        return f'Pay {{{self.mana_cost}}} to bounce {self.target}'
+
+    def play(self) -> None:
+        if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
+            self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
+            self.gs.pile_mgr.bounce(self.target)
+            self.gs.pending_choice = None
+
 class PayManaToPreventCounter(Action):
     def __init__(self, p_id: int, gs: GameState, counter_spell: AbilityAction | CastPermanentAction, mana_cost: str):
         super().__init__(p_id, gs)
@@ -123,7 +139,7 @@ class PayManaToPreventCounter(Action):
     def play(self):
         if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
             self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
-        self.gs.action_stack.remove(self.counter_spell)
+            self.gs.action_stack.remove(self.counter_spell)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
 
@@ -141,8 +157,9 @@ class PayManaToPreventDamage(Action):
 
     def play(self) -> None:
         from models.effects.listeners_generic import PreventNextDamageTo
-        if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
-            self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
+        if not self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
+            return
+        self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
         self.gs.event_mgr.register(PreventNextDamageTo(self.preventable_amt, protected=self.protected), self.source)
 
 class PayManaToDrawCards(Action):

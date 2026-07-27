@@ -302,6 +302,26 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(1, self.gs.score_mgr.poison_counters[1])
         # TODO: The above fails ... Am I ever looking up 'snake' in slug-effect map??
 
+    def test_shimian_night_stalker(self):
+        """All damage that would be dealt to you this turn by target attacking creature is dealt to SNS instead"""
+        card = self.g.battlefield('shimian-night-stalker')
+        aa = card.activated_abilities[0]
+        self.g.mana('BBB')
+        attacker = self.g.battlefield('grizzly-bears', owner=1)
+
+        self.g.next_turn(True)
+        self.assertNotIn(attacker, aa.eff_spec.target_spec.get_targets(self.gs, card))
+        self.gs.combat_mgr.create_combat(attacker)
+        self.assertIn(attacker, aa.eff_spec.target_spec.get_targets(self.gs, card))
+
+        ap = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        ap.advance()
+        ap.targets.append(attacker)
+        ap.resolve_ability()
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertEqual(2, card.damage_received_this_turn)
+        self.assertEqual(20, self.gs.life[0])
+
     def test_sindbad(self):
         """{T}: Draw a card and reveal it. If it isn't a land card, discard it."""
         card = self.g.battlefield('sindbad')

@@ -34,7 +34,7 @@ from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowt
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, VoodooDollEndStep, WhirlingDervish
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
-    UrzasMiter
+    UrzasMiter, PuppetMaster
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
@@ -45,7 +45,8 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
     DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, PreventAllDamageToEOT, PreventNextDamageTo, \
-    PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
+    PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments, \
+    RedirectNextDamageToTarget
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
     UnblockableEOT, CantCastAppliesTo
@@ -93,6 +94,7 @@ MAP: dict[str, list[EffSpec]] = {
     'psychic-allergy': [Triggered(PsychicAllergySac()), Triggered(DeclareAColor()), Spell(PsychicAllergyDamage())],
     'psychic-purge': [Triggered(PsychicPurgeDiscard()), Spell(DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'psychic-venom': [Spell(PsychicVenom(), T_FUNCS['lands'])],
+    'puppet-master': [Spell(PuppetMaster(), T_FUNCS['creatures'])],
     'purelace': [Spell(SetColor('W'), T_FUNCS['cards'])],
     'pyrotechnics': [Spell(DealOneDamageToTargetList(), TargetSpec(T_FUNCS['all_creatures_and_players'], 1, 4,
                                                                    allow_duplicate_targets=True))],
@@ -173,6 +175,8 @@ MAP: dict[str, list[EffSpec]] = {
     'shatter': [Spell(Destroy(), T_FUNCS['artifacts'])],
     'shatterstorm': [Spell(DestroyAll(T_FUNCS['artifacts'], False))],
     'shield-wall': [Spell(PumpAppliesEOT(T_FUNCS['your_creatures'], (0, 2)))],
+    'shimian-night-stalker': [Activated('BT', RedirectNextDamageToTarget(T_FUNCS['owner'], T_FUNCS['self']),
+                                        T_FUNCS['opp_attackers'])],
     'shivan-dragon': [self_pump('R', 1, 0)],
     'silhouette': [Triggered(PreventAllDamageToEOT(combat_only=True), T_FUNCS['creatures'])],
     'simulacrum': [Spell(Simulacrum())],
