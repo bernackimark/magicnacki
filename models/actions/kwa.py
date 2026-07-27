@@ -22,8 +22,25 @@ class AddKWA(Action):
 
     def play(self):
         self.target.modifiers.append(KWAMod(s=self.source, add_or_remove='add', kwa=self.ability,
-                                                  expires='EOT' if self.until_eot else None))
+                                            expires='EOT' if self.until_eot else None))
         if self.gs.pending_choice:
             self.gs.pending_choice = None
         else:
             self.gs.action_stack.pop()
+
+class JohanAction(Action):
+    """At your combat begin step, you may have J gain Defender & your creatures gain Vigilance EOT.
+    If J becomes tapped, your creatures lose their Vigilance."""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard):
+        super().__init__(p_id, gs)
+        self.source = source
+
+    def __repr__(self):
+        return f'{self.source.props.name} gains Defender & your creatures gain Vigilance until end of turn'
+
+    def play(self) -> None:
+        from models.effects.listeners_tap_untap import JohanOnTap
+        self.source.modifiers.append(KWAMod(s=self.source, add_or_remove='add', kwa='Defender', expires='EOT'))
+        for c in self.gs.card_filter.on_player_board(self.source.owner_id).creatures().result():
+            c.modifiers.append(KWAMod(s=self.source, add_or_remove='add', kwa='Vigilance', expires='EOT'))
+        self.gs.event_mgr.register(JohanOnTap(), self.source)

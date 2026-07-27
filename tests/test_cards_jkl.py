@@ -27,6 +27,26 @@ class TestCardsJKL(unittest.TestCase):
         self.assertIn(target, self.gs.boards[0])
         self.assertEqual(17, self.gs.life[0])
 
+    def test_johan(self):
+        """At your combat begin step, you may have J gain Defender & your creatures gain Vigilance EOT.
+        If J becomes tapped, your creatures lose their Vigilance."""
+        card = self.g.battlefield('johan')
+        c1 = self.g.battlefield('grizzly-bears')
+        c2 = self.g.battlefield('serendib-efreet')
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_ATTACKERS)
+        johan_action = self.gs.pending_choice.get_actions()[0]
+        johan_action.play()
+        self.assertIn('Defender', card.keyword_abilities)
+        self.assertIn('Vigilance', c1.keyword_abilities)
+
+        card.tap()
+        self.assertIn('Defender', card.keyword_abilities)
+        self.assertNotIn('Vigilance', c1.keyword_abilities)
+        self.assertNotIn('Vigilance', c2.keyword_abilities)
+
+
     def test_jovial_evil(self):
         """JE deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
         self.g.battlefield('savannah-lions', owner=1)

@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from models.actions.damage import DealDamageToYou
+from models.actions.kwa import JohanAction
 from models.actions.mana import PayMana
 from models.actions.special import DestroyAndForegoCombatDamage
 from models.choice_actions_all import ChoiceAction
@@ -9,7 +10,7 @@ from models.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
 from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, \
-    CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent, StateBasedEvent
+    CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent, StateBasedEvent, CombatBeginEvent, Event
 from models.modifiers import PTMod, KWAMod, OwnershipMod
 from models.utils import flip
 from models.zone import Zone
@@ -210,6 +211,15 @@ class MarblePriestForcesBlock(Listener):
         if gs.perm_querier.can_block(event.blocker, event.attacker):
             event.permission = True
 
+# --- COMBAT END EVENT ---
+class Johan(Listener):
+    """At your combat begin step, you may have J gain Defender & your creatures gain Vigilance EOT.
+    If J becomes tapped, your creatures lose their Vigilance."""
+    listens_to = CombatBeginEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CombatBeginEvent) -> None:
+        options = [JohanAction(source.owner_id, gs, source)]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 # --- COMBAT END EVENT ---
 class ClockworkCombatEnd(Listener):

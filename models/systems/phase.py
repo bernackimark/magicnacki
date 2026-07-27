@@ -174,6 +174,10 @@ class MainPhase(PhaseState):
 class DeclareAttackersPhase(PhaseState):
     phase = Phase.DECLARE_ATTACKERS
 
+    def on_enter(self, gs: GameState) -> None:
+        from models.events_all import CombatBeginEvent
+        gs.event_mgr.emit(CombatBeginEvent(gs.player_turn_idx))
+
     def get_actions(self, p_id: int, gs: GameState):
         from models.actions.combat import FinishDeclaringAttackers, CreatureAttack
         actions: list[Action] = []

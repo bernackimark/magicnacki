@@ -5,7 +5,8 @@ from models.actions.special import TimeVaultSkipTurnAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
-from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent
+from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, Event
+from models.modifiers import KWAMod
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -49,6 +50,21 @@ class HauntingWindTap(Listener):
         if not event.card.is_artifact:
             return
         gs.apply_damage(source, 1, event.card.owner_id)
+
+class JohanOnTap(Listener):
+    """If J becomes tapped, your creatures lose the Vigilance granted by J"""
+    listens_to = TapCardEvent
+    expires = 'EOT'
+
+    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent) -> None:
+        if event.card is not source:
+            return
+        for c in gs.card_filter.on_player_board(source.owner_id).creatures().result():
+            for mod in c.modifiers.iter_type_reverse(KWAMod):
+                if mod.s is source:
+                    c.modifiers.remove(mod)
+                    break
+        self.is_expired = True
 
 class Kudzu(Listener):
     """When enchanted land becomes tapped, destroy it.

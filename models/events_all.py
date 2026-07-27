@@ -96,6 +96,10 @@ class CastResolvedEvent(Event):
     target: GameCard | None = None
 
 @dataclass
+class CombatBeginEvent(Event):
+    active_player: int
+
+@dataclass
 class CombatDamageEvent(Event):
     is_first_strike: bool = False
 

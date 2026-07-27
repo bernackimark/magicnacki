@@ -38,7 +38,7 @@ from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWin
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, MerchantShip, \
-    MurkDwellers, GlyphOfDoom
+    MurkDwellers, GlyphOfDoom, Johan
 from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, \
     FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
@@ -204,6 +204,7 @@ MAP: dict[str: list[EffSpec]] = {
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), T_FUNCS['tapped_creatures'])],
     'jayemdae-tome': [Activated('4T', DrawCards(), T_FUNCS['owner'])],
     'jihad': [Static(JihadPT()), Static(JihadSac()), Spell(DeclareAColor())],
+    'johan': [Triggered(Johan())],
     'jovial-evil': [Spell(JovialEvil(), T_FUNCS['opp'])],
     'juggernaut': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['walls']))],
     'jump': [Spell(KWAModEffect('add', 'Flying', True), T_FUNCS['creatures'])],
