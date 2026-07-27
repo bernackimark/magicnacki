@@ -67,6 +67,21 @@ class TestCardsTUV(unittest.TestCase):
         self.gs.event_mgr.emit(UpkeepEvent(0))
         self.assertTrue(any(isinstance(a, PayMana) for a in self.gs.pending_choice.get_actions()))
 
+    def test_the_wretched(self):
+        """At combat end, gain control of all creatures blocking TW for as long as you control TW"""
+        card = self.g.battlefield('the-wretched')  # 2/5
+        blocker = self.g.battlefield('serra-angel', owner=1)
+
+        self.g.next_turn()
+        self.gs.combat_mgr.create_combat(card)
+        self.gs.combat_mgr.add_blocker(card, blocker)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.gs.phase_mgr.set_phase(Phase.COMBAT_END)
+        self.assertEqual(0, blocker.owner_id)
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual(1, blocker.owner_id)
+
     def test_time_vault(self):
         """This artifact enters tapped. This artifact doesn't untap during your untap step.
         If you would begin your turn while this artifact is tapped, you may: skip that turn & untap this artifact.

@@ -161,13 +161,13 @@ class TheWretchedUnsteal(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent) -> None:
         # TODO: Since a ZoneChangeEvent doesn't capture steals ...
         #  if The Wretched itself is stolen, I still need to return the stolen creatures
-        if event.card is not source or event.from_zone is not Zone.BATTLEFIELD:
+        if event.card is not source or event.from_zone != Zone.BATTLEFIELD:
             return
 
         from models.modifiers import OwnershipMod
         for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.auras:
-                if isinstance(mod, OwnershipMod) and mod.s is source:
+            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+                if mod.s is source:
                     c.modifiers.remove(mod)
                     gs.pile_mgr.boards[source.owner_id].remove(c)
                     gs.pile_mgr.boards[flip(source.owner_id)].append(c)
