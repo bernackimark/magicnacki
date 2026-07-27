@@ -52,9 +52,9 @@ class PayManaToUntapAction(Action):
             self.gs.pending_choice = None
 
 class LeaveTapped(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
+    def __init__(self, p_id: int, gs: GameState, card: GameCard):
         super().__init__(p_id, gs)
-        self.card = s
+        self.card = card
 
     def __repr__(self):
         return f'Leave {self.card} tapped'

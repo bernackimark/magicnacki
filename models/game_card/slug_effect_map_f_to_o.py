@@ -10,11 +10,10 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, I
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT
-from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, \
-    GlassesOfUrza, GwendlynDiCorci, JalumTome, MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, \
-    HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, \
-    FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, KoboldDrillSergeant, \
-    KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, MazeOfIth, NamelessRace, ManaShort, \
+from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
+    MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
+    FeldonsCane, FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, \
+    KoboldDrillSergeant, KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, NamelessRace, ManaShort, \
     FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, \
     GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
@@ -22,7 +21,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
-    CounterSpellUnlessManaPaid
+    CounterSpellUnlessManaPaid, RemoveFromCombat
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -256,8 +255,7 @@ MAP: dict[str: list[EffSpec]] = {
     'lord-magnus': [Static(WalkRuleRemoved('Plainswalk')), Static(WalkRuleRemoved('Forestwalk'))],
     'lure': [Spell(Lure(), T_FUNCS['creatures'])],
     'magnetic-mountain': [Triggered(DoesntUntapAtUntap(T_FUNCS['in_turn_player_tapped_blue_creatures'])),
-                          Activated('4', UntapCardEffect(), T_FUNCS['your_tapped_blue_creatures'],
-                                    allowed_phases=[Phase.UPKEEP])],
+                          Triggered(PayManaToUntapUpkeep('4', T_FUNCS['in_turn_player_tapped_blue_creatures']))],
     'mana-clash': [Spell(ManaClash())],
     'mana-drain': [Spell(ManaDrain(), T_FUNCS['spells'])],
     'mana-matrix': [Static(ManaMatrix())],
@@ -274,7 +272,7 @@ MAP: dict[str: list[EffSpec]] = {
     'marsh-viper': [Triggered(AddPoisonCounter(2))],
     'martyrs-cry': [Spell(MartyrsCry())],
     'martyrs-of-korlis': [Static(MartyrsOfKorlis())],
-    'maze-of-ith': [Activated('T', MazeOfIth(), T_FUNCS['attackers'])],
+    'maze-of-ith': [Activated('T', RemoveFromCombat(), T_FUNCS['attackers'])],
     'meekstone': [Static(Meekstone())],
     'merchant-ship': [Triggered(MerchantShip())],
     'merfolk-assassin': [Activated('T', Destroy(), T_FUNCS['islandwalkers'])],
@@ -283,7 +281,7 @@ MAP: dict[str: list[EffSpec]] = {
     'millstone': [Activated('2T', Millstone(), T_FUNCS['all_players'])],
     'mind-twist': [Spell(MindTwist(), T_FUNCS['all_players'], max_x_func=max_x_from_printed_card)],
     'miracle-worker': [Activated('T', Destroy(), T_FUNCS['auras_on_owners_creatures'])],
-    'mirror-universe': [Activated('True', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
+    'mirror-universe': [Activated('T', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_turn_func=T_FUNCS['owner'], extra_costs=[SacSelfCost()])],
     'mishras-factory': [Activated('T', AddMana('C'), T_FUNCS['owner'], text='Add {C}'),
                         Activated('1', BecomeCreature(2, 2, 'Assembly-Worker', True), T_FUNCS['self'], text='Become 2/2'),

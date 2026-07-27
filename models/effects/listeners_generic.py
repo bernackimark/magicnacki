@@ -18,7 +18,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, Event
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -606,13 +606,16 @@ class PayManaToUntapUpkeep(Listener):
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent) -> None:
         target = self.target_func(gs, s)
-        if event.active_player != target.owner_id:
+        if not isinstance(target, list):
+            target = [target]
+        target_owner = target[0].owner_id
+        if event.active_player != target_owner:
             return
-        if not gs.mana_pools[target.owner_id].can_pay(self.mana_cost):
-            return
-        options = [PayManaToUntapAction(target.owner_id, gs, s, target, self.mana_cost),
-                   LeaveTapped(target.owner_id, gs, s)]
-        gs.pending_choice = ChoiceAction(options)
+        for c in target:
+            if not gs.mana_pools[target_owner].can_pay(self.mana_cost):
+                continue
+            options = [PayManaToUntapAction(target_owner, gs, s, c, self.mana_cost)]
+            gs.pending_choice = ChoiceAction(options, may=True)
 
 class RemoveCounterAtTargetUpkeep(Listener):
     """At target owner's upkeep, put counter(s) on this card"""

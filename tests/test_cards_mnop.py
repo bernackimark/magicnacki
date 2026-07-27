@@ -17,6 +17,27 @@ class TestCardsMNOP(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_magnetic_mountain(self):
+        """Blue creatures don't untap during their controllers' untap steps.
+        At each player's upkeep, that player may choose any # of their tapped blue creatures & pay {4} to untap it."""
+        card = self.g.battlefield('magnetic-mountain')
+        blue1 = self.g.battlefield('air-elemental')
+        blue2 = self.g.battlefield('merfolk-of-the-pearl-trident')
+        non_blue = self.g.battlefield('grizzly-bears')
+        self.g.mana('UUUUUUUU')
+        blue1.tap()
+        blue2.tap()
+        non_blue.tap()
+
+        self.g.next_turn()
+        self.assertTrue(blue1.is_tapped)
+        self.assertFalse(non_blue.is_tapped)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        first_blue_untap = self.gs.pending_choice.get_actions()[0]
+        first_blue_untap.play()
+        self.assertTrue(self.gs.pending_choice)
+        # TODO: this fails because I haven't yet iterated over successive gs.pending_choice, I don't think??
+
     def test_mana_vault(self):
         """... MV doesn't untap during your untap step. At your upkeep, you may pay {4} to untap this artifact.
         At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
@@ -69,6 +90,28 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.combat(juggernaut, None)
         self.assertEqual(0, card.damage_received_this_turn)
         self.assertEqual(15, self.gs.life[0], 'Damage should not have been redirected to MOK')
+
+    def test_maze_of_ith(self):
+        """{T}: Untap target attacker. Prevent all combat damage that would be dealt to and  by that creature EOT."""
+        card = self.g.battlefield('maze-of-ith')
+        aa = card.activated_abilities[0]
+        attacker = self.g.battlefield('shivan-dragon', owner=1)
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(attacker)
+        self.g.activate_ability(aa, attacker)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertFalse(attacker.is_tapped)
+        self.assertEqual(20, self.gs.life[0])
+
+    def test_mirror_universe(self):
+        """{T}, Sacrifice this artifact: Exchange life totals with target opponent. Activate only during your upkeep."""
+        card = self.g.battlefield('mirror-universe')
+        aa = card.activated_abilities[0]
+        self.gs.apply_damage(card, 1, 1)  # life = [20, 19]
+        self.g.activate_ability(aa)
+        self.assertIn(card, self.g.gy[0])
+        self.assertEqual([19, 20], self.gs.life)
 
     def test_mold_demon(self):
         card = self.g.card('mold-demon')

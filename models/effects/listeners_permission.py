@@ -111,7 +111,10 @@ class DoesntUntapAtUntap(Listener):
         self.card_filter_func = card_filter_func
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
-        if gs.player_turn_idx == event.card.owner_id and event.card in [self.card_filter_func(gs, source)]:
+        affected_cards = self.card_filter_func(gs, source)
+        if not isinstance(affected_cards, list):
+            affected_cards = [affected_cards]
+        if gs.player_turn_idx == event.card.owner_id and event.card in affected_cards:
             event.permission = False
 
 class DoesntUntapAtUntapIfItAttackedLastTurn(Listener):
