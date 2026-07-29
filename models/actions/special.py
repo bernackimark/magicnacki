@@ -279,9 +279,9 @@ class SubTypeReplacement(Action):
 
     def play(self) -> None:
         sub_types = self.target.card_sub_types.copy()
-        self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='add', card_sub_type=self.sub_type))
+        self.target.modifiers.append(SubTypeMod(s=self.s, item=self.sub_type))
         for sub_type in sub_types:
-            self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='remove', card_sub_type=sub_type))
+            self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='remove', item=sub_type))
         self.gs.pending_choice = None
 
 # --- CARD-SPECIFIC ---

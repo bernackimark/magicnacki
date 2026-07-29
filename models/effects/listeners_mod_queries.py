@@ -34,7 +34,7 @@ class AddCreatureType(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         if event.card is not self.target:
             return
-        event.mods.append(TypeMod(s=source, add_or_remove='add', card_type='Creature'))
+        event.mods.append(TypeMod(s=source, add_or_remove='add', item='Creature'))
 
 class PTModEqualsManaValue(Listener):
     """Power and toughness mod each equal its mana value"""
@@ -72,7 +72,7 @@ class KWAApplies(Listener):
         if not isinstance(applies_to, list):
             applies_to = [applies_to]
         if event.card in applies_to:
-            event.mods.append(KWAMod(s=source, kwa=self.kwa_added, add_or_remove=self.add_or_remove))
+            event.mods.append(KWAMod(s=source, item=self.kwa_added, add_or_remove=self.add_or_remove))
 
 class SelfPTEquals(Listener):
     """For that card, its pt = the len of the T_FUNC provided, append a PTMod for the len;
@@ -203,8 +203,8 @@ class Conversion(Listener):
     modifies = 'sub_type'
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        event.mods.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Plains'))
-        event.mods.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type='Mountain'))
+        event.mods.append(SubTypeMod(s=source, item='Plains'))
+        event.mods.append(SubTypeMod(s=source, add_or_remove='remove', item='Mountain'))
 
 class GaeasAvengerPT(Listener):
     """Gaea's Avenger's power and toughness are each equal to 1 plus the number of artifacts your opponents control"""
@@ -270,7 +270,7 @@ class KormusBell(Listener):
         if event.card not in gs.card_filter.in_play().by_sub_type('Swamp').result():
             return
         if event.query == 'type':
-            event.mods.append(TypeMod(s=source, add_or_remove='add', card_type='Creature'))
+            event.mods.append(TypeMod(s=source, add_or_remove='add', item='Creature'))
         elif event.query == 'pt':
             event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
 
@@ -283,7 +283,7 @@ class LivingLands(Listener):
         if event.card not in gs.card_filter.in_play().by_sub_type('Forest').result():
             return
         if event.query == 'type':
-            event.mods.append(TypeMod(s=source, add_or_remove='add', card_type='Creature'))
+            event.mods.append(TypeMod(s=source, add_or_remove='add', item='Creature'))
         elif event.query == 'pt':
             event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
         return None
@@ -297,7 +297,7 @@ class LivingPlane(Listener):
         if event.card not in gs.card_filter.in_play().by_sub_type('Land').result():
             return
         if event.query == 'type':
-            event.mods.append(TypeMod(s=source, add_or_remove='add', card_type='Creature'))
+            event.mods.append(TypeMod(s=source, add_or_remove='add', item='Creature'))
         elif event.query == 'pt':
             event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
 

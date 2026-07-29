@@ -21,7 +21,7 @@ class AddKWA(Action):
         return f'Give {self.ability} to {self.target.props.name}'
 
     def play(self):
-        self.target.modifiers.append(KWAMod(s=self.source, add_or_remove='add', kwa=self.ability,
+        self.target.modifiers.append(KWAMod(s=self.source, item=self.ability,
                                             expires='EOT' if self.until_eot else None))
         if self.gs.pending_choice:
             self.gs.pending_choice = None
@@ -40,7 +40,7 @@ class JohanAction(Action):
 
     def play(self) -> None:
         from models.effects.listeners_tap_untap import JohanOnTap
-        self.source.modifiers.append(KWAMod(s=self.source, add_or_remove='add', kwa='Defender', expires='EOT'))
+        self.source.modifiers.append(KWAMod(s=self.source, item='Defender', expires='EOT'))
         for c in self.gs.card_filter.on_player_board(self.source.owner_id).creatures().result():
-            c.modifiers.append(KWAMod(s=self.source, add_or_remove='add', kwa='Vigilance', expires='EOT'))
+            c.modifiers.append(KWAMod(s=self.source, item='Vigilance', expires='EOT'))
         self.gs.event_mgr.register(JohanOnTap(), self.source)

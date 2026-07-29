@@ -74,9 +74,9 @@ class RapidFire(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, item='First Strike', expires='EOT'))
         if not target.rampage_amt:
-            target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Rampage 2', expires='EOT'))
+            target.modifiers.append(KWAMod(s=source, item='Rampage 2', expires='EOT'))
 
 class Reset(Resolver):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
@@ -143,7 +143,7 @@ class SandalsOfAbdallahIslandWalk(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Islandwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, item='Islandwalk', expires='EOT'))
         gs.event_mgr.register(SandalsOfAbdallahIfCreatureDies(target_creature=target), source)
 
 class Sandstorm(Resolver):
@@ -198,7 +198,7 @@ class SirensCall(Resolver):
         non_wall_creatures = gs.card_filter.on_player_board(gs.player_turn_idx).non_wall_creatures().result()
         for creature in non_wall_creatures:
             if not creature.has_summoning_sickness:
-                creature.modifiers.append(KWAMod('add', 'Goad', s=source, expires='EOT'))
+                creature.modifiers.append(KWAMod(item='Goad', s=source, expires='EOT'))
                 gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(creature), source)
 
 class Stangg(Resolver):
@@ -215,7 +215,7 @@ class StoneGiant(Resolver):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        t.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Flying', expires='EOT'))
+        t.modifiers.append(KWAMod(s=s, item='Flying', expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStep(t), s)
 
 class StormSeeker(Resolver):
@@ -373,32 +373,32 @@ class UrborgLoseFirstStrike(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='First Strike', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='First Strike', expires='EOT'))
 
 class UrborgLoseSwampwalk(Resolver):
     """{T}: Target creature loses first strike or SWAMPWALK until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Swampwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='Swampwalk', expires='EOT'))
 
 class UrzasAvengerFlying(Resolver):
     """This creature gets -1/-1 and gains your choice of FLYING, first strike, or trample until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item='Flying', expires='EOT'))
 
 class UrzasAvengerFirstStrike(Resolver):
     """This creature gets -1/-1 and gains your choice of flying, FIRST STRIKE, or trample until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='First Strike', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item='First Strike', expires='EOT'))
 
 class UrzasAvengerTrample(Resolver):
     """This creature gets -1/-1 and gains your choice of flying, first strike, or TRAMPLE until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item='Trample', expires='EOT'))
 
 class UrzasTrio(Resolver):
     """{T}: Add {C}.
@@ -450,7 +450,7 @@ class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
     def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard] = None):
         source.modifiers.append(PTMod(s=source, p_adj=4, t_adj=-4, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Defender', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='Defender', expires='EOT'))
 
 
 class WandOfIth(Resolver):
@@ -471,14 +471,14 @@ class WarBarge(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(KWAMod('add', 'Islandwalk', s=source, expires='EOT'))
+        target.modifiers.append(KWAMod(item='Islandwalk', s=source, expires='EOT'))
         gs.event_mgr.register(LTBTandem([source, target], until_eot=True), source)
 
 class Web(Resolver):
     def resolve(self, _: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
             target.modifiers.append(PTMod(s=source, p_adj=0, t_adj=2))
-            target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Reach'))
+            target.modifiers.append(KWAMod(s=source, item='Reach'))
 
 class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
@@ -522,11 +522,11 @@ class WoodElemental(Resolver):
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Forestwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, item='Forestwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
 
 class WormwoodTreefolkSwampwalk(Resolver):
     """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Swampwalk', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, item='Swampwalk', expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)

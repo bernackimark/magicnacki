@@ -64,7 +64,7 @@ class ElderLandWurm(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
         if event.blocker is not s:
             return
-        s.modifiers.append(KWAMod(s=s, add_or_remove='remove', kwa='Defender'))
+        s.modifiers.append(KWAMod(s=s, add_or_remove='remove', item='Defender'))
 
 class GiantShark(Listener):
     """Whenever this creature blocks/is blocked by a creature that's been dealt damage this turn,
@@ -80,7 +80,7 @@ class GiantShark(Listener):
             return
         if other.damage_received_this_turn:
             s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
-            s.modifiers.append(KWAMod(s=s, add_or_remove='add', kwa='Trample', expires='EOT'))
+            s.modifiers.append(KWAMod(s=s, item='Trample', expires='EOT'))
 
 class InfernalMedusa(Listener):
     """Whenever this creature blocks, destroy attacker at combat end.

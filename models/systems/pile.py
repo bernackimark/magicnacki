@@ -62,7 +62,7 @@ class PileManager:
             if event.permission is not False:
                 if event.permission is True:  # hard permission is rare, only used by clergy-of-the-nimbus
                     return
-                shield = next(card.modifiers.iter_type(RegenerationMod), None)
+                shield = next((mod for mod in card.modifiers.get(RegenerationMod)), None)
                 if shield:
                     card.modifiers.remove(shield)
                     card.tapped = True

@@ -60,7 +60,7 @@ class JohanOnTap(Listener):
         if event.card is not source:
             return
         for c in gs.card_filter.on_player_board(source.owner_id).creatures().result():
-            for mod in c.modifiers.iter_type_reverse(KWAMod):
+            for mod in c.modifiers.get(KWAMod, reverse=True):
                 if mod.s is source:
                     c.modifiers.remove(mod)
                     break

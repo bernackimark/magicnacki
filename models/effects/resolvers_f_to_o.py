@@ -141,7 +141,7 @@ class GoblinKing(Resolver):
         targets = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Goblin').result()
         for t in targets:
             if source != t:
-                t.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Mountainwalk'))
+                t.modifiers.append(KWAMod(s=source, item='Mountainwalk'))
                 t.modifiers.append(PTMod(s=source, p_adj=1, t_adj=1))
 
 class GraveRobbersAA(Resolver):
@@ -248,7 +248,7 @@ class KoboldDrillSergeant(Resolver):
         kobolds = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result()
         for k in kobolds:
             if source != k:
-                k.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample'))
+                k.modifiers.append(KWAMod(s=source, item='Trample'))
                 k.modifiers.append(PTMod(s=source, p_adj=0, t_adj=1))
 
 class KryShield(Resolver):
@@ -412,5 +412,5 @@ class NettlingImp(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(KWAMod('add', 'Goad', s=source, expires='EOT'))
+        target.modifiers.append(KWAMod(item='Goad', s=source, expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(target), source)

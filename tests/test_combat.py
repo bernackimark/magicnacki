@@ -35,7 +35,7 @@ class TestCombat(unittest.TestCase):
     def test_trample_assigns_excess_damage_to_player(self):
         attacker = self.g.battlefield('craw-wurm')  # 6/4
         blocker = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)  # 1/1
-        attacker.modifiers.append(KWAMod(s=attacker, add_or_remove='add', kwa='Trample'))
+        attacker.modifiers.append(KWAMod(s=attacker, item='Trample'))
         self.g.combat(attacker, blocker)
         expected_trample = attacker.power - blocker.toughness
         self.assertEqual(20 - expected_trample, self.gs.life[1])

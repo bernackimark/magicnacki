@@ -12,7 +12,8 @@ if TYPE_CHECKING:
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
 from models.counter_tokens import Counters
-from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod
+from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
+    OwnershipMod
 from models.zone import Zone
 
 
@@ -78,9 +79,11 @@ class GameCard:
 
     @property
     def owner_id(self) -> int:
-        if not self.modifiers or self.modifiers.new_owner_id is None:
+        if not self.modifiers:
             return self._owner_id
-        return self.modifiers.new_owner_id
+        for m in self.modifiers.get(OwnershipMod, reverse=True):
+            return m.new_owner_id
+        return self._owner_id
 
     @property
     def aas(self) -> list[EffSpec | None]:
@@ -107,9 +110,12 @@ class GameCard:
 
     @property
     def _pt(self) -> tuple[int, int]:
+        if not self.is_creature:
+            return 0, 0
+
         base_power, base_t = self.base_pt[0] or 0, self.base_pt[1] or 0
-        power = base_power + self.modifiers.power_delta + self.counters.power_delta
-        toughness = base_t + self.modifiers.toughness_delta + self.counters.toughness_delta
+        power = base_power + sum(m.p_adj for m in self.modifiers.get(PTMod)) + self.counters.power_delta
+        toughness = base_t + sum(m.t_adj for m in self.modifiers.get(PTMod)) + self.counters.toughness_delta
 
         event = ModQueryEvent(query='pt', card=self)
         self.game_state.event_mgr.emit(event)
@@ -120,34 +126,32 @@ class GameCard:
 
     @property
     def card_types(self) -> list[str]:
-        return self._modified_collection("type", self._card_types, TypeMod, lambda m: [m.card_type])
+        return self._modified_collection("type", self._card_types, TypeMod)
 
     @property
     def card_sub_types(self) -> list[str]:
-        return self._modified_collection("sub_type", self._card_sub_types, SubTypeMod, lambda m: [m.card_sub_type])
+        return self._modified_collection("sub_type", self._card_sub_types, SubTypeMod)
 
     @property
     def colors(self) -> list[str]:
-        return self._modified_collection("color", self._colors, ColorMod, lambda m: [m.new_color])
+        return self._modified_collection("color", self._colors, ColorMod)
 
     @property
     def keyword_abilities(self) -> list[str]:
-        return self._modified_collection("kwa", self._base_kwa, KWAMod, lambda m: [m.kwa])
+        return self._modified_collection("kwa", self._base_kwa, KWAMod)
 
     @property
     def mana_produced(self) -> list[str]:
-        return self._modified_collection("mana_produced", self._mana_produced, ManaProdMod, lambda m: m.colors)
+        return self._modified_collection("mana_produced", self._mana_produced, ManaProdMod)
 
-    def _modified_collection(self, query: str, base: Iterable[str | None], mod_cls, value_getter) -> list[str]:
+    def _modified_collection(self, query: str, base: Iterable[str | None],
+                             mod_cls: type[CollectionMod]) -> list[str]:
         """1) Start with a base attribute;
         2) Query ModQueryEvent listeners (which return a list of Mod)
         3) Iterate over modifiers stored in the GameCard's modifiers attribute (a list of Mod)
         4) Calculate the diff
         5) Return the current list for the requested attribute
         Ex: base = ['Flying'] -> aura grants 'First Strike' -> global mod removes all 'Flying' -> ['First Strike']"""
-
-        # TODO: 'value_getter' can go away if:
-        #  'ColorMod.new_color', 'KWAMod.kwa', etc. all used an attr "item"/"items"
 
         event = ModQueryEvent(query=query, card=self)
         self.game_state.event_mgr.emit(event)
@@ -156,12 +160,10 @@ class GameCard:
         removes = set()
 
         for mod in self.modifiers.get(mod_cls):
-            values = value_getter(mod)
-            adds.update(values) if mod.add_or_remove == "add" else removes.update(values)
+            adds.add(mod.item) if mod.add_or_remove == "add" else removes.add(mod.item)
 
         for mod in event.mods:
-            values = value_getter(mod)
-            adds.update(values) if mod.add_or_remove == "add" else removes.update(values)
+            adds.add(mod.item) if mod.add_or_remove == "add" else removes.add(mod.item)
 
         return list((set(base) | adds) - removes)
 

@@ -490,7 +490,7 @@ class ReturnToOwnerOnUntap(Listener):
         if source is not event.card:
             return
         for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+            for mod in c.modifiers.get(OwnershipMod, reverse=True):
                 c.modifiers.remove(mod)
                 gs.pile_mgr.boards[source.owner_id].remove(c)
                 gs.pile_mgr.boards[flip(source.owner_id)].append(c)
@@ -668,7 +668,7 @@ class ReturnToOwnerOnLTB(Listener):
                 if isinstance(mod, OwnershipMod):
                     gs.pile_mgr.boards[source.owner_id].remove(c)
                     gs.pile_mgr.boards[flip(source.owner_id)].append(c)
-            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+            for mod in c.modifiers.get(OwnershipMod, reverse=True):
                 c.modifiers.remove(mod)
                 gs.pile_mgr.boards[source.owner_id].remove(c)
                 gs.pile_mgr.boards[flip(source.owner_id)].append(c)

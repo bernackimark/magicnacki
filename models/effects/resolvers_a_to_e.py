@@ -104,7 +104,7 @@ class Berserk(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         target.modifiers.append(PTMod(s=source, p_adj=target.power, expires='EOT'))
-        target.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Trample', expires='EOT'))
+        target.modifiers.append(KWAMod(s=source, item='Trample', expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStepIfItAttacked(target), source)
 
 class BloodLust(Resolver):
@@ -259,7 +259,7 @@ class DustToDust(Resolver):
 class Earthbind(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         if target:
-            target.modifiers.append(KWAMod(s=source, add_or_remove='remove', kwa='Flying'))
+            target.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='Flying'))
         if 'Flying' in target.keyword_abilities:
             gs.apply_damage(source, 2, target.owner_id)
 
@@ -331,9 +331,9 @@ class EvilPresence(Resolver):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
         sub_types = target.card_sub_types.copy()
-        target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type='Swamp'))
+        target.modifiers.append(SubTypeMod(s=source, item='Swamp'))
         for sub_type in sub_types:
-            target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', card_sub_type=sub_type))
+            target.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', item=sub_type))
 
 class ExchangeLifeTotals(Resolver):
     def resolve(self, gs: GameState, s: GameCard, _: Optional[GameCard] = None):

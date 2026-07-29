@@ -76,15 +76,8 @@ class CanAttackRule(BaseRule):
                 event.permission = False
                 return
 
-        adds, removes = a.modifiers.kwa_delta
-
-        # explicit prohibition
-        if 'Attack' in removes and 'Attack' not in adds:
-            event.permission = False
-            return
-
         # defender (considers animate-wall)
-        if 'Defender' in a.keyword_abilities and 'Attack' not in adds:
+        if 'Defender' in a.keyword_abilities:
             event.permission = False
             return
 

@@ -43,7 +43,7 @@ class OldManOfTheSeaPowerCheck(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
         for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+            for mod in c.modifiers.get(OwnershipMod, reverse=True):
                 if mod.s is source:
                     print('AAA', source, source.power, c.power)
                     if source.power > c.power:

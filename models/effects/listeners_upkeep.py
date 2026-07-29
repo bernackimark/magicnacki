@@ -55,7 +55,7 @@ class CocoonUpkeep(Listener):
             return
         gs.pile_mgr.destroy(source)
         host.counters.add_counter(PLUS_ONE)
-        host.modifiers.append(KWAMod(s=source, add_or_remove='add', kwa='Flying'))
+        host.modifiers.append(KWAMod(s=source, item='Flying'))
 
 class CosmicHorror(Listener):
     """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
@@ -181,7 +181,7 @@ class ErhnamDjinn(Listener):
         if not eligible_targets:
             return
         if len(eligible_targets) == 1:
-            eligible_targets[0].modifiers.append(KWAMod('add', 'Forestwalk', s=s, expires='EOT'))
+            eligible_targets[0].modifiers.append(KWAMod(item='Forestwalk', s=s, expires='EOT'))
             return
         options = [AddKWA(s.owner_id, gs, s, t, 'Forestwalk') for t in eligible_targets]
         gs.pending_choice = ChoiceAction(options)

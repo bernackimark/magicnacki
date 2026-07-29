@@ -62,7 +62,7 @@ class AllWalksRemoved(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         for land in BASIC_LANDS:
             target.modifiers.append(KWAMod(s=source, add_or_remove='remove',
-                                           kwa=f'{land.capitalize()}walk', expires='EOT'))
+                                           item=f'{land.capitalize()}walk', expires='EOT'))
 
 class BecomeCreature(Resolver):
     def __init__(self, power: int, toughness: int, sub_type: str = None, until_eot: bool = False):
@@ -74,10 +74,10 @@ class BecomeCreature(Resolver):
     def resolve(self, gs, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
-        target.modifiers.append(TypeMod(s=source, add_or_remove='add', card_type='Creature',
+        target.modifiers.append(TypeMod(s=source, add_or_remove='add', item='Creature',
                                         expires='EOT' if self.until_eot else None))
         if self.sub_type:
-            target.modifiers.append(SubTypeMod(s=source, add_or_remove='add', card_sub_type=self.sub_type,
+            target.modifiers.append(SubTypeMod(s=source, item=self.sub_type,
                                                expires='EOT' if self.until_eot else None))
 
 class BecomeCreaturePTEqualsManaValue(Resolver):
@@ -268,7 +268,7 @@ class KWAModEffect(Resolver):
         self.eot = eot
 
     def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
-        target.modifiers.append(KWAMod(s=s, add_or_remove=self.add_or_remove, kwa=self.kwa,
+        target.modifiers.append(KWAMod(s=s, add_or_remove=self.add_or_remove, item=self.kwa,
                                        expires='EOT' if self.eot else None))
 
 class ManaBatteriesAddMana(Resolver):
@@ -382,7 +382,7 @@ class SetColor(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', new_color=self.color))
+        target.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', item=self.color))
 
 class Steal(Resolver):
     def __init__(self, new_zone: Zone = None):

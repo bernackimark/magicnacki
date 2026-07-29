@@ -166,7 +166,7 @@ class TheWretchedUnsteal(Listener):
 
         from models.modifiers import OwnershipMod
         for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.modifiers.iter_type_reverse(OwnershipMod):
+            for mod in c.modifiers.get(OwnershipMod, reverse=True):
                 if mod.s is source:
                     c.modifiers.remove(mod)
                     gs.pile_mgr.boards[source.owner_id].remove(c)
