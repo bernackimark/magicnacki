@@ -42,12 +42,8 @@ class Deck:
         return sorted({c.slug: c for c in self.main}.values(), key=lambda x: x.slug)
 
     @property
-    def colors(self) -> str:
-        colors_seen = set()
-        for c in self.main:
-            for color in c.colors:
-                colors_seen.add(color)
-        return ''.join(colors_seen)
+    def colors(self) -> list[str]:
+        return list({color for card in self.main for color in card.colors})
 
     def add_card(self, c: Card, to_pile: str = 'main') -> None:
         self.main.append(c) if to_pile == 'main' else self.side.append(c)

@@ -382,7 +382,7 @@ class SetColor(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if target is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(ColorMod(s=source, expires=self.expires, new_colors=self.color))
+        target.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', new_color=self.color))
 
 class Steal(Resolver):
     def __init__(self, new_zone: Zone = None):

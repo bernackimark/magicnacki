@@ -69,11 +69,11 @@ class Card:
         return 'Creature' in self.card_types
 
     @cached_property
-    def colors(self) -> str:
+    def colors(self) -> list[str]:
         if not self.casting_cost:
-            return 'C'
-        colors = ''.join({char for char in self.casting_cost if not char.isnumeric() and char != 'X'})
-        return colors if colors else 'C'
+            return ['C']
+        colors = list({char for char in self.casting_cost if not char.isnumeric() and char != 'X'})
+        return colors if colors else ['C']
 
 @dataclass
 class CardUniverse:

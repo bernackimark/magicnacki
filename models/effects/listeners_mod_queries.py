@@ -151,7 +151,7 @@ class AngelicVoices(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         for my_creature in gs.card_filter.creatures().on_player_board(event.card.owner_id).result():
-            if 'W' not in my_creature.props.colors or 'C' not in my_creature.props.colors:
+            if 'W' not in my_creature.colors or 'C' not in my_creature.colors:
                 return
         event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
 

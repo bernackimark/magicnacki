@@ -77,7 +77,7 @@ class OnColorSpellGainLife(Listener):
         self.life_amt = life_amt
 
     def on_event(self, gs: GameState, s: GameCard, event: CastResolvedEvent):
-        if self.color not in event.card.props.colors:
+        if self.color not in event.card.colors:
             return
         gs.score_mgr.increment_life(s.owner_id, self.life_amt, s, gs)
 
@@ -90,7 +90,7 @@ class OnColorSpellPayOneColorlessForOneLifeChoice(Listener):
         self.color = color
 
     def on_event(self, gs: GameState, s: GameCard, event: CastResolvedEvent):
-        if self.color not in event.card.props.colors:
+        if self.color not in event.card.colors:
             return
         if not gs.mana_pools[s.owner_id].can_pay('1'):
             return

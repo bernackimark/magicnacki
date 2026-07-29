@@ -14,10 +14,11 @@ class Modifier:
 
 @dataclass
 class ColorMod(Modifier):
-    new_colors: str
+    add_or_remove: str
+    new_color: str
 
     def __repr__(self):
-        return f'is now colored {self.new_colors}'
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.new_color}"
 
 @dataclass
 class KWAMod(Modifier):
@@ -142,10 +143,12 @@ class Modifiers:
         return adds - removes, removes - adds
 
     @property
-    def colors(self) -> str:
+    def colors(self) -> tuple[set[str], set[str]]:
         """Returns the last color(s) assigned; does not currently support adding/subtracting multiple color layers"""
-        for m in self.iter_type_reverse(ColorMod):
-            return m.new_colors
+        adds, removes = set(), set()
+        for m in self.iter_type(ColorMod):
+            adds.add(m.new_color) if m.add_or_remove == 'add' else removes.add(m.new_color)
+        return adds - removes, removes - adds
 
     @property
     def mana_prod_delta(self) -> tuple[set[str], set[str]]:

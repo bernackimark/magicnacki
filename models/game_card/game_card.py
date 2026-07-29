@@ -17,7 +17,7 @@ from models.zone import Zone
 
 
 class GameCard:
-    def __init__(self, props: Card, orig_owner_id: int, is_token: bool = False, colors: str = ''):
+    def __init__(self, props: Card, orig_owner_id: int, is_token: bool = False):
         self.id_ = str(uuid4())
         self.props: Card = props
         self._orig_owner_id: int = orig_owner_id
@@ -27,7 +27,7 @@ class GameCard:
         self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self._card_types: list[str] = self.props.card_types.copy()
         self._card_sub_types: list[str] = self.props.card_sub_types.copy()
-        self._colors: str = colors or self.props.colors[:]
+        self._colors: list[str] = self.props.colors
         self._mana_produced: list[str] = self.props.mana_produced or []
         self.is_token: bool = is_token
         self.is_tapped: bool = False
@@ -127,6 +127,13 @@ class GameCard:
         return self._modified_collection("sub_type", self._card_sub_types, SubTypeMod, lambda m: [m.card_sub_type])
 
     @property
+    def colors(self) -> list[str]:
+        """Does not currently lookup global queries"""
+        # TODO: the previous code was producing a RecursionError, so I'm no longer checking Modifiers
+        # TODO: from card colors comes in as a single str whereas mana_produced is a list[str], should prob make a list
+        return self._colors
+
+    @property
     def keyword_abilities(self):
         return self._modified_collection("kwa", self._base_kwa, KWAMod, lambda m: [m.kwa])
 
@@ -156,12 +163,6 @@ class GameCard:
             adds.update(values) if mod.add_or_remove == "add" else removes.update(values)
 
         return list((set(base) | adds) - removes)
-
-    @property
-    def colors(self) -> str:
-        """Does not currently lookup global queries"""
-        # TODO: the previous code was producing a RecursionError, so I'm no longer checking Modifiers
-        return self._colors
 
     def clear_all_mods(self) -> None:
         """set attached_to = None for all auras and host; all modifiers are emptied"""
