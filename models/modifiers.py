@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Literal, Union, Callable, Iterator, TypeVar
+from typing import TYPE_CHECKING, Literal, Union, Iterator, TypeVar
 
 if TYPE_CHECKING:
     from .game_card.game_card import GameCard
@@ -11,12 +11,29 @@ class Modifier:
     s: GameCard  # source
     expires: str | None = None  # None, 'EOT', 'UNTIL_SOURCE_LEAVES', 'NEXT_TURN'
 
+
 @dataclass
 class ColorMod(Modifier):
     new_colors: str
 
     def __repr__(self):
         return f'is now colored {self.new_colors}'
+
+@dataclass
+class KWAMod(Modifier):
+    add_or_remove: str
+    kwa: str
+
+    def __repr__(self):
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa}"
+
+@dataclass
+class ManaProdMod(Modifier):
+    add_or_remove: str
+    colors: list[str]
+
+    def __repr__(self):
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.colors} mana prod"
 
 @dataclass
 class OwnershipMod(Modifier):
@@ -37,26 +54,10 @@ class PTMod(Modifier):
         return f"({power_symbol}{self.p_adj}/{toughness_symbol}{self.t_adj}){end_of_turn_text}"
 
 @dataclass
-class KWAMod(Modifier):
-    add_or_remove: str
-    kwa: str
-
-    def __repr__(self):
-        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.kwa}"
-
-@dataclass
 class RegenerationMod(Modifier):
     """Prevents next destruction"""
     def __repr__(self):
         return f"regeneration shield"
-
-@dataclass
-class TypeMod(Modifier):
-    add_or_remove: Literal['add', 'remove']
-    card_type: str
-
-    def __repr__(self):
-        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_type}"
 
 @dataclass
 class SubTypeMod(Modifier):
@@ -66,9 +67,17 @@ class SubTypeMod(Modifier):
     def __repr__(self):
         return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_sub_type}"
 
+@dataclass
+class TypeMod(Modifier):
+    add_or_remove: Literal['add', 'remove']
+    card_type: str
+
+    def __repr__(self):
+        return f"{'gains' if self.add_or_remove == 'add' else 'loses'} {self.card_type}"
+
 
 T = TypeVar('T', bound=Modifier)
-ModType = Union[PTMod | KWAMod | TypeMod | SubTypeMod | OwnershipMod | RegenerationMod]
+ModType = Union[KWAMod | ManaProdMod | OwnershipMod | PTMod | RegenerationMod | SubTypeMod | TypeMod]
 
 @dataclass
 class Modifiers:
@@ -87,6 +96,9 @@ class Modifiers:
 
     def remove(self, modifier: Modifier) -> None:
         self.items.remove(modifier)
+
+    def get(self, mod_cls):
+        return list(self.iter_type(mod_cls))
 
     def iter_type(self, mod_type: type[T]) -> Iterator[T]:
         yield from (m for m in self.items if isinstance(m, mod_type))
@@ -134,6 +146,13 @@ class Modifiers:
         """Returns the last color(s) assigned; does not currently support adding/subtracting multiple color layers"""
         for m in self.iter_type_reverse(ColorMod):
             return m.new_colors
+
+    @property
+    def mana_prod_delta(self) -> tuple[set[str], set[str]]:
+        adds, removes = set(), set()
+        for m in self.iter_type(ManaProdMod):
+            [adds.add(c) for c in m.colors] if m.add_or_remove == 'add' else [removes.add(c) for c in m.colors]
+        return adds - removes, removes - adds
 
     def clear_eots(self) -> None:
         self.items = [m for m in self.items if m.expires != 'EOT']

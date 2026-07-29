@@ -1,6 +1,6 @@
 from __future__ import annotations
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 from uuid import uuid4
 
 from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
@@ -8,12 +8,11 @@ from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
 if TYPE_CHECKING:
     from game_state import GameState
     from .card import Card
-    # from ..effects.base import EffSpec, ActivatedAbility
 
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
 from models.counter_tokens import Counters
-from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod
+from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod
 from models.zone import Zone
 
 
@@ -29,6 +28,7 @@ class GameCard:
         self._card_types: list[str] = self.props.card_types.copy()
         self._card_sub_types: list[str] = self.props.card_sub_types.copy()
         self._colors: str = colors or self.props.colors[:]
+        self._mana_produced: list[str] = self.props.mana_produced or []
         self.is_token: bool = is_token
         self.is_tapped: bool = False
         self.is_face_up: bool = False
@@ -39,7 +39,7 @@ class GameCard:
 
         self.zone = Zone.LIBRARY
 
-        self.damage_dealt_this_turn: int = 0  # not sure that these belong here
+        self.damage_dealt_this_turn: int = 0
         self.damage_received_this_turn: int = 0
 
         self.base_pt = (self.props.power, self.props.toughness)
@@ -119,48 +119,43 @@ class GameCard:
         return power, toughness
 
     @property
-    def card_types(self) -> list[str]:
-        """Anytime this property is requested, it calls: 1) its own base _card_types, 2) self.modifiers.type_delta,
-        3) GameState's query system for 'type'"""
-        on_card_mods = [mod for mod in self.modifiers.iter_type(TypeMod)]
-
-        event = ModQueryEvent(query='type', card=self)
-        self.game_state.event_mgr.emit(event)
-        adds, removes = set(), set()
-        for mod in on_card_mods + event.mods:
-            adds.add(mod.card_type) if mod.add_or_remove == 'add' else removes.add(mod.card_type)
-
-        return list((set(self._card_types) | adds) - removes)
+    def card_types(self):
+        return self._modified_collection("type", self._card_types, TypeMod, lambda m: [m.card_type])
 
     @property
-    def card_sub_types(self) -> list[str]:
-        """Anytime this property is requested, it calls: 1) its own base _card_sub_types,
-        2) self.modifiers.sub_type_delta, 3) GameState's query system for 'sub_type'"""
-        on_card_mods = [mod for mod in self.modifiers.iter_type(SubTypeMod)]
-
-        event = ModQueryEvent(query='sub_type', card=self)
-        self.game_state.event_mgr.emit(event)
-        adds, removes = set(), set()
-        for mod in on_card_mods + event.mods:
-            adds.add(mod.card_sub_type) if mod.add_or_remove == 'add' else removes.add(mod.card_sub_type)
-
-        return list((set(self._card_sub_types) | adds) - removes)
+    def card_sub_types(self):
+        return self._modified_collection("sub_type", self._card_sub_types, SubTypeMod, lambda m: [m.card_sub_type])
 
     @property
-    def keyword_abilities(self) -> list[str]:
-        """base_kwa = ['Flying', 'Reach'], mod adds = {'Trample'}, global removes = {'Reach', 'First Strike'}
-        returns ['Flying', 'Trample'] ...
-        Anytime this prioerty is requested, it calls: 1) its own base _base_kwa,
-        2) self.modifiers.kwa_delta, 3) GameState's query system for 'kwa'"""
-        event = ModQueryEvent(query='kwa', card=self)
+    def keyword_abilities(self):
+        return self._modified_collection("kwa", self._base_kwa, KWAMod, lambda m: [m.kwa])
+
+    @property
+    def mana_produced(self):
+        return self._modified_collection("mana_produced", self._mana_produced, ManaProdMod, lambda m: m.colors)
+
+    def _modified_collection(self, query: str, base: Iterable[str | None], mod_cls, value_getter) -> list[str]:
+        """1) Start with a base attribute;
+        2) Query ModQueryEvent listeners (which return a list of Mod)
+        3) Iterate over modifiers stored in the GameCard's modifiers attribute (a list of Mod)
+        4) Calculate the diff
+        5) Return the current list for the requested attribute
+        Ex: base = ['Flying'] -> aura grants 'First Strike' -> global mod removes all 'Flying' -> ['First Strike']"""
+        event = ModQueryEvent(query=query, card=self)
         self.game_state.event_mgr.emit(event)
-        adds, removes = set(), set()
+
+        adds = set()
+        removes = set()
+
+        for mod in self.modifiers.get(mod_cls):
+            values = value_getter(mod)
+            adds.update(values) if mod.add_or_remove == "add" else removes.update(values)
+
         for mod in event.mods:
-            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
-        for mod in self.modifiers.iter_type(KWAMod):
-            adds.add(mod.kwa) if mod.add_or_remove == 'add' else removes.add(mod.kwa)
+            values = value_getter(mod)
+            adds.update(values) if mod.add_or_remove == "add" else removes.update(values)
 
-        return list((set(self._base_kwa) | adds) - removes)
+        return list((set(base) | adds) - removes)
 
     @property
     def colors(self) -> str:

@@ -76,7 +76,7 @@ class FellwarStone(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.actions.mana import AddMana
         produceable = {mana_produced for c in gs.card_filter.on_player_board(flip(source.owner_id)).result()
-                       for mana_produced in c.props.mana_produced}
+                       for mana_produced in c.mana_produced}
         options = [AddMana(source.owner_id, gs, source, color) for color in produceable]
         if options:
             gs.pending_choice = ChoiceAction(options)
