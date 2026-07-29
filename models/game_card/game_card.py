@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
 from models.counter_tokens import Counters
-from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod
+from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod
 from models.zone import Zone
 
 
@@ -119,26 +119,23 @@ class GameCard:
         return power, toughness
 
     @property
-    def card_types(self):
+    def card_types(self) -> list[str]:
         return self._modified_collection("type", self._card_types, TypeMod, lambda m: [m.card_type])
 
     @property
-    def card_sub_types(self):
+    def card_sub_types(self) -> list[str]:
         return self._modified_collection("sub_type", self._card_sub_types, SubTypeMod, lambda m: [m.card_sub_type])
 
     @property
     def colors(self) -> list[str]:
-        """Does not currently lookup global queries"""
-        # TODO: the previous code was producing a RecursionError, so I'm no longer checking Modifiers
-        # TODO: from card colors comes in as a single str whereas mana_produced is a list[str], should prob make a list
-        return self._colors
+        return self._modified_collection("color", self._colors, ColorMod, lambda m: [m.new_color])
 
     @property
-    def keyword_abilities(self):
+    def keyword_abilities(self) -> list[str]:
         return self._modified_collection("kwa", self._base_kwa, KWAMod, lambda m: [m.kwa])
 
     @property
-    def mana_produced(self):
+    def mana_produced(self) -> list[str]:
         return self._modified_collection("mana_produced", self._mana_produced, ManaProdMod, lambda m: m.colors)
 
     def _modified_collection(self, query: str, base: Iterable[str | None], mod_cls, value_getter) -> list[str]:
@@ -148,6 +145,10 @@ class GameCard:
         4) Calculate the diff
         5) Return the current list for the requested attribute
         Ex: base = ['Flying'] -> aura grants 'First Strike' -> global mod removes all 'Flying' -> ['First Strike']"""
+
+        # TODO: 'value_getter' can go away if:
+        #  'ColorMod.new_color', 'KWAMod.kwa', etc. all used an attr "item"/"items"
+
         event = ModQueryEvent(query=query, card=self)
         self.game_state.event_mgr.emit(event)
 
