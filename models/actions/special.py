@@ -8,6 +8,7 @@ from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import StateBasedEvent
 from models.modifiers import SubTypeMod
 from models.systems.phase import Phase
+from models.utils import flip
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -414,20 +415,21 @@ class RogahhOfKherKeepTapAndStealAction(Action):
         super().__init__(p_id, gs)
         self.source = source
         self.targets = targets
-        self.owner_upon_class_creation = int(source.owner_id)  # fixes multiple flips in .play() for unknown reason
+        # self.owner_upon_class_creation = int(source.owner_id)  # fixes multiple flips in .play() for unknown reason
 
     def __repr__(self):
         return f'Tapping & transferring control of Rogahh Of Kher Keep & all Kobolds Of Kher Keep'
 
     def play(self):
+        old_controller = int(self.source.owner_id)
+        new_controller = int(flip(self.source.owner_id))
         for t in self.targets:
             t.tap()
-            original_owner_id = int(t.owner_id)
-            self.gs.event_mgr.register(OwnershipModQuery(t), self.source)
+            self.gs.event_mgr.register(OwnershipModQuery(t, lambda gs, s: new_controller), self.source)
             t.turn_entered_for_owner = self.gs.turn_mgr.turn_number
             if t.zone == Zone.BATTLEFIELD:
-                self.gs.pile_mgr.boards[original_owner_id].remove(t)
-                self.gs.pile_mgr.boards[self.source.owner_id].append(t)
+                self.gs.pile_mgr.boards[old_controller].remove(t)
+                self.gs.pile_mgr.boards[new_controller].append(t)
         self.gs.event_mgr.emit(StateBasedEvent())
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()

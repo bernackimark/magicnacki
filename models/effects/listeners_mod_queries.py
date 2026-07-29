@@ -79,15 +79,17 @@ class OwnershipModQuery(Listener):
     listens_to = ModQueryEvent
     modifies = 'ownership'
 
-    def __init__(self, stolen_card: GameCard, eot: bool = False):
+    def __init__(self, stolen_card: GameCard, new_controller_func: Callable | None = None, eot: bool = False):
         self.stolen_card = stolen_card
+        self.new_controller_func = new_controller_func
         if eot:
             self.expires = 'EOT'
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         if event.card is not self.stolen_card:
             return
-        event.mods.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
+        new_controller_id = self.new_controller_func(gs, source) if self.new_controller_func else source.owner_id
+        event.mods.append(OwnershipMod(s=source, new_owner_id=new_controller_id))
 
 class SelfPTEquals(Listener):
     """For that card, its pt = the len of the T_FUNC provided, append a PTMod for the len;
