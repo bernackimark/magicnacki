@@ -394,7 +394,7 @@ class Steal(Resolver):
             raise RuntimeError(f'{source.props.name} needs a target')
         original_owner_id = int(target.owner_id)
         target.modifiers.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
-        target.turn_entered_for_owner = gs.turn_mgr
+        target.turn_entered_for_owner = gs.turn_mgr.turn_number
         if target.zone == Zone.BATTLEFIELD:
             gs.pile_mgr.boards[original_owner_id].remove(target)
             gs.pile_mgr.boards[source.owner_id].append(target)

@@ -110,7 +110,6 @@ class RocketLauncher(Resolver):
     """{2}: Deal 1 damage to any target. Destroy Rocket Launcher at next end step.
     Activate only if you've controlled continuously since the beginning of your most recent turn."""
     def can_activate(self, gs: GameState, s: GameCard) -> bool:
-        print(s.turn_entered_for_owner, gs.turn_mgr.most_recent_turn_started[s.owner_id])
         if not s.turn_entered_for_owner:
             return False  # turn_entered_for_owner is getting set AFTER this check
         return s.turn_entered_for_owner < gs.turn_mgr.most_recent_turn_started[s.owner_id]

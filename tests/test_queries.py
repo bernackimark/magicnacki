@@ -1,12 +1,9 @@
 import unittest
 
-from models.counter_tokens import STUN
 from models.effects.base import Listener
-from models.effects.listeners_permission import UnblockableEOT, Meekstone
+from models.effects.listeners_permission import UnblockableEOT
 from models.events_all import CanCastQueryEvent, CanTargetQueryEvent
-from models.systems.phase import Phase
-from tests.setup_helpers import (add_to_battlefield, get_card,
-                                 put_onto_battlefield_last_turn, put_onto_battlefield_this_turn, TestGame)
+from tests.setup_helpers import TestGame
 
 class TestCanAttack(unittest.TestCase):
     def setUp(self):
@@ -19,24 +16,20 @@ class TestCanAttack(unittest.TestCase):
         self.assertFalse(self.gs.perm_querier.can_attack(creature))
 
     def test_haste_overrides_summoning_sickness(self):
-        # the new TestGame class .battlefield() failed with has summoning sickness
-        creature = get_card(self.gs, 'ball-lightning')
-        put_onto_battlefield_this_turn(creature, self.gs)
-        # creature = self.g.battlefield('ball-lightning')
-        self.assertTrue(creature.has_summoning_sickness)
-        self.assertTrue(self.gs.perm_querier.can_attack(creature))
+        card = self.g.battlefield('ball-lightning')
+        self.assertFalse(card.has_summoning_sickness)
+        self.assertTrue(self.gs.perm_querier.can_attack(card))
 
     def test_creature_can_attack_turn_after_etb(self):
         # the new TestGame class .battlefield() failed with has summoning sickness
-        creature = get_card(self.gs, 'serendib-efreet')
-        put_onto_battlefield_last_turn(creature, self.gs)
-        self.assertFalse(creature.has_summoning_sickness)
-        self.assertTrue(self.gs.perm_querier.can_attack(creature))
+        card = self.g.battlefield('serendib-efreet')
+        self.g.next_turn()
+        self.assertFalse(card.has_summoning_sickness)
+        self.assertTrue(self.gs.perm_querier.can_attack(card))
 
     def test_defender_cannot_attack(self):
-        # the new TestGame class .battlefield() failed with has summoning sickness
-        creature = get_card(self.gs, 'wall-of-swords')
-        put_onto_battlefield_last_turn(creature, self.gs)
+        creature = self.g.battlefield('wall-of-swords')
+        self.g.next_turn()
         self.assertFalse(creature.has_summoning_sickness)
         self.assertFalse(self.gs.perm_querier.can_attack(creature))
 
@@ -106,7 +99,7 @@ class TestCanCast(unittest.TestCase):
         self.assertFalse(self.gs.perm_querier.can_cast(card, p_id=0))
 
     def test_cannot_cast_creature_without_correct_mana(self):
-        card = get_card(self.gs, 'serendib-efreet', 0)
+        card = self.g.card('serendib-efreet')
         self.g.mana('GR')
         self.assertFalse(self.gs.perm_querier.can_cast(card, p_id=0))
 

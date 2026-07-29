@@ -2,21 +2,13 @@ from __future__ import annotations
 from dotenv import load_dotenv
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction
-from models.actions.combat import AssignBlocker
 from models.actions.end_step_pass_turn import PassTheTurn
-from models.actions.stack_accept_counter import AcceptAction
-from models.cost import Cost
 from models.effects.base import ActivatedAbility, EffSpec
 from models.systems.phase import Phase
-from models.utils import flip
-
-if TYPE_CHECKING:
-    from game_state import GameState
-
 from data.user_data import get_user
 from engine import Engine, deflate_costs
 from models.constants import Mulligan
@@ -31,61 +23,6 @@ from renderers import ConsoleRenderer
 
 load_dotenv()
 GAME_TESTING_SETTINGS_PATH = Path(os.getenv('GAME_TESTING_SETTINGS'))
-
-
-def create_engine_and_universe(file_path_str: str = GAME_TESTING_SETTINGS_PATH,
-                               settings_key: str = 'engine_testing_setup_a',
-                               test_mode: bool = True) -> tuple[Engine, CardUniverse]:
-    """From provided path string & key, pull JSON; create CardUniverse; create decks;
-    deflate casting costs, if applicable; set rules; create & return a fresh Engine oboject
-    """
-    import json
-    with open(file_path_str, 'r') as f:
-        data = json.load(f)
-        data = data[settings_key]
-
-    universe = CardUniverse(data['universe'])
-
-    decks = [Deck.from_json(deck_id, str(i)) for i, deck_id in enumerate((data['deck_0'], data['deck_1']))]
-
-    # if deflate_c_costs:
-    #     deflate_casting_costs(decks)
-
-    # create players
-    players = []
-    for i, user_id in enumerate(data['users']):
-        user_data = get_user(user_id)
-        player = ConsolePlayer(i, user_data.handle, user_data.is_bot)
-        players.append(player)
-
-    # would put in the testing JSON, but not sure how to convert mulligan to enum member
-    rules = {'mulligan': Mulligan.LONDON_WITH_GENTLEMENS, 'best_of': 3}
-
-    eng = Engine(players=players, renderer=ConsoleRenderer(),
-                 match_manager=MatchManager(len(players), rules, decks, universe.token_cards,
-                                            first_to_act=data['starting_deck']))
-    if test_mode:
-        deflate_costs(eng.match_manager.deck_game_cards)
-    return eng, universe
-
-def get_card(gs: GameState, slug: str, player_id: int = 0) -> GameCard:
-    cu = CardUniverse(["lea", "leb", "2ed", "arn", "atq", "3ed", "leg", "drk"])
-    game_card = GameCard(cu[slug], player_id)
-    game_card.game_state = gs
-    gs.pile_mgr.libraries[player_id].append(game_card)
-    return game_card
-
-def add_to_battlefield(card: GameCard, gs: GameState):
-    gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, cause='cast')
-
-def put_onto_battlefield_this_turn(card: GameCard, gs: GameState):
-    gs.pile_mgr.boards[card.owner_id].append(card)
-    card.turn_entered_under_current_controller = gs.turn_mgr.turn_number
-
-def put_onto_battlefield_last_turn(card: GameCard, gs: GameState):
-    gs.pile_mgr.boards[card.owner_id].append(card)
-    gs.turn_mgr.most_recent_turn_started[card.owner_id] += 1
-    card.turn_entered_for_owner = gs.turn_mgr.most_recent_turn_started[card.owner_id] - 1
 
 
 class TestGame:
