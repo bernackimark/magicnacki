@@ -2,14 +2,14 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Callable, Any
 
-from models.events_all import ModQueryEvent
+from models.events_all import ModQueryEvent, Event
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
 from models.effects.base import Listener
-from models.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod
+from models.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod, OwnershipMod
 from models.utils import flip
 
 """
@@ -73,6 +73,21 @@ class KWAApplies(Listener):
             applies_to = [applies_to]
         if event.card in applies_to:
             event.mods.append(KWAMod(s=source, item=self.kwa_added, add_or_remove=self.add_or_remove))
+
+class OwnershipModQuery(Listener):
+    """Returns an OwnershipMod where new owner is the source owner"""
+    listens_to = ModQueryEvent
+    modifies = 'ownership'
+
+    def __init__(self, stolen_card: GameCard, eot: bool = False):
+        self.stolen_card = stolen_card
+        if eot:
+            self.expires = 'EOT'
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        if event.card is not self.stolen_card:
+            return
+        event.mods.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
 
 class SelfPTEquals(Listener):
     """For that card, its pt = the len of the T_FUNC provided, append a PTMod for the len;

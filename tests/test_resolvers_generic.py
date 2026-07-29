@@ -113,6 +113,19 @@ class TestResolversGeneric(unittest.TestCase):
         GraveyardToExileInItsEntirety().resolve(self.gs, None, 0)
         self.assertEqual(0, len(gy))
 
+    def test_steal(self):
+        card = self.g.battlefield('aladdin')
+        aa = card.activated_abilities[0]
+        self.g.mana('RRRR')
+        target = self.g.battlefield('sol-ring', owner=1)
+        self.g.activate_ability(aa, target)
+        self.assertEqual(0, target.owner_id)
+        self.assertIn(target, self.gs.boards[0])
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual(1, target.owner_id)
+        self.assertIn(target, self.gs.boards[1])
+
     def test_take_another_turn(self):
         time_walk = self.g.card('time-walk')
         eff = TakeAnotherTurn()

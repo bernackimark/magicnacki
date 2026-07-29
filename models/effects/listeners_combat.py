@@ -9,6 +9,7 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
+from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, \
     CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent, StateBasedEvent, CombatBeginEvent, Event
 from models.modifiers import PTMod, KWAMod, OwnershipMod
@@ -280,7 +281,7 @@ class TheWretchedSteal(Listener):
             if blocker not in gs.card_filter.in_play().result():
                 continue
             original_owner_id = int(blocker.owner_id)
-            blocker.modifiers.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
+            gs.event_mgr.register(OwnershipModQuery(blocker), source)
             blocker.turn_entered_for_owner = gs.turn_mgr
             gs.pile_mgr.boards[original_owner_id].remove(blocker)
             gs.pile_mgr.boards[source.owner_id].append(blocker)

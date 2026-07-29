@@ -61,7 +61,7 @@ class OwnershipMod(Modifier):
     new_owner_id: int
 
     def __repr__(self):
-        return f'being stolen by {self.s.props.name}'
+        return f' stolen by {self.s.props.name}'
 
 @dataclass
 class PTMod(Modifier):

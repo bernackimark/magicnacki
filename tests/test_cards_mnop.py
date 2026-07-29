@@ -8,6 +8,7 @@ from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
 from models.effects.listeners_generic import RedirectNextDamageFromCardToOwnerEOT
+from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -190,6 +191,12 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.next_turn()
         self.g.activate_ability(aa, target)
         self.assertEqual(0, target.owner_id)
+        print('-----')
+        for k, v in self.gs.event_mgr.event_listeners.items():
+            print(k, v)
+
+        # TODO: the initial steal works fine
+        #  NEXT: the next assertEqual fails because we need to unregister the Listener upon tap
 
         self.g.next_turn()
         self.assertTrue(any(isinstance(a, Untap) for a in self.gs.pending_choice.get_actions()))

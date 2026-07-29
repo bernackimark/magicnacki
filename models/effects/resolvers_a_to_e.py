@@ -10,7 +10,7 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem
-from models.effects.listeners_mod_queries import ArmyOfAllahEOT
+from models.effects.listeners_mod_queries import ArmyOfAllahEOT, OwnershipModQuery
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
 from models.systems.phase import Phase
@@ -228,7 +228,7 @@ class Disharmony(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         target.untap()
         gs.combat_mgr.remove_from_combat(target)
-        target.modifiers.append(OwnershipMod(source.owner_id, s=source, expires='EOT'))
+        gs.event_mgr.register(OwnershipModQuery(target, eot=True), source)
 
 class DivineOffering(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):

@@ -79,11 +79,18 @@ class GameCard:
 
     @property
     def owner_id(self) -> int:
-        if not self.modifiers:
+        # switching from OwnershipMod stored on self.modifiers (and needing a release Listener)
+        # if not self.modifiers:
+        #     return self._owner_id
+        # for m in self.modifiers.get(OwnershipMod, reverse=True):
+        #     return m.new_owner_id
+
+        # to this: query for OwnershipMod; if any found, return the last Mod's owner; else return the original owner
+        event = ModQueryEvent(query='ownership', card=self)
+        self.game_state.event_mgr.emit(event)
+        if not event.mods:
             return self._owner_id
-        for m in self.modifiers.get(OwnershipMod, reverse=True):
-            return m.new_owner_id
-        return self._owner_id
+        return event.mods[-1].new_owner_id
 
     @property
     def aas(self) -> list[EffSpec | None]:

@@ -50,6 +50,20 @@ class TestCardsDEF(unittest.TestCase):
         self.g.combat(attacker, host)
         self.assertIn(host, self.gs.pile_mgr.boards[0])
 
+    def test_disharmony(self):
+        """Cast this spell only during combat before blockers are declared.
+        Untap target attacking creature and remove it from combat. Gain control of that creature EOT."""
+        card = self.g.hand('disharmony')
+        attacker = self.g.battlefield('grizzly-bears', owner=1)
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(attacker)
+        self.g.cast_and_accept(card, attacker, card.abilities[0])
+        self.assertEqual(0, attacker.owner_id)
+
+        self.g.next_turn(True)
+        self.assertEqual(1, attacker.owner_id)
+
     def test_dwarven_warriors(self):
         """{T}: Target creature with power 2 or less can't be blocked this turn"""
         card = self.g.battlefield('dwarven-warriors')

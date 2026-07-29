@@ -6,6 +6,8 @@ from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
+from models.effects.listeners_mod_queries import OwnershipModQuery
+from models.systems.event import ListenerEntry
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -18,7 +20,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent
 from models.modifiers import OwnershipMod, PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -489,12 +491,12 @@ class ReturnToOwnerOnUntap(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapCardEvent):
         if source is not event.card:
             return
-        for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.modifiers.get(OwnershipMod, reverse=True):
-                c.modifiers.remove(mod)
-                gs.pile_mgr.boards[source.owner_id].remove(c)
-                gs.pile_mgr.boards[flip(source.owner_id)].append(c)
-                return
+        steals: list[OwnershipModQuery] = [mqe.effect for mqe in gs.event_mgr.event_listeners.get(ModQueryEvent)
+                                           if isinstance(mqe.effect, OwnershipModQuery) and mqe.source is source]
+        for steal in list(steals):
+            gs.event_mgr.unregister_specific_effect(steal)
+            gs.pile_mgr.boards[source.owner_id].remove(steal.stolen_card)
+            gs.pile_mgr.boards[flip(source.owner_id)].append(steal.stolen_card)
 
 class UntapRemovesPumpFromAnotherCard(Listener):
     """If an effect targeted another card and its duration was for as long as the source is tapped,
@@ -654,7 +656,7 @@ class LTBTandem(Listener):
             gs.pile_mgr.destroy(tandem_card, allow_regeneration=False)
 
 class ReturnToOwnerOnLTB(Listener):
-    """Although the OnwershipMod will be removed upon LTB; need to transfer the stolen GameCard across boards"""
+    """Is generally called from Steal() Resolver; shouldn't be much need to use directly in slug-effect map"""
     listens_to = ZoneChangeEvent
 
     def __init__(self, new_zone: Zone = None):
@@ -663,25 +665,9 @@ class ReturnToOwnerOnLTB(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
         if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
             return
-        for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.auras:
-                if isinstance(mod, OwnershipMod):
-                    gs.pile_mgr.boards[source.owner_id].remove(c)
-                    gs.pile_mgr.boards[flip(source.owner_id)].append(c)
-            for mod in c.modifiers.get(OwnershipMod, reverse=True):
-                c.modifiers.remove(mod)
-                gs.pile_mgr.boards[source.owner_id].remove(c)
-                gs.pile_mgr.boards[flip(source.owner_id)].append(c)
-                break
-
-class StealCardLeaves(Listener):
-    """You control enchanted creature; must return if Control Magic leaves board"""
-    listens_to = ZoneChangeEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        print(source, event, f'The host {event.card.host} belongs to player #{event.card.host.owner_id if event.card.host else "no host"}')
-        if source is not event.card or event.from_zone != Zone.BATTLEFIELD or event.to_zone == Zone.BATTLEFIELD:
-            return
-        host = event.card.host
-        Steal().resolve(gs, source, host)
-        print('I think I returned control to', flip(host.owner_id))
+        steals: list[OwnershipModQuery] = [mqe.effect for mqe in gs.event_mgr.event_listeners.get(ModQueryEvent)
+                                           if isinstance(mqe.effect, OwnershipModQuery) and mqe.source is source]
+        for steal in list(steals):
+            gs.event_mgr.unregister_specific_effect(steal)
+            gs.pile_mgr.boards[source.owner_id].remove(steal.stolen_card)
+            gs.pile_mgr.boards[flip(source.owner_id)].append(steal.stolen_card)

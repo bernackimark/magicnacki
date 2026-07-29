@@ -3,7 +3,7 @@ from __future__ import annotations
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     voodoo_doll_x, max_x_from_printed_card
 from .card_filter_funcs import T_FUNCS, C_FUNCS
-from models.constants import COLOR_LETTERS, BASIC_LANDS
+from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
@@ -24,7 +24,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDama
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue
 from ..effects.listeners_state_change import GlobalSac
-from ..effects.listeners_zone_change import Revelation, StanggOnLeave, TawnossCoffinZoneChange, TheWretchedUnsteal
+from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange, TheWretchedUnsteal
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
@@ -41,8 +41,7 @@ from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeEl
     TheWretchedSteal
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
     AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
-    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, \
-    PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
+    DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
     DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, PreventAllDamageToEOT, PreventNextDamageTo, \
     PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments, \
@@ -50,8 +49,8 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
     WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
     UnblockableEOT, CantCastAppliesTo
-from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PTModEqualsManaValue, \
-    PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, Transmutation
+from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEquals, \
+    KWAApplies, PumpAppliesEOT, Transmutation
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -142,8 +141,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
     'rubinia-soulsinger': [Activated('T', Steal(), T_FUNCS['opp_creatures']),
-                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap()),
-                           Triggered(ReturnToOwnerOnLTB())],
+                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap())],
     'rukh-egg': [Triggered(RukhEgg())],
     'sacrifice': [Spell(SacrificeOnCast(), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])])],
     'safe-haven': [Activated('2T', SafeHaven(), T_FUNCS['your_creatures']), Triggered(SafeHavenUpkeep())],
@@ -202,7 +200,7 @@ MAP: dict[str, list[EffSpec]] = {
                         for c in COLOR_LETTERS],
     'stangg': [Spell(Stangg())],
     'stasis': [Triggered(PayManaOrSacAtUpkeep('U')), Static(SkipUntapPhase())],
-    'steal-artifact': [Triggered(ReturnToOwnerOnLTB()), Spell(Steal(), T_FUNCS['opp_artifacts'])],
+    'steal-artifact': [Spell(Steal(), T_FUNCS['opp_artifacts'])],
     'stone-calendar': [Static(StoneCalendar())],
     'stone-giant': [Activated('T', StoneGiant(), T_FUNCS['stone_giant'])],
     'stone-rain': [Spell(Destroy(), T_FUNCS['lands'])],

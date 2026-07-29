@@ -32,8 +32,7 @@ from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfT
 from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
     ClockworkCombatEnd
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
-    UntapRemovesPumpFromAnotherCard, OptionalUntap, \
-    DealDamageOnHostUpkeep, ReturnToOwnerOnLTB, PayManaOrSacAtUpkeep, \
+    UntapRemovesPumpFromAnotherCard, OptionalUntap, DealDamageOnHostUpkeep, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
     PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep, AddCounterAtTargetUpkeep
 from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
@@ -58,7 +57,7 @@ MAP: dict[str, list[EffSpec]] = {
                          Spell(PreventNextDamageTo(), T_FUNCS['all_creatures_and_players'],
                                max_x_func=max_x_from_printed_card,
                                text="Prevent the next X damage that would be dealt to any target this turn")],
-    'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts']), Triggered(ReturnToOwnerOnLTB())],
+    'aladdin': [Activated('1RRT', Steal(), T_FUNCS['opp_artifacts'])],
     'aladdins-ring': [Activated('8T', DealDamage(4), T_FUNCS['all_creatures_and_players'])],
     'ali-baba': [Activated('R', TapCardEffect(), T_FUNCS['walls'])],
     'ali-from-cairo': [Static(AliFromCairo())],
@@ -201,7 +200,7 @@ MAP: dict[str, list[EffSpec]] = {
     'concordant-crossroads': [Static(KWAApplies(T_FUNCS['creatures'], 'add', 'Haste'))],
     'consecrate-land': [Spell(HostCantBeTargetedByAuras(), T_FUNCS['lands'])],
     'conservator': [Activated('3T', PreventNextDamageTo(protected=T_FUNCS['owner']))],
-    'control-magic': [Spell(Steal(), T_FUNCS['opp_creatures']), Triggered(ReturnToOwnerOnLTB())],
+    'control-magic': [Spell(Steal(), T_FUNCS['opp_creatures'])],
     'conversion': [Triggered(PayManaOrSacAtUpkeep('WW')), Static(Conversion())],
     'copper-tablet': [Static(DealDamageOnEveryUpkeep(T_FUNCS['in_turn_player'], 1))],
     'copy-artifact': [Spell(CopyArtifact())],

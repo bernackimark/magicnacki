@@ -1,6 +1,4 @@
 from __future__ import annotations
-
-import copy
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
 from models.actions.ability_pipeline import AbilityPipeline
@@ -14,9 +12,9 @@ from models.choice_actions_all import ChoiceAction
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
-from models.effects.listeners_mod_queries import PumpAppliesEOT, AddCreatureType, PTModEqualsManaValue
+from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
-from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, OwnershipMod, PTMod
+from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod
 from models.utils import flip
 from models.zone import Zone
 
@@ -385,21 +383,29 @@ class SetColor(Resolver):
         target.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', item=self.color))
 
 class Steal(Resolver):
-    def __init__(self, new_zone: Zone = None):
+    """Registers an OwnershipModQuery.  Default behavior is to transfer the card across boards upon stealer's LTB"""
+    def __init__(self, new_zone: Zone = None, return_on_source_ltb: bool = True):
         self.new_zone = new_zone or Zone.BATTLEFIELD
+        self.return_on_source_ltb = return_on_source_ltb
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         """If the zone is going from battlefield to battlefield, then move_card() will not trigger"""
+        from models.effects.listeners_generic import ReturnToOwnerOnLTB
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         original_owner_id = int(target.owner_id)
-        target.modifiers.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
+        gs.event_mgr.register(OwnershipModQuery(target), source)
+
         target.turn_entered_for_owner = gs.turn_mgr.turn_number
         if target.zone == Zone.BATTLEFIELD:
             gs.pile_mgr.boards[original_owner_id].remove(target)
             gs.pile_mgr.boards[source.owner_id].append(target)
         else:
             gs.pile_mgr.move_card(target, self.new_zone, cause='steal')
+
+        if self.return_on_source_ltb:
+            gs.event_mgr.register(ReturnToOwnerOnLTB(), source)
+
         gs.event_mgr.emit(StateBasedEvent())
 
 class TapCardEffect(Resolver):

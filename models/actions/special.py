@@ -4,9 +4,11 @@ import copy
 from typing import TYPE_CHECKING
 
 from models.counter_tokens import CounterType, WIND
-from models.modifiers import OwnershipMod, SubTypeMod
+from models.effects.listeners_mod_queries import OwnershipModQuery
+from models.events_all import StateBasedEvent
+from models.modifiers import SubTypeMod
 from models.systems.phase import Phase
-from models.utils import flip
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -420,7 +422,13 @@ class RogahhOfKherKeepTapAndStealAction(Action):
     def play(self):
         for t in self.targets:
             t.tap()
-            t.modifiers.append(OwnershipMod(flip(self.owner_upon_class_creation), s=self.source))
+            original_owner_id = int(t.owner_id)
+            self.gs.event_mgr.register(OwnershipModQuery(t), self.source)
+            t.turn_entered_for_owner = self.gs.turn_mgr.turn_number
+            if t.zone == Zone.BATTLEFIELD:
+                self.gs.pile_mgr.boards[original_owner_id].remove(t)
+                self.gs.pile_mgr.boards[self.source.owner_id].append(t)
+        self.gs.event_mgr.emit(StateBasedEvent())
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
         elif self.gs.pending_choice:
