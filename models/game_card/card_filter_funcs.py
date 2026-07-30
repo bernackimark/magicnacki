@@ -13,6 +13,7 @@ from models.utils import flip
 
 A_FUNCS: [str, Callable[[GameState, GameCard], tuple[int | None]]] = {
     'all_players': lambda gs, s: (0, 1),
+    'host_owner': lambda gs, s: (s.host.owner_id, ),
     'opponent': lambda gs, s: (flip(s.owner_id), ),
 }
 

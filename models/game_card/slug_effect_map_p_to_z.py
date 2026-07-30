@@ -17,7 +17,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB, Stangg, WarBarge
+    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
@@ -30,7 +30,7 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
-    RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap
+    RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, VoodooDollEndStep, WhirlingDervish
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard
 from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
@@ -68,7 +68,8 @@ MAP: dict[str, list[EffSpec]] = {
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
     'phantasmal-forces': [Triggered(PayManaOrSacAtUpkeep('U'))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(), T_FUNCS['lands'])],
-    'phyrexian-gremlins': [Triggered(OptionalUntap())],  # more to code
+    'phyrexian-gremlins': [Triggered(OptionalUntap()), Activated('T', PhyrexianGremlinsTap(), T_FUNCS['artifacts']),
+                           Triggered(PhyrexianGremlinsUntaps())],
     'piety': [Spell(PumpAppliesEOT(T_FUNCS['blockers'], (0, 3)))],
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter())],

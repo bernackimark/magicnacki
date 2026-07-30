@@ -305,6 +305,23 @@ class TestCardsMNOP(unittest.TestCase):
         convert_to_swamp.play()
         self.assertIn(target, self.gs.card_filter.on_player_board(1).swamps().result())
 
+    def test_phyrexian_gremlins(self):
+        """... {T}: Tap target artifact.
+        It doesn't untap during its controller's untap step so long as PG remains tapped."""
+        card = self.g.battlefield('phyrexian-gremlins')
+        aa = card.activated_abilities[0]
+        target = self.g.battlefield('sol-ring', owner=1)
+        self.g.activate_ability(aa, target)
+        self.assertTrue(target.is_tapped)
+
+        self.g.next_turn(True)
+        self.assertTrue(target.is_tapped)
+        card.untap()
+
+        self.g.next_turn()
+        self.assertFalse(target.is_tapped)
+
+
     def test_power_leak(self):
         """At host's upkeep, PL deals 2 damage to host owner. Host may pay X mana to prevent X of that damage."""
         card = self.g.battlefield('power-leak')

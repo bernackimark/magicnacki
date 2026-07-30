@@ -3,7 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.counter_tokens import STUN
 from models.effects.listeners_generic import PreventNextDamageTo, TakeAnotherTurn
-from models.effects.resolvers_generic import GraveyardToExileInItsEntirety
+from models.effects.resolvers_generic import GraveyardToExileInItsEntirety, AllWalksRemoved
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -31,6 +31,17 @@ class TestResolversGeneric(unittest.TestCase):
         self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.UNTAP)
         self.assertFalse(targeted.is_tapped)
+
+    def test_all_walks_removed(self):
+        card = self.g.battlefield('hammerheim')
+        aa = card.activated_abilities[1]  # remove all walks
+        islandwalker = self.g.battlefield('segovian-leviathan')
+        self.assertIn('Islandwalk', islandwalker.keyword_abilities)
+        self.g.activate_ability(aa, islandwalker)
+        self.assertNotIn('Islandwalk', islandwalker.keyword_abilities)
+
+        self.g.next_turn()
+        self.assertIn('Islandwalk', islandwalker.keyword_abilities)
 
     def test_counter_an_ability_action(self):
         card = self.g.hand('counterspell')

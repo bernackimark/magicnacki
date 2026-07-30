@@ -107,11 +107,17 @@ class DoesntUntapAtUntap(Listener):
     """Card does not untap during its owner's untap phase"""
     listens_to = CanUntapAtUntapPhaseQueryEvent
 
-    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
+    def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]] = None,
+                 target: GameCard | None = None):
         self.card_filter_func = card_filter_func
+        self.target = target
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        if not self.card_filter_func and self.target is None:
+            self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
-        affected_cards = self.card_filter_func(gs, source)
+        affected_cards = self.card_filter_func(gs, source) if self.target is None else self.target
         if not isinstance(affected_cards, list):
             affected_cards = [affected_cards]
         if gs.player_turn_idx == event.card.owner_id and event.card in affected_cards:
@@ -152,7 +158,6 @@ class HostCantAttack(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
         if source.host is event.attacker:
             event.permission = False
-
 
 class HostCantBeTargetedByAuras(Listener):
     """Host can't host an aura"""

@@ -17,7 +17,8 @@ from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageBy, \
     BounceAtEndStep, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack, LTBTandem
-from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn
+from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn, \
+    DoesntUntapAtUntap
 from models.effects.resolvers_generic import Reveal, CreateTokenCreature
 from models.modifiers import KWAMod, PTMod
 from models.utils import flip
@@ -33,6 +34,14 @@ class PhantasmalTerrain(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         options = [SubTypeReplacement(source.owner_id, gs, source, target, land_type) for land_type in BASIC_LANDS]
         gs.pending_choice = ChoiceAction(options)
+
+class PhyrexianGremlinsTap(Resolver):
+    """{T}: Tap target artifact. It doesn't untap during its controller's untap step so long as PG remains tapped."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not target:
+            raise ValueError(f'{source.props.name} needs a target')
+        target.tap()
+        gs.event_mgr.register(DoesntUntapAtUntap(target=target), source)
 
 class PrimalClay(Resolver):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,

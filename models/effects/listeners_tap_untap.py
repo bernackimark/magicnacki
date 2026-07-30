@@ -5,7 +5,7 @@ from models.actions.special import TimeVaultSkipTurnAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
-from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, Event
+from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, Event, CanUntapAtUntapPhaseQueryEvent
 from models.modifiers import KWAMod
 
 if TYPE_CHECKING:
@@ -149,6 +149,19 @@ class WildGrowth(Listener):
 
 
 # --- UNTAP CARD EVENT ---
+class PhyrexianGremlinsUntaps(Listener):
+    """{T}: Tap target artifact. It doesn't untap during its controller's untap step so long as PG remains tapped."""
+    listens_to = UntapCardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapCardEvent) -> None:
+        if event.card is not source:
+            return
+        cant_untap_listeners = gs.event_mgr.event_listeners.get(CanUntapAtUntapPhaseQueryEvent, [])
+        for listener in cant_untap_listeners:
+            if listener.source is source:
+                gs.event_mgr.unregister_specific_effect(listener.effect)
+                break
+
 class TawnossCoffinUntap(Listener):
     """When this artifact ... becomes untapped, return its exiled card to the battlefield tapped with the noted number &
      kind of counters on it and re-attach all auras.

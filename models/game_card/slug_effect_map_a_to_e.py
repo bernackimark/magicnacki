@@ -145,9 +145,8 @@ MAP: dict[str, list[EffSpec]] = {
     'boris-devilboon': [Activated('2BRTT', CreateTokenCreature('minor-demon'))],
     'bottle-of-suleiman': [Activated('1', BottleOfSuleiman(), extra_costs=[SacSelfCost()])],
     'braingeyser': [Spell(Braingeyser(), T_FUNCS['all_players'])],
-    'brainwash':
-        # WARNING: the AA would generally be activated by the opponent normally placed on an opponent creature
-        [Spell(HostCantAttack(), T_FUNCS['creatures']), Activated('3', HostCanAttack(T_FUNCS['host']))],
+    'brainwash': [Spell(HostCantAttack(), T_FUNCS['creatures']),
+                  Activated('3', HostCanAttack(T_FUNCS['host']), allowed_activators=A_FUNCS['host_owner'])],
     'brass-man': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                   Triggered(PayManaToUntapUpkeep('1', T_FUNCS['self']))],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
