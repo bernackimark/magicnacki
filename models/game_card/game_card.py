@@ -3,17 +3,15 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Iterable
 from uuid import uuid4
 
-from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
-
 if TYPE_CHECKING:
     from game_state import GameState
     from .card import Card
 
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
+from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
 from models.counter_tokens import Counters
-from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
-    OwnershipMod
+from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod
 from models.zone import Zone
 
 
@@ -21,15 +19,17 @@ class GameCard:
     def __init__(self, props: Card, orig_owner_id: int, is_token: bool = False):
         self.id_ = str(uuid4())
         self.props: Card = props
-        self._orig_owner_id: int = orig_owner_id
-        self._owner_id: int = orig_owner_id
-        self.game_state: GameState | None = None
-        self.turn_entered_for_owner: int | None = None
-        self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
         self._card_types: list[str] = self.props.card_types.copy()
         self._card_sub_types: list[str] = self.props.card_sub_types.copy()
         self._colors: list[str] = self.props.colors
         self._mana_produced: list[str] = self.props.mana_produced or []
+        self.base_pt = (self.props.power, self.props.toughness)
+        self._base_kwa = tuple(self.props.keyword_abilities)
+        self.casting_cost: str = self.props.casting_cost[:] if self.props.casting_cost else None
+        self._orig_owner_id: int = orig_owner_id
+
+        self.game_state: GameState | None = None
+        self.turn_entered_for_owner: int | None = None
         self.is_token: bool = is_token
         self.is_tapped: bool = False
         self.is_face_up: bool = False
@@ -42,9 +42,6 @@ class GameCard:
 
         self.damage_dealt_this_turn: int = 0
         self.damage_received_this_turn: int = 0
-
-        self.base_pt = (self.props.power, self.props.toughness)
-        self._base_kwa = tuple(self.props.keyword_abilities)
 
         self.extras: dict[str, Any] = {}  # declarations of X, color upon entry, etc
 
@@ -76,21 +73,6 @@ class GameCard:
     @property
     def orig_owner_id(self) -> int:
         return self._orig_owner_id
-
-    @property
-    def owner_id(self) -> int:
-        # switching from OwnershipMod stored on self.modifiers (and needing a release Listener)
-        # if not self.modifiers:
-        #     return self._owner_id
-        # for m in self.modifiers.get(OwnershipMod, reverse=True):
-        #     return m.new_owner_id
-
-        # to this: query for OwnershipMod; if any found, return the last Mod's owner; else return the original owner
-        event = ModQueryEvent(query='ownership', card=self)
-        self.game_state.event_mgr.emit(event)
-        if not event.mods:
-            return self._owner_id
-        return event.mods[-1].new_owner_id
 
     @property
     def aas(self) -> list[EffSpec | None]:
@@ -132,6 +114,16 @@ class GameCard:
         return power, toughness
 
     @property
+    def owner_id(self) -> int:
+        """Query for registered ModQueryEvents query='ownership';
+        if none found, return owner id assigned during instantiation; else, return the most recent new owner"""
+        event = ModQueryEvent(query='ownership', card=self)
+        self.game_state.event_mgr.emit(event)
+        if not event.mods:
+            return self.orig_owner_id
+        return event.mods[-1].new_owner_id
+
+    @property
     def card_types(self) -> list[str]:
         return self._modified_collection("type", self._card_types, TypeMod)
 
@@ -153,12 +145,8 @@ class GameCard:
 
     def _modified_collection(self, query: str, base: Iterable[str | None],
                              mod_cls: type[CollectionMod]) -> list[str]:
-        """1) Start with a base attribute;
-        2) Query ModQueryEvent listeners (which return a list of Mod)
-        3) Iterate over modifiers stored in the GameCard's modifiers attribute (a list of Mod)
-        4) Calculate the diff
-        5) Return the current list for the requested attribute
-        Ex: base = ['Flying'] -> aura grants 'First Strike' -> global mod removes all 'Flying' -> ['First Strike']"""
+        """Ex: base = ['Flying'] -> aura in self.modifiers grants 'First Strike' ->
+        global ModQueryEvent removes 'Flying' from all creatures -> ['First Strike']"""
 
         event = ModQueryEvent(query=query, card=self)
         self.game_state.event_mgr.emit(event)
@@ -203,6 +191,13 @@ class GameCard:
             self.is_face_up = True
 
     @property
+    def rampage_amt(self) -> int | None:
+        for kwa in self.keyword_abilities:
+            if 'Rampage' in kwa:
+                return int(kwa[-1])
+        return None
+
+    @property
     def is_artifact(self) -> bool:
         return 'Artifact' in self.card_types
 
@@ -245,10 +240,3 @@ class GameCard:
     @property
     def is_white(self) -> bool:
         return 'W' in self.colors
-
-    @property
-    def rampage_amt(self) -> int | None:
-        for kwa in self.keyword_abilities:
-            if 'Rampage' in kwa:
-                return int(kwa[-1])
-        return None
