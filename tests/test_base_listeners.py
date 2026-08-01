@@ -34,7 +34,7 @@ class TestBaseListeners(unittest.TestCase):
 
         self.gs.pile_mgr.destroy(island)
         self.gs.event_mgr.emit(StateBasedEvent())
-        # self.assertIn(card, self.gs.graveyards[0])
+        self.assertIn(card, self.gs.graveyards[0])
 
 
 if __name__ == '__main__':

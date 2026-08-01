@@ -1,14 +1,11 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
-from models.effects.listeners_generic import RedirectNextDamageFromCardToOwnerEOT
-from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -21,8 +18,8 @@ class TestCardsMNOP(unittest.TestCase):
     def test_magnetic_mountain(self):
         """Blue creatures don't untap during their controllers' untap steps.
         At each player's upkeep, that player may choose any # of their tapped blue creatures & pay {4} to untap it."""
-        card = self.g.battlefield('magnetic-mountain')
-        blue1 = self.g.battlefield('air-elemental')
+        self.g.battlefield('magnetic-mountain')
+        blue1 = self.g.battlefield('serendib-efreet')
         blue2 = self.g.battlefield('merfolk-of-the-pearl-trident')
         non_blue = self.g.battlefield('grizzly-bears')
         self.g.mana('UUUUUUUU')

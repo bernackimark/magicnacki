@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Callable, Any
+from typing import TYPE_CHECKING, Callable, Any, Optional
 
 from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.destroy_sac_regen import Sac
@@ -30,7 +30,7 @@ class DestroyCombatantAtCombatEnd(Listener):
     if such a combat is found, all matching creatures against Cockatrice would be destroyed at combat end"""
     listens_to = BlockEvent
 
-    def __init__(self, destroying_combatant_func: Callable, destroyable_func: Callable | None = None):
+    def __init__(self, destroying_combatant_func: Callable, destroyable_func: Optional[Callable] = None):
         self.destroying_combatant_func = destroying_combatant_func
         self.destroyable_func = destroyable_func
 
@@ -264,8 +264,8 @@ class RedirectNextDamageToTarget(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, protected_func: Callable, new_target_func: Callable, damage_dealer_func: Callable | None = None,
-                 redirectable_amt: int | None = None):
+    def __init__(self, protected_func: Callable, new_target_func: Callable,
+                 damage_dealer_func: Optional[Callable] = None, redirectable_amt: int | None = None):
         self.protected_func = protected_func
         self.new_target_func = new_target_func
         self.damage_dealer_func = damage_dealer_func
@@ -298,7 +298,7 @@ class RedirectNextDamageFromCardToOwnerEOT(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, protected_card_func: Callable | None = None, redirectable_amt: int | None = None):
+    def __init__(self, protected_card_func: Optional[Callable] = None, redirectable_amt: int | None = None):
         self.protected_card_func = protected_card_func
         self.redirectable_amt = redirectable_amt
         self.target = None
@@ -616,7 +616,7 @@ class PayManaToUntapUpkeep(Listener):
         gs.pending_choice = ChoiceAction(options, may=True)
 
 class RemoveCounterAtTargetUpkeep(Listener):
-    """At target owner's upkeep, put counter(s) on this card"""
+    """At target owner's upkeep, remove counter(s) from this card"""
     listens_to = UpkeepEvent
 
     def __init__(self, target: GameCard, counter_type: CounterType, amt: int = 1):

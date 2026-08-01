@@ -7,7 +7,6 @@ from models.actions.base import Action
 from models.actions.draw_discard import DiscardCards
 from models.actions.special import PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
-from models.actions.tap_untap import PayManaToUntapAction, LeaveTapped
 from models.choice_actions_all import ChoiceAction
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
@@ -431,16 +430,6 @@ class UntapCardsEffect(Resolver):
             raise ValueError(f'{source.props.name} needs a list of targets')
         for t in target:
             t.untap()
-
-class UntapForManaEffect(Resolver):
-    def __init__(self, mana_cost: str):
-        self.mana_cost = mana_cost
-
-    def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
-        if t is None:
-            t = s
-        options = [PayManaToUntapAction(s.owner_id, gs, s, t, self.mana_cost), LeaveTapped(s.owner_id, gs, s)]
-        gs.pending_choice = ChoiceAction(options)
 
 class XZeroOneCountersByManaValue(Resolver):
     """Put X +0/+1 counters on target creature, where X is that creature's mana value"""
