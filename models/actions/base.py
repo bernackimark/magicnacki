@@ -20,6 +20,8 @@ class Action(ABC):
         ...
 
     def finish(self, next_choice: ChoiceAction | None = None) -> None:
+        """This is default behavior chosen by most Actions;
+        those with successive ChoiceActions would implement their own logic"""
         if next_choice:
             self.gs.pending_choice = next_choice
         elif self.gs.pending_choice:
