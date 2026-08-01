@@ -212,7 +212,7 @@ class MarblePriestForcesBlock(Listener):
         if gs.perm_querier.can_block(event.blocker, event.attacker):
             event.permission = True
 
-# --- COMBAT END EVENT ---
+# --- COMBAT BEGIN EVENT ---
 class Johan(Listener):
     """At your combat begin step, you may have J gain Defender & your creatures gain Vigilance EOT.
     If J becomes tapped, your creatures lose their Vigilance."""
@@ -268,24 +268,20 @@ class TimeElementalAttackedOrBlocked(Listener):
         gs.apply_damage(s, 5, s.owner_id)
         gs.pile_mgr.destroy(s)
 
-class TheWretchedSteal(Listener):
+class TheWretched(Listener):
     """At combat end, gain control of all creatures blocking this creature for as long as you control TW.
     Note: The blocker must have survived."""
     listens_to = CombatEndEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
+        from models.effects.resolvers_generic import Steal
         wretched_blockers = [b for com in gs.combat_mgr.combats for b in com.blockers if com.attacker is source]
         if not wretched_blockers:
             return
         for blocker in wretched_blockers:
             if blocker not in gs.card_filter.in_play().result():
                 continue
-            original_owner_id = int(blocker.owner_id)
-            gs.event_mgr.register(OwnershipModQuery(blocker), source)
-            blocker.turn_entered_for_owner = gs.turn_mgr
-            gs.pile_mgr.boards[original_owner_id].remove(blocker)
-            gs.pile_mgr.boards[source.owner_id].append(blocker)
-            gs.event_mgr.emit(StateBasedEvent())
+            Steal().resolve(gs, source, blocker)
 
 
 # --- UNBLOCKED ---

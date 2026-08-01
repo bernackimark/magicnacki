@@ -43,8 +43,7 @@ from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, \
     FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import Onulet, FirestormPhoenix
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy, IslandSanctuary
-from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
-    AddPoisonCounter, ReturnToOwnerOnUntap, OptionalUntap, \
+from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, AddPoisonCounter, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
     PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
@@ -309,9 +308,9 @@ MAP: dict[str: list[EffSpec]] = {
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents'])],
     'oasis': [Activated('T', PreventNextDamageBy(preventable_amt=1), T_FUNCS['creatures'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
-    'old-man-of-the-sea': [Activated('T', Steal(), T_FUNCS['opp_creatures_power_not_greater_than_source']),
-                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap()),
-                           Static(OldManOfTheSeaPowerCheck())],
+    'old-man-of-the-sea': [Activated('T', Steal(return_on_untap=True),
+                                     T_FUNCS['opp_creatures_power_not_greater_than_source']),
+                           Triggered(OptionalUntap()), Static(OldManOfTheSeaPowerCheck())],
     'onulet': [Triggered(Onulet())],
     'orc-general': [Activated('T', Pump(1, 1, True), T_FUNCS['your_other_orcs'],
                               extra_costs=[SacCardCost(T_FUNCS['another_orc_or_goblin'])])],

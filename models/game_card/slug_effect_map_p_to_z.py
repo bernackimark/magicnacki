@@ -5,7 +5,7 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
-from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, SLEEP, PIN, DREAM, HATCHLING
+from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress
 from ..target import TargetSpec
@@ -17,18 +17,19 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Sindbad, SirensCall, VenarianGoldCast, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap
+    Twiddle, Sindbad, SirensCall, VenarianGold, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue
 from ..effects.listeners_state_change import GlobalSac
-from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange, TheWretchedUnsteal
+from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
-    PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep
+    PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep, PrimordialOoze, TetravusUpkeepCreate, \
+    TetravusUpkeepExile
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
     RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, VoodooDollEndStep, WhirlingDervish
@@ -38,17 +39,16 @@ from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVam
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
-    TheWretchedSteal
+    TheWretched
 from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOneColorlessForOneLifeChoice, \
-    AddPoisonCounter, ReturnToOwnerOnUntap, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
+    AddPoisonCounter, UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, PreventCombatDamageFromItsAttackers, PayManaOrSacAtUpkeep, \
-    AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, RemoveCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
+    AddCounterPerCreatureDeathAtEndStep, AddCounterAtTargetUpkeep, PayManaToUntapUpkeep, \
     DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, PreventAllDamageToEOT, PreventNextDamageTo, \
     PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments, \
     RedirectNextDamageToTarget
-from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, \
-    WalkRuleRemoved, Smoke, WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, VenarianGoldAtUntap, UnblockableCondition, \
-    UnblockableEOT, CantCastAppliesTo
+from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
+    WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEquals, \
     KWAApplies, PumpAppliesEOT, Transmutation
 from models.systems.phase import Phase
@@ -82,11 +82,10 @@ MAP: dict[str, list[EffSpec]] = {
     'power-surge': [Triggered(PowerSurge())],
     'powerleech': [Triggered(PowerleechActivation()), Triggered(PowerleechTap())],
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), T_FUNCS['creatures'])],
-    'preacher': [Activated('T', Steal(), T_FUNCS['opp_creatures']), Triggered(OptionalUntap()),
-                 Triggered(ReturnToOwnerOnUntap())],
+    'preacher': [Activated('T', Steal(return_on_untap=True), T_FUNCS['opp_creatures']), Triggered(OptionalUntap())],
     'presence-of-the-master': [Static(CounterEnchantments())],
     'primal-clay': [Spell(PrimalClay())],
-    'primordial-ooze': [Static(AddCounterAtTargetUpkeep(T_FUNCS['self'], PLUS_ONE))],  # more to code
+    'primordial-ooze': [Triggered(PrimordialOoze())],
     'princess-lucrezia': [Activated('T', AddMana('U'))],
     'prodigal-sorcerer': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'], text="Deal 1 Damage}")],
     'psionic-blast': [Spell(DealDamageToTargetAndYou(4, 2), T_FUNCS['all_creatures_and_players'])],
@@ -141,8 +140,8 @@ MAP: dict[str, list[EffSpec]] = {
     'rohgahh-of-kher-keep': [Static(PumpApplies(T_FUNCS['your_kobolds_of_kher_keep'], (2, 2))),
                              Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), T_FUNCS['tapped_creatures'])],
-    'rubinia-soulsinger': [Activated('T', Steal(), T_FUNCS['opp_creatures']),
-                           Triggered(OptionalUntap()), Triggered(ReturnToOwnerOnUntap())],
+    'rubinia-soulsinger': [Activated('T', Steal(return_on_untap=True), T_FUNCS['opp_creatures']),
+                           Triggered(OptionalUntap())],
     'rukh-egg': [Triggered(RukhEgg())],
     'sacrifice': [Spell(SacrificeOnCast(), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])])],
     'safe-haven': [Activated('2T', SafeHaven(), T_FUNCS['your_creatures']), Triggered(SafeHavenUpkeep())],
@@ -229,7 +228,9 @@ MAP: dict[str, list[EffSpec]] = {
     'telekinesis': [Spell(Telekinesis(), T_FUNCS['creatures'])],
     'teleport': [Spell(UnblockableEOT(), T_FUNCS['creatures'], allowed_phases=[Phase.DECLARE_COMBAT])],
     'terror': [Spell(Destroy(allow_regen=False), T_FUNCS['non_artifact_non_black_creatures'])],
-    'tetravus': [Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self'])],
+    'tetravite': [Static(CantBeTargetedByAuras())],  # token creature created by tetravus
+    'tetravus': [Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self']),
+                 Triggered(TetravusUpkeepCreate()), Triggered(TetravusUpkeepExile())],
     'tetsuo-umezawa': [Activated('UBBRT', Destroy(), T_FUNCS['tapped_or_blocking_creatures']),
                        Static(CantBeTargetedByAuras())],
     'the-abyss': [Triggered(TheAbyss())],
@@ -238,7 +239,7 @@ MAP: dict[str, list[EffSpec]] = {
     'the-hive': [Activated('5T', CreateTokenCreature('wasp'))],
     'the-rack': [Static(TheRack())],
     'the-tabernacle-at-pendrell-vale': [Triggered(TheTabernacleAtPendrellVale())],
-    'the-wretched': [Triggered(TheWretchedSteal()), Triggered(TheWretchedUnsteal())],
+    'the-wretched': [Triggered(TheWretched())],
     'thicket-basilisk': [Triggered(DestroyCombatantAtCombatEnd(T_FUNCS['self'], T_FUNCS['non_wall_creatures']))],
     'thoughtlace': [Spell(SetColor('U'), T_FUNCS['cards'])],
     'throne-of-bone': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('B'))],
@@ -297,8 +298,7 @@ MAP: dict[str, list[EffSpec]] = {
                          self_pump('R', 1, 0),
                          self_pump('G', 1, 0)],
     'vampire-bats': [Activated('B', Pump(1, 0, True), T_FUNCS['self'], max_activations_per_turn=2)],
-    'venarian-gold': [Triggered(RemoveCounterAtTargetUpkeep(T_FUNCS['host'], SLEEP)), Static(VenarianGoldAtUntap()),
-                      Spell(VenarianGoldCast(), T_FUNCS['creatures'], max_x_func=max_x_from_printed_card)],
+    'venarian-gold': [Spell(VenarianGold(), T_FUNCS['creatures'], max_x_func=max_x_from_printed_card)],
     'venom': [Spell(DestroyCombatantAtCombatEnd(T_FUNCS['host'], T_FUNCS['non_wall_creatures']), T_FUNCS['creatures'])],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerUpkeep()), Spell(VesuvanDoppelgangerCast())],
@@ -335,8 +335,8 @@ MAP: dict[str, list[EffSpec]] = {
     'white-ward': [Spell(KWAModEffect('add', 'Protection From White'), T_FUNCS['creatures'])],
     'wild-growth': [Spell(WildGrowth(), T_FUNCS['lands'])],
     'will-o-the-wisp': [Activated('B', Regenerate(), T_FUNCS['self'])],
-    'willow-satyr': [Activated('T', Steal(), T_FUNCS['opp_legendary_creatures']),
-                     Static(OptionalUntap()), Static(ReturnToOwnerOnUntap())],
+    'willow-satyr': [Activated('T', Steal(return_on_untap=True), T_FUNCS['opp_legendary_creatures']),
+                     Static(OptionalUntap())],
     'winds-of-change': [Spell(WindsOfChange())],
     'winter-blast': [Spell(WinterBlast(), TargetSpec(T_FUNCS['untapped_creatures'], 1, None),
                            max_x_func=max_x_from_printed_card)],

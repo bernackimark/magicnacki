@@ -49,6 +49,15 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.cast_and_accept(card, host, card.abilities[0])
         self.assertTrue(self.gs.perm_querier.can_attack(host))
 
+    def test_anti_aura_magic(self):
+        card = self.g.hand('anti-magic-aura')
+        host = self.g.battlefield('grizzly-bears')
+        legal_target = self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.g.cast_and_accept(card, host, card.abilities[2])
+        bolt = self.g.hand('lightning-bolt')
+        self.assertTrue(self.gs.perm_querier.can_target(legal_target, bolt))
+        self.assertFalse(self.gs.perm_querier.can_target(host, bolt))
+
     def test_armageddon_clock(self):
         """At your upkeep, put a doom counter on AC.
         At your draw step, AC deals damage = its doom counters to each player.

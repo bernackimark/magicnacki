@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
-from models.counter_tokens import CounterType, WIND
+from models.counter_tokens import CounterType, WIND, PLUS_ONE
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import StateBasedEvent
 from models.modifiers import SubTypeMod
@@ -274,6 +274,21 @@ class SubTypeReplacement(Action):
             self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='remove', item=sub_type))
         self.gs.pending_choice = None
 
+class TapCardAndTakeDamage(Action):
+    """Tap this creature and it deals X damage to you"""
+    def __init__(self, p_id: int, gs: GameState, source: GameCard, damage_amt: int):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.damage_amt = damage_amt
+
+    def __repr__(self):
+        return f"Tap {self.source} and it deals {self.damage_amt} damage to you"
+
+    def play(self) -> None:
+        self.source.tap()
+        self.gs.apply_damage(self.source, self.damage_amt, self.source.owner_id)
+        self.finish()
+
 # --- CARD-SPECIFIC ---
 class CyclonePayManaPerCounterDealDamage(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -416,6 +431,43 @@ class RogahhOfKherKeepTapAndStealAction(Action):
                 self.gs.pile_mgr.boards[old_controller].remove(t)
                 self.gs.pile_mgr.boards[new_controller].append(t)
         self.gs.event_mgr.emit(StateBasedEvent())
+        self.finish()
+
+class TetravusCreateTokens(Action):
+    """You may remove any number of +1/+1 counters from T to create that many 1/1 colorless
+    Tetravite artifact creature tokens"""
+    def __init__(self, p_id, gs, source: GameCard, cnt: int):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.cnt = cnt
+
+    def __repr__(self):
+        return (f'Remove {self.cnt} counter(s) from {self.source.props.name} to '
+                f'create that many Tetravite artifact creatures')
+
+    def play(self) -> None:
+        from models.effects.resolvers_generic import CreateTokenCreature
+        self.source.counters.remove_counter(PLUS_ONE, self.cnt)
+        for _ in range(self.cnt):
+            CreateTokenCreature('tetravite').resolve(self.gs, self.source)
+        self.finish()
+
+class TetravusExileTokens(Action):
+    """You may exile any number of tokens created with T. If you do, put that many +1/+1 counters on T"""
+
+    def __init__(self, p_id, gs, source: GameCard, to_be_exiled: list[GameCard]):
+        super().__init__(p_id, gs)
+        self.source = source
+        self.to_be_exiled = to_be_exiled
+
+    def __repr__(self):
+        return (f'Exile {len(self.to_be_exiled)} Tetravite(s) to add that many +1/+1 '
+                f'counters to {self.source.props.name}')
+
+    def play(self) -> None:
+        for token in self.to_be_exiled:
+            self.gs.pile_mgr.exile(token)
+            self.source.counters.add_counter(PLUS_ONE)
         self.finish()
 
 class TimeVaultSkipTurnAction(Action):

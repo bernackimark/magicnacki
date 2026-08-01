@@ -1,10 +1,11 @@
 import unittest
 
+from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.draw_discard import DrawCard
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.mana import PayMana
 from models.actions.special import Attach, PayManaToDrawCards
-from models.counter_tokens import HATCHLING
+from models.counter_tokens import HATCHLING, STUN, PLUS_ONE
 from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -32,6 +33,22 @@ class TestCardsTUV(unittest.TestCase):
         self.g.cast_and_accept(card, attacker, card.abilities[0])
         self.assertFalse(self.gs.perm_querier.can_block(blocker, attacker))
         self.assertTrue(self.gs.perm_querier.can_block(blocker, different_attacker))
+
+    def test_tetravus(self):
+        """T enters with 3 +1/+1 counters on it.
+        At your upkeep, you may remove X +1/+1 counters from T to create X 1/1
+        colorless Tetravite artifact creature tokens, who each fly & "This token can't be enchanted."
+        At your upkeep, you may exile any number of tokens created with T to put that many +1/+1 counters on T."""
+        card = self.g.hand('tetravus')
+        self.g.cast_and_accept(card, None, card.abilities[0])
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        create_2_tokens = self.gs.pending_choice.get_actions()[1]
+        create_2_tokens.play()
+        self.assertEqual(2, len(self.gs.card_filter.by_slug('tetravite').result()))
+        self.assertEqual(1, card.counters.get_count(PLUS_ONE))
+
+        self.g.next_turn()
+        # Tetravus has two upkeep listeners & I'm not sure how to access the 2nd one (exiling token listener)
 
     def test_tetsuo_umezawa(self):
         """TU can't be the target of Aura spells. {UBBR}, {T}: Destroy target tapped or blocking creature."""
@@ -156,6 +173,26 @@ class TestCardsTUV(unittest.TestCase):
         artifact = self.g.battlefield('sol-ring')
         self.gs.pile_mgr.destroy(artifact)
         self.assertTrue(any(isinstance(a, PayManaToDrawCards) for a in self.gs.pending_choice.get_actions()))
+
+    def test_venarian_gold(self):
+        """When VG enters, tap host & put X stun counters on it."""
+        card = self.g.hand('venarian-gold')
+        self.g.mana('UUUUUUUU')
+        host = self.g.battlefield('monss-goblin-raiders', owner=1)
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=1)
+        card.extras['x'] = 1
+        pipeline.advance()
+        pipeline.targets.append(host)
+        pipeline.finish()
+        pipeline.resolve_ability()
+        self.assertTrue(host.is_tapped)
+        self.assertEqual(1, host.counters.get_count(STUN))
+
+        self.g.next_turn(True)
+        self.assertTrue(host.is_tapped)
+
+        self.g.next_turn()
+        self.assertFalse(host.is_tapped)
 
     def test_venom_vs_non_wall(self):
         """Whenever host blocks / becomes blocked by a non-Wall creature, destroy that creature at end of combat"""

@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any
 
 from models.counter_tokens import PUPA, SLEEP
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -165,6 +166,15 @@ class HostCantBeTargetedByAuras(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
         if event.target is not source.host or 'Aura' not in event.source.card_sub_types:
+            return
+        event.permission = False
+
+class HostCantBeTargetedBySpells(Listener):
+    """WARNING: because CanTargetQueryEvent doesn't carry .effect, I'm backing into 'is the source a spell'?"""
+    listens_to = CanTargetQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
+        if event.target is not source.host or event.source.zone == Zone.BATTLEFIELD:
             return
         event.permission = False
 
@@ -418,16 +428,6 @@ class Meekstone(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
         if event.card.owner_id == event.active_player and event.card.is_creature and event.card.power >= 3:
-            event.permission = False
-
-class VenarianGoldAtUntap(Listener):
-    """Host doesn't untap during its controller's untap step if it has a sleep counter on it."""
-    listens_to = CanUntapAtUntapPhaseQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
-        if event.card != source.host or event.card.owner_id != event.active_player:
-            return
-        if source.host.counters.get_count(SLEEP):
             event.permission = False
 
 class WinterOrb(Listener):

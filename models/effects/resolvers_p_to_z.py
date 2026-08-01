@@ -425,14 +425,14 @@ class UrzasTrio(Resolver):
         else:
             gs.mana_pools[s.owner_id].add_floating('CC')
 
-class VenarianGoldCast(Resolver):
-    """When this Aura enters, tap enchanted creature and put X sleep counters on it ..."""
+class VenarianGold(Resolver):
+    """When this Aura enters, tap enchanted creature and put X stun counters on it ..."""
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
         if not target:
             raise RuntimeError(f"{source.props.name} needs a casting target")
         target.tap()
         if x := source.extras.get('x', 0):  # read X chosen when casting
-            source.counters.add_counter(SLEEP, x)
+            target.counters.add_counter(STUN, x)
 
 class VesuvanDoppelgangerCast(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield,

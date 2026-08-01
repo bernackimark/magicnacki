@@ -6,6 +6,7 @@ from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
+from models.counter_tokens import PLUS_ONE
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -358,6 +359,25 @@ class TestCardsMNOP(unittest.TestCase):
         ap = AbilityPipeline(1, self.gs, enchantment, enchantment.abilities[0])
         ap.advance()
         self.assertIn(enchantment, self.g.gy[1])
+
+    def test_primordial_ooze(self):
+        """At your upkeep, put a +1/+1 counter on PO.
+        Then you may pay {X}, X = +1/+1 counters on it. If you don't, tap this creature & it deals X damage to you."""
+        card = self.g.battlefield('primordial-ooze')
+        swamp = self.g.battlefield('swamp')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(1, card.counters.get_count(PLUS_ONE))
+
+        pay_mana_action = self.gs.pending_choice.get_actions()[0]
+        pay_mana_action.play()
+        self.assertTrue(swamp.is_tapped)
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertTrue(card.is_tapped)
+        self.assertEqual(18, self.gs.life[0])
+        self.assertFalse(self.gs.pending_choice)
+
 
     # def test_psychic_purge(self):
     #     """... When a spell or ability an opp controls causes you to discard this card, that player loses 5 life."""

@@ -38,7 +38,8 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
 from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
     EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantBeTargetedByAuras, HostCantAttack, \
     WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, HostCanAttack, UnblockableCondition, \
-    UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo
+    UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
+    HostCantBeTargetedBySpells
 from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \
     AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
 from models.systems.phase import Phase
@@ -75,7 +76,8 @@ MAP: dict[str, list[EffSpec]] = {
     'animate-dead': [Spell(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'])],
     'animate-wall': [Spell(HostCanAttack(), T_FUNCS['walls'])],
     'ankh-of-mishra': [Triggered(AnkhOfMishra())],
-    'anti-magic-aura': [Static(HostCantBeTargetedByAuras()), Spell(RemoveHostAuras(), T_FUNCS['creatures'])],
+    'anti-magic-aura': [Static(HostCantBeTargetedByAuras()), Static(HostCantBeTargetedBySpells()),
+                        Spell(RemoveHostAuras(), T_FUNCS['creatures'])],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['owner'])],
     'arboria': [Static(Arboria())],
     'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), self_pump('W', 0, 1),

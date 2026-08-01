@@ -3,7 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.counter_tokens import STUN
 from models.effects.listeners_generic import PreventNextDamageTo, TakeAnotherTurn
-from models.effects.resolvers_generic import GraveyardToExileInItsEntirety, AllWalksRemoved
+from models.effects.resolvers_generic import GraveyardToExileInItsEntirety
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -42,6 +42,24 @@ class TestResolversGeneric(unittest.TestCase):
 
         self.g.next_turn()
         self.assertIn('Islandwalk', islandwalker.keyword_abilities)
+
+    def test_combat_only_does_not_prevent_noncombat_damage(self):
+        attacker = self.g.card('goblin-hero')
+        target = self.g.battlefield('grizzly-bears', owner=1)
+        eff = PreventNextDamageTo(3, combat_only=True)
+        eff.protected = target
+        self.gs.event_mgr.register(eff, attacker)
+        self.gs.apply_damage(attacker, 3, target, is_combat=False)
+        self.assertIn(target, self.g.gy[1])
+
+    def test_combat_only_prevents_combat_damage(self):
+        attacker = self.g.card('goblin-hero')
+        target = self.g.battlefield('grizzly-bears', owner=1)
+        eff = PreventNextDamageTo(3, combat_only=True)
+        eff.protected = target
+        self.gs.event_mgr.register(eff, attacker)
+        self.gs.apply_damage(attacker, 3, target, is_combat=True)
+        self.assertEqual(target.damage_received_this_turn, 0)
 
     def test_counter_an_ability_action(self):
         card = self.g.hand('counterspell')
@@ -99,29 +117,11 @@ class TestResolversGeneric(unittest.TestCase):
         self.gs.apply_damage(attacker, 2, target)
         self.assertIn(target, self.g.gy[1])
 
-    def test_combat_only_does_not_prevent_noncombat_damage(self):
-        attacker = self.g.card('goblin-hero')
-        target = self.g.battlefield('grizzly-bears', owner=1)
-        eff = PreventNextDamageTo(3, combat_only=True)
-        eff.protected = target
-        self.gs.event_mgr.register(eff, attacker)
-        self.gs.apply_damage(attacker, 3, target, is_combat=False)
-        self.assertIn(target, self.g.gy[1])
-
-    def test_combat_only_prevents_combat_damage(self):
-        attacker = self.g.card('goblin-hero')
-        target = self.g.battlefield('grizzly-bears', owner=1)
-        eff = PreventNextDamageTo(3, combat_only=True)
-        eff.protected = target
-        self.gs.event_mgr.register(eff, attacker)
-        self.gs.apply_damage(attacker, 3, target, is_combat=True)
-        self.assertEqual(target.damage_received_this_turn, 0)
-
     def test_graveyard_to_exile_in_its_entirety(self):
         gy = self.g.gy[0]
-        self.g.graveyard('merfolk-of-the-pearl-trident')
+        card = self.g.graveyard('merfolk-of-the-pearl-trident')
         self.assertEqual(1, len(gy))
-        GraveyardToExileInItsEntirety().resolve(self.gs, None, 0)
+        GraveyardToExileInItsEntirety().resolve(self.gs, card, 0)
         self.assertEqual(0, len(gy))
 
     def test_steal(self):

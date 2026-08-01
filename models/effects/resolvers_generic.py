@@ -383,13 +383,14 @@ class SetColor(Resolver):
 
 class Steal(Resolver):
     """Registers an OwnershipModQuery.  Default behavior is to transfer the card across boards upon stealer's LTB"""
-    def __init__(self, new_zone: Zone = None, return_on_source_ltb: bool = True):
+    def __init__(self, new_zone: Zone = None, return_on_ltb: bool = True, return_on_untap: bool = False):
         self.new_zone = new_zone or Zone.BATTLEFIELD
-        self.return_on_source_ltb = return_on_source_ltb
+        self.return_on_source_ltb = return_on_ltb
+        self.return_on_source_untap = return_on_untap
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         """If the zone is going from battlefield to battlefield, then move_card() will not trigger"""
-        from models.effects.listeners_generic import ReturnToOwnerOnLTB
+        from models.effects.listeners_generic import ReturnToOwnerOnLTB, ReturnToOwnerOnUntap
         if not target:
             raise RuntimeError(f'{source.props.name} needs a target')
         original_owner_id = int(target.owner_id)
@@ -404,6 +405,9 @@ class Steal(Resolver):
 
         if self.return_on_source_ltb:
             gs.event_mgr.register(ReturnToOwnerOnLTB(), source)
+
+        if self.return_on_source_untap:
+            gs.event_mgr.register(ReturnToOwnerOnUntap(), source)
 
         gs.event_mgr.emit(StateBasedEvent())
 

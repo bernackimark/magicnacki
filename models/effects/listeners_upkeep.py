@@ -13,7 +13,8 @@ from models.actions.piles import TutorMultipleCards
 from models.actions.pump import VariablePTMod
 from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePayManaPerCounterDealDamage, \
     SkipDrawPhaseGainLife, PayManaAndOrTakeDamage, YawgmothDemonUnpaidUpkeep, SacTwoIslandsToUntap, SacTwoIslands, \
-    WormsOfTheEarthSacTwoLands, WormsOfTheEarthTake5Damage
+    WormsOfTheEarthSacTwoLands, WormsOfTheEarthTake5Damage, TapCardAndTakeDamage, TetravusCreateTokens, \
+    TetravusExileTokens
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
@@ -398,13 +399,30 @@ class PowerSurge(Listener):
         if untapped_lands:
             gs.apply_damage(source, len(untapped_lands), gs.player_turn_idx)
 
+class PrimordialOoze(Listener):
+    """At your upkeep, put a +1/+1 counter on PO.
+    Then you may pay {X}, X = +1/+1 counters on it. If you don't, tap this creature & it deals X damage to you."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        source.counters.add_counter(PLUS_ONE)
+        ctr_cnt = source.counters.get_count(PLUS_ONE)
+        p_id = source.owner_id
+        if not gs.mana_pools[p_id].can_pay(str(ctr_cnt)):
+            source.tap()
+            gs.apply_damage(source, ctr_cnt, p_id)
+            return
+        options = [PayMana(p_id, gs, source, str(ctr_cnt)), TapCardAndTakeDamage(p_id, gs, source, ctr_cnt)]
+        gs.pending_choice = ChoiceAction(options)
 
 class PsychicAllergyDamage(Listener):
     """At opp's upkeep, deal X damage to that opponent. X is their number of nontoken perms of the chosen color"""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if gs.player_turn_idx == source.owner_id:
+        if event.active_player == source.owner_id:
             return
         declared_color = source.extras.get('color_declaration')
         opp = flip(source.owner_id)
@@ -513,6 +531,33 @@ class StormWorld(Listener):
         if card_cnt > 4:
             gs.apply_damage(source, card_cnt - 4, gs.player_turn_idx)
 
+class TetravusUpkeepCreate(Listener):
+    """... At your upkeep, you may remove any number of +1/+1 counters from T to create that many 1/1 colorless
+    Tetravite artifact creature tokens, who each have flying and 'This token can't be enchanted.'"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        ctr_cnt = source.counters.get_count(PLUS_ONE)
+        if not ctr_cnt:
+            return
+        options = [TetravusCreateTokens(source.owner_id, gs, source, i) for i in range(1, ctr_cnt + 1)]
+        gs.pending_choice = ChoiceAction(options, may=True)
+
+class TetravusUpkeepExile(Listener):
+    """... At your upkeep, you may exile any number of tokens created with T to put that many +1/+1 counters on T."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        tetravites = gs.card_filter.on_player_board(source.owner_id).by_slug('tetravite').result()
+        if not tetravites:
+            return
+        combos = [combo for r in range(len(tetravites) + 1) for combo in combinations(tetravites, r=r)]
+        options = [TetravusExileTokens(source.owner_id, gs, source, combo) for combo in combos]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class TheAbyss(Listener):
     """At each upkeep, destroy target nonartifact creature that player controls of their choice. No regeneration."""
