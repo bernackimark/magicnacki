@@ -7,7 +7,6 @@ from models.actions.base import Action
 
 if TYPE_CHECKING:
     from models.actions.ability_pipeline import AbilityPipeline
-
     from models.game_card.game_card import GameCard
 
 
