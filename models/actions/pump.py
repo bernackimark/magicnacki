@@ -23,4 +23,4 @@ class VariablePTMod(Action):
         new_power = self.power - self.target.power
         new_toughness = self.toughness - self.target.toughness
         self.target.modifiers.append(PTMod(s=self.target, p_adj=new_power, t_adj=new_toughness))
-        self.gs.action_stack.pop()
+        self.finish()

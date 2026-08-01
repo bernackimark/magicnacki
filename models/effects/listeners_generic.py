@@ -7,7 +7,6 @@ from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.effects.listeners_mod_queries import OwnershipModQuery
-from models.systems.event import ListenerEntry
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -17,11 +16,10 @@ from models.actions.tap_untap import LeaveTapped, Untap, PayManaToUntapAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import CounterType
 from models.effects.base import Listener
-from models.effects.resolvers_generic import Steal
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
     CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent
-from models.modifiers import OwnershipMod, PTMod
+from models.modifiers import PTMod
 from models.utils import flip
 from models.zone import Zone
 
@@ -607,17 +605,15 @@ class PayManaToUntapUpkeep(Listener):
         self.target_func = target_func
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent) -> None:
-        target = self.target_func(gs, s)
-        if not isinstance(target, list):
-            target = [target]
-        target_owner = target[0].owner_id
-        if event.active_player != target_owner:
+        targets = self.target_func(gs, s)
+        if not isinstance(targets, list):
+            targets = [targets]
+        target_owner = targets[0].owner_id
+        if event.active_player != target_owner or not gs.mana_pools[target_owner].can_pay(self.mana_cost):
             return
-        for c in target:
-            if not gs.mana_pools[target_owner].can_pay(self.mana_cost):
-                continue
-            options = [PayManaToUntapAction(target_owner, gs, s, c, self.mana_cost)]
-            gs.pending_choice = ChoiceAction(options, may=True)
+
+        options = [PayManaToUntapAction(target_owner, gs, s, t, self.mana_cost, targets) for t in targets]
+        gs.pending_choice = ChoiceAction(options, may=True)
 
 class RemoveCounterAtTargetUpkeep(Listener):
     """At target owner's upkeep, put counter(s) on this card"""

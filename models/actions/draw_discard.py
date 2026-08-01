@@ -16,9 +16,7 @@ class DrawCard(Action):
 
     def play(self) -> None:
         self.gs.pile_mgr.draw(self.player_idx)
-        if len(self.gs.action_stack):
-            self.gs.action_stack.pop()
-
+        self.finish()
 
 @dataclass
 class DiscardCards(Action):
@@ -36,10 +34,7 @@ class DiscardCards(Action):
         for c in self.cards[::]:
             print(f"Discarding {c} from player {self.player_idx}'s hand")
             self.gs.pile_mgr.discard(c)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
-        elif len(self.gs.action_stack):
-            self.gs.action_stack.pop()
+        self.finish()
 
 @dataclass
 class MoveToDrawPhase(Action):
@@ -49,6 +44,7 @@ class MoveToDrawPhase(Action):
 
     def play(self) -> None:
         self.gs.phase_mgr.set_phase(Phase.DRAW)
+        self.finish()
 
 @dataclass
 class SkipDrawPhase(Action):
@@ -58,3 +54,4 @@ class SkipDrawPhase(Action):
 
     def play(self) -> None:
         self.gs.phase_mgr.set_phase(Phase.MAIN)
+        self.finish()

@@ -17,9 +17,7 @@ class AllowOpponentToDestroyALand(Action):
         return f'Allow Opponent to Destroy One of Your Lands'
 
     def play(self) -> None:
-        if self.gs.action_stack:
-            self.gs.action_stack.pop()
-            # must first pop Demonic Hordes' controller's choice to pay
+        self.finish()
         from models.choice_actions_all import ChoiceAction
         options = [DestroyAction(flip(self.player_idx), self.gs, self.source, land)
                    for land in self.gs.card_filter.lands().on_player_board(self.player_idx).result()]
@@ -37,10 +35,7 @@ class DestroyAction(Action):
 
     def play(self):
         self.gs.pile_mgr.destroy(self.target, allow_regeneration=self.allow_regen)
-        if self.gs.action_stack.actions:
-            self.gs.action_stack.pop()
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class Exile(Action):
     def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
@@ -55,7 +50,7 @@ class Exile(Action):
         if self.w_damage_amt:
             self.gs.apply_damage(self.source, self.w_damage_amt, self.source.owner_id)
         self.gs.pile_mgr.exile(self.source)
-        self.gs.action_stack.pop()  # remove choice
+        self.finish()
 
 class ReanimateAction(Action):
     def __init__(self, p_id, gs, source: GameCard, target: GameCard):
@@ -68,6 +63,7 @@ class ReanimateAction(Action):
 
     def play(self):
         self.gs.pile_mgr.reanimate(self.target)
+        self.finish()
 
 class SacToReturnAllCardsExiledBy(Action):
     def __init__(self, p_id, gs, source: GameCard, exiler: GameCard):
@@ -85,6 +81,7 @@ class SacToReturnAllCardsExiledBy(Action):
             self.gs.pile_mgr.reanimate(card)
         del self.exiler.extras['cards_exiled']
         self.gs.pile_mgr.destroy(self.exiler, allow_regeneration=False)
+        self.finish()
 
 class Sac(Action):
     def __init__(self, p_id, gs, target: GameCard, w_damage_amt: int = 0):
@@ -99,10 +96,7 @@ class Sac(Action):
         if self.w_damage_amt:
             self.gs.apply_damage(self.target, self.w_damage_amt, self.target.owner_id)
         self.gs.pile_mgr.destroy(self.target, False)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
-        elif len(self.gs.action_stack):
-            self.gs.action_stack.pop()  # remove choice
+        self.finish()
 
 class SacCards(Action):
     def __init__(self, p_id, gs, source: GameCard, cards: list[GameCard]):
@@ -116,7 +110,4 @@ class SacCards(Action):
     def play(self):
         for c in self.cards:
             self.gs.pile_mgr.destroy(c, False)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
-        elif len(self.gs.action_stack):
-            self.gs.action_stack.pop()  # remove choice
+        self.finish()

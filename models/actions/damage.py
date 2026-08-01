@@ -19,10 +19,7 @@ class DealDamageTo(Action):
 
     def play(self) -> None:
         self.gs.apply_damage(self.source, self.damage_amt, self.target)
-        if self.gs.action_stack.actions:
-            self.gs.action_stack.pop()
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class DealDamageToYou(Action):
     def __init__(self, p_id, gs, source: GameCard, damage_amt: int):
@@ -35,10 +32,7 @@ class DealDamageToYou(Action):
 
     def play(self):
         self.gs.apply_damage(self.source, self.damage_amt, self.source.owner_id)
-        if self.gs.action_stack.actions:
-            self.gs.action_stack.pop()  # remove choice
-        elif self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class GainLife(Action):
     def __init__(self, p_id, gs, source: GameCard, amt: int, target_p_id: int):
@@ -52,7 +46,7 @@ class GainLife(Action):
 
     def play(self):
         self.gs.score_mgr.increment_life(self.target_p_id, self.amt, self.source, self.gs)
-        self.gs.action_stack.pop()
+        self.finish()
 
 class PayLife(Action):
     def __init__(self, p_id, gs, source: GameCard, amt: int):
@@ -65,10 +59,7 @@ class PayLife(Action):
 
     def play(self):
         self.gs.apply_damage(self.source, self.amt, self.source.owner_id)
-        if self.gs.action_stack:
-            self.gs.action_stack.pop()
-        elif self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class RedirectDamageToYouAction(Action):
     def __init__(self, p_id, gs, source: GameCard, event: DamageProposedEvent):
@@ -81,4 +72,4 @@ class RedirectDamageToYouAction(Action):
 
     def play(self) -> None:
         self.event.target = self.source.owner_id
-        self.gs.pending_choice = None
+        self.finish()

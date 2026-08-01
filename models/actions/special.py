@@ -32,11 +32,6 @@ class Attach(Action):
     def play(self) -> None:
         self.aura.host = self.host
         self.host.auras.append(self.aura)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
-        else:
-            if self.gs.action_stack:
-                self.gs.action_stack.pop()
 
 class CopyCardAction(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard,
@@ -64,10 +59,7 @@ class CopyCardAction(Action):
         self.s.abilities = the_copy.abilities
         if self.gs.phase_mgr.phase != Phase.UPKEEP:  # hack. Vesuvan Doppel =only card that calls this during upkeep
             self.gs.pile_mgr.cast(self.s)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
-        else:
-            self.gs.action_stack.pop()
+        self.finish()
 
 class DestroyAndForegoCombatDamage(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard):
@@ -82,7 +74,7 @@ class DestroyAndForegoCombatDamage(Action):
         from models.effects.listeners_generic import PreventNextDamageBy
         self.gs.pile_mgr.destroy(self.target)
         self.gs.event_mgr.register(PreventNextDamageBy(self.source, combat_only=True))
-        self.gs.action_stack.pop()
+        self.finish()
 
 class PayManaAndOrTakeDamage(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, pay_mana_amt: int, damage_amt: int):
@@ -99,6 +91,7 @@ class PayManaAndOrTakeDamage(Action):
             self.gs.mana_pools[self.player_idx].pay(str(self.pay_mana_amt))
         if self.damage_amt:
             self.gs.apply_damage(self.source, self.damage_amt, self.player_idx)
+        self.finish()
 
 class PayManaForLife(Action):
     def __init__(self, p_id: int, gs: GameState, mana_cost: str, gain_life_amt: int):
@@ -109,10 +102,7 @@ class PayManaForLife(Action):
     def play(self):
         self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
         self.gs.score_mgr.increment_life(self.player_idx, self.gain_life_amt, source=None, gs=self.gs)
-        if self.gs.action_stack:
-            self.gs.action_stack.pop()
-        elif self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class PayManaToBounce(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard, mana_cost: str):
@@ -128,7 +118,7 @@ class PayManaToBounce(Action):
         if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
             self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
             self.gs.pile_mgr.bounce(self.target)
-            self.gs.pending_choice = None
+            self.finish()
 
 class PayManaToPreventCounter(Action):
     def __init__(self, p_id: int, gs: GameState, counter_spell: AbilityAction | CastPermanentAction, mana_cost: str):
@@ -145,6 +135,17 @@ class PayManaToPreventCounter(Action):
             self.gs.action_stack.remove(self.counter_spell)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
+
+class PayManaToDrawCards(Action):
+    def __init__(self, p_id: int, gs: GameState, mana_cost: str, card_cnt: int):
+        super().__init__(p_id, gs)
+        self.mana_cost = mana_cost
+        self.card_cnt = card_cnt
+
+    def play(self):
+        self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
+        self.gs.pile_mgr.draw(self.player_idx, self.card_cnt)
+        self.finish()
 
 class PayManaToPreventDamage(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, protected: GameCard, mana_cost: str,
@@ -165,17 +166,6 @@ class PayManaToPreventDamage(Action):
         self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
         self.gs.event_mgr.register(PreventNextDamageTo(self.preventable_amt, protected=self.protected), self.source)
 
-class PayManaToDrawCards(Action):
-    def __init__(self, p_id: int, gs: GameState, mana_cost: str, card_cnt: int):
-        super().__init__(p_id, gs)
-        self.mana_cost = mana_cost
-        self.card_cnt = card_cnt
-
-    def play(self):
-        self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
-        self.gs.pile_mgr.draw(self.player_idx, self.card_cnt)
-        self.gs.action_stack.pop()
-
 class RemoveCounterGainLife(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard,
                  counter_type: CounterType, counter_cnt: int = 1, gain_life_amt: int = 1):
@@ -189,7 +179,7 @@ class RemoveCounterGainLife(Action):
     def play(self):
         self.source.counters.remove_counter(self.counter_type, self.counter_cnt)
         self.gs.score_mgr.increment_life(self.source.owner_id, self.gain_life_amt, self.source, self.gs)
-        self.gs.action_stack.pop()
+        self.finish()
 
 class SacCreatureAndAddMana(Action):
     def __init__(self, p_id: int, gs: GameState, _: GameCard, creature: GameCard, color: str, amt: int = 0):
@@ -202,7 +192,7 @@ class SacCreatureAndAddMana(Action):
         # Sacrifice then later apply effect that depends on the creature sacrificed
         self.gs.pile_mgr.destroy(self.creature)
         self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
-        self.gs.action_stack.pop()
+        self.finish()
 
 class SacTwoIslands(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -213,7 +203,7 @@ class SacTwoIslands(Action):
         your_islands = self.gs.card_filter.on_player_board(self.s.owner_id).islands().result()
         for island in your_islands[:2]:
             self.gs.pile_mgr.destroy(island)
-        self.gs.action_stack.pop()
+        self.finish()
 
 class SacTwoIslandsToAttack(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard):
@@ -227,7 +217,7 @@ class SacTwoIslandsToAttack(Action):
         for island in your_islands[:2]:
             self.gs.pile_mgr.destroy(island)
         self.gs.event_mgr.register(CanAttackEOT(self.target), self.s)
-        self.gs.action_stack.pop()
+        self.finish()
 
 class SacTwoIslandsToUntap(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard):
@@ -240,7 +230,7 @@ class SacTwoIslandsToUntap(Action):
         for island in your_islands[:2]:
             self.gs.pile_mgr.destroy(island)
         self.target.untap()
-        self.gs.action_stack.pop()
+        self.finish()
 
 class SkipDrawPhaseGainLife(Action):
     def __init__(self, p_id: int, gs: GameState, amt: int):
@@ -250,10 +240,7 @@ class SkipDrawPhaseGainLife(Action):
     def play(self):
         self.gs.phase_mgr.set_phase(Phase.MAIN)
         self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
-        if self.gs.action_stack:
-            self.gs.action_stack.pop()
-        elif self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class StoreColorOnCard(Action):
     def __init__(self, p_id: int, gs: GameState, card: GameCard, color_letter: str):
@@ -303,7 +290,7 @@ class CyclonePayManaPerCounterDealDamage(Action):
             self.gs.pile_mgr.destroy(creature)
         for p_id in range(2):
             self.gs.apply_damage(self.s, self.wind_counters, p_id)
-        self.gs.action_stack.pop()
+        self.finish()
 
 class HealingSalveA(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -315,8 +302,7 @@ class HealingSalveA(Action):
 
     def play(self) -> None:
         self.gs.score_mgr.increment_life(self.player_idx, 3, self.s, self.gs)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class HealingSalveB(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, t: GameCard | int):
@@ -330,7 +316,7 @@ class HealingSalveB(Action):
     def play(self) -> None:
         from models.effects.listeners_generic import PreventNextDamageTo
         self.gs.event_mgr.register(PreventNextDamageTo(3, False, self.target))
-        self.gs.action_stack.pop()
+        self.finish()
 
 class IslandSanctuaryAction(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard):
@@ -347,6 +333,7 @@ class IslandSanctuaryAction(Action):
         listener = IslandSanctuaryRestriction()
         self.gs.event_mgr.register(listener, self.source)
         self.gs.event_mgr.register(UnregisterListenerOnYourNextTurn(listener), self.source)
+        self.finish()
 
 class NamelessRaceETBAction(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, amt: int):
@@ -360,6 +347,7 @@ class NamelessRaceETBAction(Action):
     def play(self) -> None:
         self.s.base_pt = (self.amt, self.amt)
         self.gs.apply_damage(self.s, self.amt, self.s.owner_id)
+        self.finish()
 
 class PrimalClayA(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -372,8 +360,7 @@ class PrimalClayA(Action):
     def play(self) -> None:
         self.s.base_pt = (3, 3)
         self.gs.pile_mgr.cast(self.s)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 
 class PrimalClayB(Action):
@@ -390,8 +377,7 @@ class PrimalClayB(Action):
         kwa.append('Flying')
         self.s._base_kwa = kwa
         self.gs.pile_mgr.cast(self.s)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class PrimalClayC(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -407,8 +393,7 @@ class PrimalClayC(Action):
         kwa.append('Defender')
         self.s._base_kwa = kwa
         self.gs.pile_mgr.cast(self.s)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class RogahhOfKherKeepTapAndStealAction(Action):
     def __init__(self, p_id, gs, source: GameCard, targets: list[GameCard]):
@@ -431,10 +416,7 @@ class RogahhOfKherKeepTapAndStealAction(Action):
                 self.gs.pile_mgr.boards[old_controller].remove(t)
                 self.gs.pile_mgr.boards[new_controller].append(t)
         self.gs.event_mgr.emit(StateBasedEvent())
-        if self.gs.action_stack.actions:
-            self.gs.action_stack.pop()
-        elif self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class TimeVaultSkipTurnAction(Action):
     def __init__(self, p_id, gs, source: GameCard):
@@ -447,6 +429,7 @@ class TimeVaultSkipTurnAction(Action):
     def play(self) -> None:
         self.source.untap()
         self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)
+        self.finish()
 
 class WoodElementalETBAction(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, cards_to_sac: list[GameCard]):
@@ -465,6 +448,7 @@ class WoodElementalETBAction(Action):
         self.s.base_pt = (self.amt, self.amt)
         for card in self.cards_to_sac:
             self.gs.pile_mgr.destroy(card, allow_regeneration=False)
+        self.finish()
 
 class WormsOfTheEarthSacTwoLands(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -479,7 +463,7 @@ class WormsOfTheEarthSacTwoLands(Action):
         for island in your_islands[:2]:
             self.gs.pile_mgr.destroy(island)
         self.gs.pile_mgr.destroy(self.s)
-        self.gs.pending_choice = None
+        self.finish()
 
 class WormsOfTheEarthTake5Damage(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -492,7 +476,7 @@ class WormsOfTheEarthTake5Damage(Action):
     def play(self) -> None:
         self.gs.apply_damage(self.s, 5, self.player_idx)
         self.gs.pile_mgr.destroy(self.s)
-        self.gs.pending_choice = None
+        self.finish()
 
 class YawgmothDemonUnpaidUpkeep(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
@@ -505,4 +489,4 @@ class YawgmothDemonUnpaidUpkeep(Action):
     def play(self) -> None:
         self.s.tap()
         self.gs.apply_damage(self.s, 2, self.s.owner_id)
-        self.gs.action_stack.pop()
+        self.finish()

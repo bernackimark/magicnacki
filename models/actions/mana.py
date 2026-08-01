@@ -19,6 +19,7 @@ class AddMana(Action):
 
     def play(self):
         self.gs.mana_pools[self.player_idx].add_floating(self.color, self.amt)
+        self.finish()
 
 
 class PayMana(Action):
@@ -32,7 +33,4 @@ class PayMana(Action):
 
     def play(self):
         self.gs.mana_pools[self.player_idx].pay(self.cost)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
-        elif self.gs.action_stack:
-            self.gs.action_stack.pop()
+        self.finish()

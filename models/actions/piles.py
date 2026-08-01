@@ -20,7 +20,7 @@ class BattlefieldToGraveyard(Action):
 
     def play(self) -> None:
         self.gs.pile_mgr.move_card(self.target, Zone.GRAVEYARD, cause='legendary_rule')
-        self.gs.pending_choice = None
+        self.finish()
 
 class HandToBattlefield(Action):
     def __init__(self, p_id, gs, target: GameCard):
@@ -32,7 +32,7 @@ class HandToBattlefield(Action):
 
     def play(self):
         self.gs.pile_mgr.move_card(self.target, Zone.BATTLEFIELD, cause='hand_to_battlefield')
-        self.gs.action_stack.pop()  # remove choice
+        self.finish()
 
 class ReorderTopOfLibrary(Action):
     def __init__(self, p_id, gs, library_id: int, cards_in_order: list[GameCard]):
@@ -49,10 +49,7 @@ class ReorderTopOfLibrary(Action):
         del lib[:len(self.cards_in_order)]
         for c in self.cards_in_order[::-1]:
             lib.insert(0, c)
-        if self.gs.action_stack.actions:
-            self.gs.action_stack.pop()
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class Shuffle(Action):
     def __init__(self, p_id, gs, cards: list[GameCard]):
@@ -64,10 +61,7 @@ class Shuffle(Action):
 
     def play(self) -> None:
         random.shuffle(self.cards)
-        if self.gs.action_stack.actions:
-            self.gs.action_stack.pop()
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class Tutor(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, tutored_card: GameCard, destination: Zone):
@@ -82,7 +76,7 @@ class Tutor(Action):
     def play(self):
         self.gs.pile_mgr.move_card(self.tutored_card, self.destination)
         random.shuffle(self.gs.pile_mgr.libraries[self.player_idx])
-        self.gs.pending_choice = None
+        self.finish()
 
 class TutorMultipleCards(Action):
     def __init__(self, p_id: int, gs: GameState, tutored_cards: list[GameCard], destination: Zone):
@@ -99,5 +93,5 @@ class TutorMultipleCards(Action):
         for c in self.tutored_cards:
             self.gs.pile_mgr.move_card(c, self.destination)
         random.shuffle(self.gs.pile_mgr.libraries[self.player_idx])
-        self.gs.pending_choice = None
         print('Library Count After:', len(self.gs.pile_mgr.libraries[self.player_idx]))
+        self.finish()

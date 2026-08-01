@@ -23,10 +23,7 @@ class AddKWA(Action):
     def play(self):
         self.target.modifiers.append(KWAMod(s=self.source, item=self.ability,
                                             expires='EOT' if self.until_eot else None))
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
-        else:
-            self.gs.action_stack.pop()
+        self.finish()
 
 class JohanAction(Action):
     """At your combat begin step, you may have J gain Defender & your creatures gain Vigilance EOT.
@@ -44,3 +41,4 @@ class JohanAction(Action):
         for c in self.gs.card_filter.on_player_board(self.source.owner_id).creatures().result():
             c.modifiers.append(KWAMod(s=self.source, item='Vigilance', expires='EOT'))
         self.gs.event_mgr.register(JohanOnTap(), self.source)
+        self.finish()

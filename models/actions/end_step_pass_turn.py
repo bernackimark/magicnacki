@@ -12,7 +12,7 @@ class MoveToEndStep(Action):
 
     def play(self) -> None:
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
-
+        self.finish()
 
 @dataclass
 class PassTheTurn(Action):

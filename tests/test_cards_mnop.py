@@ -33,11 +33,16 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.next_turn()
         self.assertTrue(blue1.is_tapped)
         self.assertFalse(non_blue.is_tapped)
+
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         first_blue_untap = self.gs.pending_choice.get_actions()[0]
         first_blue_untap.play()
-        self.assertTrue(self.gs.pending_choice)
-        # TODO: this fails because I haven't yet iterated over successive gs.pending_choice, I don't think??
+        self.assertFalse(blue1.is_tapped)
+
+        dont_untap_anymore = self.gs.pending_choice.get_actions()[1]
+        dont_untap_anymore.play()
+        self.assertTrue(blue2.is_tapped)
+        self.assertFalse(self.gs.pending_choice)
 
     def test_mana_vault(self):
         """... MV doesn't untap during your untap step. At your upkeep, you may pay {4} to untap this artifact.
@@ -195,9 +200,6 @@ class TestCardsMNOP(unittest.TestCase):
         for k, v in self.gs.event_mgr.event_listeners.items():
             print(k, v)
 
-        # TODO: the initial steal works fine
-        #  NEXT: the next assertEqual fails because we need to unregister the Listener upon tap
-
         self.g.next_turn()
         self.assertTrue(any(isinstance(a, Untap) for a in self.gs.pending_choice.get_actions()))
 
@@ -320,7 +322,6 @@ class TestCardsMNOP(unittest.TestCase):
 
         self.g.next_turn()
         self.assertFalse(target.is_tapped)
-
 
     def test_power_leak(self):
         """At host's upkeep, PL deals 2 damage to host owner. Host may pay X mana to prevent X of that damage."""
