@@ -133,8 +133,7 @@ class PayManaToPreventCounter(Action):
         if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
             self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
             self.gs.action_stack.remove(self.counter_spell)
-        if self.gs.pending_choice:
-            self.gs.pending_choice = None
+        self.finish()
 
 class PayManaToDrawCards(Action):
     def __init__(self, p_id: int, gs: GameState, mana_cost: str, card_cnt: int):
@@ -254,7 +253,7 @@ class StoreColorOnCard(Action):
     def play(self) -> None:
         self.card.extras['color_declaration'] = self.color_letter
         # TODO: make presentation request, as this selection is public
-        self.gs.pending_choice = None
+        self.finish()
 
 class SubTypeReplacement(Action):
     """In the target's modifiers, add a specific sub_type & remove all of its existing sub_types"""
@@ -272,7 +271,7 @@ class SubTypeReplacement(Action):
         self.target.modifiers.append(SubTypeMod(s=self.s, item=self.sub_type))
         for sub_type in sub_types:
             self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='remove', item=sub_type))
-        self.gs.pending_choice = None
+        self.finish()
 
 class TapCardAndTakeDamage(Action):
     """Tap this creature and it deals X damage to you"""

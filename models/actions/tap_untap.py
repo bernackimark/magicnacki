@@ -58,9 +58,9 @@ class PayManaToUntapAction(Action):
         if remaining:
             options = [PayManaToUntapAction(self.player_idx, self.gs, self.source, c, self.mana_cost, remaining)
                        for c in remaining]
-            self.gs.queue_choice(ChoiceAction(options, may=True))
+            self.finish(ChoiceAction(options, may=True))
         else:
-            self.gs.pending_choice = None
+            self.finish()
 
 class LeaveTapped(Action):
     def __init__(self, p_id: int, gs: GameState, card: GameCard):
