@@ -12,7 +12,8 @@ ARG_LOOKUP = {
     'kwa': 'keyword_abilities',
     'p': 'power',
     't': 'toughness',
-    'set': 'set'
+    'set': 'set',
+    'type': 'card_types'
 }
 
 NUMERIC_KEYS = {'mv', 'p', 't'}
@@ -85,6 +86,8 @@ class CardFilter:
                 self._cards = [c for c in self._cards if any(v in c.keyword_abilities for v in values)]
             elif key == 'set':
                 self._cards = [c for c in self._cards if any(v in c.set_codes for v in values)]
+            elif key == 'type':
+                self._cards = [c for c in self._cards if any(v in c.card_types for v in values)]
             elif key == 'mv':
                 self._cards = [c for c in self._cards if any(op_func(c.mana_value, v) for v in values)]
             elif key == 'p':
