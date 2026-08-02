@@ -1,14 +1,18 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline_support import AbilityAction
+from models.actions.cast import CastPermanentAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
+from models.actions.stack_accept_counter import AcceptAction
 from models.actions.tap_untap import Untap
 from models.counter_tokens import PLUS_ONE
 from models.effects.listeners_damage import ReverseDamage
 from models.effects.resolvers_generic import Destroy, RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
+from models.game_card.effect_spec_templates import target_spell_mv
 from models.systems.phase import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
@@ -400,6 +404,26 @@ class TestCardsQRS(unittest.TestCase):
         pipeline = AbilityPipeline(0, self.gs, bolt, bolt.abilities[0])
         pipeline.advance()
         self.assertNotIn(creature, self.gs.pending_choice.targets)
+
+    def test_spell_blast(self):
+        """Counter target spell with mana value X. (For example, if that spell's mana cost is {3UU}, X is 5.)"""
+        self.gs.hands[0].clear()
+        card = self.g.hand('spell-blast')  # casting_cost = XU
+        self.g.mana('UU')
+        large_card = self.g.hand('shivan-dragon', owner=1)
+        small_card = self.g.hand('monss-goblin-raiders', owner=1)
+
+        self.g.next_turn(True)
+        self.gs.action_stack.push(CastPermanentAction(1, self.gs, large_card), self.gs)
+        self.assertEqual(0, self.gs.action_on_idx)
+        self.assertFalse(any(a.source is card for a in self.gs.available_actions_from_hand()))
+        self.gs.action_stack.clear_()
+
+        self.g.next_turn()
+        self.gs.action_stack.push(CastPermanentAction(1, self.gs, small_card), self.gs)
+        self.assertEqual(0, self.gs.action_on_idx)
+        self.assertTrue(any(a.source is card for a in self.gs.available_actions_from_hand()))
+
 
     def test_spirit_link(self):
         """Whenever enchanted creature deals damage, you gain that much life"""

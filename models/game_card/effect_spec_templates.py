@@ -3,7 +3,7 @@ from models.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
 from models.effects.resolvers_generic import AddMana, AddCounter, ManaBatteriesAddMana, Pump
 from models.game_card.card_filter_funcs import T_FUNCS
-
+from models.systems.mana import ManaCost
 
 
 def dual_land_specs(colors: str) -> list[EffSpec]:
@@ -36,6 +36,13 @@ def clockwork_beast_x(_, s):
 
 def max_x_from_printed_card(gs, s):
     return gs.mana_pools[s.owner_id].get_max_x(s.casting_cost) // s.casting_cost.count('X')
+
+def target_spell_mv(gs, _):
+    from models.actions.ability_pipeline_support import AbilityAction
+    spell = gs.action_stack.last_action
+    cost = spell.pipeline.total_ability_cost if isinstance(spell, AbilityAction) else spell.source.casting_cost
+    cost_int = sum(ManaCost(cost).decoded.values())
+    return cost_int
 
 def your_tapped_land_cnt_and_max_x(gs, s):
     your_tapped_land_cnt = len(gs.card_filter.on_player_board(s.owner_id).tapped().lands().result())

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
-    voodoo_doll_x, max_x_from_printed_card
+    voodoo_doll_x, max_x_from_printed_card, target_spell_mv
 from .card_filter_funcs import T_FUNCS, C_FUNCS
 from models.constants import COLOR_LETTERS
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
@@ -194,6 +194,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sorceress-queen': [Activated('T', BasePT(0, 2, True), T_FUNCS['other_creatures'])],
     'soul-net': [Triggered(SoulNet())],
     'spectral-cloak': [Spell(SpectralCloak(), T_FUNCS['creatures'])],
+    'spell-blast': [Spell(CounterSpell(), T_FUNCS['spells'], min_x_func=target_spell_mv, max_x_func=target_spell_mv)],
     'spinal-villain': [Activated('T', Destroy(), T_FUNCS['blue_creatures'])],
     'spirit-link': [Spell(SpiritLink(), T_FUNCS['creatures'])],
     'spirit-shackle': [Spell(SpiritShackle(), T_FUNCS['creatures'])],
