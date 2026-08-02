@@ -51,7 +51,7 @@ class BlazingEffigy(Listener):
         total_damage = 3 + sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)
                                 if e.target is source and e.source.props.slug == 'blazing-effigy'])
         options = [DealDamageTo(source.owner_id, gs, source, total_damage, target) for target in all_creatures]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class CreatureBond(Listener):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""

@@ -79,7 +79,7 @@ class FellwarStone(Resolver):
                        for mana_produced in c.mana_produced}
         options = [AddMana(source.owner_id, gs, source, color) for color in produceable]
         if options:
-            gs.pending_choice = ChoiceAction(options)
+            gs.queue_choice(ChoiceAction(options))
 
 class FireAndBrimstone(Resolver):
     """Fire and Brimstone deals 4 damage to opponent if they attacked this turn and 4 damage to you"""
@@ -133,7 +133,7 @@ class GlyphOfReincarnation(Resolver):
             gs.pile_mgr.reanimate(creatures_in_attackers_gy[0])
         else:
             options = [ReanimateAction(source.owner_id, gs, source, t) for t in creatures_in_attackers_gy]
-            gs.pending_choice = ChoiceAction(options)
+            gs.queue_choice(ChoiceAction(options))
 
 class GoblinKing(Resolver):
     """All of your other Goblins gain +1+/+1 and Mountainwalk"""
@@ -192,7 +192,7 @@ class HealingSalve(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         all_targets = gs.card_filter.in_play().creatures().result() + [0, 1]
         options = [HealingSalveA(s.owner_id, gs, s)] + [HealingSalveB(s.owner_id, gs, s, t) for t in all_targets]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
@@ -233,7 +233,7 @@ class JalumTome(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         gs.pile_mgr.draw(source.owner_id)
         options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id]]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class JovialEvil(Resolver):
     """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
@@ -370,7 +370,7 @@ class MoldDemon(Resolver):
             gs.pile_mgr.destroy(source, False)
         two_swamp_combos = list(combinations(your_swamps, 2))
         options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in two_swamp_combos]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class NamelessRace(Resolver):
     """Upon ETB, pay any amount of life (max = # of white nontoken permanents your opponents control +
@@ -381,7 +381,7 @@ class NamelessRace(Resolver):
         max_amt = (len(gs.card_filter.on_player_board(opp).non_token().white().permanents().result()) +
                    len(gs.card_filter.in_player_graveyard(opp).white().result()))
         options = [NamelessRaceETBAction(source.owner_id, gs, source, r) for r in range(max_amt + 1)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""
@@ -400,7 +400,7 @@ class NaturalSelection(Resolver):
         a5 = ReorderTopOfLibrary(source.owner_id, gs, target, [c3, c1, c2])
         a6 = ReorderTopOfLibrary(source.owner_id, gs, target, [c3, c2, c1])
         options = [a0, a1, a2, a3, a4, a5, a6]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class NettlingImp(Resolver):
     """Give target non-Wall creature w/o summoning sickness Goad until EOT.

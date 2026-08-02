@@ -150,7 +150,7 @@ class LegendarySingletonCheck(BaseRule):
                     legends_seen[c.props.slug] = c
                 else:
                     options = [BattlefieldToGraveyard(p_id, gs, c) for c in legends_seen.values()]
-                    gs.pending_choice = ChoiceAction(options)
+                    gs.queue_choice(ChoiceAction(options))
 
 class LifeAndPoisonCheck(BaseRule):
     """Check for game_over (player life <= 0 & poison >= 10); set GameState's winner = -1 draw or 0/1 for win"""

@@ -21,7 +21,7 @@ class AllowOpponentToDestroyALand(Action):
         from models.choice_actions_all import ChoiceAction
         options = [DestroyAction(flip(self.player_idx), self.gs, self.source, land)
                    for land in self.gs.card_filter.lands().on_player_board(self.player_idx).result()]
-        self.gs.pending_choice = ChoiceAction(options)
+        self.gs.queue_choice(ChoiceAction(options))
 
 class DestroyAction(Action):
     def __init__(self, p_id, gs, source: GameCard, target: GameCard, allow_regen: bool = True):

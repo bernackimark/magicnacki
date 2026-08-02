@@ -110,7 +110,7 @@ class LandEquilibrium(Listener):
         if len(opp_lands) < your_land_cnt:
             return
         options = [Sac(event.card.owner_id, gs, land) for land in opp_lands]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Revelation(Listener):
     """Players play with their hands revealed"""

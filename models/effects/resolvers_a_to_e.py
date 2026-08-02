@@ -91,7 +91,7 @@ class BazaarOfBaghdad(Resolver):
             return
         options = [DiscardCards(source.owner_id, gs, list(combo))
                    for r in range(3, 4) for combo in combinations(cards, r)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Berserk(Resolver):
     """Cast this spell only before the combat damage step.
@@ -171,7 +171,7 @@ class Clone(Resolver):
         if not card_options:
             return
         options = [CopyCardAction(s.owner_id, gs, s, card) for card in card_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class CocoonCast(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
@@ -188,7 +188,7 @@ class CopyArtifact(Resolver):
         if not card_options:
             return
         options = [CopyCardAction(s.owner_id, gs, s, card) for card in card_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Crumble(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
@@ -218,7 +218,7 @@ class DemonicTutor(Resolver):
         library_cards = gs.pile_mgr.libraries[p_id]
         gs.add_presentation_request(p_id, 'search_library', {'cards': library_cards})
         options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in library_cards]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Disharmony(Resolver):
     """Cast this spell only during combat before blockers are declared.
@@ -306,7 +306,7 @@ class EnchantmentAlteration(Resolver):
             return
         from models.actions.special import Attach
         options = [Attach(s.owner_id, gs, s, host) for host in available_hosts]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class EnergyTap(Resolver):
     """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""

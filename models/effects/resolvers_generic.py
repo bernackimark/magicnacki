@@ -113,7 +113,7 @@ class CounterSpellUnlessManaPaid(Resolver):
             gs.pile_mgr.move_card(target.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
         options = [PayManaToPreventCounter(p_id, gs, target, self.mana_cost), CounterSpellAction(p_id, gs, target)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class CreateTokenCreature(Resolver):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""
@@ -137,7 +137,7 @@ class DeclareAColor(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
         from models.actions.special import StoreColorOnCard
         options = [StoreColorOnCard(source.owner_id, gs, source, color) for color in COLOR_LETTERS]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class DealDamage(Resolver):
     def __init__(self, amt: int = None):  # None is permitted due to the possibility of variable X
@@ -209,7 +209,7 @@ class Discard(Resolver):
         if not target:
             raise ValueError(f'{source.props.name} needs a target')
         options = [DiscardCards(target, gs, c) for c in gs.pile_mgr.hands[target]]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class DrawCards(Resolver):
     def __init__(self, card_cnt: int = 1):

@@ -33,7 +33,7 @@ class PhantasmalTerrain(Resolver):
     """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type."""
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
         options = [SubTypeReplacement(source.owner_id, gs, source, target, land_type) for land_type in BASIC_LANDS]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class PhyrexianGremlinsTap(Resolver):
     """{T}: Tap target artifact. It doesn't untap during its controller's untap step so long as PG remains tapped."""
@@ -48,7 +48,7 @@ class PrimalClay(Resolver):
     or a 1/6 Wall artifact creature with defender in addition to its other types."""
     def resolve(self, gs: GameState, s: GameCard, t: GameCard = None):
         options = [PrimalClayA(s.owner_id, gs, s), PrimalClayB(s.owner_id, gs, s), PrimalClayC(s.owner_id, gs, s)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
@@ -166,7 +166,7 @@ class ShapeshifterCast(Resolver):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
         options = [VariablePTMod(source.owner_id, gs, source, source, i, 7 - i) for i in range(8)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Simulacrum(Resolver):
     """You gain life equal to the damage already dealt to you this turn. If you control a creature,
@@ -183,7 +183,7 @@ class Simulacrum(Resolver):
         your_creatures = gs.card_filter.creatures().on_player_board(source.owner_id).result()
         if your_creatures:
             options = [DealDamageTo(source.owner_id, gs, source, damage_taken_this_turn, c) for c in your_creatures]
-            gs.pending_choice = ChoiceAction(options)
+            gs.queue_choice(ChoiceAction(options))
 
 class Sindbad(Resolver):
     """{T}: Draw a card and reveal it. If it isn't a land, discard it."""
@@ -375,7 +375,7 @@ class UntamedWilds(Resolver):
         basic_lands = [c for c in gs.pile_mgr.libraries[p_id] if c.props.is_basic_land]
         gs.add_presentation_request(p_id, 'search_library', {'cards': basic_lands})
         options = [Tutor(p_id, gs, source, basic_land, Zone.BATTLEFIELD) for basic_land in basic_lands]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class UrborgLoseFirstStrike(Resolver):
     """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
@@ -444,7 +444,7 @@ class VesuvanDoppelgangerCast(Resolver):
         if not card_options:
             return
         options = [CopyCardAction(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""
@@ -473,7 +473,7 @@ class WandOfIth(Resolver):
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
         life_payment_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
         options = [PayLife(opp, gs, source, life_payment_amt), DiscardCards(opp, gs, the_card)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class WarBarge(Resolver):
     """{3}: Target creature gains islandwalk EOT. When WB LTB this turn, destroy that creature, no regen allowed"""
@@ -526,7 +526,7 @@ class WoodElemental(Resolver):
         your_untapped_forests = gs.card_filter.on_player_board(source.owner_id).forests().untapped().result()
         options = [WoodElementalETBAction(source.owner_id, gs, source, combo)
                    for r in range(len(your_untapped_forests)) for combo in combinations(your_untapped_forests, r=r)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""

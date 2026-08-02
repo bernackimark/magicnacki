@@ -478,7 +478,7 @@ class PayManaOrCounterSpellListener(Listener):
             return
         options = [PayManaToPreventCounter(p_id, gs, target_spell, self.mana_cost),
                    CounterSpellAction(p_id, gs, target_spell)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 # --- UNTAP CARD EVENT ---
 class ReturnToOwnerOnUntap(Listener):
@@ -516,7 +516,7 @@ class OptionalUntap(Listener):
         if source.owner_id != event.active_player or not source.is_tapped:
             return
         options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class UnregisterListenerOnYourNextTurn(Listener):
     listens_to = UntapPhaseEvent
@@ -594,7 +594,7 @@ class PayManaOrSacAtUpkeep(Listener):
             gs.pile_mgr.destroy(source, allow_regeneration=False)
             return
         options = [PayMana(source.owner_id, gs, source, self.mana_cost), Sac(source.owner_id, gs, source)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class PayManaToUntapUpkeep(Listener):
     """Pay [x] to untap at target owner's upkeep"""

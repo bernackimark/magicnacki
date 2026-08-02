@@ -68,7 +68,7 @@ class ExileCreatureFromYourGraveyardCost(Cost):
         # within gs.get_available_actions(), it first seeks out gs.pending_choice, presents user w the action options,
         # executes and then pushes the effect onto the stack
         options = [Exile(gs.action_on_idx, gs, c) for c in sac_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class ExileSelfCost(Cost):
     def can_pay(self, gs, source):
@@ -123,7 +123,7 @@ class SacCardCost(Cost):
         # within gs.get_available_actions(), it first seeks out gs.pending_choice, presents user w the action options,
         # executes and then pushes the effect onto the stack
         options = [Sac(gs.action_on_idx, gs, c) for c in sac_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class SacSelfCost(Cost):
     def can_pay(self, gs, source):

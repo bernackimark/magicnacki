@@ -41,7 +41,7 @@ class CursedRack(Listener):
         overage = len(hand) - 4
         combos = [_ for _ in combinations(hand, r=overage)]
         options = [DiscardCards(opp_id, gs, combo) for combo in combos]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 
 # --- DRAW EVENT ---

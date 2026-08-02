@@ -41,7 +41,7 @@ class HasranOgress(Listener):
             gs.apply_damage(s, 3, s.owner_id)
             return
         options = [PayMana(s.owner_id, gs, s, '2'), DealDamageToYou(s.owner_id, gs, s, 3)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class MijaeDjinn(Listener):
     """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
