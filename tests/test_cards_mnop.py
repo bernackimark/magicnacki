@@ -1,6 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
@@ -332,6 +333,49 @@ class TestCardsMNOP(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, len([a for a in self.gs.pending_choice.get_actions()
                                  if isinstance(a, PayManaAndOrTakeDamage)]))
+
+    def test_power_sink_1_controller_pays_path(self):
+        """Counter target spell unless its controller pays {X}.
+        If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
+        # TODO: The land tapping part ...
+        card = self.g.hand('power-sink')  # casting_cost = XU
+        self.g.mana('UUU')
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('RRR', owner=1)
+
+        bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
+        bolt_pipeline.advance()
+        bolt_stack_action = next(a for a in self.gs.action_stack.actions)
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_stack_action])
+        x_action = SelectXAction2(0, self.gs, card_pipeline, 2)
+        x_action.play()
+        card_pipeline.advance()
+        card_pipeline.resolve_ability()
+        pay_mana_to_prevent_counter = self.gs.pending_choice.get_actions()[0]
+        pay_mana_to_prevent_counter.play()
+        bolt_stack_action.play()
+        self.assertEqual(17, self.gs.life[0])
+
+    def test_power_sink_2_spell_countered_path(self):
+        """Counter target spell unless its controller pays {X}.
+        If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
+        # TODO: The land tapping part ...
+        card = self.g.hand('power-sink')  # casting_cost = XU
+        self.g.mana('UUU')
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('RRR', owner=1)
+
+        bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
+        bolt_pipeline.advance()
+        bolt_stack_action = next(a for a in self.gs.action_stack.actions)
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_stack_action])
+        x_action = SelectXAction2(0, self.gs, card_pipeline, 2)
+        x_action.play()
+        card_pipeline.advance()
+        card_pipeline.resolve_ability()
+        bolt_countered_action = self.gs.pending_choice.get_actions()[1]
+        bolt_countered_action.play()
+        self.assertEqual(20, self.gs.life[0])
 
     def test_powerleech(self):
         """Whenever an opp's artifact becomes tapped or an opponent activates an artifact's ability without {T}

@@ -1,7 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.special import Attach
+from models.actions.special import Attach, PayManaToPreventCounter
 from models.cost import SacSelfCost
 from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent
 from models.systems.phase import Phase
@@ -166,6 +166,26 @@ class TestCardsGHI(unittest.TestCase):
         self.g.cast_and_accept(bolt, 0, bolt.abilities[0], owner=1)
         self.g.cast_and_accept(bolt_2, 0, bolt_2.abilities[0], owner=1)
         self.assertEqual(16, self.gs.life[1])
+
+    def test_in_the_eye_of_chaos(self):
+        """Whenever a player casts an instant spell, counter it unless that player pays {X}, where X = its mana value"""
+        self.g.battlefield('in-the-eye-of-chaos')
+        self.g.mana('WWWWWWWWWW')
+        instant = self.g.hand('swords-to-plowshares')
+        creature = self.g.battlefield('grizzly-bears')
+
+        instant_pipeline = AbilityPipeline(0, self.gs, instant, instant.abilities[0], targets=[creature])
+        instant_pipeline.advance()
+        pay_mana_to_not_have_countered = self.gs.pending_choice.get_actions()[0]
+        pay_mana_to_not_have_countered.play()
+        instant_pipeline.resolve_ability()
+        self.assertIn(creature, self.gs.exiles[0])
+
+        sorcery = self.g.hand('wrath-of-god')
+        creature = self.g.battlefield('monss-goblin-raiders')
+        sorcery_pipeline = AbilityPipeline(0, self.gs, sorcery, sorcery.abilities[0], targets=[creature])
+        sorcery_pipeline.advance()
+        self.assertFalse(self.gs.pending_choice)
 
     def test_instill_energy(self):
         """Enchanted creature can attack as though it had haste.

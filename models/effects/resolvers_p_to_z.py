@@ -4,15 +4,19 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
+from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.base import Action
+from models.actions.cast import CastPermanentAction
 from models.actions.damage import DealDamageTo, PayLife
 from models.actions.draw_discard import DiscardCards, DrawCard
 from models.actions.piles import Tutor, Shuffle
 from models.actions.pump import VariablePTMod
-from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement
+from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement, \
+    PayManaToPreventCounter
+from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
 from models.constants import BASIC_LANDS
-from models.counter_tokens import PLUS_ONE, SLEEP, HATCHLING, STUN
+from models.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageBy, \
@@ -42,6 +46,24 @@ class PhyrexianGremlinsTap(Resolver):
             raise ValueError(f'{source.props.name} needs a target')
         target.tap()
         gs.event_mgr.register(DoesntUntapAtUntap(target=target), source)
+
+class PowerSink(Resolver):
+    """Counter target spell unless its controller pays {X}.
+    If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if not isinstance(target, (CastPermanentAction, AbilityAction)):
+            raise ValueError(f"{source.props.name} needs a spell target")
+        power_sink_x = source.extras.get('x')
+        if not power_sink_x:
+            raise ValueError(f"Power Sink's X wasn't registered yet")
+        p_id = target.player_idx
+        if not gs.mana_pools[p_id].can_pay(str(power_sink_x)):
+            gs.action_stack.remove(target)
+            gs.pile_mgr.move_card(target.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+            return
+        options = [PayManaToPreventCounter(p_id, gs, target, str(power_sink_x)), CounterSpellAction(p_id, gs, target)]
+        gs.queue_choice(ChoiceAction(options))
 
 class PrimalClay(Resolver):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,

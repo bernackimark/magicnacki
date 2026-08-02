@@ -39,7 +39,9 @@ class CounterSpellAction(Action):
         return f"Counter {self.target_spell}"
 
     def play(self) -> None:
+        from models.actions.cast import CastPermanentAction
         self.gs.action_stack.remove(self.target_spell)
         if self.gs.pending_choice:
             self.gs.pending_choice = None
-        self.gs.pile_mgr.move_card(self.target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+        source = self.target_spell.source if isinstance(self.target_spell, CastPermanentAction) else self.target_spell.pipeline.source
+        self.gs.pile_mgr.move_card(source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)

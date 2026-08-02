@@ -8,6 +8,7 @@ from models.actions.base import Action
 from models.cost import Cost
 from models.effects.base import Resolver, ActivatedAbility, Listener
 from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent, StackAdditionEvent
+from models.systems.mana import ManaCost
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -194,7 +195,15 @@ class AbilityPipeline(Action):
 
     @property
     def ability_cost(self) -> str:
+        """Returns the base cost without considering X"""
         return self.source.casting_cost if self.eff_spec.is_spell else self.eff_spec.cost
+
+    @property
+    def total_ability_cost(self) -> str:
+        """Returns the cost inclusive of X"""
+        if not self.x_value:
+            return self.ability_cost
+        return ManaCost(self.ability_cost) + ManaCost(str(self.x_value))
 
     @property
     def aa(self) -> ActivatedAbility | None:

@@ -1,16 +1,20 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.draw_discard import DrawCard
-from models.actions.special import SacTwoIslandsToAttack
+from models.actions.special import SacTwoIslandsToAttack, PayManaToPreventCounter
+from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
+from models.zone import Zone
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
 from models.effects.base import Listener
-from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent
+from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, \
+    StackAdditionEvent
 from models.utils import flip
 
 
@@ -120,3 +124,42 @@ class ManaDrainMainPhase(Listener):
             return
         gs.mana_pools[source.owner_id].add_floating('C', self.mana_value)
         gs.event_mgr.unregister_specific_effect(self)
+
+
+# -- STACK ADDITION EVENT ---
+class InTheEyeOfChaos(Listener):
+    """Whenever a player casts an instant spell, counter it unless that player pays {X}, where X is its mana value"""
+    listens_to = StackAdditionEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StackAdditionEvent) -> None:
+        if not isinstance(event.action, AbilityAction):
+            return
+        if isinstance(event.action, AbilityAction) and not event.action.pipeline.eff_spec.is_spell:
+            return
+        if not event.action.pipeline.source.is_instant:
+            return
+        target_spell = event.action
+        p_id = target_spell.player_idx
+        mana_cost = event.action.pipeline.source.casting_cost
+        if not gs.mana_pools[p_id].can_pay(mana_cost):
+            gs.action_stack.remove(event.action)
+            gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+            return
+        options = [PayManaToPreventCounter(p_id, gs, target_spell, mana_cost),
+                   CounterSpellAction(p_id, gs, target_spell)]
+        gs.queue_choice(ChoiceAction(options))
+
+class ScarwoodBanditsAAListener(Listener):
+    """2GT: Unless opponent pays {2}, gain control of target artifact for as long as SB remains on the battlefield ...
+    I don't have a great way of adding an opponent's choice at the exact right time, I'm just creating this Listener
+    to add a choice to the stack for the opponent"""
+    listens_to = StackAdditionEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StackAdditionEvent) -> None:
+        if not isinstance(event.action, AbilityAction) or event.action.pipeline.source is not source:
+            return
+        opp = flip(source.owner_id)
+        if not gs.mana_pools[opp].can_pay('2'):
+            return
+        options = [PayManaToPreventCounter(opp, gs, event.action, '2')]
+        gs.queue_choice(ChoiceAction(options, may=True))

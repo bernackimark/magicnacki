@@ -191,8 +191,9 @@ class TestCardsDEF(unittest.TestCase):
         bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
         bolt_pipeline.advance()
         self.assertIn(bolt_pipeline, [a.pipeline for a in self.gs.action_stack.actions if isinstance(a, AbilityAction)])
+        bolt_stack_action = next(a for a in self.gs.action_stack.actions)
 
-        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_pipeline])
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_stack_action])
         card_pipeline.advance()
         card_pipeline.resolve_ability()
         allow_bolt_countered = self.gs.pending_choice.get_actions()[1]
@@ -210,8 +211,9 @@ class TestCardsDEF(unittest.TestCase):
         bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
         bolt_pipeline.advance()
         self.assertIn(bolt_pipeline, [a.pipeline for a in self.gs.action_stack.actions if isinstance(a, AbilityAction)])
+        bolt_stack_action = next(a for a in self.gs.action_stack.actions)
 
-        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_pipeline])
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_stack_action])
         card_pipeline.advance()
         card_pipeline.resolve_ability()
         pay_mana_to_prevent_counter_action = self.gs.pending_choice.get_actions()[0]

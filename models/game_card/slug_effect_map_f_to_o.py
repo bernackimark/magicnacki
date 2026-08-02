@@ -26,7 +26,7 @@ from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
     max_x_from_printed_card
-from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack
+from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
@@ -177,6 +177,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ice-storm': [Spell(Destroy(), T_FUNCS['lands'])],
     'ifh-biff-efreet': [Activated('G', IfhBiffEfreet(), allowed_activators=A_FUNCS['all_players'])],
     'immolation': [Spell(Pump(2, -2), T_FUNCS['creatures'])],
+    'in-the-eye-of-chaos': [Static(InTheEyeOfChaos())],
     'indestructible-aura': [Spell(PreventAllDamageToEOT(), T_FUNCS['creatures'])],
     'infernal-medusa': [Triggered(InfernalMedusa())],
     'inferno': [Spell(DealDamageToAllCreaturesAndPlayers(6))],

@@ -226,6 +226,31 @@ class TestCardsQRS(unittest.TestCase):
         self.g.combat(non_flier, None)
         self.assertEqual(19, self.gs.life[0])
 
+    def test_scarwood_bandits(self):
+        """2GT: Unless opponent pays {2}, gain control of target artifact for as long as SB stays on the battlefield ...
+        I don't have a great way of adding an opponent's choice at the exact right time, I'm just creating a Listener
+        to add a choice to the stack for the opponent"""
+        card = self.g.battlefield('scarwood-bandits')
+        aa = card.activated_abilities[0]
+        target = self.g.battlefield('sol-ring', owner=1)
+        self.g.mana('GGG')
+        self.g.mana('WW', owner=1)
+
+        self.g.next_turn()
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[target])
+        pipeline.advance()
+        prevent_steal_action = self.gs.pending_choice.get_actions()[0]
+        prevent_steal_action.play()
+        self.assertEqual(1, target.owner_id)
+
+        self.g.next_turn()
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[target])
+        pipeline.advance()
+        allow_steal_action = self.gs.pending_choice.get_actions()[-1]
+        allow_steal_action.play()
+        pipeline.resolve_ability()
+        self.assertEqual(0, target.owner_id)
+
     def test_scarwood_hag(self):
         """{GGGG}, {T}: Target creature gains forestwalk EOT. {T}: Target creature loses forestwalk until EOT."""
         card = self.g.battlefield('scarwood-hag')

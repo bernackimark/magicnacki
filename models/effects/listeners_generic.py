@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any, Optional
 
 from models.actions.ability_pipeline_support import AbilityAction
+from models.actions.cast import CastPermanentAction
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife, PayManaToPreventCounter
@@ -461,24 +462,27 @@ class CounterEnchantments(Listener):
         gs.pile_mgr.move_card(source_card, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
 
 class PayManaOrCounterSpellListener(Listener):
-    """Listens for when something is added to the stack"""
+    """Listens for when something is added to the stack; mana_cost parm can be passed if static,
+    else spell_mv can be used for the spell's mana value"""
     listens_to = StackAdditionEvent
 
-    def __init__(self, mana_cost: str):
+    def __init__(self, mana_cost: str = None, spell_mv: bool = False):
         self.mana_cost = mana_cost
+        self.spell_mv = spell_mv
 
     def on_event(self, gs: GameState, source: GameCard, event: StackAdditionEvent) -> None:
         if isinstance(event.action, AbilityAction) and not event.action.pipeline.eff_spec.is_spell:
             return
         target_spell = event.action
         p_id = target_spell.player_idx
-        if not gs.mana_pools[p_id].can_pay(self.mana_cost):
+        mana_cost = event.action.pipeline.source.casting_cost if self.spell_mv else self.mana_cost
+        if not gs.mana_pools[p_id].can_pay(mana_cost):
             gs.action_stack.remove(event.action)
             gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, target_spell, self.mana_cost),
+        options = [PayManaToPreventCounter(p_id, gs, target_spell, mana_cost),
                    CounterSpellAction(p_id, gs, target_spell)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 # --- UNTAP CARD EVENT ---
 class ReturnToOwnerOnUntap(Listener):

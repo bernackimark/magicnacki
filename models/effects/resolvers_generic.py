@@ -1,9 +1,9 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Callable, Literal
 
-from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.base import Action
+from models.actions.cast import CastPermanentAction
 from models.actions.draw_discard import DiscardCards
 from models.actions.special import PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
@@ -115,18 +115,21 @@ class CounterSpell(Resolver):
         gs.pile_mgr.move_card(target.pipeline.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
 
 class CounterSpellUnlessManaPaid(Resolver):
-    def __init__(self, mana_cost: str):
+    def __init__(self, mana_cost: str = None, mana_cost_eq_to_mv: bool = False):
         self.mana_cost = mana_cost
+        self.mana_cost_eq_to_mv = mana_cost_eq_to_mv
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
-        if not isinstance(target, AbilityPipeline):
+        print('DDD', type(target), target)
+        if not isinstance(target, (CastPermanentAction, AbilityAction)):
             raise ValueError(f"{source.props.name} needs a spell target")
         p_id = target.player_idx
-        if not gs.mana_pools[p_id].can_pay(self.mana_cost):
+        mana_cost = target.pipeline.total_ability_cost if isinstance(target, AbilityAction) else target.source.casting_cost
+        if not gs.mana_pools[p_id].can_pay(mana_cost):
             gs.action_stack.remove(target)
             gs.pile_mgr.move_card(target.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, target, self.mana_cost), CounterSpellAction(p_id, gs, target)]
+        options = [PayManaToPreventCounter(p_id, gs, target, mana_cost), CounterSpellAction(p_id, gs, target)]
         gs.queue_choice(ChoiceAction(options))
 
 class CreateTokenCreature(Resolver):

@@ -127,7 +127,10 @@ class PayManaToPreventCounter(Action):
         self.mana_cost = mana_cost
 
     def __repr__(self):
-        return f'Pay {{{self.mana_cost}}} to prevent counterspell by {self.counter_spell.source.props.name}'
+        from models.actions.cast import CastPermanentAction
+        source = self.counter_spell.source if isinstance(self.counter_spell, CastPermanentAction) \
+            else self.counter_spell.pipeline.source
+        return f'Pay {{{self.mana_cost}}} to prevent counterspell by {source.props.name}'
 
     def play(self):
         if self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):

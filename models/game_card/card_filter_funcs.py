@@ -184,6 +184,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
         (lambda gs, s: [spell for spell in gs.stack if (('Instant' in spell.types or 'Aura' in spell.types)
                                                         and any(isinstance(t, GameCard) and t.owner_id == s.owner_id
                                                         and t.zone == Zone.BATTLEFIELD for t in spell.targets))]),
+    'spells_instants': lambda gs, s: [spell for spell in gs.action_stack.spells if 'Instant' in spell.types],
     'stone_giant': lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result()
                                   if c.toughness < s.power],
     'tapped_creatures': lambda gs, s: gs.card_filter.in_play().creatures().tapped().result(),
