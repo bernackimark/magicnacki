@@ -12,7 +12,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    EnchantmentAlteration, DanceOfMany
+    EnchantmentAlteration, DanceOfMany, Disintegrate
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
@@ -246,6 +246,7 @@ MAP: dict[str, list[EffSpec]] = {
     'dingus-egg': [Triggered(DingusEgg())],
     'disharmony': [Spell(Disharmony(), T_FUNCS['attackers'],
                          allowed_phases=[Phase.DECLARE_COMBAT, Phase.DECLARE_ATTACKERS])],
+    'disintegrate': [Spell(Disintegrate(), T_FUNCS['all_creatures_and_players'])],
     'disrupting-scepter': [Activated('3T', Discard(), T_FUNCS['all_players'],
                                      allowed_p_turn_func=T_FUNCS['owner'])],
     'disenchant': [Spell(Destroy(), T_FUNCS['artifacts_and_enchantments'])],

@@ -19,7 +19,7 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent, Event
 from models.modifiers import PTMod
 from models.utils import flip
 from models.zone import Zone
@@ -335,6 +335,21 @@ class AddPoisonCounter(Listener):
                   f"Poison Totals: {gs.score_mgr.poison_counters}")
             gs.score_mgr.add_poison_counter(opp, self.cnt)
 
+
+# --- DIES EVENT ---
+class ExileOnDeath(Listener):
+    """If a card would die, it is exiled instead"""
+    listens_to = DiesEvent
+
+    def __init__(self, target: GameCard, eot: bool = False):
+        self.target = target
+        if eot:
+            self.expires = 'EOT'
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if event.card is not self.target:
+            return
+        gs.pile_mgr.exile(event.card)
 
 # --- END STEP ---
 class AddCounterAtEndStep(Listener):

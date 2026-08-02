@@ -1,7 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.ability_pipeline_support import AbilityAction
+from models.actions.ability_pipeline_support import AbilityAction, SelectXAction2
 from models.actions.mana import PayMana
 from models.actions.special import Attach
 from models.counter_tokens import HUNGER
@@ -63,6 +63,21 @@ class TestCardsDEF(unittest.TestCase):
 
         self.g.next_turn(True)
         self.assertEqual(1, attacker.owner_id)
+
+    def test_disintegrate(self):
+        """D deals X damage to any target.
+        If it's a creature, no regen allow EOT, & if it would die EOT, exile instead."""
+        card = self.g.hand('disintegrate')
+        self.g.mana('RRRRR')
+        target = self.g.battlefield('will-o-the-wisp', owner=1)
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[target])
+        x_action = SelectXAction2(0, self.gs, pipeline, 4)
+        x_action.play()
+        pipeline.advance()
+        self.assertFalse(self.gs.pending_choice)
+        pipeline.resolve_ability()
+        self.assertIn(target, self.gs.exiles[1])
 
     def test_dwarven_warriors(self):
         """{T}: Target creature with power 2 or less can't be blocked this turn"""

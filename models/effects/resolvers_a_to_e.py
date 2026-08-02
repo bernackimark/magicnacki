@@ -3,14 +3,16 @@ import math
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
+from models.actions.base import Action
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor
 from models.actions.special import CopyCardAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
-from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem
+from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem, ExileOnDeath
 from models.effects.listeners_mod_queries import ArmyOfAllahEOT, OwnershipModQuery
+from models.effects.listeners_permission import PreventRegenerationEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
 from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
 from models.systems.phase import Phase
@@ -229,6 +231,19 @@ class Disharmony(Resolver):
         target.untap()
         gs.combat_mgr.remove_from_combat(target)
         gs.event_mgr.register(OwnershipModQuery(target, eot=True), source)
+
+class Disintegrate(Resolver):
+    """D deals X damage to any target. If it's a creature, no regen allow EOT, & if it would die EOT, exile instead."""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        damage_amt = source.extras.get('x')
+        if not damage_amt:
+            raise ValueError(f'{source.props.name} needs an X value')
+        if not isinstance(target, int):
+            gs.event_mgr.register(ExileOnDeath(target, eot=True), source)
+            gs.event_mgr.register(PreventRegenerationEOT(target), source)
+        gs.apply_damage(source, damage_amt, target)
 
 class DivineOffering(Resolver):
     def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):

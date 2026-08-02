@@ -191,8 +191,8 @@ class PreventRegenerationEOT(Listener):
     listens_to = CanRegenerateQueryEvent
     expires = 'EOT'
 
-    def __init__(self):
-        self.target: GameCard | None = None
+    def __init__(self, target: GameCard | None = None):
+        self.target = target
 
     def initialize(self, gs: GameState, source: GameCard, targets: Any):
         if not self.target:
