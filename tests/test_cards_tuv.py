@@ -41,6 +41,7 @@ class TestCardsTUV(unittest.TestCase):
         At your upkeep, you may exile any number of tokens created with T to put that many +1/+1 counters on T."""
         card = self.g.hand('tetravus')
         self.g.cast_and_accept(card, None, card.abilities[0])
+        self.gs.pending_choice = None
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         create_2_tokens = self.gs.pending_choice.get_actions()[1]
         create_2_tokens.play()
@@ -48,7 +49,13 @@ class TestCardsTUV(unittest.TestCase):
         self.assertEqual(1, card.counters.get_count(PLUS_ONE))
 
         self.g.next_turn()
-        # Tetravus has two upkeep listeners & I'm not sure how to access the 2nd one (exiling token listener)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        decline_creating_more_tetravites = self.gs.pending_choice.get_actions()[-1]
+        decline_creating_more_tetravites.play()
+        exile_2_tetravites = self.gs.pending_choice.get_actions()[-2]
+        exile_2_tetravites.play()
+        self.assertEqual(0, len(self.gs.card_filter.by_slug('tetravite').result()))
+        self.assertEqual(3, card.counters.get_count(PLUS_ONE))
 
     def test_tetsuo_umezawa(self):
         """TU can't be the target of Aura spells. {UBBR}, {T}: Destroy target tapped or blocking creature."""

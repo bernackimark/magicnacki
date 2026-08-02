@@ -22,10 +22,7 @@ class ChoiceAction(ABC):
             return 'Decline'
 
         def play(self) -> None:
-            if self.gs.action_stack:
-                self.gs.action_stack.pop()
-            elif self.gs.pending_choice:
-                self.gs.pending_choice = None
+            self.finish()
 
     def __post_init__(self):
         if self.may:

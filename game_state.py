@@ -66,6 +66,7 @@ class GameState:
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.player_turn_idx,
                                                                   self, self.rules['mulligan'])
+        self.choice_queue: list[ChoiceAction | None] = []
 
         # objects that carry data to be displayed in UI that aren't common (ex: Show Library)
         self.presentation_requests: list[PresentationRequest] = []

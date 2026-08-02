@@ -49,7 +49,8 @@ class EventManager:
         return [e for e, turn_num in self._events if turn_num == turn_number and isinstance(e, event)]  # type: ignore
 
     def emit(self, event: Event):
-        """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr"""
+        """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr;
+        if gs.choice_queue has items but there is no gs.pending_choice, pop from choice_queue to pending_choice"""
         self._events.append((event, self._gs.turn_mgr.turn_number))
 
         for base_rule in self._base_rule_listeners[type(event)]:
@@ -65,6 +66,9 @@ class EventManager:
                         continue
             print(f'Emitting {type(event).__name__}, possible responder {e}')
             e.effect.on_event(self._gs, e.source, event)
+
+        if not self._gs.pending_choice and self._gs.choice_queue:
+            self._gs.pending_choice = self._gs.choice_queue.pop(0)
 
         self.cleanup_expired()
 

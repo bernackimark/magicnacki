@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.base import Action
 from models.actions.cast import CastPermanentAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.effects.base import ActivatedAbility, EffSpec
@@ -126,6 +127,7 @@ class TestGame:
         if target is not None:
             pipeline.targets.append(target)
         pipeline.advance()
+        pipeline.finish()
         pipeline.resolve_ability()
 
     def card_has_a_registered_listener(self, card: GameCard) -> bool:

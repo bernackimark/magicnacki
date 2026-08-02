@@ -543,7 +543,7 @@ class TetravusUpkeepCreate(Listener):
         if not ctr_cnt:
             return
         options = [TetravusCreateTokens(source.owner_id, gs, source, i) for i in range(1, ctr_cnt + 1)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.choice_queue.append(ChoiceAction(options, may=True))
 
 class TetravusUpkeepExile(Listener):
     """... At your upkeep, you may exile any number of tokens created with T to put that many +1/+1 counters on T."""
@@ -555,9 +555,9 @@ class TetravusUpkeepExile(Listener):
         tetravites = gs.card_filter.on_player_board(source.owner_id).by_slug('tetravite').result()
         if not tetravites:
             return
-        combos = [combo for r in range(len(tetravites) + 1) for combo in combinations(tetravites, r=r)]
+        combos = [combo for r in range(1, len(tetravites) + 1) for combo in combinations(tetravites, r=r)]
         options = [TetravusExileTokens(source.owner_id, gs, source, combo) for combo in combos]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.choice_queue.append(ChoiceAction(options, may=True))
 
 class TheAbyss(Listener):
     """At each upkeep, destroy target nonartifact creature that player controls of their choice. No regeneration."""

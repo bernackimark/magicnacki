@@ -26,5 +26,7 @@ class Action(ABC):
             self.gs.pending_choice = next_choice
         elif self.gs.pending_choice:
             self.gs.pending_choice = None
+            if self.gs.choice_queue:
+                self.gs.pending_choice = self.gs.choice_queue.pop(0)
         elif self.gs.action_stack.actions:
             self.gs.action_stack.pop()
