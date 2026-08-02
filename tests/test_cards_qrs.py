@@ -354,11 +354,10 @@ class TestCardsQRS(unittest.TestCase):
         self.assertNotIn(has_sickness, self.g.gy[1])
 
     def test_soul_net(self):
-        self.assertFalse(any(isinstance(a, PayManaForLife) for a in self.gs.pending_choice.get_actions()))
         self.g.battlefield('soul-net')
         creature = self.g.battlefield('grizzly-bears')
         bolt = self.g.card('lightning-bolt')
-        Destroy().resolve(self.gs, bolt, creature)
+        self.g.cast_and_accept(bolt, creature, bolt.abilities[0])
         self.assertTrue(any(isinstance(a, PayManaForLife) for a in self.gs.pending_choice.get_actions()))
 
     def test_spectral_cloak(self):

@@ -51,12 +51,14 @@ class PayManaToUntapAction(Action):
             return
         self.gs.mana_pools[self.target.owner_id].pay(self.mana_cost)
         self.target.untap()
+        self.finish()
+
         remaining = [c for c in self.remaining if c is not self.target and c.is_tapped
                      and self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost)]
         if remaining:
             options = [PayManaToUntapAction(self.player_idx, self.gs, self.source, c, self.mana_cost, remaining)
                        for c in remaining]
-            self.gs.pending_choice = ChoiceAction(options, may=True)
+            self.gs.queue_choice(ChoiceAction(options, may=True))
         else:
             self.gs.pending_choice = None
 

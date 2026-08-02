@@ -198,4 +198,4 @@ class TimeVaultOption(Listener):
         if source.owner_id != event.active_player or not source.is_tapped:
             return
         options = [TimeVaultSkipTurnAction(source.owner_id, gs, source)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))

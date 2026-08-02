@@ -71,7 +71,7 @@ class CosmicHorror(Listener):
             return
         options = [DestroyAction(event.active_player, gs, source, source, False),
                    PayMana(event.active_player, gs, source, '3BBB')]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class CurseArtifact(Listener):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
@@ -82,7 +82,7 @@ class CurseArtifact(Listener):
             return
         options = [DealDamageTo(event.active_player, gs, source, 2, source.host.owner_id),
                    Sac(event.active_player, gs, source.host)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Cyclone(Listener):
     """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
@@ -96,7 +96,7 @@ class Cyclone(Listener):
         if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
             gs.pile_mgr.destroy(source, False)
         options = [CyclonePayManaPerCounterDealDamage(source.owner_id, gs, source), Sac(source.owner_id, gs, source)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
@@ -114,11 +114,11 @@ class DemonicHordesUpkeep(Listener):
         elif not gs.mana_pools[source.owner_id].can_pay('BBB'):
             source.tap()
             options = [DestroyAction(flip(source.owner_id), gs, source, land, False) for land in your_lands]
-            gs.pending_choice = ChoiceAction(options)
+            gs.queue_choice(ChoiceAction(options))
         else:
             options = [PayMana(source.owner_id, gs, source, 'BBB'),
                        AllowOpponentToDestroyALand(source.owner_id, gs, source)]
-            gs.pending_choice = ChoiceAction(options)
+            gs.queue_choice(ChoiceAction(options))
 
 class DropOfHoney(Listener):
     """At your upkeep, destroy the creature with the least power. It can't be regenerated.
@@ -142,7 +142,7 @@ class DropOfHoney(Listener):
             return
 
         options = [DestroyAction(source.owner_id, gs, source, c, allow_regen=False) for c in creatures_w_min_power]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class ElderSpawnUpkeep(Listener):
     """At YOUR upkeep, sac an Island or sac this creature & it deals 6 damage to you."""
@@ -158,7 +158,7 @@ class ElderSpawnUpkeep(Listener):
             return
 
         options = [Sac(s.owner_id, gs, island) for island in your_islands] + [Sac(s.owner_id, gs, s, 6)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class EnergyFlux(Listener):
     """All artifacts have 'At your [the owner's] upkeep, sacrifice this artifact unless you pay {2}'"""
@@ -169,7 +169,7 @@ class EnergyFlux(Listener):
             if not gs.mana_pools[event.active_player].can_pay('2'):
                 gs.pile_mgr.destroy(your_artifact, allow_regeneration=False)
             options = [PayMana(event.active_player, gs, source, '2'), Sac(event.active_player, gs, source)]
-            gs.pending_choice = ChoiceAction(options)
+            gs.queue_choice(ChoiceAction(options))
 
 class ErhnamDjinn(Listener):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
@@ -185,7 +185,7 @@ class ErhnamDjinn(Listener):
             eligible_targets[0].modifiers.append(KWAMod(item='Forestwalk', s=s, expires='EOT'))
             return
         options = [AddKWA(s.owner_id, gs, s, t, 'Forestwalk') for t in eligible_targets]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class ErosionUpkeep(Listener):
     """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life."""
@@ -199,7 +199,7 @@ class ErosionUpkeep(Listener):
             options.append(PayMana(source.host.owner_id, gs, source, '1'))
         options.append(PayLife(source.host.owner_id, gs, source, 1))
         options.append(DestroyAction(source.host.owner_id, gs, source, source.host, allow_regen=False))
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class Fasting(Listener):
     """At your upkeep, add a hunger counter. Destroy Fasting if >=5 hunger counters.
@@ -213,7 +213,7 @@ class Fasting(Listener):
         if source.counters.get_count(HUNGER) > 4:
             gs.pile_mgr.destroy(source)
         options = [SkipDrawPhaseGainLife(source.owner_id, gs, 2)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class ForceOfNatureUpkeep(Listener):
     """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
@@ -226,7 +226,7 @@ class ForceOfNatureUpkeep(Listener):
             gs.apply_damage(s, 8, s.owner_id)
             return
         options = [PayMana(s.owner_id, gs, s, 'GGGG'), DealDamageToYou(s.owner_id, gs, s, 8)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class GabrielAngelfire(Listener):
     """At your upkeep, choose flying, first strike, trample, rampage 3. GA gains that ability until your next upkeep."""
@@ -237,7 +237,7 @@ class GabrielAngelfire(Listener):
             return
         kwa_options = ('Flying', 'First Strike', 'Trample', 'Rampage 3')
         options = [AddKWA(s.owner_id, gs, s, s, kwa) for kwa in kwa_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 
 class GhazbanOgre(Listener):
@@ -263,7 +263,7 @@ class GiantSlugUpkeep(Listener):
             return
         kwa_options = ('Forestwalk', 'Islandwalk', 'Mountainwalk', 'Plainswalk', 'Swampwalk')
         options = [AddKWA(s.owner_id, gs, s, s, kwa) for kwa in kwa_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class HazezonTamarTokenCreation(Listener):
     """Create X 1/1 Sand Warrior tokens at your next upkeep; X is the number of lands you control at that time"""
@@ -326,7 +326,7 @@ class LandTax(Listener):
         basic_lands = [c for slug, cards in basic_slug_lands.items() for c in cards]
         combo_set = {combo for r in range(1, 4) for combo in combinations(basic_lands, r)}
         options = [TutorMultipleCards(s.owner_id, gs, list(combo), Zone.HAND) for combo in combo_set]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class LeviathanUpkeep(Listener):
     """At your upkeep, you may sacrifice two Islands to untap this creature"""
@@ -339,7 +339,7 @@ class LeviathanUpkeep(Listener):
         if len(your_islands) < 2:
             return
         options = [SacTwoIslandsToUntap(event.active_player, gs, source, source)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class LordOfThePitUpkeep(Listener):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
@@ -354,7 +354,7 @@ class LordOfThePitUpkeep(Listener):
             gs.apply_damage(source, 7, source.owner_id)
             return
         options = [Sac(source.owner_id, gs, c) for c in your_other_creatures]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 
 class ManaVortexUpkeep(Listener):
@@ -368,7 +368,7 @@ class ManaVortexUpkeep(Listener):
             gs.pile_mgr.destroy(your_lands[0], allow_regeneration=False)
             return
         options = [Sac(event.active_player, gs, land) for land in your_lands]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class PowerLeak(Listener):
     """At host owner's upkeep, host owner may pay 0, 1, or 2 mana. PL deals 2 - the mana paid damage to host owner"""
@@ -387,7 +387,7 @@ class PowerLeak(Listener):
             pay_mana_options = (0, 1, 2)
         options = [PayManaAndOrTakeDamage(host_owner, gs, source, mana_amt, 2 - mana_amt)
                    for mana_amt in pay_mana_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class PowerSurge(Listener):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,
@@ -415,7 +415,7 @@ class PrimordialOoze(Listener):
             gs.apply_damage(source, ctr_cnt, p_id)
             return
         options = [PayMana(p_id, gs, source, str(ctr_cnt)), TapCardAndTakeDamage(p_id, gs, source, ctr_cnt)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class PsychicAllergyDamage(Listener):
     """At opp's upkeep, deal X damage to that opponent. X is their number of nontoken perms of the chosen color"""
@@ -443,7 +443,7 @@ class PsychicAllergySac(Listener):
             gs.pile_mgr.destroy(source)
             return
         options = [SacTwoIslands(source.owner_id, gs, source), Sac(source.owner_id, gs, source)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class RasputinDreamweaverUpkeep(Listener):
     """... At your upkeep, if RD STARTED THE TURN untapped w < 7 dream counters on it, put a dream counter on it."""
@@ -470,7 +470,7 @@ class RogahhOfKherKeepUpkeep(Listener):
             action.play()
             return
         options = [PayMana(source.owner_id, gs, source, 'RRR'), action]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class SafeHavenUpkeep(Listener):
     """At your upkeep, you may sacrifice SH to return all cards it exiled to the battlefield under owner's control"""
@@ -480,7 +480,7 @@ class SafeHavenUpkeep(Listener):
         if event.active_player != source.owner_id:
             return
         options = [SacToReturnAllCardsExiledBy(source.owner_id, gs, source, source)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class SeasonOfTheWitchUpkeep(Listener):
     """At your upkeep, sacrifice this enchantment unless you pay 2 life"""
@@ -490,7 +490,7 @@ class SeasonOfTheWitchUpkeep(Listener):
         if event.active_player != source.owner_id:
             return
         options = [PayLife(source.owner_id, gs, source, 2), Sac(source.owner_id, gs, source)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class SerendibDjinn(Listener):
     """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
@@ -501,7 +501,7 @@ class SerendibDjinn(Listener):
             return
         options = [Sac(source.owner_id, gs, land, w_damage_amt=3 if land.props.slug == 'island' else 0)
                    for land in gs.card_filter.on_player_board(source.owner_id).lands().result()]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class ShapeshifterUpkeep(Listener):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
@@ -511,7 +511,7 @@ class ShapeshifterUpkeep(Listener):
         if event.active_player != source.owner_id:
             return
         options = [VariablePTMod(source.owner_id, gs, source, source, i, 7 - i) for i in range(8)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class SpiritualSanctuary(Listener):
     """At each player's upkeep, if that player controls a Plains, they gain 1 life"""
@@ -543,7 +543,7 @@ class TetravusUpkeepCreate(Listener):
         if not ctr_cnt:
             return
         options = [TetravusCreateTokens(source.owner_id, gs, source, i) for i in range(1, ctr_cnt + 1)]
-        gs.choice_queue.append(ChoiceAction(options, may=True))
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class TetravusUpkeepExile(Listener):
     """... At your upkeep, you may exile any number of tokens created with T to put that many +1/+1 counters on T."""
@@ -557,7 +557,7 @@ class TetravusUpkeepExile(Listener):
             return
         combos = [combo for r in range(1, len(tetravites) + 1) for combo in combinations(tetravites, r=r)]
         options = [TetravusExileTokens(source.owner_id, gs, source, combo) for combo in combos]
-        gs.choice_queue.append(ChoiceAction(options, may=True))
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class TheAbyss(Listener):
     """At each upkeep, destroy target nonartifact creature that player controls of their choice. No regeneration."""
@@ -572,8 +572,7 @@ class TheAbyss(Listener):
             options = [DestroyAction(p_id, gs, source, your_non_art_creatures[0], False)]
         else:
             options = [DestroyAction(p_id, gs, source, c, False) for c in your_non_art_creatures]
-        gs.pending_choice = ChoiceAction(options)
-
+        gs.queue_choice(ChoiceAction(options))
 
 class TheFallen(Listener):
     """At your upkeep, this creature deals 1 damage to your opponent if it has previously damaged him/her this game"""
@@ -610,7 +609,7 @@ class TheTabernacleAtPendrellVale(Listener):
             if not gs.mana_pools[event.active_player].can_pay('1'):
                 gs.pile_mgr.destroy(your_creature, allow_regeneration=False)
             options = [PayMana(event.active_player, gs, source, '1'), Sac(event.active_player, gs, source)]
-            gs.pending_choice = ChoiceAction(options)
+            gs.queue_choice(ChoiceAction(options))
 
 class VesuvanDoppelgangerUpkeep(Listener):
     """You may have this creature enter as a copy of any creature on the battlefield,
@@ -625,7 +624,7 @@ class VesuvanDoppelgangerUpkeep(Listener):
             return
         from models.actions.special import CopyCardAction
         options = [CopyCardAction(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class XenicPoltergeistRelease(Listener):
     """{T}: Until your NEXT upkeep, target noncreature artifact becomes an artifact creature with PT each = its MV.
@@ -651,7 +650,7 @@ class YawgmothDemon(Listener):
             gs.apply_damage(s, 2, s.owner_id)
             return
         options = [Sac(s.owner_id, gs, a) for a in your_artifacts] + [YawgmothDemonUnpaidUpkeep(s.owner_id, gs, s)]
-        gs.pending_choice = ChoiceAction(options)
+        gs.queue_choice(ChoiceAction(options))
 
 class WormsOfTheEarthUpkeep(Listener):
     """... At each upkeep, any player may: do nothing, sac two choice lands, or WOTE deals 5 damage to that player.
@@ -663,4 +662,4 @@ class WormsOfTheEarthUpkeep(Listener):
         your_land_cnt = len(gs.card_filter.on_player_board(event.active_player).lands().result())
         if your_land_cnt >= 2:
             options.append(WormsOfTheEarthSacTwoLands(event.active_player, gs, source))
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))

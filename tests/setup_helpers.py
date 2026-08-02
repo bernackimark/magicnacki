@@ -36,6 +36,7 @@ class TestGame:
         self.cu = cu
         self.gs = self.engine.match_manager.create_game_state()
         self.engine.gs = self.gs
+        self.gs.pending_choice = None  # clears the Mulligan Choice
 
     def card(self, slug: str, player_id: int = 0) -> GameCard:
         game_card = GameCard(self.cu[slug], player_id)
@@ -127,7 +128,6 @@ class TestGame:
         if target is not None:
             pipeline.targets.append(target)
         pipeline.advance()
-        pipeline.finish()
         pipeline.resolve_ability()
 
     def card_has_a_registered_listener(self, card: GameCard) -> bool:

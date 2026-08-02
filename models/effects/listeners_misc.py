@@ -75,7 +75,7 @@ class VerduranEnchantress(Listener):
         if source.owner_id != event.card.owner_id or not event.card.is_enchantment:
             return
         options = [DrawCard(source.owner_id, gs)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 # --- LIFE LOSS ---
 class AliFromCairo(Listener):
@@ -105,7 +105,7 @@ class LeviathanAttack(Listener):
             return
 
         options = [SacTwoIslandsToAttack(event.active_p_id, gs, source, source)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class ManaDrainMainPhase(Listener):
     """... At your next main phase, add an amount of {C} equal to that spell's mana value"""

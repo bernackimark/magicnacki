@@ -113,7 +113,7 @@ class PuppetMaster(Listener):
         gs.pile_mgr.bounce(event.card)
         if gs.mana_pools[source.owner_id].can_pay('UUU'):
             options = [PayManaToBounce(source.owner_id, gs, source, source, 'UUU')]
-            gs.pending_choice = ChoiceAction(options, may=True)
+            gs.queue_choice(ChoiceAction(options, may=True))
 
 class RukhEgg(Listener):
     """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""
@@ -173,7 +173,7 @@ class SoulNet(Listener):
         if not event.card.is_creature:
             return
         options = [PayManaForLife(source.owner_id, gs, '1', 1)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 
 class TabletOfEpityr(Listener):
@@ -184,7 +184,7 @@ class TabletOfEpityr(Listener):
         if not event.card.is_artifact or event.card.owner_id != source.owner_id:
             return
         options = [PayManaForLife(source.owner_id, gs, '1', 1)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 
 class UrzasMiter(Listener):
@@ -195,4 +195,4 @@ class UrzasMiter(Listener):
         if event.card.owner_id != source.owner_id or 'Artifact' not in event.card.card_types:
             return
         options = [PayManaToDrawCards(source.owner_id, gs, '3', 1)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))

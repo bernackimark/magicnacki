@@ -37,6 +37,9 @@ class TestCardsMNOP(unittest.TestCase):
         first_blue_untap.play()
         self.assertFalse(blue1.is_tapped)
 
+        print('---------')
+        print(self.gs.pending_choice.get_actions())
+        print('------')
         dont_untap_anymore = self.gs.pending_choice.get_actions()[1]
         dont_untap_anymore.play()
         self.assertTrue(blue2.is_tapped)
@@ -118,9 +121,10 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual([19, 20], self.gs.life)
 
     def test_mold_demon(self):
+        """When this creature enters, sacrifice it unless you sacrifice two Swamps"""
         card = self.g.card('mold-demon')
-        self.g.battlefield('swamp', cnt=7)
-        self.g.cast_and_accept(card, None, card.abilities[0], add_lots_of_mana=False)
+        self.g.battlefield('swamp', cnt=9)
+        self.g.cast_and_accept(card, None, card.abilities[0])
         self.assertTrue(any(isinstance(a, SacCards) for a in self.gs.pending_choice.get_actions()))
 
     def test_nether_void(self):
@@ -377,7 +381,6 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertTrue(card.is_tapped)
         self.assertEqual(18, self.gs.life[0])
         self.assertFalse(self.gs.pending_choice)
-
 
     # def test_psychic_purge(self):
     #     """... When a spell or ability an opp controls causes you to discard this card, that player loses 5 life."""

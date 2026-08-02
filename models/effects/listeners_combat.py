@@ -220,7 +220,7 @@ class Johan(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CombatBeginEvent) -> None:
         options = [JohanAction(source.owner_id, gs, source)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 # --- COMBAT END EVENT ---
 class ClockworkCombatEnd(Listener):
@@ -296,7 +296,7 @@ class FloralSpuzzem(Listener):
         if not opp_artifacts:
             return
         options = [DestroyAndForegoCombatDamage(s.owner_id, gs, s, t) for t in opp_artifacts]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 
 class MerchantShip(Listener):

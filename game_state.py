@@ -66,7 +66,7 @@ class GameState:
         # used for forced actions that do not go onto the stack (ex: it's resolved that you must discard, select one)
         self.pending_choice: ChoiceAction | None = MulliganChoice(self.player_turn_idx,
                                                                   self, self.rules['mulligan'])
-        self.choice_queue: list[ChoiceAction | None] = []
+        self._pending_choices: list[ChoiceAction | None] = []
 
         # objects that carry data to be displayed in UI that aren't common (ex: Show Library)
         self.presentation_requests: list[PresentationRequest] = []
@@ -102,6 +102,12 @@ class GameState:
     @property
     def player_turn_idx(self) -> int:
         return self.turn_mgr.player_turn_idx
+
+    def queue_choice(self, choice: ChoiceAction):
+        if self.pending_choice is None:
+            self.pending_choice = choice
+        else:
+            self._pending_choices.append(choice)
 
     def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))

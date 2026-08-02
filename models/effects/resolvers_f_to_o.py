@@ -45,7 +45,7 @@ class FalseOrders(Resolver):
         other_combats = [com for com in gs.combat_mgr.combats if target not in com.blockers]
         if other_combats:
             options = [AssignBlocker(source.owner_id, gs, target, com.attacker) for com in other_combats]
-            gs.pending_choice = ChoiceAction(options, may=True)
+            gs.queue_choice(ChoiceAction(options, may=True))
 
 class Feint(Resolver):
     """Tap all creatures blocking target attacking creature.
@@ -281,7 +281,7 @@ class LivingArtifactUpkeep(Resolver):
         if gs.player_turn_idx != s.owner_id:
             return
         options = [RemoveCounterGainLife(s.owner_id, gs, s, VITALITY)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class ManaClash(Resolver):
     """You and target opponent each flip a coin. Mana Clash deals 1 damage to each player whose coin comes up tails.

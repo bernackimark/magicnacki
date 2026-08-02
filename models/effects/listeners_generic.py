@@ -95,7 +95,7 @@ class OnColorSpellPayOneColorlessForOneLifeChoice(Listener):
         if not gs.mana_pools[s.owner_id].can_pay('1'):
             return
         options = [PayManaForLife(s.owner_id, gs, '1', 1)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 
 # --- COMBAT END ---
@@ -613,7 +613,7 @@ class PayManaToUntapUpkeep(Listener):
             return
 
         options = [PayManaToUntapAction(target_owner, gs, s, t, self.mana_cost, targets) for t in targets]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class RemoveCounterAtTargetUpkeep(Listener):
     """At target owner's upkeep, remove counter(s) from this card"""

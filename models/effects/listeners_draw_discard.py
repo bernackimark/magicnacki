@@ -93,7 +93,7 @@ class IslandSanctuary(Listener):
         if event.active_player != source.owner_id:
             return
         options = [IslandSanctuaryAction(source.owner_id, gs, source)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class ManaVaultDamageIfTapped(Listener):
     """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""

@@ -36,7 +36,7 @@ class BloodOfTheMartyr(Listener):
             return
         from models.actions.damage import RedirectDamageToYouAction
         options = [RedirectDamageToYouAction(source.owner_id, gs, source, event)]
-        gs.pending_choice = ChoiceAction(options, may=True)
+        gs.queue_choice(ChoiceAction(options, may=True))
 
 class Forcefield(Listener):
     """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""
