@@ -2,7 +2,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 
 from models.effects.base import Listener
-from models.events_all import StateBasedEvent, Event
+from models.effects.listeners_mod_queries import OwnershipModQuery
+from models.events_all import StateBasedEvent, Event, ModQueryEvent
 from models.modifiers import OwnershipMod
 from models.utils import flip
 
@@ -37,18 +38,16 @@ class JihadSac(Listener):
             gs.pile_mgr.destroy(source, allow_regeneration=False)
 
 class OldManOfTheSeaPowerCheck(Listener):
-    """Gain control of target creature with power <= OMOTS's power for as long as ... t
-    arget's power remains <= OMOTS's power."""
+    """Gain control of target creature ... so as long as ... target's power remains <= OMOTS's power."""
     listens_to = StateBasedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
-        for c in gs.pile_mgr.boards[source.owner_id]:
-            for mod in c.modifiers.get(OwnershipMod, reverse=True):
-                if mod.s is source:
-                    print('AAA', source, source.power, c.power)
-                    if source.power > c.power:
-                        print('YYY')
-                        c.modifiers.remove(mod)
-                        gs.pile_mgr.boards[source.owner_id].remove(c)
-                        gs.pile_mgr.boards[flip(source.owner_id)].append(c)
-                        return
+        entry = next((e for e in gs.event_mgr.event_listeners.get(ModQueryEvent, []) if e.source is source), None)
+        if not entry:
+            return
+
+        effect: OwnershipModQuery = entry.effect
+        if source.power > effect.stolen_card.power:
+            gs.event_mgr.unregister_specific_effect(effect)
+            gs.pile_mgr.boards[source.owner_id].remove(effect.stolen_card)
+            gs.pile_mgr.boards[flip(source.owner_id)].append(effect.stolen_card)

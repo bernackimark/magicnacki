@@ -198,9 +198,6 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.next_turn()
         self.g.activate_ability(aa, target)
         self.assertEqual(0, target.owner_id)
-        print('-----')
-        for k, v in self.gs.event_mgr.event_listeners.items():
-            print(k, v)
 
         self.g.next_turn()
         self.assertTrue(any(isinstance(a, Untap) for a in self.gs.pending_choice.get_actions()))
@@ -212,12 +209,13 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(0, target.owner_id)
         pump = self.g.hand('giant-growth')
         pump.abilities[0].effect.resolve(self.gs, pump, card)
-        # TODO: debug print statements are firing here from inside of OldManOfTheSeaPowerCheck, showing its power as 2
 
-        # print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
-        # self.gs.event_mgr.emit(StateBasedEvent)
-        # print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
-        # self.assertEqual(1, target.owner_id, 'Target should have been returned to original owner when OMOTOS pumped')
+        print('---------')
+        print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
+        self.gs.event_mgr.emit(StateBasedEvent())
+        print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
+        self.assertEqual(1, target.owner_id, 'Target should have been returned to original owner when OMOTOS pumped')
+        self.assertIn(target, self.gs.boards[1])
 
     def test_orcish_artillery(self):
         """{T}: This creature deals 2 damage to any target and 3 damage to you"""

@@ -6,7 +6,7 @@ from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, LivingLands, \
-    LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
+    LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, BecomeBasicLand
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT
@@ -91,7 +91,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fungusaur': [Triggered(FungusaurOnDamage())],
     'gabriel-angelfire': [Triggered(GabrielAngelfire())],
     'gaeas-avenger': [Static(GaeasAvengerPT())],
-    'gaeas-liege': [Static(GaeasLiegePT())],  # more to code
+    'gaeas-liege': [Static(GaeasLiegePT()), Activated('T', BecomeBasicLand('forest'), T_FUNCS['lands'])],
     'gaeas-touch': [Activated('', AddMana('G', 2), T_FUNCS['owner'], extra_costs=[SacSelfCost()],
                               text='Exile for {GG}'),
                     Activated('', HandToBoard(), T_FUNCS['forests_in_your_hand'], text='Play extra forest',

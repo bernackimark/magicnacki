@@ -61,7 +61,9 @@ class EventManager:
             if isinstance(event, ModQueryEvent):
                 # enforce type contract
                 if hasattr(e.effect, "modifies"):
-                    if e.effect.modifies != event.query:
+                    if isinstance(e.effect.modifies, str) and e.effect.modifies != event.query:
+                        continue
+                    if isinstance(e.effect.modifies, tuple) and event.query not in e.effect.modifies:
                         continue
             print(f'Emitting {type(event).__name__}, possible responder {e}')
             e.effect.on_event(self._gs, e.source, event)

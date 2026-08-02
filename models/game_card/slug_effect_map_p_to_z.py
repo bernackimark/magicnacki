@@ -50,7 +50,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
     WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEquals, \
-    KWAApplies, PumpAppliesEOT, Transmutation
+    KWAApplies, PumpAppliesEOT, Transmutation, SunglassesOfUrza
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -212,6 +212,7 @@ MAP: dict[str, list[EffSpec]] = {
     'su-chi': [Triggered(SuChi())],
     'subdue': [Spell(Subdue(), T_FUNCS['creatures'])],
     'sunastian-falconer': [Activated('T', AddMana('C', 2))],
+    'sunglasses-of-urza': [Static(SunglassesOfUrza())],
     'sunken-city': [Static(PumpApplies(T_FUNCS['blue_creatures'], (1, 1))), Triggered(PayManaOrSacAtUpkeep('UU'))],
     'swords-to-plowshares': [Spell(SwordsToPlowshares(), T_FUNCS['creatures'])],
     'sylvan-paradise': [Spell(SetColor('G', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],

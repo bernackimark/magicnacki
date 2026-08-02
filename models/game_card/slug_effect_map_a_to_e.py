@@ -41,7 +41,7 @@ from models.effects.listeners_permission import ArtifactWardCanBeTargeted, Akron
     UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
     HostCantBeTargetedBySpells
 from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \
-    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT
+    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, BloodMoon, ManaProdAlter
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -135,6 +135,7 @@ MAP: dict[str, list[EffSpec]] = {
     'blessing': [Activated('W', Pump(1, 1, True), T_FUNCS['host'])],
     'blight': [Spell(Blight(), T_FUNCS['lands'])],
     'blood-lust': [Spell(BloodLust(), T_FUNCS['creatures'])],
+    'blood-moon': [Static(BloodMoon())],
     'blood-of-the-martyr': [Triggered(BloodOfTheMartyr())],
     'blue-elemental-blast': [Spell(CounterSpell(), T_FUNCS['red_spells']),
                              Spell(Destroy(), T_FUNCS['red_permanents'])],
@@ -232,6 +233,7 @@ MAP: dict[str, list[EffSpec]] = {
     'deathgrip': [Activated('BB', CounterSpell(), T_FUNCS['green_spells'])],
     'deathlace': [Spell(SetColor('B'), T_FUNCS['cards'])],
     'death-ward': [Spell(Regenerate(), T_FUNCS['creatures'])],
+    'deep-water': [Activated('T', ManaProdAlter('U', T_FUNCS['your_lands'], eot=True))],
     'demonic-hordes': [Activated('T', Destroy(), T_FUNCS['lands']), Triggered(DemonicHordesUpkeep())],
     'demonic-torment': [Spell(HostCantAttack(), T_FUNCS['creatures']),
                         Static(PreventAllDamageEOT(dealer_func=T_FUNCS['host'], combat_only=True))],

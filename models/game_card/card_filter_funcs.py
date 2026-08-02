@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from game_card import GameCard
     from models.actions.base import Action
 
-from models.constants import Target, ALL_PLAYER_INDICES
+from models.constants import Target, ALL_PLAYER_INDICES, BASIC_LANDS
 from models.utils import flip
 
 A_FUNCS: [str, Callable[[GameState, GameCard], tuple[int | None]]] = {
@@ -132,6 +132,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'non_artifact_creatures': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
     'non_artifact_non_black_creatures': lambda gs, s: gs.card_filter.non_artifact_creatures().non_black().result(),
     'non_artifact_non_white_creatures': lambda gs, s: gs.card_filter.non_artifact_creatures().non_white().result(),
+    'non_basic_lands': lambda gs, s: [c for c in gs.card_filter.in_play().lands.result()
+                                      if c.props.slug not in BASIC_LANDS],
     'non_creature_artifacts': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
     'non_fliers': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying', False).result(),
     'non_token_creatures': lambda gs, s: gs.card_filter.in_play().non_token().creatures().result(),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
-from typing import TYPE_CHECKING, Callable, Any
+from functools import cached_property
+from typing import TYPE_CHECKING, Callable, Any, Optional
 
 from models.events_all import ModQueryEvent, Event
 
@@ -8,8 +9,9 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
+from models.constants import BASIC_LAND_MANA_PRODUCED, BASIC_LANDS
 from models.effects.base import Listener
-from models.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod, OwnershipMod
+from models.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod, OwnershipMod, ManaProdMod
 from models.utils import flip
 
 """
@@ -35,6 +37,46 @@ class AddCreatureType(Listener):
         if event.card is not self.target:
             return
         event.mods.append(TypeMod(s=source, add_or_remove='add', item='Creature'))
+
+class BecomeBasicLand(Listener):
+    """Modifies the card's sub_type into a basic land of the provided type;
+    replaces all mana produced to the one associated w the new type"""
+    listens_to = ModQueryEvent
+    modifies = ('mana_produced', 'sub_type')
+
+    def __init__(self, basic_land_type: str, applies_to_func: Optional[Callable] = None, eot: bool = False):
+        self.basic_land_type = basic_land_type
+        self.applies_to_func = applies_to_func
+        self.target = None
+        if eot:
+            self.expires = 'EOT'
+
+    @cached_property
+    def new_mana_produced(self) -> str:
+        return BASIC_LAND_MANA_PRODUCED[self.basic_land_type]
+
+    @cached_property
+    def new_sub_type(self) -> str:
+        return self.basic_land_type.capitalize()
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        if self.target is None:
+            self.target = targets[0]
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        if event.card is not self.target:
+            return
+        affected_cards = self.applies_to_func(gs, source) if self.applies_to_func and not self.target else [self.target]
+        for c in affected_cards:
+            if event.query == 'sub_type':
+                for orig_sub_type in c.props.card_sub_types:
+                    event.mods.append(SubTypeMod(s=source, item=orig_sub_type, add_or_remove='remove'))
+                event.mods.append(SubTypeMod(s=source, item=self.new_sub_type))
+                return
+            if event.query == 'mana_produced':
+                for orig_mana in c._mana_produced:
+                    event.mods.append(ManaProdMod(s=source, item=orig_mana, add_or_remove='remove'))
+                event.mods.append(ManaProdMod(s=source, item=self.new_mana_produced))
 
 class PTModEqualsManaValue(Listener):
     """Power and toughness mod each equal its mana value"""
@@ -74,12 +116,37 @@ class KWAApplies(Listener):
         if event.card in applies_to:
             event.mods.append(KWAMod(s=source, item=self.kwa_added, add_or_remove=self.add_or_remove))
 
+class ManaProdAlter(Listener):
+    """Replaces all mana produced to the one associated w the new type"""
+    listens_to = ModQueryEvent
+    modifies = 'mana_produced'
+
+    def __init__(self, mana_color: str, applies_to_func: Optional[Callable] = None, eot: bool = False):
+        self.mana_color = mana_color
+        self.applies_to_func = applies_to_func
+        self.target = None
+        if eot:
+            self.expires = 'EOT'
+
+    def initialize(self, gs: GameState, source: GameCard, targets: Any):
+        if self.applies_to_func is None and self.target is None:
+            self.target = targets[0]
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        affected_cards = self.applies_to_func(gs, source) if self.applies_to_func and not self.target else [self.target]
+        if event.card not in affected_cards:
+            return
+        for c in affected_cards:
+            for orig_mana in c._mana_produced:
+                event.mods.append(ManaProdMod(s=source, item=orig_mana, add_or_remove='remove'))
+            event.mods.append(ManaProdMod(s=source, item=self.mana_color))
+
 class OwnershipModQuery(Listener):
     """Returns an OwnershipMod where new owner is the source owner"""
     listens_to = ModQueryEvent
     modifies = 'ownership'
 
-    def __init__(self, stolen_card: GameCard, new_controller_func: Callable | None = None, eot: bool = False):
+    def __init__(self, stolen_card: GameCard, new_controller_func: Optional[Callable] = None, eot: bool = False):
         self.stolen_card = stolen_card
         self.new_controller_func = new_controller_func
         if eot:
@@ -214,6 +281,27 @@ class AspectOfWolfPT(Listener):
         t_adj = math.ceil(your_forest_cnt / 2)
         event.mods.append(PTMod(s=source, p_adj=p_adj, t_adj=t_adj))
 
+class BloodMoon(Listener):
+    """Nonbasic lands are Mountains"""
+    listens_to = ModQueryEvent
+    modifies = ('mana_produced', 'sub_type')
+    # TODO: this doesn't take away the card's other abilities, such as LOA, strip-mine, mishras-factory
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        non_basic_lands = [c for c in gs.card_filter.in_play().lands().result() if c.props.slug not in BASIC_LANDS]
+        if event.card not in non_basic_lands:
+            return
+        if event.query == 'sub_type':
+            for orig_sub_type in event.card.props.card_sub_types:
+                event.mods.append(SubTypeMod(s=source, item=orig_sub_type, add_or_remove='remove'))
+            event.mods.append(SubTypeMod(s=source, item='Mountain'))
+            return
+
+        if event.query == 'mana_produced':
+            for orig_mana in event.card._mana_produced:
+                event.mods.append(ManaProdMod(s=source, item=orig_mana, add_or_remove='remove'))
+            event.mods.append(ManaProdMod(s=source, item='R'))
+
 class Conversion(Listener):
     """All Mountains are Plains"""
     listens_to = ModQueryEvent
@@ -330,6 +418,16 @@ class RabidWombat(Listener):
         if not aura_cnt:
             return
         event.mods.append(PTMod(s=source, p_adj=2 * aura_cnt, t_adj=2 * aura_cnt, expires='EOT'))
+
+class SunglassesOfUrza(Listener):
+    """You may spend white mana as though it were red mana"""
+    listens_to = ModQueryEvent
+    modifies = 'mana_produced'
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        if 'W' not in event.card._mana_produced:
+            return
+        event.mods.append(ManaProdMod(s=source, item='R'))
 
 class Transmutation(Listener):
     """Switch target creature's power and toughness EOT"""
