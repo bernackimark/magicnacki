@@ -10,7 +10,7 @@ from models.actions.destroy_sac_regen import (DestroyAction, Sac, AllowOpponentT
 from models.actions.kwa import AddKWA
 from models.actions.mana import PayMana
 from models.actions.piles import TutorMultipleCards
-from models.actions.pump import VariablePTMod
+from models.actions.pump import VariablePTMod, BasePTAction
 from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePayManaPerCounterDealDamage, \
     SkipDrawPhaseGainLife, PayManaAndOrTakeDamage, YawgmothDemonUnpaidUpkeep, SacTwoIslandsToUntap, SacTwoIslands, \
     WormsOfTheEarthSacTwoLands, WormsOfTheEarthTake5Damage, TapCardAndTakeDamage, TetravusCreateTokens, \
@@ -18,9 +18,9 @@ from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePay
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
-from models.effects.resolvers_generic import Steal
+from models.effects.resolvers_generic import Steal, BasePT
 from models.events_all import UpkeepEvent, Event
-from models.modifiers import KWAMod
+from models.modifiers import KWAMod, BasePTMod
 from models.utils import flip
 from models.zone import Zone
 
@@ -263,6 +263,29 @@ class GiantSlugUpkeep(Listener):
             return
         kwa_options = ('Forestwalk', 'Islandwalk', 'Mountainwalk', 'Plainswalk', 'Swampwalk')
         options = [AddKWA(s.owner_id, gs, s, s, kwa) for kwa in kwa_options]
+        gs.queue_choice(ChoiceAction(options))
+
+class Halfdane(Listener):
+    """H's base PT = (3, 3)
+    At your upkeep, change H's base PT = PT of target creature other than H until end of your NEXT upkeep
+    If no legal targets, H's base PT = (3, 3)"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
+        if event.active_player != s.owner_id:
+            return
+
+        if existing_mod := next((mod for mod in s.modifiers.get(BasePTMod) if mod.s is s), None):
+            s.modifiers.remove(existing_mod)
+
+        eligible_targets = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
+        if not eligible_targets:
+            s.base_pt = (3, 3)
+        if len(eligible_targets) == 1:
+            target = eligible_targets[0]
+            s.modifiers.append(BasePT(target.power, target.toughness))
+            return
+        options = [BasePTAction(s.owner_id, gs, s, s, t.power, t.toughness) for t in eligible_targets]
         gs.queue_choice(ChoiceAction(options))
 
 class HazezonTamarTokenCreation(Listener):

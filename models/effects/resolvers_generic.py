@@ -13,7 +13,7 @@ from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
-from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod
+from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
 from models.utils import flip
 from models.zone import Zone
 
@@ -60,6 +60,20 @@ class AllWalksRemoved(Resolver):
         for land in BASIC_LANDS:
             target.modifiers.append(KWAMod(s=source, add_or_remove='remove',
                                            item=f'{land.capitalize()}walk', expires='EOT'))
+
+class BasePT(Resolver):
+    def __init__(self, base_p: int = None, base_t: int = None, eot: bool = False):
+        self.base_p = base_p
+        self.base_t = base_t
+        self.eot = eot
+
+    def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
+        if not target:
+            raise ValueError(f'{s.props.name} needs a target')
+        base_p = self.base_p if self.base_p is not None else target.base_pt[0]
+        base_t = self.base_t if self.base_t is not None else target.base_pt[1]
+        print('AAA', base_p, base_t)
+        target.modifiers.append(BasePTMod(s=s, base_p=base_p, base_t=base_t, expires='EOT' if self.eot else None))
 
 class BecomeCreature(Resolver):
     def __init__(self, power: int, toughness: int, sub_type: str = None, until_eot: bool = False):

@@ -43,6 +43,35 @@ class TestResolversGeneric(unittest.TestCase):
         self.g.next_turn()
         self.assertIn('Islandwalk', islandwalker.keyword_abilities)
 
+    def test_base_pt_p_and_t_declared(self):
+        """Set target creature's base PT to specified values (p or t can be None, defaulting to its orig base value)"""
+        card = self.g.battlefield('sorceress-queen')
+        aa = card.activated_abilities[0]  # set target base PT to (0/2)
+        target = self.g.battlefield('grizzly-bears')  # 2/2
+        pump = self.g.hand('giant-growth')  # +3/+3
+
+        self.g.next_turn()
+        self.g.cast_and_accept(pump, target, pump.abilities[0])
+        self.g.activate_ability(aa, target)
+        self.assertEqual(3, target.power)
+        self.assertEqual(5, target.toughness)
+
+    def test_base_pt_only_p_declared(self):
+        """Set target creature's base PT to specified values (p or t can be None, defaulting to its orig base value)"""
+        card = self.g.battlefield('island-of-wak-wak')
+        aa = card.activated_abilities[0]  # set power = 0
+        target = self.g.battlefield('air-elemental')  # 4/4
+        pump = self.g.hand('giant-growth')  # +3/+3
+
+        self.g.cast_and_accept(pump, target, pump.abilities[0])
+        self.g.activate_ability(aa, target)
+        self.assertEqual(3, target.power)
+        self.assertEqual(7, target.toughness)
+
+        self.g.next_turn()
+        self.assertEqual(4, target.power)
+        self.assertEqual(4, target.toughness)
+
     def test_combat_only_does_not_prevent_noncombat_damage(self):
         attacker = self.g.card('goblin-hero')
         target = self.g.battlefield('grizzly-bears', owner=1)

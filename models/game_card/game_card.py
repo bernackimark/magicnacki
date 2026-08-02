@@ -11,7 +11,8 @@ from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
 from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
 from models.counter_tokens import Counters
-from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod
+from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
+    BasePTMod
 from models.zone import Zone
 
 
@@ -102,8 +103,14 @@ class GameCard:
         if not self.is_creature:
             return 0, 0
 
-        base_power, base_t = self.base_pt[0] or 0, self.base_pt[1] or 0
-        power = base_power + sum(m.p_adj for m in self.modifiers.get(PTMod)) + self.counters.power_delta
+        base_p, base_t = self.base_pt
+
+        for mod in self.modifiers.get(BasePTMod):
+            base_p = mod.base_p
+            base_t = mod.base_t
+
+        base_p, base_t = base_p or 0, base_t or 0
+        power = base_p + sum(m.p_adj for m in self.modifiers.get(PTMod)) + self.counters.power_delta
         toughness = base_t + sum(m.t_adj for m in self.modifiers.get(PTMod)) + self.counters.toughness_delta
 
         event = ModQueryEvent(query='pt', card=self)

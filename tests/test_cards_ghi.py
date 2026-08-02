@@ -110,6 +110,26 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertIn(goblin, self.g.gy[0])  # this test now fails
 
+    def test_halfdane(self):
+        """H's base PT = (3, 3)
+        At your upkeep, change H's base PT = PT of target creature other than H until end of your NEXT upkeep
+        If no legal targets, H's base PT = (3, 3)"""
+        card = self.g.battlefield('halfdane')
+        self.assertEqual((3, 3), card.base_pt)
+        creature1 = self.g.battlefield('sengir-vampire')  # 4/4
+        creature2 = self.g.battlefield('grizzly-bears')  # 2/2
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        set_pt_eq_to_sengir = self.gs.pending_choice.get_actions()[0]
+        print(set_pt_eq_to_sengir)
+        set_pt_eq_to_sengir.play()
+        self.assertEqual(4, card.power)
+
+        self.g.next_turn()
+        self.gs.pile_mgr.destroy(creature1)
+        self.gs.pile_mgr.destroy(creature2)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(3, card.power)
+
     def test_haunting_wind(self):
         """Whenever an artifact becomes tapped or a player activates an artifact's ability
         without {T} in its activation cost, HW deals 1 damage to that artifact's controller."""

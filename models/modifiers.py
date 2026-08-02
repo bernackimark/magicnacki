@@ -14,12 +14,10 @@ Modifier (attributes: s (source) & expires (defaults to None)
     |- ManaProdMod
     |- SubTypeMod
     |- TypeMod
+ |- BasePTMod (special because of its integer attributes)
  |- PTMod (special because of its integer attributes)
  |- RegenerationMod (possesses no other attributes)
 """
-
-# TODO: Handle OwnershipMod through ModQuery instead,
-#  however Warning: the order does matter (control-magic atop control-magic) ...
 
 
 @dataclass(kw_only=True)
@@ -64,6 +62,15 @@ class OwnershipMod(Modifier):
         return f' stolen by {self.s.props.name}'
 
 @dataclass
+class BasePTMod(Modifier):
+    base_p: int | None = None
+    base_t: int | None = None
+
+    def __repr__(self):
+        end_of_turn_text = ' until end of turn' if self.expires == 'EOT' else ''
+        return f" base=({self.base_p}/{self.base_t}){end_of_turn_text}"
+
+@dataclass
 class PTMod(Modifier):
     p_adj: int = 0
     t_adj: int = 0
@@ -82,7 +89,7 @@ class RegenerationMod(Modifier):
 
 
 T = TypeVar('T', bound=Modifier)
-ModType = Union[KWAMod | ManaProdMod | OwnershipMod | PTMod | RegenerationMod | SubTypeMod | TypeMod]
+ModType = Union[KWAMod | ManaProdMod | OwnershipMod | BasePTMod | PTMod | RegenerationMod | SubTypeMod | TypeMod]
 
 @dataclass
 class Modifiers:

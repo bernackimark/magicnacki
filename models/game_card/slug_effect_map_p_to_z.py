@@ -22,7 +22,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDama
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, UntapCardEffect, \
-    DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue
+    DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -49,7 +49,7 @@ from ..effects.listeners_generic import OnColorSpellGainLife, OnColorSpellPayOne
     RedirectNextDamageToTarget
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
     WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo
-from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEquals, \
+from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEqualsFuncLen, \
     KWAApplies, PumpAppliesEOT, Transmutation, SunglassesOfUrza
 from models.systems.phase import Phase
 
@@ -62,7 +62,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pavel-maliki': [self_pump('BR', 1, 0)],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['owner']),
                     Activated('T', Pump(1, 2, True), T_FUNCS['one_one_creatures'])],
-    'people-of-the-woods': [Static(SelfPTEquals(T_FUNCS['your_forests'], t_only=True))],
+    'people-of-the-woods': [Static(SelfPTEqualsFuncLen(T_FUNCS['your_forests'], t_only=True))],
     'personal-incarnation': [Triggered(PersonalIncarnationDies()),
                              Activated('', RedirectNextDamageFromCardToOwnerEOT(T_FUNCS['self'], 1))],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)), Triggered(PestilenceEndStep())],
@@ -74,7 +74,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter())],
     'pixie-queen': [Activated('GGGT', KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
-    'plague-rats': [Static(SelfPTEquals(T_FUNCS['plague_rats']))],
+    'plague-rats': [Static(SelfPTEqualsFuncLen(T_FUNCS['plague_rats']))],
     'planar-gate': [Static(PlanarGate())],
     'plateau': dual_land_specs('RW'),
     'power-artifact': [Spell(PowerArtifact(), T_FUNCS['artifacts'])],
@@ -189,6 +189,7 @@ MAP: dict[str, list[EffSpec]] = {
     'snake': [Triggered(AddPoisonCounter())],  # token creature created by serpent-generator
     'sol-ring': [Activated('T', AddMana('C', 2), T_FUNCS['owner'])],
     'solkanar-the-swamp-king': [Spell(OnColorSpellGainLife('B'))],
+    'sorceress-queen': [Activated('T', BasePT(0, 2, True), T_FUNCS['other_creatures'])],
     'soul-net': [Triggered(SoulNet())],
     'spectral-cloak': [Spell(SpectralCloak(), T_FUNCS['creatures'])],
     'spinal-villain': [Activated('T', Destroy(), T_FUNCS['blue_creatures'])],

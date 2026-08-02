@@ -27,7 +27,7 @@ from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, Cu
 from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
-from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, BlazingEffigy
+from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, BlazingEffigy, BrineHag
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
 from ..effects.listeners_combat import CavePeopleAttackPump, ElderLandWurm, AislingLeprechaun, Arboria, \
     ClockworkCombatEnd
@@ -41,7 +41,7 @@ from models.effects.listeners_permission import ArtifactWardCanBeTargeted, Akron
     UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
     HostCantBeTargetedBySpells
 from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \
-    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, BloodMoon, ManaProdAlter
+    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, PumpAppliesEOT, BloodMoon, ManaProdAlter
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -152,6 +152,7 @@ MAP: dict[str, list[EffSpec]] = {
                   Activated('3', HostCanAttack(T_FUNCS['host']), allowed_activators=A_FUNCS['host_owner'])],
     'brass-man': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                   Triggered(PayManaToUntapUpkeep('1', T_FUNCS['self']))],
+    'brine-hag': [Triggered(BrineHag())],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
     'burrowing': [Spell(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'])],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['your_tapped_lands'], 1, None),
@@ -220,7 +221,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cursed-rack': [Triggered(CursedRack())],
     'cyclone': [Triggered(Cyclone())],
     'cyclopean-mummy': [Triggered(CyclopeanMummy())],
-    'dakkon-blackblade': [Static(SelfPTEquals(T_FUNCS['your_lands']))],
+    'dakkon-blackblade': [Static(SelfPTEqualsFuncLen(T_FUNCS['your_lands']))],
     'damping-field': [Triggered(DampingField())],
     'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU')), Spell(DanceOfMany(), T_FUNCS['non_token_creatures'])],
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(T_FUNCS['your_forests'])])],

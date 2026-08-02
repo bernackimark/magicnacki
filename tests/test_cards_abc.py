@@ -151,6 +151,21 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.next_turn()
         self.assertEqual(1, creature.power)
 
+    def test_brine_hag(self):
+        """When BH dies, change base PT of all creatures that dealt damage to it this turn to 0/2.
+        (This effect lasts indefinitely.)"""
+        card = self.g.battlefield('brine-hag')  # 2/2
+        creature = self.g.battlefield('craw-wurm', owner=1)  # 6/4
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(creature)
+        self.gs.combat_mgr.add_blocker(creature, card)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertEqual(0, creature.power)
+
+        self.g.next_turn()
+        self.assertEqual(0, creature.power)
+
     def test_candelabra_of_tawnos(self):
         """{X}, {T}: Untap X target lands"""
         card = self.g.battlefield('candelabra-of-tawnos')

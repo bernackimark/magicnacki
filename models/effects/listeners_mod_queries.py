@@ -158,32 +158,6 @@ class OwnershipModQuery(Listener):
         new_controller_id = self.new_controller_func(gs, source) if self.new_controller_func else source.owner_id
         event.mods.append(OwnershipMod(s=source, new_owner_id=new_controller_id))
 
-class SelfPTEquals(Listener):
-    """For that card, its pt = the len of the T_FUNC provided, append a PTMod for the len;
-    you may provide p_only or t_only to only affect that value"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def __init__(self, card_cnt_func: Callable[[GameState, GameCard], list[GameCard]],
-                 p_only: bool = False, t_only: bool = False):
-        self.card_cnt_func = card_cnt_func
-        self.p_only = p_only
-        self.t_only = t_only
-
-        if self.p_only and self.t_only:
-            raise ValueError("Both p_only & t_only may not be True for SelfPTEquals")
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source:
-            return
-        amt = len(self.card_cnt_func(gs, source))
-        if not self.p_only and not self.t_only:
-            event.mods.append(PTMod(s=source, p_adj=amt, t_adj=amt))
-        elif self.p_only:
-            event.mods.append(PTMod(s=source, p_adj=amt))
-        elif self.t_only:
-            event.mods.append(PTMod(s=source, t_adj=amt))
-
 class PumpApplies(Listener):
     """If card is in applies_to_func (and the optional condition isn't False), append a PTMod for the provided pt_adj"""
     listens_to = ModQueryEvent
@@ -226,6 +200,32 @@ class PumpAppliesEOT(Listener):
             applies_to = [applies_to]
         if event.card in applies_to:
             event.mods.append(PTMod(s=source, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT'))
+
+class SelfPTEqualsFuncLen(Listener):
+    """For that card, its pt = the len of the T_FUNC provided, append a PTMod for the len;
+    you may provide p_only or t_only to only affect that value"""
+    listens_to = ModQueryEvent
+    modifies = 'pt'
+
+    def __init__(self, card_cnt_func: Callable[[GameState, GameCard], list[GameCard]],
+                 p_only: bool = False, t_only: bool = False):
+        self.card_cnt_func = card_cnt_func
+        self.p_only = p_only
+        self.t_only = t_only
+
+        if self.p_only and self.t_only:
+            raise ValueError("Both p_only & t_only may not be True for SelfPTEquals")
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        if event.card is not source:
+            return
+        amt = len(self.card_cnt_func(gs, source))
+        if not self.p_only and not self.t_only:
+            event.mods.append(PTMod(s=source, p_adj=amt, t_adj=amt))
+        elif self.p_only:
+            event.mods.append(PTMod(s=source, p_adj=amt))
+        elif self.t_only:
+            event.mods.append(PTMod(s=source, t_adj=amt))
 
 # --- CARD-SPECIFIC ---
 class AngelicVoices(Listener):

@@ -8,7 +8,9 @@ from models.actions.special import PayManaToDrawCards, PayManaForLife, PayManaTo
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
+from models.effects.resolvers_generic import BasePT
 from models.events_all import DiesEvent, DamageResolvedEvent, Event
+from models.modifiers import BasePTMod
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -52,6 +54,22 @@ class BlazingEffigy(Listener):
                                 if e.target is source and e.source.props.slug == 'blazing-effigy'])
         options = [DealDamageTo(source.owner_id, gs, source, total_damage, target) for target in all_creatures]
         gs.queue_choice(ChoiceAction(options))
+
+class BrineHag(Listener):
+    """When BH dies, change the base PT of all creatures that dealt damage to it this turn to 0/2.
+    (This effect lasts indefinitely.)"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if event.card is not source:
+            return
+        events: list[DamageResolvedEvent] = gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)
+        for e in events:
+            if e.target is not source or not e.source.is_creature:
+                continue
+            e.source.modifiers.append(BasePTMod(0, 2, s=source))
+            # TODO: Craw Wurm is incorrectly dying because Brine Hag's combat damage is getting dealt after this
+            #  so when CW's toughness is reduced to 2, BH is killing it w combat damage
 
 class CreatureBond(Listener):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""

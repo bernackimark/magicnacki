@@ -6,7 +6,7 @@ from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, LivingLands, \
-    LivingPlane, JihadPT, PumpApplies, SelfPTEquals, KWAApplies, PumpAppliesEOT, BecomeBasicLand
+    LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, PumpAppliesEOT, BecomeBasicLand
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT
@@ -21,7 +21,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
-    CounterSpellUnlessManaPaid, RemoveFromCombat
+    CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT
 from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -32,7 +32,7 @@ from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, 
     LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
     HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, \
-    LeviathanUpkeep
+    LeviathanUpkeep, Halfdane
 from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
@@ -143,6 +143,7 @@ MAP: dict[str: list[EffSpec]] = {
     'green-ward': [Spell(KWAModEffect('add', 'Protection From Green'), T_FUNCS['creatures'])],
     'guardian-angel': [Spell(GuardianAngel(), T_FUNCS['all_creatures_and_players'])],  # partial
     'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), T_FUNCS['all_players'])],
+    'halfdane': [Triggered(Halfdane())],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['owner']),
                    Activated('T', AllWalksRemoved(), T_FUNCS['creatures'])],
     'hasran-ogress': [Triggered(HasranOgress())],
@@ -189,6 +190,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ironclaw-orcs': [Static(IronclawOrcs())],
     'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                               Triggered(PayManaToUntapUpkeep('UU', T_FUNCS['self']))],
+    'island-of-wak-wak': [Activated('T', BasePT(base_p=0, base_t=None, eot=True), T_FUNCS['fliers'])],
     'island-sanctuary': [Static(IslandSanctuary())],
     'ivory-cup': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('W'))],
     'ivory-guardians': [Static(IvoryGuardians())],
@@ -211,7 +213,7 @@ MAP: dict[str: list[EffSpec]] = {
     'karakas': [Activated('T', AddMana('W')), Activated('T', Bounce(), T_FUNCS['legendary_creatures'])],
     'karma': [Triggered(Karma())],
     'kei-takahashi': [Activated('T', PreventNextDamageBy(preventable_amt=2), T_FUNCS['creatures'])],
-    'keldon-warlord': [Static(SelfPTEquals(T_FUNCS['your_non_wall_creatures']))],
+    'keldon-warlord': [Static(SelfPTEqualsFuncLen(T_FUNCS['your_non_wall_creatures']))],
     'khabal-ghoul': [AddCounterPerCreatureDeathAtEndStep(PLUS_ONE)],
     'killer-bees': [self_pump('G', 1, 1)],
     'king-suleiman': [Activated('T', Destroy(), T_FUNCS['djinns_and_efreets'])],
@@ -304,7 +306,7 @@ MAP: dict[str: list[EffSpec]] = {
                          Activated('1T', DestroyAll(T_FUNCS['artifacts_creatures_enchantments']))],
     'niall-silvain': [Activated('GGGGT', Regenerate(), T_FUNCS['creatures'])],
     'nicol-bolas': [Triggered(PayManaOrSacAtUpkeep('UBR')), Triggered(NicolBolas())],
-    'nightmare': [Static(SelfPTEquals(T_FUNCS['your_swamps']))],
+    'nightmare': [Static(SelfPTEqualsFuncLen(T_FUNCS['your_swamps']))],
     'northern-paladin': [Activated('WW', Destroy(), T_FUNCS['black_permanents'])],
     'oasis': [Activated('T', PreventNextDamageBy(preventable_amt=1), T_FUNCS['creatures'])],
     'obelisk-of-undoing': [Activated('6T', Bounce(), T_FUNCS['perms_you_own_and_control'])],
