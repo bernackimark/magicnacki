@@ -58,6 +58,7 @@ class AbilityPipeline(Action):
         self.advance()
 
     def can_begin(self) -> bool:
+        print('Entering .can_begin() for', self.source)
         if self.eff_spec.allowed_p_turn_func is not None:
             if self.eff_spec.allowed_p_turn_func(self.gs, self.source) != self.gs.player_turn_idx:
                 return False
@@ -81,6 +82,10 @@ class AbilityPipeline(Action):
         if max_x < min_x:
             return False
 
+        if (self.source.casting_cost and 'X' in self.source.casting_cost
+                and not self.gs.mana_pools[self.player_idx].can_pay(str(min_x))):
+            return False
+
         target_spec = self.eff_spec.target_spec
         if target_spec:
             targets = target_spec.get_targets(self.gs, self.source)
@@ -88,6 +93,7 @@ class AbilityPipeline(Action):
                 return False
 
         if not self.gs.mana_pools[self.player_idx].can_pay(self.ability_cost):
+            print('BBB')
             return False
 
         for extra_cost in self.eff_spec.extra_costs:
