@@ -26,7 +26,8 @@ from models.systems.phase import Phase
 from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
     max_x_from_printed_card
-from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos
+from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos, \
+    InvokePrejudice
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, HazezonTamarLTB, Kismet, \
     LandEquilibrium
@@ -187,6 +188,7 @@ MAP: dict[str: list[EffSpec]] = {
                                  max_activations_per_turn=1)],
     'invisibility': [Spell(UnblockableCondition(T_FUNCS['host'], T_FUNCS['non_wall_creatures']), T_FUNCS['creatures'])],
     'inquisition': [Spell(Inquisition(), T_FUNCS['all_players'])],
+    'invoke-prejudice': [Static(InvokePrejudice())],
     'iron-star': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('R'))],
     'ironclaw-orcs': [Static(IronclawOrcs())],
     'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),

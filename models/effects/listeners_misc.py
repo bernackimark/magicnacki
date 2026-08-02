@@ -149,6 +149,33 @@ class InTheEyeOfChaos(Listener):
                    CounterSpellAction(p_id, gs, target_spell)]
         gs.queue_choice(ChoiceAction(options))
 
+class InvokePrejudice(Listener):
+    """Whenever an opponent casts a creature spell that DOESN'T SHARE A COLOR with a creature you control,
+    counter that spell unless that player pays {X}, X = its mana value"""
+    listens_to = StackAdditionEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: StackAdditionEvent) -> None:
+        if event.player_id == source.owner_id:
+            return
+        if isinstance(event.action, AbilityAction) and not event.action.pipeline.eff_spec.is_spell:
+            return
+        target_spell = event.action
+        p_id = target_spell.player_idx
+        spell_source = event.action.pipeline.source if isinstance(target_spell, AbilityAction) else target_spell.source
+        spell_colors = {color for color in spell_source.colors}
+        your_creature_colors = {color for card in gs.card_filter.on_player_board(source.owner_id).creatures().result()
+                                for color in card.colors}
+        if spell_colors & your_creature_colors:
+            return
+        mana_cost = source.casting_cost
+        if not gs.mana_pools[p_id].can_pay(mana_cost):
+            gs.action_stack.remove(target_spell)
+            gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+            return
+        options = [PayManaToPreventCounter(p_id, gs, target_spell, mana_cost),
+                   CounterSpellAction(p_id, gs, target_spell)]
+        gs.queue_choice(ChoiceAction(options, may=True))
+
 class ScarwoodBanditsAAListener(Listener):
     """2GT: Unless opponent pays {2}, gain control of target artifact for as long as SB remains on the battlefield ...
     I don't have a great way of adding an opponent's choice at the exact right time, I'm just creating this Listener

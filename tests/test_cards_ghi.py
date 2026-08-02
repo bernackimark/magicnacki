@@ -1,6 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.actions.special import Attach, PayManaToPreventCounter
 from models.cost import SacSelfCost
 from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent
@@ -205,6 +206,24 @@ class TestCardsGHI(unittest.TestCase):
         card.tap()
         ability = AbilityPipeline(0, self.gs, card, aa.eff_spec)
         self.assertFalse(ability.can_begin(), 'Should not be able to activate 2x in a turn')
+
+    def test_invoke_prejudice(self):
+        """Whenever an opponent casts a creature spell that DOESN'T SHARE A COLOR with a creature you control,
+        counter that spell unless that player pays {X}, X = its mana value"""
+        self.g.battlefield('invoke-prejudice')
+        self.g.battlefield('grizzly-bears')
+        self.g.battlefield('will-o-the-wisp')
+        unaffected = self.g.hand('chromium', owner=1)  # WUB
+        affected = self.g.hand('savannah-lions', owner=1)
+        self.g.mana('WWWWUUUUBBBB', owner=1)
+
+        unaffected_pipeline = AbilityPipeline(1, self.gs, unaffected, unaffected.abilities[0])
+        unaffected_pipeline.advance()
+        self.assertFalse(self.gs.pending_choice)
+        unaffected_pipeline.resolve_ability()
+
+        CastWithNoSpellEffect(1, self.gs, affected).play()
+        self.assertTrue(self.gs.pending_choice.get_actions())
 
     def test_island_sanctuary(self):
         """At your draw step, you may skip your draw and until your next turn,
