@@ -225,6 +225,11 @@ class GameCard:
         return 'Land' in self.card_types
 
     @property
+    def is_permanent(self) -> bool:
+        permanent_types = {'Artifact', 'Enchantment', 'Creature', 'Land'}
+        return bool(permanent_types & set(self.card_types))
+
+    @property
     def is_sorcery(self) -> bool:
         return 'Sorcery' in self.card_types
 
