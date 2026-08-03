@@ -93,7 +93,6 @@ class AbilityPipeline(Action):
                 return False
 
         if not self.gs.mana_pools[self.player_idx].can_pay(self.ability_cost):
-            print('BBB')
             return False
 
         for extra_cost in self.eff_spec.extra_costs:
