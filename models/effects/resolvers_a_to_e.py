@@ -173,8 +173,12 @@ class Cleansing(Resolver):
     class CleansingState:
         lands: list[GameCard]
         land_idx: int = 0
-        player_idx: int = 0
+        player_cnt_acted_on_this_land: int = 0
         saved_lands: list[GameCard] = field(default_factory=list)
+
+        @property
+        def active_land(self) -> GameCard:
+            return self.lands[self.land_idx]
 
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
         lands = gs.card_filter.in_play().lands().result()
@@ -188,21 +192,23 @@ class Cleansing(Resolver):
     def queue_next_choice(gs: GameState, source: GameCard, state: CleansingState):
         # Finished all lands
         if state.land_idx >= len(state.lands):
+            print('Entering exit flow')
             for land in state.lands:
                 if land not in state.saved_lands:
                     gs.pile_mgr.destroy(land)
+            gs.pending_choice = None
             return
 
-        # Finished asking all players about this land
-        if state.player_idx >= gs.player_cnt:
+        # Move to next land if both players declined to save or someone did save it
+        if state.player_cnt_acted_on_this_land >= 2 or state.active_land in state.saved_lands:
+            print('Moving to next card')
             state.land_idx += 1
-            state.player_idx = 0
+            state.player_cnt_acted_on_this_land = 0
             Cleansing.queue_next_choice(gs, source, state)
             return
 
-        options = [CleansingPayAction(state.player_idx, gs, source, state),
-                   CleansingDeclineAction(state.player_idx, gs, source, state)]
-        gs.action_on_idx = state.player_idx
+        options = [CleansingPayAction(gs.action_on_idx, gs, source, state),
+                   CleansingDeclineAction(gs.action_on_idx, gs, source, state)]
         gs.queue_choice(ChoiceAction(options))
 
 

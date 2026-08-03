@@ -12,7 +12,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches
+    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
@@ -183,6 +183,7 @@ MAP: dict[str, list[EffSpec]] = {
                         Activated('T', CityOfShadowsAddMana())],
     'clay-statue': [Activated('2', Regenerate(), T_FUNCS['self'])],
     'cleanse': [Spell(DestroyAll(T_FUNCS['black_creatures']))],
+    'cleansing': [Spell(Cleansing())],
     'clergy-of-the-holy-nimbus': [Static(RegenerateSelf()),
                                   Activated('1', PreventRegenerationEOT(), T_FUNCS['self'],
                                             allowed_activators=A_FUNCS['opponent'])],

@@ -299,12 +299,13 @@ class CleansingDeclineAction(Action):
         self.state = state
 
     def __repr__(self):
-        return f'Player #{self.player_idx}: Decline saving {self.state.lands[self.state.land_idx]}'
+        return f"Decline saving Player #{self.state.active_land.owner_id}'s {self.state.active_land}"
 
     def play(self):
         from models.effects.resolvers_a_to_e import Cleansing
+        self.state.player_cnt_acted_on_this_land += 1
         # Ask the next player
-        self.state.player_idx += 1
+        self.gs.action_on_idx = flip(self.gs.action_on_idx)
         Cleansing.queue_next_choice(self.gs, self.s, self.state)
 
 class CleansingPayAction(Action):
@@ -314,18 +315,16 @@ class CleansingPayAction(Action):
         self.state = state
 
     def __repr__(self):
-        return f'Player #{self.player_idx}: Decline saving {self.state.lands[self.state.land_idx]}'
+        return f"Pay 1 life to save Player #{self.state.active_land.owner_id}'s {self.state.active_land}"
 
     def play(self):
         from models.effects.resolvers_a_to_e import Cleansing
-        land = self.state.lands[self.state.land_idx]
         self.gs.score_mgr.decrement_life(self.player_idx, 1, self.s, self.gs)
-        self.state.saved_lands.append(land)
+        self.state.saved_lands.append(self.state.active_land)
 
         # Move immediately to next land
         self.state.land_idx += 1
-        self.state.player_idx = 0
-
+        self.gs.action_on_idx = flip(self.gs.action_on_idx)
         Cleansing.queue_next_choice(self.gs, self.s, self.state)
 
 class CyclonePayManaPerCounterDealDamage(Action):
