@@ -212,6 +212,8 @@ class GameState:
                     continue
 
             elif c.props.is_permanent and not c.spells:
+                if not self.mana_pools[self.action_on_idx].can_pay(c.casting_cost):
+                    continue
                 # its .play() will add it to the stack
                 actions.append(CastWithNoSpellEffect(c.owner_id, self, c))
                 continue
@@ -257,7 +259,7 @@ class GameState:
                 return self.action_stack.last_action.get_actions()
 
             available_actions: list[AbilityPipeline | Action] = [AcceptAction(p_id, self)]
-            available_actions.extend(self.get_activated_abilities_from_board())
+            available_actions.extend(self.add_activated_abilities_from_board())
 
             # Check instants & sorceries
             hand_instants = [c for c in self.pile_mgr.hands[p_id] if c.is_instant]
