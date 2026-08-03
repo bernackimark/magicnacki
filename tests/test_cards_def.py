@@ -3,7 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import AbilityAction, SelectXAction2
 from models.actions.mana import PayMana
-from models.actions.special import Attach
+from models.actions.special import Attach, DrafnaSelectCardAction
 from models.counter_tokens import HUNGER
 from models.events_all import UpkeepEvent
 from models.systems.phase import Phase
@@ -79,6 +79,26 @@ class TestCardsDEF(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertIn(target, self.gs.exiles[1])
 
+    def test_drafnas_restoration(self):
+        """Put any number of target artifact cards from target player's graveyard atop of their library in ANY ORDER"""
+        card = self.g.hand('drafnas-restoration')
+        aladdins_lamp = self.g.graveyard('aladdins-lamp')
+        self.g.graveyard('basalt-monolith')
+        colossus = self.g.graveyard('colossus-of-sardia')
+        self.g.graveyard('dwarven-warriors')  # not an artifact
+        self.g.cast_and_accept(card, 0, card.abilities[0])
+        self.assertEqual(4, len(self.gs.pending_choice.get_actions()))  # 3 artifacts & finish action
+        select_aladdins_lamp = next(a for a in self.gs.pending_choice.get_actions()
+                                    if isinstance(a, DrafnaSelectCardAction) and a.card is aladdins_lamp)
+        select_aladdins_lamp.play()
+        select_colossus = next(a for a in self.gs.pending_choice.get_actions()
+                               if isinstance(a, DrafnaSelectCardAction) and a.card is colossus)
+        select_colossus.play()
+        finish_action = self.gs.pending_choice.get_actions()[-1]
+        finish_action.play()
+        self.assertEqual([colossus, aladdins_lamp], self.gs.pile_mgr.libraries[0][:2])
+        self.assertFalse(self.gs.pending_choice)
+
     def test_dwarven_warriors(self):
         """{T}: Target creature with power 2 or less can't be blocked this turn"""
         card = self.g.battlefield('dwarven-warriors')
@@ -115,6 +135,33 @@ class TestCardsDEF(unittest.TestCase):
         legal_host = self.g.battlefield('merfolk-of-the-pearl-trident')
         self.g.cast_and_accept(card, aura, card.abilities[0])
         self.assertIn(legal_host, [a.host for a in self.gs.pending_choice.get_actions() if isinstance(a, Attach)])
+
+    def test_eureka(self):
+        """Both players may take any permanent in their hand and put it directly into play.
+        Players take turns playing one card from their hand until neither wants to play more permanents.
+        No other spells/effects may be used while E is in effect. If a spell has an X in casting cost, X=0."""
+        [h.clear() for h in self.gs.hands]
+        card = self.g.hand('eureka')
+        p0c1 = self.g.hand('merfolk-of-the-pearl-trident')
+        p0c2 = self.g.hand('aladdins-lamp')
+        p1c1 = self.g.hand('winter-orb', owner=1)
+        p1c2 = self.g.hand('grizzly-bears', owner=1)
+        self.g.cast_and_accept(card, None, card.abilities[0])
+
+        merfolk_to_board = self.gs.pending_choice.get_actions()[0]
+        merfolk_to_board.play()
+        self.assertIn(p0c1, self.gs.boards[0])
+
+        grizzly_bears_to_board = self.gs.pending_choice.get_actions()[1]
+        grizzly_bears_to_board.play()
+        self.assertIn(p1c2, self.gs.boards[1])
+
+        p0_finish_playing = self.gs.pending_choice.get_actions()[-1]
+        p0_finish_playing.play()
+        p1_finish_playing = self.gs.pending_choice.get_actions()[-1]
+        p1_finish_playing.play()
+        self.assertFalse(self.gs.pending_choice)
+
 
     def test_eye_for_an_eye(self):
         """The next time a source of your choice would deal damage to you this turn,

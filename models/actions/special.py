@@ -344,6 +344,65 @@ class CyclonePayManaPerCounterDealDamage(Action):
             self.gs.apply_damage(self.s, self.wind_counters, p_id)
         self.finish()
 
+class DrafnaFinishAction(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, state: "DrafnasRestoration.DrafnasRestorationState"):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.state = state
+
+    def __repr__(self):
+        return "Finish selecting artifacts"
+
+    def play(self) -> None:
+        for card in self.state.selected_cards:
+            self.gs.pile_mgr.move_card(card, Zone.LIBRARY)
+        self.finish()
+
+class DrafnaSelectCardAction(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, state: "DrafnasRestoration.DrafnasRestorationState",
+                 card: GameCard):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.state = state
+        self.card = card
+
+    def __repr__(self):
+        return f"Move {self.card.props.name} to library; subsequent artifacts will be placed above this card"
+
+    def play(self) -> None:
+        self.state.selected_cards.append(self.card)
+
+class EurekaPlayCardAction(Action):
+    def __init__(self, p_id: int, gs: GameState, state: "Eureka.EurekaState", card: GameCard):
+        super().__init__(p_id, gs)
+        self.state = state
+        self.card = card
+
+    def __repr__(self):
+        return f"Play {self.card.props.name} to your board"
+
+    def play(self) -> None:
+        from models.effects.resolvers_a_to_e import Eureka
+        self.gs.pile_mgr.move_card(self.card, Zone.BATTLEFIELD, cause='eureka', emit_zone_event=False)
+        self.state.current_player = flip(self.player_idx)
+        self.gs.pending_choice = None
+        Eureka.queue_next_choice(self.gs, self.state)
+
+class EurekaPlayerFinishAction(Action):
+    def __init__(self, p_id: int, gs: GameState, state: "Eureka.EurekaState"):
+        super().__init__(p_id, gs)
+        self.state = state
+
+    def __repr__(self):
+        return f"Finish playing permanents to your board"
+
+    def play(self) -> None:
+        from models.effects.resolvers_a_to_e import Eureka
+        self.state.players_who_are_done.append(self.player_idx)
+        self.state.current_player = flip(self.player_idx)
+        self.gs.pending_choice = None
+        Eureka.queue_next_choice(self.gs, self.state)
+
 class HealingSalveA(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
         super().__init__(p_id, gs)

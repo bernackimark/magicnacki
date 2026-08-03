@@ -12,7 +12,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing
+    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration, Eureka
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
@@ -254,6 +254,7 @@ MAP: dict[str, list[EffSpec]] = {
     'disenchant': [Spell(Destroy(), T_FUNCS['artifacts_and_enchantments'])],
     'divine-offering': [Spell(DivineOffering(), T_FUNCS['artifacts'])],
     'divine-transformation': [Spell(Pump(3, 3), T_FUNCS['creatures'])],
+    'drafnas-restoration': [Spell(DrafnasRestoration(), T_FUNCS['all_players'])],
     'dragon-engine': [self_pump('2', 1, 0)],
     'dragon-whelp': [self_pump('R', 1, 0), Triggered(DragonWhelpEndStep())],
     'drain-power': [Spell(DrainPower(), T_FUNCS['opp'])],
@@ -292,6 +293,7 @@ MAP: dict[str, list[EffSpec]] = {
     'erosion': [Spell(ErosionUpkeep(), T_FUNCS['lands'])],
     'eternal-flame': [Spell(EternalFlame())],
     'eternal-warrior': [Spell(KWAModEffect('add', 'Vigilance'), T_FUNCS['creatures'])],
+    'eureka': [Spell(Eureka())],
     'evil-eye-of-orms-by-gore': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['non_wall_creatures'])),
                                  Static(EvilEyeOfOrmsByGoreMyNonEyeNoAttack())],
     'evil-presence': [Spell(EvilPresence(), T_FUNCS['lands'])],

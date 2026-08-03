@@ -8,7 +8,8 @@ from models.actions.base import Action
 from models.actions.damage import DealDamageTo
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor
-from models.actions.special import CopyCardAction, CleansingPayAction, CleansingDeclineAction
+from models.actions.special import CopyCardAction, CleansingPayAction, CleansingDeclineAction, DrafnaFinishAction, \
+    DrafnaSelectCardAction, EurekaPlayCardAction, EurekaPlayerFinishAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
@@ -321,6 +322,33 @@ class DrainPower(Resolver):
         for color, amt in land_giver_mana.items():
             gs.mana_pools[source.owner_id].add_floating(color, amt)
 
+class DrafnasRestoration(Resolver):
+    """Put any number of target artifact cards from target player's graveyard on top of their library in ANY ORDER"""
+    @dataclass
+    class DrafnasRestorationState:
+        all_artifacts_in_target_gy: list[GameCard]
+        selected_cards: list[GameCard] = field(default_factory=list)
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        all_cards = gs.card_filter.in_player_graveyard(target).artifacts().result()
+        if not all_cards:
+            return
+
+        state = DrafnasRestoration.DrafnasRestorationState(all_cards)
+        self.queue_next_choice(gs, source, state)
+
+    @staticmethod
+    def queue_next_choice(gs: GameState, source: GameCard, state: DrafnasRestorationState):
+        if len(state.selected_cards) >= len(state.all_artifacts_in_target_gy):
+            options = [DrafnaFinishAction(gs.action_on_idx, gs, source, state)]
+        else:
+            remaining = [c for c in state.all_artifacts_in_target_gy if c not in state.selected_cards]
+            options = [DrafnaSelectCardAction(gs.action_on_idx, gs, source, state, card) for card in remaining]
+            options.append(DrafnaFinishAction(gs.action_on_idx, gs, source, state))  # type: ignore
+        gs.queue_choice(ChoiceAction(options))
+
 class DustToDust(Resolver):
     """Exile two target artifacts"""
     def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
@@ -396,6 +424,42 @@ class EternalFlame(Resolver):
         x = len(gs.card_filter.on_player_board(gs.player_turn_idx).mountains().result())
         gs.apply_damage(source, x, flip(gs.player_turn_idx))
         gs.apply_damage(source, math.ceil(x/2), gs.player_turn_idx)
+
+class Eureka(Resolver):
+    """Both players may take any permanent in their hand and put it directly into play.
+    Players take turns playing one card from their hand until neither wants to play more permanents.
+    No other spells/effects of any kind may be used while E is in effect. If a spell has an X in casting cost, X=0."""
+    @dataclass
+    class EurekaState:
+        current_player: int
+        players_who_are_done: list[int] = field(default_factory=list)
+
+    def resolve(self, gs: GameState, source: GameCard, _: Optional[GameCard | int | Action] = None) -> None:
+        all_perms = [[c for c in h if c.is_permanent] for h in gs.hands]
+        if not all_perms:
+            return
+
+        state = Eureka.EurekaState(gs.player_turn_idx)
+        self.queue_next_choice(gs, state)
+
+    @staticmethod
+    def queue_next_choice(gs: GameState, state: EurekaState):
+        if sorted(state.players_who_are_done) == [0, 1]:
+            gs.pending_choice = None
+            return
+
+        if state.current_player in state.players_who_are_done:
+            state.current_player = flip(state.current_player)
+            Eureka.queue_next_choice(gs, state)
+            return
+
+        gs.action_on_idx = state.current_player
+
+        perms_in_hand = [c for c in gs.hands[state.current_player] if c.is_permanent]
+        options = [EurekaPlayCardAction(state.current_player, gs, state, card) for card in perms_in_hand]
+        options.append(EurekaPlayerFinishAction(state.current_player, gs, state))  # type: ignore
+        choice = ChoiceAction(options)
+        gs.queue_choice(choice)
 
 class EvilPresence(Resolver):
     """Enchant land Enchanted land is a Swamp"""
