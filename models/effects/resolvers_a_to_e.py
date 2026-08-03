@@ -1,20 +1,22 @@
 from __future__ import annotations
 import math
+from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING, Optional
 
 from models.actions.base import Action
+from models.actions.damage import DealDamageTo
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor
-from models.actions.special import CopyCardAction
+from models.actions.special import CopyCardAction, CleansingPayAction, CleansingDeclineAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem, ExileOnDeath
-from models.effects.listeners_mod_queries import ArmyOfAllahEOT, OwnershipModQuery
+from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.effects.listeners_permission import PreventRegenerationEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
-from models.modifiers import OwnershipMod, SubTypeMod, PTMod, KWAMod
+from models.modifiers import SubTypeMod, PTMod, KWAMod
 from models.systems.phase import Phase
 from models.utils import flip
 from models.zone import Zone
@@ -165,6 +167,45 @@ class CityOfShadowsAddMana(Resolver):
         cnt = source.counters.get_count(STORAGE)
         gs.mana_pools[source.owner_id].add_floating('C', cnt)
 
+class Cleansing(Resolver):
+    """For each land, destroy that land unless any player pays 1 life"""
+    @dataclass
+    class CleansingState:
+        lands: list[GameCard]
+        land_idx: int = 0
+        player_idx: int = 0
+        saved_lands: list[GameCard] = field(default_factory=list)
+
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        lands = gs.card_filter.in_play().lands().result()
+        if not lands:
+            return
+
+        state = Cleansing.CleansingState(lands)
+        self.queue_next_choice(gs, source, state)
+
+    @staticmethod
+    def queue_next_choice(gs: GameState, source: GameCard, state: CleansingState):
+        # Finished all lands
+        if state.land_idx >= len(state.lands):
+            for land in state.lands:
+                if land not in state.saved_lands:
+                    gs.pile_mgr.destroy(land)
+            return
+
+        # Finished asking all players about this land
+        if state.player_idx >= gs.player_cnt:
+            state.land_idx += 1
+            state.player_idx = 0
+            Cleansing.queue_next_choice(gs, source, state)
+            return
+
+        options = [CleansingPayAction(state.player_idx, gs, source, state),
+                   CleansingDeclineAction(state.player_idx, gs, source, state)]
+        gs.action_on_idx = state.player_idx
+        gs.queue_choice(ChoiceAction(options))
+
+
 class Clone(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield;
     pushes valid targets to the stack for user selection, which then calls an Action that copies select target attrs"""
@@ -194,9 +235,20 @@ class CopyArtifact(Resolver):
 
 class Crumble(Resolver):
     def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if target:
-            gs.pile_mgr.destroy(target, allow_regeneration=False)
-            gs.score_mgr.increment_life(target.owner_id, target.props.mana_value, source, gs)
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.pile_mgr.destroy(target, allow_regeneration=False)
+        gs.score_mgr.increment_life(target.owner_id, target.props.mana_value, source, gs)
+
+class CuombajjWitches(Resolver):
+    """{T}: CW deals 1 damage to any target and 1 damage to any target of an opponent's choice"""
+    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+        if target is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.apply_damage(source, 1, target)
+        targets = gs.card_filter.in_play().creatures().result() + [0, 1]
+        options = [DealDamageTo(flip(source.owner_id), gs, source, 1, t) for t in targets]
+        gs.queue_choice(ChoiceAction(options))
 
 class DanceOfMany(Resolver):
     """When DOM ETB, create a token copy of target nontoken creature -- copies its original props w/o mods ...

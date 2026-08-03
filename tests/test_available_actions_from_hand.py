@@ -24,6 +24,12 @@ class TestAvailableActionsFromHand(unittest.TestCase):
         self.g.begin_cast(aura)
         self.assertEqual(2, len(self.gs.pending_choice.get_actions()))
 
+    def test_not_offered_to_cast_uncastable_cards(self):
+        self.gs.hands[0].clear()
+        card = self.g.hand('merfolk-of-the-pearl-trident')
+        island = self.g.hand('island')
+        self.assertNotIn(card, [a.source for a in self.gs.available_actions_from_hand()])
+
     def test_cannot_cast_auras_without_valid_target(self):
         card = self.g.hand('holy-strength')
         self.g.mana('W')

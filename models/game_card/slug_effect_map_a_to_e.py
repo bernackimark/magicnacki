@@ -12,7 +12,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    EnchantmentAlteration, DanceOfMany, Disintegrate
+    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
@@ -216,6 +216,7 @@ MAP: dict[str, list[EffSpec]] = {
     'crumble': [Spell(Crumble(), T_FUNCS['artifacts'])],
     'crusade': [Static(PumpApplies(T_FUNCS['white_creatures'], (1, 1)))],
     'crystal-rod': [Static(OnColorSpellPayOneColorlessForOneLifeChoice('U'))],
+    'cuombajj-witches': [Activated('T', CuombajjWitches(), T_FUNCS['all_creatures_and_players'])],
     'curse-artifact': [Spell(CurseArtifact(), T_FUNCS['artifacts'])],
     'cursed-land': [Spell(DealDamageOnHostUpkeep(1), T_FUNCS['lands'])],
     'cursed-rack': [Triggered(CursedRack())],

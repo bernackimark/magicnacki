@@ -292,6 +292,42 @@ class TapCardAndTakeDamage(Action):
         self.finish()
 
 # --- CARD-SPECIFIC ---
+class CleansingDeclineAction(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, state: "CleansingState"):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.state = state
+
+    def __repr__(self):
+        return f'Player #{self.player_idx}: Decline saving {self.state.lands[self.state.land_idx]}'
+
+    def play(self):
+        from models.effects.resolvers_a_to_e import Cleansing
+        # Ask the next player
+        self.state.player_idx += 1
+        Cleansing.queue_next_choice(self.gs, self.s, self.state)
+
+class CleansingPayAction(Action):
+    def __init__(self, p_id: int, gs: GameState, s: GameCard, state: "CleansingState"):
+        super().__init__(p_id, gs)
+        self.s = s
+        self.state = state
+
+    def __repr__(self):
+        return f'Player #{self.player_idx}: Decline saving {self.state.lands[self.state.land_idx]}'
+
+    def play(self):
+        from models.effects.resolvers_a_to_e import Cleansing
+        land = self.state.lands[self.state.land_idx]
+        self.gs.score_mgr.decrement_life(self.player_idx, 1, self.s, self.gs)
+        self.state.saved_lands.append(land)
+
+        # Move immediately to next land
+        self.state.land_idx += 1
+        self.state.player_idx = 0
+
+        Cleansing.queue_next_choice(self.gs, self.s, self.state)
+
 class CyclonePayManaPerCounterDealDamage(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard):
         super().__init__(p_id, gs)

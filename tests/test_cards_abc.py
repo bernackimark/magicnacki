@@ -177,7 +177,7 @@ class TestCardsAtoC(unittest.TestCase):
         forest.tap()
         self.assertEqual(2, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
 
-        mountain = self.g.battlefield('mountain')
+        self.g.battlefield('mountain')
         plains = self.g.battlefield('plains')
         pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
         pipeline.x_value = 2
@@ -348,6 +348,17 @@ class TestCardsAtoC(unittest.TestCase):
     #     self.gs.event_mgr.register(creature_bond.abilities[0].effect, creature_bond)
     #     self.gs.pile_mgr.destroy(host)
     #     self.assertEqual(self.gs.life[0], 19)
+
+    def test_cuombajj_witches(self):
+        """{T}: CW deals 1 damage to any target and 1 damage to any target of an opponent's choice."""
+        card = self.g.battlefield('cuombajj-witches')
+        aa = card.activated_abilities[0]
+        target = self.g.battlefield('savannah-lions', owner=1)
+        self.g.activate_ability(aa, target)
+        self.assertIn(target, self.g.gy[1])
+        deal_1_damage_to_play_0 = self.gs.pending_choice.get_actions()[1]
+        deal_1_damage_to_play_0.play()
+        self.assertEqual(19, self.gs.life[0])
 
     def test_cursed_rack(self):
         """Opponent's maximum hand size is four [at their discard phase]"""
