@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import random
 from itertools import combinations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.base import Action
 from models.actions.cast import CastPermanentAction
 from models.actions.damage import DealDamageTo, PayLife
 from models.actions.draw_discard import DiscardCards, DrawCard
@@ -316,14 +315,14 @@ class Timetwister(Resolver):
     (Timetwister to its owner's graveyard.)"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for p_id in (0, 1):
-            for c in gs.pile_mgr.hands[p_id]:
+            for c in gs.pile_mgr.hands[p_id][:]:
                 gs.pile_mgr.move_card(c, Zone.LIBRARY, emit_zone_event=False)
-            for c in gs.pile_mgr.graveyards[p_id]:
+            for c in gs.pile_mgr.graveyards[p_id][:]:
                 gs.pile_mgr.move_card(c, Zone.LIBRARY, emit_zone_event=False)
             random.shuffle(gs.pile_mgr.libraries[p_id])
             gs.pile_mgr.draw(p_id, 7)
-            # if p_id == s.owner_id:
-            #     gs.pile_mgr.graveyards[p_id].append(time_twister)
+            if p_id == source.owner_id:
+                gs.pile_mgr.move_card(source, Zone.GRAVEYARD, emit_zone_event=False)
 
 class TowerOfCoireall(Resolver):
     """{T}: Target creature can't be blocked by Walls this turn"""

@@ -130,6 +130,7 @@ class TestCardsTUV(unittest.TestCase):
         """Each player shuffles their hand & graveyard into their library, then draws seven cards.
         (Then put Timetwister into its owner's graveyard.)"""
         # this works 1/2 the time
+        self.g.mana('UUUUU')
         self.g.gy[0].clear()
         self.g.graveyard('scryb-sprites')
         self.g.graveyard('serra-angel')
@@ -137,7 +138,10 @@ class TestCardsTUV(unittest.TestCase):
         self.g.hand('island')
         self.g.hand('island')
         card = self.g.hand('timetwister')
-        self.g.cast_and_accept(card, None, card.abilities[0])
+        # self.g.cast_and_accept(card, None, card.abilities[0])
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+        pipeline.resolve_ability()
         self.assertTrue(7, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
         self.assertNotEqual(hand_snapshot, self.gs.pile_mgr.hands[0])

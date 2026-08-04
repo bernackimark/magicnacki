@@ -250,6 +250,7 @@ class DanceOfMany(Resolver):
     When DOM LTB, exile the token. When the token LTB, sac DOM"""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        from models.game_card.game_card import GameCard
         the_copy = GameCard(t.props, source.owner_id, is_token=True)
         the_copy.game_state = gs
         the_copy.zone = t.zone
