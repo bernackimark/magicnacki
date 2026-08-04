@@ -7,7 +7,6 @@ from models.actions.base import Action
 from models.cost import Cost
 
 
-# --- NEW PIPELINE APPROACH 7/13/26 ---
 @dataclass
 class AbilityAction(Action):
     pipeline: AbilityPipeline

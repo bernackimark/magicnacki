@@ -1,10 +1,11 @@
 from __future__ import annotations
-from abc import ABC
+
+from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
 from functools import partial
-from typing import TYPE_CHECKING, Optional, Literal, Union, Callable, Any
+from typing import TYPE_CHECKING, Literal, Union, Callable, Any, TypeAlias
 
-from models.cost import Cost, TapCost, ManaCost
+from models.cost import Cost, CostResult
 from models.events_all import Event
 from ..target import TargetSpec
 
@@ -14,14 +15,23 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.systems.phase import Phase
 
+RTarget: TypeAlias = "GameCard | int | Action | None"
 
-class Resolver:
+
+@dataclass
+class ResContext:
+    """Resolution Context passes information from Ability Pipeline to the Resolver"""
+    cost_result: CostResult | None = None
+    x_value: int | None = None
+    chosen_mode: int | None = None
+
+class Resolver(ABC):
     def __repr__(self):
         return self.__class__.__name__
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
-        """Perform an explicit game action (ex: deal 3 damage)"""
-        raise NotImplementedError()
+    @abstractmethod
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        ...
 
     def can_cast(self, gs: GameState, source: GameCard) -> bool:
         return True

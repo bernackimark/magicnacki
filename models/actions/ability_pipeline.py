@@ -238,6 +238,9 @@ class AbilityPipeline(Action):
     def needs_extra_cost_choices(self) -> bool:
         if not self.eff_spec.extra_costs:
             return False
+        for extra_cost in self.eff_spec.extra_costs:
+            if extra_cost.requires_choice:
+                return True
         return len(self.selected_extra_costs) < len(self.eff_spec.extra_costs)
 
     def get_x_range(self) -> tuple[int, int]:

@@ -196,12 +196,13 @@ class PreventAllDamageToEOT(Listener):
     listens_to = DamageProposedEvent
     expires = 'EOT'
 
-    def __init__(self, combat_only: bool = False):
+    def __init__(self, target: GameCard | None = None, combat_only: bool = False):
+        self.target = target
         self.combat_only = combat_only
-        self.target: GameCard | None = None
 
     def initialize(self, gs: GameState, source: GameCard, targets: Any):
-        self.target = targets[0]
+        if self.target is None:
+            self.target = targets[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if event.target is not self.target or (self.combat_only and not event.is_combat):
