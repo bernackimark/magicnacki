@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Any
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.base import Action
 from models.actions.cast import CastPermanentAction
 from models.actions.end_step_pass_turn import PassTheTurn
+from models.actions.stack_accept_counter import AcceptAction
 from models.effects.base import ActivatedAbility, EffSpec
 from models.systems.phase import Phase
 from data.user_data import get_user

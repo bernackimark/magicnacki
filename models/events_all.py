@@ -3,8 +3,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterable, Any
 
 if TYPE_CHECKING:
-    from models.actions.ability_pipeline_support import AbilityAction
-    from models.actions.cast import CastPermanentAction
+    from models.action_stack import StackItemType
     from models.effects.base import ActivatedAbility
     from models.constants import Target
     from models.game_card.game_card import GameCard
@@ -215,7 +214,7 @@ class RandomEvent(Event):
 @dataclass(frozen=True)
 class StackAdditionEvent(Event):
     player_id: int
-    action: AbilityAction | CastPermanentAction
+    action: StackItemType
 
 @dataclass(frozen=True)
 class StateBasedEvent(Event):

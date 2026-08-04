@@ -1,6 +1,9 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from models.game_card.game_card import GameCard
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.base import Action
@@ -18,6 +21,14 @@ class AbilityAction(Action):
 
     def play(self) -> None:
         self.pipeline.resolve_ability()
+
+    @property
+    def source(self) -> GameCard:
+        return self.pipeline.source
+
+    @property
+    def total_mana_cost(self) -> str:
+        return self.pipeline.total_ability_cost
 
 
 @dataclass

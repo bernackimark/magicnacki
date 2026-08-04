@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any, Optional
 
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.cast import CastPermanentAction
 from models.actions.destroy_sac_regen import Sac
 from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife, PayManaToPreventCounter
@@ -19,7 +18,7 @@ from models.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent, Event
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent
 from models.modifiers import PTMod
 from models.utils import flip
 from models.zone import Zone

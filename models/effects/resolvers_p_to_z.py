@@ -4,8 +4,6 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.cast import CastPermanentAction
 from models.actions.damage import DealDamageTo, PayLife
 from models.actions.draw_discard import DiscardCards, DrawCard
 from models.actions.piles import Tutor, Shuffle
@@ -52,7 +50,8 @@ class PowerSink(Resolver):
     If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if not isinstance(t, (CastPermanentAction, AbilityAction)):
+        from models.action_stack import StackItemType
+        if not isinstance(t, StackItemType):
             raise ValueError(f"{source.props.name} needs a spell target")
         power_sink_x = source.extras.get('x')
         if not power_sink_x:

@@ -1,9 +1,8 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
-from models.actions.special import Attach, PayManaToPreventCounter
-from models.cost import SacSelfCost
+from models.actions.cast import CastWithNoSpellEffect
+from models.actions.special import Attach
 from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent
 from models.systems.phase import Phase
 from models.zone import Zone

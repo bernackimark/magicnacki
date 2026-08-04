@@ -11,12 +11,12 @@ from models.events_all import Event
 from ..target import TargetSpec
 
 if TYPE_CHECKING:
-    from ..actions.base import Action
+    from ..action_stack import StackItemType
     from ..game_card.game_card import GameCard
     from game_state import GameState
     from models.systems.phase import Phase
 
-RTarget: TypeAlias = "GameCard | int | Action | list[GameCard] | None"
+RTarget: TypeAlias = "GameCard | int | StackItemType | list[GameCard] | None"
 
 
 @dataclass

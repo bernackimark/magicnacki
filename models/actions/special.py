@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from typing import TYPE_CHECKING
 
+from models.action_stack import StackItemType
 from models.counter_tokens import CounterType, WIND, PLUS_ONE
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import StateBasedEvent
@@ -13,8 +14,6 @@ from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from models.actions.ability_pipeline_support import AbilityAction
-    from models.actions.cast import CastPermanentAction
     from models.game_card.game_card import GameCard
 
 
@@ -121,15 +120,13 @@ class PayManaToBounce(Action):
             self.finish()
 
 class PayManaToPreventCounter(Action):
-    def __init__(self, p_id: int, gs: GameState, counter_spell: AbilityAction | CastPermanentAction, mana_cost: str):
+    def __init__(self, p_id: int, gs: GameState, counter_spell: StackItemType, mana_cost: str):
         super().__init__(p_id, gs)
         self.counter_spell = counter_spell
         self.mana_cost = mana_cost
 
     def __repr__(self):
-        from models.actions.cast import CastPermanentAction
-        source = self.counter_spell.source if isinstance(self.counter_spell, CastPermanentAction) \
-            else self.counter_spell.pipeline.source
+        source = self.counter_spell.source
         return f'Pay {{{self.mana_cost}}} to prevent counterspell by {source.props.name}'
 
     def play(self):

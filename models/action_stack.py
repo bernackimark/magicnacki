@@ -7,12 +7,11 @@ if TYPE_CHECKING:
 
 from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.cast import CastPermanentAction
-from models.choice_actions_all import ChoiceAction
 from models.actions.base import Action
 from models.utils import flip
 
 T = TypeVar('T', bound=Action)
-StackItemType = Union[AbilityAction | CastPermanentAction | ChoiceAction]
+StackItemType = Union[AbilityAction | CastPermanentAction]
 
 
 @dataclass
@@ -43,7 +42,7 @@ class ActionStack:
         return self._actions[-1]
 
     @property
-    def spells(self) -> list[AbilityAction | CastPermanentAction | None]:
+    def spells(self) -> list[StackItemType | None]:
         spells = []
         for a in self.actions:
             if isinstance(a, AbilityAction) and a.pipeline.eff_spec and not a.pipeline.eff_spec.is_spell:

@@ -43,3 +43,8 @@ class CastPermanentAction(Action):
 
         self.gs.event_mgr.register_card(self.source)
         self.gs.event_mgr.emit(StateBasedEvent())
+        self.finish()
+
+    @property
+    def total_mana_cost(self) -> str:
+        return self.source.casting_cost

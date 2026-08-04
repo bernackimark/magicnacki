@@ -1,6 +1,8 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.cast import CastWithNoSpellEffect
+from models.actions.stack_accept_counter import AcceptAction
 from models.counter_tokens import STUN
 from models.effects.listeners_generic import PreventNextDamageTo, TakeAnotherTurn
 from models.effects.resolvers_generic import GraveyardToExileInItsEntirety
@@ -114,8 +116,13 @@ class TestResolversGeneric(unittest.TestCase):
         target = self.g.hand('grizzly-bears', owner=1)
         self.g.mana('UU')
         self.g.mana('GGG', owner=1)
-        cast_target_action = next(a for a in self.gs.available_actions_from_hand() if a.source is target)
-        # TODO: casting a vanilla permanent never hits the stack; CastPermanentAction contains .play()
+        CastWithNoSpellEffect(1, self.gs, target).play()  # adds grizzly-bears casting to stack
+        target_spell = self.gs.action_stack.last_action
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[target_spell])
+        pipeline.advance()
+        AcceptAction(0, self.gs).play()
+        self.assertIn(target, self.g.gy[1])
+        self.assertFalse(self.gs.action_stack.actions)
 
     def test_prevents_all_damage_when_amount_is_none(self):
         attacker = self.g.card('goblin-hero')

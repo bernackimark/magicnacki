@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Literal
 
+from models.action_stack import StackItemType
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.cast import CastPermanentAction
 from models.actions.draw_discard import DiscardCards
 from models.actions.special import PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
@@ -101,10 +101,11 @@ class Bounce(Resolver):
 class CounterSpell(Resolver):
     """This can be used by all counter spells, not just the card named 'Counterspell'"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if not isinstance(t, AbilityAction):
-            raise TypeError(f'{source.props.name} needs an Action for a target')
+        if not isinstance(t, StackItemType):
+            raise TypeError(f'{source.props.name} needs a StackItemType for a target')
+        print('T', t)
         gs.action_stack.remove(t)
-        gs.pile_mgr.move_card(t.pipeline.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+        gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
 
 class CounterSpellUnlessManaPaid(Resolver):
     def __init__(self, mana_cost: str = None, mana_cost_eq_to_mv: bool = False):
@@ -112,15 +113,14 @@ class CounterSpellUnlessManaPaid(Resolver):
         self.mana_cost_eq_to_mv = mana_cost_eq_to_mv
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if not isinstance(t, (CastPermanentAction, AbilityAction)):
+        if not isinstance(t, StackItemType):
             raise ValueError(f"{source.props.name} needs a spell target")
         p_id = t.player_idx
-        mana_cost = t.pipeline.total_ability_cost if isinstance(t, AbilityAction) else t.source.casting_cost
-        if not gs.mana_pools[p_id].can_pay(mana_cost):
+        if not gs.mana_pools[p_id].can_pay(t.total_mana_cost):
             gs.action_stack.remove(t)
             gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, t, mana_cost), CounterSpellAction(p_id, gs, t)]
+        options = [PayManaToPreventCounter(p_id, gs, t, t.total_mana_cost), CounterSpellAction(p_id, gs, t)]
         gs.queue_choice(ChoiceAction(options))
 
 class CreateTokenCreature(Resolver):

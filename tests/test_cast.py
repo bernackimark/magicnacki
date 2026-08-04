@@ -1,7 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
+from models.actions.cast import CastWithNoSpellEffect
 from models.actions.stack_accept_counter import AcceptAction
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
