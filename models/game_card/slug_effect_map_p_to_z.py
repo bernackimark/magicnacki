@@ -357,7 +357,7 @@ MAP: dict[str, list[EffSpec]] = {
     'wormwood-treefolk': [Activated('GG', WormwoodTreefolkForestwalk()), Activated('BB', WormwoodTreefolkSwampwalk())],
     'wrath-of-god': [Spell(ExileAllCreatures())],
     'wyluli-wolf': [Activated('T', Pump(1, 1, True), T_FUNCS['creatures'])],
-    'xira-arien': [Activated('BRGT', DrawCards(3), T_FUNCS['all_players'])],
+    'xira-arien': [Activated('BRGT', DrawCards(), T_FUNCS['all_players'])],
     'yawgmoth-demon': [Static(YawgmothDemon())],
     'ydwen-efreet': [Static(YdwenEfreet())],
     'xenic-poltergeist': [Activated('T', BecomeCreaturePTEqualsManaValue(), T_FUNCS['non_creature_artifacts']),

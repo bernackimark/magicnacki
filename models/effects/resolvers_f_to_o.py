@@ -28,9 +28,8 @@ if TYPE_CHECKING:
 
 class FallingStar(Resolver):
     """Select an opponent's creature. If a di roll is 1-5, deal 3 damage to it"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         result: int = gs.randomize_event(source.owner_id, [1, 2, 3, 4, 5, 6])
         print(f'The roll is a: {result}')
         if result <= 5:
@@ -38,9 +37,8 @@ class FallingStar(Resolver):
 
 class FalseOrders(Resolver):
     """... Remove target blocker from a combat. You may have it block in a different legal combat."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.combat_mgr.remove_from_combat(t)
         other_combats = [com for com in gs.combat_mgr.combats if t not in com.blockers]
         if other_combats:
@@ -102,9 +100,8 @@ class GlassesOfUrza(Resolver):
 
 class GlyphOfDelusion(Resolver):
     """Put X glyph counters on target creature that target Wall blocked this turn, X = power of that blocked creature"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         com = gs.combat_mgr.get_combat(t)
         com.declared_attacker.counters.add_counter(STUN, com.declared_attacker.power)
 
@@ -119,9 +116,8 @@ class GlyphOfDestruction(Resolver):
 class GlyphOfReincarnation(Resolver):
     """Cast this spell only after combat. Destroy attacker blocked by target Wall this turn. It can't be regenerated.
     You put a different creature from the attacker's graveyard onto the battlefield under its owner's control."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         com = gs.combat_mgr.get_combat(t)
         attacker = com.declared_attacker
         creatures_in_attackers_gy = list(gs.card_filter.in_player_graveyard(attacker.owner_id).creatures().result())
@@ -150,10 +146,9 @@ class GraveRobbersAA(Resolver):
         gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
 class GreatDefender(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        """Target creature gets +0/+X until end of turn, where X is its mana value."""
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    """Target creature gets +0/+X until end of turn, where X is its mana value."""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(PTMod(s=source, t_adj=t.props.mana_value, expires='EOT'))
 
 class Greed(Resolver):
@@ -164,9 +159,8 @@ class Greed(Resolver):
 class GuardianAngel(Resolver):
     """Prevent the next X damage that would be dealt to any target (permanent or player) this turn.
     Until EOT, you may pay {1} at any time to prevent the next 1 damage that would be dealt to that target this turn."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         from models.effects.listeners_generic import PreventNextDamageTo
         x = context.x_value
         gs.event_mgr.register(PreventNextDamageTo(x, protected=t), source)
@@ -175,9 +169,8 @@ class GuardianAngel(Resolver):
 
 class GwendlynDiCorci(Resolver):
     """{T}: Target player discards a card at random. Activate only during your turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         cards = gs.pile_mgr.hands[t]
         if not cards:
             return
@@ -197,17 +190,15 @@ class HealingSalve(Resolver):
 
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         x = context.x_value
         t.modifiers.append(PTMod(s=source, p_adj=x, expires='EOT'))
 
 class HurkylsRecall(Resolver):
     """Return all artifacts target player owns to their hand"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f"{source.props.name} needs a target player")
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         for artifact in gs.card_filter.on_player_board(t).artifacts().result():
             gs.pile_mgr.bounce(artifact)
 
@@ -221,9 +212,8 @@ class IfhBiffEfreet(Resolver):
 
 class Inquisition(Resolver):
     """Target player reveals their hand. Deal damage to that player = number of white cards in their hand."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f"{source.props.name} needs a target player")
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         opp_cards = gs.pile_mgr.hands[flip(source.owner_id)]
         for c in opp_cards:
             c.reveal()
@@ -278,6 +268,7 @@ class LibraryOfAlexandria(Resolver):
 
 class LivingArtifactUpkeep(Resolver):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
+    # TODO: this needs to be an Upkeep Listener ...
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         if gs.player_turn_idx != source.owner_id:
             return
@@ -312,10 +303,9 @@ class ManaDrain(Resolver):
         gs.event_mgr.register(ManaDrainMainPhase(t.source.props.mana_value), source)
 
 class ManaShort(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         """target = player_id whose lands should be tapped"""
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
         player_lands = gs.card_filter.on_player_board(t).lands().result()
         for land in player_lands:
             land.tap()
@@ -340,9 +330,8 @@ class MazeOfIth(Resolver):
 
 class Millstone(Resolver):
     """{2}, {T}: Target player mills two cards"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         for _ in range(2):
             top_card = gs.pile_mgr.libraries[t][0]  # Warning: if no cards, this pukes
             gs.pile_mgr.move_card(top_card, Zone.GRAVEYARD, cause='mill')
@@ -387,9 +376,8 @@ class NamelessRace(Resolver):
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""
     # TODO: this doesn't address the 'you may shuffle'
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         top_3_cards = gs.pile_mgr.libraries[t][:3]
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
         a0 = Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[t])
@@ -410,8 +398,7 @@ class NettlingImp(Resolver):
     def can_activate(self, gs: GameState, source: GameCard) -> bool:
         return source.owner_id != gs.player_turn_idx and gs.phase_mgr.phase < Phase.DECLARE_ATTACKERS
 
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(item='Goad', s=source, expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(t), source)

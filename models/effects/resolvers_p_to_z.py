@@ -43,9 +43,8 @@ class PhantasmalTerrain(Resolver):
 
 class PhyrexianGremlinsTap(Resolver):
     """{T}: Tap target artifact. It doesn't untap during its controller's untap step so long as PG remains tapped."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.tap()
         gs.event_mgr.register(DoesntUntapAtUntap(target=t), source)
 
@@ -77,9 +76,8 @@ class PrimalClay(Resolver):
 
 class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target player')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         opp_cards = gs.pile_mgr.hands[t]
         for c in opp_cards:
             c.reveal()
@@ -95,19 +93,17 @@ class RagMan(Resolver):
 class Rakalite(Resolver):
     """{2}: Prevent the next 1 damage that would be dealt to any target this turn.
     Return this artifact to its owner's hand at the beginning of the next end step."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         """target is the card dealing damage"""
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
         gs.event_mgr.register(PreventNextDamageTo(1, protected=t), source)
         gs.event_mgr.register(BounceAtEndStep(source), source)
 
 class RapidFire(Resolver):
     """Cast this spell only before blockers are declared. Target creature gains first strike until end of turn.
     If it doesn't have rampage, that creature gains rampage 2 until end of turn."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(s=source, item='First Strike', expires='EOT'))
         if not t.rampage_amt:
             t.modifiers.append(KWAMod(s=source, item='Rampage 2', expires='EOT'))
@@ -160,9 +156,8 @@ class SacrificeOnCast(Resolver):
 
 class SafeHaven(Resolver):
     """{2}, {T}: Exile target creature you control, storing the exiled card's ID for future reference"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f"{source.props.name} needs a target")
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.exile(t)
         if source.extras.get('cards_exiled') is None:
             source.extras['cards_exiled'] = set()
@@ -170,9 +165,8 @@ class SafeHaven(Resolver):
 
 class SandalsOfAbdallahIslandWalk(Resolver):
     """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(s=source, item='Islandwalk', expires='EOT'))
         gs.event_mgr.register(SandalsOfAbdallahIfCreatureDies(target_creature=t), source)
 
@@ -217,9 +211,8 @@ class Sindbad(Resolver):
 
 class SingingTree(Resolver):
     """Target attacking creature has base power 0 until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(PTMod(s=source, p_adj=-t.base_pt[0], expires='EOT'))
 
 class SirensCall(Resolver):
@@ -267,9 +260,8 @@ class Subdue(Resolver):
         t.modifiers.append(PTMod(s=source, p_adj=0, t_adj=t.props.mana_value))
 
 class SwordsToPlowshares(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.exile(t)
         gs.score_mgr.increment_life(t.owner_id, t.power, source, gs)
 
@@ -290,18 +282,16 @@ class SyphonSoul(Resolver):
 
 class TangleKelp(Resolver):
     """Tap host. Host doesn't untap during its controller's untap step if it attacked their last turn."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.tap()
         gs.event_mgr.register(DoesntUntapAtUntapIfItAttackedLastTurn(t), source)
 
 class TawnossCoffin(Resolver):
     """... Exile target creature & all its auras. Note the number & kind of counters that were on that creature ..."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         from copy import deepcopy
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
         my_deep_copy = deepcopy(t)
         source.extras['exiled_card'] = t
         source.extras['exiled_card_deep_copy'] = my_deep_copy
@@ -310,9 +300,8 @@ class TawnossCoffin(Resolver):
 class Telekinesis(Resolver):
     """Tap target creature. Prevent all combat damage that would be dealt by that creature this turn.
     It doesn't untap during its controller's next two untap steps."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.tap()
         gs.event_mgr.register(PreventAllDamageByEOT(t, combat_only=True), source)
         t.counters.add_counter(STUN, 2)
@@ -338,16 +327,14 @@ class Timetwister(Resolver):
 
 class TowerOfCoireall(Resolver):
     """{T}: Target creature can't be blocked by Walls this turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.event_mgr.register(TowerOfCoireallEOT(t), source)
 
 class Tracker(Resolver):
     """Tracker deals damage = its power to target creature. That creature deals damage = its power to this creature."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.apply_damage(source, source.power, t)
         gs.apply_damage(t, t.power, source)
 
@@ -359,9 +346,8 @@ class TriassicEggA(Resolver):
         has_creature_in_hand = len([c for c in gs.pile_mgr.hands[s.owner_id] if c.is_creature]) > 0
         return ctr_cnt_condition and has_creature_in_hand
 
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.move_card(t, Zone.BATTLEFIELD)
 
 class TriassicEggB(Resolver):
@@ -372,15 +358,13 @@ class TriassicEggB(Resolver):
         creatures_in_your_gy = len([c for c in gs.graveyards[s.owner_id] if c.is_creature]) > 0
         return ctr_cnt_condition and creatures_in_your_gy
 
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.move_card(t, Zone.BATTLEFIELD)
 
 class Twiddle(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.untap() if t.is_tapped else t.tap()
 
 class Typhoon(Resolver):
@@ -402,16 +386,15 @@ class UntamedWilds(Resolver):
 
 class UrborgLoseFirstStrike(Resolver):
     """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='First Strike', expires='EOT'))
 
 class UrborgLoseSwampwalk(Resolver):
     """{T}: Target creature loses first strike or SWAMPWALK until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='Swampwalk', expires='EOT'))
 
 class UrzasAvengerFlying(Resolver):
@@ -450,9 +433,8 @@ class UrzasTrio(Resolver):
 
 class VenarianGold(Resolver):
     """When this Aura enters, tap enchanted creature and put X stun counters on it ..."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise RuntimeError(f"{source.props.name} needs a casting target")
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.tap()
         if x := context.x_value:
             t.counters.add_counter(STUN, x)
@@ -471,9 +453,8 @@ class VesuvanDoppelgangerCast(Resolver):
 
 class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target player')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.add_presentation_request(source.owner_id, 'view_library', {'cards': gs.pile_mgr.libraries[t][:5]})
         options = [Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[t])]
         gs.queue_choice(ChoiceAction(options, may=True))
@@ -500,16 +481,14 @@ class WandOfIth(Resolver):
 
 class WarBarge(Resolver):
     """{3}: Target creature gains islandwalk EOT. When WB LTB this turn, destroy that creature, no regen allowed"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(item='Islandwalk', s=source, expires='EOT'))
         gs.event_mgr.register(LTBTandem([source, t], until_eot=True), source)
 
 class Web(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a target')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(PTMod(s=source, p_adj=0, t_adj=2))
         t.modifiers.append(KWAMod(s=source, item='Reach'))
 
@@ -535,9 +514,8 @@ class WindsOfChange(Resolver):
 
 class WinterBlast(Resolver):
     """Tap X target creatures. Winter Blast deals 2 damage to each of those creatures with flying."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t is None:
-            raise ValueError(f'{source.props.name} needs a list of targets')
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         for target in t:
             target.tap()
             if 'Flying' in t.keyword_abilities:

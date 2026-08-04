@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
 from functools import partial
@@ -38,6 +39,18 @@ class Resolver(ABC):
 
     def can_activate(self, gs: GameState, source: GameCard) -> bool:
         return True
+
+    @staticmethod
+    def target_required(fn):
+        """wrapper for .resolve() that replaces 100s of methods starting with:
+        if t is None:
+            raise ValueError(f"{source.props.name} needs a target")"""
+        @functools.wraps(fn)
+        def wrapper(self, gs, source, t=None, context=None):
+            if t is None:
+                raise ValueError(f"{source.props.name} needs a target")
+            return fn(self, gs, source, t, context)
+        return wrapper
 
 class Listener:
     listens_to: type[Event] | None = None  # used by event listeners
