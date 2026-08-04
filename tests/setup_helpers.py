@@ -17,6 +17,7 @@ from models.game_card.card import CardUniverse
 from models.game_card.game_card import GameCard
 from models.deck import Deck
 from models.systems.match import MatchManager
+from models.utils import flip
 from models.zone import Zone
 from players import ConsolePlayer
 from renderers import ConsoleRenderer
@@ -129,6 +130,7 @@ class TestGame:
             pipeline.targets.append(target)
         pipeline.advance()
         pipeline.resolve_ability()
+        AcceptAction(flip(owner), self.gs).play()
 
     def card_has_a_registered_listener(self, card: GameCard) -> bool:
         return any(e.source is card for entries in self.gs.event_mgr.event_listeners.values() for e in entries)

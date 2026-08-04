@@ -15,19 +15,10 @@ from models.actions.base import Action
 @dataclass
 class AcceptAction(Action):
     def __repr__(self) -> str:
-        return f"Accept {self.gs.action_stack.last_action}"
+        return f"Pass priority: {self.gs.action_stack.last_action}"
 
     def play(self) -> None:
-        last_action: StackItemType = self.gs.action_stack.last_action
-        if last_action is None:
-            raise RuntimeError("Nothing on the stack.")
-
-        first_actor_idx = self.gs.action_stack.first_actor_idx
-        last_action.play()
-
-        # --- reset action stack and current actor ---
-        self.gs.action_on_idx = first_actor_idx  # action returns to the first actor
-        self.gs.action_stack.remove(last_action)
+        self.gs.priority_mgr.pass_priority(self.player_idx)
 
 @dataclass
 class CounterSpellAction(Action):

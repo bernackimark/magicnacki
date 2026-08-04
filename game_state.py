@@ -5,6 +5,7 @@ from typing import Any, Sequence, TYPE_CHECKING
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.effects.base import Activated
+from models.systems.priority import PriorityManager
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -16,7 +17,8 @@ from models.systems.event import EventManager
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
 from models.systems.combat import CombatManager
-from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent, StateBasedEvent
+from models.events_all import DamageResolvedEvent, RandomEvent, DamageProposedEvent, CostQueryEvent, StateBasedEvent, \
+    CanCastQueryEvent
 from models.game_card.game_card import GameCard
 from models.game_card_filter import CardFilter
 from models.game_history import GameHistory
@@ -41,15 +43,15 @@ class GameState:
         self.tokens = tokens
         self.all_player_cards = cards.copy()
 
+        self.combat_mgr = CombatManager(self)
         self.event_mgr = EventManager(self)  # houses, emits, registers, unregisters Listener(Effect)
+        self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
         self.phase_mgr = PhaseManager(self)
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
-        self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
+        self.priority_mgr = PriorityManager(self)  # manages action related to the stack
         self.score_mgr = ScoreManager()  # manages life & poison
-        self.combat_mgr = CombatManager(self)
-
-        # action, turn, phase (game flow) concepts
         self.turn_mgr = TurnManager(self.player_cnt, player_turn_idx)
+
         self.action_on_idx: int = self.player_turn_idx
 
         self.mana_pools: list[ManaPool] = [ManaPool(self, i) for i in range(self.player_cnt)]
@@ -58,7 +60,6 @@ class GameState:
 
         self.game_history = GameHistory()  # turn num, p_idx, Action; appended to in engine.play()
 
-        # self.card_filter = CardFilter(self)  # replaced by the @property card_filter due to ChatGPT suggestion
         # only has knowledge of the current game; match info is handled in Engine's MatchManager
         self.is_game_over: bool = False
         self.winner: int | None = None
@@ -215,13 +216,17 @@ class GameState:
                 if not self.mana_pools[self.action_on_idx].can_pay(c.casting_cost):
                     continue
                 # its .play() will add it to the stack
-                actions.append(CastWithNoSpellEffect(c.owner_id, self, c))
+                query = CanCastQueryEvent(c, self.action_on_idx)
+                self.event_mgr.emit(query)
+                if query.permission is not False:
+                    actions.append(CastWithNoSpellEffect(c.owner_id, self, c))
                 continue
 
             for spell_eff in c.spells:
                 # creates a pipeline for selecting: X, mode, targets, extra costs
                 pipeline = AbilityPipeline(c.owner_id, self, c, spell_eff)
                 if pipeline.can_begin():
+                    print('EEE', c)
                     actions.append(pipeline)
 
         return actions

@@ -147,7 +147,6 @@ class AbilityPipeline(Action):
 
         action = AbilityAction(self.player_idx, self.gs, self)
         self.gs.action_stack.push(action, self.gs)
-        self.gs.event_mgr.emit(StackAdditionEvent(self.player_idx, action))
 
     def resolve_ability(self):
         if isinstance(self.eff_spec.effect, Resolver):

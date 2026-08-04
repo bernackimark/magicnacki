@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypeVar, Union
 
+from models.events_all import StackAdditionEvent
+
 if TYPE_CHECKING:
     from game_state import GameState
 
@@ -51,12 +53,13 @@ class ActionStack:
         return spells
         # return [a for a in self.actions if isinstance(a, AbilityPipeline) and a.eff_spec.is_spell]
 
-    def push(self, action: StackItemType, gs: GameState, flip_action_on_opponent: bool = True) -> None:
+    def push(self, action: StackItemType, gs: GameState) -> None:
         if not isinstance(action, StackItemType):
             raise TypeError(f"Action Stack expects an action, received {action}, type {type(action)}")
         self._actions.append(action)
-        if flip_action_on_opponent:
-            gs.action_on_idx = flip(gs.action_on_idx)
+        player = gs.action_on_idx
+        gs.priority_mgr.new_stack_item_added()
+        gs.event_mgr.emit(StackAdditionEvent(player, action))
 
     def pop(self):
         self._actions.pop()

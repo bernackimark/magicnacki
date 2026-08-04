@@ -233,6 +233,7 @@ class TestCardsDEF(unittest.TestCase):
 
     def test_firestorm_phoenix(self):
         """If this card would die, bounce it instead; it cannot be re-summoned this turn"""
+        self.gs.hands[0].clear()
         card = self.g.battlefield('firestorm-phoenix')  # 3/2
         bolt = self.g.hand('lightning-bolt')
         self.g.mana('RRRRRRRRRRRRR')

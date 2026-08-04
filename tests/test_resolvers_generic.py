@@ -121,6 +121,7 @@ class TestResolversGeneric(unittest.TestCase):
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[target_spell])
         pipeline.advance()
         AcceptAction(0, self.gs).play()
+        AcceptAction(1, self.gs).play()
         self.assertIn(target, self.g.gy[1])
         self.assertFalse(self.gs.action_stack.actions)
 
