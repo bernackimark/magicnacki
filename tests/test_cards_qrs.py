@@ -1,18 +1,14 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.cast import CastPermanentAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
-from models.actions.stack_accept_counter import AcceptAction
 from models.actions.tap_untap import Untap
 from models.counter_tokens import PLUS_ONE
-from models.effects.listeners_damage import ReverseDamage
-from models.effects.resolvers_generic import Destroy, RevealHands
+from models.effects.resolvers_generic import RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
-from models.game_card.effect_spec_templates import target_spell_mv
 from models.systems.phase import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
@@ -275,7 +271,7 @@ class TestCardsQRS(unittest.TestCase):
     def test_season_of_the_witch(self):
         """At your upkeep, sac SOTW unless you pay 2 life. At end step,
         destroy all untapped creatures that didn't attack this turn, except for creatures that couldn't attack."""
-        card = self.g.battlefield('season-of-the-witch')
+        self.g.battlefield('season-of-the-witch')
         wall = self.g.battlefield('wall-of-wood')
         has_haste = self.g.battlefield('nether-shadow')
         regular = self.g.battlefield('savannah-lions')
@@ -398,7 +394,6 @@ class TestCardsQRS(unittest.TestCase):
         pipeline.advance()
         self.assertIn(creature, [a.target for a in self.gs.pending_choice.get_actions()])
 
-        self.gs.pending_choice = None
         spectral_cloak = self.g.battlefield('spectral-cloak')
         Attach(0, self.gs, spectral_cloak, creature).play()
         pipeline = AbilityPipeline(0, self.gs, bolt, bolt.abilities[0])
@@ -423,7 +418,6 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.action_stack.push(CastPermanentAction(1, self.gs, small_card), self.gs)
         self.assertEqual(0, self.gs.action_on_idx)
         self.assertTrue(any(a.source is card for a in self.gs.available_actions_from_hand()))
-
 
     def test_spirit_link(self):
         """Whenever enchanted creature deals damage, you gain that much life"""
@@ -465,7 +459,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.mana('U')
         tapped_card = self.g.battlefield('nether-void')
         tapped_card.tap()
-        untapped_card = self.g.battlefield('grizzly-bears')
+        self.g.battlefield('grizzly-bears')
 
         self.g.next_turn()
         self.assertTrue(tapped_card.is_tapped)
@@ -507,7 +501,7 @@ class TestCardsQRS(unittest.TestCase):
 
     def test_tablet_of_epityr(self):
         """Whenever an artifact you control is put into a graveyard from battlefield, you may pay {1} to gain 1 life."""
-        card = self.g.battlefield('tablet-of-epityr')
+        self.g.battlefield('tablet-of-epityr')
         your_artifact = self.g.battlefield('barls-cage')
         self.g.mana('U')
         self.gs.pile_mgr.destroy(your_artifact)
