@@ -1,8 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Callable, Literal
+from typing import TYPE_CHECKING, Callable, Literal
 
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.base import Action
 from models.actions.cast import CastPermanentAction
 from models.actions.draw_discard import DiscardCards
 from models.actions.special import PayManaToPreventCounter
@@ -20,6 +19,7 @@ from models.zone import Zone
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
+    from models.effects.base import RTarget, ResContext
 
 
 class AddCounter(Resolver):
@@ -28,8 +28,8 @@ class AddCounter(Resolver):
         self.counter_type = counter_type
         self.cnt = cnt
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        target = source if not target else target
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        target = source if not t else t
         target.counters.add_counter(self.counter_type, self.cnt)
 
 class AddMana(Resolver):
@@ -40,7 +40,7 @@ class AddMana(Resolver):
         if color not in COLOR_LETTERS_W_COLORLESS:
             raise ValueError(f"Color must be one of: {COLOR_LETTERS_W_COLORLESS}")
 
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.mana_pools[source.owner_id].add_floating(self.color, self.cnt)
 
 class AddStunCounter(Resolver):
@@ -48,18 +48,17 @@ class AddStunCounter(Resolver):
     def __init__(self, cnt: int = 1):
         self.cnt = cnt
 
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.tap()
-        target.counters.add_counter(STUN, self.cnt)
+        t.tap()
+        t.counters.add_counter(STUN, self.cnt)
 
 class AllWalksRemoved(Resolver):
     """Target creature loses all landwalk abilities until end of turn"""
-    def resolve(self, gs, source: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for land in BASIC_LANDS:
-            target.modifiers.append(KWAMod(s=source, add_or_remove='remove',
-                                           item=f'{land.capitalize()}walk', expires='EOT'))
+            t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=f'{land.capitalize()}walk', expires='EOT'))
 
 class BasePT(Resolver):
     def __init__(self, base_p: int = None, base_t: int = None, eot: bool = False):
@@ -67,13 +66,12 @@ class BasePT(Resolver):
         self.base_t = base_t
         self.eot = eot
 
-    def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise ValueError(f'{s.props.name} needs a target')
-        base_p = self.base_p if self.base_p is not None else target.base_pt[0]
-        base_t = self.base_t if self.base_t is not None else target.base_pt[1]
-        print('AAA', base_p, base_t)
-        target.modifiers.append(BasePTMod(s=s, base_p=base_p, base_t=base_t, expires='EOT' if self.eot else None))
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        base_p = self.base_p if self.base_p is not None else t.base_pt[0]
+        base_t = self.base_t if self.base_t is not None else t.base_pt[1]
+        t.modifiers.append(BasePTMod(s=source, base_p=base_p, base_t=base_t, expires='EOT' if self.eot else None))
 
 class BecomeCreature(Resolver):
     def __init__(self, power: int, toughness: int, sub_type: str = None, until_eot: bool = False):
@@ -82,54 +80,52 @@ class BecomeCreature(Resolver):
         self.sub_type = sub_type
         self.until_eot = until_eot
 
-    def resolve(self, gs, source: GameCard, target: GameCard = None):
-        if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        target.modifiers.append(TypeMod(s=source, add_or_remove='add', item='Creature',
-                                        expires='EOT' if self.until_eot else None))
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        t.modifiers.append(TypeMod(s=source, add_or_remove='add', item='Creature',
+                                   expires='EOT' if self.until_eot else None))
         if self.sub_type:
-            target.modifiers.append(SubTypeMod(s=source, item=self.sub_type,
-                                               expires='EOT' if self.until_eot else None))
+            t.modifiers.append(SubTypeMod(s=source, item=self.sub_type, expires='EOT' if self.until_eot else None))
 
 class BecomeCreaturePTEqualsManaValue(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        add_creature_mod_query = AddCreatureType(target)
-        pt_mod_query = PTModEqualsManaValue(target)
+        add_creature_mod_query = AddCreatureType(t)
+        pt_mod_query = PTModEqualsManaValue(t)
         gs.event_mgr.register(add_creature_mod_query, source)
         gs.event_mgr.register(pt_mod_query, source)
 
 class Bounce(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.pile_mgr.bounce(target)
+        gs.pile_mgr.bounce(t)
 
 class CounterSpell(Resolver):
     """This can be used by all counter spells, not just the card named 'Counterspell'"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | AbilityAction] = None) -> None:
-        if not isinstance(target, AbilityAction):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if not isinstance(t, AbilityAction):
             raise TypeError(f'{source.props.name} needs an Action for a target')
-        gs.action_stack.remove(target)
-        gs.pile_mgr.move_card(target.pipeline.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+        gs.action_stack.remove(t)
+        gs.pile_mgr.move_card(t.pipeline.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
 
 class CounterSpellUnlessManaPaid(Resolver):
     def __init__(self, mana_cost: str = None, mana_cost_eq_to_mv: bool = False):
         self.mana_cost = mana_cost
         self.mana_cost_eq_to_mv = mana_cost_eq_to_mv
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
-        print('DDD', type(target), target)
-        if not isinstance(target, (CastPermanentAction, AbilityAction)):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if not isinstance(t, (CastPermanentAction, AbilityAction)):
             raise ValueError(f"{source.props.name} needs a spell target")
-        p_id = target.player_idx
-        mana_cost = target.pipeline.total_ability_cost if isinstance(target, AbilityAction) else target.source.casting_cost
+        p_id = t.player_idx
+        mana_cost = t.pipeline.total_ability_cost if isinstance(t, AbilityAction) else t.source.casting_cost
         if not gs.mana_pools[p_id].can_pay(mana_cost):
-            gs.action_stack.remove(target)
-            gs.pile_mgr.move_card(target.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+            gs.action_stack.remove(t)
+            gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, target, mana_cost), CounterSpellAction(p_id, gs, target)]
+        options = [PayManaToPreventCounter(p_id, gs, t, mana_cost), CounterSpellAction(p_id, gs, t)]
         gs.queue_choice(ChoiceAction(options))
 
 class CreateTokenCreature(Resolver):
@@ -137,7 +133,7 @@ class CreateTokenCreature(Resolver):
     def __init__(self, slug: str):
         self.slug = slug
 
-    def resolve(self, gs: GameState, source: GameCard, target=None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.game_card.game_card import GameCard
         from models.zone import Zone
         card = gs.tokens.get(self.slug)
@@ -151,7 +147,7 @@ class CreateTokenCreature(Resolver):
 
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None) -> None:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.actions.special import StoreColorOnCard
         options = [StoreColorOnCard(source.owner_id, gs, source, color) for color in COLOR_LETTERS]
         gs.queue_choice(ChoiceAction(options))
@@ -160,36 +156,33 @@ class DealDamage(Resolver):
     def __init__(self, amt: int = None):  # None is permitted due to the possibility of variable X
         self.amt = amt
 
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard | int = None, variable_amt: int = None):
-        amt = self.amt if not variable_amt else variable_amt
-        gs.apply_damage(source, amt, target)
-
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        amt = context.x_value if context.x_value is not None else self.amt
+        gs.apply_damage(source, amt, t)
 
 class DealOneDamageToTargetList(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard | int] = None):
-        for t in target:
-            print(source, 1, target)
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        for target in t:
+            print(source, 1, t)
             gs.apply_damage(source, 1, t)
-
 
 class DealDamageToAllCreaturesAndPlayers(Resolver):
     def __init__(self, amt: int):
         self.amt = amt
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         [gs.apply_damage(source, self.amt, p_id, is_combat=False) for p_id in (0, 1)]
         [gs.apply_damage(source, self.amt, creature) for creature in gs.card_filter.in_play().creatures().result()]
-
 
 class DealDamageToTargetAndSelf(Resolver):
     def __init__(self, amt_to_target: int, amt_to_source_card: int):
         self.amt_to_target = amt_to_target
         self.amt_to_source_card = amt_to_source_card
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise RuntimeError(f"{source.props.name} needs a target")
-        gs.apply_damage(source, self.amt_to_target, target)
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f"{source.props.name} needs a target")
+        gs.apply_damage(source, self.amt_to_target, t)
         gs.apply_damage(source, self.amt_to_source_card, source)
 
 
@@ -198,52 +191,51 @@ class DealDamageToTargetAndYou(Resolver):
         self.amt_to_target = amt_to_target
         self.amt_to_you = amt_to_you
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise RuntimeError(f"{source.props.name} needs a target")
-        gs.apply_damage(source, self.amt_to_target, target)
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f"{source.props.name} needs a target")
+        gs.apply_damage(source, self.amt_to_target, t)
         gs.apply_damage(source, self.amt_to_you, source.owner_id)
 
 class Destroy(Resolver):
     def __init__(self, allow_regen: bool = True):
         self.allow_regen = allow_regen
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        gs.pile_mgr.destroy(target, allow_regeneration=self.allow_regen)
-
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.destroy(t, allow_regeneration=self.allow_regen)
 
 class DestroyAll(Resolver):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]], allow_regen: bool = True):
         self.card_filter_func = card_filter_func
         self.allow_regen = allow_regen
 
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        for c in self.card_filter_func(gs, s):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        for c in self.card_filter_func(gs, source):
             gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
 
 class Discard(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        options = [DiscardCards(target, gs, c) for c in gs.pile_mgr.hands[target]]
+        options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
         gs.queue_choice(ChoiceAction(options))
 
 class DrawCards(Resolver):
     def __init__(self, card_cnt: int = 1):
         self.card_cnt = card_cnt
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[int] = None):
-        if target is None:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             return
-        gs.pile_mgr.draw(target, self.card_cnt)
+        gs.pile_mgr.draw(t, self.card_cnt)
 
 class EmptyResolver(Resolver):
     """Used by auras that have complex Listeners but no resolver"""
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         pass
 
 class ExileAllCreatures(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for c in gs.card_filter.in_play().creatures().result():
             gs.pile_mgr.exile(c)
 
@@ -251,29 +243,29 @@ class GainLife(Resolver):
     def __init__(self, amt: int = 1):
         self.amt = amt
 
-    def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gs.score_mgr.increment_life(target, self.amt, source, gs)
+        gs.score_mgr.increment_life(t, self.amt, source, gs)
 
 class GraveyardToExile(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        gs.pile_mgr.exile(target)
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gs.pile_mgr.exile(t)
 
 class GraveyardToExileInItsEntirety(Resolver):
     """Moves all cards from target player's graveyard to that same player's exile"""
-    def resolve(self, gs: GameState, source: GameCard, target: int = None):
-        if target is None:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        gy = gs.pile_mgr.graveyards[target][:]
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        gy = gs.pile_mgr.graveyards[t][:]
         for card in gy:
             gs.pile_mgr.exile(card)
 
 class HandToBoard(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        gs.pile_mgr.cast(target)
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.cast(t)
 
 class KWAModEffect(Resolver):
     def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):
@@ -281,16 +273,16 @@ class KWAModEffect(Resolver):
         self.kwa = kwa
         self.eot = eot
 
-    def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
-        target.modifiers.append(KWAMod(s=s, add_or_remove=self.add_or_remove, item=self.kwa,
-                                       expires='EOT' if self.eot else None))
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        t.modifiers.append(KWAMod(s=source, add_or_remove=self.add_or_remove, item=self.kwa,
+                                  expires='EOT' if self.eot else None))
 
 class ManaBatteriesAddMana(Resolver):
     def __init__(self, color: str):
         self.color = color
 
-    def resolve(self, gs: GameState, source: GameCard, target=None):
-        x = source.extras.get('x', 0)  # read X chosen when activating
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        x = context.x_value
         source.counters.remove_counter(CHARGE, x)
         gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x)
 
@@ -300,62 +292,62 @@ class Pump(Resolver):
         self.t_adj = toughness_adj
         self.eot = eot
 
-    def resolve(self, gs, s: GameCard, target: Optional[GameCard] = None):
-        if not target:
-            raise ValueError(f'{s.props.name} needs a target')
-        target.modifiers.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT' if self.eot else None))
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        t.modifiers.append(PTMod(s=source, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT' if self.eot else None))
 
 class Reanimate(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise RuntimeError(f'{source.props.name} needs a target')
-        gs.pile_mgr.reanimate(target)
+        gs.pile_mgr.reanimate(t)
 
 class Regenerate(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(RegenerationMod(s=source, expires='EOT'))
+        t.modifiers.append(RegenerationMod(s=source, expires='EOT'))
 
 class RemoveCounter(Resolver):
     def __init__(self, counter_type: CounterType):
         self.counter_type = counter_type
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard | int | Action] = None) -> None:
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.counters.remove_counter(self.counter_type)
+        t.counters.remove_counter(self.counter_type)
 
 class RemoveFromCombat(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
-        if target is None:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.combat_mgr.remove_from_combat(target)
+        gs.combat_mgr.remove_from_combat(t)
 
 class RemoveHostAuras(Resolver):
     """Removes target's existing auras"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise RuntimeError(f'{source.props.name} needs a target')
-        for aura in list(target.auras):
+        for aura in list(t.auras):
             gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'))
             gs.pile_mgr.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
             gs.event_mgr.unregister_effects(aura)
 
 class Reveal(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None) -> None:
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        gs.add_presentation_request(flip(target.owner_id), 'view_card', {'cards': [target]})
+        gs.add_presentation_request(flip(t.owner_id), 'view_card', {'cards': [t]})
 
 class RevealHands(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: int | list[int] = None) -> None:
-        if isinstance(target, int):
-            target = [target]
-        elif target is None:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if isinstance(t, int):
+            target = [t]
+        elif t is None:
             target = [0, 1]
-        for t in target:
-            for c in gs.pile_mgr.hands[t]:
+        for target in t:
+            for c in gs.pile_mgr.hands[target]:
                 c.reveal()
 
 class RevealLibrary(Resolver):
@@ -363,7 +355,7 @@ class RevealLibrary(Resolver):
         self.viewer_id = viewer_id
         self.top_x = top_x
 
-    def resolve(self, gs: GameState, source: GameCard, target=None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         if self.viewer_id is None:
             self.viewer_id = source.owner_id
         cards = gs.pile_mgr.libraries[source.owner_id] if not self.top_x else gs.pile_mgr.libraries[source.owner_id][:self.top_x]
@@ -374,7 +366,7 @@ class RevealTopLibraryCard(Resolver):
     def __init__(self, library_id: int = None):
         self.library_id = library_id
 
-    def resolve(self, gs: GameState, source: GameCard, target=None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         libraries = (0, 1) if self.library_id is None else (self.library_id, )
         for p_id in libraries:
             if gs.pile_mgr.libraries[p_id]:
@@ -384,8 +376,8 @@ class SacAll(Resolver):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]]):
         self.card_filter_func = card_filter_func
 
-    def resolve(self, gs: GameState, s: GameCard, t: Optional[GameCard] = None):
-        for c in self.card_filter_func(gs, s):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        for c in self.card_filter_func(gs, source):
             gs.pile_mgr.destroy(c, allow_regeneration=False)
 
 class SetColor(Resolver):
@@ -393,10 +385,10 @@ class SetColor(Resolver):
         self.color = color
         self.expires = expires
 
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if target is None:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
-        target.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', item=self.color))
+        t.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', item=self.color))
 
 class Steal(Resolver):
     """Registers an OwnershipModQuery.  Default behavior is to transfer the card across boards upon stealer's LTB"""
@@ -405,20 +397,20 @@ class Steal(Resolver):
         self.return_on_source_ltb = return_on_ltb
         self.return_on_source_untap = return_on_untap
 
-    def resolve(self, gs: GameState, source: GameCard, target: Optional[GameCard] = None):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         """If the zone is going from battlefield to battlefield, then move_card() will not trigger"""
         from models.effects.listeners_generic import ReturnToOwnerOnLTB, ReturnToOwnerOnUntap
-        if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        original_owner_id = int(target.owner_id)
-        gs.event_mgr.register(OwnershipModQuery(target), source)
+        if t is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        original_owner_id = int(t.owner_id)
+        gs.event_mgr.register(OwnershipModQuery(t), source)
 
-        target.turn_entered_for_owner = gs.turn_mgr.turn_number
-        if target.zone == Zone.BATTLEFIELD:
-            gs.pile_mgr.boards[original_owner_id].remove(target)
-            gs.pile_mgr.boards[source.owner_id].append(target)
+        t.turn_entered_for_owner = gs.turn_mgr.turn_number
+        if t.zone == Zone.BATTLEFIELD:
+            gs.pile_mgr.boards[original_owner_id].remove(t)
+            gs.pile_mgr.boards[source.owner_id].append(t)
         else:
-            gs.pile_mgr.move_card(target, self.new_zone, cause='steal')
+            gs.pile_mgr.move_card(t, self.new_zone, cause='steal')
 
         if self.return_on_source_ltb:
             gs.event_mgr.register(ReturnToOwnerOnLTB(), source)
@@ -429,32 +421,32 @@ class Steal(Resolver):
         gs.event_mgr.emit(StateBasedEvent())
 
 class TapCardEffect(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.tap()
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        t.tap()
 
 class TapCardsEffect(Resolver):
     """Accepts a list of targets and taps each"""
-    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a list of targets')
-        for t in target:
-            t.tap()
+        for target in t:
+            target.tap()
 
 class UntapCardEffect(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        target.untap()
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        t.untap()
 
 class UntapCardsEffect(Resolver):
     """Accepts a list of targets and untaps each"""
-    def resolve(self, gs: GameState, source: GameCard, target: list[GameCard] = None):
-        if not target:
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a list of targets')
-        for t in target:
-            t.untap()
+        for target in t:
+            target.untap()
 
 class XZeroOneCountersByManaValue(Resolver):
     """Put X +0/+1 counters on target creature, where X is that creature's mana value"""
-    def resolve(self, gs: GameState, source: GameCard, target: GameCard = None):
-        if not target:
-            raise RuntimeError(f'{source.props.name} needs a target')
-        target.counters.add_counter(PLUS_ZERO_ONE, target.props.mana_value)
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if t is None:
+            raise ValueError(f'{source.props.name} needs a target')
+        t.counters.add_counter(PLUS_ZERO_ONE, t.props.mana_value)

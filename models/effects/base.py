@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.systems.phase import Phase
 
-RTarget: TypeAlias = "GameCard | int | Action | None"
+RTarget: TypeAlias = "GameCard | int | Action | list[GameCard] | None"
 
 
 @dataclass
