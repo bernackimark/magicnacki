@@ -3,7 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.special import Attach
-from models.cost import CostResult, SacCardCost
+from models.cost import SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
@@ -378,4 +378,3 @@ class TestCardsAtoC(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
