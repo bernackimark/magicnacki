@@ -285,3 +285,6 @@ class GameState:
 
 # TODO:
 #  can_cast() must take into account multi-mana-color producers (dual lands, etc)
+
+# TODO:
+#  Mana abilities: Abilities that produce mana do not use the stack and cannot be responded to or countered at all
