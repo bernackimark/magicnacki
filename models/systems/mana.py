@@ -28,6 +28,10 @@ class ManaCost:
     def decoded(self) -> dict[str, int]:
         return self._decode(self.cost)
 
+    @property
+    def mana_value(self) -> int:
+        return sum(self.decoded.values())
+
     @staticmethod
     def _decode(cost_str: str) -> dict[str, int]:
         """ex '2U' returns {'U': 1, 'G': 0, ... 'C': 2} where C = colorless; 'C' is guaranteed to be the last key"""
