@@ -105,9 +105,10 @@ class RemoveCounterCost(Cost):
 class SacCardCost(Cost):
     requires_choice = True
 
-    def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]]):
+    def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]] = None,
+                 selected_card: GameCard | None = None):
         self.target_func = target_func
-        self.selected_card: GameCard | None = None
+        self.selected_card = selected_card
 
     def can_pay(self, gs: GameState, source: GameCard) -> bool:
         return len(self.target_func(gs, source)) >= 1

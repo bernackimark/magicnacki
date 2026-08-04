@@ -110,7 +110,7 @@ class TestCardsQRS(unittest.TestCase):
         possible_actions = self.gs.pending_choice.get_actions()
         self.assertEqual({1, 2, 3, 4}, {a.x for a in possible_actions})
 
-        card.extras['x'] = 4
+        pipeline.x_value = 4
         pipeline.resolve_ability()  # RH = 4/4
         self.assertEqual(4, card.counters.get_count(PLUS_ONE))
 

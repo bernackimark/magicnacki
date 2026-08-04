@@ -157,7 +157,7 @@ class DealDamage(Resolver):
         self.amt = amt
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        amt = context.x_value if context.x_value is not None else self.amt
+        amt = context.x_value if context and context.x_value is not None else self.amt
         gs.apply_damage(source, amt, t)
 
 class DealOneDamageToTargetList(Resolver):
@@ -346,8 +346,8 @@ class RevealHands(Resolver):
             target = [t]
         elif t is None:
             target = [0, 1]
-        for target in t:
-            for c in gs.pile_mgr.hands[target]:
+        for tar in target:
+            for c in gs.pile_mgr.hands[tar]:
                 c.reveal()
 
 class RevealLibrary(Resolver):

@@ -268,7 +268,7 @@ class Subdue(Resolver):
 
 class SwordsToPlowshares(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if t in None:
+        if t is None:
             raise ValueError(f'{source.props.name} needs a target')
         gs.pile_mgr.exile(t)
         gs.score_mgr.increment_life(t.owner_id, t.power, source, gs)

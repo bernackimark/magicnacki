@@ -5,13 +5,13 @@ from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING, Union
 
 from models.actions.base import Action
-from models.cost import Cost
-from models.effects.base import Resolver, ActivatedAbility, Listener
+from models.effects.base import Resolver, ActivatedAbility, Listener, ResContext
 from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent, StackAdditionEvent
 from models.systems.mana import ManaCost
 from models.zone import Zone
 
 if TYPE_CHECKING:
+    from models.cost import Cost, CostResult
     from models.effects.base import EffSpec
     from models.game_card.game_card import GameCard
 
@@ -42,7 +42,7 @@ class AbilityPipeline(Action):
     selected_extra_costs: list[Cost] = field(default_factory=list)
 
     # information produced by paying costs
-    cost_result: Union["CostResult", None] = None
+    cost_result: CostResult | None = None
 
     # def __post_init__(self):
     #     if self.eff_spec and self.eff_spec.effect and not isinstance(self.eff_spec.effect, Resolver):
@@ -151,7 +151,8 @@ class AbilityPipeline(Action):
 
     def resolve_ability(self):
         if isinstance(self.eff_spec.effect, Resolver):
-            self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument())
+            context = ResContext(cost_result=self.cost_result, x_value=self.x_value, chosen_mode=self.chosen_mode)
+            self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument(), context)
 
         if self.eff_spec.is_aa:
             aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
@@ -238,10 +239,9 @@ class AbilityPipeline(Action):
     def needs_extra_cost_choices(self) -> bool:
         if not self.eff_spec.extra_costs:
             return False
-        for extra_cost in self.eff_spec.extra_costs:
-            if extra_cost.requires_choice:
-                return True
-        return len(self.selected_extra_costs) < len(self.eff_spec.extra_costs)
+        if len(self.selected_extra_costs) >= len(self.eff_spec.extra_costs):
+            return False
+        return any(extra_cost.requires_choice for extra_cost in self.eff_spec.extra_costs)
 
     def get_x_range(self) -> tuple[int, int]:
         # TODO: the below line is a placeholder, using a random large number of "10", just to get through some tests

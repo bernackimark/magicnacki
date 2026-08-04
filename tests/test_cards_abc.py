@@ -3,6 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.special import Attach
+from models.cost import CostResult, SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
@@ -100,11 +101,13 @@ class TestCardsAtoC(unittest.TestCase):
     def test_berserk(self):
         """Cast this spell only before the combat damage step. Target creature gains trample and gets +X/+0 EOT,
         where X is its power. At end step, destroy that creature if it attacked this turn."""
+        self.gs.hands[0].clear()
         card = self.g.hand('berserk')
         target = self.g.battlefield('grizzly-bears')  # 2/2
         self.g.mana('GGG')
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
-        self.assertFalse(card.abilities[0].effect.can_cast(self.gs, card))
+        self.assertFalse(any(a for a in self.gs.available_actions_from_hand()
+                         if isinstance(a, AbilityPipeline) and a.source is card))
 
         self.g.next_turn()
         card.abilities[0].effect.resolve(self.gs, card, target)
@@ -221,8 +224,10 @@ class TestCardsAtoC(unittest.TestCase):
 
         aa1 = card.activated_abilities[0]
         creature = self.g.battlefield('savannah-lions')
-        self.g.activate_ability(aa1)
-        self.gs.pending_choice.get_actions()[0].play()  # Sac the creature
+        pipeline = AbilityPipeline(0, self.gs, card, aa1.eff_spec,
+                                   selected_extra_costs=[SacCardCost(selected_card=creature)])
+        pipeline.advance()
+        pipeline.resolve_ability()
         self.assertEqual(1, card.counters.get_count(STORAGE))
         self.assertIn(creature, self.g.gy[0])
 
