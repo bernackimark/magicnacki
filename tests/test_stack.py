@@ -1,6 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.actions.cast import CastWithNoSpellEffect
 from models.actions.stack_accept_counter import AcceptAction
 from tests.setup_helpers import TestGame
 
@@ -67,23 +68,68 @@ class TestStackResolution(unittest.TestCase):
         """P0 casts Shivan Dragon
         P1 casts Counterspell targeting Dragon
         resolve stack"""
+        spell = self.g.hand('shivan-dragon')
+        self.g.mana('RRRRRRRRRR')
+        CastWithNoSpellEffect(0, self.gs, spell).play()  # push CastPermanentAction on stack
+        stack_item = self.gs.action_stack.last_action
+
+        counter = self.g.hand('counterspell', owner=1)
+        self.g.mana('UU', owner=1)
+        counter_pipeline = AbilityPipeline(1, self.gs, counter, counter.abilities[0], targets=[stack_item])
+        counter_pipeline.advance()
+        self.assertEqual(0, self.gs.action_on_idx)
+
+        AcceptAction(0, self.gs).play()
+        AcceptAction(1, self.gs).play()
         self.assertFalse(len(self.gs.action_stack.actions))
+        self.assertIn(spell, self.g.gy[0])
 
     def test_counter_spell_a_counter_spell(self):
         """P0 casts Shivan Dragon
         P1 casts Counterspell targeting Dragon
         P0 casts Counterspell targeting Counterspell"""
-        self.assertFalse(len(self.gs.action_stack.actions))
+        spell = self.g.hand('shivan-dragon')
+        self.g.mana('RRRRRRRRRR')
+        CastWithNoSpellEffect(0, self.gs, spell).play()  # push CastPermanentAction on stack
+        spell_item = self.gs.action_stack.last_action
 
-    def test_counter_an_activated_ability(self):
-        """"""
+        counter = self.g.hand('counterspell', owner=1)
+        self.g.mana('UU', owner=1)
+        counter_pipeline = AbilityPipeline(1, self.gs, counter, counter.abilities[0], targets=[spell_item])
+        counter_pipeline.advance()
+        counter_item = self.gs.action_stack.last_action
+        self.assertEqual(0, self.gs.action_on_idx)
+
+        ctr_ctr = self.g.hand('counterspell')
+        self.g.mana('UU')
+        cc_pipeline = AbilityPipeline(0, self.gs, ctr_ctr, ctr_ctr.abilities[0], targets=[counter_item])
+        cc_pipeline.advance()
+        self.assertEqual(1, self.gs.action_on_idx)
+
+        AcceptAction(1, self.gs).play()
+        AcceptAction(0, self.gs).play()
         self.assertFalse(len(self.gs.action_stack.actions))
+        self.assertIn(spell, self.gs.boards[0])
 
     def test_ability_survives_source_ltb(self):
         """Prodigal Sorcerer taps
         Bolt kills Sorcerer
         Ability still resolves"""
-        self.assertFalse(len(self.gs.action_stack.actions))
+        card = self.g.battlefield('prodigal-sorcerer')
+        aa = card.activated_abilities[0]
+        bolt = self.g.battlefield('lightning-bolt', owner=1)
+        self.g.mana('R', owner=1)
+
+        self.g.next_turn()
+        card_pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[1])
+        card_pipeline.advance()
+        bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[card])
+        bolt_pipeline.advance()
+
+        AcceptAction(0, self.gs).play()
+        AcceptAction(1, self.gs).play()
+        self.assertEqual(19, self.gs.life[1])
+        self.assertIn(card, self.g.gy[0])
 
     def test_illegal_target_fizzles(self):
         """Bolt -> Bears
