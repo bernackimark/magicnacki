@@ -59,15 +59,18 @@ class CanAttackEOT(Listener):
 class CantAttack(Listener):
     listens_to = CanAttackQueryEvent
 
-    def __init__(self, target: GameCard):
+    def __init__(self, applies_to_func: Callable[[GameState, GameCard], GameCard] = None,
+                 target: GameCard | None = None):
+        self.applies_to_func = applies_to_func
         self.target = target
 
     def initialize(self, gs: GameState, source: GameCard, target: Any):
-        if self.target is None:
+        if not self.applies_to_func and self.target is None:
             self.target = target[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        if event.attacker is not self.target:
+        card = self.applies_to_func(gs, source) if self.applies_to_func else self.target
+        if event.attacker is not card:
             return
         event.permission = False
 

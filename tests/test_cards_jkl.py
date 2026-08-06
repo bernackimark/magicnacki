@@ -106,6 +106,34 @@ class TestCardsJKL(unittest.TestCase):
         self.g.next_turn()
         self.assertEqual(2, card.power)
 
+    def test_leviathan(self):
+        """This creature enters tapped and doesn't untap during your untap step.
+        At your upkeep, you may sac two Islands to untap this creature.
+        This creature can't attack unless you sacrifice two Islands. (This cost is paid as attackers are declared.)"""
+        card = self.g.hand('leviathan')
+        self.g.mana('UUUUUUUUUUUUUUUUUUU')
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.spells[0], targets=[card])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertTrue(card.is_tapped)
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        untap = self.gs.pending_choice.get_actions()[0]
+        untap.play()
+        self.assertFalse(card.is_tapped)
+        self.assertFalse(self.gs.perm_querier.can_attack(card))
+
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+        pay_to_attack = self.gs.pending_choice.get_actions()[0]
+        pay_to_attack.play()
+        self.assertTrue(self.gs.perm_querier.can_attack(card))
+        card.tap()
+
+        self.g.next_turn()
+        self.assertTrue(card.is_tapped)
+
     def test_library_of_alexandria(self):
         """{T}: Add {C}.
         {T}: Draw a card. Activate only if you have exactly seven cards in hand."""

@@ -90,6 +90,25 @@ class TestCardsWXYZ(unittest.TestCase):
         self.assertEqual(15, self.gs.life[1])
         self.assertIn(card, self.g.gy[0])
 
+    def test_xenic_poltergeist(self):
+        """Until your next upkeep, target noncreature artifact becomes an artifact creature w PT each = to its MV"""
+        target = self.g.battlefield('sol-ring')  # 1
+        card = self.g.battlefield('xenic-poltergeist')
+        aa = card.activated_abilities[0]
+
+        self.g.next_turn()
+        self.g.activate_ability(aa, target)
+        self.assertTrue(target.is_creature)
+        self.assertEqual(1, target.toughness)
+
+        self.g.next_turn(True)
+        self.assertTrue(target.is_creature)
+        self.assertEqual(1, target.toughness)
+
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertFalse(target.is_creature)
+        self.assertEqual(0, target.toughness)
 
 if __name__ == '__main__':
     unittest.main()
