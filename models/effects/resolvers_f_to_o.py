@@ -10,12 +10,13 @@ from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction
-from models.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN
+from models.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
 from models.effects.resolvers_generic import GraveyardToExile
 from models.modifiers import PTMod, KWAMod
+from models.systems.mana import ManaCost
 from models.systems.phase import Phase
 from models.utils import flip
 from models.zone import Zone
@@ -266,6 +267,12 @@ class LibraryOfAlexandria(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.draw(source.owner_id)
 
+class LifeChisel(Resolver):
+    """Sac a creature: You gain life equal to the sacrificed creature's toughness. Activate only during your upkeep."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        amt = context.cost_result.paid_cards[0].toughness
+        gs.score_mgr.increment_life(source.owner_id, amt, source, gs)
+
 class LivingArtifactUpkeep(Resolver):
     """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
     # TODO: this needs to be an Upkeep Listener ...
@@ -390,6 +397,12 @@ class NaturalSelection(Resolver):
         a6 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c2, c1])
         options = [a0, a1, a2, a3, a4, a5, a6]
         gs.queue_choice(ChoiceAction(options))
+
+class Necropolis(Resolver):
+    """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        mv = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
+        source.counters.add_counter(PLUS_ZERO_ONE, mv)
 
 class NettlingImp(Resolver):
     """Give target non-Wall creature w/o summoning sickness Goad until EOT.

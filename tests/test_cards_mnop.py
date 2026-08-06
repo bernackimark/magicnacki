@@ -7,8 +7,11 @@ from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
+from models.choice_actions_all import ExtraCostChoice2
+from models.cost import ExileCreatureFromYourGraveyardCost
 from models.counter_tokens import PLUS_ONE
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
+from models.game_card.card_filter_funcs import T_FUNCS
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -127,6 +130,22 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.battlefield('swamp', cnt=9)
         self.g.cast_and_accept(card, None, card.abilities[0])
         self.assertTrue(any(isinstance(a, SacCards) for a in self.gs.pending_choice.get_actions()))
+
+    def test_necropolis(self):
+        """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""
+        self.g.graveyard('merfolk-of-the-pearl-trident')  # U
+        air_elemental = self.g.graveyard('air-elemental')  # 3UU
+        card = self.g.battlefield('necropolis')  # 0/1
+        aa = card.activated_abilities[0]
+
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[card])
+        exile_air_elemental = ExileCreatureFromYourGraveyardCost(selected_card=air_elemental)
+        pipeline.cost_result = exile_air_elemental.pay(self.gs, card)
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.assertEqual(card.toughness, 6)
+        self.assertIn(air_elemental, self.gs.exiles[0])
 
     def test_nether_void(self):
         """Whenever a player casts a spell, counter it unless that player pays {3}"""

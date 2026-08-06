@@ -60,15 +60,16 @@ class DiscardLastCardDrawnThisTurn(Cost):
 class ExileCreatureFromYourGraveyardCost(Cost):
     requires_choice = True
 
-    def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]]):
+    def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]] = None,
+                 selected_card: GameCard | None = None):
         self.target_func = target_func
-        self.selected_card: GameCard | None = None
+        self.selected_card = selected_card
 
     def can_pay(self, gs: GameState, source: GameCard) -> bool:
         return len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result()) > 0
 
     def pay(self, gs: GameState, source: GameCard) -> CostResult:
-        gs.pile_mgr.exile(source)
+        gs.pile_mgr.exile(self.selected_card)
         return CostResult([self.selected_card])
 
 class ExileSelfCost(Cost):

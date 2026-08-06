@@ -17,7 +17,8 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, 
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
     Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
     WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Sindbad, SirensCall, VenarianGold, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap, PowerSink
+    Twiddle, Sindbad, SirensCall, VenarianGold, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap, PowerSink, \
+    PriestOfYawgmoth
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
@@ -85,6 +86,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), T_FUNCS['creatures'])],
     'preacher': [Activated('T', Steal(return_on_untap=True), T_FUNCS['opp_creatures']), Triggered(OptionalUntap())],
     'presence-of-the-master': [Static(CounterEnchantments())],
+    'priest-of-yawgmoth': [Activated('T', PriestOfYawgmoth(), extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
     'primal-clay': [Spell(PrimalClay())],
     'primordial-ooze': [Triggered(PrimordialOoze())],
     'princess-lucrezia': [Activated('T', AddMana('U'))],

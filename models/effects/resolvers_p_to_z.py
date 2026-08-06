@@ -64,6 +64,12 @@ class PowerSink(Resolver):
         options = [PayManaToPreventCounter(p_id, gs, t, str(power_sink_x)), CounterSpellAction(p_id, gs, t)]
         gs.queue_choice(ChoiceAction(options))
 
+class PriestOfYawgmoth(Resolver):
+    """Sac an artifact: Add an amount of {B} equal to the sacrificed creature's mana value."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        mana_value = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
+        gs.mana_pools[source.owner_id].add_floating('B', mana_value)
+
 class PrimalClay(Resolver):
     """As this creature enters, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,
     or a 1/6 Wall artifact creature with defender in addition to its other types."""

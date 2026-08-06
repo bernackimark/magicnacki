@@ -15,7 +15,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, Glass
     FeldonsCane, FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, \
     KoboldDrillSergeant, KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, NamelessRace, ManaShort, \
     FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, \
-    GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel
+    GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, Necropolis, LifeChisel
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
@@ -239,6 +239,8 @@ MAP: dict[str: list[EffSpec]] = {
                   Triggered(LeviathanUpkeep()), Triggered(LeviathanAttack()), Spell(TapCardEffect(), T_FUNCS['self'])],
     'ley-druid': [Activated('T', UntapCardEffect(), T_FUNCS['tapped_lands'])],
     'library-of-alexandria': [Activated('T', AddMana('C')), Activated('T', LibraryOfAlexandria())],
+    'life-chisel': [Spell(LifeChisel(), allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=T_FUNCS['owner'],
+                          extra_costs=[SacCardCost(T_FUNCS['your_artifacts'])])],
     'lifeblood': [Triggered(Lifeblood())],
     'lifeforce': [Activated('GG', CounterSpell(), T_FUNCS['black_spells'])],
     'lifelace': [Spell(SetColor('G'), T_FUNCS['cards'])],
@@ -301,7 +303,7 @@ MAP: dict[str: list[EffSpec]] = {
     'murk-dwellers': [Triggered(MurkDwellers())],
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), T_FUNCS['all_players'])],
-    'necropolis': [Activated('', XZeroOneCountersByManaValue(),
+    'necropolis': [Activated('', Necropolis(),
                              extra_costs=[ExileCreatureFromYourGraveyardCost(T_FUNCS['creatures_in_your_graveyard'])])],
     'nether-void': [Triggered(PayManaOrCounterSpellListener('3'))],
     'nettling-imp': [Activated('T', NettlingImp(), T_FUNCS['non_wall_creatures_wo_summoning_sickness'])],

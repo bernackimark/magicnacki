@@ -5,6 +5,7 @@ from models.actions.cast import CastPermanentAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
 from models.actions.tap_untap import Untap
+from models.cost import SacCardCost
 from models.counter_tokens import PLUS_ONE
 from models.effects.resolvers_generic import RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
@@ -186,6 +187,20 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(0, target.owner_id)
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(1, target.owner_id)
+
+    def test_sacrifice(self):
+        """Sac a creature to add {B} = to sac'd card MV"""
+        mv_5_card = self.g.battlefield('serra-angel')
+        card = self.g.hand('sacrifice')
+        self.g.mana('B')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        sac = SacCardCost(selected_card=mv_5_card)
+        pipeline.cost_result = sac.pay(self.gs, card)
+        pipeline.finish()
+        pipeline.resolve_ability()
+
+        self.assertEqual(5, self.gs.mana_pools[0].available_mana.get('B'))
+        self.assertIn(mv_5_card, self.g.gy[0])
 
     def test_safe_haven(self):
         """{2}, {T}: Exile target creature you control.

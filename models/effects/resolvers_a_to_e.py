@@ -268,6 +268,12 @@ class DemonicTutor(Resolver):
         options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in library_cards]
         gs.queue_choice(ChoiceAction(options))
 
+class DiamondValley(Resolver):
+    """{T}, Sacrifice a creature: You gain life equal to the sacrificed creature's toughness"""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        amt = context.cost_result.paid_cards[0].toughness
+        gs.score_mgr.increment_life(source.owner_id, amt, source, gs)
+
 class Disharmony(Resolver):
     """Cast this spell only during combat before blockers are declared.
     Untap target attacking creature and remove it from combat. Gain control of that creature until end of turn."""

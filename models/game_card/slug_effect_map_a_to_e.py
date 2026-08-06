@@ -12,7 +12,8 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration, Eureka
+    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration, Eureka, \
+    DiamondValley
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
@@ -246,6 +247,7 @@ MAP: dict[str, list[EffSpec]] = {
                Activated('T', DealDamage(1), T_FUNCS['attackers'], allowed_phases=[Phase.COMBAT_END])],
     'desert-twister': [Spell(Destroy(), T_FUNCS['permanents'])],
     'diabolic-machine': [Activated('3', Regenerate(), T_FUNCS['self'])],
+    'diamond-valley': [Activated('T', DiamondValley(), extra_costs=[SacCardCost(T_FUNCS['your_creatures'])])],
     'dingus-egg': [Triggered(DingusEgg())],
     'disharmony': [Spell(Disharmony(), T_FUNCS['attackers'],
                          allowed_phases=[Phase.DECLARE_COMBAT, Phase.DECLARE_ATTACKERS])],

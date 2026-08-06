@@ -113,15 +113,19 @@ class AbilityPipeline(Action):
             return
 
         if self.needs_x:
+            print('Entering Needs X')
             from models.choice_actions_all import XChoice2
             self.gs.pending_choice = XChoice2(self)
         elif self.needs_mode:
+            print('Entering Needs Mode')
             from models.choice_actions_all import ModeChoice2
             self.gs.pending_choice = ModeChoice2(self)
         elif self.needs_targets:
+            print('Entering Needs Targets')
             from models.choice_actions_all import TargetChoice2
             self.gs.pending_choice = TargetChoice2(self)
         elif self.needs_extra_cost_choices:
+            print('Entering Needs Extra Cost')
             from models.choice_actions_all import ExtraCostChoice2
             self.gs.pending_choice = ExtraCostChoice2(self)
         else:
