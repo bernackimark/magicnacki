@@ -8,16 +8,6 @@ if TYPE_CHECKING:
 
 from models.actions.base import Action
 
-@dataclass
-class TapCard(Action):
-    card: GameCard
-
-    def __repr__(self) -> str:
-        return f"Tap {self.card.__repr__()}"
-
-    def play(self) -> None:
-        self.card.tap()
-        self.finish()
 
 @dataclass
 class Untap(Action):

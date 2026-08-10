@@ -5,7 +5,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
-from models.modifiers import PTMod, BasePTMod
+from models.modifiers import PTMod
 
 
 class BasePTAction(Action):

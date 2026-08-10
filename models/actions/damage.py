@@ -21,33 +21,6 @@ class DealDamageTo(Action):
         self.gs.apply_damage(self.source, self.damage_amt, self.target)
         self.finish()
 
-class DealDamageToYou(Action):
-    def __init__(self, p_id, gs, source: GameCard, damage_amt: int):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.damage_amt = damage_amt
-
-    def __repr__(self):
-        return f'{self.source.props.name} deals {self.damage_amt} damage to you'
-
-    def play(self):
-        self.gs.apply_damage(self.source, self.damage_amt, self.source.owner_id)
-        self.finish()
-
-class GainLife(Action):
-    def __init__(self, p_id, gs, source: GameCard, amt: int, target_p_id: int):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.amt = amt
-        self.target_p_id = target_p_id
-
-    def __repr__(self):
-        return f'Player #{self.target_p_id} gains {self.amt} life from {self.source.props.name}'
-
-    def play(self):
-        self.gs.score_mgr.increment_life(self.target_p_id, self.amt, self.source, self.gs)
-        self.finish()
-
 class PayLife(Action):
     def __init__(self, p_id, gs, source: GameCard, amt: int):
         super().__init__(p_id, gs)

@@ -4,6 +4,7 @@ import copy
 from typing import TYPE_CHECKING
 
 from models.action_stack import StackItemType
+from models.actions.base import Action
 from models.counter_tokens import CounterType, WIND, PLUS_ONE
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import StateBasedEvent
@@ -16,8 +17,6 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-
-from models.actions.base import Action
 
 class Attach(Action):
     def __init__(self, p_id: int, gs: GameState, aura: GameCard, host: GameCard):

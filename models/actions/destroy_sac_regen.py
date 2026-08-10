@@ -37,21 +37,6 @@ class DestroyAction(Action):
         self.gs.pile_mgr.destroy(self.target, allow_regeneration=self.allow_regen)
         self.finish()
 
-class Exile(Action):
-    def __init__(self, p_id, gs, source: GameCard, w_damage_amt: int = 0):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.w_damage_amt = w_damage_amt
-
-    def __repr__(self):
-        return f'Exile {self.source.props.name}'
-
-    def play(self):
-        if self.w_damage_amt:
-            self.gs.apply_damage(self.source, self.w_damage_amt, self.source.owner_id)
-        self.gs.pile_mgr.exile(self.source)
-        self.finish()
-
 class ReanimateAction(Action):
     def __init__(self, p_id, gs, source: GameCard, target: GameCard):
         super().__init__(p_id, gs)

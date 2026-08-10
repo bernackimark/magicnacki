@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-from models.actions.damage import DealDamageToYou
+from models.actions.damage import DealDamageTo
 from models.actions.kwa import JohanAction
 from models.actions.mana import PayMana
 from models.actions.special import DestroyAndForegoCombatDamage
@@ -9,10 +9,9 @@ from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
-from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, \
-    CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent, StateBasedEvent, CombatBeginEvent, Event
-from models.modifiers import PTMod, KWAMod, OwnershipMod
+    CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent, CombatBeginEvent
+from models.modifiers import PTMod, KWAMod
 from models.utils import flip
 from models.zone import Zone
 
@@ -40,7 +39,7 @@ class HasranOgress(Listener):
         if not gs.mana_pools[s.owner_id].can_pay('2'):
             gs.apply_damage(s, 3, s.owner_id)
             return
-        options = [PayMana(s.owner_id, gs, s, '2'), DealDamageToYou(s.owner_id, gs, s, 3)]
+        options = [PayMana(s.owner_id, gs, s, '2'), DealDamageTo(s.owner_id, gs, s, 3, s.owner_id)]
         gs.queue_choice(ChoiceAction(options))
 
 class MijaeDjinn(Listener):

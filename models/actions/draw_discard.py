@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
 from models.systems.phase import Phase
@@ -44,14 +44,4 @@ class MoveToDrawPhase(Action):
 
     def play(self) -> None:
         self.gs.phase_mgr.set_phase(Phase.DRAW)
-        self.finish()
-
-@dataclass
-class SkipDrawPhase(Action):
-
-    def __repr__(self) -> str:
-        return "Skip Draw Phase"
-
-    def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.MAIN)
         self.finish()

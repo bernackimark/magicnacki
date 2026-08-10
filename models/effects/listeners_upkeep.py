@@ -4,7 +4,7 @@ from collections import defaultdict
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.damage import PayLife, DealDamageTo, DealDamageToYou
+from models.actions.damage import PayLife, DealDamageTo
 from models.actions.destroy_sac_regen import (DestroyAction, Sac, AllowOpponentToDestroyALand,
                                               SacToReturnAllCardsExiledBy)
 from models.actions.kwa import AddKWA
@@ -225,7 +225,7 @@ class ForceOfNatureUpkeep(Listener):
         if not gs.mana_pools[s.owner_id].can_pay('GGGG'):
             gs.apply_damage(s, 8, s.owner_id)
             return
-        options = [PayMana(s.owner_id, gs, s, 'GGGG'), DealDamageToYou(s.owner_id, gs, s, 8)]
+        options = [PayMana(s.owner_id, gs, s, 'GGGG'), DealDamageTo(s.owner_id, gs, s, 8, s.owner_id)]
         gs.queue_choice(ChoiceAction(options))
 
 class GabrielAngelfire(Listener):
