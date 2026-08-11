@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.draw_discard import DiscardCards
+from models.actions.draw_discard import DiscardCards, SylvanLibraryDraw
 from models.actions.special import IslandSanctuaryAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import DOOM
 from models.effects.base import Listener
-from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
+from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent, Event
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -103,3 +104,37 @@ class ManaVaultDamageIfTapped(Listener):
         if event.active_player != s.owner_id or not s.is_tapped:
             return
         gs.apply_damage(s, 1, s.owner_id)
+
+class SylvanLibrary(Listener):
+    """At your draw step, you may draw two additional cards ..."""
+    listens_to = DrawStepEvent
+
+    @dataclass
+    class SylvanLibraryState:
+        source: GameCard
+        top_3_cards: list[GameCard]
+        selected_drawn: list[GameCard] = field(default_factory=list)
+        selected_ordered: list[GameCard] = field(default_factory=list)
+        status = 'drawing'
+
+        @property
+        def life_owed_to_draw(self) -> int:
+            return 4 if len(self.selected_drawn) else 0
+
+        @property
+        def is_done(self) -> bool:
+            return len(self.selected_drawn) + len(self.selected_ordered) >= 3
+
+        @property
+        def unaddressed_cards(self) -> list[GameCard]:
+            return [c for c in self.top_3_cards if c not in self.selected_drawn and c not in self.selected_ordered]
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        lib = gs.pile_mgr.libraries[source.owner_id]
+        if len(lib) < 3:
+            return
+        top_3_cards = gs.pile_mgr.libraries[source.owner_id][:3]
+        options = [SylvanLibraryDraw(source.owner_id, gs, SylvanLibrary.SylvanLibraryState(source, top_3_cards))]
+        gs.pending_choice = ChoiceAction(options, may=True)

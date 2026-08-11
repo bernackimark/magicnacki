@@ -34,7 +34,7 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
     RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, VoodooDollEndStep, WhirlingDervish
-from ..effects.listeners_draw_discard import PsychicPurgeDiscard
+from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
 from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
     UrzasMiter, PuppetMaster
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink, ReverseDamage
@@ -221,6 +221,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sunglasses-of-urza': [Static(SunglassesOfUrza())],
     'sunken-city': [Static(PumpApplies(T_FUNCS['blue_creatures'], (1, 1))), Triggered(PayManaOrSacAtUpkeep('UU'))],
     'swords-to-plowshares': [Spell(SwordsToPlowshares(), T_FUNCS['creatures'])],
+    'sylvan-library': [Triggered(SylvanLibrary())],
     'sylvan-paradise': [Spell(SetColor('G', 'EOT'), TargetSpec(T_FUNCS['creatures'], 1, None))],
     'syphon-soul': [Spell(SyphonSoul(), T_FUNCS['opp'])],
     'tablet-of-epityr': [Triggered(TabletOfEpityr())],

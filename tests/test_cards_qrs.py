@@ -506,6 +506,36 @@ class TestCardsQRS(unittest.TestCase):
         card.abilities[0].effect.resolve(self.gs, card, 1)
         self.assertEqual(13, self.gs.life[1])
 
+    def test_sylvan_library(self):
+        """At your draw step, you may draw two additional cards.
+        For each card beyond the first, pay 4 life or put the card on top of your library."""
+        self.gs.hands[0].clear()
+        self.gs.pile_mgr.libraries[0].clear()
+        card = self.g.battlefield('sylvan-library')
+        c1 = self.g.library('alabaster-potion')
+        c2 = self.g.library('blue-elemental-blast')
+        c3 = self.g.library('colossus-of-sardia')
+        self.gs.phase_mgr.set_phase(Phase.DRAW)
+
+        yes_draw_extra_cards = self.gs.pending_choice.get_actions()[0]
+        yes_draw_extra_cards.play()
+
+        self.assertFalse(len(self.gs.hands[0]))  # the rest of DrawPhase(PhaseState).on_enter() is happening
+        draw_c2 = self.gs.pending_choice.get_actions()[1]
+        draw_c2.play()
+
+        draw_c1 = self.gs.pending_choice.get_actions()[1]
+        draw_c1.play()
+        self.assertEqual(12, self.gs.life[0])
+
+        finish_drawing = self.gs.pending_choice.get_actions()[-1]
+        finish_drawing.play()
+
+        self.assertEqual(1, len(self.gs.pending_choice.get_actions()))
+        move_c3_to_library = self.gs.pending_choice.get_actions()[0]
+        move_c3_to_library.play()
+        self.assertEqual(self.gs.pile_mgr.libraries[0][0], c3)
+
     def test_syphon_soul(self):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
         card = self.g.hand('syphon-soul')

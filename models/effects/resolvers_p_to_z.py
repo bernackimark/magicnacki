@@ -269,15 +269,6 @@ class SwordsToPlowshares(Resolver):
         gs.pile_mgr.exile(t)
         gs.score_mgr.increment_life(t.owner_id, t.power, source, gs)
 
-class SylvanLibrary(Resolver):
-    """At your draw step, you may draw two additional cards.
-    If you do, choose two cards in your hand drawn this turn.
-    For each of those cards, pay 4 life or put the card on top of your library."""
-    # TODO: Once player opts to draw, control needs to be returned back to player to then make subsequent choices.
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        options = [DrawCard(source.owner_id, gs)]
-        gs.queue_choice(ChoiceAction(options, may=True))
-
 class SyphonSoul(Resolver):
     """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
