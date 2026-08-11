@@ -506,46 +506,39 @@ class TestCardsQRS(unittest.TestCase):
         card.abilities[0].effect.resolve(self.gs, card, 1)
         self.assertEqual(13, self.gs.life[1])
 
-    def test_sylvan_library_1(self):
-        """At your draw step, you may draw two additional cards.
-        For each card beyond the first, pay 4 life or put the card on top of your library.
-        This test draws only the first standard card & orders the remaining 2"""
-
     def test_sylvan_library_2(self):
         """At your draw step, you may draw two additional cards.
         For each card beyond the first, pay 4 life or put the card on top of your library.
         This test draws 2 cards"""
         self.gs.hands[0].clear()
         self.gs.pile_mgr.libraries[0].clear()
-        card = self.g.battlefield('sylvan-library')
-        c1 = self.g.library('alabaster-potion')
-        c2 = self.g.library('blue-elemental-blast')
+        self.g.battlefield('sylvan-library')
+        self.g.library('alabaster-potion')
+        self.g.library('blue-elemental-blast')
         c3 = self.g.library('colossus-of-sardia')
+
+        self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.DRAW)
-
         yes_draw_extra_cards = self.gs.pending_choice.get_actions()[0]
-        yes_draw_extra_cards.play()
+        yes_draw_extra_cards.play()  # there are now a total of three cards drawn
+        self.assertEqual(3, len(self.gs.hands[0]))
 
-        self.assertFalse(len(self.gs.hands[0]))  # the rest of DrawPhase(PhaseState).on_enter() is happening
         draw_c2 = self.gs.pending_choice.get_actions()[1]
-        draw_c2.play()
+        draw_c2.play()  # select blue-elemental-blast as the normal card drawn
 
-        draw_c1 = self.gs.pending_choice.get_actions()[1]
-        draw_c1.play()
-        self.assertEqual(16, self.gs.life[0])  # there should have only been one card drawn
+        select_c1 = self.gs.pending_choice.get_actions()[1]
+        select_c1.play()  # select alabaster-potion as the card you want to engage with
+        add_to_hand_for_4_life = self.gs.pending_choice.get_actions()[0]
+        add_to_hand_for_4_life.play()  # keep alabaster-potion in hand, decrement 4 life
+        self.assertEqual(16, self.gs.life[0])
 
-        finish_drawing = self.gs.pending_choice.get_actions()[-1]
-        finish_drawing.play()
+        select_c3 = self.gs.pending_choice.get_actions()[0]
+        select_c3.play()  # select colossus-of-sardia as the card you want to engage with (it's the only remaining card)
+        place_atop_library = self.gs.pending_choice.get_actions()[-1]
+        place_atop_library.play()  # place colossus-of-sardia atop the library
+        self.assertEqual(c3, self.gs.pile_mgr.libraries[0][0])
 
-        self.assertEqual(1, len(self.gs.pending_choice.get_actions()))
-        move_c3_to_library = self.gs.pending_choice.get_actions()[0]
-        move_c3_to_library.play()
-        self.assertEqual(self.gs.pile_mgr.libraries[0][0], c3)
-
-    def test_sylvan_library_3(self):
-        """At your draw step, you may draw two additional cards.
-        For each card beyond the first, pay 4 life or put the card on top of your library.
-        This test draws 3 cards"""
+        self.assertIsNone(self.gs.pending_choice)
 
     def test_syphon_soul(self):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
