@@ -506,9 +506,15 @@ class TestCardsQRS(unittest.TestCase):
         card.abilities[0].effect.resolve(self.gs, card, 1)
         self.assertEqual(13, self.gs.life[1])
 
-    def test_sylvan_library(self):
+    def test_sylvan_library_1(self):
         """At your draw step, you may draw two additional cards.
-        For each card beyond the first, pay 4 life or put the card on top of your library."""
+        For each card beyond the first, pay 4 life or put the card on top of your library.
+        This test draws only the first standard card & orders the remaining 2"""
+
+    def test_sylvan_library_2(self):
+        """At your draw step, you may draw two additional cards.
+        For each card beyond the first, pay 4 life or put the card on top of your library.
+        This test draws 2 cards"""
         self.gs.hands[0].clear()
         self.gs.pile_mgr.libraries[0].clear()
         card = self.g.battlefield('sylvan-library')
@@ -526,7 +532,7 @@ class TestCardsQRS(unittest.TestCase):
 
         draw_c1 = self.gs.pending_choice.get_actions()[1]
         draw_c1.play()
-        self.assertEqual(12, self.gs.life[0])
+        self.assertEqual(16, self.gs.life[0])  # there should have only been one card drawn
 
         finish_drawing = self.gs.pending_choice.get_actions()[-1]
         finish_drawing.play()
@@ -535,6 +541,11 @@ class TestCardsQRS(unittest.TestCase):
         move_c3_to_library = self.gs.pending_choice.get_actions()[0]
         move_c3_to_library.play()
         self.assertEqual(self.gs.pile_mgr.libraries[0][0], c3)
+
+    def test_sylvan_library_3(self):
+        """At your draw step, you may draw two additional cards.
+        For each card beyond the first, pay 4 life or put the card on top of your library.
+        This test draws 3 cards"""
 
     def test_syphon_soul(self):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
