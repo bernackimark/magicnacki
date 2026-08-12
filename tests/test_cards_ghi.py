@@ -110,6 +110,27 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertIn(goblin, self.g.gy[0])  # this test now fails
 
+    def test_guardian_beast(self):
+        """As long as GB is untapped, noncreature artifacts you control can't be enchanted, they have indestructible, &
+        other players can't gain control of them. This effect doesn't remove Auras already attached."""
+        # TODO: other players can't gain control of them
+        card = self.g.battlefield('guardian-beast')
+        protected = self.g.battlefield('sol-ring')
+        artifact_destroyer = self.g.hand('disenchant')
+        artifact_aura = self.g.hand('artifact-possession')
+        self.g.mana('BBBWWW')
+
+        self.assertFalse(self.gs.perm_querier.can_target(protected, artifact_aura))
+        card.tap()
+        self.assertTrue(self.gs.perm_querier.can_target(protected, artifact_aura))
+
+        card.untap()
+        destroy_pipeline = AbilityPipeline(0, self.gs, artifact_destroyer, artifact_destroyer.abilities[0],
+                                           targets=[protected])
+        destroy_pipeline.advance()
+        destroy_pipeline.resolve_ability()
+        self.assertIn(protected, self.gs.boards[0])
+
     def test_halfdane(self):
         """H's base PT = (3, 3)
         At your upkeep, change H's base PT = PT of target creature other than H until end of your NEXT upkeep

@@ -5,11 +5,11 @@ from models.cost import SacSelfCost, ExileSelfCost, RemoveCounterCost, SacCardCo
 from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
-from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, LivingLands, \
-    LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, PumpAppliesEOT, BecomeBasicLand
+from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, \
+    LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, PumpAppliesEOT, BecomeBasicLand
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
-    PreventRegenerationEOT
+    PreventRegenerationEOT, CantBeTargetedByAuras
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
     MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
     FeldonsCane, FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, \
@@ -143,6 +143,10 @@ MAP: dict[str: list[EffSpec]] = {
     'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', 'Protection From Green'), T_FUNCS['creatures'])],
     'guardian-angel': [Spell(GuardianAngel(), T_FUNCS['all_creatures_and_players'])],  # partial
+    'guardian-beast': [Static(KWAApplies(T_FUNCS['your_non_creature_artifacts'], 'add', 'Indestructible',
+                                         C_FUNCS['self_is_untapped'])),
+                       Static(CantBeTargetedByAuras(T_FUNCS['your_non_creature_artifacts'],
+                                                    condition_func=C_FUNCS['self_is_untapped']))],
     'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), T_FUNCS['all_players'])],
     'halfdane': [Triggered(Halfdane())],
     'hammerheim': [Activated('T', AddMana('R'), T_FUNCS['owner']),

@@ -210,6 +210,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'your_green_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().green().result(),
     'your_forests': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
     'your_lands': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).lands().result(),
+    'your_non_creature_artifacts': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).non_creature_artifacts().result(),
     'your_non_wall_creatures': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).non_wall_creatures().result(),
     'your_other_creatures':
         lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result() if c is not s],

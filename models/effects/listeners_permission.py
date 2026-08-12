@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any
 
-from models.counter_tokens import PUPA, SLEEP
+from models.counter_tokens import PUPA
 from models.zone import Zone
 
 if TYPE_CHECKING:
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
     CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, \
-    CanRegenerateQueryEvent, Event
+    CanRegenerateQueryEvent
 
 """
 These are Effects that listens for Events that are XXQueryEvent
@@ -79,18 +79,22 @@ class CantBeTargetedByAuras(Listener):
     listens_to = CanTargetQueryEvent
 
     def __init__(self, protected_card_func: Callable[[GameState, GameCard], GameCard] = None,
-                 protected_card: GameCard | None = None):
+                 protected_card: GameCard | None = None, condition_func: Callable[[GameState, GameCard], bool] = None):
         self.protected_card_func = protected_card_func
         self.protected_card = protected_card
+        self.condition_func = condition_func
 
     def initialize(self, gs: GameState, source: GameCard, target: Any):
         if not self.protected_card_func and self.protected_card is None:
             self.protected_card = target[0]
 
     def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
-        print('xxx', self.protected_card_func, self.protected_card)
-        protected_card = self.protected_card or self.protected_card_func(gs, source)
-        if event.target is not protected_card or 'Aura' not in event.source.card_sub_types:
+        if 'Aura' not in event.source.card_sub_types:
+            return
+        protected_cards = [self.protected_card] if self.protected_card else self.protected_card_func(gs, source)
+        if event.target not in protected_cards:
+            return
+        if self.condition_func and not self.condition_func(gs, source):
             return
         event.permission = False
 
