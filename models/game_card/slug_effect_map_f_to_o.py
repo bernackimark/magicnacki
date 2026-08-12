@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from models.cost import SacSelfCost, ExileSelfCost, RemoveCounterCost, SacCardCost, DiscardLastCardDrawnThisTurn, \
-    ExileCreatureFromYourGraveyardCost
+    ExileCreatureFromYourGraveyardCost, DiscardACard
 from models.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
@@ -233,6 +233,8 @@ MAP: dict[str: list[EffSpec]] = {
     'lance': [Spell(KWAModEffect('add', 'First Strike'), T_FUNCS['creatures'])],
     'land-equilibrium': [Static(LandEquilibrium())],
     'land-tax': [Triggered(LandTax())],
+    'lands-edge': [Activated('', DealDamage(2), T_FUNCS['all_players'], allowed_activators=A_FUNCS['all_players'],
+                             extra_costs=[DiscardACard(T_FUNCS['cards_in_your_hand'])])],
     'lesser-werewolf': [Activated('B', LesserWerewolf(), T_FUNCS['combating_against'],
                                   allowed_phases=[Phase.DECLARE_BLOCKERS])],
     'leviathan': [Static(DoesntUntapAtUntap(T_FUNCS['self'])), Static(CantAttack(T_FUNCS['self'])),

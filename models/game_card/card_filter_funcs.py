@@ -75,6 +75,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'blue_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_blue],
     'cards': lambda gs, s: gs.card_filter.in_play().result(),
     'cards_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).result(),
+    'cards_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).result(),
     'city_in_a_bottle': lambda gs, s: [c for c in
                                        gs.card_filter.in_play().non_token().permanents().by_set_code('arn').result()
                                        if c.props.slug != 'city-in-a-bottle'],

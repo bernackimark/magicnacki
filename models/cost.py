@@ -22,12 +22,25 @@ class Cost(ABC):
     requires_choice: bool = False
 
     @abstractmethod
-    def can_pay(self, gs: GameState, source: GameCard) -> bool:
-        ...
+    def can_pay(self, gs: GameState, source: GameCard) -> bool: ...
 
     @abstractmethod
+    def pay(self, gs: GameState, source: GameCard) -> CostResult: ...
+
+class DiscardACard(Cost):
+    requires_choice = True
+
+    def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]] = None,
+                 selected_card: GameCard | None = None):
+        self.target_func = target_func
+        self.selected_card = selected_card
+
+    def can_pay(self, gs: GameState, source: GameCard):
+        return len(gs.pile_mgr.hands[source.owner_id]) > 0
+
     def pay(self, gs: GameState, source: GameCard) -> CostResult:
-        ...
+        gs.pile_mgr.discard(self.selected_card)
+        return CostResult([self.selected_card])
 
 class DiscardAtRandomCost(Cost):
     def can_pay(self, gs: GameState, source: GameCard):

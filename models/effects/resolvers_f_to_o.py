@@ -250,6 +250,14 @@ class KryShield(Resolver):
         gs.event_mgr.register(PreventNextDamageBy(t), source)
         t.modifiers.append(PTMod(s=source, t_adj=t.props.mana_value, expires='EOT'))
 
+class LandsEdge(Resolver):
+    """Discard a card: If the discarded card was a land, LE deals 2 damage to target player.
+    Any player may activate this ability."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        discarded = context.cost_result.paid_cards[0]
+        if discarded.is_land:
+            gs.apply_damage(source, 2, t)
+
 class LesserWerewolf(Resolver):
     """If this creature's power is >= 1, it gets -1/-0 until EOT & put a -0/-1 counter on
     target creature blocking/blocked by this creature. Activate only during the declare blockers step."""
