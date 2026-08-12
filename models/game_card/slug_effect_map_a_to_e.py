@@ -13,7 +13,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
     AshnodsTransmogrant, ActiveVolcano, Amnesia, AnimateDead, BookOfRass, BottleOfSuleiman, ChaosOrb, \
     Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
     EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration, Eureka, \
-    DiamondValley
+    DiamondValley, ConsecrateLand
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
@@ -37,7 +37,7 @@ from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeCho
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
     PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep, AddCounterAtTargetUpkeep
 from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
-    EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantBeTargetedByAuras, HostCantAttack, \
+    EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantAttack, \
     WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, HostCanAttack, UnblockableCondition, \
     UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
     HostCantBeTargetedBySpells
@@ -77,7 +77,7 @@ MAP: dict[str, list[EffSpec]] = {
     'animate-dead': [Spell(AnimateDead(), T_FUNCS['creatures_in_your_graveyard'])],
     'animate-wall': [Spell(HostCanAttack(), T_FUNCS['walls'])],
     'ankh-of-mishra': [Triggered(AnkhOfMishra())],
-    'anti-magic-aura': [Static(HostCantBeTargetedByAuras()), Static(HostCantBeTargetedBySpells()),
+    'anti-magic-aura': [Static(CantBeTargetedByAuras(T_FUNCS['host'])), Static(HostCantBeTargetedBySpells()),
                         Spell(RemoveHostAuras(), T_FUNCS['creatures'])],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), T_FUNCS['owner'])],
     'arboria': [Static(Arboria())],
@@ -119,7 +119,7 @@ MAP: dict[str, list[EffSpec]] = {
     'ball-lightning': [Triggered(DestroyAtEndStep(T_FUNCS['self']))],
     'banshee': [Activated('XT', Banshee(), T_FUNCS['all_creatures_and_players'], max_x_func=max_x_from_printed_card)],
     'barls-cage': [Activated('3', AddStunCounter(), T_FUNCS['creatures'])],
-    'bartel-runeaxe': [Static(CantBeTargetedByAuras())],
+    'bartel-runeaxe': [Static(CantBeTargetedByAuras(T_FUNCS['self']))],
     'basalt-monolith': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                         Activated('T', AddMana('C', 3)), Activated('3', UntapCardEffect(), T_FUNCS['self'])],
     'bayou': dual_land_specs('BG'),
@@ -204,7 +204,7 @@ MAP: dict[str, list[EffSpec]] = {
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                            Triggered(PayManaToUntapUpkeep('9', T_FUNCS['self']))],
     'concordant-crossroads': [Static(KWAApplies(T_FUNCS['creatures'], 'add', 'Haste'))],
-    'consecrate-land': [Spell(HostCantBeTargetedByAuras(), T_FUNCS['lands'])],
+    'consecrate-land': [Spell(ConsecrateLand(), T_FUNCS['lands'])],
     'conservator': [Activated('3T', PreventNextDamageTo(protected=T_FUNCS['owner']))],
     'control-magic': [Spell(Steal(), T_FUNCS['opp_creatures'])],
     'conversion': [Triggered(PayManaOrSacAtUpkeep('WW')), Static(Conversion())],

@@ -220,6 +220,14 @@ class CocoonCast(Resolver):
         t.tap()
         source.counters.add_counter(PUPA, 3)
 
+class ConsecrateLand(Resolver):
+    """Enchanted land has indestructible and can't be enchanted by other Auras"""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        from models.effects.listeners_permission import CantBeTargetedByAuras
+        gs.event_mgr.register(CantBeTargetedByAuras(protected_card=t), source)
+        t.modifiers.append(KWAMod(s=source, item='Indestructible'))
+
 class CopyArtifact(Resolver):
     """You may have this enchantment enter as a copy of any artifact on the battlefield,
     except it's an enchantment in addition to its other types"""

@@ -56,6 +56,9 @@ class PileManager:
         print('Entering destroy() for', card)
         # ask replacement system if destruction is prevented
         # as of now, this destruction replacement & damage are handled separately but could be unified later
+        if 'Indestructible' in card.keyword_abilities:
+            return
+
         if allow_regeneration:
             event = CanRegenerateQueryEvent(card)
             self._gs.event_mgr.emit(event)

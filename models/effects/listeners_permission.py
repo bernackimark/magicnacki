@@ -78,8 +78,19 @@ class CantBeTargetedByAuras(Listener):
     """Card can't host an aura"""
     listens_to = CanTargetQueryEvent
 
+    def __init__(self, protected_card_func: Callable[[GameState, GameCard], GameCard] = None,
+                 protected_card: GameCard | None = None):
+        self.protected_card_func = protected_card_func
+        self.protected_card = protected_card
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if not self.protected_card_func and self.protected_card is None:
+            self.protected_card = target[0]
+
     def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
-        if event.target is not source or 'Aura' not in event.source.card_sub_types:
+        print('xxx', self.protected_card_func, self.protected_card)
+        protected_card = self.protected_card or self.protected_card_func(gs, source)
+        if event.target is not protected_card or 'Aura' not in event.source.card_sub_types:
             return
         event.permission = False
 
@@ -162,15 +173,6 @@ class HostCantAttack(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
         if source.host is event.attacker:
             event.permission = False
-
-class HostCantBeTargetedByAuras(Listener):
-    """Host can't host an aura"""
-    listens_to = CanTargetQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
-        if event.target is not source.host or 'Aura' not in event.source.card_sub_types:
-            return
-        event.permission = False
 
 class HostCantBeTargetedBySpells(Listener):
     """WARNING: because CanTargetQueryEvent doesn't carry .effect, I'm backing into 'is the source a spell'?"""

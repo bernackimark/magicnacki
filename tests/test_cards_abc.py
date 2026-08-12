@@ -328,20 +328,26 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_consecrate_land(self):
         """Host has indestructible and can't be enchanted by other Auras"""
-        card = self.g.battlefield('consecrate-land')
+        card = self.g.hand('consecrate-land')
         host = self.g.battlefield('island')
         unprotected_land = self.g.battlefield('swamp')
-        Attach(0, self.gs, card, host).play()
+        self.g.mana('W')
+
+        ap = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[host])
+        ap.advance()
+        ap.resolve_ability()
 
         phantasmal_terrain = self.g.card('phantasmal-terrain')
         targets = phantasmal_terrain.abilities[0].target_spec.get_targets(self.gs, phantasmal_terrain)
         self.assertIn(unprotected_land, targets)
         self.assertNotIn(host, targets)
 
-        # TODO: once Indestructible is coded, uncomment this test
-        # stone_rain = self.g.card('stone-rain')
-        # stone_rain.abilities[0].effect.resolve(self.gs, stone_rain, host)  # type: ignore
-        # self.assertNotIn(host, self.g.gy[0])
+        stone_rain = self.g.card('stone-rain')
+        stone_rain.abilities[0].effect.resolve(self.gs, stone_rain, host)
+        self.assertNotIn(host, self.g.gy[0])
+
+        stone_rain.abilities[0].effect.resolve(self.gs, stone_rain, unprotected_land)
+        self.assertIn(unprotected_land, self.g.gy[0])
 
     # def test_creature_bond(self):
     #     """When host dies, this Aura deals damage equal to that creature's toughness to the creature's controller."""

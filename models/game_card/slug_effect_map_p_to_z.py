@@ -236,11 +236,11 @@ MAP: dict[str, list[EffSpec]] = {
     'telekinesis': [Spell(Telekinesis(), T_FUNCS['creatures'])],
     'teleport': [Spell(UnblockableEOT(), T_FUNCS['creatures'], allowed_phases=[Phase.DECLARE_COMBAT])],
     'terror': [Spell(Destroy(allow_regen=False), T_FUNCS['non_artifact_non_black_creatures'])],
-    'tetravite': [Static(CantBeTargetedByAuras())],  # token creature created by tetravus
+    'tetravite': [Static(CantBeTargetedByAuras(T_FUNCS['self']))],  # token creature created by tetravus
     'tetravus': [Spell(AddCounter(PLUS_ONE, 3), T_FUNCS['self']),
                  Triggered(TetravusUpkeepCreate()), Triggered(TetravusUpkeepExile())],
     'tetsuo-umezawa': [Activated('UBBRT', Destroy(), T_FUNCS['tapped_or_blocking_creatures']),
-                       Static(CantBeTargetedByAuras())],
+                       Static(CantBeTargetedByAuras(T_FUNCS['self']))],
     'the-abyss': [Triggered(TheAbyss())],
     'the-brute': [Activated('RRR', Regenerate(), T_FUNCS['host']), Spell(Pump(1, 0), T_FUNCS['creatures'])],
     'the-fallen': [Static(TheFallen())],
