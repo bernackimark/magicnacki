@@ -239,6 +239,7 @@ class CopyArtifact(Resolver):
         gs.queue_choice(ChoiceAction(options))
 
 class Crumble(Resolver):
+    """Destroy target artifact. It can't be regenerated. That artifact's controller gains life = its MV."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.destroy(t, allow_regeneration=False)

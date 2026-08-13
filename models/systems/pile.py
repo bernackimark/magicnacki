@@ -82,6 +82,19 @@ class PileManager:
         print(f'{card} is destroyed')
         self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is destroyed')
 
+    def sacrifice(self, card: GameCard):
+        """In MTG Rules, a scarificed card does count as dying, since 'dying' is just short for 'goes to the graveyard';
+        having Indestructible does not prevent a sacrifice; regeneration does not apply to sacrificed card"""
+        print('Entering sacrifice() for', card)
+
+        self._gs.event_mgr.emit(DiesEvent(card))
+        if card.zone != Zone.BATTLEFIELD:
+            return  # a DiesEvent Listener may have sent the card somewhere else
+        self.move_card(card, Zone.GRAVEYARD, cause="sacrifice")
+        self._gs.turn_mgr.cards_that_died.append(card)
+        print(f'{card} is sacrificed')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is sacrificed')
+
     def exile(self, card: GameCard):
         self.move_card(card, Zone.EXILE, cause="exile")
         print(f'{card} is exiled')

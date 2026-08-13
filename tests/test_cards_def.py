@@ -33,7 +33,7 @@ class TestCardsDEF(unittest.TestCase):
         self.g.next_turn()
         self.assertTrue(self.gs.perm_querier.can_attack(the_copy))
 
-        self.gs.pile_mgr.destroy(card, allow_regeneration=False)
+        self.gs.pile_mgr.sacrifice(card)
         self.assertNotIn(the_copy, self.gs.boards[0])
 
     def test_demonic_torment(self):

@@ -65,7 +65,7 @@ class SacToReturnAllCardsExiledBy(Action):
         for card in self.exiler.extras.get('cards_exiled'):
             self.gs.pile_mgr.reanimate(card)
         del self.exiler.extras['cards_exiled']
-        self.gs.pile_mgr.destroy(self.exiler, allow_regeneration=False)
+        self.gs.pile_mgr.sacrifice(self.exiler)
         self.finish()
 
 class Sac(Action):

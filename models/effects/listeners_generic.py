@@ -600,7 +600,7 @@ class DealDamageOnHostUpkeep(Listener):
         gs.apply_damage(source, self.amount, source.host.owner_id)
 
 class PayManaOrSacAtUpkeep(Listener):
-    """At owner's upkeep, if owner cannot pay mana, card is destroyed on the spot"""
+    """At owner's upkeep, if owner cannot pay mana, card is sacrificed on the spot"""
     listens_to = UpkeepEvent
 
     def __init__(self, mana_cost: str):
@@ -610,7 +610,7 @@ class PayManaOrSacAtUpkeep(Listener):
         if event.active_player != source.owner_id:
             return
         if not gs.mana_pools[source.owner_id].can_pay(self.mana_cost):
-            gs.pile_mgr.destroy(source, allow_regeneration=False)
+            gs.pile_mgr.sacrifice(source)
             return
         options = [PayMana(source.owner_id, gs, source, self.mana_cost), Sac(source.owner_id, gs, source)]
         gs.queue_choice(ChoiceAction(options))

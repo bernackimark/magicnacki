@@ -24,7 +24,7 @@ class GlobalSac(Listener):
             affected_cards = [affected_cards]
         if self.condition is None or self.condition(gs, source):
             for card in affected_cards:
-                gs.pile_mgr.destroy(card, allow_regeneration=False)
+                gs.pile_mgr.sacrifice(card)
 
 class JihadSac(Listener):
     """When the chosen player controls no nontoken permanents of the chosen color, sacrifice this enchantment"""
@@ -34,7 +34,7 @@ class JihadSac(Listener):
         declared_color = source.extras.get('color_declaration')
         opp = flip(source.owner_id)
         if not gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result():
-            gs.pile_mgr.destroy(source, allow_regeneration=False)
+            gs.pile_mgr.sacrifice(source)
 
 class OldManOfTheSeaPowerCheck(Listener):
     """Gain control of target creature ... so as long as ... target's power remains <= OMOTS's power."""

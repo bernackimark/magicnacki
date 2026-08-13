@@ -153,7 +153,7 @@ class ElderSpawnUpkeep(Listener):
             return
         your_islands = gs.card_filter.on_player_board(s.owner_id).islands().result()
         if not your_islands:
-            gs.pile_mgr.destroy(s, allow_regeneration=False)
+            gs.pile_mgr.sacrifice(s)
             gs.apply_damage(s, 6, s.owner_id)
             return
 
@@ -167,7 +167,7 @@ class EnergyFlux(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         for your_artifact in gs.card_filter.on_player_board(event.active_player).artifacts().result():
             if not gs.mana_pools[event.active_player].can_pay('2'):
-                gs.pile_mgr.destroy(your_artifact, allow_regeneration=False)
+                gs.pile_mgr.sacrifice(your_artifact)
             options = [PayMana(event.active_player, gs, source, '2'), Sac(event.active_player, gs, source)]
             gs.queue_choice(ChoiceAction(options))
 
@@ -388,7 +388,7 @@ class ManaVortexUpkeep(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         your_lands = gs.card_filter.on_player_board(gs.player_turn_idx).lands().result()
         if len(your_lands) == 1:
-            gs.pile_mgr.destroy(your_lands[0], allow_regeneration=False)
+            gs.pile_mgr.sacrifice(your_lands[0])
             return
         options = [Sac(event.active_player, gs, land) for land in your_lands]
         gs.queue_choice(ChoiceAction(options))
@@ -630,7 +630,7 @@ class TheTabernacleAtPendrellVale(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         for your_creature in gs.card_filter.on_player_board(event.active_player).creatures().result():
             if not gs.mana_pools[event.active_player].can_pay('1'):
-                gs.pile_mgr.destroy(your_creature, allow_regeneration=False)
+                gs.pile_mgr.destroy(your_creature)
             options = [PayMana(event.active_player, gs, source, '1'), Sac(event.active_player, gs, source)]
             gs.queue_choice(ChoiceAction(options))
 

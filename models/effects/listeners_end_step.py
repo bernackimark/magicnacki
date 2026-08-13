@@ -17,7 +17,7 @@ class DragonWhelpEndStep(Listener):
 
     def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
         if len([temp for temp in s.modifiers.items if temp.s is s]) >= 4:
-            gs.pile_mgr.destroy(s, allow_regeneration=False)
+            gs.pile_mgr.sacrifice(s)
 
 
 class ErgRaiders(Listener):

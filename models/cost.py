@@ -128,7 +128,7 @@ class SacCardCost(Cost):
         return len(self.target_func(gs, source)) >= 1
 
     def pay(self, gs: GameState, source: GameCard) -> CostResult:
-        gs.pile_mgr.destroy(self.selected_card, allow_regeneration=False)
+        gs.pile_mgr.sacrifice(self.selected_card)
         return CostResult([self.selected_card])
 
 class SacSelfCost(Cost):
@@ -136,7 +136,7 @@ class SacSelfCost(Cost):
         return source in gs.card_filter.in_play().result()
 
     def pay(self, gs: GameState, source: GameCard) -> CostResult:
-        gs.pile_mgr.destroy(source, allow_regeneration=False)
+        gs.pile_mgr.sacrifice(source)
         return CostResult([source])
 
 class SacTwoIslandsCost(Cost):
@@ -147,5 +147,5 @@ class SacTwoIslandsCost(Cost):
         your_islands = gs.card_filter.on_player_board(source.owner_id).islands().result()
         sacrificed_islands = your_islands[:2]
         for island in your_islands:
-            gs.pile_mgr.destroy(island, allow_regeneration=False)
+            gs.pile_mgr.sacrifice(island)
         return CostResult([sacrificed_islands])

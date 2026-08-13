@@ -357,7 +357,7 @@ class SacAll(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for c in self.card_filter_func(gs, source):
-            gs.pile_mgr.destroy(c, allow_regeneration=False)
+            gs.pile_mgr.sacrifice(c)
 
 class SetColor(Resolver):
     def __init__(self, color: str, expires: str | None = None):

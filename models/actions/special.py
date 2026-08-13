@@ -591,7 +591,7 @@ class WoodElementalETBAction(Action):
     def play(self) -> None:
         self.s.base_pt = (self.amt, self.amt)
         for card in self.cards_to_sac:
-            self.gs.pile_mgr.destroy(card, allow_regeneration=False)
+            self.gs.pile_mgr.sacrifice(card)
         self.finish()
 
 class WormsOfTheEarthSacTwoLands(Action):
