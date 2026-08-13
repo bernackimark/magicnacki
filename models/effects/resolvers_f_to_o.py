@@ -10,6 +10,7 @@ from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction
+from models.constants import KW
 from models.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
@@ -137,7 +138,7 @@ class GoblinKing(Resolver):
         targets = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Goblin').result()
         for t in targets:
             if source != t:
-                t.modifiers.append(KWAMod(s=source, item='Mountainwalk'))
+                t.modifiers.append(KWAMod(s=source, item=KW.ISLANDWALK))
                 t.modifiers.append(PTMod(s=source, p_adj=1, t_adj=1))
 
 class GraveRobbersAA(Resolver):
@@ -208,7 +209,7 @@ class IfhBiffEfreet(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for i in range(2):
             gs.apply_damage(source, 1, i)
-        for flier in list(gs.card_filter.in_play().creatures().has('Flying').result()):
+        for flier in list(gs.card_filter.in_play().creatures().has(KW.FLYING).result()):
             gs.apply_damage(source, 1, flier)
 
 class Inquisition(Resolver):
@@ -240,7 +241,7 @@ class KoboldDrillSergeant(Resolver):
         kobolds = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result()
         for k in kobolds:
             if source != k:
-                k.modifiers.append(KWAMod(s=source, item='Trample'))
+                k.modifiers.append(KWAMod(s=source, item=KW.TRAMPLE))
                 k.modifiers.append(PTMod(s=source, p_adj=0, t_adj=1))
 
 class KryShield(Resolver):
@@ -421,5 +422,5 @@ class NettlingImp(Resolver):
 
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(item='Goad', s=source, expires='EOT'))
+        t.modifiers.append(KWAMod(item=KW.GOAD, s=source, expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(t), source)

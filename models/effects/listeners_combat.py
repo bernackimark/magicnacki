@@ -6,6 +6,7 @@ from models.actions.kwa import JohanAction
 from models.actions.mana import PayMana
 from models.actions.special import DestroyAndForegoCombatDamage
 from models.choice_actions_all import ChoiceAction
+from models.constants import KW
 from models.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
@@ -80,7 +81,7 @@ class GiantShark(Listener):
             return
         if other.damage_received_this_turn:
             s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
-            s.modifiers.append(KWAMod(s=s, item='Trample', expires='EOT'))
+            s.modifiers.append(KWAMod(s=s, item=KW.TRAMPLE, expires='EOT'))
 
 class InfernalMedusa(Listener):
     """Whenever this creature blocks, destroy attacker at combat end.

@@ -8,6 +8,7 @@ from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
 from models.choice_actions_all import ExtraCostChoice2
+from models.constants import KW
 from models.cost import ExileCreatureFromYourGraveyardCost
 from models.counter_tokens import PLUS_ONE
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
@@ -185,9 +186,9 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertNotIn(illegal_target_1, targets)
         self.assertNotIn(illegal_target_2, targets)
 
-        self.assertNotIn('Goad', legal_target.keyword_abilities)
+        self.assertNotIn(KW.GOAD, legal_target.keyword_abilities)
         self.g.activate_ability(aa, legal_target)
-        self.assertIn('Goad', legal_target.keyword_abilities)
+        self.assertIn(KW.GOAD, legal_target.keyword_abilities)
 
         self.g.next_turn()
         festival = self.g.hand('festival')  # no creatures may attack
@@ -288,7 +289,7 @@ class TestCardsMNOP(unittest.TestCase):
         pipeline.targets.append(c_1)
         pipeline.advance()
         pipeline.resolve_ability()
-        self.assertIn('Islandwalk', c_1.keyword_abilities)
+        self.assertIn(KW.ISLANDWALK, c_1.keyword_abilities)
 
     def test_pendelhaven(self):
         """{T}: Add {G}. {T}: Target 1/1 creature gets +1/+2 until end of turn."""

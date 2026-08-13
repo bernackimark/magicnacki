@@ -8,10 +8,10 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-from models.constants import BASIC_LANDS
+from models.constants import BASIC_LANDS, KW
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanDamageQueryEvent, \
-    CanTargetQueryEvent, StateBasedEvent, Event
+    CanTargetQueryEvent, StateBasedEvent
 from models.utils import flip
 
 
@@ -46,8 +46,8 @@ class CanBlockRule(BaseRule):
                 return
 
         # Global Flying/Reach rule
-        if ('Flying' in a.keyword_abilities and
-                not any(kwa for kwa in b.keyword_abilities if kwa in ('Flying', 'Reach'))):
+        if (KW.FLYING in a.keyword_abilities and
+                not any(kwa for kwa in b.keyword_abilities if kwa in (KW.FLYING, KW.REACH))):
             event.permission = False
             return
 
@@ -66,12 +66,12 @@ class CanAttackRule(BaseRule):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
         a = event.attacker
-        if (not a.is_creature or (a.has_summoning_sickness and 'Haste' not in a.keyword_abilities)
+        if (not a.is_creature or (a.has_summoning_sickness and KW.HASTE not in a.keyword_abilities)
                 or a.is_tapped):
             event.permission = False
             return
 
-        if 'Islandhome' in a.keyword_abilities:
+        if KW.ISLANDHOME in a.keyword_abilities:
             if not gs.card_filter.on_player_board(flip(a.owner_id)).islands().result():
                 event.permission = False
                 return
@@ -132,7 +132,7 @@ class IslandhomeCheck(BaseRule):
     listens_to = StateBasedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
-        for creature in gs.card_filter.in_play().has('Islandhome').result():
+        for creature in gs.card_filter.in_play().has(KW.ISLANDHOME).result():
             if not gs.card_filter.on_player_board(creature.owner_id).islands().result():
                 gs.pile_mgr.destroy(creature)
 

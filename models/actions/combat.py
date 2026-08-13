@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from models.constants import KW
+
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
@@ -17,7 +19,7 @@ class CreatureAttack(Action):
         return f"Add {self.card.__repr__()} to attack"
 
     def play(self) -> None:
-        if 'Vigilance' not in self.card.keyword_abilities:
+        if KW.VIGILANCE not in self.card.keyword_abilities:
             self.card.tap()
         self.gs.combat_mgr.create_combat(self.card)
 

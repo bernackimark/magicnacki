@@ -11,4 +11,3 @@ INVOCATIONS: dict[str, list[EffSpec]] = {}
 INVOCATIONS.update(MAP1)
 INVOCATIONS.update(MAP2)
 INVOCATIONS.update(MAP3)
-

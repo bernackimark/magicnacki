@@ -8,8 +8,7 @@ from models.actions.special import PayManaToDrawCards, PayManaForLife, PayManaTo
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
-from models.effects.resolvers_generic import BasePT
-from models.events_all import DiesEvent, DamageResolvedEvent, Event
+from models.events_all import DiesEvent, DamageResolvedEvent
 from models.modifiers import BasePTMod
 
 if TYPE_CHECKING:

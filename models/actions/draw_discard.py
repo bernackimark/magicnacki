@@ -2,7 +2,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from models.choice_actions_all import ChoiceAction
 from models.events_all import DrawCardEvent
 from models.zone import Zone
 

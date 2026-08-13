@@ -3,6 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.special import Attach
+from models.constants import KW
 from models.cost import SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM
 from models.effects.listeners_misc import ArtifactPossessionActivation
@@ -317,7 +318,7 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.event_mgr.emit(UpkeepEvent(0))
         self.assertIn(card, self.g.gy[0])
         self.assertEqual(3, host.power)
-        self.assertIn('Flying', host.keyword_abilities)
+        self.assertIn(KW.FLYING, host.keyword_abilities)
 
     def test_concordant_crossroads(self):
         """All creatures have haste"""

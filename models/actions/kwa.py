@@ -1,5 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING
+
+from models.constants import KW
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -39,6 +41,6 @@ class JohanAction(Action):
         from models.effects.listeners_tap_untap import JohanOnTap
         self.source.modifiers.append(KWAMod(s=self.source, item='Defender', expires='EOT'))
         for c in self.gs.card_filter.on_player_board(self.source.owner_id).creatures().result():
-            c.modifiers.append(KWAMod(s=self.source, item='Vigilance', expires='EOT'))
+            c.modifiers.append(KWAMod(s=self.source, item=KW.VIGILANCE, expires='EOT'))
         self.gs.event_mgr.register(JohanOnTap(), self.source)
         self.finish()

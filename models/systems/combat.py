@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from models.constants import KW
 from models.events_all import StateBasedEvent
 from models.utils import flip
 
@@ -75,8 +76,8 @@ class Combat:
 #
 #     @property
 #     def contains_first_strike(self) -> bool:
-#         return any('First Strike' in self.attacker.keyword_abilities or
-#                    'First Strike' in b.keyword_abilities for b in self.blockers)
+#         return any(KW.FIRST_STRIKE in self.attacker.keyword_abilities or
+#                    KW.FIRST_STRIKE in b.keyword_abilities for b in self.blockers)
 #
 #     @property
 #     def defending_player(self) -> int:
@@ -133,9 +134,9 @@ class Combat:
 #     @staticmethod
 #     def _phase_applicable(creature: GameCard, first_strike: bool) -> bool:
 #         """Returns True if this creature should deal damage in the current phase."""
-#         if not first_strike and 'First Strike' not in creature.keyword_abilities:
+#         if not first_strike and KW.FIRST_STRIKE not in creature.keyword_abilities:
 #             return True
-#         if first_strike and 'First Strike' in creature.keyword_abilities:
+#         if first_strike and KW.FIRST_STRIKE in creature.keyword_abilities:
 #             return True
 #         return False
 
@@ -203,16 +204,16 @@ class CombatManager:
 
     @staticmethod
     def _deals_damage_this_step(creature: GameCard, first_strike: bool) -> bool:
-        has_fs = 'First Strike' in creature.keyword_abilities
+        has_fs = KW.FIRST_STRIKE in creature.keyword_abilities
         return has_fs if first_strike else not has_fs
 
     @property
     def has_first_strike_step(self):
         for combat in self.combats:
-            if 'First Strike' in combat.attacker.keyword_abilities:
+            if KW.FIRST_STRIKE in combat.attacker.keyword_abilities:
                 return True
             for blocker in combat.blockers:
-                if 'First Strike' in blocker.keyword_abilities:
+                if KW.FIRST_STRIKE in blocker.keyword_abilities:
                     return True
         return False
 
@@ -237,7 +238,7 @@ class CombatManager:
                     blocker = combat.blockers[0]
                     if self.is_in_combat(blocker):
                         # handle trample
-                        if 'Trample' in attacker.keyword_abilities:
+                        if KW.TRAMPLE in attacker.keyword_abilities:
                             lethal = max(0, blocker.toughness - blocker.damage_received_this_turn)
                             damage_to_blocker = min(attacker_power, lethal)
                             assignments.append((attacker, damage_to_blocker, blocker))
@@ -248,7 +249,7 @@ class CombatManager:
                             assignments.append((attacker, attacker.power, blocker))
                     else:
                         # Trample still hits player even if blockers are gone
-                        if 'Trample' in attacker.keyword_abilities:
+                        if KW.TRAMPLE in attacker.keyword_abilities:
                             assignments.append((attacker, attacker_power, flip(attacker.owner_id)))
 
                 elif not combat.is_blocked:

@@ -3,6 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.stack_accept_counter import AcceptAction
+from models.constants import KW
 from models.counter_tokens import STUN
 from models.effects.listeners_generic import PreventNextDamageTo, TakeAnotherTurn
 from models.effects.resolvers_generic import GraveyardToExileInItsEntirety
@@ -38,12 +39,12 @@ class TestResolversGeneric(unittest.TestCase):
         card = self.g.battlefield('hammerheim')
         aa = card.activated_abilities[1]  # remove all walks
         islandwalker = self.g.battlefield('segovian-leviathan')
-        self.assertIn('Islandwalk', islandwalker.keyword_abilities)
+        self.assertIn(KW.ISLANDWALK, islandwalker.keyword_abilities)
         self.g.activate_ability(aa, islandwalker)
-        self.assertNotIn('Islandwalk', islandwalker.keyword_abilities)
+        self.assertNotIn(KW.ISLANDWALK, islandwalker.keyword_abilities)
 
         self.g.next_turn()
-        self.assertIn('Islandwalk', islandwalker.keyword_abilities)
+        self.assertIn(KW.ISLANDWALK, islandwalker.keyword_abilities)
 
     def test_base_pt_p_and_t_declared(self):
         """Set target creature's base PT to specified values (p or t can be None, defaulting to its orig base value)"""

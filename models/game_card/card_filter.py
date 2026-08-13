@@ -23,7 +23,7 @@ OPS = {'=': operator.eq, '!=': operator.ne, '>=': operator.ge, '<=': operator.le
 class CardFilter:
     """Creates a CardUniverse of all Old School cards; uses query chaining methods to successively filter the pool;
     caller must use .result() at the end of their statement to reset the card pool ...
-    Example usage: CardFilter().mana_value([6, 7], '=').has('Flying').result()"""
+    Example usage: CardFilter().mana_value([6, 7], '=').has(KW.FLYING).result()"""
     def __init__(self):
         self._all_cards: tuple[Card, ...] = tuple(CardUniverse(OS_SCRYFALL_SETS).cards)
         self._cards: list[Card] = list(self._all_cards)

@@ -16,6 +16,7 @@ from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePay
     WormsOfTheEarthSacTwoLands, WormsOfTheEarthTake5Damage, TapCardAndTakeDamage, TetravusCreateTokens, \
     TetravusExileTokens
 from models.choice_actions_all import ChoiceAction
+from models.constants import KW
 from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal, BasePT
@@ -56,7 +57,7 @@ class CocoonUpkeep(Listener):
             return
         gs.pile_mgr.destroy(source)
         host.counters.add_counter(PLUS_ONE)
-        host.modifiers.append(KWAMod(s=source, item='Flying'))
+        host.modifiers.append(KWAMod(s=source, item=KW.FLYING))
 
 class CosmicHorror(Listener):
     """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
@@ -182,9 +183,9 @@ class ErhnamDjinn(Listener):
         if not eligible_targets:
             return
         if len(eligible_targets) == 1:
-            eligible_targets[0].modifiers.append(KWAMod(item='Forestwalk', s=s, expires='EOT'))
+            eligible_targets[0].modifiers.append(KWAMod(item=KW.FORESTWALK, s=s, expires='EOT'))
             return
-        options = [AddKWA(s.owner_id, gs, s, t, 'Forestwalk') for t in eligible_targets]
+        options = [AddKWA(s.owner_id, gs, s, t, KW.FORESTWALK) for t in eligible_targets]
         gs.queue_choice(ChoiceAction(options))
 
 class ErosionUpkeep(Listener):
@@ -235,7 +236,7 @@ class GabrielAngelfire(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
         if event.active_player != s.owner_id:
             return
-        kwa_options = ('Flying', 'First Strike', 'Trample', 'Rampage 3')
+        kwa_options = (KW.FLYING, KW.FIRST_STRIKE, KW.TRAMPLE, KW.RAMPAGE_3)
         options = [AddKWA(s.owner_id, gs, s, s, kwa) for kwa in kwa_options]
         gs.queue_choice(ChoiceAction(options))
 
@@ -261,7 +262,7 @@ class GiantSlugUpkeep(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
         if event.active_player != s.owner_id:
             return
-        kwa_options = ('Forestwalk', 'Islandwalk', 'Mountainwalk', 'Plainswalk', 'Swampwalk')
+        kwa_options = (KW.FORESTWALK, KW.ISLANDWALK, KW.ISLANDWALK, KW.PLAINSWALK, KW.SWAMPWALK)
         options = [AddKWA(s.owner_id, gs, s, s, kwa) for kwa in kwa_options]
         gs.queue_choice(ChoiceAction(options))
 

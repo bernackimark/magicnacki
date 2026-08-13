@@ -2,7 +2,7 @@ from __future__ import annotations
 from itertools import combinations
 
 from .card_filter_funcs import T_FUNCS, C_FUNCS, A_FUNCS
-from models.constants import COLOR_LETTERS
+from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
 from models.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
@@ -132,7 +132,7 @@ MAP: dict[str, list[EffSpec]] = {
                               text=f'Add {{3{c}}}') for c in COLOR_LETTERS],
     'black-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('B')],
     'black-vise': [Triggered(BlackVise())],
-    'black-ward': [Spell(KWAModEffect('add', 'Protection From Black'), T_FUNCS['creatures'])],
+    'black-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_BLACK), T_FUNCS['creatures'])],
     'blazing-effigy': [Triggered(BlazingEffigy())],
     'blessing': [Activated('W', Pump(1, 1, True), T_FUNCS['host'])],
     'blight': [Spell(Blight(), T_FUNCS['lands'])],
@@ -142,7 +142,7 @@ MAP: dict[str, list[EffSpec]] = {
     'blue-elemental-blast': [Spell(CounterSpell(), T_FUNCS['red_spells']),
                              Spell(Destroy(), T_FUNCS['red_permanents'])],
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
-    'blue-ward': [Spell(KWAModEffect('add', 'Protection From Blue'), T_FUNCS['creatures'])],
+    'blue-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_BLUE), T_FUNCS['creatures'])],
     'bog-rats': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['walls']))],
     'bone-flute': [Activated('2T', PumpAppliesEOT(T_FUNCS['creatures'], (-1, 0)))],
     'book-of-rass': [Activated('2', BookOfRass())],
@@ -156,13 +156,13 @@ MAP: dict[str, list[EffSpec]] = {
                   Triggered(PayManaToUntapUpkeep('1', T_FUNCS['self']))],
     'brine-hag': [Triggered(BrineHag())],
     'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), T_FUNCS['all_creatures_and_players'])],
-    'burrowing': [Spell(KWAModEffect('add', 'Mountainwalk'), T_FUNCS['creatures'])],
+    'burrowing': [Spell(KWAModEffect('add', KW.ISLANDWALK), T_FUNCS['creatures'])],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(T_FUNCS['your_tapped_lands'], 1, None),
                                        max_x_func=your_tapped_land_cnt_and_max_x)],
     'carrion-ants': [self_pump('1', 1, 1)],
     'castle': [Static(PumpApplies(T_FUNCS['your_untapped_white_creatures'], (0, 2)))],
     'cave-people': [Triggered(CavePeopleAttackPump(), T_FUNCS['self']),
-                    Activated('1RRT', KWAModEffect('add', 'Mountainwalk', True), T_FUNCS['creatures'])],
+                    Activated('1RRT', KWAModEffect('add', KW.ISLANDWALK, True), T_FUNCS['creatures'])],
     'caverns-of-despair': [Static(AttackerCountMax(2)), Static(BlockerCountMax(2))],
     'celestial-prism': [Activated('2T', AddMana(c), T_FUNCS['owner'], text=f'Add 1 {c}') for c in COLOR_LETTERS],
     'chaos-orb': [Activated('1T', ChaosOrb(), T_FUNCS['opp_non_token_perms'], extra_costs=[SacSelfCost()],
@@ -203,7 +203,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cocoon': [Spell(CocoonCast(), T_FUNCS['your_creatures']), Static(CocoonUntap()), Static(CocoonUpkeep())],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(T_FUNCS['self'])),
                            Triggered(PayManaToUntapUpkeep('9', T_FUNCS['self']))],
-    'concordant-crossroads': [Static(KWAApplies(T_FUNCS['creatures'], 'add', 'Haste'))],
+    'concordant-crossroads': [Static(KWAApplies(T_FUNCS['creatures'], 'add', KW.HASTE))],
     'consecrate-land': [Spell(ConsecrateLand(), T_FUNCS['lands'])],
     'conservator': [Activated('3T', PreventNextDamageTo(protected=T_FUNCS['owner']))],
     'control-magic': [Spell(Steal(), T_FUNCS['opp_creatures'])],
@@ -213,7 +213,7 @@ MAP: dict[str, list[EffSpec]] = {
     'coral-helm': [Activated('3', Pump(2, 2, True), T_FUNCS['creatures'], extra_costs=[DiscardAtRandomCost()])],
     'cosmic-horror': [Static(CosmicHorror())],
     'counterspell': [Spell(CounterSpell(), T_FUNCS['spells'])],
-    'crevasse': [Static(WalkRuleRemoved('Mountainwalk'))],
+    'crevasse': [Static(WalkRuleRemoved(KW.ISLANDWALK))],
     'creature-bond': [Triggered(CreatureBond())],
     'crimson-manticore': [Activated('RT', DealDamage(1), T_FUNCS['combatants'])],
     'crumble': [Spell(Crumble(), T_FUNCS['artifacts'])],
@@ -234,7 +234,7 @@ MAP: dict[str, list[EffSpec]] = {
                               extra_costs=[SacSelfCost()])],
     'darkness': [Spell(PreventAllDamageEOT(combat_only=True))],
     'davenant-archer': [Activated('T', DealDamage(1), T_FUNCS['combatants'])],
-    'deadfall': [Static(WalkRuleRemoved('Forestwalk'))],
+    'deadfall': [Static(WalkRuleRemoved(KW.FORESTWALK))],
     'deathgrip': [Activated('BB', CounterSpell(), T_FUNCS['green_spells'])],
     'deathlace': [Spell(SetColor('B'), T_FUNCS['cards'])],
     'death-ward': [Spell(Regenerate(), T_FUNCS['creatures'])],
@@ -286,7 +286,7 @@ MAP: dict[str, list[EffSpec]] = {
     'elephant-graveyard': [Activated('T', AddMana('C')), Activated('T', Regenerate(), T_FUNCS['elephants'])],
     'elven-riders': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['non_wall_non_fliers']))],
     'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow())],
-    'emerald-dragonfly': [Activated('GG', KWAModEffect('add', 'First Strike', True), T_FUNCS['self'])],
+    'emerald-dragonfly': [Activated('GG', KWAModEffect('add', KW.FIRST_STRIKE, True), T_FUNCS['self'])],
     'enchanted-being': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['enchanted_creatures'], combat_only=True))],
     'enchantment-alteration': [Spell(EnchantmentAlteration(), T_FUNCS['auras_on_creatures_or_lands'])],
     'energy-flux': [Triggered(EnergyFlux())],
@@ -295,7 +295,7 @@ MAP: dict[str, list[EffSpec]] = {
     'erhnam-djinn': [Triggered(ErhnamDjinn(), T_FUNCS['opp_non_wall_creatures'])],
     'erosion': [Spell(ErosionUpkeep(), T_FUNCS['lands'])],
     'eternal-flame': [Spell(EternalFlame())],
-    'eternal-warrior': [Spell(KWAModEffect('add', 'Vigilance'), T_FUNCS['creatures'])],
+    'eternal-warrior': [Spell(KWAModEffect('add', KW.VIGILANCE), T_FUNCS['creatures'])],
     'eureka': [Spell(Eureka())],
     'evil-eye-of-orms-by-gore': [Static(UnblockableCondition(T_FUNCS['self'], T_FUNCS['non_wall_creatures'])),
                                  Static(EvilEyeOfOrmsByGoreMyNonEyeNoAttack())],

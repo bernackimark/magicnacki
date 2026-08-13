@@ -3,7 +3,7 @@ import math
 from functools import cached_property
 from typing import TYPE_CHECKING, Callable, Any, Optional
 
-from models.events_all import ModQueryEvent, Event
+from models.events_all import ModQueryEvent
 
 if TYPE_CHECKING:
     from game_state import GameState

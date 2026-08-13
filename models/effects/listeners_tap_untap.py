@@ -5,7 +5,7 @@ from models.actions.special import TimeVaultSkipTurnAction
 from models.choice_actions_all import ChoiceAction
 from models.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
-from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, Event, CanUntapAtUntapPhaseQueryEvent
+from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapPhaseQueryEvent
 from models.modifiers import KWAMod
 
 if TYPE_CHECKING:

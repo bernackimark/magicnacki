@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 from models.action_stack import StackItemType
 from models.actions.base import Action
+from models.constants import KW
 from models.counter_tokens import CounterType, WIND, PLUS_ONE
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import StateBasedEvent
@@ -481,7 +482,7 @@ class PrimalClayB(Action):
     def play(self) -> None:
         self.s.base_pt = (2, 2)
         kwa = list(self.s._base_kwa)
-        kwa.append('Flying')
+        kwa.append(KW.FLYING)
         self.s._base_kwa = kwa
         self.gs.pile_mgr.cast(self.s)
         self.finish()

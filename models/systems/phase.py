@@ -3,6 +3,7 @@ from abc import ABC
 from enum import auto, IntEnum
 from typing import TYPE_CHECKING
 
+from models.constants import KW
 from models.counter_tokens import STUN
 from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
 
@@ -453,6 +454,6 @@ class PhaseManager:
 
     @staticmethod
     def any_remaining_required_attackers(p_id: int, gs: GameState):
-        return any(c for c in gs.pile_mgr.boards[p_id] if 'Goad' in c.keyword_abilities and gs.perm_querier.can_attack(c) and
+        return any(c for c in gs.pile_mgr.boards[p_id] if KW.GOAD in c.keyword_abilities and gs.perm_querier.can_attack(c) and
                    c not in gs.card_filter.attackers().result())
 

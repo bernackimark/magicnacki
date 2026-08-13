@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any
 
+from models.constants import KW
 from models.counter_tokens import PUPA
 from models.zone import Zone
 
@@ -330,9 +331,9 @@ class IslandSanctuaryRestriction(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
         if event.attacker == source.owner_id:
             return
-        if 'Flying' in event.attacker.keyword_abilities:
+        if KW.FLYING in event.attacker.keyword_abilities:
             return
-        if 'Islandwalk' in event.attacker.keyword_abilities:
+        if KW.ISLANDWALK in event.attacker.keyword_abilities:
             return
         event.permission = False
 
@@ -352,7 +353,7 @@ class Moat(Listener):
     query = 'can_attack'
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        if event.attacker in gs.card_filter.in_play().has('Flying').creatures().result():
+        if event.attacker in gs.card_filter.in_play().has(KW.FLYING).creatures().result():
             event.permission = False
 
 class SpectralCloak(Listener):

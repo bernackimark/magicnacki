@@ -10,6 +10,7 @@ from models.actions.piles import Tutor
 from models.actions.special import CopyCardAction, CleansingPayAction, CleansingDeclineAction, DrafnaFinishAction, \
     DrafnaSelectCardAction, EurekaPlayCardAction, EurekaPlayerFinishAction
 from models.choice_actions_all import ChoiceAction
+from models.constants import KW
 from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem, ExileOnDeath
@@ -103,7 +104,7 @@ class Berserk(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(PTMod(s=source, p_adj=t.power, expires='EOT'))
-        t.modifiers.append(KWAMod(s=source, item='Trample', expires='EOT'))
+        t.modifiers.append(KWAMod(s=source, item=KW.TRAMPLE, expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStepIfItAttacked(t), source)
 
 class BloodLust(Resolver):
@@ -226,7 +227,7 @@ class ConsecrateLand(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.effects.listeners_permission import CantBeTargetedByAuras
         gs.event_mgr.register(CantBeTargetedByAuras(protected_card=t), source)
-        t.modifiers.append(KWAMod(s=source, item='Indestructible'))
+        t.modifiers.append(KWAMod(s=source, item=KW.INDESTRUCTIBLE))
 
 class CopyArtifact(Resolver):
     """You may have this enchantment enter as a copy of any artifact on the battlefield,
@@ -355,15 +356,15 @@ class DustToDust(Resolver):
 class Earthbind(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='Flying'))
-        if 'Flying' in t.keyword_abilities:
+        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=KW.FLYING))
+        if KW.FLYING in t.keyword_abilities:
             gs.apply_damage(source, 2, t.owner_id)
 
 class Earthquake(Resolver):
     """Earthquake deals X damage to each creature without flying and each player"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         x = context.x_value
-        for c in gs.card_filter.in_play().has('Flying', False).creatures().result():
+        for c in gs.card_filter.in_play().has(KW.FLYING, False).creatures().result():
             gs.apply_damage(source, x, c)
         for p_id in (0, 1):
             gs.apply_damage(source, x, p_id)

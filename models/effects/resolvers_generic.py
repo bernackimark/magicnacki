@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Literal
 
 from models.action_stack import StackItemType
-from models.actions.ability_pipeline_support import AbilityAction
 from models.actions.draw_discard import DiscardCards
 from models.actions.special import PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction

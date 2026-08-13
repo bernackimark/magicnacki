@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from game_card import GameCard
     from models.actions.base import Action
 
-from models.constants import Target, ALL_PLAYER_INDICES, BASIC_LANDS
+from models.constants import Target, ALL_PLAYER_INDICES, BASIC_LANDS, KW
 from models.utils import flip
 
 A_FUNCS: [str, Callable[[GameState, GameCard], tuple[int | None]]] = {
@@ -84,8 +84,8 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'creature_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_creature],
     'creatures_in_all_graveyards': lambda gs, s: gs.card_filter.in_graveyards().creatures().result(),
     'creatures': lambda gs, s: gs.card_filter.in_play().creatures().result(),
-    'creatures_w_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
-    'creatures_wo_forestwalk': lambda gs, s: gs.card_filter.in_play().has('Forestwalk', False).result(),
+    'creatures_w_forestwalk': lambda gs, s: gs.card_filter.in_play().has(KW.FORESTWALK).result(),
+    'creatures_wo_forestwalk': lambda gs, s: gs.card_filter.in_play().has(KW.FORESTWALK, False).result(),
     'creatures_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).creatures().result(),
     'creatures_and_enchantments': lambda gs, s: gs.card_filter.in_play().by_type(['Creature', 'Enchantment']).result(),
     'creatures_and_lands': lambda gs, s: gs.card_filter.in_play().creatures().result() +
@@ -96,9 +96,9 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'creatures_power_three_or_more': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                                     if c.power >= 3],
     'creatures_with_first_strike': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result
-                                                          if 'First Strike' in c.keyword_abilities],
+                                                          if KW.FIRST_STRIKE in c.keyword_abilities],
     'creatures_with_swampwalk': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result
-                                                       if 'Swampwalk' in c.keyword_abilities],
+                                                       if KW.SWAMPWALK in c.keyword_abilities],
     'djinns_and_efreets': lambda gs, s: gs.card_filter.in_play().by_sub_type(['Djinn', 'Efreet']).result(),
     'elephants': lambda gs, s: gs.card_filter.in_play().by_sub_type('Elephant').result(),
     'enchanted_cards': lambda gs, s: gs.card_filter.is_enchanted().result(),
@@ -107,10 +107,10 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'enchants_in_your_graveyard': lambda gs, s: gs.card_filter.in_player_graveyard(s.owner_id).enchantments().result(),
     'flash_flood': lambda gs, s: gs.card_filter.in_play().red().permanents().result() +
                                  gs.card_filter.in_play().mountains().result(),
-    'fliers': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying').result(),
+    'fliers': lambda gs, _: gs.card_filter.in_play().creatures().has(KW.FLYING).result(),
     'forests': lambda gs, _: gs.card_filter.in_play().forests().result(),
     'forests_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).forests().result(),
-    'forestwalkers': lambda gs, s: gs.card_filter.in_play().has('Forestwalk').result(),
+    'forestwalkers': lambda gs, s: gs.card_filter.in_play().has(KW.FORESTWALK).result(),
     'goblin_permanents_in_your_hand': lambda gs, s: gs.card_filter.in_player_hand(s.owner_id).by_sub_type('Goblin').permanents().result(),
     'goblins': lambda gs, s: gs.card_filter.in_play().by_sub_type('Goblin').result(),
     'golgothian_sylex': lambda gs, s: [c for c in
@@ -127,7 +127,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'in_turn_player_tapped_blue_creatures': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).tapped().blue().creatures().result(),
     'instant_spells': lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_instant],
     'islands': lambda gs, s: gs.card_filter.in_play().islands().result(),
-    'islandwalkers': lambda gs, s: gs.card_filter.in_play().has('Islandwalk').result(),
+    'islandwalkers': lambda gs, s: gs.card_filter.in_play().has(KW.ISLANDWALK).result(),
     'lands': lambda gs, s: gs.card_filter.in_play().lands().result(),
     'legendary_creatures': lambda gs, s: gs.card_filter.in_play().legendary().creatures().result(),
     'non_artifact_creatures': lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result(),
@@ -136,13 +136,13 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'non_basic_lands': lambda gs, s: [c for c in gs.card_filter.in_play().lands.result()
                                       if c.props.slug not in BASIC_LANDS],
     'non_creature_artifacts': lambda gs, s: gs.card_filter.in_play().non_creature_artifacts().result(),
-    'non_fliers': lambda gs, _: gs.card_filter.in_play().creatures().has('Flying', False).result(),
+    'non_fliers': lambda gs, _: gs.card_filter.in_play().creatures().has(KW.FLYING, False).result(),
     'non_token_creatures': lambda gs, s: gs.card_filter.in_play().non_token().creatures().result(),
     'non_token_permanents': lambda gs, s: gs.card_filter.in_play().non_token().permanents().result(),
     'non_wall_creatures': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().result(),
     'non_wall_creatures_wo_summoning_sickness': lambda gs, s: [c for c in gs.card_filter.in_play().non_wall_creatures().result()
                                                                if not c.has_summoning_sickness],
-    'non_wall_non_fliers': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().has('Flying', False).result(),
+    'non_wall_non_fliers': lambda gs, s: gs.card_filter.in_play().non_wall_creatures().has(KW.FLYING, False).result(),
     'non_white_creatures': lambda gs, s: gs.card_filter.in_play().non_white().creatures().result(),
     'one_one_creatures': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
                                         if c.power == 1 and c.toughness == 1],
@@ -198,7 +198,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'untapped_artifacts_creatures_lands': lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).untapped().result(),
     'untapped_creatures': lambda gs, s: gs.card_filter.in_play().creatures().untapped().result(),
     'untapped_creatures_without_flying':
-        lambda gs, s: gs.card_filter.in_play().creatures().untapped().has('Flying', False).result(),
+        lambda gs, s: gs.card_filter.in_play().creatures().untapped().has(KW.FLYING, False).result(),
     'walls': lambda gs, s: gs.card_filter.in_play().walls().result(),
     'white_creatures': lambda gs, s: gs.card_filter.in_play().white().creatures().result(),
     'white': lambda gs, s: gs.card_filter.in_play().white().result(),

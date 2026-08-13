@@ -118,4 +118,3 @@ class Modifiers:
 
     def clear_all(self) -> None:
         self.items.clear()
-

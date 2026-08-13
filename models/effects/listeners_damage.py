@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from models.choice_actions_all import ChoiceAction
+from models.constants import KW
 from models.counter_tokens import PLUS_ONE, VITALITY
 from models.effects.base import Listener
 from models.events_all import DamageProposedEvent, DamageResolvedEvent
@@ -21,7 +22,7 @@ class AlAbarasCarpetPrevention(Listener):
         self.protected_player = protected_player
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target != self.protected_player or 'Flying' in event.source.keyword_abilities:
+        if event.target != self.protected_player or KW.FLYING in event.source.keyword_abilities:
             return
         event.prevented += event.remaining
         event.remaining = 0
@@ -139,7 +140,7 @@ class ScarecrowPrevention(Listener):
         self.protected_player = protected_player
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target != self.protected_player or 'Flying' not in event.source.keyword_abilities:
+        if event.target != self.protected_player or KW.FLYING not in event.source.keyword_abilities:
             return
         event.prevented += event.remaining
         event.remaining = 0

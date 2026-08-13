@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import copy
 from dataclasses import dataclass, field
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 from models.actions.base import Action
 from models.effects.base import Resolver, ActivatedAbility, Listener, ResContext
-from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent, StackAdditionEvent
+from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent
 from models.systems.mana import ManaCost
 from models.zone import Zone
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 from copy import copy
 from typing import TYPE_CHECKING
 
+from models.constants import KW
 from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, StateBasedEvent, \
     CanRegenerateQueryEvent
 from models.modifiers import RegenerationMod
@@ -56,7 +57,7 @@ class PileManager:
         print('Entering destroy() for', card)
         # ask replacement system if destruction is prevented
         # as of now, this destruction replacement & damage are handled separately but could be unified later
-        if 'Indestructible' in card.keyword_abilities:
+        if KW.INDESTRUCTIBLE in card.keyword_abilities:
             return
 
         if allow_regeneration:

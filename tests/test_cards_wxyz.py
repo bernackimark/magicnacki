@@ -1,5 +1,6 @@
 import unittest
 
+from models.constants import KW
 from models.systems.phase import Phase
 from models.zone import Zone
 from tests.setup_helpers import TestGame
@@ -42,10 +43,10 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g.mana('UUUUUUUU')
         target = self.g.battlefield('scryb-sprites')
         self.g.activate_ability(aa, target)
-        self.assertIn('Islandwalk', target.keyword_abilities)
+        self.assertIn(KW.ISLANDWALK, target.keyword_abilities)
 
         self.g.next_turn()
-        self.assertNotIn('Islandwalk', target.keyword_abilities)
+        self.assertNotIn(KW.ISLANDWALK, target.keyword_abilities)
         self.g.activate_ability(aa, target)
         self.gs.pile_mgr.destroy(target, allow_regeneration=False)
         self.assertIn(card, self.g.gy[0])

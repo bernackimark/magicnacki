@@ -3,7 +3,7 @@ from __future__ import annotations
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     voodoo_doll_x, max_x_from_printed_card, target_spell_mv
 from .card_filter_funcs import T_FUNCS, C_FUNCS
-from models.constants import COLOR_LETTERS
+from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
@@ -58,7 +58,7 @@ MAP: dict[str, list[EffSpec]] = {
     'palladia-mors': [Triggered(PayManaOrSacAtUpkeep('RGW'))],
     'paralyze': [Triggered(DoesntUntapAtUntap(T_FUNCS['host'])), Static(PayManaToUntapUpkeep('4', T_FUNCS['host'])),
                  Spell(TapCardEffect(), T_FUNCS['host'])],
-    'part-water': [Spell(KWAModEffect('add', 'Islandwalk', True), T_FUNCS['creatures'],
+    'part-water': [Spell(KWAModEffect('add', KW.ISLANDWALK, True), T_FUNCS['creatures'],
                          max_x_func=max_x_from_printed_card)],
     'pavel-maliki': [self_pump('BR', 1, 0)],
     'pendelhaven': [Activated('T', AddMana('G'), T_FUNCS['owner']),
@@ -74,7 +74,7 @@ MAP: dict[str, list[EffSpec]] = {
     'piety': [Spell(PumpAppliesEOT(T_FUNCS['blockers'], (0, 3)))],
     'pirate-ship': [Activated('T', DealDamage(1), T_FUNCS['all_creatures_and_players'])],
     'pit-scorpion': [Triggered(AddPoisonCounter())],
-    'pixie-queen': [Activated('GGGT', KWAModEffect('add', 'Flying'), T_FUNCS['creatures'])],
+    'pixie-queen': [Activated('GGGT', KWAModEffect('add', KW.FLYING), T_FUNCS['creatures'])],
     'plague-rats': [Static(SelfPTEqualsFuncLen(T_FUNCS['plague_rats']))],
     'planar-gate': [Static(PlanarGate())],
     'plateau': dual_land_specs('RW'),
@@ -100,9 +100,9 @@ MAP: dict[str, list[EffSpec]] = {
     'purelace': [Spell(SetColor('W'), T_FUNCS['cards'])],
     'pyrotechnics': [Spell(DealOneDamageToTargetList(), TargetSpec(T_FUNCS['all_creatures_and_players'], 1, 4,
                                                                    allow_duplicate_targets=True))],
-    'quagmire': [Static(WalkRuleRemoved('Swampwalk'))],
+    'quagmire': [Static(WalkRuleRemoved(KW.SWAMPWALK))],
     'rabid-wombat': [Static(RabidWombat())],
-    'radjan-spirit': [Activated('T', KWAModEffect('remove', 'Flying', True), T_FUNCS['creatures'])],
+    'radjan-spirit': [Activated('T', KWAModEffect('remove', KW.FLYING, True), T_FUNCS['creatures'])],
     'rag-man': [Activated('BBBT', RagMan(), T_FUNCS['opp'], allowed_p_turn_func=T_FUNCS['owner'])],
     'ragnar': [Activated('GWUT', Regenerate(), T_FUNCS['creatures'])],
     'raise-dead': [Spell(Bounce(), T_FUNCS['creatures_in_your_graveyard'])],
@@ -119,7 +119,7 @@ MAP: dict[str, list[EffSpec]] = {
     'red-elemental-blast': [Spell(CounterSpell(), T_FUNCS['blue_spells']),
                             Spell(Destroy(), T_FUNCS['blue_permanents'])],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('R')],
-    'red-ward': [Spell(KWAModEffect('add', 'Protection From Red'), T_FUNCS['creatures'])],
+    'red-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_RED), T_FUNCS['creatures'])],
     'regeneration': [Activated('G', Regenerate(), T_FUNCS['host'])],
     'regrowth': [Spell(Bounce(), T_FUNCS['cards_in_your_graveyard'])],
     'relic-barrier': [Activated('T', TapCardEffect(), T_FUNCS['untapped_artifacts'])],
@@ -157,8 +157,8 @@ MAP: dict[str, list[EffSpec]] = {
     'savannah': dual_land_specs('GW'),
     'scarecrow': [Activated('6T', PreventAllDamageEOT(T_FUNCS['owner'], T_FUNCS['fliers']))],
     'scarwood-bandits': [Static(ScarwoodBanditsAAListener()), Activated('2GT', Steal(), T_FUNCS['opp_artifacts'])],
-    'scarwood-hag': [Activated('GGGGT', KWAModEffect('add', 'Forestwalk', True), T_FUNCS['creatures_wo_forestwalk']),
-                     Activated('T', KWAModEffect('remove', 'Forestwalk', True), T_FUNCS['forestwalkers'])],
+    'scarwood-hag': [Activated('GGGGT', KWAModEffect('add', KW.FORESTWALK, True), T_FUNCS['creatures_wo_forestwalk']),
+                     Activated('T', KWAModEffect('remove', KW.FORESTWALK, True), T_FUNCS['forestwalkers'])],
     'scavenger-folk': [Activated('GT', Destroy(), T_FUNCS['artifacts'], extra_costs=[SacSelfCost()])],
     'scavenging-ghoul': [Triggered(AddCounterPerCreatureDeathAtEndStep(CORPSE)),
                          Activated('', Regenerate(), T_FUNCS['self'], extra_costs=[RemoveCounterCost(CORPSE)])],
@@ -282,13 +282,13 @@ MAP: dict[str, list[EffSpec]] = {
     'twiddle': [Spell(Twiddle(), T_FUNCS['artifacts_creatures_lands'])],
     'typhoon': [Spell(Typhoon(), T_FUNCS['opp'])],
     'uncle-istvan': [Static(PreventAllDamage(T_FUNCS['self'], T_FUNCS['creatures']))],
-    'undertow': [Static(WalkRuleRemoved('Islandwalk'))],
+    'undertow': [Static(WalkRuleRemoved(KW.ISLANDWALK))],
     'underground-sea': dual_land_specs('BU'),
     'unholy-strength': [Spell(Pump(2, 1), T_FUNCS['creatures'])],
     'unstable-mutation': [Static(AddCounterAtTargetUpkeep(T_FUNCS['host'], MINUS_ONE)),
                           Spell(Pump(3, 3), T_FUNCS['creatures'])],
     'unsummon': [Spell(Bounce(), T_FUNCS['creatures'])],
-    'ur-drago': [Static(WalkRuleRemoved('Swampwalk'))],
+    'ur-drago': [Static(WalkRuleRemoved(KW.SWAMPWALK))],
     'urborg': [Activated('T', AddMana('B')),
                Activated('T', UrborgLoseFirstStrike(), T_FUNCS['creatures_with_first_strike']),
                Activated('T', UrborgLoseSwampwalk(), T_FUNCS['creatures_with_swampwalk'])],
@@ -340,7 +340,7 @@ MAP: dict[str, list[EffSpec]] = {
     'wheel-of-fortune': [Spell(WheelOfFortune())],
     'whirling-dervish': [Triggered(WhirlingDervish())],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('W')],
-    'white-ward': [Spell(KWAModEffect('add', 'Protection From White'), T_FUNCS['creatures'])],
+    'white-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_WHITE), T_FUNCS['creatures'])],
     'wild-growth': [Spell(WildGrowth(), T_FUNCS['lands'])],
     'will-o-the-wisp': [Activated('B', Regenerate(), T_FUNCS['self'])],
     'willow-satyr': [Activated('T', Steal(return_on_untap=True), T_FUNCS['opp_legendary_creatures']),
@@ -365,6 +365,6 @@ MAP: dict[str, list[EffSpec]] = {
     'ydwen-efreet': [Static(YdwenEfreet())],
     'xenic-poltergeist': [Activated('T', BecomeCreaturePTEqualsManaValue(), T_FUNCS['non_creature_artifacts']),
                           Triggered(XenicPoltergeistRelease())],
-    'zombie-master': [Static(KWAApplies(T_FUNCS['other_zombies'], 'add', 'Swampwalk'))],
+    'zombie-master': [Static(KWAApplies(T_FUNCS['other_zombies'], 'add', KW.SWAMPWALK))],
     # TODO: giving other zombies an activated ability
 }

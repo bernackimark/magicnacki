@@ -248,4 +248,3 @@ class ZoneChangeEvent(Event):
     from_zone: Zone
     to_zone: Zone
     cause: str | None = None
-

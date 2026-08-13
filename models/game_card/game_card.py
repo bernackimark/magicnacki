@@ -3,6 +3,8 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Iterable
 from uuid import uuid4
 
+from ..constants import KW
+
 if TYPE_CHECKING:
     from game_state import GameState
     from .card import Card
@@ -69,7 +71,7 @@ class GameCard:
         if not self.turn_entered_for_owner:
             return True  # turn_entered_for_owner is getting set AFTER this check
         return self.turn_entered_for_owner >= self.game_state.turn_mgr.most_recent_turn_started[self.owner_id] and \
-            'Haste' not in self.keyword_abilities
+            KW.HASTE not in self.keyword_abilities
 
     @property
     def orig_owner_id(self) -> int:
@@ -152,8 +154,8 @@ class GameCard:
 
     def _modified_collection(self, query: str, base: Iterable[str | None],
                              mod_cls: type[CollectionMod]) -> list[str]:
-        """Ex: base = ['Flying'] -> aura in self.modifiers grants 'First Strike' ->
-        global ModQueryEvent removes 'Flying' from all creatures -> ['First Strike']"""
+        """Ex: base = [KW.FLYING] -> aura in self.modifiers grants KW.FIRST_STRIKE ->
+        global ModQueryEvent removes KW.FLYING from all creatures -> [KW.FIRST_STRIKE]"""
 
         event = ModQueryEvent(query=query, card=self)
         self.game_state.event_mgr.emit(event)

@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
-from models.events_all import StateBasedEvent, CastResolvedEvent, StackAdditionEvent
+from models.events_all import StateBasedEvent, CastResolvedEvent
 from models.zone import Zone
 
 @dataclass

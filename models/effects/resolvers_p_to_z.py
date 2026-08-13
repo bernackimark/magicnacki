@@ -5,14 +5,14 @@ from itertools import combinations
 from typing import TYPE_CHECKING
 
 from models.actions.damage import DealDamageTo, PayLife
-from models.actions.draw_discard import DiscardCards, DrawCard
+from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor, Shuffle
 from models.actions.pump import VariablePTMod
 from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement, \
     PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
-from models.constants import BASIC_LANDS
+from models.constants import BASIC_LANDS, KW
 from models.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
@@ -108,9 +108,9 @@ class RapidFire(Resolver):
     If it doesn't have rampage, that creature gains rampage 2 until end of turn."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(s=source, item='First Strike', expires='EOT'))
+        t.modifiers.append(KWAMod(s=source, item=KW.FIRST_STRIKE, expires='EOT'))
         if not t.rampage_amt:
-            t.modifiers.append(KWAMod(s=source, item='Rampage 2', expires='EOT'))
+            t.modifiers.append(KWAMod(s=source, item=KW.RAMPAGE_2, expires='EOT'))
 
 class Reset(Resolver):
     """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
@@ -171,7 +171,7 @@ class SandalsOfAbdallahIslandWalk(Resolver):
     """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(s=source, item='Islandwalk', expires='EOT'))
+        t.modifiers.append(KWAMod(s=source, item=KW.ISLANDWALK, expires='EOT'))
         gs.event_mgr.register(SandalsOfAbdallahIfCreatureDies(target_creature=t), source)
 
 class Sandstorm(Resolver):
@@ -225,7 +225,7 @@ class SirensCall(Resolver):
         non_wall_creatures = gs.card_filter.on_player_board(gs.player_turn_idx).non_wall_creatures().result()
         for creature in non_wall_creatures:
             if not creature.has_summoning_sickness:
-                creature.modifiers.append(KWAMod(item='Goad', s=source, expires='EOT'))
+                creature.modifiers.append(KWAMod(item=KW.GOAD, s=source, expires='EOT'))
                 gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(creature), source)
 
 class Stangg(Resolver):
@@ -242,7 +242,7 @@ class StoneGiant(Resolver):
     """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
     Destroy that creature at the beginning of the next end step."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        t.modifiers.append(KWAMod(s=source, item='Flying', expires='EOT'))
+        t.modifiers.append(KWAMod(s=source, item=KW.FLYING, expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStep(t), source)
 
 class StormSeeker(Resolver):
@@ -384,31 +384,31 @@ class UrborgLoseFirstStrike(Resolver):
 
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='First Strike', expires='EOT'))
+        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=KW.FIRST_STRIKE, expires='EOT'))
 
 class UrborgLoseSwampwalk(Resolver):
     """{T}: Target creature loses first strike or SWAMPWALK until end of turn"""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='Swampwalk', expires='EOT'))
+        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=KW.SWAMPWALK, expires='EOT'))
 
 class UrzasAvengerFlying(Resolver):
     """This creature gets -1/-1 and gains your choice of FLYING, first strike, or trample until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, item='Flying', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item=KW.FLYING, expires='EOT'))
 
 class UrzasAvengerFirstStrike(Resolver):
     """This creature gets -1/-1 and gains your choice of flying, FIRST STRIKE, or trample until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, item='First Strike', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item=KW.FIRST_STRIKE, expires='EOT'))
 
 class UrzasAvengerTrample(Resolver):
     """This creature gets -1/-1 and gains your choice of flying, first strike, or TRAMPLE until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, item='Trample', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item=KW.TRAMPLE, expires='EOT'))
 
 class UrzasTrio(Resolver):
     """{T}: Add {C}.
@@ -478,14 +478,14 @@ class WarBarge(Resolver):
     """{3}: Target creature gains islandwalk EOT. When WB LTB this turn, destroy that creature, no regen allowed"""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(item='Islandwalk', s=source, expires='EOT'))
+        t.modifiers.append(KWAMod(item=KW.ISLANDWALK, s=source, expires='EOT'))
         gs.event_mgr.register(LTBTandem([source, t], until_eot=True), source)
 
 class Web(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(PTMod(s=source, p_adj=0, t_adj=2))
-        t.modifiers.append(KWAMod(s=source, item='Reach'))
+        t.modifiers.append(KWAMod(s=source, item=KW.REACH))
 
 class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
@@ -513,7 +513,7 @@ class WinterBlast(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         for target in t:
             target.tap()
-            if 'Flying' in t.keyword_abilities:
+            if KW.FLYING in t.keyword_abilities:
                 gs.apply_damage(source, 2, target)
 
 class WoodElemental(Resolver):
@@ -528,11 +528,11 @@ class WoodElemental(Resolver):
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(KWAMod(s=source, item='Forestwalk', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item=KW.FORESTWALK, expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)
 
 class WormwoodTreefolkSwampwalk(Resolver):
     """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(KWAMod(s=source, item='Swampwalk', expires='EOT'))
+        source.modifiers.append(KWAMod(s=source, item=KW.SWAMPWALK, expires='EOT'))
         gs.apply_damage(source, 2, source.owner_id)

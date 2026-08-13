@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum, auto
+from enum import Enum, auto, StrEnum
 from typing import Union
 
 ALL_PLAYER_INDICES = (0, 1)
@@ -22,11 +22,35 @@ OLD_SCHOOL_BANNED_SLUGS = ('bronze-tablet', 'contract-from-below', 'darkpact', '
                            'divine-intervention', 'jeweled-bird', 'rebirth', 'shahrazad', 'tempest-efreet')
 Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
-KEYWORD_ABILITIES = ['Banding', 'Defender', 'First Strike', 'Flying', 'Forestwalk', 'Goad', 'Haste',
-                     'Indestructible', 'Islandwalk', 'Menace', 'Mountainwalk', 'Protection From Black',
-                     'Protection From Blue', 'Protection From Green', 'Protection From Red', 'Protection From White',
-                     'Rampage 1', 'Rampage 2', 'Rampage 3', 'Reach', 'Swampwalk', 'Foresthome', 'Islandhome',
-                     'Mountainhome', 'Plainswalk', 'Swamphome', 'Trample', 'Vigilance']
+class KW(StrEnum):
+    BANDING = 'Banding'
+    DEFENDER = 'Defender'
+    FIRST_STRIKE = 'First Strike'
+    FLYING = 'Flying'
+    FORESTHOME = 'Foresthome'
+    FORESTWALK = 'Forestwalk'
+    GOAD = 'Goad'
+    HASTE = 'Haste'
+    INDESTRUCTIBLE = 'Indestructible'
+    ISLANDHOME = 'Islandhome'
+    ISLANDWALK = 'Islandwalk'
+    MENACE = 'Menace'
+    MOUNTAINHOME = 'Mountainhome'
+    MOUNTAINWALK = 'Mountainwalk'
+    PLAINSWALK = 'Plainswalk'
+    PROTECTION_FROM_BLACK = 'Protection From Black'
+    PROTECTION_FROM_BLUE = 'Protection From Blue'
+    PROTECTION_FROM_GREEN = 'Protection From Green'
+    PROTECTION_FROM_RED = 'Protection From Red'
+    PROTECTION_FROM_WHITE = 'Protection From White'
+    RAMPAGE_1 = 'Rampage 1'
+    RAMPAGE_2 = 'Rampage 2'
+    RAMPAGE_3 = 'Rampage 3'
+    REACH = 'Reach'
+    SWAMPHOME = 'Swamphome'
+    SWAMPWALK = 'Swampwalk'
+    TRAMPLE = 'Trample'
+    VIGILANCE = 'Vigilance'
 
 class Mulligan(Enum):
     ORIGINAL = auto()

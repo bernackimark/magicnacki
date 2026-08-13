@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterator, Any
 
 from common.file_utils import read_json_file
-from models.constants import BASIC_LANDS
+from models.constants import BASIC_LANDS, KW
 from models.utils import str_to_int
 
 
@@ -108,7 +108,7 @@ class CardUniverse:
 
     @staticmethod
     def _update_protection_kwa(keywords: list[str | None], oracle_text: str) -> list[str | None]:
-        """Leverages oracle text to: ['First Strike', 'Protection'] -> ['First Strike', 'Protection From White']"""
+        """Leverages oracle text to: [KW.FIRST_STRIKE, 'Protection'] -> [KW.FIRST_STRIKE, KW.PROTECTION_FROM_WHITE]"""
         if 'Protection' not in keywords:
             return keywords
         _, text_after_protection_from = oracle_text.split('Protection from ')
@@ -123,7 +123,7 @@ class CardUniverse:
         if 'First strike' not in keywords:
             return keywords
         keywords.remove('First strike')
-        keywords.append('First Strike')
+        keywords.append(KW.FIRST_STRIKE)
         return keywords
 
     @staticmethod

@@ -3,8 +3,7 @@ from typing import TYPE_CHECKING, Callable
 
 from models.effects.base import Listener
 from models.effects.listeners_mod_queries import OwnershipModQuery
-from models.events_all import StateBasedEvent, Event, ModQueryEvent
-from models.modifiers import OwnershipMod
+from models.events_all import StateBasedEvent, ModQueryEvent
 from models.utils import flip
 
 if TYPE_CHECKING:

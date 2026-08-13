@@ -1,6 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.constants import KW
 from models.counter_tokens import MINUS_ZERO_ONE
 from models.systems.phase import Phase
 from models.zone import Zone
@@ -39,12 +40,12 @@ class TestCardsJKL(unittest.TestCase):
         johan_action = self.gs.pending_choice.get_actions()[0]
         johan_action.play()
         self.assertIn('Defender', card.keyword_abilities)
-        self.assertIn('Vigilance', c1.keyword_abilities)
+        self.assertIn(KW.VIGILANCE, c1.keyword_abilities)
 
         card.tap()
         self.assertIn('Defender', card.keyword_abilities)
-        self.assertNotIn('Vigilance', c1.keyword_abilities)
-        self.assertNotIn('Vigilance', c2.keyword_abilities)
+        self.assertNotIn(KW.VIGILANCE, c1.keyword_abilities)
+        self.assertNotIn(KW.VIGILANCE, c2.keyword_abilities)
 
 
     def test_jovial_evil(self):

@@ -51,4 +51,3 @@ def your_tapped_land_cnt_and_max_x(gs, s):
 
 def voodoo_doll_x(_, source):
     return source.counters.get_count(PIN) // 2
-

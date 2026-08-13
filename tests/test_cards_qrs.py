@@ -5,6 +5,7 @@ from models.actions.cast import CastPermanentAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
 from models.actions.tap_untap import Untap
+from models.constants import KW
 from models.cost import SacCardCost
 from models.counter_tokens import PLUS_ONE
 from models.effects.resolvers_generic import RevealHands
@@ -223,7 +224,7 @@ class TestCardsQRS(unittest.TestCase):
         target = self.g.battlefield('merfolk-of-the-pearl-trident')
         self.g.mana('UUUUUU')
         self.g.activate_ability(aa, target)
-        self.assertIn('Islandwalk', target.keyword_abilities)
+        self.assertIn(KW.ISLANDWALK, target.keyword_abilities)
 
         self.gs.pile_mgr.destroy(target)
         self.assertIn(card, self.g.gy[0])
@@ -277,11 +278,11 @@ class TestCardsQRS(unittest.TestCase):
 
         self.g.next_turn()
         self.g.activate_ability(give_aa, non_forest_walker)
-        self.assertIn('Forestwalk', non_forest_walker.keyword_abilities)
+        self.assertIn(KW.FORESTWALK, non_forest_walker.keyword_abilities)
 
         self.g.next_turn()
         self.g.activate_ability(lose_aa, forest_walker)
-        self.assertNotIn('Forestwalk', forest_walker.keyword_abilities)
+        self.assertNotIn(KW.FORESTWALK, forest_walker.keyword_abilities)
 
     def test_season_of_the_witch(self):
         """At your upkeep, sac SOTW unless you pay 2 life. At end step,
@@ -496,7 +497,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertNotIn(illegal_target, aa.eff_spec.target_spec.get_targets(self.gs, card))
 
         self.g.activate_ability(aa, legal_target)
-        self.assertIn('Flying', legal_target.keyword_abilities)
+        self.assertIn(KW.FLYING, legal_target.keyword_abilities)
         self.gs.event_mgr.emit(EndStepEvent(0))
         self.assertEqual(legal_target.zone, Zone.GRAVEYARD)
 

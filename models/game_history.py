@@ -1,6 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -42,4 +42,3 @@ class GameHistory:
 
     def get_last_n(self, n: int) -> list[dict] | None:
         return self._items[-n:]
-
