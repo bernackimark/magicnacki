@@ -122,11 +122,10 @@ class CardFilter:
         return self
 
     # --- by color ---
-    def by_color(self, color: str | list):
-        if isinstance(color, list):
-            self._cards = [c for c in self._cards for col in color if col in c.colors]
-        else:
-            self._cards = [c for c in self._cards if color in c.colors]
+    def by_color(self, colors: str | list):
+        if isinstance(colors, str):
+            colors = [colors]
+        self._cards = [c for c in self._cards if any(color in c.colors for color in colors)]
         return self
 
     def white(self):
