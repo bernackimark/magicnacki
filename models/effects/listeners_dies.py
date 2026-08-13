@@ -143,8 +143,6 @@ class RukhEgg(Listener):
         from models.effects.resolvers_generic import CreateTokenCreature
         obj = CreateTokenCreature('rukh')
         obj.resolve(gs, source)
-        # gs.create_token_creature(source.owner_id, 'Bird', 4, 4, ['Flying', 'Attack'], [], ['Bird'], 'R')
-
 
 class SandalsOfAbdallahIfCreatureDies(Listener):
     """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact"""
@@ -159,7 +157,6 @@ class SandalsOfAbdallahIfCreatureDies(Listener):
             return
         gs.pile_mgr.destroy(source)
         self.is_expired = True
-
 
 class SengirVampire(Listener):
     """Whenever a creature dealt damage by this creature this turn dies, put a +1/+1 counter on this creature"""

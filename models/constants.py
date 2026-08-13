@@ -22,12 +22,11 @@ OLD_SCHOOL_BANNED_SLUGS = ('bronze-tablet', 'contract-from-below', 'darkpact', '
                            'divine-intervention', 'jeweled-bird', 'rebirth', 'shahrazad', 'tempest-efreet')
 Target = Union["GameCard", list["GameCard"], int, tuple[int, int], None]
 
-KEYWORD_ABILITIES = ['Attack', 'Banding', 'Defender', 'First Strike', 'Flying', 'Forestwalk', 'Goad', 'Haste',
-                     'Indestructible', 'Islandwalk', 'Menace',
-                     'Mountainwalk', 'Protection From Black', 'Protection From Blue', 'Protection From Green',
-                     'Protection From Red', 'Protection From White', 'Rampage 1', 'Rampage 2', 'Rampage 3', 'Reach',
-                     'Swampwalk', 'Foresthome', 'Islandhome', 'Mountainhome', 'Plainswalk', 'Swamphome', 'Trample',
-                     'Vigilance']
+KEYWORD_ABILITIES = ['Banding', 'Defender', 'First Strike', 'Flying', 'Forestwalk', 'Goad', 'Haste',
+                     'Indestructible', 'Islandwalk', 'Menace', 'Mountainwalk', 'Protection From Black',
+                     'Protection From Blue', 'Protection From Green', 'Protection From Red', 'Protection From White',
+                     'Rampage 1', 'Rampage 2', 'Rampage 3', 'Reach', 'Swampwalk', 'Foresthome', 'Islandhome',
+                     'Mountainhome', 'Plainswalk', 'Swamphome', 'Trample', 'Vigilance']
 
 class Mulligan(Enum):
     ORIGINAL = auto()
