@@ -1,14 +1,12 @@
 from __future__ import annotations
 from typing import Callable, TYPE_CHECKING
 
-from models.zone import Zone
-
 if TYPE_CHECKING:
     from game_state import GameState
     from game_card import GameCard
     from models.actions.base import Action
 
-from models.constants import Target, ALL_PLAYER_INDICES, BASIC_LANDS, KW
+from models.constants import Target, ALL_PLAYER_INDICES, BASIC_LANDS, KW, Zone
 from models.utils import flip
 
 A_FUNCS: [str, Callable[[GameState, GameCard], tuple[int | None]]] = {

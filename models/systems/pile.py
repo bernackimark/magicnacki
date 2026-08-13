@@ -2,11 +2,10 @@ from __future__ import annotations
 from copy import copy
 from typing import TYPE_CHECKING
 
-from models.constants import KW
+from models.constants import KW, Zone
 from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, StateBasedEvent, \
     CanRegenerateQueryEvent
 from models.modifiers import RegenerationMod
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard

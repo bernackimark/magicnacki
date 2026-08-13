@@ -7,7 +7,8 @@ if TYPE_CHECKING:
 
 from models.actions.base import Action
 from models.events_all import StateBasedEvent, CastResolvedEvent
-from models.zone import Zone
+from models.constants import Zone
+
 
 @dataclass
 class CastWithNoSpellEffect(Action):

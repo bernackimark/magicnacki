@@ -5,10 +5,9 @@ from typing import TYPE_CHECKING, Iterable, Any
 if TYPE_CHECKING:
     from models.action_stack import StackItemType
     from models.effects.base import ActivatedAbility
-    from models.constants import Target
+    from models.constants import Target, Zone
     from models.game_card.game_card import GameCard
     from models.modifiers import ModType
-    from models.zone import Zone
 
 """
 Events are dataclasses that can be emitted and Listener effects can respond.

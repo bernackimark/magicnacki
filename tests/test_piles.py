@@ -1,6 +1,6 @@
 import unittest
 
-from models.zone import Zone
+from models.constants import Zone
 from tests.setup_helpers import TestGame
 
 

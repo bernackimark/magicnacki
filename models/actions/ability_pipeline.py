@@ -8,7 +8,7 @@ from models.actions.base import Action
 from models.effects.base import Resolver, ActivatedAbility, Listener, ResContext
 from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent
 from models.systems.mana import ManaCost
-from models.zone import Zone
+from models.constants import Zone
 
 if TYPE_CHECKING:
     from models.cost import Cost, CostResult

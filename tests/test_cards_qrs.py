@@ -5,14 +5,13 @@ from models.actions.cast import CastPermanentAction
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import PayManaForLife, Attach
 from models.actions.tap_untap import Untap
-from models.constants import KW
+from models.constants import KW, Zone
 from models.cost import SacCardCost
 from models.counter_tokens import PLUS_ONE
 from models.effects.resolvers_generic import RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
 from models.systems.phase import Phase
-from models.zone import Zone
 from tests.setup_helpers import TestGame
 
 

@@ -5,7 +5,7 @@ from models.actions.cast import CastWithNoSpellEffect
 from models.actions.special import Attach
 from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent
 from models.systems.phase import Phase
-from models.zone import Zone
+from models.constants import Zone
 from tests.setup_helpers import TestGame
 
 class TestCardsGHI(unittest.TestCase):

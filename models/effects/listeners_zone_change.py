@@ -8,7 +8,7 @@ from models.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import ZoneChangeEvent
 from models.utils import flip
-from models.zone import Zone
+from models.constants import Zone
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard

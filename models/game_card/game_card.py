@@ -3,7 +3,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Iterable
 from uuid import uuid4
 
-from ..constants import KW
+from ..constants import KW, Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -15,7 +15,6 @@ from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
 from models.counter_tokens import Counters
 from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
     BasePTMod
-from models.zone import Zone
 
 
 class GameCard:

@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any
 
-from models.constants import KW
+from models.constants import KW, Zone
 from models.counter_tokens import PUPA
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState

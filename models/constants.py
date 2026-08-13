@@ -69,3 +69,11 @@ X_POINTS = {
     'armageddon': 1, 'mana-drain': 1, 'maze-of-ith': 1, 'mishras-factory': 1, 'mishras-workshop': 1,
     'moat': 1, 'recall': 1, 'regrowth': 1, 'the-abyss': 1
 }
+
+
+class Zone(Enum):
+    BATTLEFIELD = auto()
+    GRAVEYARD = auto()
+    EXILE = auto()
+    HAND = auto()
+    LIBRARY = auto()

@@ -10,7 +10,7 @@ from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction
-from models.constants import KW
+from models.constants import KW, Zone
 from models.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
@@ -20,7 +20,6 @@ from models.modifiers import PTMod, KWAMod
 from models.systems.mana import ManaCost
 from models.systems.phase import Phase
 from models.utils import flip
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState

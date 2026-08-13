@@ -12,7 +12,7 @@ from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, Pri
     PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
-from models.constants import BASIC_LANDS, KW
+from models.constants import BASIC_LANDS, KW, Zone
 from models.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
@@ -25,7 +25,6 @@ from models.events_all import DamageResolvedEvent
 from models.modifiers import KWAMod, PTMod
 from models.systems.mana import ManaCost
 from models.utils import flip
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState

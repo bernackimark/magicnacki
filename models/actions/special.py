@@ -5,14 +5,13 @@ from typing import TYPE_CHECKING
 
 from models.action_stack import StackItemType
 from models.actions.base import Action
-from models.constants import KW
+from models.constants import KW, Zone
 from models.counter_tokens import CounterType, WIND, PLUS_ONE
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.events_all import StateBasedEvent
 from models.modifiers import SubTypeMod
 from models.systems.phase import Phase
 from models.utils import flip
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState

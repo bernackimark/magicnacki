@@ -21,7 +21,7 @@ from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedE
     CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent
 from models.modifiers import PTMod
 from models.utils import flip
-from models.zone import Zone
+from models.constants import Zone
 
 
 # -- BLOCK EVENT ---

@@ -2,8 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-
-from models.zone import Zone
+from models.constants import Zone
 
 if TYPE_CHECKING:
     from models.action_stack import StackItemType

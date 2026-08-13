@@ -16,14 +16,13 @@ from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePay
     WormsOfTheEarthSacTwoLands, WormsOfTheEarthTake5Damage, TapCardAndTakeDamage, TetravusCreateTokens, \
     TetravusExileTokens
 from models.choice_actions_all import ChoiceAction
-from models.constants import KW
+from models.constants import KW, Zone
 from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal, BasePT
 from models.events_all import UpkeepEvent, Event
 from models.modifiers import KWAMod, BasePTMod
 from models.utils import flip
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard

@@ -6,14 +6,13 @@ from models.actions.draw_discard import DiscardCards
 from models.actions.special import PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
-from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS
+from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
 from models.utils import flip
-from models.zone import Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -129,7 +128,7 @@ class CreateTokenCreature(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.game_card.game_card import GameCard
-        from models.zone import Zone
+        from models.constants import Zone
         card = gs.tokens.get(self.slug)
         if not card:
             raise ValueError(f'No token found for {self.slug}')

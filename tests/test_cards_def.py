@@ -7,7 +7,7 @@ from models.actions.special import Attach, DrafnaSelectCardAction
 from models.counter_tokens import HUNGER
 from models.events_all import UpkeepEvent
 from models.systems.phase import Phase
-from models.zone import Zone
+from models.constants import Zone
 from tests.setup_helpers import TestGame
 
 
