@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any
 
 from models.choice_actions_all import ChoiceAction
 from models.constants import KW
-from models.counter_tokens import PLUS_ONE, VITALITY
+from models.game_card.counter_tokens import PLUS_ONE, VITALITY
 from models.effects.base import Listener
 from models.events_all import DamageProposedEvent, DamageResolvedEvent
 from models.utils import flip

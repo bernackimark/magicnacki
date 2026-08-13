@@ -1,7 +1,7 @@
 import unittest
 
 from models.constants import KW
-from models.modifiers import KWAMod
+from models.game_card.modifiers import KWAMod
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 

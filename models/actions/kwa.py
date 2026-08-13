@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from models.actions.base import Action
-from models.modifiers import KWAMod
+from models.game_card.modifiers import KWAMod
 
 
 class AddKWA(Action):

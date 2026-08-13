@@ -1,6 +1,6 @@
 import unittest
 
-from models.counter_tokens import DOOM
+from models.game_card.counter_tokens import DOOM
 from models.events_all import UpkeepEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame

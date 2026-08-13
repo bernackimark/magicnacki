@@ -1,5 +1,5 @@
 from models.cost import RemoveCounterCost
-from models.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
+from models.game_card.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
 from models.effects.resolvers_generic import AddMana, AddCounter, ManaBatteriesAddMana, Pump
 from models.game_card.card_filter_funcs import T_FUNCS

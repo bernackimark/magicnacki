@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from models.cost import SacSelfCost, ExileSelfCost, RemoveCounterCost, SacCardCost, DiscardLastCardDrawnThisTurn, \
     ExileCreatureFromYourGraveyardCost, DiscardACard
-from models.counter_tokens import CARRION, PLUS_ONE
+from models.game_card.counter_tokens import CARRION, PLUS_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, \

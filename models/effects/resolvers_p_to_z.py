@@ -13,7 +13,7 @@ from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, Pri
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
 from models.constants import BASIC_LANDS, KW, Zone
-from models.counter_tokens import PLUS_ONE, HATCHLING, STUN
+from models.game_card.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageBy, \
@@ -22,7 +22,7 @@ from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapA
     DoesntUntapAtUntap
 from models.effects.resolvers_generic import Reveal, CreateTokenCreature
 from models.events_all import DamageResolvedEvent
-from models.modifiers import KWAMod, PTMod
+from models.game_card.modifiers import KWAMod, PTMod
 from models.systems.mana import ManaCost
 from models.utils import flip
 

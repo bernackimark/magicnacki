@@ -7,12 +7,12 @@ from models.actions.mana import PayMana
 from models.actions.special import DestroyAndForegoCombatDamage
 from models.choice_actions_all import ChoiceAction
 from models.constants import KW, Zone
-from models.counter_tokens import PLUS_ONE_ZERO
+from models.game_card.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
 from models.effects.listeners_generic import DestroyAtCombatEnd
 from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, \
     CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent, CombatBeginEvent
-from models.modifiers import PTMod, KWAMod
+from models.game_card.modifiers import PTMod, KWAMod
 from models.utils import flip
 
 if TYPE_CHECKING:

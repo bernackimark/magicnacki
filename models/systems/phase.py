@@ -4,7 +4,7 @@ from enum import auto, IntEnum
 from typing import TYPE_CHECKING
 
 from models.constants import KW
-from models.counter_tokens import STUN
+from models.game_card.counter_tokens import STUN
 from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
 
 if TYPE_CHECKING:

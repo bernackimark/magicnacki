@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
 from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
-from models.counter_tokens import Counters
-from models.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
+from models.game_card.counter_tokens import Counters
+from models.game_card.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
     BasePTMod
 
 

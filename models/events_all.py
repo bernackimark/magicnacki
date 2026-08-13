@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from models.effects.base import ActivatedAbility
     from models.constants import Target, Zone
     from models.game_card.game_card import GameCard
-    from models.modifiers import ModType
+    from models.game_card.modifiers import ModType
 
 """
 Events are dataclasses that can be emitted and Listener effects can respond.

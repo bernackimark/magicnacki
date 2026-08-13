@@ -3,9 +3,8 @@ from copy import copy
 from typing import TYPE_CHECKING
 
 from models.constants import KW, Zone
-from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, StateBasedEvent, \
-    CanRegenerateQueryEvent
-from models.modifiers import RegenerationMod
+from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, CanRegenerateQueryEvent
+from models.game_card.modifiers import RegenerationMod
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard

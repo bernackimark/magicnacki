@@ -14,12 +14,12 @@ if TYPE_CHECKING:
 
 from models.actions.tap_untap import LeaveTapped, Untap, PayManaToUntapAction
 from models.choice_actions_all import ChoiceAction
-from models.counter_tokens import CounterType
+from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
     CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent
-from models.modifiers import PTMod
+from models.game_card.modifiers import PTMod
 from models.utils import flip
 from models.constants import Zone
 

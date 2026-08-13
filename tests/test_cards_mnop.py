@@ -7,12 +7,10 @@ from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import Untap, PayManaToUntapAction
-from models.choice_actions_all import ExtraCostChoice2
 from models.constants import KW
 from models.cost import ExileCreatureFromYourGraveyardCost
-from models.counter_tokens import PLUS_ONE
+from models.game_card.counter_tokens import PLUS_ONE
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
-from models.game_card.card_filter_funcs import T_FUNCS
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 

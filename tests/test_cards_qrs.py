@@ -7,7 +7,7 @@ from models.actions.special import PayManaForLife, Attach
 from models.actions.tap_untap import Untap
 from models.constants import KW, Zone
 from models.cost import SacCardCost
-from models.counter_tokens import PLUS_ONE
+from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.resolvers_generic import RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent

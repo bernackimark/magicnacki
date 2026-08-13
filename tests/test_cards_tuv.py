@@ -2,10 +2,9 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.draw_discard import DrawCard
-from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.mana import PayMana
 from models.actions.special import Attach, PayManaToDrawCards
-from models.counter_tokens import HATCHLING, STUN, PLUS_ONE
+from models.game_card.counter_tokens import HATCHLING, STUN, PLUS_ONE
 from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame

@@ -8,7 +8,7 @@ from models.actions.draw_discard import DiscardCards, SylvanLibraryDrawTwoAction
     SylvanLibraryPayLifeAction, SylvanLibrarySelectCardAction, SylvanLibraryPutOnTopAction
 from models.actions.special import IslandSanctuaryAction
 from models.choice_actions_all import ChoiceAction
-from models.counter_tokens import DOOM
+from models.game_card.counter_tokens import DOOM
 from models.effects.base import Listener
 from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
 from models.utils import flip

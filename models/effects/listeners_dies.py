@@ -6,10 +6,10 @@ from typing import TYPE_CHECKING
 from models.actions.damage import DealDamageTo
 from models.actions.special import PayManaToDrawCards, PayManaForLife, PayManaToBounce
 from models.choice_actions_all import ChoiceAction
-from models.counter_tokens import PLUS_ONE
+from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import DiesEvent, DamageResolvedEvent
-from models.modifiers import BasePTMod
+from models.game_card.modifiers import BasePTMod
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard

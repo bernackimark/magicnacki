@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Union, TypeVar
 
 if TYPE_CHECKING:
-    from .game_card.game_card import GameCard
+    from models.game_card.game_card import GameCard
 
 from dataclasses import dataclass, field
 

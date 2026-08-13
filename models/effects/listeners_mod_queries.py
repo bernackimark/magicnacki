@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 from models.constants import BASIC_LAND_MANA_PRODUCED, BASIC_LANDS
 from models.effects.base import Listener
-from models.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod, OwnershipMod, ManaProdMod
+from models.game_card.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod, OwnershipMod, ManaProdMod
 from models.utils import flip
 
 """

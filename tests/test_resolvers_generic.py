@@ -4,7 +4,7 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.stack_accept_counter import AcceptAction
 from models.constants import KW
-from models.counter_tokens import STUN
+from models.game_card.counter_tokens import STUN
 from models.effects.listeners_generic import PreventNextDamageTo, TakeAnotherTurn
 from models.effects.resolvers_generic import GraveyardToExileInItsEntirety
 from models.systems.phase import Phase

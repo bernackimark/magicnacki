@@ -11,12 +11,12 @@ from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction
 from models.constants import KW, Zone
-from models.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN, PLUS_ZERO_ONE
+from models.game_card.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
 from models.effects.resolvers_generic import GraveyardToExile
-from models.modifiers import PTMod, KWAMod
+from models.game_card.modifiers import PTMod, KWAMod
 from models.systems.mana import ManaCost
 from models.systems.phase import Phase
 from models.utils import flip

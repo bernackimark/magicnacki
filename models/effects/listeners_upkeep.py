@@ -17,11 +17,11 @@ from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePay
     TetravusExileTokens
 from models.choice_actions_all import ChoiceAction
 from models.constants import KW, Zone
-from models.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
+from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal, BasePT
 from models.events_all import UpkeepEvent, Event
-from models.modifiers import KWAMod, BasePTMod
+from models.game_card.modifiers import KWAMod, BasePTMod
 from models.utils import flip
 
 if TYPE_CHECKING:

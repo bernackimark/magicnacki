@@ -11,13 +11,13 @@ from models.actions.special import CopyCardAction, CleansingPayAction, Cleansing
     DrafnaSelectCardAction, EurekaPlayCardAction, EurekaPlayerFinishAction
 from models.choice_actions_all import ChoiceAction
 from models.constants import KW, Zone
-from models.counter_tokens import STORAGE, PUPA, PLUS_ONE
+from models.game_card.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem, ExileOnDeath
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.effects.listeners_permission import PreventRegenerationEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
-from models.modifiers import SubTypeMod, PTMod, KWAMod
+from models.game_card.modifiers import SubTypeMod, PTMod, KWAMod
 from models.utils import flip
 
 if TYPE_CHECKING:

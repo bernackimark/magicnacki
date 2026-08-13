@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.counter_tokens import PLUS_ONE, PIN
+from models.game_card.counter_tokens import PLUS_ONE, PIN
 from models.effects.base import Listener
 from models.events_all import EndStepEvent
 from models.utils import flip

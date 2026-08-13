@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from models.actions.destroy_sac_regen import Sac
 from models.choice_actions_all import ChoiceAction
-from models.counter_tokens import PLUS_ONE
+from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import ZoneChangeEvent
 from models.utils import flip
@@ -164,7 +164,7 @@ class TheWretchedUnsteal(Listener):
         if event.card is not source or event.from_zone != Zone.BATTLEFIELD:
             return
 
-        from models.modifiers import OwnershipMod
+        from models.game_card.modifiers import OwnershipMod
         for c in gs.pile_mgr.boards[source.owner_id]:
             for mod in c.modifiers.get(OwnershipMod, reverse=True):
                 if mod.s is source:

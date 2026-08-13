@@ -4,7 +4,7 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import AbilityAction, SelectXAction2
 from models.actions.mana import PayMana
 from models.actions.special import Attach, DrafnaSelectCardAction
-from models.counter_tokens import HUNGER
+from models.game_card.counter_tokens import HUNGER
 from models.events_all import UpkeepEvent
 from models.systems.phase import Phase
 from models.constants import Zone

@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.constants import KW, Zone
-from models.counter_tokens import MINUS_ZERO_ONE
+from models.game_card.counter_tokens import MINUS_ZERO_ONE
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
