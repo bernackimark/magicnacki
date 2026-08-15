@@ -7,11 +7,10 @@ from typing import TYPE_CHECKING
 from models.actions.damage import DealDamageTo, PayLife
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor, Shuffle
-from models.actions.pump import VariablePTMod
 from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement, \
     PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import BASIC_LANDS, KW, Zone
 from models.game_card.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver, RTarget, ResContext
@@ -183,8 +182,16 @@ class Sandstorm(Resolver):
 class ShapeshifterCast(Resolver):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        options = [VariablePTMod(source.owner_id, gs, source, source, i, 7 - i) for i in range(8)]
+        options = [ChoiceOption(f"Set {source}'s power to {n} & toughness to {7-n}",
+                                lambda: self.variable_pt_mod(source, n)) for n in range(8)]
+        # options = [VariablePTMod(source.owner_id, gs, source, source, i, 7 - i) for i in range(8)]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def variable_pt_mod(s: GameCard, n: int):
+        p_adj = n - s.power
+        t_adj = 7 - n - s.toughness
+        s.modifiers.append(PTMod(s=s, p_adj=p_adj, t_adj=t_adj))
 
 class Simulacrum(Resolver):
     """You gain life equal to the damage already dealt to you this turn. If you control a creature,

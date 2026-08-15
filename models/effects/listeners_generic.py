@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
-from models.actions.tap_untap import LeaveTapped, Untap, PayManaToUntapAction
-from models.choice_actions_all import ChoiceAction
+from models.actions.tap_untap import PayManaToUntapAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
@@ -534,8 +534,19 @@ class OptionalUntap(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
         if source.owner_id != event.active_player or not source.is_tapped:
             return
-        options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
+        options = [ChoiceOption(f'Untap {source}', lambda: self.untap_and_log_decision(gs, source)),
+                   ChoiceOption(f'Leave {source} tapped', lambda: self.log_decision(gs, source))]
+        # options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def untap_and_log_decision(gs: GameState, card: GameCard):
+        card.untap()
+        gs.turn_mgr.untap_decisions_made.add(card.id_)
+
+    @staticmethod
+    def log_decision(gs: GameState, card: GameCard):
+        gs.turn_mgr.untap_decisions_made.add(card.id_)
 
 class UnregisterListenerOnYourNextTurn(Listener):
     listens_to = UntapPhaseEvent

@@ -84,6 +84,7 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g.next_turn(True)
         card = self.g.battlefield('worms-of-the-earth')
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        print(self.gs.pending_choice.get_actions())
         self.assertEqual(2, len(self.gs.pending_choice.get_actions()))
         take_5_damage = self.gs.pending_choice.get_actions()[0]
         take_5_damage.play()

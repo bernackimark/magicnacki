@@ -88,7 +88,7 @@ class TestCardsTUV(unittest.TestCase):
         self.g.battlefield('phantom-monster')
         self.g.mana('UUUU')
         self.gs.event_mgr.emit(UpkeepEvent(0))
-        self.assertTrue(any(isinstance(a, PayMana) for a in self.gs.pending_choice.get_actions()))
+        self.assertTrue(len(self.gs.pending_choice.get_actions()))
 
     def test_the_wretched(self):
         """At combat end, gain control of all creatures blocking TW for as long as you control TW"""

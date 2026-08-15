@@ -2,10 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from models.actions.damage import DealDamageTo
-from models.actions.kwa import JohanAction
 from models.actions.mana import PayMana
 from models.actions.special import DestroyAndForegoCombatDamage
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
@@ -218,8 +217,18 @@ class Johan(Listener):
     listens_to = CombatBeginEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CombatBeginEvent) -> None:
-        options = [JohanAction(source.owner_id, gs, source)]
+        options = [ChoiceOption(f'{source} gains Defender & your creatures gain Vigilance until end of turn',
+                                lambda: self.johan(gs, source))]
+        # options = [JohanAction(source.owner_id, gs, source)]
         gs.queue_choice(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def johan(gs: GameState, s: GameCard):
+        from models.effects.listeners_tap_untap import JohanOnTap
+        s.modifiers.append(KWAMod(s=s, item='Defender', expires='EOT'))
+        for c in gs.card_filter.on_player_board(s.owner_id).creatures().result():
+            c.modifiers.append(KWAMod(s=s, item=KW.VIGILANCE, expires='EOT'))
+        gs.event_mgr.register(JohanOnTap(), s)
 
 # --- COMBAT END EVENT ---
 class ClockworkCombatEnd(Listener):

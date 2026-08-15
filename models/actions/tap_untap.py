@@ -9,20 +9,9 @@ if TYPE_CHECKING:
 from models.actions.base import Action
 
 
-@dataclass
-class Untap(Action):
-    card: GameCard
-
-    def __repr__(self) -> str:
-        return f"Untap {self.card.__repr__()}"
-
-    def play(self) -> None:
-        self.card.untap()
-        self.gs.turn_mgr.untap_decisions_made.add(self.card.id_)
-        self.finish()
-
 class PayManaToUntapAction(Action):
     """Remaining is for other cards that would be candidates for a successive ChoiceAction"""
+    # TODO: i don't know what the above comment means about successive ChoiceAction
     def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard, mana_cost: str,
                  remaining: list[GameCard] | None = None):
         super().__init__(p_id, gs)
@@ -51,15 +40,3 @@ class PayManaToUntapAction(Action):
             self.finish(ChoiceAction(options, may=True))
         else:
             self.finish()
-
-class LeaveTapped(Action):
-    def __init__(self, p_id: int, gs: GameState, card: GameCard):
-        super().__init__(p_id, gs)
-        self.card = card
-
-    def __repr__(self):
-        return f'Leave {self.card} tapped'
-
-    def play(self):
-        self.gs.turn_mgr.untap_decisions_made.add(self.card.id_)
-        self.finish()

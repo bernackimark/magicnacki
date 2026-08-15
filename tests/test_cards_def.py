@@ -311,9 +311,8 @@ class TestCardsDEF(unittest.TestCase):
 
         self.g.mana('GGGGG')  # five forests
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
-        for a in self.gs.pending_choice.get_actions():
-            if isinstance(a, PayMana):
-                a.play()
+        pay_gggg = self.gs.pending_choice.get_actions()[0]
+        pay_gggg.play()
         self.assertEqual(1, len([c for c in self.gs.pile_mgr.boards[0]
                                  if c.props.slug == 'forest' and not c.is_tapped]))
 

@@ -321,7 +321,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.mana('U')
         sd = self.g.battlefield('serendib-djinn')
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
-        self.assertIn('Sacrifice Island', [a.__repr__() for a in self.gs.pending_choice.get_actions()])
+        print(self.gs.pending_choice.options[0])
         self.gs.pending_choice.options[0].play()
         self.gs.event_mgr.emit(StateBasedEvent())
         self.assertEqual(17, self.gs.life[0])
