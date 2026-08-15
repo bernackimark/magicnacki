@@ -1,8 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-from models.actions.damage import DealDamageTo
-from models.actions.mana import PayMana
 from models.actions.special import DestroyAndForegoCombatDamage
 from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import KW, Zone
@@ -38,7 +36,9 @@ class HasranOgress(Listener):
         if not gs.mana_pools[s.owner_id].can_pay('2'):
             gs.apply_damage(s, 3, s.owner_id)
             return
-        options = [PayMana(s.owner_id, gs, s, '2'), DealDamageTo(s.owner_id, gs, s, 3, s.owner_id)]
+        options = [ChoiceOption(f"Pay {{{'2'}}}", lambda: gs.mana_pools[s.owner_id].pay('2')),
+                   ChoiceOption(f'{s} deals 3 damage to you', lambda: gs.apply_damage(s, 3, s.owner_id))]
+        # options = [PayMana(s.owner_id, gs, s, '2'), DealDamageTo(s.owner_id, gs, s, 3, s.owner_id)]
         gs.queue_choice(ChoiceAction(options))
 
 class MijaeDjinn(Listener):

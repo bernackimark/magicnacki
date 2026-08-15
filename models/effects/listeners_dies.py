@@ -3,9 +3,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.actions.damage import DealDamageTo
 from models.actions.special import PayManaToDrawCards, PayManaForLife, PayManaToBounce
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import DiesEvent, DamageResolvedEvent
@@ -43,15 +42,17 @@ class BlazingEffigy(Listener):
     X is 3 plus the amount of damage dealt to this creature this turn by other sources named Blazing Effigy."""
     listens_to = DiesEvent
 
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
-        if source is not event.card:
+    def on_event(self, gs: GameState, s: GameCard, event: DiesEvent) -> None:
+        if s is not event.card:
             return
         all_creatures = gs.card_filter.creatures().in_play().result()
         if not all_creatures:
             return
         total_damage = 3 + sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)
-                                if e.target is source and e.source.props.slug == 'blazing-effigy'])
-        options = [DealDamageTo(source.owner_id, gs, source, total_damage, target) for target in all_creatures]
+                                if e.target is s and e.source.props.slug == 'blazing-effigy'])
+        options = [ChoiceOption(f'{s.props.name} deals {total_damage} damage to {t}',
+                                lambda: gs.apply_damage(s, total_damage, t)) for t in all_creatures]
+        # options = [DealDamageTo(s.owner_id, gs, s, total_damage, target) for target in all_creatures]
         gs.queue_choice(ChoiceAction(options))
 
 class BrineHag(Listener):

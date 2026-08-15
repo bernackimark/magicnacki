@@ -4,8 +4,6 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.damage import DealDamageTo, PayLife
-from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor, Shuffle
 from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement, \
     PayManaToPreventCounter
@@ -196,18 +194,20 @@ class ShapeshifterCast(Resolver):
 class Simulacrum(Resolver):
     """You gain life equal to the damage already dealt to you this turn. If you control a creature,
     Simulacrum deals damage to target creature you control equal to the damage dealt to you this turn."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+    def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.events_all import DamageResolvedEvent
         damage_taken_this_turn = sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number)
-                                      if isinstance(e, DamageResolvedEvent) and e.target == source.owner_id])
+                                      if isinstance(e, DamageResolvedEvent) and e.target == s.owner_id])
         if not damage_taken_this_turn:
             return
 
-        gs.score_mgr.increment_life(source.owner_id, damage_taken_this_turn, source, gs)
+        gs.score_mgr.increment_life(s.owner_id, damage_taken_this_turn, s, gs)
 
-        your_creatures = gs.card_filter.creatures().on_player_board(source.owner_id).result()
+        your_creatures = gs.card_filter.creatures().on_player_board(s.owner_id).result()
         if your_creatures:
-            options = [DealDamageTo(source.owner_id, gs, source, damage_taken_this_turn, c) for c in your_creatures]
+            options = [ChoiceOption(f'{s} deals {damage_taken_this_turn} damage to {c}',
+                                    lambda: gs.apply_damage(s, damage_taken_this_turn, c)) for c in your_creatures]
+            # options = [DealDamageTo(s.owner_id, gs, s, damage_taken_this_turn, c) for c in your_creatures]
             gs.queue_choice(ChoiceAction(options))
 
 class Sindbad(Resolver):
@@ -476,8 +476,10 @@ class WandOfIth(Resolver):
         if not opp_cards:
             return
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
-        life_payment_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
-        options = [PayLife(opp, gs, source, life_payment_amt), DiscardCards(opp, gs, the_card)]
+        life_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
+        options = [ChoiceOption(f'Pay {life_amt}', lambda: gs.score_mgr.decrement_life(opp, life_amt, source, gs)),
+                   ChoiceOption(f'Discard {the_card}', lambda: gs.pile_mgr.discard(the_card, source))]
+        # options = [PayLife(opp, gs, source, life_amt), DiscardCards(opp, gs, the_card)]
         gs.queue_choice(ChoiceAction(options))
 
 class WarBarge(Resolver):

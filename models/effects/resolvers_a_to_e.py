@@ -4,12 +4,11 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.damage import DealDamageTo
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Tutor
 from models.actions.special import CopyCardAction, CleansingPayAction, CleansingDeclineAction, DrafnaFinishAction, \
     DrafnaSelectCardAction, EurekaPlayCardAction, EurekaPlayerFinishAction
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver, RTarget, ResContext
@@ -248,10 +247,12 @@ class Crumble(Resolver):
 class CuombajjWitches(Resolver):
     """{T}: CW deals 1 damage to any target and 1 damage to any target of an opponent's choice"""
     @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.apply_damage(source, 1, t)
+    def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None):
+        gs.apply_damage(s, 1, t)
         targets = gs.card_filter.in_play().creatures().result() + [0, 1]
-        options = [DealDamageTo(flip(source.owner_id), gs, source, 1, t) for t in targets]
+        options = [ChoiceOption(f'{s.props.name} deals 1 damage to {t}',
+                                lambda: gs.apply_damage(s, 1, t)) for t in targets]
+        # options = [DealDamageTo(flip(s.owner_id), gs, s, 1, t) for t in targets]
         gs.queue_choice(ChoiceAction(options))
 
 class DanceOfMany(Resolver):

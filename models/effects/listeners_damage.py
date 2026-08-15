@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import KW
 from models.game_card.counter_tokens import PLUS_ONE, VITALITY
 from models.effects.base import Listener
@@ -35,9 +35,15 @@ class BloodOfTheMartyr(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         if not event.target.is_creature:
             return
-        from models.actions.damage import RedirectDamageToYouAction
-        options = [RedirectDamageToYouAction(source.owner_id, gs, source, event)]
+        # from models.actions.damage import RedirectDamageToYouAction
+        options = [ChoiceOption(f'Redirect all damage from {event.target} to you',
+                                lambda: self.redirect(source, event))]
+        # options = [RedirectDamageToYouAction(source.owner_id, gs, source, event)]
         gs.queue_choice(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def redirect(source: GameCard, event: DamageProposedEvent):
+        event.target = source.owner_id
 
 class Forcefield(Listener):
     """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""
