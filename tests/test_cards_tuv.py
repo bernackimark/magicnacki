@@ -1,8 +1,6 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.draw_discard import DrawCard
-from models.actions.mana import PayMana
 from models.actions.special import Attach, PayManaToDrawCards
 from models.game_card.counter_tokens import HATCHLING, STUN, PLUS_ONE
 from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
@@ -241,7 +239,7 @@ class TestCardsTUV(unittest.TestCase):
         enchantment = self.g.card('undertow')
         cast_event = CastResolvedEvent(enchantment, 0)
         self.gs.event_mgr.emit(cast_event)
-        self.assertTrue(any(isinstance(a, DrawCard) for a in self.gs.pending_choice.options))
+        self.assertTrue(len([a for a in self.gs.pending_choice.options if a.description == 'Draw a card']))
 
 
 if __name__ == '__main__':

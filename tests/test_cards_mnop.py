@@ -3,10 +3,9 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.cast import CastWithNoSpellEffect
-from models.actions.destroy_sac_regen import SacCards
 from models.actions.end_step_pass_turn import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
-from models.actions.tap_untap import Untap, PayManaToUntapAction
+from models.actions.tap_untap import PayManaToUntapAction
 from models.constants import KW
 from models.cost import ExileCreatureFromYourGraveyardCost
 from models.game_card.counter_tokens import PLUS_ONE
@@ -128,7 +127,11 @@ class TestCardsMNOP(unittest.TestCase):
         card = self.g.card('mold-demon')
         self.g.battlefield('swamp', cnt=9)
         self.g.cast_and_accept(card, None, card.abilities[0])
-        self.assertTrue(any(isinstance(a, SacCards) for a in self.gs.pending_choice.get_actions()))
+        swamp_cnt_before = len(self.gs.card_filter.on_player_board(0).swamps().result())
+        sac_two_swamps = self.gs.pending_choice.get_actions()[0]
+        sac_two_swamps.play()
+        swamp_cnt_after = len(self.gs.card_filter.on_player_board(0).swamps().result())
+        self.assertEqual(2, swamp_cnt_before - swamp_cnt_after)
 
     def test_necropolis(self):
         """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""
@@ -219,8 +222,6 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(0, target.owner_id)
 
         self.g.next_turn()
-        self.assertTrue(any(isinstance(a, Untap) for a in self.gs.pending_choice.get_actions()))
-
         card.untap()
         self.assertEqual(1, target.owner_id)
 

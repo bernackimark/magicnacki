@@ -2,8 +2,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any, Optional
 
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.destroy_sac_regen import Sac
-from models.actions.mana import PayMana
 from models.actions.special import PayManaForLife, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.effects.listeners_mod_queries import OwnershipModQuery
@@ -617,13 +615,15 @@ class PayManaOrSacAtUpkeep(Listener):
     def __init__(self, mana_cost: str):
         self.mana_cost = mana_cost
 
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if event.active_player != source.owner_id:
+    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
+        if event.active_player != s.owner_id:
             return
-        if not gs.mana_pools[source.owner_id].can_pay(self.mana_cost):
-            gs.pile_mgr.sacrifice(source)
+        if not gs.mana_pools[s.owner_id].can_pay(self.mana_cost):
+            gs.pile_mgr.sacrifice(s)
             return
-        options = [PayMana(source.owner_id, gs, source, self.mana_cost), Sac(source.owner_id, gs, source)]
+        options = [ChoiceOption(f"Pay {{{self.mana_cost}}}", lambda: gs.mana_pools[s.owner_id].pay(self.mana_cost)),
+                   ChoiceOption(f'Sac {s}', lambda: gs.pile_mgr.sacrifice(s))]
+        # options = [PayMana(s.owner_id, gs, s, self.mana_cost), Sac(s.owner_id, gs, s)]
         gs.queue_choice(ChoiceAction(options))
 
 class PayManaToUntapUpkeep(Listener):

@@ -2,10 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.draw_discard import DrawCard
 from models.actions.special import SacTwoIslandsToAttack, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import Zone
 
 if TYPE_CHECKING:
@@ -78,7 +77,7 @@ class VerduranEnchantress(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent):
         if source.owner_id != event.card.owner_id or not event.card.is_enchantment:
             return
-        options = [DrawCard(source.owner_id, gs)]
+        options = [ChoiceOption('Draw a card', lambda: gs.pile_mgr.draw(event.owner_id))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 # --- LIFE LOSS ---

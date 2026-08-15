@@ -5,11 +5,10 @@ from typing import TYPE_CHECKING
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.combat import AssignBlocker
-from models.actions.destroy_sac_regen import SacCards, ReanimateAction
 from models.actions.draw_discard import DiscardCards
 from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
@@ -71,12 +70,11 @@ class FeldonsCane(Resolver):
 
 class FellwarStone(Resolver):
     """{T}: Add one mana of any color that a land an opponent controls could produce"""
-    # Note: Because mana_produced is only stored on read-only props, it doesn't update if lands are altered in-game
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        from models.actions.mana import AddMana
         produceable = {mana_produced for c in gs.card_filter.on_player_board(flip(source.owner_id)).result()
                        for mana_produced in c.mana_produced}
-        options = [AddMana(source.owner_id, gs, source, color) for color in produceable]
+        options = [ChoiceOption(f"Add {{{color}}}", lambda: gs.mana_pools[source.owner_id].add_floating(color))
+                   for color in produceable]
         if options:
             gs.queue_choice(ChoiceAction(options))
 
@@ -121,14 +119,15 @@ class GlyphOfReincarnation(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         com = gs.combat_mgr.get_combat(t)
         attacker = com.declared_attacker
-        creatures_in_attackers_gy = list(gs.card_filter.in_player_graveyard(attacker.owner_id).creatures().result())
+        attacker_gy_creatures = list(gs.card_filter.in_player_graveyard(attacker.owner_id).creatures().result())
         gs.pile_mgr.destroy(attacker, allow_regeneration=False)
-        if not creatures_in_attackers_gy:
+        if not attacker_gy_creatures:
             return
-        elif len(creatures_in_attackers_gy) == 1:
-            gs.pile_mgr.reanimate(creatures_in_attackers_gy[0])
+        elif len(attacker_gy_creatures) == 1:
+            gs.pile_mgr.reanimate(attacker_gy_creatures[0])
         else:
-            options = [ReanimateAction(source.owner_id, gs, source, t) for t in creatures_in_attackers_gy]
+            options = [ChoiceOption(f'Reanimate {c}', lambda: gs.pile_mgr.reanimate(c)) for c in attacker_gy_creatures]
+            # options = [ReanimateAction(source.owner_id, gs, source, t) for t in attacker_gy_creatures]
             gs.queue_choice(ChoiceAction(options))
 
 class GoblinKing(Resolver):
@@ -373,9 +372,16 @@ class MoldDemon(Resolver):
         your_swamps = gs.card_filter.on_player_board(source.owner_id).swamps().result()
         if len(your_swamps) < 2:
             gs.pile_mgr.destroy(source, False)
-        two_swamp_combos = list(combinations(your_swamps, 2))
-        options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in two_swamp_combos]
+        combos = list(combinations(your_swamps, 2))
+        options = [ChoiceOption(f"Sac 2 swamps", lambda: self.sac_two_swamps(gs, combo)) for combo in combos] + \
+                  [ChoiceOption(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
+        # options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in combos]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def sac_two_swamps(gs: GameState, two_swamps: list[GameCard]):
+        for swamp in two_swamps:
+            gs.pile_mgr.sacrifice(swamp)
 
 class NamelessRace(Resolver):
     """Upon ETB, pay any amount of life (max = # of white nontoken permanents your opponents control +

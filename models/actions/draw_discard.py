@@ -14,15 +14,6 @@ from models.systems.phase import Phase
 
 
 @dataclass
-class DrawCard(Action):
-    def __repr__(self) -> str:
-        return 'Draw a Card'
-
-    def play(self) -> None:
-        self.gs.pile_mgr.draw(self.player_idx)
-        self.finish()
-
-@dataclass
 class DiscardCards(Action):
     cards: GameCard | list[GameCard]
 

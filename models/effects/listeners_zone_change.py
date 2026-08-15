@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from models.actions.destroy_sac_regen import Sac
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import ZoneChangeEvent
@@ -109,7 +108,8 @@ class LandEquilibrium(Listener):
         opp_lands = gs.card_filter.on_player_board(event.card.owner_id).lands().result()
         if len(opp_lands) < your_land_cnt:
             return
-        options = [Sac(event.card.owner_id, gs, land) for land in opp_lands]
+        options = [ChoiceOption(f'Sac {land}', lambda: gs.pile_mgr.sacrifice(land)) for land in opp_lands]
+        # options = [Sac(event.card.owner_id, gs, land) for land in opp_lands]
         gs.queue_choice(ChoiceAction(options))
 
 class Revelation(Listener):

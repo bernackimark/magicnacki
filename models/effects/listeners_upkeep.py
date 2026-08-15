@@ -594,7 +594,7 @@ class RogahhOfKherKeepUpkeep(Listener):
             # action.play()
             return
         options = [ChoiceOption("Pay {{{'RRR}}}", lambda: gs.mana_pools[source.owner_id].pay('RRR')),
-                   ChoiceOption('Tap & transf control of Rogahh Of Kher Keep & all Kobolds Of Kher Keep',
+                   ChoiceOption('Tap & transfer control of Rogahh Of Kher Keep & all Kobolds Of Kher Keep',
                                 lambda: self.special_action(gs, source, target_cards))]
         # options = [PayMana(source.owner_id, gs, source, 'RRR'), action]
         gs.queue_choice(ChoiceAction(options))
