@@ -11,11 +11,11 @@ from models.actions.kwa import AddKWA
 from models.actions.mana import PayMana
 from models.actions.piles import TutorMultipleCards
 from models.actions.pump import VariablePTMod, BasePTAction
-from models.actions.special import RogahhOfKherKeepTapAndStealAction, CyclonePayManaPerCounterDealDamage, \
+from models.actions.special import RogahhOfKherKeepTapAndStealAction, \
     SkipDrawPhaseGainLife, PayManaAndOrTakeDamage, YawgmothDemonUnpaidUpkeep, SacTwoIslandsToUntap, SacTwoIslands, \
     WormsOfTheEarthSacTwoLands, WormsOfTheEarthTake5Damage, TapCardAndTakeDamage, TetravusCreateTokens, \
     TetravusExileTokens
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
 from models.effects.base import Listener
@@ -78,10 +78,12 @@ class CurseArtifact(Listener):
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if not source.host or gs.player_turn_idx != source.host.owner_id:
+        host = source.host
+        host_owner = host.owner_id
+        if not host or gs.player_turn_idx != host_owner:
             return
-        options = [DealDamageTo(event.active_player, gs, source, 2, source.host.owner_id),
-                   Sac(event.active_player, gs, source.host)]
+        options = [ChoiceOption(f"Deal 2 damage to P#{host_owner}", lambda: gs.apply_damage(source, 2, host_owner)),
+                   ChoiceOption(f"Sac {host.props.name}", lambda: gs.pile_mgr.sacrifice(host))]
         gs.queue_choice(ChoiceAction(options))
 
 class Cyclone(Listener):
@@ -93,10 +95,29 @@ class Cyclone(Listener):
         if gs.player_turn_idx != source.owner_id:
             return
         source.counters.add_counter(WIND)
+        wind_counters = source.counters.get_count(WIND)
+
         if not gs.mana_pools[source.owner_id].can_pay('G' * source.counters.get_count(WIND)):
-            gs.pile_mgr.destroy(source, False)
-        options = [CyclonePayManaPerCounterDealDamage(source.owner_id, gs, source), Sac(source.owner_id, gs, source)]
+            gs.pile_mgr.sacrifice(source)
+            return
+
+        options = [ChoiceOption(f'Pay {wind_counters} G to deal {wind_counters} damage to all creatures & players',
+                                lambda: self.pay_and_damage(gs, source, wind_counters)),
+                   ChoiceOption(f'Sacrifice {source.props.name}', lambda: gs.pile_mgr.destroy(source))]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def pay_and_damage(gs: GameState, source: GameCard, wind_counters: int):
+        gs.mana_pools[source.owner_id].pay('G' * wind_counters)
+
+        for creature in list(gs.card_filter.in_play().creatures().result()):
+            gs.apply_damage(source, wind_counters, creature)
+
+        for p_id in range(2):
+            gs.apply_damage(source, wind_counters, p_id)
+
+        # options = [CyclonePayManaPerCounterDealDamage(source.owner_id, gs, source), Sac(source.owner_id, gs, source)]
+        # gs.queue_choice(ChoiceAction(options))
 
 class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""

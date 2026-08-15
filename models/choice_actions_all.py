@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from models.actions.base import Action
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 # --- GENERIC CHOICE ACTIONS ---
 @dataclass
 class ChoiceAction(ABC):
-    options: list[Action | None] = field(default_factory=list)
+    options: list[ChoiceOption] = field(default_factory=list)
     may: bool = False
 
     @dataclass
@@ -26,15 +26,28 @@ class ChoiceAction(ABC):
 
     def __post_init__(self):
         if self.may:
-            p_idx = self.options[0].player_idx
-            gs = self.options[0].gs
-            self.options.append(ChoiceAction._Decline(p_idx, gs))
+            self.options.append(ChoiceOption(description='Decline', callback=lambda: None))
+            # p_idx = self.options[0].player_idx
+            # gs = self.options[0].gs
+            # self.options.append(ChoiceAction._Decline(p_idx, gs))
 
     def choose_target(self, target):
         raise NotImplementedError
 
-    def get_actions(self) -> list[Action]:
+    def get_actions(self) -> list[ChoiceOption]:
         return self.options
+
+
+@dataclass
+class ChoiceOption:
+    description: str
+    callback: Callable[[], None]
+
+    def __repr__(self):
+        return self.description
+
+    def play(self):
+        self.callback()
 
 
 class XChoice2(ChoiceAction):

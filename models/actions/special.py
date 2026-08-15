@@ -323,23 +323,6 @@ class CleansingPayAction(Action):
         self.gs.action_on_idx = flip(self.gs.action_on_idx)
         Cleansing.queue_next_choice(self.gs, self.s, self.state)
 
-class CyclonePayManaPerCounterDealDamage(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-        self.wind_counters = self.s.counters.get_count(WIND)
-
-    def __repr__(self):
-        return f'Pay {self.wind_counters} G to deal {self.wind_counters} damage to all creatures & players'
-
-    def play(self) -> None:
-        self.gs.mana_pools[self.s.owner_id].pay('G' * self.wind_counters)
-        for creature in list(self.gs.card_filter.in_play().creatures().result()):
-            self.gs.pile_mgr.destroy(creature)
-        for p_id in range(2):
-            self.gs.apply_damage(self.s, self.wind_counters, p_id)
-        self.finish()
-
 class DrafnaFinishAction(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, state: "DrafnasRestoration.DrafnasRestorationState"):
         super().__init__(p_id, gs)

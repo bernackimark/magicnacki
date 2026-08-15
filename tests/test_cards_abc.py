@@ -4,7 +4,7 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.constants import KW
 from models.cost import SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
@@ -371,6 +371,22 @@ class TestCardsAtoC(unittest.TestCase):
         deal_1_damage_to_play_0.play()
         self.assertEqual(19, self.gs.life[0])
 
+    def test_curse_artifact(self):
+        """At host controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
+        card = self.g.hand('curse-artifact')
+        self.g.mana('BBBB')
+        target = self.g.battlefield('sol-ring', owner=1)
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[target])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        take_2_damage = self.gs.pending_choice.get_actions()[0]
+        take_2_damage.play()
+        self.assertEqual(18, self.gs.life[1])
+
     def test_cursed_rack(self):
         """Opponent's maximum hand size is four [at their discard phase]"""
         self.g.battlefield('cursed-rack')
@@ -380,6 +396,23 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.next_turn(True)
         self.gs.event_mgr.emit(DiscardStepEvent(1))
         self.assertEqual(15, len(self.gs.pending_choice.get_actions()))  # 6 card hand x 2 selections = 15 combos
+
+    def test_cyclone(self):
+        """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
+        If you pay, Cyclone deals damage = its wind counters to each creature and each player."""
+        card = self.g.battlefield('cyclone')
+        forest = self.g.battlefield('forest')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(1, card.counters.get_count(WIND))
+
+        pay_g_to_deal_damage = self.gs.pending_choice.get_actions()[0]
+        pay_g_to_deal_damage.play()
+        self.assertEqual(19, self.gs.life[0])
+
+        self.g.next_turn()
+        self.gs.pile_mgr.destroy(forest)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertIn(card, self.g.gy[0])
 
 
 if __name__ == '__main__':
