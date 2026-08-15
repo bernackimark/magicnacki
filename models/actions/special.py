@@ -145,25 +145,6 @@ class PayManaToDrawCards(Action):
         self.gs.pile_mgr.draw(self.player_idx, self.card_cnt)
         self.finish()
 
-class PayManaToPreventDamage(Action):
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, protected: GameCard, mana_cost: str,
-                 preventable_amt: int | None = None):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.protected = protected
-        self.mana_cost = mana_cost
-        self.preventable_amt = preventable_amt
-
-    def __repr__(self):
-        return f'Pay {{{self.mana_cost}}} to prevent {self.preventable_amt} damage to {self.protected}'
-
-    def play(self) -> None:
-        from models.effects.listeners_generic import PreventNextDamageTo
-        if not self.gs.mana_pools[self.player_idx].can_pay(self.mana_cost):
-            return
-        self.gs.mana_pools[self.player_idx].pay(self.mana_cost)
-        self.gs.event_mgr.register(PreventNextDamageTo(self.preventable_amt, protected=self.protected), self.source)
-
 class RemoveCounterGainLife(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard,
                  counter_type: CounterType, counter_cnt: int = 1, gain_life_amt: int = 1):
@@ -179,30 +160,6 @@ class RemoveCounterGainLife(Action):
         self.gs.score_mgr.increment_life(self.source.owner_id, self.gain_life_amt, self.source, self.gs)
         self.finish()
 
-class SacCreatureAndAddMana(Action):
-    def __init__(self, p_id: int, gs: GameState, _: GameCard, creature: GameCard, color: str, amt: int = 0):
-        super().__init__(p_id, gs)
-        self.creature = creature
-        self.color = color
-        self.amt = amt
-
-    def play(self):
-        # Sacrifice then later apply effect that depends on the creature sacrificed
-        self.gs.pile_mgr.destroy(self.creature)
-        self.gs.mana_pools[self.gs.player_turn_idx].add_floating(self.color, self.amt)
-        self.finish()
-
-class SacTwoIslands(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-
-    def play(self) -> None:
-        your_islands = self.gs.card_filter.on_player_board(self.s.owner_id).islands().result()
-        for island in your_islands[:2]:
-            self.gs.pile_mgr.destroy(island)
-        self.finish()
-
 class SacTwoIslandsToAttack(Action):
     def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard):
         super().__init__(p_id, gs)
@@ -215,29 +172,6 @@ class SacTwoIslandsToAttack(Action):
         for island in your_islands[:2]:
             self.gs.pile_mgr.destroy(island)
         self.gs.event_mgr.register(CanAttackEOT(self.target), self.s)
-        self.finish()
-
-class SacTwoIslandsToUntap(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard, target: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-        self.target = target
-
-    def play(self):
-        your_islands = self.gs.card_filter.on_player_board(self.s.owner_id).islands().result()
-        for island in your_islands[:2]:
-            self.gs.pile_mgr.destroy(island)
-        self.target.untap()
-        self.finish()
-
-class SkipDrawPhaseGainLife(Action):
-    def __init__(self, p_id: int, gs: GameState, amt: int):
-        super().__init__(p_id, gs)
-        self.amt = amt
-
-    def play(self):
-        self.gs.phase_mgr.set_phase(Phase.MAIN)
-        self.gs.score_mgr.increment_life(self.player_idx, self.amt, source=None, gs=self.gs)
         self.finish()
 
 class StoreColorOnCard(Action):
@@ -270,21 +204,6 @@ class SubTypeReplacement(Action):
         self.target.modifiers.append(SubTypeMod(s=self.s, item=self.sub_type))
         for sub_type in sub_types:
             self.target.modifiers.append(SubTypeMod(s=self.s, add_or_remove='remove', item=sub_type))
-        self.finish()
-
-class TapCardAndTakeDamage(Action):
-    """Tap this creature and it deals X damage to you"""
-    def __init__(self, p_id: int, gs: GameState, source: GameCard, damage_amt: int):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.damage_amt = damage_amt
-
-    def __repr__(self):
-        return f"Tap {self.source} and it deals {self.damage_amt} damage to you"
-
-    def play(self) -> None:
-        self.source.tap()
-        self.gs.apply_damage(self.source, self.damage_amt, self.source.owner_id)
         self.finish()
 
 # --- CARD-SPECIFIC ---
@@ -485,65 +404,6 @@ class PrimalClayC(Action):
         self.gs.pile_mgr.cast(self.s)
         self.finish()
 
-class RogahhOfKherKeepTapAndStealAction(Action):
-    def __init__(self, p_id, gs, source: GameCard, targets: list[GameCard]):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.targets = targets
-        # self.owner_upon_class_creation = int(source.owner_id)  # fixes multiple flips in .play() for unknown reason
-
-    def __repr__(self):
-        return f'Tapping & transferring control of Rogahh Of Kher Keep & all Kobolds Of Kher Keep'
-
-    def play(self):
-        old_controller = int(self.source.owner_id)
-        new_controller = int(flip(self.source.owner_id))
-        for t in self.targets:
-            t.tap()
-            self.gs.event_mgr.register(OwnershipModQuery(t, lambda gs, s: new_controller), self.source)
-            t.turn_entered_for_owner = self.gs.turn_mgr.turn_number
-            if t.zone == Zone.BATTLEFIELD:
-                self.gs.pile_mgr.boards[old_controller].remove(t)
-                self.gs.pile_mgr.boards[new_controller].append(t)
-        self.gs.event_mgr.emit(StateBasedEvent())
-        self.finish()
-
-class TetravusCreateTokens(Action):
-    """You may remove any number of +1/+1 counters from T to create that many 1/1 colorless
-    Tetravite artifact creature tokens"""
-    def __init__(self, p_id, gs, source: GameCard, cnt: int):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.cnt = cnt
-
-    def __repr__(self):
-        return (f'Remove {self.cnt} counter(s) from {self.source.props.name} to '
-                f'create that many Tetravite artifact creatures')
-
-    def play(self) -> None:
-        from models.effects.resolvers_generic import CreateTokenCreature
-        self.source.counters.remove_counter(PLUS_ONE, self.cnt)
-        for _ in range(self.cnt):
-            CreateTokenCreature('tetravite').resolve(self.gs, self.source)
-        self.finish()
-
-class TetravusExileTokens(Action):
-    """You may exile any number of tokens created with T. If you do, put that many +1/+1 counters on T"""
-
-    def __init__(self, p_id, gs, source: GameCard, to_be_exiled: list[GameCard]):
-        super().__init__(p_id, gs)
-        self.source = source
-        self.to_be_exiled = to_be_exiled
-
-    def __repr__(self):
-        return (f'Exile {len(self.to_be_exiled)} Tetravite(s) to add that many +1/+1 '
-                f'counters to {self.source.props.name}')
-
-    def play(self) -> None:
-        for token in self.to_be_exiled:
-            self.gs.pile_mgr.exile(token)
-            self.source.counters.add_counter(PLUS_ONE)
-        self.finish()
 
 class TimeVaultSkipTurnAction(Action):
     def __init__(self, p_id, gs, source: GameCard):
@@ -575,45 +435,4 @@ class WoodElementalETBAction(Action):
         self.s.base_pt = (self.amt, self.amt)
         for card in self.cards_to_sac:
             self.gs.pile_mgr.sacrifice(card)
-        self.finish()
-
-class WormsOfTheEarthSacTwoLands(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-
-    def __repr__(self):
-        return f'Sac two lands and destroy Worms Of The Earth'
-
-    def play(self) -> None:
-        your_islands = self.gs.card_filter.on_player_board(self.player_idx).lands().result()
-        for island in your_islands[:2]:
-            self.gs.pile_mgr.destroy(island)
-        self.gs.pile_mgr.destroy(self.s)
-        self.finish()
-
-class WormsOfTheEarthTake5Damage(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-
-    def __repr__(self):
-        return f'Take 5 damage and destroy Worms Of The Earth'
-
-    def play(self) -> None:
-        self.gs.apply_damage(self.s, 5, self.player_idx)
-        self.gs.pile_mgr.destroy(self.s)
-        self.finish()
-
-class YawgmothDemonUnpaidUpkeep(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-
-    def __repr__(self):
-        return f'{self.s.props.name} taps and deals 2 damage to you'
-
-    def play(self) -> None:
-        self.s.tap()
-        self.gs.apply_damage(self.s, 2, self.s.owner_id)
         self.finish()
