@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption
 from models.game_card.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
 from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapPhaseQueryEvent

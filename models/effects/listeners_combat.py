@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-from models.actions.special import DestroyAndForegoCombatDamage
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
@@ -303,8 +303,16 @@ class FloralSpuzzem(Listener):
         opp_artifacts = gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result()
         if not opp_artifacts:
             return
-        options = [DestroyAndForegoCombatDamage(s.owner_id, gs, s, t) for t in opp_artifacts]
+        options = [ChoiceOption(f'Destroy {t} & forego combat damage assigned by {s}',
+                                lambda: self.destroy_and_forego_combat_damage(gs, s, t))
+                   for t in opp_artifacts]
         gs.queue_choice(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def destroy_and_forego_combat_damage(gs: GameState, s: GameCard, t: GameCard):
+        from models.effects.listeners_generic import PreventNextDamageBy
+        gs.pile_mgr.destroy(t)
+        gs.event_mgr.register(PreventNextDamageBy(s, combat_only=True))
 
 
 class MerchantShip(Listener):

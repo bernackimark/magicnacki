@@ -4,7 +4,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Any, Optional
 
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.special import PayManaForLife, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.effects.listeners_mod_queries import OwnershipModQuery
 
@@ -12,7 +11,8 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption, pay_mana_to_prevent_counter, pay_mana_to_gain_life
 from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
@@ -93,7 +93,7 @@ class OnColorSpellPayOneColorlessForOneLifeChoice(Listener):
             return
         if not gs.mana_pools[s.owner_id].can_pay('1'):
             return
-        options = [PayManaForLife(s.owner_id, gs, '1', 1)]
+        options = [ChoiceOption(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, s.owner_id, '1'))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 
@@ -494,7 +494,8 @@ class PayManaOrCounterSpellListener(Listener):
             gs.action_stack.remove(event.action)
             gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, target_spell, mana_cost),
+        options = [ChoiceOption(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
+                                lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, target_spell)),
                    CounterSpellAction(p_id, gs, target_spell)]
         gs.queue_choice(ChoiceAction(options, may=True))
 

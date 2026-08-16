@@ -5,9 +5,10 @@ from collections import defaultdict
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption, copy_card
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM
+from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM, VITALITY
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal, BasePT
 from models.events_all import UpkeepEvent, Event, StateBasedEvent
@@ -437,6 +438,22 @@ class LeviathanUpkeep(Listener):
             gs.pile_mgr.destroy(island)
         s.untap()
 
+class LivingArtifactUpkeep(Listener):
+    """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        options = [ChoiceOption(f'Remove a Vitality counter from {source} to gain 1 life',
+                                lambda: self.remove_counter_gain_life(gs, source))]
+        gs.queue_choice(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def remove_counter_gain_life(gs: GameState, s: GameCard):
+        s.counters.remove_counter(VITALITY)
+        gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
+
 class LordOfThePitUpkeep(Listener):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
     listens_to = UpkeepEvent
@@ -452,7 +469,6 @@ class LordOfThePitUpkeep(Listener):
         options = [ChoiceOption(f'Sac {c} to {source}', lambda: gs.pile_mgr.sacrifice(c)) for c in your_other_creatures]
         # options = [Sac(source.owner_id, gs, c) for c in your_other_creatures]
         gs.queue_choice(ChoiceAction(options))
-
 
 class ManaVortexUpkeep(Listener):
     """At each player's upkeep, they sac a land.
@@ -486,8 +502,6 @@ class PowerLeak(Listener):
         options = [ChoiceOption(f'Pay {mana_amt} mana & take {2 - mana_amt} from {source}',
                                 lambda: self.pay_mana_take_damage(gs, host_owner, source, mana_amt, 2 - mana_amt))
                    for mana_amt in pay_mana_options]
-        # options = [PayManaAndOrTakeDamage(host_owner, gs, source, mana_amt, 2 - mana_amt)
-        #            for mana_amt in pay_mana_options]
         gs.queue_choice(ChoiceAction(options))
 
     @staticmethod
@@ -820,8 +834,7 @@ class VesuvanDoppelgangerUpkeep(Listener):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        from models.actions.special import CopyCardAction
-        options = [CopyCardAction(s.owner_id, gs, s, card, copy_color=False) for card in card_options]
+        options = [ChoiceOption(f'{s} copies {t}', lambda: copy_card(gs, s, t, copy_color=False)) for t in card_options]
         gs.queue_choice(ChoiceAction(options))
 
 class XenicPoltergeistRelease(Listener):

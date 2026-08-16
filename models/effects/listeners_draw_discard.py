@@ -4,13 +4,13 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.draw_discard import SylvanLibraryDrawTwoAction, \
-    SylvanLibraryPayLifeAction, SylvanLibrarySelectCardAction, SylvanLibraryPutOnTopAction
-from models.actions.special import IslandSanctuaryAction
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption
+from models.constants import Zone
 from models.game_card.counter_tokens import DOOM
 from models.effects.base import Listener
 from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
+from models.systems.phase import Phase
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -95,8 +95,18 @@ class IslandSanctuary(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent) -> None:
         if event.active_player != source.owner_id:
             return
-        options = [IslandSanctuaryAction(source.owner_id, gs, source)]
+        option_text = 'Skip your draw & until your next turn, you can only be attacked by fliers and/or islandwalkers'
+        options = [ChoiceOption(option_text, lambda: self.island_sanctuary_method(gs, source))]
         gs.queue_choice(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def island_sanctuary_method(gs: GameState, s: GameCard):
+        from models.effects.listeners_permission import IslandSanctuaryRestriction
+        from models.effects.listeners_generic import UnregisterListenerOnYourNextTurn
+        gs.phase_mgr.set_phase(Phase.MAIN)
+        listener = IslandSanctuaryRestriction()
+        gs.event_mgr.register(listener, s)
+        gs.event_mgr.register(UnregisterListenerOnYourNextTurn(listener), s)
 
 class ManaVaultDamageIfTapped(Listener):
     """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
@@ -116,22 +126,54 @@ class SylvanLibrary(Listener):
         drawn_cards: list[GameCard]
         selected_cards: list[GameCard] = field(default_factory=list)
 
-    def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent) -> None:
-        if event.active_player != source.owner_id:
+    def on_event(self, gs: GameState, s: GameCard, event: DrawStepEvent) -> None:
+        if event.active_player != s.owner_id:
             return
 
-        gs.queue_choice(ChoiceAction([SylvanLibraryDrawTwoAction(gs.action_on_idx, gs, source)], may=True))
+        options = [ChoiceOption(f'Draw two additional cards with {s}', lambda: self.draw_two(s.owner_id, gs, s))]
+        gs.queue_choice(ChoiceAction(options, may=True))
 
-    @staticmethod
-    def queue_card_decision(gs: GameState, source: GameCard, state: SylvanLibraryState, card: GameCard) -> None:
-        options = [SylvanLibraryPayLifeAction(gs.action_on_idx, gs, source, state, card),
-                   SylvanLibraryPutOnTopAction(gs.action_on_idx, gs, source, state, card)]
+    def queue_card_decision(self, gs: GameState, s: GameCard, state: SylvanLibraryState, card: GameCard) -> None:
+        options = [ChoiceOption(f'Pay 4 life for {card}', lambda: self.pay_life(s.owner_id, gs, s, state)),
+                   ChoiceOption(f'Put {card} atop your library', lambda: self.put_on_top(gs, s, state, card))]
         gs.queue_choice(ChoiceAction(options))
 
-    @staticmethod
-    def queue_next_card_selection(gs: GameState, source: GameCard, state: SylvanLibraryState) -> None:
+    def queue_next_card_selection(self, gs: GameState, source: GameCard, state: SylvanLibraryState) -> None:
         if len(state.selected_cards) >= 3:
             return
         remaining = [card for card in state.drawn_cards if card not in state.selected_cards]
-        options = [SylvanLibrarySelectCardAction(gs.action_on_idx, gs, source, state, card) for card in remaining]
+        options = [ChoiceOption(self.select_card_text(state, c), lambda: self.select_card(gs, source, state, c))
+                   for c in remaining]
         gs.queue_choice(ChoiceAction(options))
+
+    def draw_two(self, p_id: int, gs: GameState, s: GameCard):
+        gs.pile_mgr.draw(p_id, 2)
+        cards_drawn = [e.card for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DrawCardEvent)
+                       if e.player_id == p_id]
+        state = self.SylvanLibraryState(drawn_cards=cards_drawn[:])
+        gs.pending_choice = None
+        self.queue_next_card_selection(gs, s, state)
+
+    def pay_life(self, p_id: int, gs: GameState, s: GameCard, state: SylvanLibraryState):
+        gs.score_mgr.decrement_life(p_id, 4, s, gs)
+        gs.pending_choice = None
+        self.queue_next_card_selection(gs, s, state)
+
+    def put_on_top(self, gs: GameState, s: GameCard, state: SylvanLibraryState, card: GameCard):
+        gs.pile_mgr.move_card(card, Zone.LIBRARY, cause='sylvan-library')
+        gs.pending_choice = None
+        self.queue_next_card_selection(gs, s, state)
+
+    def select_card(self, gs: GameState, s: GameCard, state: SylvanLibraryState, card: GameCard):
+        state.selected_cards.append(card)
+        gs.pending_choice = None
+        if len(state.selected_cards) == 1:
+            self.queue_next_card_selection(gs, s, state)
+        else:
+            self.queue_card_decision(gs, s, state, card)
+
+    @staticmethod
+    def select_card_text(state: SylvanLibraryState, card: GameCard):
+        if not state.selected_cards:
+            return f'Select {card} as your free draw card'
+        return f'Select {card} to either add to your hand for 4 life or place atop your library'

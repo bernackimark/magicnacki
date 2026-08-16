@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.actions.ability_pipeline_support import AbilityAction
-from models.actions.special import SacTwoIslandsToAttack, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption, pay_mana_to_prevent_counter
 from models.constants import Zone
 
 if TYPE_CHECKING:
@@ -107,8 +107,16 @@ class LeviathanAttack(Listener):
         if len(your_islands) < 2:
             return
 
-        options = [SacTwoIslandsToAttack(event.active_p_id, gs, source, source)]
+        options = [ChoiceOption(f'Sac Two Islands & Allow {source} to attack',
+                                lambda: self.sac_2_island_allow_attack(gs, source, your_islands))]
         gs.queue_choice(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def sac_2_island_allow_attack(gs: GameState, s: GameCard, your_islands: list[GameCard]):
+        from models.effects.listeners_permission import CanAttackEOT
+        for island in your_islands[:2]:
+            gs.pile_mgr.sacrifice(island)
+        gs.event_mgr.register(CanAttackEOT(s), s)
 
 class ManaDrainMainPhase(Listener):
     """... At your next main phase, add an amount of {C} equal to that spell's mana value"""
@@ -144,7 +152,8 @@ class InTheEyeOfChaos(Listener):
             gs.action_stack.remove(event.action)
             gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, target_spell, mana_cost),
+        options = [ChoiceOption(f'Pay {{{mana_cost}}} to prevent counterspell by {source}',
+                                lambda: pay_mana_to_prevent_counter(gs, p_id, mana_cost, target_spell)),
                    CounterSpellAction(p_id, gs, target_spell)]
         gs.queue_choice(ChoiceAction(options))
 
@@ -171,7 +180,8 @@ class InvokePrejudice(Listener):
             gs.action_stack.remove(target_spell)
             gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, target_spell, mana_cost),
+        options = [ChoiceOption(f'Pay {{{mana_cost}}} to prevent counterspell by {source}',
+                                lambda: pay_mana_to_prevent_counter(gs, p_id, mana_cost, target_spell)),
                    CounterSpellAction(p_id, gs, target_spell)]
         gs.queue_choice(ChoiceAction(options, may=True))
 
@@ -187,5 +197,6 @@ class ScarwoodBanditsAAListener(Listener):
         opp = flip(source.owner_id)
         if not gs.mana_pools[opp].can_pay('2'):
             return
-        options = [PayManaToPreventCounter(opp, gs, event.action, '2')]
+        options = [ChoiceOption(f'Pay 2 to prevent counterspell',
+                                lambda: pay_mana_to_prevent_counter(gs, opp, '2', event.action))]
         gs.queue_choice(ChoiceAction(options, may=True))

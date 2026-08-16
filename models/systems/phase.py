@@ -338,7 +338,8 @@ class DiscardPhase(PhaseState):
         gs.event_mgr.emit(DiscardStepEvent(active_player=gs.player_turn_idx))
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.choice_actions_all import ChoiceAction, ChoiceOption
+        from models.choice_actions_all import ChoiceAction
+        from models.choice_options import ChoiceOption
         hand = gs.pile_mgr.hands[p_id]
         if len(hand) > 7:
             options = [ChoiceOption(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]

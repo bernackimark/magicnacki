@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Literal
 
 from models.action_stack import StackItemType
-from models.actions.special import PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption, pay_mana_to_prevent_counter
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
@@ -117,7 +117,9 @@ class CounterSpellUnlessManaPaid(Resolver):
             gs.action_stack.remove(t)
             gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, t, t.total_mana_cost), CounterSpellAction(p_id, gs, t)]
+        options = [ChoiceOption(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
+                                lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, t)),
+                   CounterSpellAction(p_id, gs, t)]
         gs.queue_choice(ChoiceAction(options))
 
 class CreateTokenCreature(Resolver):
@@ -140,9 +142,14 @@ class CreateTokenCreature(Resolver):
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        from models.actions.special import StoreColorOnCard
-        options = [StoreColorOnCard(source.owner_id, gs, source, color) for color in COLOR_LETTERS]
+        options = [ChoiceOption(f"Declare {source}'s color as {color}", lambda: self.etb_action(source, color))
+                   for color in COLOR_LETTERS]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def etb_action(s: GameCard, color: str):
+        s.extras['color_declaration'] = color
+        # TODO: make presentation request, as this selection is public
 
 class DealDamage(Resolver):
     """Supply a static amount in the initializer or declare x via AbilityPipeline -> ResContext -> .resolve()"""

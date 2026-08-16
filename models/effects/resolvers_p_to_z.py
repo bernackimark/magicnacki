@@ -4,9 +4,9 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.special import CopyCardAction, SubTypeReplacement, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption, pay_mana_to_prevent_counter, copy_card
 from models.constants import BASIC_LANDS, KW, Zone
 from models.game_card.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver, RTarget, ResContext
@@ -17,7 +17,7 @@ from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapA
     DoesntUntapAtUntap
 from models.effects.resolvers_generic import Reveal, CreateTokenCreature
 from models.events_all import DamageResolvedEvent
-from models.game_card.modifiers import KWAMod, PTMod
+from models.game_card.modifiers import KWAMod, PTMod, SubTypeMod
 from models.systems.mana import ManaCost
 from models.utils import flip
 
@@ -29,8 +29,17 @@ if TYPE_CHECKING:
 class PhantasmalTerrain(Resolver):
     """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        options = [SubTypeReplacement(source.owner_id, gs, source, t, land_type) for land_type in BASIC_LANDS]
+        options = [ChoiceOption(f"Turn {t} into a {land_type}", lambda: self.sub_type_replacement(source, t, land_type))
+                   for land_type in BASIC_LANDS]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def sub_type_replacement(s: GameCard, target: GameCard, sub_type: str):
+        sub_type = sub_type.capitalize()
+        s_types = target.card_sub_types.copy()
+        target.modifiers.append(SubTypeMod(s=s, item=sub_type))
+        for s_type in s_types:
+            target.modifiers.append(SubTypeMod(s=s, add_or_remove='remove', item=s_type))
 
 class PhyrexianGremlinsTap(Resolver):
     """{T}: Tap target artifact. It doesn't untap during its controller's untap step so long as PG remains tapped."""
@@ -55,7 +64,10 @@ class PowerSink(Resolver):
             gs.action_stack.remove(t)
             gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [PayManaToPreventCounter(p_id, gs, t, str(power_sink_x)), CounterSpellAction(p_id, gs, t)]
+        mana_cost = str(power_sink_x)
+        options = [ChoiceOption(f'Pay {{{mana_cost}}} to prevent counterspell by {source}',
+                                lambda: pay_mana_to_prevent_counter(gs, p_id, mana_cost, t)),
+                   CounterSpellAction(p_id, gs, t)]
         gs.queue_choice(ChoiceAction(options))
 
 class PriestOfYawgmoth(Resolver):
@@ -471,13 +483,13 @@ class VenarianGold(Resolver):
 class VesuvanDoppelgangerCast(Resolver):
     """You may have this creature enter as a copy of any creature on the battlefield,
     except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if gs.player_turn_idx != source.owner_id:
+    def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if gs.player_turn_idx != s.owner_id:
             return
-        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not source]
+        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        options = [CopyCardAction(source.owner_id, gs, source, card, copy_color=False) for card in card_options]
+        options = [ChoiceOption(f'{s} copies {t}', lambda: copy_card(gs, s, t, copy_color=False)) for t in card_options]
         gs.queue_choice(ChoiceAction(options))
 
 class Visions(Resolver):
@@ -485,7 +497,7 @@ class Visions(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.add_presentation_request(source.owner_id, 'view_library', {'cards': gs.pile_mgr.libraries[t][:5]})
-        options = [Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[t])]
+        options = [ChoiceOption(f'Shuffle', lambda: random.shuffle(gs.pile_mgr.libraries[t]))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 class WallOfWonder(Resolver):

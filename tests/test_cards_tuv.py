@@ -1,7 +1,6 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.special import PayManaToDrawCards
 from models.game_card.counter_tokens import HATCHLING, STUN, PLUS_ONE
 from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
 from models.systems.phase import Phase
@@ -180,7 +179,7 @@ class TestCardsTUV(unittest.TestCase):
         self.gs.event_mgr.register(card.abilities[0].effect, card)
         artifact = self.g.battlefield('sol-ring')
         self.gs.pile_mgr.destroy(artifact)
-        self.assertTrue(any(isinstance(a, PayManaToDrawCards) for a in self.gs.pending_choice.get_actions()))
+        self.assertTrue(any(a.description.startswith('Pay 3') for a in self.gs.pending_choice.get_actions()))
 
     def test_venarian_gold(self):
         """When VG enters, tap host & put X stun counters on it."""

@@ -3,8 +3,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from models.actions.special import PayManaToDrawCards, PayManaForLife, PayManaToBounce
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption, pay_mana_to_draw_cards, pay_mana_to_bounce, pay_mana_to_gain_life
 from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import DiesEvent, DamageResolvedEvent
@@ -130,7 +130,8 @@ class PuppetMaster(Listener):
             return
         gs.pile_mgr.bounce(event.card)
         if gs.mana_pools[source.owner_id].can_pay('UUU'):
-            options = [PayManaToBounce(source.owner_id, gs, source, source, 'UUU')]
+            options = [ChoiceOption(f"Pay {{{'UUU'}}} to bounce {source}",
+                                    lambda: pay_mana_to_bounce(gs, source.owner_id, 'UUU', source))]
             gs.queue_choice(ChoiceAction(options, may=True))
 
 class RukhEgg(Listener):
@@ -187,7 +188,7 @@ class SoulNet(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not event.card.is_creature:
             return
-        options = [PayManaForLife(source.owner_id, gs, '1', 1)]
+        options = [ChoiceOption(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 
@@ -198,7 +199,7 @@ class TabletOfEpityr(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not event.card.is_artifact or event.card.owner_id != source.owner_id:
             return
-        options = [PayManaForLife(source.owner_id, gs, '1', 1)]
+        options = [ChoiceOption(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 
@@ -209,5 +210,5 @@ class UrzasMiter(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if event.card.owner_id != source.owner_id or 'Artifact' not in event.card.card_types:
             return
-        options = [PayManaToDrawCards(source.owner_id, gs, '3', 1)]
+        options = [ChoiceOption(f'Pay 3 to draw a card', lambda: pay_mana_to_draw_cards(gs, source.owner_id, '3'))]
         gs.queue_choice(ChoiceAction(options, may=True))

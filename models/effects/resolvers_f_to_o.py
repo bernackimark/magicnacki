@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.combat import AssignBlocker
-from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import MINUS_ZERO_ONE, VITALITY, STUN, PLUS_ZERO_ONE
+from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
@@ -183,8 +183,15 @@ class HealingSalve(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         s = source
         all_targets = gs.card_filter.in_play().creatures().result() + [0, 1]
-        options = [HealingSalveA(s.owner_id, gs, s)] + [HealingSalveB(s.owner_id, gs, s, t) for t in all_targets]
+        options = [ChoiceOption('You gain 3 life', lambda: gs.score_mgr.increment_life(s.owner_id, 3, s, gs))] + \
+                  [ChoiceOption('Prevent the next 3 damage that would be dealt to any target this turn',
+                                lambda: self.prevent_next_3(gs, t)) for t in all_targets]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def prevent_next_3(gs: GameState, target: GameCard):
+        from models.effects.listeners_generic import PreventNextDamageTo
+        gs.event_mgr.register(PreventNextDamageTo(3, False, target))
 
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
@@ -278,15 +285,6 @@ class LifeChisel(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         amt = context.cost_result.paid_cards[0].toughness
         gs.score_mgr.increment_life(source.owner_id, amt, source, gs)
-
-class LivingArtifactUpkeep(Resolver):
-    """... At your upkeep, you may remove a vitality counter from this Aura to gain 1 life"""
-    # TODO: this needs to be an Upkeep Listener ...
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if gs.player_turn_idx != source.owner_id:
-            return
-        options = [RemoveCounterGainLife(source.owner_id, gs, source, VITALITY)]
-        gs.queue_choice(ChoiceAction(options, may=True))
 
 class ManaClash(Resolver):
     """You and target opponent each flip a coin. Mana Clash deals 1 damage to each player whose coin comes up tails.
@@ -386,12 +384,17 @@ class NamelessRace(Resolver):
     """Upon ETB, pay any amount of life (max = # of white nontoken permanents your opponents control +
     the total number of white cards in their graveyards). NR's PT are each = life paid as it entered."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        from models.actions.special import NamelessRaceETBAction
         opp = flip(source.owner_id)
         max_amt = (len(gs.card_filter.on_player_board(opp).non_token().white().permanents().result()) +
                    len(gs.card_filter.in_player_graveyard(opp).white().result()))
-        options = [NamelessRaceETBAction(source.owner_id, gs, source, r) for r in range(max_amt + 1)]
+        options = [ChoiceOption(f'Pay {amt} life to make {source} a {amt}/{amt} creature',
+                                lambda: self.etb_action(gs, source, amt)) for amt in range(max_amt + 1)]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def etb_action(gs: GameState, s: GameCard, amt: int):
+        s.base_pt = (amt, amt)
+        gs.score_mgr.decrement_life(s.owner_id, amt, s, gs)
 
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""

@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption
 from models.constants import KW
 from models.game_card.counter_tokens import PLUS_ONE, VITALITY
 from models.effects.base import Listener

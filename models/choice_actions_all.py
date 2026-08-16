@@ -1,9 +1,10 @@
 from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 from models.actions.base import Action
+from models.choice_options import ChoiceOption
 
 if TYPE_CHECKING:
     from models.actions.ability_pipeline import AbilityPipeline
@@ -36,18 +37,6 @@ class ChoiceAction(ABC):
 
     def get_actions(self) -> list[ChoiceOption]:
         return self.options
-
-
-@dataclass
-class ChoiceOption:
-    description: str
-    callback: Callable[[], None]
-
-    def __repr__(self):
-        return self.description
-
-    def play(self):
-        self.callback()
 
 
 class XChoice2(ChoiceAction):

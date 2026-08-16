@@ -5,9 +5,10 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.special import CopyCardAction, CleansingPayAction, CleansingDeclineAction, DrafnaFinishAction, \
+from models.actions.special import CleansingPayAction, CleansingDeclineAction, DrafnaFinishAction, \
     DrafnaSelectCardAction, EurekaPlayCardAction, EurekaPlayerFinishAction
-from models.choice_actions_all import ChoiceAction, ChoiceOption
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import ChoiceOption, copy_card
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver, RTarget, ResContext
@@ -204,13 +205,12 @@ class Cleansing(Resolver):
 
 
 class Clone(Resolver):
-    """You may have this creature enter as a copy of any creature on the battlefield;
-    pushes valid targets to the stack for user selection, which then calls an Action that copies select target attrs"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not source]
+    """You may have this creature enter as a copy of any creature on the battlefield"""
+    def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None):
+        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        options = [CopyCardAction(source.owner_id, gs, source, card) for card in card_options]
+        options = [ChoiceOption(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
         gs.queue_choice(ChoiceAction(options))
 
 class CocoonCast(Resolver):
@@ -230,11 +230,11 @@ class ConsecrateLand(Resolver):
 class CopyArtifact(Resolver):
     """You may have this enchantment enter as a copy of any artifact on the battlefield,
     except it's an enchantment in addition to its other types"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not source]
+    def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None):
+        card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
         if not card_options:
             return
-        options = [CopyCardAction(source.owner_id, gs, source, card) for card in card_options]
+        options = [ChoiceOption(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
         gs.queue_choice(ChoiceAction(options))
 
 class Crumble(Resolver):

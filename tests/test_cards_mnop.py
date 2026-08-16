@@ -4,7 +4,6 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.advance_phase import PassTheTurn
-from models.actions.special import PayManaAndOrTakeDamage
 from models.constants import KW
 from models.cost import ExileCreatureFromYourGraveyardCost
 from models.game_card.counter_tokens import PLUS_ONE
@@ -350,7 +349,7 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.attach(card, host)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, len([a for a in self.gs.pending_choice.get_actions()
-                                 if isinstance(a, PayManaAndOrTakeDamage)]))
+                                 if a.description.startswith('Pay ')]))
 
     def test_power_sink_1_controller_pays_path(self):
         """Counter target spell unless its controller pays {X}.

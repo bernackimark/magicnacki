@@ -14,7 +14,7 @@ from ..constants import KW
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
     MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
     FeldonsCane, FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, \
-    KoboldDrillSergeant, KryShield, LivingArtifactUpkeep, ManaClash, MartyrsCry, NamelessRace, ManaShort, \
+    KoboldDrillSergeant, KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, \
     FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, \
     GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, Necropolis, LifeChisel
 from ..effects.resolvers_a_to_e import ExchangeLifeTotals
@@ -34,7 +34,7 @@ from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, 
     LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
     HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, \
-    LeviathanUpkeep, Halfdane
+    LeviathanUpkeep, Halfdane, LivingArtifactUpkeep
 from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
