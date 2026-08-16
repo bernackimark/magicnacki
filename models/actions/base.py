@@ -20,13 +20,13 @@ class Action(ABC):
         ...
 
     def finish(self, next_choice: ChoiceAction | None = None) -> None:
-        """This is default behavior chosen by most Actions;
-        those with successive ChoiceActions would implement their own logic"""
         if next_choice:
-            self.gs.pending_choice = next_choice
-        elif self.gs.pending_choice:
-            self.gs.pending_choice = None
-            if self.gs._pending_choices:
-                self.gs.pending_choice = self.gs._pending_choices.pop(0)
-        elif self.gs.action_stack.actions:
+            self.gs.queue_choice(next_choice)
+            return
+
+        if self.gs.pending_choice:
+            self.gs.choice_mgr.complete()
+            return
+
+        if self.gs.action_stack.actions:
             self.gs.action_stack.pop()

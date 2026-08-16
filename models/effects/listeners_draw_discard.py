@@ -150,22 +150,22 @@ class SylvanLibrary(Listener):
         cards_drawn = [e.card for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DrawCardEvent)
                        if e.player_id == p_id]
         state = self.SylvanLibraryState(drawn_cards=cards_drawn[:])
-        gs.pending_choice = None
+        gs.choice_mgr.clear_current()
         self.queue_next_card_selection(gs, s, state)
 
     def pay_life(self, p_id: int, gs: GameState, s: GameCard, state: SylvanLibraryState):
         gs.score_mgr.decrement_life(p_id, 4, s, gs)
-        gs.pending_choice = None
+        gs.choice_mgr.clear_current()
         self.queue_next_card_selection(gs, s, state)
 
     def put_on_top(self, gs: GameState, s: GameCard, state: SylvanLibraryState, card: GameCard):
         gs.pile_mgr.move_card(card, Zone.LIBRARY, cause='sylvan-library')
-        gs.pending_choice = None
+        gs.choice_mgr.clear_current()
         self.queue_next_card_selection(gs, s, state)
 
     def select_card(self, gs: GameState, s: GameCard, state: SylvanLibraryState, card: GameCard):
         state.selected_cards.append(card)
-        gs.pending_choice = None
+        gs.choice_mgr.clear_current()
         if len(state.selected_cards) == 1:
             self.queue_next_card_selection(gs, s, state)
         else:

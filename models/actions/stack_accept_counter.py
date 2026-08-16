@@ -31,6 +31,6 @@ class CounterSpellAction(Action):
     def play(self) -> None:
         self.gs.action_stack.remove(self.target_spell)
         if self.gs.pending_choice:
-            self.gs.pending_choice = None
+            self.gs.choice_mgr.clear_current()
         source = self.target_spell.source
         self.gs.pile_mgr.move_card(source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)

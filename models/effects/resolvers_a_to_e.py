@@ -185,7 +185,7 @@ class Cleansing(Resolver):
             for land in state.lands:
                 if land not in state.saved_lands:
                     gs.pile_mgr.destroy(land)
-            gs.pending_choice = None
+            self.gs.choice_mgr.clear_current()
             return
 
         # Move to next land if both players declined to save or someone did save it
@@ -471,7 +471,7 @@ class Eureka(Resolver):
 
     def queue_next_choice(self, gs: GameState, state: EurekaState):
         if sorted(state.players_who_are_done) == [0, 1]:
-            gs.pending_choice = None
+            gs.choice_mgr.clear_current()
             return
 
         if state.current_player in state.players_who_are_done:
@@ -492,13 +492,13 @@ class Eureka(Resolver):
     def finish_playing(self, gs: GameState, p_id: int, state: EurekaState):
         state.players_who_are_done.append(p_id)
         state.current_player = flip(p_id)
-        gs.pending_choice = None
+        gs.choice_mgr.clear_current()
         self.queue_next_choice(gs, state)
 
     def play_card(self, gs: GameState, p_id: int, state: EurekaState, card: GameCard):
         gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, cause='eureka', emit_zone_event=False)
         state.current_player = flip(p_id)
-        gs.pending_choice = None
+        gs.choice_mgr.clear_current()
         self.queue_next_choice(gs, state)
 
 class EvilPresence(Resolver):

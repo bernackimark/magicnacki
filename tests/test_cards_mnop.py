@@ -279,7 +279,7 @@ class TestCardsMNOP(unittest.TestCase):
         pipeline.advance()
         possible_actions = self.gs.pending_choice.get_actions()
         self.assertEqual(1, len(possible_actions))  # 'UUU' -> X=1 only
-        self.gs.pending_choice = None
+        self.gs.choice_mgr.clear_current()
 
         self.g.next_turn()
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])

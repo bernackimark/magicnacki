@@ -37,7 +37,7 @@ class TestCardsTUV(unittest.TestCase):
         At your upkeep, you may exile any number of tokens created with T to put that many +1/+1 counters on T."""
         card = self.g.hand('tetravus')
         self.g.cast_and_accept(card, None, card.abilities[0])
-        self.gs.pending_choice = None
+        self.gs.choice_mgr.clear_current()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         create_2_tokens = self.gs.pending_choice.get_actions()[1]
         create_2_tokens.play()

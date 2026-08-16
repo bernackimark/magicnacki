@@ -77,7 +77,7 @@ class TestCardsJKL(unittest.TestCase):
         self.gs.pile_mgr.move_card(opp_land, Zone.BATTLEFIELD, cause='cast', emit_zone_event=True)
         self.assertEqual(3, len(self.gs.pending_choice.get_actions()), 'Should have options to sac one of 3 lands')
 
-        self.gs.pending_choice = None
+        self.gs.choice_mgr.clear_current()
         self.g.mana('RRRRR')
         opp_land = self.g.hand('swamp', owner=1)
         self.gs.pile_mgr.move_card(opp_land, Zone.BATTLEFIELD, cause='cast', emit_zone_event=True)

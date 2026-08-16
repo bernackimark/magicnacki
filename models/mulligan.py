@@ -52,12 +52,12 @@ class MulliganChoice(ChoiceAction):
         if self.rule == Mulligan.ORIGINAL:
             if self.is_all_or_no_lands() and not self.mulligans_taken:
                 return [TakeMulligan(self.player_idx, self.gs, self), KeepHand(self.player_idx, self.gs, self)]
-            self.gs.pending_choice = None
+            self.gs.choice_mgr.clear_current()
             return []  # is this enough to get out of this flow?
         if self.is_all_or_no_lands():
             return [TakeGentlemensMulligan(self.player_idx, self.gs, self), KeepHand(self.player_idx, self.gs, self)]
         if self.mulligans_taken >= 7:
-            self.gs.pending_choice = None
+            self.gs.choice_mgr.clear_current()
             return []
         return [TakeMulligan(self.player_idx, self.gs, self), KeepHand(self.player_idx, self.gs, self)]
 
@@ -125,9 +125,9 @@ class KeepHand(Action):
 
     def play(self):
         if self.choice.rule in (Mulligan.LONDON, Mulligan.LONDON_WITH_GENTLEMENS) and self.choice.mulligans_taken > 0:
-            self.gs.pending_choice = BottomChoice(self.player_idx, self.gs, self.choice.mulligans_taken)
+            self.gs.choice_mgr.queue(BottomChoice(self.player_idx, self.gs, self.choice.mulligans_taken))
             return
-        self.gs.pending_choice = None
+        self.gs.choice_mgr.clear_current()
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
         self.gs.phase_mgr.set_phase(Phase.MAIN)
@@ -143,7 +143,7 @@ class FinishBottoming(Action):
         for card in self.choice.selected:
             self.gs.pile_mgr.hands[self.player_idx].remove(card)
             self.gs.pile_mgr.libraries[self.player_idx].append(card)
-        self.gs.pending_choice = None
+        self.gs.choice_mgr.clear_current()
         if self.gs.action_stack.actions:
             self.gs.action_stack.pop()
         self.gs.phase_mgr.set_phase(Phase.MAIN)
