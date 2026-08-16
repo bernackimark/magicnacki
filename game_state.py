@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from models.game_card.card import Card
 
 from models.action_stack import ActionStack
-from models.actions.stack_accept_counter import AcceptAction
+from models.actions.stack_accept_counter import PassPriority
 from models.systems.event import EventManager
 from models.actions.base import Action
 from models.choice_actions_all import ChoiceAction
@@ -263,7 +263,7 @@ class GameState:
             if isinstance(self.action_stack.last_action, ChoiceAction):
                 return self.action_stack.last_action.get_actions()
 
-            available_actions: list[AbilityPipeline | Action] = [AcceptAction(p_id, self)]
+            available_actions: list[AbilityPipeline | Action] = [PassPriority(p_id, self)]
             available_actions.extend(self.add_activated_abilities_from_board())
 
             # Check instants & sorceries

@@ -7,7 +7,7 @@ from typing import Any
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction
 from models.actions.advance_phase import PassTheTurn
-from models.actions.stack_accept_counter import AcceptAction
+from models.actions.stack_accept_counter import PassPriority
 from models.effects.base import ActivatedAbility, EffSpec
 from models.systems.phase import Phase
 from data.user_data import get_user
@@ -134,7 +134,7 @@ class TestGame:
             pipeline.targets.append(target)
         pipeline.advance()
         pipeline.resolve_ability()
-        AcceptAction(flip(owner), self.gs).play()
+        PassPriority(flip(owner), self.gs).play()
 
     def card_has_a_registered_listener(self, card: GameCard) -> bool:
         return any(e.source is card for entries in self.gs.event_mgr.event_listeners.values() for e in entries)

@@ -12,7 +12,7 @@ from models.actions.base import Action
 
 
 @dataclass
-class AcceptAction(Action):
+class PassPriority(Action):
     def __repr__(self) -> str:
         return f"Pass priority: {self.gs.action_stack.last_action}"
 

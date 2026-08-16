@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastWithNoSpellEffect
-from models.actions.stack_accept_counter import AcceptAction
+from models.actions.stack_accept_counter import PassPriority
 from models.events_all import CastResolvedEvent
 from tests.setup_helpers import TestGame
 
@@ -29,8 +29,8 @@ class TestStackResolution(unittest.TestCase):
         bolt_pipeline.advance()  # AbilityAction is pushed onto stack; priority moves to player #0
         self.assertEqual(0, self.gs.action_on_idx)
 
-        AcceptAction(0, self.gs).play()  # player 0 passes priority (adds nothing else to the stack)
-        AcceptAction(1, self.gs).play()  # player 1 also passes priority, thus the entire stack should resolve
+        PassPriority(0, self.gs).play()  # player 0 passes priority (adds nothing else to the stack)
+        PassPriority(1, self.gs).play()  # player 1 also passes priority, thus the entire stack should resolve
 
         self.assertIn(creature, self.gs.graveyards[0])
         self.assertIn(bolt, self.gs.graveyards[1])
@@ -57,8 +57,8 @@ class TestStackResolution(unittest.TestCase):
         gg_pipeline.advance()  # AbilityAction is pushed onto stack; priority moves to player #1
         self.assertEqual(1, self.gs.action_on_idx)
 
-        AcceptAction(1, self.gs).play()  # player 1 passes priority (adds nothing else to the stack)
-        AcceptAction(0, self.gs).play()  # player 0 also passes priority, thus the entire stack should resolve
+        PassPriority(1, self.gs).play()  # player 1 passes priority (adds nothing else to the stack)
+        PassPriority(0, self.gs).play()  # player 0 also passes priority, thus the entire stack should resolve
 
         self.assertNotIn(creature, self.gs.graveyards[0])
         self.assertIn(bolt, self.gs.graveyards[1])
@@ -80,8 +80,8 @@ class TestStackResolution(unittest.TestCase):
         counter_pipeline.advance()
         self.assertEqual(0, self.gs.action_on_idx)
 
-        AcceptAction(0, self.gs).play()
-        AcceptAction(1, self.gs).play()
+        PassPriority(0, self.gs).play()
+        PassPriority(1, self.gs).play()
         self.assertFalse(len(self.gs.action_stack.actions))
         self.assertIn(spell, self.g.gy[0])
 
@@ -107,8 +107,8 @@ class TestStackResolution(unittest.TestCase):
         cc_pipeline.advance()
         self.assertEqual(1, self.gs.action_on_idx)
 
-        AcceptAction(1, self.gs).play()
-        AcceptAction(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
         self.assertFalse(len(self.gs.action_stack.actions))
         self.assertIn(spell, self.gs.boards[0])
 
@@ -127,8 +127,8 @@ class TestStackResolution(unittest.TestCase):
         bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[card])
         bolt_pipeline.advance()
 
-        AcceptAction(0, self.gs).play()
-        AcceptAction(1, self.gs).play()
+        PassPriority(0, self.gs).play()
+        PassPriority(1, self.gs).play()
         self.assertEqual(19, self.gs.life[1])
         self.assertIn(card, self.g.gy[0])
 
@@ -147,8 +147,8 @@ class TestStackResolution(unittest.TestCase):
         unsummon_pipleline = AbilityPipeline(0, self.gs, unsummon, unsummon.abilities[0], targets=[bears])
         unsummon_pipleline.advance()
 
-        AcceptAction(1, self.gs).play()
-        AcceptAction(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
         self.assertEqual(0, bears.damage_received_this_turn)
         self.assertIn(bears, self.gs.hands[0])
         self.assertFalse(len(self.gs.action_stack.actions))
@@ -173,8 +173,8 @@ class TestStackResolution(unittest.TestCase):
         bolt_pipeline.advance()  # AbilityAction is pushed onto stack; priority moves to player #0
         self.assertEqual(0, self.gs.action_on_idx)
 
-        AcceptAction(0, self.gs).play()  # player 0 passes priority (adds nothing else to the stack)
-        AcceptAction(1, self.gs).play()  # player 1 also passes priority, thus the entire stack should resolve
+        PassPriority(0, self.gs).play()  # player 0 passes priority (adds nothing else to the stack)
+        PassPriority(1, self.gs).play()  # player 1 also passes priority, thus the entire stack should resolve
         self.assertEqual(0, self.gs.action_on_idx)
 
     def test_counter_removes_only_its_target(self):
@@ -199,8 +199,8 @@ class TestStackResolution(unittest.TestCase):
         counter_pipeline = AbilityPipeline(0, self.gs, counter, counter.abilities[0], targets=[gg_stack_item])
         counter_pipeline.advance()
 
-        AcceptAction(1, self.gs).play()
-        AcceptAction(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
         self.assertIn(creature, self.g.gy[1])
         self.assertFalse(len(self.gs.action_stack.actions))
 
@@ -219,8 +219,8 @@ class TestStackResolution(unittest.TestCase):
         gg_pipeline = AbilityPipeline(0, self.gs, gg, gg.abilities[0], targets=[creature])
         gg_pipeline.advance()
 
-        AcceptAction(1, self.gs).play()
-        AcceptAction(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
         self.assertIn(creature, self.gs.boards[0])
         self.assertFalse(len(self.gs.action_stack.actions))
 
@@ -246,8 +246,8 @@ class TestStackResolution(unittest.TestCase):
         ctr1_pipeline = AbilityPipeline(0, self.gs, ctr1, ctr1.abilities[0], targets=[ctr2_stack_item])
         ctr1_pipeline.advance()
 
-        AcceptAction(1, self.gs).play()
-        AcceptAction(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
         self.assertEqual(4, len(self.gs.hands[0]))
         self.assertFalse(len(self.gs.action_stack.actions))
 
@@ -270,8 +270,8 @@ class TestStackResolution(unittest.TestCase):
         counter_pipeline.advance()
         self.assertEqual(0, self.gs.action_on_idx)
 
-        AcceptAction(0, self.gs).play()
-        AcceptAction(1, self.gs).play()
+        PassPriority(0, self.gs).play()
+        PassPriority(1, self.gs).play()
         self.assertFalse(any(e.card is raiders for e in
                              self.gs.event_mgr.get_events(self.gs.turn_mgr.turn_number, CastResolvedEvent)))
 

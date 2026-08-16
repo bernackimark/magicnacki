@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastWithNoSpellEffect
-from models.actions.stack_accept_counter import AcceptAction
+from models.actions.stack_accept_counter import PassPriority
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -50,8 +50,8 @@ class TestCast(unittest.TestCase):
         cast_action = next(a for a in available_actions if isinstance(a, CastWithNoSpellEffect) and a.source is card)
         cast_action.play()
         self.assertTrue(self.gs.action_stack.last_action.source is card)
-        AcceptAction(1, self.gs).play()
-        AcceptAction(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
         self.assertIn(card, self.gs.boards[0])
 
     def test_cast_card_with_effects_but_no_spell(self):
@@ -61,8 +61,8 @@ class TestCast(unittest.TestCase):
         available_actions = [a for a in self.gs.available_actions_from_hand()]
         cast_action = next(a for a in available_actions if isinstance(a, CastWithNoSpellEffect) and a.source is card)
         cast_action.play()
-        AcceptAction(1, self.gs).play()
-        AcceptAction(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
         self.assertTrue(any(e.source is card for effs in self.gs.event_mgr.event_listeners.values() for e in effs))
 
     def test_cast_card_with_spell_with_no_effect(self):

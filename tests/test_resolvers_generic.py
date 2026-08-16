@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastWithNoSpellEffect
-from models.actions.stack_accept_counter import AcceptAction
+from models.actions.stack_accept_counter import PassPriority
 from models.constants import KW
 from models.game_card.counter_tokens import STUN
 from models.effects.listeners_generic import PreventNextDamageTo, TakeAnotherTurn
@@ -121,8 +121,8 @@ class TestResolversGeneric(unittest.TestCase):
         target_spell = self.gs.action_stack.last_action
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[target_spell])
         pipeline.advance()
-        AcceptAction(0, self.gs).play()
-        AcceptAction(1, self.gs).play()
+        PassPriority(0, self.gs).play()
+        PassPriority(1, self.gs).play()
         self.assertIn(target, self.g.gy[1])
         self.assertFalse(self.gs.action_stack.actions)
 

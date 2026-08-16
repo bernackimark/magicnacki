@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
-from models.actions.stack_accept_counter import AcceptAction
+from models.actions.stack_accept_counter import PassPriority
 from tests.setup_helpers import TestGame
 
 
@@ -40,7 +40,7 @@ class TestVariableX(unittest.TestCase):
         pipeline.advance()
 
         # Accept the generated AbilityAction
-        AcceptAction(1, self.gs).play()
+        PassPriority(1, self.gs).play()
         self.assertEqual(self.gs.life[0], 23)
 
     def test_x_activation_simple(self):
@@ -75,7 +75,7 @@ class TestVariableX(unittest.TestCase):
         pipeline.advance()
 
         # Accept the generated AbilityAction
-        AcceptAction(1, self.gs).play()
+        PassPriority(1, self.gs).play()
 
         self.assertEqual([18, 19], [self.gs.life[0], self.gs.life[1]])
 
