@@ -18,19 +18,6 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class Attach(Action):
-    def __init__(self, p_id: int, gs: GameState, aura: GameCard, host: GameCard):
-        super().__init__(p_id, gs)
-        self.aura = aura
-        self.host = host
-
-    def __repr__(self):
-        return f'Attach {self.aura} to {self.host}'
-
-    def play(self) -> None:
-        self.aura.host = self.host
-        self.host.auras.append(self.aura)
-
 class CopyCardAction(Action):
     def __init__(self, p_id: int, gs: GameState, source: GameCard, target: GameCard,
                  addtional_types: list[str] = None, copy_color: bool = True):
@@ -358,81 +345,3 @@ class NamelessRaceETBAction(Action):
         self.gs.apply_damage(self.s, self.amt, self.s.owner_id)
         self.finish()
 
-class PrimalClayA(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-
-    def __repr__(self):
-        return 'Cast as a 3/3'
-
-    def play(self) -> None:
-        self.s.base_pt = (3, 3)
-        self.gs.pile_mgr.cast(self.s)
-        self.finish()
-
-
-class PrimalClayB(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-
-    def __repr__(self):
-        return 'Cast as a 2/2 flier'
-
-    def play(self) -> None:
-        self.s.base_pt = (2, 2)
-        kwa = list(self.s._base_kwa)
-        kwa.append(KW.FLYING)
-        self.s._base_kwa = kwa
-        self.gs.pile_mgr.cast(self.s)
-        self.finish()
-
-class PrimalClayC(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard):
-        super().__init__(p_id, gs)
-        self.s = s
-
-    def __repr__(self):
-        return 'Cast as a 1/6 wall'
-
-    def play(self) -> None:
-        self.s.base_pt = (1, 6)
-        kwa = list(self.s._base_kwa)
-        kwa.append('Defender')
-        self.s._base_kwa = kwa
-        self.gs.pile_mgr.cast(self.s)
-        self.finish()
-
-
-class TimeVaultSkipTurnAction(Action):
-    def __init__(self, p_id, gs, source: GameCard):
-        super().__init__(p_id, gs)
-        self.source = source
-
-    def __repr__(self):
-        return f'Skip turn and untap {self.source.props.name}'
-
-    def play(self) -> None:
-        self.source.untap()
-        self.gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)
-        self.finish()
-
-class WoodElementalETBAction(Action):
-    def __init__(self, p_id: int, gs: GameState, s: GameCard, cards_to_sac: list[GameCard]):
-        super().__init__(p_id, gs)
-        self.s = s
-        self.cards_to_sac = cards_to_sac
-
-    def __repr__(self):
-        return f'Sac {self.amt} to make {self.s.props.name} a {self.amt}/{self.amt} creature'
-
-    @property
-    def amt(self) -> int:
-        return len(self.cards_to_sac)
-
-    def play(self) -> None:
-        self.s.base_pt = (self.amt, self.amt)
-        for card in self.cards_to_sac:
-            self.gs.pile_mgr.sacrifice(card)
-        self.finish()

@@ -108,7 +108,11 @@ class PileManager:
         self._gs.event_mgr.emit(DiscardEvent(card.orig_owner_id, card, source))
         self.move_card(card, Zone.GRAVEYARD, cause="discard")
         print(f'{card} is discarded')
-        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is bounced')
+        self._gs.game_history.append_non_action(self._gs, card=card, text=f'{card} is discarded')
+
+    def discards(self, cards: list[GameCard], source: GameCard | None = None):
+        for card in cards:
+            self.discard(card, source)
 
     def reanimate(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='reanimate')

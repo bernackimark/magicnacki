@@ -12,25 +12,6 @@ if TYPE_CHECKING:
 from models.actions.base import Action
 
 
-@dataclass
-class DiscardCards(Action):
-    cards: GameCard | list[GameCard]
-
-    def __repr__(self) -> str:
-        if not isinstance(self.cards, list):
-            return f"Discard {self.cards} to graveyard"
-        else:
-            return f"Discard {', '.join([c.__repr__() for c in self.cards])} to graveyard"
-
-    def play(self) -> None:
-        if not isinstance(self.cards, list):
-            self.cards = [self.cards]
-        for c in self.cards[::]:
-            print(f"Discarding {c} from player {self.player_idx}'s hand")
-            self.gs.pile_mgr.discard(c)
-        self.finish()
-
-
 # --- CARD SPECIFIC ---
 @dataclass
 class SylvanLibraryPayLifeAction(Action):

@@ -2,7 +2,6 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastWithNoSpellEffect
-from models.actions.special import Attach
 from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent
 from models.systems.phase import Phase
 from models.constants import Zone
@@ -39,7 +38,7 @@ class TestCardsGHI(unittest.TestCase):
         """Prevent all combat damage that would be dealt to and dealt by enchanted creature"""
         host = self.g.battlefield('merfolk-of-the-pearl-trident')
         card = self.g.battlefield('gaseous-form')
-        Attach(0, self.gs, card, host).play()
+        self.g.attach(card, host)
         blocker = self.g.battlefield('scryb-sprites')
         self.g.next_turn()
         self.g.combat(host, blocker)

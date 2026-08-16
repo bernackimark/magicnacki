@@ -4,8 +4,7 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.advance_phase import PassTheTurn
-from models.actions.special import Attach, PayManaAndOrTakeDamage
-from models.actions.tap_untap import PayManaToUntapAction
+from models.actions.special import PayManaAndOrTakeDamage
 from models.constants import KW
 from models.cost import ExileCreatureFromYourGraveyardCost
 from models.game_card.counter_tokens import PLUS_ONE
@@ -257,7 +256,7 @@ class TestCardsMNOP(unittest.TestCase):
         card = self.g.battlefield('paralyze')
         host = self.g.battlefield('grizzly-bears', owner=1)
         self.g.mana('B')
-        Attach(0, self.gs, card, host).play()
+        self.g.attach(card, host)
         card.abilities[2].effect.resolve(self.gs, card, host)
         self.assertTrue(host.is_tapped)
 
@@ -265,7 +264,7 @@ class TestCardsMNOP(unittest.TestCase):
         PassTheTurn(0, self.gs).play()
         self.assertTrue(host.is_tapped)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
-        self.assertTrue(any(isinstance(a, PayManaToUntapAction) for a in self.gs.pending_choice.get_actions()))
+        self.assertTrue(any(a.description.startswith('Leave ') for a in self.gs.pending_choice.get_actions()))
 
     def test_part_water(self):
         """[casting cost XXU] X target creatures gain islandwalk until end of turn."""
@@ -348,7 +347,7 @@ class TestCardsMNOP(unittest.TestCase):
         card = self.g.battlefield('power-leak')
         host = self.g.battlefield('unstable-mutation')
         self.g.mana('GG')
-        Attach(0, self.gs, card, host).play()
+        self.g.attach(card, host)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, len([a for a in self.gs.pending_choice.get_actions()
                                  if isinstance(a, PayManaAndOrTakeDamage)]))

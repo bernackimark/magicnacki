@@ -4,9 +4,7 @@ import random
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.piles import Tutor, Shuffle
-from models.actions.special import CopyCardAction, PrimalClayA, PrimalClayB, PrimalClayC, SubTypeReplacement, \
-    PayManaToPreventCounter
+from models.actions.special import CopyCardAction, SubTypeReplacement, PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import BASIC_LANDS, KW, Zone
@@ -71,8 +69,32 @@ class PrimalClay(Resolver):
     or a 1/6 Wall artifact creature with defender in addition to its other types."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         s = source
-        options = [PrimalClayA(s.owner_id, gs, s), PrimalClayB(s.owner_id, gs, s), PrimalClayC(s.owner_id, gs, s)]
+        options = [ChoiceOption('Cast as a 3/3', lambda: self.three_three(gs, s)),
+                   ChoiceOption('Cast as a 2/2 flier', lambda: self.two_two_flier(gs, s)),
+                   ChoiceOption('Cast as a 1/6 wall', lambda: self.one_six_wall(gs, s))]
+        # options = [PrimalClayA(s.owner_id, gs, s), PrimalClayB(s.owner_id, gs, s), PrimalClayC(s.owner_id, gs, s)]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def three_three(gs: GameState, s: GameCard):
+        s.base_pt = (3, 3)
+        gs.pile_mgr.cast(s)
+
+    @staticmethod
+    def two_two_flier(gs: GameState, s: GameCard):
+        s.base_pt = (2, 2)
+        kwa = list(s._base_kwa)
+        kwa.append(KW.FLYING)
+        s._base_kwa = kwa
+        gs.pile_mgr.cast(s)
+
+    @staticmethod
+    def one_six_wall(gs: GameState, s: GameCard):
+        s.base_pt = (1, 6)
+        kwa = list(s._base_kwa)
+        kwa.append('Defender')
+        s._base_kwa = kwa
+        gs.pile_mgr.cast(s)
 
 class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
@@ -379,11 +401,17 @@ class Typhoon(Resolver):
 class UntamedWilds(Resolver):
     """Search your library for a basic land card, put that card onto the battlefield, then shuffle"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        p_id = source.owner_id
-        basic_lands = [c for c in gs.pile_mgr.libraries[p_id] if c.props.is_basic_land]
-        gs.add_presentation_request(p_id, 'search_library', {'cards': basic_lands})
-        options = [Tutor(p_id, gs, source, basic_land, Zone.BATTLEFIELD) for basic_land in basic_lands]
+        lib = gs.pile_mgr.libraries[source.owner_id]
+        basic_lands = [c for c in lib if c.props.is_basic_land]
+        gs.add_presentation_request(source.owner_id, 'search_library', {'cards': basic_lands})
+        options = [ChoiceOption(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in basic_lands]
+        # options = [Tutor(source.owner_id, gs, source, basic_land, Zone.BATTLEFIELD) for basic_land in basic_lands]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def tutor(gs: GameState, lib: list[GameCard], card: GameCard, to_zone: Zone):
+        gs.pile_mgr.move_card(card, to_zone)
+        random.shuffle(lib)
 
 class UrborgLoseFirstStrike(Resolver):
     """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
@@ -527,11 +555,18 @@ class WinterBlast(Resolver):
 class WoodElemental(Resolver):
     """As this creature enters, sac any number of untapped Forests. WE's PT are each = # of Forests sacrificed."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        from models.actions.special import WoodElementalETBAction
         your_untapped_forests = gs.card_filter.on_player_board(source.owner_id).forests().untapped().result()
-        options = [WoodElementalETBAction(source.owner_id, gs, source, combo)
+        options = [ChoiceOption(f"Sac {len(combo)} to make {source} a {len(combo)}/{len(combo)} creature",
+                                lambda: self.etb_action(gs, source, combo))
                    for r in range(len(your_untapped_forests)) for combo in combinations(your_untapped_forests, r=r)]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def etb_action(gs: GameState, s: GameCard, forest_combo: list[GameCard]):
+        amt = len(forest_combo)
+        s.base_pt = (amt, amt)
+        for card in forest_combo:
+            gs.pile_mgr.sacrifice(card)
 
 class WormwoodTreefolkForestwalk(Resolver):
     """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""

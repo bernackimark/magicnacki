@@ -94,6 +94,11 @@ class TestGame:
         for color in mana:
             self.battlefield(lookup[color], owner=owner)
 
+    @staticmethod
+    def attach(aura: GameCard, host: GameCard) -> None:
+        aura.host = host
+        host.auras.append(aura)
+
     def activate_ability(self, aa: ActivatedAbility, target: GameCard | int | None = None, owner: int = 0):
         pipeline = AbilityPipeline(owner, self.gs, aa.source, aa.eff_spec)
         if target is not None:

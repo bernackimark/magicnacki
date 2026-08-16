@@ -2,10 +2,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Literal
 
 from models.action_stack import StackItemType
-from models.actions.draw_discard import DiscardCards
 from models.actions.special import PayManaToPreventCounter
 from models.actions.stack_accept_counter import CounterSpellAction
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
@@ -207,7 +206,9 @@ class DestroyAll(Resolver):
 class Discard(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
+        """t is the player id"""
+        options = [ChoiceOption(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
+        # options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
         gs.queue_choice(ChoiceAction(options))
 
 class DrawCards(Resolver):

@@ -3,8 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastPermanentAction
 from models.actions.advance_phase import PassTheTurn
-from models.actions.special import PayManaForLife, Attach
-from models.actions.tap_untap import Untap
+from models.actions.special import PayManaForLife
 from models.constants import KW, Zone
 from models.cost import SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE
@@ -309,7 +308,7 @@ class TestCardsQRS(unittest.TestCase):
         """Host can't be blocked except by artifact creatures and/or white creatures"""
         host = self.g.battlefield('giant-spider')
         card = self.g.battlefield('seeker')
-        Attach(0, self.gs, card, host).play()
+        self.g.attach(card, host)
         ineligible_blocker = self.g.battlefield('grizzly-bears', owner=1)
         eligible_blocker = self.g.battlefield('savannah-lions', owner=1)
         self.assertFalse(self.gs.perm_querier.can_block(ineligible_blocker, host))
@@ -410,7 +409,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(creature, [a.target for a in self.gs.pending_choice.get_actions()])
 
         spectral_cloak = self.g.battlefield('spectral-cloak')
-        Attach(0, self.gs, spectral_cloak, creature).play()
+        self.g.attach(spectral_cloak, creature)
         pipeline = AbilityPipeline(0, self.gs, bolt, bolt.abilities[0])
         pipeline.advance()
         self.assertNotIn(creature, self.gs.pending_choice.targets)
@@ -438,7 +437,7 @@ class TestCardsQRS(unittest.TestCase):
         """Whenever enchanted creature deals damage, you gain that much life"""
         host = self.g.battlefield('giant-spider')  # 4/4
         spirit_link = self.g.battlefield('spirit-link')
-        Attach(0, self.gs, spirit_link, host).play()
+        self.g.attach(spirit_link, host)
         self.gs.apply_damage(host, 4, 1, is_combat=True)
         self.assertEqual(24, self.gs.life[0])
 
@@ -446,7 +445,7 @@ class TestCardsQRS(unittest.TestCase):
         """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it"""
         host = self.g.battlefield('giant-spider')  # 4/4
         spirit_shackle = self.g.battlefield('spirit-shackle')
-        Attach(0, self.gs, spirit_shackle, host).play()
+        self.g.attach(spirit_shackle, host)
         host.tap()
         self.assertEqual(2, host.toughness)
 

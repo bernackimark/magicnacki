@@ -1,7 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.special import Attach, PayManaToDrawCards
+from models.actions.special import PayManaToDrawCards
 from models.game_card.counter_tokens import HATCHLING, STUN, PLUS_ONE
 from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
 from models.systems.phase import Phase
@@ -165,7 +165,7 @@ class TestCardsTUV(unittest.TestCase):
         """Host gets +3/+3. At host's upkeep, put a -1/-1 counter on host."""
         card = self.g.battlefield('unstable-mutation')
         host = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
-        Attach(0, self.gs, card, host).play()
+        self.g.attach(card, host)
         card.abilities[1].effect.resolve(self.gs, card, host)
         self.assertEqual(4, host.power)
 

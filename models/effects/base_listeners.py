@@ -1,14 +1,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.actions.piles import BattlefieldToGraveyard
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-from models.constants import BASIC_LANDS, KW
+from models.constants import BASIC_LANDS, KW, Zone
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanDamageQueryEvent, \
     CanTargetQueryEvent, StateBasedEvent
@@ -145,11 +144,13 @@ class LegendarySingletonCheck(BaseRule):
         for p_id in (0, 1):
             legends_seen = {}
             for c in gs.card_filter.on_player_board(p_id).legendaries().result():
-                print('XYZ', legends_seen)
                 if c.props.slug not in legends_seen:
                     legends_seen[c.props.slug] = c
                 else:
-                    options = [BattlefieldToGraveyard(p_id, gs, c) for c in legends_seen.values()]
+                    options = [ChoiceOption(f'Move legendary {c} to graveyard',
+                                            lambda: gs.pile_mgr.move_card(c, Zone.BATTLEFIELD, cause='legendary_rule'))
+                               for c in legends_seen.values()]
+                    # options = [BattlefieldToGraveyard(p_id, gs, c) for c in legends_seen.values()]
                     gs.queue_choice(ChoiceAction(options))
 
 class LifeAndPoisonCheck(BaseRule):

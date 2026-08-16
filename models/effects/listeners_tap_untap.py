@@ -1,12 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from models.actions.special import TimeVaultSkipTurnAction
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.game_card.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
 from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapPhaseQueryEvent
 from models.game_card.modifiers import KWAMod
+from models.systems.phase import Phase
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -83,9 +83,13 @@ class Kudzu(Listener):
             s.host = host_owner_lands[0]
             s.host.auras.append(s)
             return
-        from models.actions.special import Attach
-        options = [Attach(s.host.owner_id, gs, s, land) for land in host_owner_lands]
+        options = [ChoiceOption(f'Attach {s} to {land}', lambda: self.attach(s, land)) for land in host_owner_lands]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def attach(aura: GameCard, host: GameCard):
+        aura.host = host
+        host.auras.append(aura)
 
 
 class Lifeblood(Listener):
@@ -197,5 +201,11 @@ class TimeVaultOption(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
         if source.owner_id != event.active_player or not source.is_tapped:
             return
-        options = [TimeVaultSkipTurnAction(source.owner_id, gs, source)]
+        options = [ChoiceOption(f'Skip turn and untap {source}', lambda: self.untap_and_skip_turn(gs, source))]
+        # options = [TimeVaultSkipTurnAction(source.owner_id, gs, source)]
         gs.queue_choice(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def untap_and_skip_turn(gs: GameState, c: GameCard):
+        c.untap()
+        gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)

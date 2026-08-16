@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import AbilityAction, SelectXAction2
-from models.actions.special import Attach, DrafnaSelectCardAction
+from models.actions.special import DrafnaSelectCardAction
 from models.game_card.counter_tokens import HUNGER
 from models.events_all import UpkeepEvent
 from models.systems.phase import Phase
@@ -133,7 +133,7 @@ class TestCardsDEF(unittest.TestCase):
 
         legal_host = self.g.battlefield('merfolk-of-the-pearl-trident')
         self.g.cast_and_accept(card, aura, card.abilities[0])
-        self.assertIn(legal_host, [a.host for a in self.gs.pending_choice.get_actions() if isinstance(a, Attach)])
+        self.assertIn(legal_host, card.abilities[0].target_spec.get_targets(self.gs, card))
 
     def test_eureka(self):
         """Both players may take any permanent in their hand and put it directly into play.

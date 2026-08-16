@@ -4,10 +4,10 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.draw_discard import DiscardCards, SylvanLibraryDrawTwoAction, \
+from models.actions.draw_discard import SylvanLibraryDrawTwoAction, \
     SylvanLibraryPayLifeAction, SylvanLibrarySelectCardAction, SylvanLibraryPutOnTopAction
 from models.actions.special import IslandSanctuaryAction
-from models.choice_actions_all import ChoiceAction
+from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.game_card.counter_tokens import DOOM
 from models.effects.base import Listener
 from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
@@ -42,7 +42,8 @@ class CursedRack(Listener):
         hand = gs.pile_mgr.hands[opp_id]
         overage = len(hand) - 4
         combos = [_ for _ in combinations(hand, r=overage)]
-        options = [DiscardCards(opp_id, gs, combo) for combo in combos]
+        options = [ChoiceOption(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
+        # options = [DiscardCards(opp_id, gs, combo) for combo in combos]
         gs.queue_choice(ChoiceAction(options))
 
 

@@ -1,12 +1,10 @@
 from __future__ import annotations
 import random
-from itertools import combinations
+from itertools import combinations, permutations
 from typing import TYPE_CHECKING
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.combat import AssignBlocker
-from models.actions.draw_discard import DiscardCards
-from models.actions.piles import Shuffle, ReorderTopOfLibrary
 from models.actions.special import RemoveCounterGainLife, HealingSalveA, HealingSalveB
 from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.constants import KW, Zone
@@ -224,7 +222,8 @@ class JalumTome(Resolver):
     """Draw a card, then discard a card"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.draw(source.owner_id)
-        options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id]]
+        options = [ChoiceOption(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[source.owner_id]]
+        # options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id]]
         gs.queue_choice(ChoiceAction(options))
 
 class JovialEvil(Resolver):
@@ -397,20 +396,31 @@ class NamelessRace(Resolver):
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""
     # TODO: this doesn't address the 'you may shuffle'
+    # TODO: this would be better handled by making selecting each card, like Sylvan Library
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        top_3_cards = gs.pile_mgr.libraries[t][:3]
+        lib = gs.pile_mgr.libraries[t]
+        top_3_cards = lib[:3]
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
-        a0 = Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[t])
-        c1, c2, c3 = top_3_cards
-        a1 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c2, c3])
-        a2 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c3, c2])
-        a3 = ReorderTopOfLibrary(source.owner_id, gs, t, [c2, c1, c3])
-        a4 = ReorderTopOfLibrary(source.owner_id, gs, t, [c2, c3, c1])
-        a5 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c1, c2])
-        a6 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c2, c1])
-        options = [a0, a1, a2, a3, a4, a5, a6]
+        # a0 = Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[t])
+        # c1, c2, c3 = top_3_cards
+        options = [ChoiceOption(f"Order top of library top -> bottom: {', '.join(list(perm))}",
+                                lambda: self.order_lib(lib, list(perm))) for perm in permutations(top_3_cards, r=3)] + \
+                  [ChoiceOption(f"Shuffle", lambda: random.shuffle(lib))]
+        # a1 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c2, c3])
+        # a2 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c3, c2])
+        # a3 = ReorderTopOfLibrary(source.owner_id, gs, t, [c2, c1, c3])
+        # a4 = ReorderTopOfLibrary(source.owner_id, gs, t, [c2, c3, c1])
+        # a5 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c1, c2])
+        # a6 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c2, c1])
+        # options = [a0, a1, a2, a3, a4, a5, a6]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def order_lib(lib: list[GameCard], ordered_cards: list[GameCard]):
+        del lib[:len(ordered_cards)]
+        for c in ordered_cards[::-1]:
+            lib.insert(0, c)
 
 class Necropolis(Resolver):
     """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""

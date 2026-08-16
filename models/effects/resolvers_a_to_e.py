@@ -1,11 +1,10 @@
 from __future__ import annotations
 import math
+import random
 from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.draw_discard import DiscardCards
-from models.actions.piles import Tutor
 from models.actions.special import CopyCardAction, CleansingPayAction, CleansingDeclineAction, DrafnaFinishAction, \
     DrafnaSelectCardAction, EurekaPlayCardAction, EurekaPlayerFinishAction
 from models.choice_actions_all import ChoiceAction, ChoiceOption
@@ -86,12 +85,13 @@ class BazaarOfBaghdad(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.draw(source.owner_id, 2)
         cards = gs.pile_mgr.hands[source.owner_id]
-        if len(cards) <= 2:
-            for c in cards[:]:
-                cards.remove(c)
+        if len(cards) <= 3:
+            gs.pile_mgr.discards(cards, source=source)
             return
-        options = [DiscardCards(source.owner_id, gs, list(combo))
-                   for r in range(3, 4) for combo in combinations(cards, r)]
+        combos = [list(combo) for combo in combinations(cards, 3)]
+        options = [ChoiceOption(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
+        # options = [DiscardCards(source.owner_id, gs, list(combo))
+        #            for r in range(3, 4) for combo in combinations(cards, r)]
         gs.queue_choice(ChoiceAction(options))
 
 class Berserk(Resolver):
@@ -273,10 +273,16 @@ class DemonicTutor(Resolver):
     """Search your library for a card, put that card into your hand, then shuffle"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         p_id = source.owner_id
-        library_cards = gs.pile_mgr.libraries[p_id]
-        gs.add_presentation_request(p_id, 'search_library', {'cards': library_cards})
-        options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in library_cards]
+        lib = gs.pile_mgr.libraries[p_id]
+        gs.add_presentation_request(p_id, 'search_library', {'cards': lib})
+        options = [ChoiceOption(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in lib]
+        # options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in lib]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def tutor(gs: GameState, lib: list[GameCard], card: GameCard, to_zone: Zone):
+        gs.pile_mgr.move_card(card, to_zone)
+        random.shuffle(lib)
 
 class DiamondValley(Resolver):
     """{T}, Sacrifice a creature: You gain life equal to the sacrificed creature's toughness"""
@@ -400,9 +406,13 @@ class EnchantmentAlteration(Resolver):
             available_hosts = [c for c in gs.card_filter.in_play().lands().result() if c is not t.host]
         else:
             return
-        from models.actions.special import Attach
-        options = [Attach(source.owner_id, gs, source, host) for host in available_hosts]
+        options = [ChoiceOption(f'Attach {t} to {host}', lambda: self.attach(t, host)) for host in available_hosts]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def attach(aura: GameCard, host: GameCard):
+        aura.host = host
+        host.auras.append(aura)
 
 class EnergyTap(Resolver):
     """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""

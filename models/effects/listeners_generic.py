@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Callable, Any, Optional
 
 from models.actions.ability_pipeline_support import AbilityAction
@@ -10,7 +12,6 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
-from models.actions.tap_untap import PayManaToUntapAction
 from models.choice_actions_all import ChoiceAction, ChoiceOption
 from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener
@@ -630,6 +631,15 @@ class PayManaToUntapUpkeep(Listener):
     """Pay [x] to untap at target owner's upkeep"""
     listens_to = UpkeepEvent
 
+    @dataclass
+    class PayManaToUntapState:
+        subject_cards: list[GameCard]
+        handled_cards: list[GameCard] = field(default_factory=list)
+
+        @property
+        def remaining_cards(self) -> list[GameCard | None]:
+            return [c for c in self.subject_cards if c not in self.handled_cards]
+
     def __init__(self, mana_cost: str, target_func: Callable):
         self.mana_cost = mana_cost
         self.target_func = target_func
@@ -641,9 +651,27 @@ class PayManaToUntapUpkeep(Listener):
         target_owner = targets[0].owner_id
         if event.active_player != target_owner or not gs.mana_pools[target_owner].can_pay(self.mana_cost):
             return
+        state = PayManaToUntapUpkeep.PayManaToUntapState(targets)
+        self.queue_next_choice(gs, state)
 
-        options = [PayManaToUntapAction(target_owner, gs, s, t, self.mana_cost, targets) for t in targets]
-        gs.queue_choice(ChoiceAction(options, may=True))
+    def queue_next_choice(self, gs: GameState, state: PayManaToUntapUpkeep.PayManaToUntapState):
+        if not state.remaining_cards or not gs.mana_pools[gs.player_turn_idx].can_pay(self.mana_cost):
+            return
+        card = state.remaining_cards[0]
+        mc = self.mana_cost
+        options = [ChoiceOption(f"Leave {card} tapped", lambda c=card: self.leave_tapped(gs, state, c)),
+                   ChoiceOption(f"Pay {mc} to untap {card}", lambda c=card: self.untap_card(gs, state, c))]
+        gs.queue_choice(ChoiceAction(options))
+
+    def untap_card(self, gs: GameState, state: PayManaToUntapUpkeep.PayManaToUntapState, c: GameCard):
+        gs.mana_pools[c.owner_id].pay(self.mana_cost)
+        c.untap()
+        state.handled_cards.append(c)
+        self.queue_next_choice(gs, state)
+
+    def leave_tapped(self, gs: GameState, state: PayManaToUntapUpkeep.PayManaToUntapState, c: GameCard):
+        state.handled_cards.append(c)
+        self.queue_next_choice(gs, state)
 
 class RemoveCounterAtTargetUpkeep(Listener):
     """At target owner's upkeep, remove counter(s) from this card"""
