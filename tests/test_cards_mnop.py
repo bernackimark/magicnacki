@@ -3,7 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.cast import CastWithNoSpellEffect
-from models.actions.end_step_pass_turn import PassTheTurn
+from models.actions.advance_phase import PassTheTurn
 from models.actions.special import Attach, PayManaAndOrTakeDamage
 from models.actions.tap_untap import PayManaToUntapAction
 from models.constants import KW

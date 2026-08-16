@@ -111,7 +111,7 @@ class UpkeepPhase(PhaseState):
         gs.event_mgr.emit(UpkeepEvent(active_player=gs.player_turn_idx))
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.actions.draw_discard import MoveToDrawPhase
+        from models.actions.advance_phase import MoveToDrawPhase
         # allow upkeep-triggered activations
         for c in gs.pile_mgr.boards[p_id]:
             abilities = gs.get_available_activated_abilities(c)
@@ -145,8 +145,8 @@ class MainPhase(PhaseState):
         gs.event_mgr.emit(MainPhaseEvent(gs.player_turn_idx))
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.actions.combat import BeginCombat
-        from models.actions.end_step_pass_turn import MoveToEndStep
+        from models.actions.advance_phase import BeginCombat
+        from models.actions.advance_phase import MoveToEndStep
 
         actions: list[Action] = []
 
@@ -180,7 +180,8 @@ class DeclareAttackersPhase(PhaseState):
         gs.event_mgr.emit(CombatBeginEvent(gs.player_turn_idx))
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.actions.combat import FinishDeclaringAttackers, CreatureAttack
+        from models.actions.combat import CreatureAttack
+        from models.actions.advance_phase import FinishDeclaringAttackers
         actions: list[Action] = []
 
         if gs.combat_mgr.combats and not gs.phase_mgr.any_remaining_required_attackers(p_id, gs):
@@ -206,7 +207,8 @@ class DeclareBlockersPhase(PhaseState):
             gs.event_mgr.emit(AttackEvent(com.attacker))
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.actions.combat import FinishBlocking, AssignBlocker
+        from models.actions.combat import AssignBlocker
+        from models.actions.advance_phase import FinishBlocking
 
         if not gs.combat_mgr.combats:
             return None
@@ -295,7 +297,7 @@ class SecondMainPhase(PhaseState):
     phase = Phase.SECOND_MAIN
 
     def get_actions(self, p_id: int, gs: GameState):
-        from models.actions.end_step_pass_turn import MoveToEndStep
+        from models.actions.advance_phase import MoveToEndStep
 
         actions: list[Action] = [MoveToEndStep(p_id, gs)]
 
@@ -389,7 +391,7 @@ class PassTurnPhase(PhaseState):
     phase = Phase.PASS_THE_TURN
 
     def on_enter(self, gs: GameState):
-        from models.actions.end_step_pass_turn import PassTheTurn
+        from models.actions.advance_phase import PassTheTurn
         from models.events_all import PassTheTurnEvent
 
         current_turn_number = gs.turn_mgr.turn_number

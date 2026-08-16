@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.actions.base import Action
-from models.systems.phase import Phase
 
 
 @dataclass
@@ -29,16 +28,6 @@ class DiscardCards(Action):
         for c in self.cards[::]:
             print(f"Discarding {c} from player {self.player_idx}'s hand")
             self.gs.pile_mgr.discard(c)
-        self.finish()
-
-@dataclass
-class MoveToDrawPhase(Action):
-
-    def __repr__(self) -> str:
-        return "Move to Draw Phase"
-
-    def play(self) -> None:
-        self.gs.phase_mgr.set_phase(Phase.DRAW)
         self.finish()
 
 
