@@ -14,7 +14,7 @@ class ChoiceManager:
 
     @property
     def current(self) -> ChoiceAction | None:
-        return self.current
+        return self._current
 
     def choose(self, option: CO) -> None:
         # The current choice is being consumed.
@@ -23,8 +23,7 @@ class ChoiceManager:
         # Execute the actual game operation.
         option.play()
 
-        # If the callback didn't create another current choice,
-        # promote the next queued choice.
+        # If the callback didn't create another current choice, promote the next queued choice.
         if self.current is None and self._pending:
             self._current = self._pending.pop(0)
 
@@ -41,6 +40,9 @@ class ChoiceManager:
     def clear(self) -> None:
         self._current = None
         self._pending.clear()
+
+    def clear_current(self) -> None:
+        self._current = None
 
     def get_actions(self) -> list[CO]:
         if self.current is None:

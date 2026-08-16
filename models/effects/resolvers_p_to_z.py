@@ -519,7 +519,6 @@ class WandOfIth(Resolver):
         life_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
         options = [CO(f'Pay {life_amt}', lambda: gs.score_mgr.decrement_life(opp, life_amt, source, gs)),
                    CO(f'Discard {the_card}', lambda: gs.pile_mgr.discard(the_card, source))]
-        # options = [PayLife(opp, gs, source, life_amt), DiscardCards(opp, gs, the_card)]
         gs.queue_choice(ChoiceAction(options))
 
 class WarBarge(Resolver):

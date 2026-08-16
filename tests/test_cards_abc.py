@@ -367,6 +367,8 @@ class TestCardsAtoC(unittest.TestCase):
         target = self.g.battlefield('savannah-lions', owner=1)
         self.g.activate_ability(aa, target)
         self.assertIn(target, self.g.gy[1])
+        print(self.gs.action_on_idx)
+        print(self.gs.pending_choice.get_actions())
         deal_1_damage_to_play_0 = self.gs.pending_choice.get_actions()[1]
         deal_1_damage_to_play_0.play()
         self.assertEqual(19, self.gs.life[0])

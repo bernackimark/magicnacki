@@ -331,8 +331,8 @@ class Halfdane(Listener):
             target = targets[0]
             s.modifiers.append(BasePT(target.power, target.toughness))
             return
-        options = [CO(f"Change {s}'s base PT to that of {t}",
-                      lambda t=target: BasePT(t.power, t.toughness).resolve(gs, s, s)) for t in targets]
+        options = [CO(f"Change {s}'s base PT to that of {target}",
+                      lambda t=target: BasePT(t.power, t.toughness).resolve(gs, s, s)) for target in targets]
         gs.queue_choice(ChoiceAction(options))
 
 class HazezonTamarTokenCreation(Listener):
@@ -847,6 +847,7 @@ class WormsOfTheEarthUpkeep(Listener):
         options = [CO('Take 5 damage and destroy Worms Of The Earth',
                       lambda: self.take_5_damage(gs, event.active_player, source))]
         your_land_cnt = len(gs.card_filter.on_player_board(event.active_player).lands().result())
+        print('xxx', event.active_player, your_land_cnt)
         if your_land_cnt >= 2:
             options.append(CO('Sac two lands and destroy Worms Of The Earth',
                               lambda: self.sac_two_lands(gs, event.active_player, source)))

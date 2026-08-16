@@ -41,8 +41,9 @@ class CursedRack(Listener):
 
         hand = gs.pile_mgr.hands[opp_id]
         overage = len(hand) - 4
-        combos = [_ for _ in combinations(hand, r=overage)]
-        options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
+        combos: list[list[GameCard]] = [_ for _ in combinations(hand, r=overage)]
+        options = [CO(f"Discard {', '.join([c.props.name for c in combo])}",
+                      lambda: gs.pile_mgr.discards(combo)) for combo in combos]
         gs.queue_choice(ChoiceAction(options))
 
 

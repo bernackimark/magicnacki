@@ -19,7 +19,8 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g.activate_ability(aa, 0)
         pay_option = self.gs.pending_choice.options[0]
         discard_option = self.gs.pending_choice.options[1]
-        discard_card = discard_option.cards
+        discard_card = ''  # this is just a placeholder line;
+        # TODO: this test actually tests a random event and need to be written
         if discard_card.is_land:
             pay_option.play()
             self.assertEqual(19, self.gs.life[0])
@@ -85,7 +86,10 @@ class TestCardsWXYZ(unittest.TestCase):
         card = self.g.battlefield('worms-of-the-earth')
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         print(self.gs.pending_choice.get_actions())
-        self.assertEqual(2, len(self.gs.pending_choice.get_actions()))
+        self.assertEqual(1, self.gs.action_on_idx)
+        self.assertEqual(2, len(self.gs.pending_choice.get_actions()),
+                         "Player 1 doesn't have any lands, so shouldn't be offered the 'Sac two lands' option"
+                         "I think the problem is that the last choice is never cleared")
         take_5_damage = self.gs.pending_choice.get_actions()[0]
         take_5_damage.play()
         self.assertEqual(15, self.gs.life[1])

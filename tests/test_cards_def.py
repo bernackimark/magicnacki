@@ -132,7 +132,7 @@ class TestCardsDEF(unittest.TestCase):
 
         legal_host = self.g.battlefield('merfolk-of-the-pearl-trident')
         self.g.cast_and_accept(card, aura, card.abilities[0])
-        self.assertIn(legal_host, card.abilities[0].target_spec.get_targets(self.gs, card))
+        self.assertEqual(1, len(self.gs.pending_choice.get_actions()))
 
     def test_eureka(self):
         """Both players may take any permanent in their hand and put it directly into play.
@@ -277,10 +277,13 @@ class TestCardsDEF(unittest.TestCase):
         card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_stack_action])
         card_pipeline.advance()
         card_pipeline.resolve_ability()
-        pay_mana_to_prevent_counter_action = self.gs.pending_choice.get_actions()[0]
-        pay_mana_to_prevent_counter_action.play()
-        self.assertTrue(17, self.gs.life[1])
-        self.assertTrue(self.gs.pending_choice is None)
+        pay_mana_to_prevent_counter = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(pay_mana_to_prevent_counter)
+        self.assertIsNone(self.gs.pending_choice)
+        self.assertEqual(17, self.gs.life[0],
+                         "The stack clears, but we never go back and resolve lightning-bolt"
+                         "I'm not even sure that's correct, once the mana paid,"
+                         "maybe priority goes back to the counterer")
 
     def test_fog(self):
         """Prevent all combat damage this turn"""

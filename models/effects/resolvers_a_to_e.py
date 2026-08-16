@@ -264,9 +264,8 @@ class CuombajjWitches(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None):
         gs.apply_damage(s, 1, t)
         targets = gs.card_filter.in_play().creatures().result() + [0, 1]
-        options = [CO(f'{s.props.name} deals 1 damage to {t}',
-                      lambda: gs.apply_damage(s, 1, t)) for t in targets]
-        # options = [DealDamageTo(flip(s.owner_id), gs, s, 1, t) for t in targets]
+        options = [CO(f'{s.props.name} deals 1 damage to {target}',
+                      lambda chosen_target=target: gs.apply_damage(s, 1, chosen_target)) for target in targets]
         gs.queue_choice(ChoiceAction(options))
 
 class DanceOfMany(Resolver):

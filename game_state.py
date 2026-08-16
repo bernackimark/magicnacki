@@ -46,7 +46,7 @@ class GameState:
         self.all_player_cards = cards.copy()
 
         # ChoiceMgr is for forced actions that don't hit the stack (ex: it's resolved that you must discard, select one)
-        self.choice_mgr = ChoiceManager(self, MulliganChoice(self.player_turn_idx, self, self.rules['mulligan']))
+        self.choice_mgr = ChoiceManager(self, MulliganChoice(player_turn_idx, self, self.rules['mulligan']))
         self.combat_mgr = CombatManager(self)
         self.event_mgr = EventManager(self)  # houses, emits, registers, unregisters Listener(Effect)
         self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
