@@ -339,10 +339,10 @@ class DiscardPhase(PhaseState):
 
     def get_actions(self, p_id: int, gs: GameState):
         from models.choice_actions_all import ChoiceAction
-        from models.choice_options import ChoiceOption
+        from models.choice_options import CO
         hand = gs.pile_mgr.hands[p_id]
         if len(hand) > 7:
-            options = [ChoiceOption(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
+            options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
             # options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
             gs.queue_choice(ChoiceAction(options))
 

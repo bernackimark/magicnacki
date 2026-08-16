@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption
+from models.choice_options import CO
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -148,8 +148,8 @@ class LegendarySingletonCheck(BaseRule):
                 if c.props.slug not in legends_seen:
                     legends_seen[c.props.slug] = c
                 else:
-                    options = [ChoiceOption(f'Move legendary {c} to graveyard',
-                                            lambda: gs.pile_mgr.move_card(c, Zone.BATTLEFIELD, cause='legendary_rule'))
+                    options = [CO(f'Move legendary {c} to graveyard',
+                                  lambda: gs.pile_mgr.move_card(c, Zone.BATTLEFIELD, cause='legendary_rule'))
                                for c in legends_seen.values()]
                     # options = [BattlefieldToGraveyard(p_id, gs, c) for c in legends_seen.values()]
                     gs.queue_choice(ChoiceAction(options))

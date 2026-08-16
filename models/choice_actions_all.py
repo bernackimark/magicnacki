@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from models.actions.base import Action
-from models.choice_options import ChoiceOption
+from models.choice_options import CO
 
 if TYPE_CHECKING:
     from models.actions.ability_pipeline import AbilityPipeline
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 # --- GENERIC CHOICE ACTIONS ---
 @dataclass
 class ChoiceAction(ABC):
-    options: list[ChoiceOption] = field(default_factory=list)
+    options: list[CO] = field(default_factory=list)
     may: bool = False
 
     @dataclass
@@ -27,7 +27,7 @@ class ChoiceAction(ABC):
 
     def __post_init__(self):
         if self.may:
-            self.options.append(ChoiceOption(description='Decline', callback=lambda: None))
+            self.options.append(CO(description='Decline', callback=lambda: None))
             # p_idx = self.options[0].player_idx
             # gs = self.options[0].gs
             # self.options.append(ChoiceAction._Decline(p_idx, gs))
@@ -35,7 +35,7 @@ class ChoiceAction(ABC):
     def choose_target(self, target):
         raise NotImplementedError
 
-    def get_actions(self) -> list[ChoiceOption]:
+    def get_actions(self) -> list[CO]:
         return self.options
 
 

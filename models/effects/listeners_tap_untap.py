@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption
+from models.choice_options import CO
 from models.game_card.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
 from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapPhaseQueryEvent
@@ -84,7 +84,7 @@ class Kudzu(Listener):
             s.host = host_owner_lands[0]
             s.host.auras.append(s)
             return
-        options = [ChoiceOption(f'Attach {s} to {land}', lambda: self.attach(s, land)) for land in host_owner_lands]
+        options = [CO(f'Attach {s} to {land}', lambda: self.attach(s, land)) for land in host_owner_lands]
         gs.queue_choice(ChoiceAction(options))
 
     @staticmethod
@@ -202,8 +202,7 @@ class TimeVaultOption(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
         if source.owner_id != event.active_player or not source.is_tapped:
             return
-        options = [ChoiceOption(f'Skip turn and untap {source}', lambda: self.untap_and_skip_turn(gs, source))]
-        # options = [TimeVaultSkipTurnAction(source.owner_id, gs, source)]
+        options = [CO(f'Skip turn and untap {source}', lambda: self.untap_and_skip_turn(gs, source))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
     @staticmethod

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Callable, Literal
 from models.action_stack import StackItemType
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption, pay_mana_to_prevent_counter
+from models.choice_options import CO, pay_mana_to_prevent_counter
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver
@@ -117,8 +117,8 @@ class CounterSpellUnlessManaPaid(Resolver):
             gs.action_stack.remove(t)
             gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [ChoiceOption(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
-                                lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, t)),
+        options = [CO(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
+                      lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, t)),
                    CounterSpellAction(p_id, gs, t)]
         gs.queue_choice(ChoiceAction(options))
 
@@ -142,7 +142,7 @@ class CreateTokenCreature(Resolver):
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        options = [ChoiceOption(f"Declare {source}'s color as {color}", lambda: self.etb_action(source, color))
+        options = [CO(f"Declare {source}'s color as {color}", lambda: self.etb_action(source, color))
                    for color in COLOR_LETTERS]
         gs.queue_choice(ChoiceAction(options))
 
@@ -214,7 +214,7 @@ class Discard(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         """t is the player id"""
-        options = [ChoiceOption(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
+        options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
         # options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
         gs.queue_choice(ChoiceAction(options))
 

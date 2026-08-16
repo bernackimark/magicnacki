@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption
+from models.choice_options import CO
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import PLUS_ONE_ZERO
 from models.effects.base import Listener
@@ -36,8 +36,8 @@ class HasranOgress(Listener):
         if not gs.mana_pools[s.owner_id].can_pay('2'):
             gs.apply_damage(s, 3, s.owner_id)
             return
-        options = [ChoiceOption(f"Pay {{{'2'}}}", lambda: gs.mana_pools[s.owner_id].pay('2')),
-                   ChoiceOption(f'{s} deals 3 damage to you', lambda: gs.apply_damage(s, 3, s.owner_id))]
+        options = [CO(f"Pay {{{'2'}}}", lambda: gs.mana_pools[s.owner_id].pay('2')),
+                   CO(f'{s} deals 3 damage to you', lambda: gs.apply_damage(s, 3, s.owner_id))]
         # options = [PayMana(s.owner_id, gs, s, '2'), DealDamageTo(s.owner_id, gs, s, 3, s.owner_id)]
         gs.queue_choice(ChoiceAction(options))
 
@@ -217,8 +217,8 @@ class Johan(Listener):
     listens_to = CombatBeginEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: CombatBeginEvent) -> None:
-        options = [ChoiceOption(f'{source} gains Defender & your creatures gain Vigilance until end of turn',
-                                lambda: self.johan(gs, source))]
+        options = [CO(f'{source} gains Defender & your creatures gain Vigilance until end of turn',
+                      lambda: self.johan(gs, source))]
         # options = [JohanAction(source.owner_id, gs, source)]
         gs.queue_choice(ChoiceAction(options, may=True))
 
@@ -303,8 +303,8 @@ class FloralSpuzzem(Listener):
         opp_artifacts = gs.card_filter.on_player_board(flip(s.owner_id)).artifacts().result()
         if not opp_artifacts:
             return
-        options = [ChoiceOption(f'Destroy {t} & forego combat damage assigned by {s}',
-                                lambda: self.destroy_and_forego_combat_damage(gs, s, t))
+        options = [CO(f'Destroy {t} & forego combat damage assigned by {s}',
+                      lambda: self.destroy_and_forego_combat_damage(gs, s, t))
                    for t in opp_artifacts]
         gs.queue_choice(ChoiceAction(options, may=True))
 

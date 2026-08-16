@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.combat import AssignBlocker
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption
+from models.choice_options import CO
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
@@ -71,7 +71,7 @@ class FellwarStone(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         produceable = {mana_produced for c in gs.card_filter.on_player_board(flip(source.owner_id)).result()
                        for mana_produced in c.mana_produced}
-        options = [ChoiceOption(f"Add {{{color}}}", lambda: gs.mana_pools[source.owner_id].add_floating(color))
+        options = [CO(f"Add {{{color}}}", lambda: gs.mana_pools[source.owner_id].add_floating(color))
                    for color in produceable]
         if options:
             gs.queue_choice(ChoiceAction(options))
@@ -124,7 +124,7 @@ class GlyphOfReincarnation(Resolver):
         elif len(attacker_gy_creatures) == 1:
             gs.pile_mgr.reanimate(attacker_gy_creatures[0])
         else:
-            options = [ChoiceOption(f'Reanimate {c}', lambda: gs.pile_mgr.reanimate(c)) for c in attacker_gy_creatures]
+            options = [CO(f'Reanimate {c}', lambda: gs.pile_mgr.reanimate(c)) for c in attacker_gy_creatures]
             # options = [ReanimateAction(source.owner_id, gs, source, t) for t in attacker_gy_creatures]
             gs.queue_choice(ChoiceAction(options))
 
@@ -183,9 +183,9 @@ class HealingSalve(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         s = source
         all_targets = gs.card_filter.in_play().creatures().result() + [0, 1]
-        options = [ChoiceOption('You gain 3 life', lambda: gs.score_mgr.increment_life(s.owner_id, 3, s, gs))] + \
-                  [ChoiceOption('Prevent the next 3 damage that would be dealt to any target this turn',
-                                lambda: self.prevent_next_3(gs, t)) for t in all_targets]
+        options = [CO('You gain 3 life', lambda: gs.score_mgr.increment_life(s.owner_id, 3, s, gs))] + \
+                  [CO('Prevent the next 3 damage that would be dealt to any target this turn',
+                      lambda: self.prevent_next_3(gs, t)) for t in all_targets]
         gs.queue_choice(ChoiceAction(options))
 
     @staticmethod
@@ -229,7 +229,7 @@ class JalumTome(Resolver):
     """Draw a card, then discard a card"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.draw(source.owner_id)
-        options = [ChoiceOption(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[source.owner_id]]
+        options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[source.owner_id]]
         # options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id]]
         gs.queue_choice(ChoiceAction(options))
 
@@ -370,8 +370,8 @@ class MoldDemon(Resolver):
         if len(your_swamps) < 2:
             gs.pile_mgr.destroy(source, False)
         combos = list(combinations(your_swamps, 2))
-        options = [ChoiceOption(f"Sac 2 swamps", lambda: self.sac_two_swamps(gs, combo)) for combo in combos] + \
-                  [ChoiceOption(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
+        options = [CO(f"Sac 2 swamps", lambda: self.sac_two_swamps(gs, combo)) for combo in combos] + \
+                  [CO(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
         # options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in combos]
         gs.queue_choice(ChoiceAction(options))
 
@@ -387,8 +387,8 @@ class NamelessRace(Resolver):
         opp = flip(source.owner_id)
         max_amt = (len(gs.card_filter.on_player_board(opp).non_token().white().permanents().result()) +
                    len(gs.card_filter.in_player_graveyard(opp).white().result()))
-        options = [ChoiceOption(f'Pay {amt} life to make {source} a {amt}/{amt} creature',
-                                lambda: self.etb_action(gs, source, amt)) for amt in range(max_amt + 1)]
+        options = [CO(f'Pay {amt} life to make {source} a {amt}/{amt} creature',
+                      lambda: self.etb_action(gs, source, amt)) for amt in range(max_amt + 1)]
         gs.queue_choice(ChoiceAction(options))
 
     @staticmethod
@@ -407,9 +407,9 @@ class NaturalSelection(Resolver):
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
         # a0 = Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[t])
         # c1, c2, c3 = top_3_cards
-        options = [ChoiceOption(f"Order top of library top -> bottom: {', '.join(list(perm))}",
-                                lambda: self.order_lib(lib, list(perm))) for perm in permutations(top_3_cards, r=3)] + \
-                  [ChoiceOption(f"Shuffle", lambda: random.shuffle(lib))]
+        options = [CO(f"Order top of library top -> bottom: {', '.join(list(perm))}",
+                      lambda: self.order_lib(lib, list(perm))) for perm in permutations(top_3_cards, r=3)] + \
+                  [CO(f"Shuffle", lambda: random.shuffle(lib))]
         # a1 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c2, c3])
         # a2 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c3, c2])
         # a3 = ReorderTopOfLibrary(source.owner_id, gs, t, [c2, c1, c3])

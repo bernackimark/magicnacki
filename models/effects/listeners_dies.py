@@ -4,7 +4,7 @@ import math
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption, pay_mana_to_draw_cards, pay_mana_to_bounce, pay_mana_to_gain_life
+from models.choice_options import CO, pay_mana_to_draw_cards, pay_mana_to_bounce, pay_mana_to_gain_life
 from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import DiesEvent, DamageResolvedEvent
@@ -50,8 +50,8 @@ class BlazingEffigy(Listener):
             return
         total_damage = 3 + sum([e.amt for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)
                                 if e.target is s and e.source.props.slug == 'blazing-effigy'])
-        options = [ChoiceOption(f'{s.props.name} deals {total_damage} damage to {t}',
-                                lambda: gs.apply_damage(s, total_damage, t)) for t in all_creatures]
+        options = [CO(f'{s.props.name} deals {total_damage} damage to {t}',
+                      lambda: gs.apply_damage(s, total_damage, t)) for t in all_creatures]
         # options = [DealDamageTo(s.owner_id, gs, s, total_damage, target) for target in all_creatures]
         gs.queue_choice(ChoiceAction(options))
 
@@ -130,8 +130,8 @@ class PuppetMaster(Listener):
             return
         gs.pile_mgr.bounce(event.card)
         if gs.mana_pools[source.owner_id].can_pay('UUU'):
-            options = [ChoiceOption(f"Pay {{{'UUU'}}} to bounce {source}",
-                                    lambda: pay_mana_to_bounce(gs, source.owner_id, 'UUU', source))]
+            options = [CO(f"Pay {{{'UUU'}}} to bounce {source}",
+                          lambda: pay_mana_to_bounce(gs, source.owner_id, 'UUU', source))]
             gs.queue_choice(ChoiceAction(options, may=True))
 
 class RukhEgg(Listener):
@@ -188,7 +188,7 @@ class SoulNet(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not event.card.is_creature:
             return
-        options = [ChoiceOption(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
+        options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 
@@ -199,7 +199,7 @@ class TabletOfEpityr(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if not event.card.is_artifact or event.card.owner_id != source.owner_id:
             return
-        options = [ChoiceOption(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
+        options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 
@@ -210,5 +210,5 @@ class UrzasMiter(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
         if event.card.owner_id != source.owner_id or 'Artifact' not in event.card.card_types:
             return
-        options = [ChoiceOption(f'Pay 3 to draw a card', lambda: pay_mana_to_draw_cards(gs, source.owner_id, '3'))]
+        options = [CO(f'Pay 3 to draw a card', lambda: pay_mana_to_draw_cards(gs, source.owner_id, '3'))]
         gs.queue_choice(ChoiceAction(options, may=True))

@@ -2,7 +2,6 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import AbilityAction, SelectXAction2
-from models.actions.special import DrafnaSelectCardAction
 from models.game_card.counter_tokens import HUNGER
 from models.events_all import UpkeepEvent
 from models.systems.phase import Phase
@@ -88,10 +87,10 @@ class TestCardsDEF(unittest.TestCase):
         self.g.cast_and_accept(card, 0, card.abilities[0])
         self.assertEqual(4, len(self.gs.pending_choice.get_actions()))  # 3 artifacts & finish action
         select_aladdins_lamp = next(a for a in self.gs.pending_choice.get_actions()
-                                    if isinstance(a, DrafnaSelectCardAction) and a.card is aladdins_lamp)
+                                    if a.description.startswith('Move ') and a.card is aladdins_lamp)
         select_aladdins_lamp.play()
         select_colossus = next(a for a in self.gs.pending_choice.get_actions()
-                               if isinstance(a, DrafnaSelectCardAction) and a.card is colossus)
+                               if a.description.startswith('Move ') and a.card is colossus)
         select_colossus.play()
         finish_action = self.gs.pending_choice.get_actions()[-1]
         finish_action.play()

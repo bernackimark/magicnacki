@@ -5,10 +5,8 @@ from dataclasses import dataclass, field
 from itertools import combinations
 from typing import TYPE_CHECKING
 
-from models.actions.special import CleansingPayAction, CleansingDeclineAction, DrafnaFinishAction, \
-    DrafnaSelectCardAction, EurekaPlayCardAction, EurekaPlayerFinishAction
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption, copy_card
+from models.choice_options import CO, copy_card
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import STORAGE, PUPA, PLUS_ONE
 from models.effects.base import Resolver, RTarget, ResContext
@@ -90,7 +88,7 @@ class BazaarOfBaghdad(Resolver):
             gs.pile_mgr.discards(cards, source=source)
             return
         combos = [list(combo) for combo in combinations(cards, 3)]
-        options = [ChoiceOption(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
+        options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
         # options = [DiscardCards(source.owner_id, gs, list(combo))
         #            for r in range(3, 4) for combo in combinations(cards, r)]
         gs.queue_choice(ChoiceAction(options))
@@ -180,8 +178,7 @@ class Cleansing(Resolver):
         state = Cleansing.CleansingState(lands)
         self.queue_next_choice(gs, source, state)
 
-    @staticmethod
-    def queue_next_choice(gs: GameState, source: GameCard, state: CleansingState):
+    def queue_next_choice(self, gs: GameState, source: GameCard, state: CleansingState):
         # Finished all lands
         if state.land_idx >= len(state.lands):
             print('Entering exit flow')
@@ -196,12 +193,29 @@ class Cleansing(Resolver):
             print('Moving to next card')
             state.land_idx += 1
             state.player_cnt_acted_on_this_land = 0
-            Cleansing.queue_next_choice(gs, source, state)
+            self.queue_next_choice(gs, source, state)
             return
 
-        options = [CleansingPayAction(gs.action_on_idx, gs, source, state),
-                   CleansingDeclineAction(gs.action_on_idx, gs, source, state)]
+        options = [CO(f"Pay 1 life to save Player #{state.active_land.owner_id}'s {state.active_land}",
+                      lambda: self.pay_cleansing(gs, source.owner_id, source, state)),
+                   CO(f"Decline saving Player #{state.active_land.owner_id}'s {state.active_land}",
+                      lambda: self.decline_cleansing(gs, source, state))]
         gs.queue_choice(ChoiceAction(options))
+
+    def decline_cleansing(self, gs: GameState, s: GameCard, state: CleansingState):
+        state.player_cnt_acted_on_this_land += 1
+        # Ask the next player
+        gs.action_on_idx = flip(gs.action_on_idx)
+        self.queue_next_choice(gs, s, state)
+
+    def pay_cleansing(self, gs: GameState, p_id: int, s: GameCard, state: CleansingState):
+        gs.score_mgr.decrement_life(p_id, 1, s, gs)
+        state.saved_lands.append(state.active_land)
+
+        # Move immediately to next land
+        state.land_idx += 1
+        gs.action_on_idx = flip(gs.action_on_idx)
+        self.queue_next_choice(gs, s, state)
 
 
 class Clone(Resolver):
@@ -210,7 +224,7 @@ class Clone(Resolver):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        options = [ChoiceOption(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
+        options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
         gs.queue_choice(ChoiceAction(options))
 
 class CocoonCast(Resolver):
@@ -234,7 +248,7 @@ class CopyArtifact(Resolver):
         card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
         if not card_options:
             return
-        options = [ChoiceOption(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
+        options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
         gs.queue_choice(ChoiceAction(options))
 
 class Crumble(Resolver):
@@ -250,8 +264,8 @@ class CuombajjWitches(Resolver):
     def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None):
         gs.apply_damage(s, 1, t)
         targets = gs.card_filter.in_play().creatures().result() + [0, 1]
-        options = [ChoiceOption(f'{s.props.name} deals 1 damage to {t}',
-                                lambda: gs.apply_damage(s, 1, t)) for t in targets]
+        options = [CO(f'{s.props.name} deals 1 damage to {t}',
+                      lambda: gs.apply_damage(s, 1, t)) for t in targets]
         # options = [DealDamageTo(flip(s.owner_id), gs, s, 1, t) for t in targets]
         gs.queue_choice(ChoiceAction(options))
 
@@ -275,7 +289,7 @@ class DemonicTutor(Resolver):
         p_id = source.owner_id
         lib = gs.pile_mgr.libraries[p_id]
         gs.add_presentation_request(p_id, 'search_library', {'cards': lib})
-        options = [ChoiceOption(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in lib]
+        options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in lib]
         # options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in lib]
         gs.queue_choice(ChoiceAction(options))
 
@@ -341,17 +355,26 @@ class DrafnasRestoration(Resolver):
             return
 
         state = DrafnasRestoration.DrafnasRestorationState(all_cards)
-        self.queue_next_choice(gs, source, state)
+        self.queue_next_choice(gs, state)
 
-    @staticmethod
-    def queue_next_choice(gs: GameState, source: GameCard, state: DrafnasRestorationState):
+    def queue_next_choice(self, gs: GameState, state: DrafnasRestorationState):
         if len(state.selected_cards) >= len(state.all_artifacts_in_target_gy):
-            options = [DrafnaFinishAction(gs.action_on_idx, gs, source, state)]
+            options = [CO("Finish selecting artifacts", lambda: self.finish_selecting(gs, state))]
         else:
             remaining = [c for c in state.all_artifacts_in_target_gy if c not in state.selected_cards]
-            options = [DrafnaSelectCardAction(gs.action_on_idx, gs, source, state, card) for card in remaining]
-            options.append(DrafnaFinishAction(gs.action_on_idx, gs, source, state))  # type: ignore
+            options = [CO("Finish selecting artifacts", lambda: self.finish_selecting(gs, state))] + \
+                      [CO(f"Move {c} to library; subsequent artifacts will be placed above this card",
+                          lambda: self.select_card(state, c)) for c in remaining]
         gs.queue_choice(ChoiceAction(options))
+
+    @staticmethod
+    def finish_selecting(gs: GameState, state: DrafnasRestorationState):
+        for card in state.selected_cards:
+            gs.pile_mgr.move_card(card, Zone.LIBRARY)
+
+    @staticmethod
+    def select_card(state: DrafnasRestorationState, card: GameCard):
+        state.selected_cards.append(card)
 
 class DustToDust(Resolver):
     """Exile two target artifacts"""
@@ -406,7 +429,7 @@ class EnchantmentAlteration(Resolver):
             available_hosts = [c for c in gs.card_filter.in_play().lands().result() if c is not t.host]
         else:
             return
-        options = [ChoiceOption(f'Attach {t} to {host}', lambda: self.attach(t, host)) for host in available_hosts]
+        options = [CO(f'Attach {t} to {host}', lambda: self.attach(t, host)) for host in available_hosts]
         gs.queue_choice(ChoiceAction(options))
 
     @staticmethod
@@ -446,24 +469,37 @@ class Eureka(Resolver):
         state = Eureka.EurekaState(gs.player_turn_idx)
         self.queue_next_choice(gs, state)
 
-    @staticmethod
-    def queue_next_choice(gs: GameState, state: EurekaState):
+    def queue_next_choice(self, gs: GameState, state: EurekaState):
         if sorted(state.players_who_are_done) == [0, 1]:
             gs.pending_choice = None
             return
 
         if state.current_player in state.players_who_are_done:
             state.current_player = flip(state.current_player)
-            Eureka.queue_next_choice(gs, state)
+            self.queue_next_choice(gs, state)
             return
 
         gs.action_on_idx = state.current_player
 
         perms_in_hand = [c for c in gs.hands[state.current_player] if c.is_permanent]
-        options = [EurekaPlayCardAction(state.current_player, gs, state, card) for card in perms_in_hand]
-        options.append(EurekaPlayerFinishAction(state.current_player, gs, state))  # type: ignore
+        options = [CO(f"Play {c} to your board", lambda: self.play_card(gs, gs.action_on_idx, state, c))
+                   for c in perms_in_hand] + \
+                  [CO("Finish playing permanents to your board",
+                      lambda: self.finish_playing(gs, gs.action_on_idx, state))]
         choice = ChoiceAction(options)
         gs.queue_choice(choice)
+
+    def finish_playing(self, gs: GameState, p_id: int, state: EurekaState):
+        state.players_who_are_done.append(p_id)
+        state.current_player = flip(p_id)
+        gs.pending_choice = None
+        self.queue_next_choice(gs, state)
+
+    def play_card(self, gs: GameState, p_id: int, state: EurekaState, card: GameCard):
+        gs.pile_mgr.move_card(card, Zone.BATTLEFIELD, cause='eureka', emit_zone_event=False)
+        state.current_player = flip(p_id)
+        gs.pending_choice = None
+        self.queue_next_choice(gs, state)
 
 class EvilPresence(Resolver):
     """Enchant land Enchanted land is a Swamp"""

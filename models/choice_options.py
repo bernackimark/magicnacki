@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class ChoiceOption:
+class CO:
+    """Choice Option: an option presented to a user in pending_choice"""
     description: str
     callback: Callable[[], None]
 

@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption, pay_mana_to_prevent_counter, pay_mana_to_gain_life
+from models.choice_options import CO, pay_mana_to_prevent_counter, pay_mana_to_gain_life
 from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
@@ -93,7 +93,7 @@ class OnColorSpellPayOneColorlessForOneLifeChoice(Listener):
             return
         if not gs.mana_pools[s.owner_id].can_pay('1'):
             return
-        options = [ChoiceOption(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, s.owner_id, '1'))]
+        options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, s.owner_id, '1'))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
 
@@ -494,8 +494,8 @@ class PayManaOrCounterSpellListener(Listener):
             gs.action_stack.remove(event.action)
             gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
-        options = [ChoiceOption(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
-                                lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, target_spell)),
+        options = [CO(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
+                      lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, target_spell)),
                    CounterSpellAction(p_id, gs, target_spell)]
         gs.queue_choice(ChoiceAction(options, may=True))
 
@@ -534,8 +534,8 @@ class OptionalUntap(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
         if source.owner_id != event.active_player or not source.is_tapped:
             return
-        options = [ChoiceOption(f'Untap {source}', lambda: self.untap_and_log_decision(gs, source)),
-                   ChoiceOption(f'Leave {source} tapped', lambda: self.log_decision(gs, source))]
+        options = [CO(f'Untap {source}', lambda: self.untap_and_log_decision(gs, source)),
+                   CO(f'Leave {source} tapped', lambda: self.log_decision(gs, source))]
         # options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
         gs.queue_choice(ChoiceAction(options))
 
@@ -623,8 +623,8 @@ class PayManaOrSacAtUpkeep(Listener):
         if not gs.mana_pools[s.owner_id].can_pay(self.mana_cost):
             gs.pile_mgr.sacrifice(s)
             return
-        options = [ChoiceOption(f"Pay {{{self.mana_cost}}}", lambda: gs.mana_pools[s.owner_id].pay(self.mana_cost)),
-                   ChoiceOption(f'Sac {s}', lambda: gs.pile_mgr.sacrifice(s))]
+        options = [CO(f"Pay {{{self.mana_cost}}}", lambda: gs.mana_pools[s.owner_id].pay(self.mana_cost)),
+                   CO(f'Sac {s}', lambda: gs.pile_mgr.sacrifice(s))]
         # options = [PayMana(s.owner_id, gs, s, self.mana_cost), Sac(s.owner_id, gs, s)]
         gs.queue_choice(ChoiceAction(options))
 
@@ -660,8 +660,8 @@ class PayManaToUntapUpkeep(Listener):
             return
         card = state.remaining_cards[0]
         mc = self.mana_cost
-        options = [ChoiceOption(f"Leave {card} tapped", lambda c=card: self.leave_tapped(gs, state, c)),
-                   ChoiceOption(f"Pay {mc} to untap {card}", lambda c=card: self.untap_card(gs, state, c))]
+        options = [CO(f"Leave {card} tapped", lambda c=card: self.leave_tapped(gs, state, c)),
+                   CO(f"Pay {mc} to untap {card}", lambda c=card: self.untap_card(gs, state, c))]
         gs.queue_choice(ChoiceAction(options))
 
     def untap_card(self, gs: GameState, state: PayManaToUntapUpkeep.PayManaToUntapState, c: GameCard):

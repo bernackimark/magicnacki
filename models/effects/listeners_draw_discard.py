@@ -5,7 +5,7 @@ from itertools import combinations
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import ChoiceOption
+from models.choice_options import CO
 from models.constants import Zone
 from models.game_card.counter_tokens import DOOM
 from models.effects.base import Listener
@@ -42,8 +42,7 @@ class CursedRack(Listener):
         hand = gs.pile_mgr.hands[opp_id]
         overage = len(hand) - 4
         combos = [_ for _ in combinations(hand, r=overage)]
-        options = [ChoiceOption(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
-        # options = [DiscardCards(opp_id, gs, combo) for combo in combos]
+        options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
         gs.queue_choice(ChoiceAction(options))
 
 
@@ -96,7 +95,7 @@ class IslandSanctuary(Listener):
         if event.active_player != source.owner_id:
             return
         option_text = 'Skip your draw & until your next turn, you can only be attacked by fliers and/or islandwalkers'
-        options = [ChoiceOption(option_text, lambda: self.island_sanctuary_method(gs, source))]
+        options = [CO(option_text, lambda: self.island_sanctuary_method(gs, source))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
     @staticmethod
@@ -130,19 +129,19 @@ class SylvanLibrary(Listener):
         if event.active_player != s.owner_id:
             return
 
-        options = [ChoiceOption(f'Draw two additional cards with {s}', lambda: self.draw_two(s.owner_id, gs, s))]
+        options = [CO(f'Draw two additional cards with {s}', lambda: self.draw_two(s.owner_id, gs, s))]
         gs.queue_choice(ChoiceAction(options, may=True))
 
     def queue_card_decision(self, gs: GameState, s: GameCard, state: SylvanLibraryState, card: GameCard) -> None:
-        options = [ChoiceOption(f'Pay 4 life for {card}', lambda: self.pay_life(s.owner_id, gs, s, state)),
-                   ChoiceOption(f'Put {card} atop your library', lambda: self.put_on_top(gs, s, state, card))]
+        options = [CO(f'Pay 4 life for {card}', lambda: self.pay_life(s.owner_id, gs, s, state)),
+                   CO(f'Put {card} atop your library', lambda: self.put_on_top(gs, s, state, card))]
         gs.queue_choice(ChoiceAction(options))
 
     def queue_next_card_selection(self, gs: GameState, source: GameCard, state: SylvanLibraryState) -> None:
         if len(state.selected_cards) >= 3:
             return
         remaining = [card for card in state.drawn_cards if card not in state.selected_cards]
-        options = [ChoiceOption(self.select_card_text(state, c), lambda: self.select_card(gs, source, state, c))
+        options = [CO(self.select_card_text(state, c), lambda: self.select_card(gs, source, state, c))
                    for c in remaining]
         gs.queue_choice(ChoiceAction(options))
 
