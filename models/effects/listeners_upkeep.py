@@ -598,7 +598,7 @@ class RogahhOfKherKeepUpkeep(Listener):
     def special_action(gs: GameState, s: GameCard, targets: list[GameCard]):
         from models.effects.listeners_mod_queries import OwnershipModQuery
         old_controller = int(s.owner_id)
-        new_controller = int(s.owner_id)
+        new_controller = flip(old_controller)
         for t in targets:
             t.tap()
             gs.event_mgr.register(OwnershipModQuery(t, lambda gs, s: new_controller), s)

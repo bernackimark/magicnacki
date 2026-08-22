@@ -275,14 +275,15 @@ class TestCardsDEF(unittest.TestCase):
 
         card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_stack_action])
         card_pipeline.advance()
-        card_pipeline.resolve_ability()
         pay_mana_to_prevent_counter = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(pay_mana_to_prevent_counter)
-        self.assertIsNone(self.gs.pending_choice)
+        self.assertTrue(any(a.source is bolt for a in self.gs.action_stack.actions),
+                        'Lightning Bolt should still be on the stack but is not')
         self.assertEqual(17, self.gs.life[0],
-                         "The stack clears, but we never go back and resolve lightning-bolt"
+                         "We never go back and resolve lightning-bolt"
                          "I'm not even sure that's correct, once the mana paid,"
                          "maybe priority goes back to the counterer")
+        self.assertIsNone(self.gs.pending_choice)
 
     def test_fog(self):
         """Prevent all combat damage this turn"""
