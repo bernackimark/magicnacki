@@ -11,30 +11,28 @@ class TestCardsWXYZ(unittest.TestCase):
         self.gs = self.g.gs
 
     def test_wand_of_ith(self):
-        """3T: Target player reveals a random card from their hand. If it's a land, that player pays 1 life or discards.
+        """3T: Opponent reveals a random card from their hand. If it's a land, that player pays 1 life or discards.
         If it isn't a land, the player pays life = its MV or discards it. Activate only during your turn."""
+        self.gs.hands[1].clear()
+        land = self.g.hand('plains', owner=1)
+        non_land = self.g.hand('air-elemental', owner=1)  # mv=5
         card = self.g.card('wand-of-ith')
         aa = card.activated_abilities[0]
-        self.g.mana('UUUUUU')
+        self.g.mana('UUUUUUUUUUUU')
+        self.g.activate_ability(aa, 1)
+
+        discard_option = self.gs.pending_choice.options[1]
+        first_card_is_land = discard_option.description == 'Discard PLAINS'
+        self.gs.choice_mgr.choose(discard_option)
+        self.assertIn(land, self.g.gy[1]) if first_card_is_land else self.assertIn(non_land, self.g.gy[1])
+
+        card.untap()
         self.g.activate_ability(aa, 0)
         pay_option = self.gs.pending_choice.options[0]
-        discard_option = self.gs.pending_choice.options[1]
-        discard_card = ''  # this is just a placeholder line;
-        # TODO: this test actually tests a random event and need to be written
-        if discard_card.is_land:
-            pay_option.play()
-            self.assertEqual(19, self.gs.life[0])
-        else:
-            mv = discard_card.props.mana_value
-            pay_option.play()
-            self.assertEqual(20 - mv, self.gs.life[0])
-
-        self.g.next_turn()
-        self.g.activate_ability(aa, 0)
-        discard_option = self.gs.pending_choice.options[1]
-        discard_card = discard_option.cards
-        discard_option.play()
-        self.assertEqual(discard_card.zone, Zone.GRAVEYARD)
+        self.gs.choice_mgr.choose(pay_option)
+        is_land = not first_card_is_land
+        life_loss_should_be = 1 if is_land else 5
+        self.assertEqual(20 - life_loss_should_be, self.gs.life[1])
 
     def test_war_barge(self):
         """{3}: Target creature gains islandwalk EOT. When WB LTB EOT, destroy that creature, no regen allowed"""
@@ -79,17 +77,14 @@ class TestCardsWXYZ(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, len(self.gs.pending_choice.get_actions()))
         sac_two_lands = self.gs.pending_choice.get_actions()[1]
-        sac_two_lands.play()
+        self.gs.choice_mgr.choose(sac_two_lands)
         self.assertFalse(any(c.is_land for c in self.gs.boards[0]))
 
         self.g.next_turn(True)
         card = self.g.battlefield('worms-of-the-earth')
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
-        print(self.gs.pending_choice.get_actions())
         self.assertEqual(1, self.gs.action_on_idx)
-        self.assertEqual(2, len(self.gs.pending_choice.get_actions()),
-                         "Player 1 doesn't have any lands, so shouldn't be offered the 'Sac two lands' option"
-                         "I think the problem is that the last choice is never cleared")
+        self.assertEqual(2, len(self.gs.pending_choice.get_actions()))
         take_5_damage = self.gs.pending_choice.get_actions()[0]
         take_5_damage.play()
         self.assertEqual(15, self.gs.life[1])

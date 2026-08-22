@@ -517,7 +517,7 @@ class WandOfIth(Resolver):
             return
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
         life_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
-        options = [CO(f'Pay {life_amt}', lambda: gs.score_mgr.decrement_life(opp, life_amt, source, gs)),
+        options = [CO(f'Pay {life_amt} life', lambda: gs.score_mgr.decrement_life(opp, life_amt, source, gs)),
                    CO(f'Discard {the_card}', lambda: gs.pile_mgr.discard(the_card, source))]
         gs.queue_choice(ChoiceAction(options))
 

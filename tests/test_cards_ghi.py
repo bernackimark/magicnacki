@@ -197,7 +197,7 @@ class TestCardsGHI(unittest.TestCase):
         instant_pipeline = AbilityPipeline(0, self.gs, instant, instant.abilities[0], targets=[creature])
         instant_pipeline.advance()
         pay_mana_to_not_have_countered = self.gs.pending_choice.get_actions()[0]
-        pay_mana_to_not_have_countered.play()
+        self.gs.choice_mgr.choose(pay_mana_to_not_have_countered)
         instant_pipeline.resolve_ability()
         self.assertIn(creature, self.gs.exiles[0])
 

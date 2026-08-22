@@ -363,7 +363,7 @@ class DrafnasRestoration(Resolver):
             remaining = [c for c in state.all_artifacts_in_target_gy if c not in state.selected_cards]
             options = [CO("Finish selecting artifacts", lambda: self.finish_selecting(gs, state))] + \
                       [CO(f"Move {c} to library; subsequent artifacts will be placed above this card",
-                          lambda: self.select_card(state, c)) for c in remaining]
+                          lambda c=c: self.select_card(gs, state, c)) for c in remaining]
         gs.queue_choice(ChoiceAction(options))
 
     @staticmethod
@@ -371,9 +371,9 @@ class DrafnasRestoration(Resolver):
         for card in state.selected_cards:
             gs.pile_mgr.move_card(card, Zone.LIBRARY)
 
-    @staticmethod
-    def select_card(state: DrafnasRestorationState, card: GameCard):
+    def select_card(self, gs: GameState, state: DrafnasRestorationState, card: GameCard):
         state.selected_cards.append(card)
+        self.queue_next_choice(gs, state)
 
 class DustToDust(Resolver):
     """Exile two target artifacts"""
@@ -481,7 +481,7 @@ class Eureka(Resolver):
         gs.action_on_idx = state.current_player
 
         perms_in_hand = [c for c in gs.hands[state.current_player] if c.is_permanent]
-        options = [CO(f"Play {c} to your board", lambda: self.play_card(gs, gs.action_on_idx, state, c))
+        options = [CO(f"Play {c} to your board", lambda c=c: self.play_card(gs, gs.action_on_idx, state, c))
                    for c in perms_in_hand] + \
                   [CO("Finish playing permanents to your board",
                       lambda: self.finish_playing(gs, gs.action_on_idx, state))]

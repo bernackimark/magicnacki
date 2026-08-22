@@ -158,7 +158,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.mana('RRR')
         self.gs.event_mgr.emit(UpkeepEvent(0))
         the_bad_option = self.gs.pending_choice.get_actions()[1]
-        the_bad_option.play()
+        self.gs.choice_mgr.choose(the_bad_option)
         self.assertTrue(card.is_tapped)
         self.assertTrue(kobold.is_tapped)
         self.assertEqual(1, card.owner_id)
@@ -175,7 +175,7 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(0, target.owner_id)
 
         self.g.next_turn()
-        self.assertTrue(any(isinstance(a, Untap) for a in self.gs.pending_choice.get_actions()))
+        self.assertTrue(any(a for a in self.gs.pending_choice.get_actions() if a.description.startswith('Untap rubin')))
 
         card.untap()
         self.assertEqual(1, target.owner_id)

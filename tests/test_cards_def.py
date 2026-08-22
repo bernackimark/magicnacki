@@ -87,13 +87,13 @@ class TestCardsDEF(unittest.TestCase):
         self.g.cast_and_accept(card, 0, card.abilities[0])
         self.assertEqual(4, len(self.gs.pending_choice.get_actions()))  # 3 artifacts & finish action
         select_aladdins_lamp = next(a for a in self.gs.pending_choice.get_actions()
-                                    if a.description.startswith('Move ') and a.card is aladdins_lamp)
-        select_aladdins_lamp.play()
+                                    if a.description.startswith('Move ALADDIN'))
+        self.gs.choice_mgr.choose(select_aladdins_lamp)
         select_colossus = next(a for a in self.gs.pending_choice.get_actions()
-                               if a.description.startswith('Move ') and a.card is colossus)
-        select_colossus.play()
-        finish_action = self.gs.pending_choice.get_actions()[-1]
-        finish_action.play()
+                               if a.description.startswith('Move COLOSSUS'))
+        self.gs.choice_mgr.choose(select_colossus)
+        finish_action = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(finish_action)
         self.assertEqual([colossus, aladdins_lamp], self.gs.pile_mgr.libraries[0][:2])
         self.assertFalse(self.gs.pending_choice)
 
@@ -141,25 +141,24 @@ class TestCardsDEF(unittest.TestCase):
         [h.clear() for h in self.gs.hands]
         card = self.g.hand('eureka')
         p0c1 = self.g.hand('merfolk-of-the-pearl-trident')
-        p0c2 = self.g.hand('aladdins-lamp')
-        p1c1 = self.g.hand('winter-orb', owner=1)
+        self.g.hand('aladdins-lamp')
+        self.g.hand('winter-orb', owner=1)
         p1c2 = self.g.hand('grizzly-bears', owner=1)
         self.g.cast_and_accept(card, None, card.abilities[0])
 
         merfolk_to_board = self.gs.pending_choice.get_actions()[0]
-        merfolk_to_board.play()
+        self.gs.choice_mgr.choose(merfolk_to_board)
         self.assertIn(p0c1, self.gs.boards[0])
 
         grizzly_bears_to_board = self.gs.pending_choice.get_actions()[1]
-        grizzly_bears_to_board.play()
+        self.gs.choice_mgr.choose(grizzly_bears_to_board)
         self.assertIn(p1c2, self.gs.boards[1])
 
         p0_finish_playing = self.gs.pending_choice.get_actions()[-1]
-        p0_finish_playing.play()
+        self.gs.choice_mgr.choose(p0_finish_playing)
         p1_finish_playing = self.gs.pending_choice.get_actions()[-1]
-        p1_finish_playing.play()
+        self.gs.choice_mgr.choose(p1_finish_playing)
         self.assertFalse(self.gs.pending_choice)
-
 
     def test_eye_for_an_eye(self):
         """The next time a source of your choice would deal damage to you this turn,
@@ -288,7 +287,7 @@ class TestCardsDEF(unittest.TestCase):
     def test_fog(self):
         """Prevent all combat damage this turn"""
         card = self.g.hand('fog')
-        attacker = self.g.battlefield('grizzly-bears', owner=1)  #2/2
+        attacker = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
         bolt = self.g.hand('lightning-bolt', owner=1)
 
         self.g.next_turn(True)

@@ -707,7 +707,7 @@ class TetravusUpkeepCreate(Listener):
         if not ctr_cnt:
             return
         options = [CO(f'Remove {i} counter(s) from {s} to create {i} Tetravite artifact creature(s)',
-                      lambda: self.create_tokens(gs, s, i)) for i in range(1, ctr_cnt + 1)]
+                      lambda i=i: self.create_tokens(gs, s, i)) for i in range(1, ctr_cnt + 1)]
         gs.queue_choice(ChoiceAction(options, may=True))
 
     @staticmethod

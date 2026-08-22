@@ -121,13 +121,13 @@ class TestCardsJKL(unittest.TestCase):
         self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         untap = self.gs.pending_choice.get_actions()[0]
-        untap.play()
+        self.gs.choice_mgr.choose(untap)
         self.assertFalse(card.is_tapped)
         self.assertFalse(self.gs.perm_querier.can_attack(card))
 
         self.gs.phase_mgr.set_phase(Phase.MAIN)
         pay_to_attack = self.gs.pending_choice.get_actions()[0]
-        pay_to_attack.play()
+        self.gs.choice_mgr.choose(pay_to_attack)
         self.assertTrue(self.gs.perm_querier.can_attack(card))
         card.tap()
 

@@ -33,15 +33,12 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertFalse(non_blue.is_tapped)
 
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
-        first_blue_untap = self.gs.pending_choice.get_actions()[0]
-        first_blue_untap.play()
+        first_blue_untap = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(first_blue_untap)
         self.assertFalse(blue1.is_tapped)
 
-        print('---------')
-        print(self.gs.pending_choice.get_actions())
-        print('------')
-        dont_untap_anymore = self.gs.pending_choice.get_actions()[1]
-        dont_untap_anymore.play()
+        dont_untap_anymore = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(dont_untap_anymore)
         self.assertTrue(blue2.is_tapped)
         self.assertFalse(self.gs.pending_choice)
 
@@ -58,8 +55,8 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertTrue(19, self.gs.life[0])
 
         self.gs.event_mgr.emit(UpkeepEvent(0))
-        pay_to_untap = self.gs.pending_choice.get_actions()[0]
-        pay_to_untap.play()
+        pay_to_untap = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(pay_to_untap)
         self.assertFalse(card.is_tapped)
 
     def test_mana_vortex(self):
@@ -432,7 +429,7 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(1, card.counters.get_count(PLUS_ONE))
 
         pay_mana_action = self.gs.pending_choice.get_actions()[0]
-        pay_mana_action.play()
+        self.gs.choice_mgr.choose(pay_mana_action)
         self.assertTrue(swamp.is_tapped)
 
         self.g.next_turn()

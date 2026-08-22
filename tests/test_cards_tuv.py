@@ -40,16 +40,17 @@ class TestCardsTUV(unittest.TestCase):
         self.gs.choice_mgr.clear_current()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         create_2_tokens = self.gs.pending_choice.get_actions()[1]
-        create_2_tokens.play()
+        self.gs.choice_mgr.choose(create_2_tokens)
         self.assertEqual(2, len(self.gs.card_filter.by_slug('tetravite').result()))
         self.assertEqual(1, card.counters.get_count(PLUS_ONE))
 
         self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         decline_creating_more_tetravites = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(decline_creating_more_tetravites)
         decline_creating_more_tetravites.play()
         exile_2_tetravites = self.gs.pending_choice.get_actions()[-2]
-        exile_2_tetravites.play()
+        self.gs.choice_mgr.choose(exile_2_tetravites)
         self.assertEqual(0, len(self.gs.card_filter.by_slug('tetravite').result()))
         self.assertEqual(3, card.counters.get_count(PLUS_ONE))
 
