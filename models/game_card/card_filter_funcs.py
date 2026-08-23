@@ -229,5 +229,5 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
                        gs.card_filter.attackers().result().copy()],
     'your_untapped_white_creatures':
         lambda gs, s: gs.card_filter.on_player_board(s.owner_id).creatures().untapped().white().result(),
-    'your_walls': lambda gs, s: gs.card_filter.on_player_board(gs.player_turn_idx).in_play().walls().result(),
+    'your_walls': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).in_play().walls().result(),
 }
