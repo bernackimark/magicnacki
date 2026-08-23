@@ -162,7 +162,7 @@ T_FUNCS: [str, Callable[[GameState, GameCard], list[Target | GameCard | Action |
     'opp_non_wall_creatures': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).non_wall_creatures().result(),
     'opp_tapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).tapped().artifacts().result(),
     'opp_untapped_artifacts': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).untapped().artifacts().result(),
-    'other_creatures': lambda gs, s: [c for c in T_FUNCS['creatures'] if c is not s],
+    'other_creatures': lambda gs, s: [c for c in T_FUNCS['creatures'](gs, s) if c is not s],
     'other_merfolk': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().by_sub_type('Merfolk').result()
                                     if c is not s],
     'other_zombies': lambda gs, s: [c for c in gs.card_filter.in_play().creatures().by_sub_type('Zombie').result()
