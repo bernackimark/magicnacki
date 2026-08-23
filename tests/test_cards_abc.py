@@ -155,8 +155,8 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertEqual(1, creature.power)
 
     def test_brine_hag(self):
-        """When BH dies, change base PT of all creatures that dealt damage to it this turn to 0/2.
-        (This effect lasts indefinitely.)"""
+        """When BH dies, change base PT of all creatures that dealt damage to it this turn to 0/2 for as long as that
+        creature remains on the battlefield; State-based rules do evaluate & the creature will almost definitely die"""
         card = self.g.battlefield('brine-hag')  # 2/2
         creature = self.g.battlefield('craw-wurm', owner=1)  # 6/4
 
@@ -164,10 +164,19 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.combat_mgr.create_combat(creature)
         self.gs.combat_mgr.add_blocker(creature, card)
         self.gs.combat_mgr.handle_damage_step(False)
-        self.assertEqual(0, creature.power)
+        self.assertIn(creature, self.g.gy[1])
 
+        card = self.g.battlefield('brine-hag')  # new brine-hag; last one wnet to the graveyard
         self.g.next_turn()
-        self.assertEqual(0, creature.power)
+        globally_pumped_creature = self.g.battlefield('savannah-lions', owner=1)  # 2/1
+        self.g.battlefield('crusade')
+        self.g.battlefield('crusade')  # savannah-lions should now be 4/3
+        self.gs.combat_mgr.create_combat(globally_pumped_creature)
+        self.gs.combat_mgr.add_blocker(globally_pumped_creature, card)
+        self.gs.combat_mgr.handle_damage_step(False)  # savannah-lions should now be (0/2) +1/+1 +1/+1 = 2/4
+        self.assertIn(card, self.g.gy[0])
+        self.assertEqual((2, 4), (globally_pumped_creature.power, globally_pumped_creature.toughness))
+        self.assertIn(globally_pumped_creature, self.gs.boards[1])
 
     def test_candelabra_of_tawnos(self):
         """{X}, {T}: Untap X target lands"""

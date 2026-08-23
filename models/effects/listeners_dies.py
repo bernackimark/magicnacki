@@ -56,8 +56,9 @@ class BlazingEffigy(Listener):
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class BrineHag(Listener):
-    """When BH dies, change the base PT of all creatures that dealt damage to it this turn to 0/2.
-    (This effect lasts indefinitely.)"""
+    """When BH dies, change base PT of all creatures that dealt damage to it this turn to 0/2
+    for as long as that creature remains on the battlefield;
+    however, State-based rules do evaluate & the creature will almost definitely die"""
     listens_to = DiesEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
@@ -68,8 +69,6 @@ class BrineHag(Listener):
             if e.target is not source or not e.source.is_creature:
                 continue
             e.source.modifiers.append(BasePTMod(0, 2, s=source))
-            # TODO: Craw Wurm is incorrectly dying because Brine Hag's combat damage is getting dealt after this
-            #  so when CW's toughness is reduced to 2, BH is killing it w combat damage
 
 class CreatureBond(Listener):
     """When enchanted creature dies, deal damage = to host's toughness to the creature's controller"""
