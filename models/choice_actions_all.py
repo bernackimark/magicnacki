@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from models.actions.base import Action
 from models.choice_options import CO
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 class ChoiceAction(ABC):
     options: list[CO] = field(default_factory=list)
     may: bool = False
+    on_complete: Callable[[], None] | None = None
 
     @dataclass
     class _Decline(Action):
@@ -34,6 +35,10 @@ class ChoiceAction(ABC):
 
     def choose_target(self, target):
         raise NotImplementedError
+
+    def complete(self):
+        if self.on_complete:
+            self.on_complete()
 
     def get_actions(self) -> list[CO]:
         return self.options

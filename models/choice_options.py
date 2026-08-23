@@ -58,4 +58,3 @@ def pay_mana_to_gain_life(gs: GameState, p_id: int, mana_cost: str, life_amt: in
 def pay_mana_to_prevent_counter(gs: GameState, p_id: int, mana_cost: str, counter_spell: StackItemType):
     if gs.mana_pools[p_id].can_pay(mana_cost):
         gs.mana_pools[p_id].pay(mana_cost)
-        gs.action_stack.remove(counter_spell)

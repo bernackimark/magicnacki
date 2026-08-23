@@ -112,15 +112,17 @@ class CounterSpellUnlessManaPaid(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         if not isinstance(t, StackItemType):
             raise ValueError(f"{source.props.name} needs a spell target")
-        p_id = t.player_idx
-        if not gs.mana_pools[p_id].can_pay(t.total_mana_cost):
-            gs.action_stack.remove(t)
-            gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+        target_spell = t
+        p_id = target_spell.player_idx
+        print('T =', target_spell)
+        if not gs.mana_pools[p_id].can_pay(self.mana_cost):
+            gs.action_stack.remove(target_spell)
+            gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
         options = [CO(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
-                      lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, t)),
-                   CounterSpellAction(p_id, gs, t)]
-        gs.choice_mgr.queue(ChoiceAction(options))
+                      lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, target_spell)),
+                   CounterSpellAction(p_id, gs, target_spell)]
+        gs.choice_mgr.queue(ChoiceAction(options, on_complete=lambda: gs.action_stack.pop()))
 
 class CreateTokenCreature(Resolver):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""

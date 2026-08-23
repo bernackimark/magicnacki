@@ -18,13 +18,22 @@ class ChoiceManager:
 
     def choose(self, option: CO) -> None:
         # The current choice is being consumed.
+        choice = self._current
         self._current = None
 
         # Execute the actual game operation.
         option.play()
 
-        # If the callback didn't create another current choice, promote the next queued choice.
-        if self.current is None and self._pending:
+        # If the callback created another choice, that choice takes precedence.
+        if self._current is not None:
+            return
+
+        # This choice is complete
+        if choice.on_complete:
+            choice.complete()
+
+        # Promote a queued choice, if one exists.
+        if self._pending:
             self._current = self._pending.pop(0)
 
     def queue(self, choice: ChoiceAction) -> None:
