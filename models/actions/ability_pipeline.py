@@ -8,7 +8,7 @@ from models.actions.base import Action
 from models.effects.base import Resolver, ActivatedAbility, Listener, ResContext
 from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent
 from models.systems.mana import ManaCost
-from models.constants import Zone
+from models.constants import Zone, Target
 
 if TYPE_CHECKING:
     from models.cost import Cost, CostResult
@@ -131,7 +131,7 @@ class AbilityPipeline(Action):
         else:
             self.finish()
 
-    def target_argument(self):
+    def target_argument(self) -> Target:
         if not self.targets:
             return None
         return self.targets[0] if len(self.targets) == 1 else self.targets
@@ -155,7 +155,11 @@ class AbilityPipeline(Action):
     def resolve_ability(self):
         if isinstance(self.eff_spec.effect, Resolver):
             context = ResContext(cost_result=self.cost_result, x_value=self.x_value, chosen_mode=self.chosen_mode)
-            self.eff_spec.effect.resolve(self.gs, self.source, self.target_argument(), context)
+            orig_target = self.target_argument()
+            if orig_target is not None and not self.is_target_still_legal(orig_target):
+                print(f"{self.source.props.name} fizzled; {orig_target} is no longer a legal target")
+            else:
+                self.eff_spec.effect.resolve(self.gs, self.source, orig_target, context)
 
         if self.eff_spec.is_aa:
             aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
@@ -250,3 +254,12 @@ class AbilityPipeline(Action):
         # TODO: the below line is a placeholder, using a random large number of "10", just to get through some tests
         max_x = 10 if not self.eff_spec.max_x_func else self.eff_spec.max_x_func(self.gs, self.source)
         return self.eff_spec.min_x_func(self.gs, self.source), max_x
+
+    def is_target_still_legal(self, target: Target) -> bool:
+        # TODO: this only handles is the original target was a single GameCard
+        from models.game_card.game_card import GameCard
+        if not isinstance(target, GameCard) or self.eff_spec.target_spec is None:
+            return True
+        if isinstance(target, GameCard) and target not in self.eff_spec.target_spec.get_targets(self.gs, self.source):
+            return False
+        return True
