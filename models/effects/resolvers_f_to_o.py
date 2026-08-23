@@ -41,7 +41,7 @@ class FalseOrders(Resolver):
         other_combats = [com for com in gs.combat_mgr.combats if t not in com.blockers]
         if other_combats:
             options = [AssignBlocker(source.owner_id, gs, t, com.attacker) for com in other_combats]
-            gs.queue_choice(ChoiceAction(options, may=True))
+            gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 class Feint(Resolver):
     """Tap all creatures blocking target attacking creature.
@@ -74,7 +74,7 @@ class FellwarStone(Resolver):
         options = [CO(f"Add {{{color}}}", lambda: gs.mana_pools[source.owner_id].add_floating(color))
                    for color in produceable]
         if options:
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
 
 class FireAndBrimstone(Resolver):
     """Fire and Brimstone deals 4 damage to opponent if they attacked this turn and 4 damage to you"""
@@ -126,7 +126,7 @@ class GlyphOfReincarnation(Resolver):
         else:
             options = [CO(f'Reanimate {c}', lambda: gs.pile_mgr.reanimate(c)) for c in attacker_gy_creatures]
             # options = [ReanimateAction(source.owner_id, gs, source, t) for t in attacker_gy_creatures]
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
 
 class GoblinKing(Resolver):
     """All of your other Goblins gain +1+/+1 and Mountainwalk"""
@@ -186,7 +186,7 @@ class HealingSalve(Resolver):
         options = [CO('You gain 3 life', lambda: gs.score_mgr.increment_life(s.owner_id, 3, s, gs))] + \
                   [CO('Prevent the next 3 damage that would be dealt to any target this turn',
                       lambda: self.prevent_next_3(gs, t)) for t in all_targets]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def prevent_next_3(gs: GameState, target: GameCard):
@@ -231,7 +231,7 @@ class JalumTome(Resolver):
         gs.pile_mgr.draw(source.owner_id)
         options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[source.owner_id]]
         # options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id]]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class JovialEvil(Resolver):
     """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
@@ -373,7 +373,7 @@ class MoldDemon(Resolver):
         options = [CO(f"Sac 2 swamps", lambda: self.sac_two_swamps(gs, combo)) for combo in combos] + \
                   [CO(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
         # options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in combos]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def sac_two_swamps(gs: GameState, two_swamps: list[GameCard]):
@@ -389,7 +389,7 @@ class NamelessRace(Resolver):
                    len(gs.card_filter.in_player_graveyard(opp).white().result()))
         options = [CO(f'Pay {amt} life to make {source} a {amt}/{amt} creature',
                       lambda: self.etb_action(gs, source, amt)) for amt in range(max_amt + 1)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def etb_action(gs: GameState, s: GameCard, amt: int):
@@ -417,7 +417,7 @@ class NaturalSelection(Resolver):
         # a5 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c1, c2])
         # a6 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c2, c1])
         # options = [a0, a1, a2, a3, a4, a5, a6]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def order_lib(lib: list[GameCard], ordered_cards: list[GameCard]):

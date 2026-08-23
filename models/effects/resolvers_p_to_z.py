@@ -31,7 +31,7 @@ class PhantasmalTerrain(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         options = [CO(f"Turn {t} into a {land_type}", lambda: self.sub_type_replacement(source, t, land_type))
                    for land_type in BASIC_LANDS]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def sub_type_replacement(s: GameCard, target: GameCard, sub_type: str):
@@ -68,7 +68,7 @@ class PowerSink(Resolver):
         options = [CO(f'Pay {{{mana_cost}}} to prevent counterspell by {source}',
                       lambda: pay_mana_to_prevent_counter(gs, p_id, mana_cost, t)),
                    CounterSpellAction(p_id, gs, t)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class PriestOfYawgmoth(Resolver):
     """Sac an artifact: Add an amount of {B} equal to the sacrificed creature's mana value."""
@@ -85,7 +85,7 @@ class PrimalClay(Resolver):
                    CO('Cast as a 2/2 flier', lambda: self.two_two_flier(gs, s)),
                    CO('Cast as a 1/6 wall', lambda: self.one_six_wall(gs, s))]
         # options = [PrimalClayA(s.owner_id, gs, s), PrimalClayB(s.owner_id, gs, s), PrimalClayC(s.owner_id, gs, s)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def three_three(gs: GameState, s: GameCard):
@@ -217,7 +217,7 @@ class ShapeshifterCast(Resolver):
         options = [CO(f"Set {source}'s power to {n} & toughness to {7 - n}",
                       lambda: self.variable_pt_mod(source, n)) for n in range(8)]
         # options = [VariablePTMod(source.owner_id, gs, source, source, i, 7 - i) for i in range(8)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def variable_pt_mod(s: GameCard, n: int):
@@ -242,7 +242,7 @@ class Simulacrum(Resolver):
             options = [CO(f'{s} deals {damage_taken_this_turn} damage to {c}',
                           lambda: gs.apply_damage(s, damage_taken_this_turn, c)) for c in your_creatures]
             # options = [DealDamageTo(s.owner_id, gs, s, damage_taken_this_turn, c) for c in your_creatures]
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
 
 class Sindbad(Resolver):
     """{T}: Draw a card and reveal it. If it isn't a land, discard it."""
@@ -418,7 +418,7 @@ class UntamedWilds(Resolver):
         gs.add_presentation_request(source.owner_id, 'search_library', {'cards': basic_lands})
         options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in basic_lands]
         # options = [Tutor(source.owner_id, gs, source, basic_land, Zone.BATTLEFIELD) for basic_land in basic_lands]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def tutor(gs: GameState, lib: list[GameCard], card: GameCard, to_zone: Zone):
@@ -490,7 +490,7 @@ class VesuvanDoppelgangerCast(Resolver):
         if not card_options:
             return
         options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t, copy_color=False)) for t in card_options]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""
@@ -498,7 +498,7 @@ class Visions(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.add_presentation_request(source.owner_id, 'view_library', {'cards': gs.pile_mgr.libraries[t][:5]})
         options = [CO(f'Shuffle', lambda: random.shuffle(gs.pile_mgr.libraries[t]))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
@@ -519,7 +519,7 @@ class WandOfIth(Resolver):
         life_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
         options = [CO(f'Pay {life_amt} life', lambda: gs.score_mgr.decrement_life(opp, life_amt, source, gs)),
                    CO(f'Discard {the_card}', lambda: gs.pile_mgr.discard(the_card, source))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class WarBarge(Resolver):
     """{3}: Target creature gains islandwalk EOT. When WB LTB this turn, destroy that creature, no regen allowed"""
@@ -570,7 +570,7 @@ class WoodElemental(Resolver):
         options = [CO(f"Sac {len(combo)} to make {source} a {len(combo)}/{len(combo)} creature",
                       lambda: self.etb_action(gs, source, combo))
                    for r in range(len(your_untapped_forests)) for combo in combinations(your_untapped_forests, r=r)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def etb_action(gs: GameState, s: GameCard, forest_combo: list[GameCard]):

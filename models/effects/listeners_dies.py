@@ -53,7 +53,7 @@ class BlazingEffigy(Listener):
         options = [CO(f'{s.props.name} deals {total_damage} damage to {t}',
                       lambda: gs.apply_damage(s, total_damage, t)) for t in all_creatures]
         # options = [DealDamageTo(s.owner_id, gs, s, total_damage, target) for target in all_creatures]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class BrineHag(Listener):
     """When BH dies, change the base PT of all creatures that dealt damage to it this turn to 0/2.
@@ -132,7 +132,7 @@ class PuppetMaster(Listener):
         if gs.mana_pools[source.owner_id].can_pay('UUU'):
             options = [CO(f"Pay {{{'UUU'}}} to bounce {source}",
                           lambda: pay_mana_to_bounce(gs, source.owner_id, 'UUU', source))]
-            gs.queue_choice(ChoiceAction(options, may=True))
+            gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 class RukhEgg(Listener):
     """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""
@@ -189,7 +189,7 @@ class SoulNet(Listener):
         if not event.card.is_creature:
             return
         options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 
 class TabletOfEpityr(Listener):
@@ -200,7 +200,7 @@ class TabletOfEpityr(Listener):
         if not event.card.is_artifact or event.card.owner_id != source.owner_id:
             return
         options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 
 class UrzasMiter(Listener):
@@ -211,4 +211,4 @@ class UrzasMiter(Listener):
         if event.card.owner_id != source.owner_id or 'Artifact' not in event.card.card_types:
             return
         options = [CO(f'Pay 3 to draw a card', lambda: pay_mana_to_draw_cards(gs, source.owner_id, '3'))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))

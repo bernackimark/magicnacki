@@ -78,7 +78,7 @@ class VerduranEnchantress(Listener):
         if source.owner_id != event.card.owner_id or not event.card.is_enchantment:
             return
         options = [CO('Draw a card', lambda: gs.pile_mgr.draw(event.owner_id))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 # --- LIFE LOSS ---
 class AliFromCairo(Listener):
@@ -109,7 +109,7 @@ class LeviathanAttack(Listener):
 
         options = [CO(f'Sac Two Islands & Allow {source} to attack',
                       lambda: self.sac_2_island_allow_attack(gs, source, your_islands))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def sac_2_island_allow_attack(gs: GameState, s: GameCard, your_islands: list[GameCard]):
@@ -155,7 +155,7 @@ class InTheEyeOfChaos(Listener):
         options = [CO(f'Pay {{{mana_cost}}} to prevent counterspell by {source}',
                       lambda: pay_mana_to_prevent_counter(gs, p_id, mana_cost, target_spell)),
                    CounterSpellAction(p_id, gs, target_spell)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class InvokePrejudice(Listener):
     """Whenever an opponent casts a creature spell that DOESN'T SHARE A COLOR with a creature you control,
@@ -183,7 +183,7 @@ class InvokePrejudice(Listener):
         options = [CO(f'Pay {{{mana_cost}}} to prevent counterspell by {source}',
                       lambda: pay_mana_to_prevent_counter(gs, p_id, mana_cost, target_spell)),
                    CounterSpellAction(p_id, gs, target_spell)]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 class ScarwoodBanditsAAListener(Listener):
     """2GT: Unless opponent pays {2}, gain control of target artifact for as long as SB remains on the battlefield ...
@@ -199,4 +199,4 @@ class ScarwoodBanditsAAListener(Listener):
             return
         options = [CO(f'Pay 2 to prevent counterspell',
                       lambda: pay_mana_to_prevent_counter(gs, opp, '2', event.action))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))

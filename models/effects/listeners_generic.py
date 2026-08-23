@@ -94,7 +94,7 @@ class OnColorSpellPayOneColorlessForOneLifeChoice(Listener):
         if not gs.mana_pools[s.owner_id].can_pay('1'):
             return
         options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, s.owner_id, '1'))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 
 # --- COMBAT END ---
@@ -497,7 +497,7 @@ class PayManaOrCounterSpellListener(Listener):
         options = [CO(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
                       lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, target_spell)),
                    CounterSpellAction(p_id, gs, target_spell)]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 # --- UNTAP CARD EVENT ---
 class ReturnToOwnerOnUntap(Listener):
@@ -537,7 +537,7 @@ class OptionalUntap(Listener):
         options = [CO(f'Untap {source}', lambda: self.untap_and_log_decision(gs, source)),
                    CO(f'Leave {source} tapped', lambda: self.log_decision(gs, source))]
         # options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def untap_and_log_decision(gs: GameState, card: GameCard):
@@ -626,7 +626,7 @@ class PayManaOrSacAtUpkeep(Listener):
         options = [CO(f"Pay {{{self.mana_cost}}}", lambda: gs.mana_pools[s.owner_id].pay(self.mana_cost)),
                    CO(f'Sac {s}', lambda: gs.pile_mgr.sacrifice(s))]
         # options = [PayMana(s.owner_id, gs, s, self.mana_cost), Sac(s.owner_id, gs, s)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class PayManaToUntapUpkeep(Listener):
     """Pay [x] to untap at target owner's upkeep"""
@@ -662,7 +662,7 @@ class PayManaToUntapUpkeep(Listener):
         mc = self.mana_cost
         options = [CO(f"Leave {card} tapped", lambda c=card: self.leave_tapped(gs, state, c)),
                    CO(f"Pay {mc} to untap {card}", lambda c=card: self.untap_card(gs, state, c))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     def untap_card(self, gs: GameState, state: PayManaToUntapUpkeep.PayManaToUntapState, c: GameCard):
         gs.mana_pools[c.owner_id].pay(self.mana_cost)

@@ -65,7 +65,7 @@ class CosmicHorror(Listener):
                    CO(f"Pay {{{'3BB'}}}", lambda: gs.pile_mgr.destroy(source))]
         # options = [DestroyAction(event.active_player, gs, source, source, False),
         #            PayMana(event.active_player, gs, source, '3BBB')]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def destroy_and_damage(gs: GameState, source: GameCard, damage_amt: int):
@@ -83,7 +83,7 @@ class CurseArtifact(Listener):
             return
         options = [CO(f"Deal 2 damage to P#{host_owner}", lambda: gs.apply_damage(source, 2, host_owner)),
                    CO(f"Sac {host.props.name}", lambda: gs.pile_mgr.sacrifice(host))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Cyclone(Listener):
     """At your upkeep, add a wind counter, then pay {G} for each wind counter on it or sac.
@@ -103,7 +103,7 @@ class Cyclone(Listener):
         options = [CO(f'Pay {wind_counters} G to deal {wind_counters} damage to all creatures & players',
                       lambda: self.pay_and_damage(gs, source, wind_counters)),
                    CO(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def pay_and_damage(gs: GameState, source: GameCard, wind_counters: int):
@@ -116,7 +116,7 @@ class Cyclone(Listener):
             gs.apply_damage(source, wind_counters, p_id)
 
         # options = [CyclonePayManaPerCounterDealDamage(source.owner_id, gs, source), Sac(source.owner_id, gs, source)]
-        # gs.queue_choice(ChoiceAction(options))
+        # gs.choice_mgr.queue(ChoiceAction(options))
 
 class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
@@ -135,7 +135,7 @@ class DemonicHordesUpkeep(Listener):
             source.tap()
             gs.action_on_idx = flip(source.owner_id)
             options = [CO(f"Sac opponent's {c}", lambda: gs.pile_mgr.sacrifice(c)) for c in your_lands]
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
         else:
             options = [CO(f"Pay {{{'BBB'}}}", lambda: gs.mana_pools[source.owner_id].pay('BBB'))]
             # TODO:
@@ -144,7 +144,7 @@ class DemonicHordesUpkeep(Listener):
             #          options = [DestroyAction(flip(self.player_idx), self.gs, self.source, land)
             #                    for land in self.gs.card_filter.lands().on_player_board(self.player_idx).result()]
 
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
 
 class DropOfHoney(Listener):
     """At your upkeep, destroy the creature with the least power. It can't be regenerated.
@@ -169,7 +169,7 @@ class DropOfHoney(Listener):
 
         # options = [DestroyAction(source.owner_id, gs, source, c, allow_regen=False) for c in creatures_w_min_power]
         options = [CO(f"Destroy {c}", lambda: gs.pile_mgr.destroy(c, False)) for c in creatures_w_min_power]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class ElderSpawnUpkeep(Listener):
     """At YOUR upkeep, sac an Island or sac ES & it deals 6 damage to you."""
@@ -187,7 +187,7 @@ class ElderSpawnUpkeep(Listener):
         options = [CO(f'Sac {i}', lambda: gs.pile_mgr.sacrifice(i)) for i in your_islands] + \
                   [CO(f'Sac {s} & it deals 6 damage to you', lambda: self.sac_w_damage(gs, s, 6))]
         # options = [Sac(s.owner_id, gs, island) for island in your_islands] + [Sac(s.owner_id, gs, s, 6)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def sac_w_damage(gs: GameState, card: GameCard, damage_amt: int):
@@ -205,7 +205,7 @@ class EnergyFlux(Listener):
             options = [CO(f"Pay {{{'2'}}}", lambda: gs.mana_pools[source.owner_id].pay('2')),
                        CO(f"Sac {source}", lambda: gs.pile_mgr.sacrifice(source))]
             # options = [PayMana(event.active_player, gs, source, '2'), Sac(event.active_player, gs, source)]
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
 
 class ErhnamDjinn(Listener):
     """At your upkeep, target non-Wall creature an opponent controls gains forestwalk until your next upkeep"""
@@ -223,7 +223,7 @@ class ErhnamDjinn(Listener):
         kwa_mod = KWAMod(s=s, item='Forestwalk')
         options = [CO(f'Give Forestwalk to {t}', lambda: t.modifiers.append(kwa_mod)) for t in targets]
         # options = [AddKWA(s.owner_id, gs, s, t, KW.FORESTWALK) for t in targets]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class ErosionUpkeep(Listener):
     """At upkeep of enchanted land's controller, destroy that land unless that player pays {1} or 1 life."""
@@ -239,7 +239,7 @@ class ErosionUpkeep(Listener):
         options.append(CO(f"Pay 1 life", lambda: gs.score_mgr.decrement_life(host_owner, 1, source, gs)))
         options.append(CO(f"Destroy {source.host}", lambda: gs.pile_mgr.destroy(source.host)))
 
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Fasting(Listener):
     """At your upkeep, add a hunger counter. Destroy Fasting if >=5 hunger counters.
@@ -254,7 +254,7 @@ class Fasting(Listener):
             gs.pile_mgr.destroy(source)
         options = [CO('Skip Draw Phase & Gain 2 life', lambda: self.skip_draw_phase_gain_life(gs, source.owner_id, 2))]
         # options = [SkipDrawPhaseGainLife(source.owner_id, gs, 2)]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def skip_draw_phase_gain_life(gs: GameState, p_id: int, amt: int):
@@ -273,7 +273,7 @@ class ForceOfNatureUpkeep(Listener):
             return
         options = [CO(f"Pay {{{'GGGG'}}}", lambda: gs.mana_pools[s.owner_id].pay('GGGG')),
                    CO(f"{s} deals 8 damage to you", lambda: gs.apply_damage(s, 8, s.owner_id))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class GabrielAngelfire(Listener):
     """At your upkeep, choose flying, first strike, trample, rampage 3. GA gains that ability until your next upkeep."""
@@ -284,7 +284,7 @@ class GabrielAngelfire(Listener):
             return
         kwa_options = (KW.FLYING, KW.FIRST_STRIKE, KW.TRAMPLE, KW.RAMPAGE_3)
         options = [CO(f'{s} gains {o}', lambda: s.modifiers.append(KWAMod(s=s, item=o))) for o in kwa_options]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class GhazbanOgre(Listener):
     """At your upkeep, if a player has more life than each other player,
@@ -309,7 +309,7 @@ class GiantSlugUpkeep(Listener):
             return
         kwa_options = (KW.FORESTWALK, KW.ISLANDWALK, KW.ISLANDWALK, KW.PLAINSWALK, KW.SWAMPWALK)
         options = [CO(f'{s} gains {o}', lambda: s.modifiers.append(KWAMod(s=s, item=o))) for o in kwa_options]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Halfdane(Listener):
     """H's base PT = (3, 3)
@@ -333,7 +333,7 @@ class Halfdane(Listener):
             return
         options = [CO(f"Change {s}'s base PT to that of {target}",
                       lambda t=target: BasePT(t.power, t.toughness).resolve(gs, s, s)) for target in targets]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class HazezonTamarTokenCreation(Listener):
     """Create X 1/1 Sand Warrior tokens at your next upkeep; X is the number of lands you control at that time"""
@@ -397,7 +397,7 @@ class LandTax(Listener):
         combo_set = {combo for r in range(1, 4) for combo in combinations(basic_lands, r)}
         options = [CO(f"Tutor {', '.join([c for c in list(combo)])}",
                       lambda: self.tutor_cards(gs, s.owner_id, list(combo), Zone.HAND)) for combo in combo_set]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def tutor_cards(gs: GameState, p_id: int, cards: list[GameCard], destination: Zone):
@@ -416,7 +416,7 @@ class LeviathanUpkeep(Listener):
         if len(your_islands) < 2:
             return
         options = [CO(f"Sac 2 islands to untap {s}", lambda: self.sac_two_islands_to_untap(gs, s, your_islands))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def sac_two_islands_to_untap(gs: GameState, s: GameCard, your_islands: list[GameCard]):
@@ -433,7 +433,7 @@ class LivingArtifactUpkeep(Listener):
             return
         options = [CO(f'Remove a Vitality counter from {source} to gain 1 life',
                       lambda: self.remove_counter_gain_life(gs, source))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def remove_counter_gain_life(gs: GameState, s: GameCard):
@@ -453,7 +453,7 @@ class LordOfThePitUpkeep(Listener):
             gs.apply_damage(source, 7, source.owner_id)
             return
         options = [CO(f'Sac {c} to {source}', lambda: gs.pile_mgr.sacrifice(c)) for c in your_other_creatures]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class ManaVortexUpkeep(Listener):
     """At each player's upkeep, they sac a land.
@@ -466,7 +466,7 @@ class ManaVortexUpkeep(Listener):
             gs.pile_mgr.sacrifice(your_lands[0])
             return
         options = [CO(f'Sac {land}', lambda: gs.pile_mgr.sacrifice(land)) for land in your_lands]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class PowerLeak(Listener):
     """At host owner's upkeep, host owner may pay 0, 1, or 2 mana. PL deals 2 - the mana paid damage to host owner"""
@@ -486,7 +486,7 @@ class PowerLeak(Listener):
         options = [CO(f'Pay {mana_amt} mana & take {2 - mana_amt} from {source}',
                       lambda: self.pay_mana_take_damage(gs, host_owner, source, mana_amt, 2 - mana_amt))
                    for mana_amt in pay_mana_options]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def pay_mana_take_damage(gs: GameState, p_id: int, s: GameCard, mana_amt: int = 0, damage_amt: int = 0):
@@ -523,7 +523,7 @@ class PrimordialOoze(Listener):
         options = [CO(f"Pay {{{str(ctr_cnt)}}}", lambda: gs.mana_pools[source.owner_id].pay(str(ctr_cnt))),
                    CO(f'Tap {source} & take {ctr_cnt} damage',
                       lambda: self.tap_card_take_damage(gs, source, ctr_cnt))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def tap_card_take_damage(gs: GameState, card: GameCard, damage_amt: int):
@@ -557,7 +557,7 @@ class PsychicAllergySac(Listener):
             return
         options = [CO(f'Sac 2 islands', lambda: self.sac_two_islands(gs, your_islands)),
                    CO(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def sac_two_islands(gs: GameState, your_islands: list[GameCard]):
@@ -592,7 +592,7 @@ class RogahhOfKherKeepUpkeep(Listener):
         options = [CO("Pay {{{'RRR}}}", lambda: gs.mana_pools[source.owner_id].pay('RRR')),
                    CO('Tap & transfer control of Rogahh Of Kher Keep & all Kobolds Of Kher Keep',
                       lambda: self.special_action(gs, source, target_cards))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def special_action(gs: GameState, s: GameCard, targets: list[GameCard]):
@@ -617,7 +617,7 @@ class SafeHavenUpkeep(Listener):
             return
         options = [CO(f'Sac {source} to return all cards it exiled to the battlefield',
                       lambda: self.return_all_cards_exiled_by(gs, source))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def return_all_cards_exiled_by(gs: GameState, exiler: GameCard):
@@ -637,7 +637,7 @@ class SeasonOfTheWitchUpkeep(Listener):
             return
         options = [CO('Pay 2 life', lambda: gs.score_mgr.decrement_life(source.owner_id, 2, source, gs)),
                    CO(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class SerendibDjinn(Listener):
     """At your upkeep, sac a land. If it's an Island, 3 damage to you. When you control no lands, sac this creature."""
@@ -652,7 +652,7 @@ class SerendibDjinn(Listener):
             return
         options = [CO(f"Sac {c}{' & take 3 damage' if c.is_island else ''}",
                       lambda: self.sac_w_damage(gs, source, c, 3 if c.is_island else 0)) for c in your_lands]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def sac_w_damage(gs: GameState, s: GameCard, card: GameCard, damage_amt: int):
@@ -669,7 +669,7 @@ class ShapeshifterUpkeep(Listener):
             return
         options = [CO(f"Set {source}'s power to {n} & toughness to {7 - n}",
                       lambda: self.variable_pt_mod(source, n)) for n in range(8)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def variable_pt_mod(s: GameCard, n: int):
@@ -708,7 +708,7 @@ class TetravusUpkeepCreate(Listener):
             return
         options = [CO(f'Remove {i} counter(s) from {s} to create {i} Tetravite artifact creature(s)',
                       lambda i=i: self.create_tokens(gs, s, i)) for i in range(1, ctr_cnt + 1)]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def create_tokens(gs: GameState, s: GameCard, cnt: int):
@@ -730,7 +730,7 @@ class TetravusUpkeepExile(Listener):
         combos = [combo for r in range(1, len(tetravites) + 1) for combo in combinations(tetravites, r=r)]
         options = [CO(f'Exile {len(combo)} Tetravite(s) to add that many +1/+1 counters to {s}',
                       lambda: self.exile_tokens(gs, s, combo)) for combo in combos]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def exile_tokens(gs: GameState, s: GameCard, to_be_exiled: list[GameCard]):
@@ -752,7 +752,7 @@ class TheAbyss(Listener):
             options = [CO(f'Destroy {target}', lambda: gs.pile_mgr.destroy(target, allow_regeneration=False))]
         else:
             options = [CO(f'Destroy {c}', lambda: gs.pile_mgr.destroy(c, False)) for c in your_non_art_creatures]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class TheFallen(Listener):
     """At your upkeep, this creature deals 1 damage to your opponent if it has previously damaged him/her this game"""
@@ -790,7 +790,7 @@ class TheTabernacleAtPendrellVale(Listener):
                 gs.pile_mgr.destroy(your_creature)
             options = [CO(f"Pay {{{'1'}}}", lambda: gs.mana_pools[event.active_player].pay('1')),
                        CO(f'Sac {your_creature}', lambda: gs.pile_mgr.sacrifice(your_creature))]
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
 
 class VesuvanDoppelgangerUpkeep(Listener):
     """You may have this creature enter as a copy of any creature on the battlefield,
@@ -804,7 +804,7 @@ class VesuvanDoppelgangerUpkeep(Listener):
         if not card_options:
             return
         options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t, copy_color=False)) for t in card_options]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class XenicPoltergeistRelease(Listener):
     """{T}: Until your NEXT upkeep, target noncreature artifact becomes an artifact creature with PT each = its MV.
@@ -831,7 +831,7 @@ class YawgmothDemon(Listener):
             return
         options = [CO(f'Sac {a}', lambda: gs.pile_mgr.sacrifice(a)) for a in your_artifacts] + \
                   [CO(f'{s} taps and deals 2 damage to you', lambda: self.yd_unpaid_upkeep(gs, s))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def yd_unpaid_upkeep(gs: GameState, s: GameCard):
@@ -851,7 +851,7 @@ class WormsOfTheEarthUpkeep(Listener):
         if your_land_cnt >= 2:
             options.append(CO('Sac two lands and destroy Worms Of The Earth',
                               lambda: self.sac_two_lands(gs, event.active_player, source)))
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def sac_two_lands(gs: GameState, p_id: int, s: GameCard):

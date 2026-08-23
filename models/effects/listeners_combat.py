@@ -39,7 +39,7 @@ class HasranOgress(Listener):
         options = [CO(f"Pay {{{'2'}}}", lambda: gs.mana_pools[s.owner_id].pay('2')),
                    CO(f'{s} deals 3 damage to you', lambda: gs.apply_damage(s, 3, s.owner_id))]
         # options = [PayMana(s.owner_id, gs, s, '2'), DealDamageTo(s.owner_id, gs, s, 3, s.owner_id)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class MijaeDjinn(Listener):
     """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
@@ -220,7 +220,7 @@ class Johan(Listener):
         options = [CO(f'{source} gains Defender & your creatures gain Vigilance until end of turn',
                       lambda: self.johan(gs, source))]
         # options = [JohanAction(source.owner_id, gs, source)]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def johan(gs: GameState, s: GameCard):
@@ -306,7 +306,7 @@ class FloralSpuzzem(Listener):
         options = [CO(f'Destroy {t} & forego combat damage assigned by {s}',
                       lambda: self.destroy_and_forego_combat_damage(gs, s, t))
                    for t in opp_artifacts]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def destroy_and_forego_combat_damage(gs: GameState, s: GameCard, t: GameCard):

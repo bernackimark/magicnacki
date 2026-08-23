@@ -44,7 +44,7 @@ class CursedRack(Listener):
         combos: list[list[GameCard]] = [_ for _ in combinations(hand, r=overage)]
         options = [CO(f"Discard {', '.join([c.props.name for c in combo])}",
                       lambda: gs.pile_mgr.discards(combo)) for combo in combos]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 
 # --- DRAW EVENT ---
@@ -97,7 +97,7 @@ class IslandSanctuary(Listener):
             return
         option_text = 'Skip your draw & until your next turn, you can only be attacked by fliers and/or islandwalkers'
         options = [CO(option_text, lambda: self.island_sanctuary_method(gs, source))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def island_sanctuary_method(gs: GameState, s: GameCard):
@@ -131,12 +131,12 @@ class SylvanLibrary(Listener):
             return
 
         options = [CO(f'Draw two additional cards with {s}', lambda: self.draw_two(s.owner_id, gs, s))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     def queue_card_decision(self, gs: GameState, s: GameCard, state: SylvanLibraryState, card: GameCard) -> None:
         options = [CO(f'Pay 4 life for {card}', lambda: self.pay_life(s.owner_id, gs, s, state)),
                    CO(f'Put {card} atop your library', lambda: self.put_on_top(gs, s, state, card))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     def queue_next_card_selection(self, gs: GameState, source: GameCard, state: SylvanLibraryState) -> None:
         if len(state.selected_cards) >= 3:
@@ -144,7 +144,7 @@ class SylvanLibrary(Listener):
         remaining = [card for card in state.drawn_cards if card not in state.selected_cards]
         options = [CO(self.select_card_text(state, c), lambda: self.select_card(gs, source, state, c))
                    for c in remaining]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     def draw_two(self, p_id: int, gs: GameState, s: GameCard):
         gs.pile_mgr.draw(p_id, 2)

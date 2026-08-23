@@ -344,7 +344,7 @@ class DiscardPhase(PhaseState):
         if len(hand) > 7:
             options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
             # options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
-            gs.queue_choice(ChoiceAction(options))
+            gs.choice_mgr.queue(ChoiceAction(options))
 
         # return [DiscardCards(p_id, gs, c) for c in hand] if len(hand) > 7 else None
 

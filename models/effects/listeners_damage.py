@@ -39,7 +39,7 @@ class BloodOfTheMartyr(Listener):
         # from models.actions.damage import RedirectDamageToYouAction
         options = [CO(f'Redirect all damage from {event.target} to you', lambda: self.redirect(source, event))]
         # options = [RedirectDamageToYouAction(source.owner_id, gs, source, event)]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def redirect(source: GameCard, event: DamageProposedEvent):

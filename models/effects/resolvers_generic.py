@@ -120,7 +120,7 @@ class CounterSpellUnlessManaPaid(Resolver):
         options = [CO(f'Pay {{{self.mana_cost}}} to prevent counterspell by {source}',
                       lambda: pay_mana_to_prevent_counter(gs, p_id, self.mana_cost, t)),
                    CounterSpellAction(p_id, gs, t)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class CreateTokenCreature(Resolver):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""
@@ -144,7 +144,7 @@ class DeclareAColor(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         options = [CO(f"Declare {source}'s color as {color}", lambda: self.etb_action(source, color))
                    for color in COLOR_LETTERS]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def etb_action(s: GameCard, color: str):
@@ -216,7 +216,7 @@ class Discard(Resolver):
         """t is the player id"""
         options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
         # options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class DrawCards(Resolver):
     def __init__(self, card_cnt: int = 1):

@@ -152,7 +152,7 @@ class LegendarySingletonCheck(BaseRule):
                                   lambda: gs.pile_mgr.move_card(c, Zone.BATTLEFIELD, cause='legendary_rule'))
                                for c in legends_seen.values()]
                     # options = [BattlefieldToGraveyard(p_id, gs, c) for c in legends_seen.values()]
-                    gs.queue_choice(ChoiceAction(options))
+                    gs.choice_mgr.queue(ChoiceAction(options))
 
 class LifeAndPoisonCheck(BaseRule):
     """Check for game_over (player life <= 0 & poison >= 10); set GameState's winner = -1 draw or 0/1 for win"""

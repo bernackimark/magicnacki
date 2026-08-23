@@ -85,7 +85,7 @@ class Kudzu(Listener):
             s.host.auras.append(s)
             return
         options = [CO(f'Attach {s} to {land}', lambda: self.attach(s, land)) for land in host_owner_lands]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def attach(aura: GameCard, host: GameCard):
@@ -203,7 +203,7 @@ class TimeVaultOption(Listener):
         if source.owner_id != event.active_player or not source.is_tapped:
             return
         options = [CO(f'Skip turn and untap {source}', lambda: self.untap_and_skip_turn(gs, source))]
-        gs.queue_choice(ChoiceAction(options, may=True))
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
     def untap_and_skip_turn(gs: GameState, c: GameCard):

@@ -275,6 +275,8 @@ class TestCardsDEF(unittest.TestCase):
 
         card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[bolt_stack_action])
         card_pipeline.advance()
+        card_pipeline.resolve_ability()
+        print('XXX', self.gs.action_stack.actions)
         pay_mana_to_prevent_counter = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(pay_mana_to_prevent_counter)
         self.assertTrue(any(a.source is bolt for a in self.gs.action_stack.actions),

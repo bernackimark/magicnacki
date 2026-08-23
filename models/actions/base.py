@@ -21,7 +21,7 @@ class Action(ABC):
 
     def finish(self, next_choice: ChoiceAction | None = None) -> None:
         if next_choice:
-            self.gs.queue_choice(next_choice)
+            self.gs.choice_mgr.queue(next_choice)
             return
 
         if self.gs.pending_choice:

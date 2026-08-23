@@ -111,7 +111,7 @@ class LandEquilibrium(Listener):
             return
         options = [CO(f'Sac {land}', lambda: gs.pile_mgr.sacrifice(land)) for land in opp_lands]
         # options = [Sac(event.card.owner_id, gs, land) for land in opp_lands]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Revelation(Listener):
     """Players play with their hands revealed"""

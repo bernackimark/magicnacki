@@ -91,7 +91,7 @@ class BazaarOfBaghdad(Resolver):
         options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
         # options = [DiscardCards(source.owner_id, gs, list(combo))
         #            for r in range(3, 4) for combo in combinations(cards, r)]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Berserk(Resolver):
     """Cast this spell only before the combat damage step.
@@ -200,7 +200,7 @@ class Cleansing(Resolver):
                       lambda: self.pay_cleansing(gs, source.owner_id, source, state)),
                    CO(f"Decline saving Player #{state.active_land.owner_id}'s {state.active_land}",
                       lambda: self.decline_cleansing(gs, source, state))]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     def decline_cleansing(self, gs: GameState, s: GameCard, state: CleansingState):
         state.player_cnt_acted_on_this_land += 1
@@ -225,7 +225,7 @@ class Clone(Resolver):
         if not card_options:
             return
         options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class CocoonCast(Resolver):
     @Resolver.target_required
@@ -249,7 +249,7 @@ class CopyArtifact(Resolver):
         if not card_options:
             return
         options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Crumble(Resolver):
     """Destroy target artifact. It can't be regenerated. That artifact's controller gains life = its MV."""
@@ -266,7 +266,7 @@ class CuombajjWitches(Resolver):
         targets = gs.card_filter.in_play().creatures().result() + [0, 1]
         options = [CO(f'{s.props.name} deals 1 damage to {target}',
                       lambda chosen_target=target: gs.apply_damage(s, 1, chosen_target)) for target in targets]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class DanceOfMany(Resolver):
     """When DOM ETB, create a token copy of target nontoken creature -- copies its original props w/o mods ...
@@ -290,7 +290,7 @@ class DemonicTutor(Resolver):
         gs.add_presentation_request(p_id, 'search_library', {'cards': lib})
         options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in lib]
         # options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in lib]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def tutor(gs: GameState, lib: list[GameCard], card: GameCard, to_zone: Zone):
@@ -364,7 +364,7 @@ class DrafnasRestoration(Resolver):
             options = [CO("Finish selecting artifacts", lambda: self.finish_selecting(gs, state))] + \
                       [CO(f"Move {c} to library; subsequent artifacts will be placed above this card",
                           lambda c=c: self.select_card(gs, state, c)) for c in remaining]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def finish_selecting(gs: GameState, state: DrafnasRestorationState):
@@ -429,7 +429,7 @@ class EnchantmentAlteration(Resolver):
         else:
             return
         options = [CO(f'Attach {t} to {host}', lambda: self.attach(t, host)) for host in available_hosts]
-        gs.queue_choice(ChoiceAction(options))
+        gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
     def attach(aura: GameCard, host: GameCard):
@@ -486,7 +486,7 @@ class Eureka(Resolver):
                   [CO("Finish playing permanents to your board",
                       lambda: self.finish_playing(gs, gs.action_on_idx, state))]
         choice = ChoiceAction(options)
-        gs.queue_choice(choice)
+        gs.choice_mgr.queue(choice)
 
     def finish_playing(self, gs: GameState, p_id: int, state: EurekaState):
         state.players_who_are_done.append(p_id)
