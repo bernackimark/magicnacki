@@ -46,7 +46,7 @@ class OldManOfTheSeaPowerCheck(Listener):
             return
 
         effect: OwnershipModQuery = entry.effect
-        if source.power > effect.stolen_card.power:
+        if effect.stolen_card.power > source.power:
             gs.event_mgr.unregister_specific_effect(effect)
             gs.pile_mgr.boards[source.owner_id].remove(effect.stolen_card)
             gs.pile_mgr.boards[flip(source.owner_id)].append(effect.stolen_card)

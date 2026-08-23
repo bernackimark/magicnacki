@@ -211,7 +211,7 @@ class TestCardsMNOP(unittest.TestCase):
         this creature remains tapped and that creature's power remains <= OMOTS's power."""
         card = self.g.battlefield('old-man-of-the-sea')  # 2/3
         aa = card.activated_abilities[0]
-        target = self.g.battlefield('air-elemental', owner=1)  # 4/4
+        target = self.g.battlefield('scryb-sprites', owner=1)  # 1/1
         self.g.next_turn()
         self.g.activate_ability(aa, target)
         self.assertEqual(0, target.owner_id)
@@ -223,13 +223,13 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.activate_ability(aa, target)
         self.assertEqual(0, target.owner_id)
         pump = self.g.hand('giant-growth')
-        pump.abilities[0].effect.resolve(self.gs, pump, card)
+        pump.abilities[0].effect.resolve(self.gs, pump, target)
 
         print('---------')
         print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
         self.gs.event_mgr.emit(StateBasedEvent())
         print(card.power, target.power)  # this correctly indicates that OMOTS's power is 5
-        self.assertEqual(1, target.owner_id, 'Target should have been returned to original owner when OMOTOS pumped')
+        self.assertEqual(1, target.owner_id, 'Target should have been returned to original owner when pumped')
         self.assertIn(target, self.gs.boards[1])
 
     def test_orcish_artillery(self):
