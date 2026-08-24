@@ -7,7 +7,8 @@ from models.systems.mana import ManaCost
 
 
 def dual_land_specs(colors: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), T_FUNCS['owner'], text=f'Add {{{color}}}') for color in colors]
+    return [Activated('T', AddMana(color), T_FUNCS['owner'], is_mana_ability=True,
+                      text=f'Add {{{color}}}') for color in colors]
 
 def self_pump(activation_cost: str, p: int, t: int):
     """Returns an Activated EffSpec; it is EOT=True, target is the card itself"""
@@ -15,13 +16,13 @@ def self_pump(activation_cost: str, p: int, t: int):
                      text=f'Pump +{p}/+{t}')
 
 def mana_battery_add_mana(color: str) -> EffSpec:
-    return Activated('T', ManaBatteriesAddMana(color), extra_costs=[RemoveCounterCost(CHARGE)],
+    return Activated('T', ManaBatteriesAddMana(color), extra_costs=[RemoveCounterCost(CHARGE)], is_mana_ability=True,
                      max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE),
                      text=f'Remove any number of charge counters from this artifact: Add {color}, '
                           f'then add an additional {color} for each charge counter removed this way')
 
 def mox_specs(color: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), T_FUNCS['owner'], text=f'Add {{{color}}}')]
+    return [Activated('T', AddMana(color), T_FUNCS['owner'], is_mana_ability=True, text=f'Add {{{color}}}')]
 
 
 MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])

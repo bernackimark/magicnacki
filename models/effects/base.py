@@ -84,6 +84,7 @@ class EffSpec:
     text: str = ''
     min_x_func: Callable = lambda gs, s: 1
     max_x_func: Union[Callable[..., int], None] = None
+    is_mana_ability: bool = False
 
     def __post_init__(self):
         """Some slug-eff_spec mappings provide a callable (assume exactly 1 target will be chosen);
