@@ -24,17 +24,6 @@ class AnkhOfMishra(Listener):
             return
         gs.apply_damage(source, 2, event.card.owner_id)
 
-
-class CitanulDruid(Listener):
-    """Whenever an opponent casts an artifact spell, put a +1/+1 counter on this creature"""
-    listens_to = ZoneChangeEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent):
-        if event.to_zone != Zone.BATTLEFIELD or 'Artifact' not in event.card.props.card_types:
-            return
-        source.counters.add_counter(PLUS_ONE)
-
-
 class DingusEgg(Listener):
     """Whenever a land is put into a graveyard from battlefield, deal 2 damage to that land's controller."""
     listens_to = ZoneChangeEvent

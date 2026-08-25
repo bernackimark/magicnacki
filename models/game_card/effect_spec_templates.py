@@ -9,6 +9,7 @@ from models.systems.mana import ManaCost
 
 
 class On:
+    """Fluent builder for a trigger & a resolver"""
     def __init__(self, event_type: type[Event]):
         self.event_type = event_type
         self.conditions = []

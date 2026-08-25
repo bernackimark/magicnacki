@@ -22,11 +22,6 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
-class ActiveVolcano(Resolver):
-    """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.pile_mgr.bounce(t) if t.props.slug == 'island' else gs.pile_mgr.destroy(t)
-
 class Amnesia(Resolver):
     """Target player reveals their hand and discards all nonland cards"""
 
@@ -36,13 +31,6 @@ class Amnesia(Resolver):
             c.reveal()
             if 'Land' not in c.card_types:
                 gs.pile_mgr.discard(c, source)
-
-class AnimateDead(Resolver):
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-
-        gs.pile_mgr.reanimate(t)
-        t.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=0))
 
 class ArenaOfTheAncientsCast(Resolver):
     """When this artifact enters, tap all legendary creatures"""
@@ -89,8 +77,6 @@ class BazaarOfBaghdad(Resolver):
             return
         combos = [list(combo) for combo in combinations(cards, 3)]
         options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
-        # options = [DiscardCards(source.owner_id, gs, list(combo))
-        #            for r in range(3, 4) for combo in combinations(cards, r)]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class Berserk(Resolver):
@@ -111,11 +97,6 @@ class BloodLust(Resolver):
         new_toughness = max(1, t.toughness - 4)
         toughness_mod = new_toughness - t.toughness
         t.modifiers.append(PTMod(s=source, p_adj=4, t_adj=toughness_mod, expires='EOT'))
-
-class BookOfRass(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.apply_damage(source, 2, source.owner_id)
-        gs.pile_mgr.draw(source.owner_id)
 
 class BottleOfSuleiman(Resolver):
     """{1}, Sac: Flip a coin. If you win the flip, create a 5/5 colorless Djinn artifact creature token with flying.

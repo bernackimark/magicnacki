@@ -42,7 +42,6 @@ class BlazingEffigy(Listener):
                                 if e.target is s and e.source.props.slug == 'blazing-effigy'])
         options = [CO(f'{s.props.name} deals {total_damage} damage to {t}',
                       lambda: gs.apply_damage(s, total_damage, t)) for t in all_creatures]
-        # options = [DealDamageTo(s.owner_id, gs, s, total_damage, target) for target in all_creatures]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class BrineHag(Listener):
@@ -128,33 +127,3 @@ class SengirVampire(Listener):
             source.counters.add_counter(PLUS_ONE)
             return
 
-class SoulNet(Listener):
-    """Whenever a creature dies, {1}: Gain 1 life"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not event.card.is_creature:
-            return
-        options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
-        gs.choice_mgr.queue(ChoiceAction(options, may=True))
-
-class TabletOfEpityr(Listener):
-    """Whenever an artifact you control dies, {1}: Gain 1 life"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not event.card.is_artifact or event.card.owner_id != source.owner_id:
-            return
-        options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
-        gs.choice_mgr.queue(ChoiceAction(options, may=True))
-
-
-class UrzasMiter(Listener):
-    """Whenever an artifact you control dies, if it wasn't sacrificed [not handling this part], {3}: draw a card"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if event.card.owner_id != source.owner_id or 'Artifact' not in event.card.card_types:
-            return
-        options = [CO(f'Pay 3 to draw a card', lambda: pay_mana_to_draw_cards(gs, source.owner_id, '3'))]
-        gs.choice_mgr.queue(ChoiceAction(options, may=True))

@@ -4,8 +4,7 @@ import functools
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
 from enum import StrEnum, auto, Enum
-from functools import partial
-from typing import TYPE_CHECKING, Literal, Union, Callable, Any, TypeAlias
+from typing import TYPE_CHECKING, Union, Callable, Any, TypeAlias
 
 from models.cost import Cost, CostResult
 from models.events_all import Event
@@ -14,6 +13,7 @@ from ..target import TargetSpec
 if TYPE_CHECKING:
     from ..action_stack import StackItemType
     from ..game_card.game_card import GameCard
+    from ..game_card.effect_spec_templates import On
     from game_state import GameState
     from models.systems.phase import Phase
 
@@ -148,7 +148,7 @@ def Activated(cost: str,
                    max_activations_per_turn=max_activations_per_turn, text=text,
                    min_x_func=min_x_func, max_x_func=max_x_func, is_mana_ability=is_mana_ability)
 
-def GenericTriggered(on: On) -> EffSpec:
+def GenTrig(on: On) -> EffSpec:
     return EffSpec(spec_type=ESType.TRIGGERED, cost='', effect=on.build())
 
 def Spell(effect: Resolver | Listener,

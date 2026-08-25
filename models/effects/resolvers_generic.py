@@ -18,6 +18,15 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from models.effects.base import RTarget, ResContext
 
+class Do(Resolver):
+    """Accepts mulptiple resolvers & executes them in succession; the target & context will be the same for all"""
+    def __init__(self, *resolvers: Resolver):
+        self.resolvers = resolvers
+
+    def resolve(self, gs, source, t=None, context=None):
+        for resolver in self.resolvers:
+            resolver.resolve(gs, source, t, context)
+
 
 class AddCounter(Resolver):
     """If no target is provided, the source card will receive the counter"""
@@ -126,20 +135,22 @@ class CounterSpellUnlessManaPaid(Resolver):
 
 class CreateTokenCreature(Resolver):
     """Looks-up token slug in GameState's 'tokens' dict; creates GameCard with .is_token = True; adds to board"""
-    def __init__(self, slug: str):
+    def __init__(self, slug: str, cnt: int = 1):
         self.slug = slug
+        self.cnt = cnt
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.game_card.game_card import GameCard
         from models.constants import Zone
-        card = gs.tokens.get(self.slug)
-        if not card:
-            raise ValueError(f'No token found for {self.slug}')
-        game_card = GameCard(card, source.owner_id, is_token=True)
-        game_card.zone = Zone.BATTLEFIELD
-        game_card.game_state = gs
-        gs.pile_mgr.boards[source.owner_id].append(game_card)
-        gs.event_mgr.register_card(game_card)
+        for _ in range(self.cnt):
+            card = gs.tokens.get(self.slug)
+            if not card:
+                raise ValueError(f'No token found for {self.slug}')
+            game_card = GameCard(card, source.owner_id, is_token=True)
+            game_card.zone = Zone.BATTLEFIELD
+            game_card.game_state = gs
+            gs.pile_mgr.boards[source.owner_id].append(game_card)
+            gs.event_mgr.register_card(game_card)
 
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
@@ -161,6 +172,13 @@ class DealDamage(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         amt = context.x_value if context and context.x_value is not None else self.amt
         gs.apply_damage(source, amt, t)
+
+class DealDamageToSourceOwner(Resolver):
+    def __init__(self, amt: int = 1):
+        self.amt = amt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.apply_damage(source, self.amt, source.owner_id)
 
 class DealOneDamageToTargetList(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -236,8 +254,8 @@ class DrawCards(Resolver):
     def __init__(self, card_cnt: int = 1):
         self.card_cnt = card_cnt
 
-    @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        t = source.owner_id if t is None else t
         gs.pile_mgr.draw(t, self.card_cnt)
 
 class EmptyResolver(Resolver):
@@ -258,8 +276,8 @@ class GainLife(Resolver):
     def __init__(self, amt: int = 1):
         self.amt = amt
 
-    @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        t = source.owner_id if t is None else t
         gs.score_mgr.increment_life(t, self.amt, source, gs)
 
 class GraveyardToExile(Resolver):
@@ -308,6 +326,19 @@ class ManaBatteriesAddMana(Resolver):
         source.counters.remove_counter(CHARGE, x)
         gs.mana_pools[source.owner_id].add_floating(self.color, 1 + x)
 
+class MayPayMana(Resolver):
+    def __init__(self, mana_cost: str, effect: Resolver):
+        self.mana_cost = mana_cost
+        self.effect = effect
+
+    def resolve(self, gs, source, t=None, context=None):
+        options = [CO(f'Pay {{{self.mana_cost}}}', lambda: self.pay_and_resolve(gs, source, t, context))]
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
+
+    def pay_and_resolve(self, gs: GameState, source: GameCard, t: RTarget, context: ResContext):
+        gs.mana_pools[source.owner_id].pay(self.mana_cost)
+        self.effect.resolve(gs, source, t, context)
+
 class Pump(Resolver):
     def __init__(self, power_adj: int, toughness_adj: int, eot: bool = False):
         self.p_adj = power_adj
@@ -332,8 +363,8 @@ class RemoveCounter(Resolver):
     def __init__(self, counter_type: CounterType):
         self.counter_type = counter_type
 
-    @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        t = source if t is None else t
         t.counters.remove_counter(self.counter_type)
 
 class RemoveFromCombat(Resolver):

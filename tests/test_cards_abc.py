@@ -154,6 +154,16 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.next_turn()
         self.assertEqual(1, creature.power)
 
+    def test_book_of_rass(self):
+        """Draw a card for 2 damage"""
+        self.gs.hands[0].clear()
+        self.g.mana('UUUUUUUU')
+        card = self.g.battlefield('book-of-rass')
+        aa = card.activated_abilities[0]
+        self.g.activate_ability(aa)
+        self.assertEqual(1, len(self.gs.hands[0]))
+        self.assertEqual(18, self.gs.life[0])
+
     def test_brine_hag(self):
         """When BH dies, change base PT of all creatures that dealt damage to it this turn to 0/2 for as long as that
         creature remains on the battlefield; State-based rules do evaluate & the creature will almost definitely die"""

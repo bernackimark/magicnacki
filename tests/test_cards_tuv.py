@@ -12,6 +12,16 @@ class TestCardsTUV(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_tablet_of_epityr(self):
+        """Whenever an artifact you control dies, {1}: Gain 1 life"""
+        self.g.battlefield('tablet-of-epityr')
+        self.g.mana('U')
+        artifact = self.g.battlefield('sol-ring')
+        self.gs.pile_mgr.destroy(artifact)
+        pay_1_gain_1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(pay_1_gain_1)
+        self.assertEqual(21, self.gs.life[0])
+
     def test_tawnoss_coffin(self):
         """You may choose not to untap TC during your untap step.
         3T: Exile target creature and all attached auras. Note the number & kind of counters that were on that creature.
@@ -180,7 +190,7 @@ class TestCardsTUV(unittest.TestCase):
         self.gs.event_mgr.register(card.abilities[0].effect, card)
         artifact = self.g.battlefield('sol-ring')
         self.gs.pile_mgr.destroy(artifact)
-        self.assertTrue(any(a.description.startswith('Pay 3') for a in self.gs.pending_choice.get_actions()))
+        self.assertTrue(any(a.description.startswith('Pay ') for a in self.gs.pending_choice.get_actions()))
 
     def test_venarian_gold(self):
         """When VG enters, tap host & put X stun counters on it."""

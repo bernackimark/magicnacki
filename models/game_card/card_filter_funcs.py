@@ -36,10 +36,6 @@ class TF:
     Ex: TF.artifacts_in_graveyards() explicitly indicates that it's looking somewhere besides the battlefield."""
 
     @staticmethod
-    def active_volcano_targets() -> Callable:
-        return lambda gs, s: gs.card_filter.in_play().blue().permanents().result() + gs.card_filter.in_play().islands().result()
-
-    @staticmethod
     def all_creatures_and_players():
         return lambda gs, s: gs.card_filter.in_play().creatures().result() + [0, 1]
 

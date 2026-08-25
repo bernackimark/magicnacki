@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import CO, pay_mana_to_prevent_counter, pay_mana_to_gain_life
+from models.choice_options import CO, pay_mana_to_prevent_counter
 from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener, ResContext
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
@@ -91,22 +91,6 @@ class OnColorSpellGainLife(Listener):
         if self.color not in event.card.colors:
             return
         gs.score_mgr.increment_life(s.owner_id, self.life_amt, s, gs)
-
-
-class OnColorSpellPayOneColorlessForOneLifeChoice(Listener):
-    """Whenever a player casts a [certain color] spell, you may {1}: Gain 1 life"""
-    listens_to = CastResolvedEvent
-
-    def __init__(self, color: str):
-        self.color = color
-
-    def on_event(self, gs: GameState, s: GameCard, event: CastResolvedEvent):
-        if self.color not in event.card.colors:
-            return
-        if not gs.mana_pools[s.owner_id].can_pay('1'):
-            return
-        options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, s.owner_id, '1'))]
-        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 
 # --- COMBAT END ---
@@ -637,7 +621,6 @@ class PayManaOrSacAtUpkeep(Listener):
             return
         options = [CO(f"Pay {{{self.mana_cost}}}", lambda: gs.mana_pools[s.owner_id].pay(self.mana_cost)),
                    CO(f'Sac {s}', lambda: gs.pile_mgr.sacrifice(s))]
-        # options = [PayMana(s.owner_id, gs, s, self.mana_cost), Sac(s.owner_id, gs, s)]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class PayManaToUntapUpkeep(Listener):
@@ -686,19 +669,6 @@ class PayManaToUntapUpkeep(Listener):
         state.handled_cards.append(c)
         self.queue_next_choice(gs, state)
 
-class RemoveCounterAtTargetUpkeep(Listener):
-    """At target owner's upkeep, remove counter(s) from this card"""
-    listens_to = UpkeepEvent
-
-    def __init__(self, target: GameCard, counter_type: CounterType, amt: int = 1):
-        self.target = target
-        self.counter_type = counter_type
-        self.amt = amt
-
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
-        if event.active_player != self.target.owner_id:
-            return
-        self.target.counters.remove_counter(self.counter_type, self.amt)
 
 # --- ZONE CHANGE ---
 class LTBTandem(Listener):

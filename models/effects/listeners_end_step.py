@@ -44,16 +44,6 @@ class InfiniteAuthorityEndStep(Listener):
             if e.card in other_combatants:
                 source.host.counters.add_counter(PLUS_ONE)
 
-
-class PestilenceEndStep(Listener):
-    """At the beginning of the end step, if no creatures are on the battlefield, sacrifice this enchantment"""
-    listens_to = EndStepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent):
-        if not gs.card_filter.creatures().in_play().result():
-            gs.pile_mgr.destroy(source)
-
-
 class SeasonOfTheWitchEndStep(Listener):
     """At YOUR end step, destroy all untapped creatures that didn't attack this turn, except those who 'couldn't'.
     Note: I'm defining 'couldn't' = summoning sickness or has Defender"""
@@ -71,7 +61,6 @@ class SeasonOfTheWitchEndStep(Listener):
                 continue
             gs.pile_mgr.destroy(creature)
 
-
 class SirensCallEndStep(Listener):
     """At next end step, destroy all non-Wall creatures that player controls that didn't attack this turn.
     Ignore this effect for each creature the player didn't control continuously since the beginning of the turn."""
@@ -86,7 +75,6 @@ class SirensCallEndStep(Listener):
             if not creature.has_summoning_sickness and creature not in attackers:
                 gs.pile_mgr.destroy(creature)
 
-
 class VoodooDollEndStep(Listener):
     """At your end step, if untapped, destroy this card & it deals damage to you = to the # of pin counters on it"""
     listens_to = EndStepEvent
@@ -99,15 +87,3 @@ class VoodooDollEndStep(Listener):
         if pin_cnt := source.counters.get_count(PIN) > 0:
             gs.apply_damage(source, pin_cnt, source.owner_id)
         gs.pile_mgr.destroy(source)
-
-
-class WhirlingDervish(Listener):
-    """At each end step, if this creature dealt damage to an opponent this turn, put a +1/+1 counter on it"""
-    listens_to = EndStepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: EndStepEvent) -> None:
-        from models.events_all import DamageResolvedEvent
-        for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent):
-            if e.source is source and e.target == flip(source.owner_id):
-                source.counters.add_counter(PLUS_ONE)
-                return
