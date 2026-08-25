@@ -5,7 +5,7 @@ from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.advance_phase import PassTheTurn
 from models.constants import KW
-from models.cost import ExileCreatureFromYourGraveyardCost
+from models.cost import ExileCardCost
 from models.game_card.counter_tokens import PLUS_ONE
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
 from models.systems.phase import Phase
@@ -136,7 +136,7 @@ class TestCardsMNOP(unittest.TestCase):
         aa = card.activated_abilities[0]
 
         pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[card])
-        exile_air_elemental = ExileCreatureFromYourGraveyardCost(selected_card=air_elemental)
+        exile_air_elemental = ExileCardCost(selected_card=air_elemental)
         pipeline.cost_result = exile_air_elemental.pay(self.gs, card)
         pipeline.advance()
         pipeline.resolve_ability()
