@@ -203,6 +203,19 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.next_turn()
         self.assertEqual(0, len(aa.eff_spec.target_spec.get_targets(self.gs, card)))
 
+    def test_cave_people(self):
+        """Whenever this creature attacks, it gets +1/-2 until end of turn ..."""
+        card = self.g.battlefield('cave-people')  # 1/4
+
+        self.g.next_turn()
+        self.gs.combat_mgr.create_combat(card)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)
+        self.assertEqual(2, card.power)
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)
+        self.assertEqual(1, card.power)
+
     def test_caverns_of_despair(self):
         """No more than two creatures can attack each combat. No more than two creatures can block each combat."""
         self.g.battlefield('caverns-of-despair')

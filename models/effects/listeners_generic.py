@@ -8,20 +8,32 @@ from models.actions.stack_accept_counter import CounterSpellAction
 from models.effects.listeners_mod_queries import OwnershipModQuery
 
 if TYPE_CHECKING:
+    from models.effects.base import Resolver
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_prevent_counter, pay_mana_to_gain_life
 from models.game_card.counter_tokens import CounterType
-from models.effects.base import Listener
+from models.effects.base import Listener, ResContext
 from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
     UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent
+    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent, Event
 from models.game_card.modifiers import PTMod
 from models.utils import flip
 from models.constants import Zone
 
+
+class GenericEventListener(Listener):
+    def __init__(self, event_type: type[Event], conditions: list, resolver: Resolver):
+        self.listens_to = event_type  # used during listener registration
+        self.conditions = conditions
+        self.resolver = resolver
+
+    def on_event(self, gs, source, event: Event):
+        if self.conditions and not all(condition.matches(gs, source, event) for condition in self.conditions):
+            return
+        self.resolver.resolve(gs, source, context=ResContext(event=event))
 
 # -- BLOCK EVENT ---
 class DestroyCombatantAtCombatEnd(Listener):

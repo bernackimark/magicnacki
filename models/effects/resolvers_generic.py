@@ -369,6 +369,18 @@ class SacAll(Resolver):
         for c in self.card_filter_func(gs, source):
             gs.pile_mgr.sacrifice(c)
 
+class SelfPump(Resolver):
+    """Doesn't require a target; using it to ease into the fluent/builder pattern; could later be replaced by:
+    a generic Pump that specifies .to() method"""
+    def __init__(self, power_adj: int, toughness_adj: int, eot: bool = False):
+        self.p_adj = power_adj
+        self.t_adj = toughness_adj
+        self.eot = eot
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        s = source
+        s.modifiers.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT' if self.eot else None))
+
 class SetColor(Resolver):
     def __init__(self, color: str, expires: str | None = None):
         self.color = color

@@ -17,15 +17,6 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 # --- ATTACK EVENT ---
-class CavePeopleAttackPump(Listener):
-    """Whenever this creature attacks, it gets +1/-2 until end of turn ..."""
-    listens_to = AttackEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
-        if event.attacker is not s:
-            return
-        event.attacker.modifiers.append(PTMod(s=s, p_adj=1, t_adj=-2, expires='EOT'))
-
 class HasranOgress(Listener):
     """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
     listens_to = AttackEvent

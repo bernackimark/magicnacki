@@ -1,4 +1,6 @@
 from models.cost import RemoveCounterCost
+from models.effects.listeners_generic import GenericEventListener
+from models.events_all import Event
 from models.game_card.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
 from models.effects.resolvers_generic import AddMana, AddCounter, ManaBatteriesAddMana, Pump
@@ -6,6 +8,25 @@ from models.game_card.card_filter_funcs import TF
 from models.systems.mana import ManaCost
 
 
+class On:
+    def __init__(self, event_type: type[Event]):
+        self.event_type = event_type
+        self.conditions = []
+        self.resolver = None
+
+    def where(self, condition):
+        self.conditions.append(condition)
+        return self
+
+    def then(self, resolver):
+        self.resolver = resolver
+        return self
+
+    def build(self) -> GenericEventListener:
+        return GenericEventListener(event_type=self.event_type, conditions=self.conditions, resolver=self.resolver)
+
+
+# --- HELPERS THAT BUILD EFFSPEC ---
 def dual_land_specs(colors: str) -> list[EffSpec]:
     return [Activated('T', AddMana(color), TF.owner(), is_mana_ability=True,
                       text=f'Add {{{color}}}') for color in colors]

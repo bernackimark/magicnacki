@@ -26,6 +26,7 @@ class ResContext:
     cost_result: CostResult | None = None
     x_value: int | None = None
     chosen_mode: int | None = None
+    event: Event | None = None
 
 class Resolver(ABC):
     def __repr__(self):
@@ -146,6 +147,9 @@ def Activated(cost: str,
                    allowed_p_turn_func=allowed_p_turn_func, allowed_activators=allowed_activators,
                    max_activations_per_turn=max_activations_per_turn, text=text,
                    min_x_func=min_x_func, max_x_func=max_x_func, is_mana_ability=is_mana_ability)
+
+def GenericTriggered(on: On) -> EffSpec:
+    return EffSpec(spec_type=ESType.TRIGGERED, cost='', effect=on.build())
 
 def Spell(effect: Resolver | Listener,
           target_spec: Union[Callable, TargetSpec, None] = None,
