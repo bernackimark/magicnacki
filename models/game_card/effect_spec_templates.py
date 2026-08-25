@@ -2,30 +2,30 @@ from models.cost import RemoveCounterCost
 from models.game_card.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
 from models.effects.resolvers_generic import AddMana, AddCounter, ManaBatteriesAddMana, Pump
-from models.game_card.card_filter_funcs import T_FUNCS
+from models.game_card.card_filter_funcs import TF
 from models.systems.mana import ManaCost
 
 
 def dual_land_specs(colors: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), T_FUNCS['owner'], is_mana_ability=True,
+    return [Activated('T', AddMana(color), TF.owner(), is_mana_ability=True,
                       text=f'Add {{{color}}}') for color in colors]
 
 def self_pump(activation_cost: str, p: int, t: int):
     """Returns an Activated EffSpec; it is EOT=True, target is the card itself"""
-    return Activated(activation_cost, Pump(power_adj=p, toughness_adj=t, eot=True), T_FUNCS['self'],
+    return Activated(activation_cost, Pump(power_adj=p, toughness_adj=t, eot=True), TF.self(),
                      text=f'Pump +{p}/+{t}')
 
 def mana_battery_add_mana(color: str) -> EffSpec:
     return Activated('T', ManaBatteriesAddMana(color), extra_costs=[RemoveCounterCost(CHARGE)], is_mana_ability=True,
-                     max_x_func=lambda gs, s: T_FUNCS['self'](gs, s).counters.get_count(CHARGE),
+                     max_x_func=lambda gs, s: TF.self()(gs, s).counters.get_count(CHARGE),
                      text=f'Remove any number of charge counters from this artifact: Add {color}, '
                           f'then add an additional {color} for each charge counter removed this way')
 
 def mox_specs(color: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), T_FUNCS['owner'], is_mana_ability=True, text=f'Add {{{color}}}')]
+    return [Activated('T', AddMana(color), TF.owner(), is_mana_ability=True, text=f'Add {{{color}}}')]
 
 
-MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), T_FUNCS['self'])
+MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), TF.self())
 
 
 # --- X HELPERS ---
