@@ -70,7 +70,7 @@ class DiscardLastCardDrawnThisTurn(Cost):
         gs.pile_mgr.discard(last_drawn, source)
         return cost_result
 
-class ExileCreatureFromYourGraveyardCost(Cost):
+class ExileCardCost(Cost):
     requires_choice = True
 
     def __init__(self, target_func: Callable[[GameState, GameCard], list[GameCard]] = None,
