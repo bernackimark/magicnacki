@@ -36,7 +36,7 @@ class TF:
     Ex: TF.artifacts_in_graveyards() explicitly indicates that it's looking somewhere besides the battlefield."""
 
     @staticmethod
-    def active_volcano_targets():
+    def active_volcano_targets() -> Callable:
         return lambda gs, s: gs.card_filter.in_play().blue().permanents().result() + gs.card_filter.in_play().islands().result()
 
     @staticmethod
@@ -221,13 +221,11 @@ class TF:
 
     @staticmethod
     def creatures_power_two_or_less():
-        return lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
-                              if c.power <= 2]
+        return lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result() if c.power <= 2]
 
     @staticmethod
     def creatures_power_three_or_more():
-        return lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result()
-                              if c.power >= 3]
+        return lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result() if c.power >= 3]
 
     @staticmethod
     def creatures_with_first_strike():
@@ -265,7 +263,8 @@ class TF:
 
     @staticmethod
     def flash_flood():
-        return lambda gs, s: gs.card_filter.in_play().red().permanents().result() + gs.card_filter.in_play().mountains().result()
+        return lambda gs, s: (gs.card_filter.in_play().red().permanents().result() +
+                              gs.card_filter.in_play().mountains().result())
 
     @staticmethod
     def fliers():
@@ -293,8 +292,7 @@ class TF:
 
     @staticmethod
     def golgothian_sylex():
-        return lambda gs, s: [c for c in
-                              gs.card_filter.in_play().non_token().permanents().by_set_code('AQ').result()
+        return lambda gs, s: [c for c in gs.card_filter.in_play().non_token().permanents().by_set_code('AQ').result()
                               if c.props.slug != 'golgothian-sylex']
 
     @staticmethod
@@ -303,7 +301,8 @@ class TF:
 
     @staticmethod
     def green_and_white_creatures():
-        return lambda gs, s: gs.card_filter.in_play().green().creatures().result() + gs.card_filter.in_play().white().creatures().result()
+        return lambda gs, s: (gs.card_filter.in_play().green().creatures().result() +
+                              gs.card_filter.in_play().white().creatures().result())
 
     @staticmethod
     def green_creatures():
