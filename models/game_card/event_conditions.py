@@ -15,6 +15,16 @@ class EventCondition(ABC):
     def matches(self, gs: GameState, source: GameCard, event: Event) -> bool: ...
 
 
+class CardIsHost(EventCondition):
+    """This can be used by any Event with the 'card' attr"""
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        return event.card is source.host  # type: ignore
+
+class CardIsSource(EventCondition):
+    """This can be used by any Event with the 'card' attr"""
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        return event.card is source  # type: ignore
+
 class CastCardIsArtifact(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
         return event.card.is_artifact

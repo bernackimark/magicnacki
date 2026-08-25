@@ -229,6 +229,10 @@ class DestroyAll(Resolver):
         for c in self.card_filter_func(gs, source):
             gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
 
+class DestroyHost(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.destroy(source.host)
+
 class DestroySelf(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.destroy(source)
@@ -314,18 +318,9 @@ class KWAModEffect(Resolver):
         self.eot = eot
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        t = source if t is None else t
         t.modifiers.append(KWAMod(s=source, add_or_remove=self.add_or_remove, item=self.kwa,
                                   expires='EOT' if self.eot else None))
-
-class KWASelfMod(Resolver):
-    def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):
-        self.add_or_remove = add_or_remove
-        self.kwa = kwa
-        self.eot = eot
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(KWAMod(s=source, add_or_remove=self.add_or_remove, item=self.kwa,
-                                       expires='EOT' if self.eot else None))
 
 class ManaBatteriesAddMana(Resolver):
     def __init__(self, color: str):

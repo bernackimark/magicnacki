@@ -24,25 +24,6 @@ class ArtifactPossessionTap(Listener):
             return
         gs.apply_damage(source, 2, source.host.owner_id)
 
-class Blight(Listener):
-    """Enchant land; When enchanted land becomes tapped, destroy it."""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
-        if not source.host or source.props.slug != 'blight' or event.card is not source.host:
-            return
-        gs.pile_mgr.destroy(source.host)
-
-
-class CityOfBrassDamageOnTap(Listener):
-    """Whenever this land becomes tapped, it deals 1 damage to you"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
-        if event.card is not source:
-            return
-        gs.apply_damage(source, 1, source.owner_id)
-
 class HauntingWindTap(Listener):
     """Whenever an artifact becomes tapped ... deal 1 damage to artifact's controller"""
     listens_to = TapCardEvent

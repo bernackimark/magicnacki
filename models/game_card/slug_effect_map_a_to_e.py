@@ -7,9 +7,9 @@ from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORAGE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import SelfIsAttacking, SelfIsDier, SelfIsBlocker, SelfIsCombatant, IsYourTurn, CasterIsOpp, \
-    CastCardIsArtifact, CastCardIsBlue
+    CastCardIsArtifact, CastCardIsBlue, CardIsHost, CardIsSource
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
-    CastResolvedEvent
+    CastResolvedEvent, TapCardEvent
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
@@ -21,8 +21,8 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageT
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
     CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, SelfPump, \
-    DestroySelfCombatants, ExileSelf, KWASelfMod, DestroySelf, MayPayMana, Do, DealDamageToSourceOwner, Reanimate, \
-    GainLifeTargetMV
+    DestroySelfCombatants, ExileSelf, DestroySelf, MayPayMana, Do, DealDamageToSourceOwner, Reanimate, GainLifeTargetMV, \
+    DestroyHost
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x, On
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
@@ -30,7 +30,7 @@ from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import AnkhOfMishra, DingusEgg
 from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, CurseArtifact, Cyclone, \
     DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
-from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, ArtifactPossessionTap
+from ..effects.listeners_tap_untap import ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
@@ -139,7 +139,7 @@ MAP: dict[str, list[EffSpec]] = {
     'black-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_BLACK), TF.creatures())],
     'blazing-effigy': [Triggered(BlazingEffigy())],
     'blessing': [Activated('W', Pump(1, 1, True), TF.host())],
-    'blight': [Spell(Blight(), TF.lands())],
+    'blight': [Spell(EmptyResolver(), TF.lands()), GenTrig(On(TapCardEvent).where(CardIsHost()).then(DestroyHost()))],
     'blood-lust': [Spell(BloodLust(), TF.creatures())],
     'blood-moon': [Static(BloodMoon())],
     'blood-of-the-martyr': [Triggered(BloodOfTheMartyr())],
@@ -184,7 +184,7 @@ MAP: dict[str, list[EffSpec]] = {
     'city-in-a-bottle': [Static(GlobalSac(TF.city_in_a_bottle())), Static(CantCastAppliesTo(TF.city_in_a_bottle())),
                          Spell(SacAll(TF.city_in_a_bottle()))],
     'city-of-brass': [Activated('T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
-                     [Triggered(CityOfBrassDamageOnTap())],
+                     [GenTrig(On(TapCardEvent).where(CardIsSource()).then(DealDamageToSourceOwner()))],
     'city-of-shadows': [Activated('T', AddCounter(STORAGE), extra_costs=[SacCardCost(TF.your_creatures())]),
                         Activated('T', CityOfShadowsAddMana(), is_mana_ability=True)],
     'clay-statue': [Activated('2', Regenerate(), TF.self())],
@@ -280,7 +280,7 @@ MAP: dict[str, list[EffSpec]] = {
     'eater-of-the-dead': [Activated('', EaterOfTheDead(), TF.creatures_in_all_graveyards())],
     'ebony-horse': [Activated('2T', RemoveFromCombat(), TF.attackers())],
     'el-hajjaj': [Triggered(ElHajjaj(), TF.self())],
-    'elder-land-wurm': [GenTrig(On(BlockEvent).where(SelfIsBlocker()).then(KWASelfMod('remove', 'Defender')))],
+    'elder-land-wurm': [GenTrig(On(BlockEvent).where(SelfIsBlocker()).then(KWAModEffect('remove', 'Defender')))],
     'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(UnblockableCondition(TF.self(), TF.red()))],
     'electric-eel': [Spell(DealDamage(1), TF.owner()),
                      Activated('RR', Do(SelfPump(0, 2, True), DealDamageToSourceOwner()))],
