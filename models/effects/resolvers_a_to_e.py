@@ -124,11 +124,6 @@ class ChaosOrb(Resolver):
         if result <= 4:
             gs.pile_mgr.destroy(t)
 
-class CityOfShadowsAddCounter(Resolver):
-    """{T}, Exile a creature you control: Put a storage counter on this land"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        source.counters.add_counter(STORAGE)
-
 class CityOfShadowsAddMana(Resolver):
     """{T}: Add {C} for each storage counter on this land"""
     def can_activate(self, gs: GameState, source: GameCard) -> bool:
@@ -305,12 +300,6 @@ class Disintegrate(Resolver):
             gs.event_mgr.register(PreventRegenerationEOT(t), source)
         gs.apply_damage(source, damage_amt, t)
 
-class DivineOffering(Resolver):
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.pile_mgr.destroy(t)
-        gs.score_mgr.increment_life(source.owner_id, t.props.mana_value, source, gs)
-
 class DrainPower(Resolver):
     """Target player activates a mana ability of each land they control.
     Then that player loses all unspent mana & you add the mana lost this way."""
@@ -388,16 +377,6 @@ class EaterOfTheDead(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         GraveyardToExile().resolve(gs, source, t)
         source.untap()
-
-class ElectricEel(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        source.modifiers.append(PTMod(s=source, p_adj=2, expires='EOT'))
-        gs.apply_damage(source, 1, source.owner_id)
-
-class ElvesOfTheDeepShadow(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.mana_pools[source.owner_id].add_floating('B')
-        gs.apply_damage(source, 1, source.owner_id)
 
 class EnchantmentAlteration(Resolver):
     """Attach target Aura attached to a creature or land to another permanent of that type"""
@@ -489,9 +468,3 @@ class EvilPresence(Resolver):
         t.modifiers.append(SubTypeMod(s=source, item='Swamp'))
         for sub_type in sub_types:
             t.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', item=sub_type))
-
-class ExchangeLifeTotals(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        your_life = gs.life[source.owner_id]
-        opp_life = gs.life[flip(source.owner_id)]
-        gs.life[source.owner_id], gs.life[flip(source.owner_id)] = opp_life, your_life

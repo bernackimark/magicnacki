@@ -345,6 +345,10 @@ class TF:
         return lambda gs, s: gs.card_filter.in_play().legendary().creatures().result()
 
     @staticmethod
+    def mountains():
+        return lambda gs, s: gs.card_filter.in_play().mountains().result()
+
+    @staticmethod
     def non_artifact_creatures():
         return lambda gs, s: gs.card_filter.in_play().non_artifact_creatures().result()
 

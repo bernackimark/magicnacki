@@ -15,18 +15,18 @@ from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
-    UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TimeElementalBounce, TriassicEggA, \
+    UrborgLoseFirstStrike, UrborgLoseSwampwalk, StreamOfLife, UrzasTrio, TriassicEggA, \
     SingingTree, Rakalite, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, SyphonSoul, \
-    Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, Web, \
-    WindsOfChange, WinterBlast, WoodElemental, WormwoodTreefolkForestwalk, WormwoodTreefolkSwampwalk, Reset, Riptide, \
-    Twiddle, Sindbad, SirensCall, VenarianGold, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap, PowerSink, \
-    PriestOfYawgmoth
+    Timetwister, UrzasAvengerFlying, UrzasAvengerFirstStrike, UrzasAvengerTrample, WallOfWonder, WandOfIth, \
+    WindsOfChange, WinterBlast, WoodElemental, Reset, Riptide, PriestOfYawgmoth, \
+    Twiddle, Sindbad, SirensCall, VenarianGold, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap, PowerSink
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDamageToTargetList, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndSelf, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, \
-    DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, DestroySelf, MayPayMana, GainLife
+    DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, DestroySelf, MayPayMana, \
+    GainLife, Do, DealDamageToSourceOwner
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -245,7 +245,7 @@ MAP: dict[str, list[EffSpec]] = {
     'thoughtlace': [Spell(SetColor('U'), TF.cards())],
     'throne-of-bone': [GenTrig(On(CastResolvedEvent).where(CastCardIsBlack()).then(MayPayMana('1', GainLife(1))))],
     'time-elemental': [Triggered(TimeElementalAttackedOrBlocked()),
-                       Activated('2UUT', TimeElementalBounce(), TF.unenchanted_perms())],
+                       Activated('2UUT', Bounce(), TF.unenchanted_perms())],
     'time-vault': [Triggered(DoesntUntapAtUntap(TF.self())), Triggered(TimeVaultOption()),
                    Activated('T', TakeAnotherTurn()), Spell(TapCardEffect(), TF.self())],
     'time-walk': [Spell(TakeAnotherTurn())],
@@ -323,7 +323,7 @@ MAP: dict[str, list[EffSpec]] = {
     'water-wurm': [Static(PumpApplies(TF.self(), (0, 1), C_FUNCS['opp_has_island']))],
     'weakness': [Spell(Pump(-2, -1), TF.creatures())],
     'weakstone': [Static(PumpApplies(TF.attackers(), (-1, 0)))],
-    'web': [Spell(Web(), TF.creatures())],
+    'web': [Spell(Do(Pump(0, 2), KWAModEffect('add', 'Reach')), TF.creatures())],
     'wheel-of-fortune': [Spell(WheelOfFortune())],
     'whirling-dervish': [GenTrig(On(EndStepEvent).where(SelfDamagedOpponent()).then(AddCounter(PLUS_ONE)))],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('W')],
@@ -342,7 +342,8 @@ MAP: dict[str, list[EffSpec]] = {
                               max_x_func=max_x_from_printed_card)],
     'worms-of-the-earth': [Static(CantCastAppliesTo(TF.all_lands_in_game())),
                            Static(GlobalSac(TF.all_lands_in_game())), Triggered(WormsOfTheEarthUpkeep())],
-    'wormwood-treefolk': [Activated('GG', WormwoodTreefolkForestwalk()), Activated('BB', WormwoodTreefolkSwampwalk())],
+    'wormwood-treefolk': [Activated('GG', Do(KWAModEffect('add', 'Forestwalk', True), DealDamageToSourceOwner(2))),
+                          Activated('BB', Do(KWAModEffect('add', 'Swampwalk', True), DealDamageToSourceOwner(2)))],
     'wrath-of-god': [Spell(ExileAllCreatures())],
     'wyluli-wolf': [Activated('T', Pump(1, 1, True), TF.creatures())],
     'xira-arien': [Activated('BRGT', DrawCards(), TF.all_players())],

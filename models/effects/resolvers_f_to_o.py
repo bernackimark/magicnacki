@@ -84,11 +84,6 @@ class FireAndBrimstone(Resolver):
             gs.apply_damage(source, 4, opp)
             gs.apply_damage(source, 4, source.owner_id)
 
-class FlashFlood(Resolver):
-    """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.pile_mgr.bounce(t) if t.props.slug == 'mountain' else gs.pile_mgr.destroy(t)
-
 class GlassesOfUrza(Resolver):
     """Look at opponent's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -137,22 +132,11 @@ class GoblinKing(Resolver):
                 t.modifiers.append(KWAMod(s=source, item=KW.ISLANDWALK))
                 t.modifiers.append(PTMod(s=source, p_adj=1, t_adj=1))
 
-class GraveRobbersAA(Resolver):
-    """{B}, {T}: Exile target artifact card from a graveyard. You gain 2 life."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        GraveyardToExile().resolve(gs, source, t)
-        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
-
 class GreatDefender(Resolver):
     """Target creature gets +0/+X until end of turn, where X is its mana value."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(PTMod(s=source, t_adj=t.props.mana_value, expires='EOT'))
-
-class Greed(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.apply_damage(source, 2, source.owner_id)
-        gs.pile_mgr.draw(source.owner_id)
 
 class GuardianAngel(Resolver):
     """Prevent the next X damage that would be dealt to any target (permanent or player) this turn.
@@ -177,21 +161,6 @@ class GwendlynDiCorci(Resolver):
             return
         random_card: GameCard = gs.randomize_event(t, cards)
         gs.pile_mgr.discard(random_card, source)
-
-class HealingSalve(Resolver):
-    """Choose one - * You gain 3 life. * Prevent the next 3 damage that would be dealt to any target this turn."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        s = source
-        all_targets = gs.card_filter.in_play().creatures().result() + [0, 1]
-        options = [CO('You gain 3 life', lambda: gs.score_mgr.increment_life(s.owner_id, 3, s, gs))] + \
-                  [CO('Prevent the next 3 damage that would be dealt to any target this turn',
-                      lambda: self.prevent_next_3(gs, t)) for t in all_targets]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
-    @staticmethod
-    def prevent_next_3(gs: GameState, target: GameCard):
-        from models.effects.listeners_generic import PreventNextDamageTo
-        gs.event_mgr.register(PreventNextDamageTo(3, False, target))
 
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
@@ -230,7 +199,6 @@ class JalumTome(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.draw(source.owner_id)
         options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[source.owner_id]]
-        # options = [DiscardCards(source.owner_id, gs, c) for c in gs.pile_mgr.hands[source.owner_id]]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class JovialEvil(Resolver):
@@ -320,7 +288,7 @@ class ManaShort(Resolver):
         player_lands = gs.card_filter.on_player_board(t).lands().result()
         for land in player_lands:
             land.tap()
-        print(f"Mana Short taps {len(player_lands)} lands belonging to player {t}.")
+        print(f"Mana Short taps all lands belonging to player {t}.")
 
 class MartyrsCry(Resolver):
     """Sorcery WW [] Exile all white creatures. For each creature exiled this way, its controller draws a card."""
@@ -372,7 +340,6 @@ class MoldDemon(Resolver):
         combos = list(combinations(your_swamps, 2))
         options = [CO(f"Sac 2 swamps", lambda: self.sac_two_swamps(gs, combo)) for combo in combos] + \
                   [CO(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
-        # options = [SacCards(source.owner_id, gs, source, two_swamps) for two_swamps in combos]
         gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
@@ -398,25 +365,14 @@ class NamelessRace(Resolver):
 
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""
-    # TODO: this doesn't address the 'you may shuffle'
-    # TODO: this would be better handled by making selecting each card, like Sylvan Library
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         lib = gs.pile_mgr.libraries[t]
         top_3_cards = lib[:3]
         gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
-        # a0 = Shuffle(source.owner_id, gs, gs.pile_mgr.libraries[t])
-        # c1, c2, c3 = top_3_cards
         options = [CO(f"Order top of library top -> bottom: {', '.join(list(perm))}",
                       lambda: self.order_lib(lib, list(perm))) for perm in permutations(top_3_cards, r=3)] + \
                   [CO(f"Shuffle", lambda: random.shuffle(lib))]
-        # a1 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c2, c3])
-        # a2 = ReorderTopOfLibrary(source.owner_id, gs, t, [c1, c3, c2])
-        # a3 = ReorderTopOfLibrary(source.owner_id, gs, t, [c2, c1, c3])
-        # a4 = ReorderTopOfLibrary(source.owner_id, gs, t, [c2, c3, c1])
-        # a5 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c1, c2])
-        # a6 = ReorderTopOfLibrary(source.owner_id, gs, t, [c3, c2, c1])
-        # options = [a0, a1, a2, a3, a4, a5, a6]
         gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod

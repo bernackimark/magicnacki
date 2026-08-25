@@ -4,24 +4,25 @@ from itertools import combinations
 from .card_filter_funcs import C_FUNCS, A_FUNCS, TF
 from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORAGE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import SelfIsAttacking, SelfIsDier, SelfIsBlocker, SelfIsCombatant, IsYourTurn, CasterIsOpp, \
     CastCardIsArtifact, CastCardIsBlue
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
     CastResolvedEvent
 from ..target import TargetSpec
-from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
+from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
     DemonicTutor, Clone, CopyArtifact, EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, \
     AshnodsTransmogrant, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, ConsecrateLand, \
-    Crumble, DivineOffering, Earthbind, ElectricEel, ElvesOfTheDeepShadow, ArenaOfTheAncientsCast, \
-    EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration, Eureka
+    Crumble, Earthbind, ArenaOfTheAncientsCast, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, \
+    Cleansing, DrafnasRestoration, Eureka
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
     CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, SelfPump, \
-    DestroySelfCombatants, ExileSelf, KWASelfMod, DestroySelf, MayPayMana, Do, DealDamageToSourceOwner, Reanimate
+    DestroySelfCombatants, ExileSelf, KWASelfMod, DestroySelf, MayPayMana, Do, DealDamageToSourceOwner, Reanimate, \
+    GainLifeTargetMV
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x, On
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
@@ -184,7 +185,7 @@ MAP: dict[str, list[EffSpec]] = {
                          Spell(SacAll(TF.city_in_a_bottle()))],
     'city-of-brass': [Activated('T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
                      [Triggered(CityOfBrassDamageOnTap())],
-    'city-of-shadows': [Activated('T', CityOfShadowsAddCounter(), extra_costs=[SacCardCost(TF.your_creatures())]),
+    'city-of-shadows': [Activated('T', AddCounter(STORAGE), extra_costs=[SacCardCost(TF.your_creatures())]),
                         Activated('T', CityOfShadowsAddMana(), is_mana_ability=True)],
     'clay-statue': [Activated('2', Regenerate(), TF.self())],
     'cleanse': [Spell(DestroyAll(TF.black_creatures()))],
@@ -255,7 +256,7 @@ MAP: dict[str, list[EffSpec]] = {
     'disintegrate': [Spell(Disintegrate(), TF.all_creatures_and_players())],
     'disrupting-scepter': [Activated('3T', Discard(), TF.all_players(), allowed_p_turn_func=TF.owner())],
     'disenchant': [Spell(Destroy(), TF.artifacts_and_enchantments())],
-    'divine-offering': [Spell(DivineOffering(), TF.artifacts())],
+    'divine-offering': [Spell(Do(Destroy(allow_regen=False), GainLifeTargetMV()), TF.artifacts())],
     'divine-transformation': [Spell(Pump(3, 3), TF.creatures())],
     'drafnas-restoration': [Spell(DrafnasRestoration(), TF.all_players())],
     'dragon-engine': [self_pump('2', 1, 0)],
@@ -281,11 +282,12 @@ MAP: dict[str, list[EffSpec]] = {
     'el-hajjaj': [Triggered(ElHajjaj(), TF.self())],
     'elder-land-wurm': [GenTrig(On(BlockEvent).where(SelfIsBlocker()).then(KWASelfMod('remove', 'Defender')))],
     'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(UnblockableCondition(TF.self(), TF.red()))],
-    'electric-eel': [Spell(DealDamage(1), TF.owner()), Activated('RR', ElectricEel())],
+    'electric-eel': [Spell(DealDamage(1), TF.owner()),
+                     Activated('RR', Do(SelfPump(0, 2, True), DealDamageToSourceOwner()))],
     'elephant-graveyard': [Activated('T', AddMana('C'), is_mana_ability=True),
                            Activated('T', Regenerate(), TF.elephants())],
     'elven-riders': [Static(UnblockableCondition(TF.self(), TF.non_wall_non_fliers()))],
-    'elves-of-deep-shadow': [Activated('T', ElvesOfTheDeepShadow(), is_mana_ability=True)],
+    'elves-of-deep-shadow': [Activated('T', Do(AddMana('B'), DealDamageToSourceOwner()), is_mana_ability=True)],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', KW.FIRST_STRIKE, True), TF.self())],
     'enchanted-being': [Static(PreventAllDamage(TF.self(), TF.enchanted_creatures(), combat_only=True))],
     'enchantment-alteration': [Spell(EnchantmentAlteration(), TF.auras_on_creatures_or_lands())],

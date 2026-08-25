@@ -14,17 +14,17 @@ from .event_conditions import SelfIsDier, SelfIsUnblockedAttacker, SelfIsDamageR
     CastCardIsRed
 from ..constants import KW
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
-    MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
-    FeldonsCane, FlashFlood, GoblinKing, Greed, GlyphOfDestruction, HealingSalve, HurkylsRecall, Inquisition, \
+    MindTwist, NaturalSelection, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
+    FeldonsCane, GoblinKing, GlyphOfDestruction, HurkylsRecall, Inquisition, \
     KoboldDrillSergeant, KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, \
     FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, \
     GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, Necropolis, LifeChisel
-from ..effects.resolvers_a_to_e import ExchangeLifeTotals
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
-    CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, SelfPump, AddCounter, DestroySelf, MayPayMana
+    CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, SelfPump, AddCounter, DestroySelf, MayPayMana, \
+    ExchangeLifeTotals, Do, GraveyardToExile, DealDamageToSourceOwner
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, TF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -79,7 +79,7 @@ MAP: dict[str: list[EffSpec]] = {
     'fishliver-oil': [Spell(KWAModEffect('add', KW.ISLANDWALK), TF.creatures())],
     'fissure': [Spell(Destroy(False), TF.creatures_and_lands())],
     'flash-counter': [Spell(CounterSpell(), TF.instant_spells())],
-    'flash-flood': [Spell(FlashFlood(), TF.flash_flood())],
+    'flash-flood': [Spell(Destroy(), TF.red_permanents()), Spell(Bounce(), TF.mountains())],
     'flashfires': [Spell(DestroyAll(TF.plains()))],
     'flight': [Spell(KWAModEffect('add', KW.FLYING), TF.creatures())],
     'flood': [Activated('UU', TapCardEffect(), TF.untapped_creatures_without_flying())],
@@ -135,12 +135,12 @@ MAP: dict[str: list[EffSpec]] = {
     'gosta-dirk': [Static(WalkRuleRemoved(KW.ISLANDWALK))],
     'granite-gargoyle': [self_pump('R', 0, 1)],
     'grapeshot-catapult': [Activated('T', DealDamage(4), TF.fliers())],
-    'grave-robbers': [Activated('BT', GraveRobbersAA(), TF.artifacts_in_graveyards())],
+    'grave-robbers': [Activated('BT', Do(GraveyardToExile(), GainLife(2)), TF.artifacts_in_graveyards())],
     'gravity-sphere': [Static(KWAApplies(TF.creatures(), 'remove', KW.FLYING))],
     'great-defender': [Spell(GreatDefender(), TF.creatures())],
     'great-wall': [Static(WalkRuleRemoved(KW.PLAINSWALK))],
     'greater-realm-of-preservation': [Activated('1W', PreventNextDamageTo(protected=TF.owner()), TF.black_and_red())],
-    'greed': [Activated('B', Greed(), TF.owner())],
+    'greed': [Activated('B', Do(DrawCards(), DealDamageToSourceOwner(2)))],
     'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_GREEN), TF.creatures())],
     'guardian-angel': [Spell(GuardianAngel(), TF.all_creatures_and_players())],
@@ -155,7 +155,7 @@ MAP: dict[str: list[EffSpec]] = {
     'hasran-ogress': [Triggered(HasranOgress())],
     'haunting-wind': [Triggered(HauntingWindActivation()), Triggered(HauntingWindTap())],
     'hazezon-tamar': [Triggered(HazezonTamarTokenCreation(TF.owner())), Triggered(HazezonTamarLTB())],
-    'healing-salve': [Spell(HealingSalve())],
+    'healing-salve': [Spell(GainLife(3)), Spell(PreventNextDamageTo(3), TF.all_creatures_and_players())],
     'heavens-gate': [Spell(SetColor('W', 'EOT'), TargetSpec(TF.creatures(), 1, None))],
     'hell-swarm': [Spell(PumpAppliesEOT(TF.creatures(), (-1, 0)))],
     'hells-caretaker': [Activated('T', Reanimate(), TF.creatures_in_your_graveyard(), allowed_phases=[Phase.UPKEEP],

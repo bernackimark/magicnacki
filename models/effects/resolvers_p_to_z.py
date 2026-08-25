@@ -84,7 +84,6 @@ class PrimalClay(Resolver):
         options = [CO('Cast as a 3/3', lambda: self.three_three(gs, s)),
                    CO('Cast as a 2/2 flier', lambda: self.two_two_flier(gs, s)),
                    CO('Cast as a 1/6 wall', lambda: self.one_six_wall(gs, s))]
-        # options = [PrimalClayA(s.owner_id, gs, s), PrimalClayB(s.owner_id, gs, s), PrimalClayC(s.owner_id, gs, s)]
         gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
@@ -241,7 +240,6 @@ class Simulacrum(Resolver):
         if your_creatures:
             options = [CO(f'{s} deals {damage_taken_this_turn} damage to {c}',
                           lambda: gs.apply_damage(s, damage_taken_this_turn, c)) for c in your_creatures]
-            # options = [DealDamageTo(s.owner_id, gs, s, damage_taken_this_turn, c) for c in your_creatures]
             gs.choice_mgr.queue(ChoiceAction(options))
 
 class Sindbad(Resolver):
@@ -341,11 +339,6 @@ class Telekinesis(Resolver):
         gs.event_mgr.register(PreventAllDamageByEOT(t, combat_only=True), source)
         t.counters.add_counter(STUN, 2)
 
-class TimeElementalBounce(Resolver):
-    """... {2UU}, {T}: Return target unenchanted permanent to its owner's hand"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.pile_mgr.bounce(t)
-
 class Timetwister(Resolver):
     """Each player shuffles their hand & graveyard into their library, then draws 7 cards.
     (Timetwister to its owner's graveyard.)"""
@@ -417,7 +410,6 @@ class UntamedWilds(Resolver):
         basic_lands = [c for c in lib if c.props.is_basic_land]
         gs.add_presentation_request(source.owner_id, 'search_library', {'cards': basic_lands})
         options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in basic_lands]
-        # options = [Tutor(source.owner_id, gs, source, basic_land, Zone.BATTLEFIELD) for basic_land in basic_lands]
         gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
@@ -426,7 +418,7 @@ class UntamedWilds(Resolver):
         random.shuffle(lib)
 
 class UrborgLoseFirstStrike(Resolver):
-    """{T}: Target creature loses FIRST STRIKE or swampwalk until end of turn"""
+    """{T}: Target creature loses First Strike or Swampwalk until end of turn"""
 
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
@@ -528,12 +520,6 @@ class WarBarge(Resolver):
         t.modifiers.append(KWAMod(item=KW.ISLANDWALK, s=source, expires='EOT'))
         gs.event_mgr.register(LTBTandem([source, t], until_eot=True), source)
 
-class Web(Resolver):
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(PTMod(s=source, p_adj=0, t_adj=2))
-        t.modifiers.append(KWAMod(s=source, item=KW.REACH))
-
 class WheelOfFortune(Resolver):
     """Each player discards their hand, then draws seven cards"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -578,15 +564,3 @@ class WoodElemental(Resolver):
         s.base_pt = (amt, amt)
         for card in forest_combo:
             gs.pile_mgr.sacrifice(card)
-
-class WormwoodTreefolkForestwalk(Resolver):
-    """{GG}: This creature gains forestwalk until end of turn and deals 2 damage to you"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(KWAMod(s=source, item=KW.FORESTWALK, expires='EOT'))
-        gs.apply_damage(source, 2, source.owner_id)
-
-class WormwoodTreefolkSwampwalk(Resolver):
-    """{BB}: This creature gains swampwalk until end of turn and deals 2 damage to you"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(KWAMod(s=source, item=KW.SWAMPWALK, expires='EOT'))
-        gs.apply_damage(source, 2, source.owner_id)

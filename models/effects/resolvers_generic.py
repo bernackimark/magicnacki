@@ -7,7 +7,7 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_prevent_counter
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
-from models.effects.base import Resolver
+from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
@@ -247,7 +247,6 @@ class Discard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         """t is the player id"""
         options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
-        # options = [DiscardCards(t, gs, c) for c in gs.pile_mgr.hands[t]]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class DrawCards(Resolver):
@@ -262,6 +261,12 @@ class EmptyResolver(Resolver):
     """Used by auras that have complex Listeners but no resolver"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         pass
+
+class ExchangeLifeTotals(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        your_life = gs.life[source.owner_id]
+        opp_life = gs.life[flip(source.owner_id)]
+        gs.life[source.owner_id], gs.life[flip(source.owner_id)] = opp_life, your_life
 
 class ExileAllCreatures(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -279,6 +284,11 @@ class GainLife(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t = source.owner_id if t is None else t
         gs.score_mgr.increment_life(t, self.amt, source, gs)
+
+class GainLifeTargetMV(Resolver):
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        gs.score_mgr.increment_life(source.owner_id, t.props.mana_value, source, gs)
 
 class GraveyardToExile(Resolver):
     @Resolver.target_required
