@@ -15,16 +15,6 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 
-class AbuJafar(Listener):
-    """When this creature dies, destroy all creatures blocking or blocked by it. They can't be regenerated."""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if event.card is not source:
-            return
-        for combatant in gs.combat_mgr.get_combatants_against(event.card):
-            gs.pile_mgr.destroy(combatant, allow_regeneration=False)
-
 class AxelrodGunnarson(Listener):
     """Whenever a creature dealt damage by AG this turn dies, you gain 1 life & AG deals 1 damage to [opponent]"""
     listens_to = DiesEvent
@@ -79,16 +69,6 @@ class CreatureBond(Listener):
             return
         gs.apply_damage(source, source.host.toughness, source.host.owner_id)
 
-
-class CyclopeanMummy(Listener):
-    """When this creature dies, exile it"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or event.card != source:
-            return
-        gs.pile_mgr.exile(source)
-
 class FirestormPhoenix(Listener):
     """If this card would die, bounce it instead; it cannot be re-summoned this turn"""
     listens_to = DiesEvent
@@ -99,16 +79,6 @@ class FirestormPhoenix(Listener):
         gs.pile_mgr.bounce(source)
         from models.effects.listeners_permission import CantCastEOT
         gs.event_mgr.register(CantCastEOT(source), source)
-
-class Onulet(Listener):
-    """When this creature dies, you gain 2 life"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or event.card != source:
-            return
-        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
-
 
 class PersonalIncarnationDies(Listener):
     """... When this creature dies, its owner loses half their life, rounding up the loss amount"""
@@ -132,17 +102,6 @@ class PuppetMaster(Listener):
             options = [CO(f"Pay {{{'UUU'}}} to bounce {source}",
                           lambda: pay_mana_to_bounce(gs, source.owner_id, 'UUU', source))]
             gs.choice_mgr.queue(ChoiceAction(options, may=True))
-
-class RukhEgg(Listener):
-    """When this creature dies, create a 4/4 red Bird creature token with flying at next end step"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or event.card != source:
-            return
-        from models.effects.resolvers_generic import CreateTokenCreature
-        obj = CreateTokenCreature('rukh')
-        obj.resolve(gs, source)
 
 class SandalsOfAbdallahIfCreatureDies(Listener):
     """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact"""
@@ -169,17 +128,6 @@ class SengirVampire(Listener):
             source.counters.add_counter(PLUS_ONE)
             return
 
-
-class SuChi(Listener):
-    """When this creature dies, add {CCCC}"""
-    listens_to = DiesEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent):
-        if not isinstance(event, DiesEvent) or event.card != source:
-            return
-        gs.mana_pools[source.owner_id].add_floating('C', 4)
-
-
 class SoulNet(Listener):
     """Whenever a creature dies, {1}: Gain 1 life"""
     listens_to = DiesEvent
@@ -189,7 +137,6 @@ class SoulNet(Listener):
             return
         options = [CO(f"{{{1}}}: Gain 1 life", lambda: pay_mana_to_gain_life(gs, source.owner_id, '1'))]
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
-
 
 class TabletOfEpityr(Listener):
     """Whenever an artifact you control dies, {1}: Gain 1 life"""

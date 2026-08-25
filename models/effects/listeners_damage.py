@@ -15,19 +15,6 @@ if TYPE_CHECKING:
 
 
 # --- DAMAGE PROPOSED EVENT ---
-class AlAbarasCarpetPrevention(Listener):
-    listens_to = DamageProposedEvent
-    expires = 'EOT'
-
-    def __init__(self, protected_player: int):
-        self.protected_player = protected_player
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target != self.protected_player or KW.FLYING in event.source.keyword_abilities:
-            return
-        event.prevented += event.remaining
-        event.remaining = 0
-
 class BloodOfTheMartyr(Listener):
     """Until EOT, if damage would be dealt to any creature, you may have that damage dealt to you instead"""
     listens_to = DamageProposedEvent
@@ -138,19 +125,6 @@ class RockHydraAutoDamagePrevent(Listener):
             event.prevented += 1
             event.remaining -= 1
 
-class ScarecrowPrevention(Listener):
-    listens_to = DamageProposedEvent
-    expires = 'EOT'
-
-    def __init__(self, protected_player: int):
-        self.protected_player = protected_player
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target != self.protected_player or KW.FLYING not in event.source.keyword_abilities:
-            return
-        event.prevented += event.remaining
-        event.remaining = 0
-
 class VeteranBodyguard(Listener):
     """As long as VB is untapped, redirect all damage by unblocked creatures to VB instead"""
     listens_to = DamageProposedEvent
@@ -195,16 +169,6 @@ class EyeForAnEye(Listener):
             return
         self.is_expired = True
         gs.apply_damage(source, event.amt, event.source.owner_id)
-
-
-class FungusaurOnDamage(Listener):
-    """Whenever this creature is dealt damage, put a +1/+1 counter on it"""
-    listens_to = DamageResolvedEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
-        if event.target is not source:
-            return
-        source.counters.add_counter(PLUS_ONE)
 
 class GlyphOfLife(Listener):
     """Whenever target wall is dealt damage by an attacker this turn, gain that much life."""

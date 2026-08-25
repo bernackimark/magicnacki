@@ -29,7 +29,6 @@ class HasranOgress(Listener):
             return
         options = [CO(f"Pay {{{'2'}}}", lambda: gs.mana_pools[s.owner_id].pay('2')),
                    CO(f'{s} deals 3 damage to you', lambda: gs.apply_damage(s, 3, s.owner_id))]
-        # options = [PayMana(s.owner_id, gs, s, '2'), DealDamageTo(s.owner_id, gs, s, 3, s.owner_id)]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class MijaeDjinn(Listener):
@@ -47,15 +46,6 @@ class MijaeDjinn(Listener):
 
 
 # --- BLOCK EVENT ---
-class ElderLandWurm(Listener):
-    """When this creature blocks for the first time, it loses defender"""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.blocker is not s:
-            return
-        s.modifiers.append(KWAMod(s=s, add_or_remove='remove', item='Defender'))
-
 class GiantShark(Listener):
     """Whenever this creature blocks/is blocked by a creature that's been dealt damage this turn,
     this creature gets +2/+0 and gains trample until end of turn"""
@@ -210,7 +200,6 @@ class Johan(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CombatBeginEvent) -> None:
         options = [CO(f'{source} gains Defender & your creatures gain Vigilance until end of turn',
                       lambda: self.johan(gs, source))]
-        # options = [JohanAction(source.owner_id, gs, source)]
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod
@@ -222,14 +211,6 @@ class Johan(Listener):
         gs.event_mgr.register(JohanOnTap(), s)
 
 # --- COMBAT END EVENT ---
-class ClockworkCombatEnd(Listener):
-    """At end of combat, if this creature attacked or blocked this combat, remove a +1/+0 counter from it"""
-    listens_to = CombatEndEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CombatEndEvent) -> None:
-        if source in gs.card_filter.combatants().result():
-            source.counters.remove_counter(PLUS_ONE_ZERO)
-
 class GlyphOfDoom(Listener):
     """At combat end, destroy creature blocked by target wall this turn."""
     listens_to = CombatEndEvent
@@ -265,7 +246,7 @@ class TimeElementalAttackedOrBlocked(Listener):
         if s not in gs.card_filter.combatants().result():
             return
         gs.apply_damage(s, 5, s.owner_id)
-        gs.pile_mgr.destroy(s)
+        gs.pile_mgr.sacrifice(s)
 
 class TheWretched(Listener):
     """At combat end, gain control of all creatures blocking this creature for as long as you control TW.
@@ -304,23 +285,3 @@ class FloralSpuzzem(Listener):
         from models.effects.listeners_generic import PreventNextDamageBy
         gs.pile_mgr.destroy(t)
         gs.event_mgr.register(PreventNextDamageBy(s, combat_only=True))
-
-
-class MerchantShip(Listener):
-    """Whenever this creature attacks and isn't blocked, you gain 2 life"""
-    listens_to = UnblockedAttackerEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
-        if event.attacker != s:
-            return
-        gs.score_mgr.increment_life(s.owner_id, 2, s, gs)
-
-
-class MurkDwellers(Listener):
-    """Whenever this creature attacks and isn't blocked, it gets +2/+0 until end of combat"""
-    listens_to = UnblockedAttackerEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UnblockedAttackerEvent):
-        if event.attacker != s:
-            return
-        s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))

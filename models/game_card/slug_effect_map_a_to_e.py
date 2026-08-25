@@ -6,8 +6,8 @@ from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenericTriggered
-from .event_conditions import SelfIsAttacking
-from ..events_all import AttackEvent
+from .event_conditions import SelfIsAttacking, SelfIsDier, SelfIsBlocker, SelfIsCombatant
+from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
@@ -19,7 +19,8 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddCounter, City
 from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
-    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, SelfPump
+    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, SelfPump, \
+    DestroySelfCombatants, ExileSelf, KWASelfMod
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x, On
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
@@ -30,9 +31,9 @@ from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, Cu
 from ..effects.listeners_tap_untap import Blight, CityOfBrassDamageOnTap, ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
-from ..effects.listeners_dies import AbuJafar, AxelrodGunnarson, CreatureBond, CyclopeanMummy, BlazingEffigy, BrineHag
+from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
-from ..effects.listeners_combat import ElderLandWurm, AislingLeprechaun, Arboria, ClockworkCombatEnd
+from ..effects.listeners_combat import AislingLeprechaun, Arboria
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, \
     UntapRemovesPumpFromAnotherCard, OptionalUntap, DealDamageOnHostUpkeep, PayManaOrSacAtUpkeep, \
     DestroyAtEndStep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
@@ -48,7 +49,7 @@ from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
     'abomination': [Triggered(DestroyCombatantAtCombatEnd(TF.self(), TF.green_and_white_creatures()))],
-    'abu-jafar': [Triggered(AbuJafar())],
+    'abu-jafar': [GenericTriggered(On(DiesEvent).where(SelfIsDier()).then(DestroySelfCombatants(allow_regen=False)))],
     'acid-rain': [Spell(DestroyAll(TF.forests()))],
     'active-volcano': [Spell(ActiveVolcano(), TF.active_volcano_targets())],
     'adun-oakenshield': [Activated('BRGT', Bounce(), TF.creatures_in_your_graveyard())],
@@ -188,11 +189,13 @@ MAP: dict[str, list[EffSpec]] = {
     'cleansing': [Spell(Cleansing())],
     'clergy-of-the-holy-nimbus': [Static(RegenerateSelf()), Activated('1', PreventRegenerationEOT(), TF.self(),
                                                                       allowed_activators=A_FUNCS['opponent'])],
-    'clockwork-avian': [Static(ClockworkCombatEnd()),
+    'clockwork-avian': [GenericTriggered(On(CombatEndEvent).where(SelfIsCombatant()).
+                                         then(RemoveCounter(PLUS_ONE_ZERO))),
                         Activated('XT', AddCounter(PLUS_ONE_ZERO), TF.self(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_turn_func=TF.owner(), max_x_func=clockwork_avian_x),
                         Spell(AddCounter(PLUS_ONE_ZERO, 4))],
-    'clockwork-beast': [Static(ClockworkCombatEnd()),
+    'clockwork-beast': [GenericTriggered(On(CombatEndEvent).where(SelfIsCombatant()).
+                                         then(RemoveCounter(PLUS_ONE_ZERO))),
                         Activated('XT', AddCounter(PLUS_ONE_ZERO), TF.self(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_turn_func=TF.owner(), max_x_func=clockwork_beast_x),
                         Spell(AddCounter(PLUS_ONE_ZERO, 7))],
@@ -223,7 +226,7 @@ MAP: dict[str, list[EffSpec]] = {
     'cursed-land': [Spell(DealDamageOnHostUpkeep(1), TF.lands())],
     'cursed-rack': [Triggered(CursedRack())],
     'cyclone': [Triggered(Cyclone())],
-    'cyclopean-mummy': [Triggered(CyclopeanMummy())],
+    'cyclopean-mummy': [GenericTriggered(On(DiesEvent).where(SelfIsDier()).then(ExileSelf()))],
     'dakkon-blackblade': [Static(SelfPTEqualsFuncLen(TF.your_lands()))],
     'damping-field': [Triggered(DampingField())],
     'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU')), Spell(DanceOfMany(), TF.non_token_creatures())],
@@ -276,7 +279,7 @@ MAP: dict[str, list[EffSpec]] = {
     'eater-of-the-dead': [Activated('', EaterOfTheDead(), TF.creatures_in_all_graveyards())],
     'ebony-horse': [Activated('2T', RemoveFromCombat(), TF.attackers())],
     'el-hajjaj': [Triggered(ElHajjaj(), TF.self())],
-    'elder-land-wurm': [Triggered(ElderLandWurm())],
+    'elder-land-wurm': [GenericTriggered(On(BlockEvent).where(SelfIsBlocker()).then(KWASelfMod('remove', 'Defender')))],
     'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(UnblockableCondition(TF.self(), TF.red()))],
     'electric-eel': [Spell(DealDamage(1), TF.owner()), Activated('RR', ElectricEel())],
     'elephant-graveyard': [Activated('T', AddMana('C'), is_mana_ability=True),

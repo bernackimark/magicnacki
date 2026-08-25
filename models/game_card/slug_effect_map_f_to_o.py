@@ -3,13 +3,14 @@ from __future__ import annotations
 from models.cost import SacSelfCost, ExileSelfCost, RemoveCounterCost, SacCardCost, DiscardLastCardDrawnThisTurn, \
     ExileCardCost, DiscardACard
 from models.game_card.counter_tokens import CARRION, PLUS_ONE
-from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
+from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenericTriggered
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, \
     LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, PumpAppliesEOT, BecomeBasicLand
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT, CantBeTargetedByAuras
+from .event_conditions import SelfIsDier, SelfIsUnblockedAttacker, SelfIsDamageReceiver, YouAreDrawer
 from ..constants import KW
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
     MindTwist, NaturalSelection, GraveRobbersAA, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
@@ -22,11 +23,11 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     DealDamageToAllCreaturesAndPlayers, DealDamageToTargetAndYou, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
-    CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT
+    CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, SelfPump, AddCounter, DestroySelf
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, TF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
-    max_x_from_printed_card
+    max_x_from_printed_card, On
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos, \
     InvokePrejudice
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
@@ -38,18 +39,19 @@ from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAnge
 from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
-    InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, MerchantShip, \
-    MurkDwellers, GlyphOfDoom, Johan
+    InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, GlyphOfDoom, \
+    Johan
 from ..effects.listeners_cost import Gloom, ManaMatrix
-from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, \
-    FungusaurOnDamage, HypnoticSpecter, LivingArtifactOnDamage, NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
-from ..effects.listeners_dies import Onulet, FirestormPhoenix
-from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, FastingDestroy, IslandSanctuary
+from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, HypnoticSpecter, LivingArtifactOnDamage, \
+    NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
+from ..effects.listeners_dies import FirestormPhoenix
+from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, IslandSanctuary
 from ..effects.listeners_generic import OnColorSpellPayOneColorlessForOneLifeChoice, AddPoisonCounter, OptionalUntap, \
     DealDamageToOwnerOnUpkeep, DealDamageOnHostUpkeep, CantAttackIfAttackedLastTurn, PayManaOrSacAtUpkeep, \
     AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
     PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
     RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
+from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), TF.self(),
@@ -59,7 +61,8 @@ MAP: dict[str: list[EffSpec]] = {
     'farmstead': [Spell(EmptyResolver(), TF.lands()),
                   Activated('WW', GainLife(), TF.host_owner(), allowed_phases=[Phase.UPKEEP],
                             allowed_p_turn_func=TF.host_owner(), max_activations_per_turn=1)],
-    'fasting': [Triggered(Fasting(), TF.self()), Triggered(FastingDestroy())],
+    'fasting': [Triggered(Fasting(), TF.self()),
+                GenericTriggered(On(DrawCardEvent).where(YouAreDrawer()).then(DestroySelf()))],
     'fear': [Spell(UnblockableCondition(TF.host(), TF.non_artifact_non_black_creatures()), TF.creatures())],
     'feedback': [Spell(DealDamageOnHostUpkeep(1), TF.enchants())],
     'feint': [Spell(Feint(), TF.attackers())],
@@ -88,7 +91,7 @@ MAP: dict[str: list[EffSpec]] = {
     'forethought-amulet': [Triggered(PayManaOrSacAtUpkeep('3')), Static(ForethoughtAmulet())],
     'fountain-of-youth': [Activated('2T', GainLife(), TF.owner())],
     'frozen-shade': [self_pump('B', 1, 1)],
-    'fungusaur': [Triggered(FungusaurOnDamage())],
+    'fungusaur': [GenericTriggered(On(DamageResolvedEvent).where(SelfIsDamageReceiver).then(AddCounter(PLUS_ONE)))],
     'gabriel-angelfire': [Triggered(GabrielAngelfire())],
     'gaeas-avenger': [Static(GaeasAvengerPT())],
     'gaeas-liege': [Static(GaeasLiegePT()), Activated('T', BecomeBasicLand('forest'), TF.lands())],
@@ -279,7 +282,7 @@ MAP: dict[str: list[EffSpec]] = {
     'martyrs-of-korlis': [Static(MartyrsOfKorlis())],
     'maze-of-ith': [Activated('T', RemoveFromCombat(), TF.attackers())],
     'meekstone': [Static(Meekstone())],
-    'merchant-ship': [Triggered(MerchantShip())],
+    'merchant-ship': [GenericTriggered(On(UnblockedAttackerEvent).where(SelfIsUnblockedAttacker()).then(GainLife(2)))],
     'merfolk-assassin': [Activated('T', Destroy(), TF.islandwalkers())],
     'mightstone': [Static(PumpApplies(TF.attackers(), (1, 0)))],
     'mijae-djinn': [Triggered(MijaeDjinn())],
@@ -299,7 +302,8 @@ MAP: dict[str: list[EffSpec]] = {
     'mox-pearl': mox_specs('W'),
     'mox-ruby': mox_specs('R'),
     'mox-sapphire': mox_specs('U'),
-    'murk-dwellers': [Triggered(MurkDwellers())],
+    'murk-dwellers': [GenericTriggered(On(UnblockedAttackerEvent).where(SelfIsUnblockedAttacker()).
+                                       then(SelfPump(2, 0, True)))],
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), TF.all_players())],
     'necropolis': [Activated('', Necropolis(), extra_costs=[ExileCardCost(TF.creatures_in_your_graveyard())])],
@@ -316,7 +320,7 @@ MAP: dict[str: list[EffSpec]] = {
     'old-man-of-the-sea': [Activated('T', Steal(return_on_untap=True),
                                      TF.opp_creatures_power_not_greater_than_source()),
                            Triggered(OptionalUntap()), Static(OldManOfTheSeaPowerCheck())],
-    'onulet': [Triggered(Onulet())],
+    'onulet': [GenericTriggered(On(DiesEvent).where(SelfIsDier()).then(GainLife(2)))],
     'orc-general': [Activated('T', Pump(1, 1, True), TF.your_other_orcs(),
                               extra_costs=[SacCardCost(TF.another_orc_or_goblin())])],
     'orcish-artillery': [Activated('T', DealDamageToTargetAndYou(2, 3), TF.all_creatures_and_players())],

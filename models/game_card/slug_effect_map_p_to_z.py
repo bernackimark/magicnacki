@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
-    voodoo_doll_x, max_x_from_printed_card, target_spell_mv
+    voodoo_doll_x, max_x_from_printed_card, target_spell_mv, On
 from .card_filter_funcs import C_FUNCS, TF
 from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
-from models.effects.base import EffSpec, Activated, Triggered, Static, Spell
+from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenericTriggered
+from .event_conditions import SelfIsDier
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
+from ..events_all import DiesEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -35,8 +37,8 @@ from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowt
     RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import PestilenceEndStep, SeasonOfTheWitchEndStep, VoodooDollEndStep, WhirlingDervish
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
-from ..effects.listeners_dies import PersonalIncarnationDies, RukhEgg, SengirVampire, SuChi, SoulNet, TabletOfEpityr, \
-    UrzasMiter, PuppetMaster
+from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, SoulNet, TabletOfEpityr, UrzasMiter, \
+    PuppetMaster
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
@@ -138,7 +140,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), TF.tapped_creatures())],
     'rubinia-soulsinger': [Activated('T', Steal(return_on_untap=True), TF.opp_creatures()), Triggered(OptionalUntap())],
-    'rukh-egg': [Triggered(RukhEgg())],
+    'rukh-egg': [GenericTriggered(On(DiesEvent).where(SelfIsDier()).then(CreateTokenCreature('rukh')))],
     'sacrifice': [Spell(SacrificeOnCast(), extra_costs=[SacCardCost(TF.your_creatures())])],
     'safe-haven': [Activated('2T', SafeHaven(), TF.your_creatures()), Triggered(SafeHavenUpkeep())],
     'sage-of-lat-nam': [Activated('T', DrawCards(), TF.owner(), extra_costs=[SacCardCost(TF.your_artifacts())])],
@@ -206,7 +208,7 @@ MAP: dict[str, list[EffSpec]] = {
     'stream-of-life': [Spell(StreamOfLife(), TF.all_players(), max_x_func=max_x_from_printed_card)],
     'strip-mine': [Activated('T', AddMana('C'), TF.owner(), is_mana_ability=True),
                    Activated('T', Destroy(), TF.lands(), extra_costs=[SacSelfCost()])],
-    'su-chi': [Triggered(SuChi())],
+    'su-chi': [GenericTriggered(On(DiesEvent).where(SelfIsDier()).then(AddMana('C', 4)))],
     'subdue': [Spell(Subdue(), TF.creatures())],
     'sunastian-falconer': [Activated('T', AddMana('C', 2), is_mana_ability=True)],
     'sunglasses-of-urza': [Static(SunglassesOfUrza())],

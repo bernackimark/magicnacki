@@ -185,7 +185,6 @@ class DealDamageToTargetAndSelf(Resolver):
         gs.apply_damage(source, self.amt_to_target, t)
         gs.apply_damage(source, self.amt_to_source_card, source)
 
-
 class DealDamageToTargetAndYou(Resolver):
     def __init__(self, amt_to_target: int, amt_to_you: int):
         self.amt_to_target = amt_to_target
@@ -210,6 +209,19 @@ class DestroyAll(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for c in self.card_filter_func(gs, source):
+            gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
+
+class DestroySelf(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.destroy(source)
+
+class DestroySelfCombatants(Resolver):
+    def __init__(self, allow_regen: bool = True):
+        self.allow_regen = allow_regen
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        combatants = gs.combat_mgr.get_combatants_against(source)
+        for c in combatants:
             gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
 
 class Discard(Resolver):
@@ -237,6 +249,10 @@ class ExileAllCreatures(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for c in gs.card_filter.in_play().creatures().result():
             gs.pile_mgr.exile(c)
+
+class ExileSelf(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.exile(source)
 
 class GainLife(Resolver):
     def __init__(self, amt: int = 1):
@@ -272,6 +288,16 @@ class KWAModEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         t.modifiers.append(KWAMod(s=source, add_or_remove=self.add_or_remove, item=self.kwa,
                                   expires='EOT' if self.eot else None))
+
+class KWASelfMod(Resolver):
+    def __init__(self, add_or_remove: Literal['add', 'remove'], kwa: str, eot: bool = False):
+        self.add_or_remove = add_or_remove
+        self.kwa = kwa
+        self.eot = eot
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        source.modifiers.append(KWAMod(s=source, add_or_remove=self.add_or_remove, item=self.kwa,
+                                       expires='EOT' if self.eot else None))
 
 class ManaBatteriesAddMana(Resolver):
     def __init__(self, color: str):
