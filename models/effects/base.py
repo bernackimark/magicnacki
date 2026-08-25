@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 from abc import abstractmethod, ABC
 from dataclasses import dataclass, field
+from enum import StrEnum, auto, Enum
 from functools import partial
 from typing import TYPE_CHECKING, Literal, Union, Callable, Any, TypeAlias
 
@@ -69,13 +70,21 @@ class Listener:
         raise NotImplementedError()
 
 
+class ESType(StrEnum):
+    """EffSpec types"""
+    ACTIVATED = auto()
+    SPELL = auto()
+    STATIC = auto()
+    TRIGGERED = auto()
+
+
 @dataclass(frozen=True)
 class EffSpec:
     """Effect Specification; mapping slugs to Effects uses EffSpec"""
-    activation_type: Literal['activated', 'spell', 'static', 'triggered']
+    spec_type: ESType
     cost: str
     effect: Resolver | Listener
-    target_spec: Union[Callable, TargetSpec, None] = None
+    target_spec: Union[Enum, TargetSpec, None] = None
     extra_costs: list[Cost | None] = field(default_factory=list)
     allowed_phases: list[Phase | None] = field(default_factory=list)
     allowed_p_turn_func: Callable[[GameState, GameCard], int] = None
@@ -94,11 +103,11 @@ class EffSpec:
 
     @property
     def is_aa(self) -> bool:
-        return self.activation_type == 'activated'
+        return self.spec_type == ESType.ACTIVATED
 
     @property
     def is_spell(self) -> bool:
-        return self.activation_type == 'spell'
+        return self.spec_type == ESType.SPELL
 
     @staticmethod
     def _normalize_target_spec(target_spec: Callable | TargetSpec | None) -> TargetSpec | None:
@@ -117,10 +126,58 @@ class ActivatedAbility:
     eff_spec: EffSpec
     activations_this_turn: int = 0
 
-    # def __post_init__(self):
-    #     if not isinstance(self.eff_spec.effect, Resolver):
-    #         raise TypeError(f'{self.source.props.name} is trying to create an ActivatedAbility with an effect'
-    #                         f'specification that is not a Resolver; the supplied effect spec is {self.eff_spec}')
+
+def Activated(cost: str,
+              effect: Resolver | Listener,
+              target_spec: Union[Callable, TargetSpec, None] = None,
+              *,
+              extra_costs: list[Cost | None] = None,
+              allowed_phases: list[Phase | None] = None,
+              allowed_p_turn_func: Callable[[GameState, GameCard], int] = None,
+              allowed_activators: Callable[[GameState, GameCard], tuple[int] | None] = None,
+              max_activations_per_turn: int = 999,
+              text: str = '',
+              min_x_func: Callable = lambda gs, s: 1,
+              max_x_func: Union[Callable[..., int], None] = None,
+              is_mana_ability: bool = False) -> EffSpec:
+
+    return EffSpec(spec_type=ESType.ACTIVATED, cost=cost, effect=effect, target_spec=target_spec,
+                   extra_costs=extra_costs or [], allowed_phases=allowed_phases or [],
+                   allowed_p_turn_func=allowed_p_turn_func, allowed_activators=allowed_activators,
+                   max_activations_per_turn=max_activations_per_turn, text=text,
+                   min_x_func=min_x_func, max_x_func=max_x_func, is_mana_ability=is_mana_ability)
+
+def Spell(effect: Resolver | Listener,
+          target_spec: Union[Callable, TargetSpec, None] = None,
+          *,
+          extra_costs: list[Cost | None] | None = None,
+          allowed_phases: list[Phase | None] = None,
+          allowed_p_turn_func: Callable[[GameState, GameCard], int] = None,
+          text: str = '',
+          min_x_func: Callable = lambda gs, s: 1,
+          max_x_func: Callable[..., int] | None = None) -> EffSpec:
+    return EffSpec(spec_type=ESType.SPELL, cost='', effect=effect, target_spec=target_spec,
+                   extra_costs=extra_costs or [], allowed_phases=allowed_phases or [],
+                   allowed_p_turn_func=allowed_p_turn_func, text=text, min_x_func=min_x_func, max_x_func=max_x_func)
+
+def Static(effect: Listener,
+           target_spec: Union[Callable, TargetSpec, None] = None,
+           *,
+           text: str = '') -> EffSpec:
+
+    return EffSpec(spec_type=ESType.STATIC, cost='', effect=effect, target_spec=target_spec, text=text)
+
+def Triggered(effect: Listener,
+              target_spec: Union[Callable, TargetSpec, None] = None,
+              *,
+              allowed_phases: list[Phase | None] | None = None,
+              allowed_p_turn_func: Callable[[GameState, GameCard], int] | None = None,
+              allowed_activators: Callable[[GameState, GameCard], tuple[int] | None] | None = None,
+              text: str = '') -> EffSpec:
+
+    return EffSpec(spec_type=ESType.TRIGGERED, cost='', effect=effect, target_spec=target_spec,
+                   allowed_phases=allowed_phases or [], allowed_p_turn_func=allowed_p_turn_func,
+                   allowed_activators=allowed_activators, text=text)
 
 
 """
@@ -130,7 +187,3 @@ Static is always on & can answer questions without causing actions (crusade)
 Triggered are abilities that respond to 'when/whenever' (hypnotic-specter)
 """
 
-Activated = partial(EffSpec, 'activated')
-Spell = partial(EffSpec, 'spell', '')
-Static = partial(EffSpec, 'static', '')
-Triggered = partial(EffSpec, 'triggered', '')
