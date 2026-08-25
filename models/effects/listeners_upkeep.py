@@ -539,10 +539,8 @@ class PsychicAllergyDamage(Listener):
             return
         declared_color = source.extras.get('color_declaration')
         opp = flip(source.owner_id)
-        cnt = gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result()
-        if cnt:
+        if cnt := len(gs.card_filter.on_player_board(opp).by_color(declared_color).non_token().permanents().result()):
             gs.apply_damage(source, cnt, opp)
-
 
 class PsychicAllergySac(Listener):
     """... At your upkeep, destroy this enchantment unless you sacrifice two Islands"""
