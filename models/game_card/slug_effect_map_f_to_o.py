@@ -11,7 +11,7 @@ from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, L
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT, CantBeTargetedByAuras
 from .event_conditions import SelfIsDier, SelfIsUnblockedAttacker, SelfIsDamageReceiver, YouAreDrawer, CastCardIsWhite, \
-    CastCardIsRed
+    CastCardIsRed, CardIsMountain, CardIsOpponents, CardIsForest
 from ..constants import KW
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
     MindTwist, NaturalSelection, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
@@ -37,7 +37,7 @@ from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, 
 from ..effects.listeners_upkeep import Fasting, ForceOfNatureUpkeep, GabrielAngelfire, GhazbanOgre, \
     HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, \
     LeviathanUpkeep, Halfdane, LivingArtifactUpkeep
-from ..effects.listeners_tap_untap import Kudzu, Lifeblood, Lifetap, HauntingWindTap
+from ..effects.listeners_tap_untap import Kudzu, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import HasranOgress, MijaeDjinn, GiantShark, InfernalMedusa, \
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, GlyphOfDoom, \
@@ -52,7 +52,8 @@ from ..effects.listeners_generic import AddPoisonCounter, OptionalUntap, \
     AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
     PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
     RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
-from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent
+from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \
+    TapCardEvent
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), TF.self(),
@@ -246,10 +247,10 @@ MAP: dict[str: list[EffSpec]] = {
                               Activated('T', LibraryOfAlexandria())],
     'life-chisel': [Spell(LifeChisel(), allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=TF.owner(),
                           extra_costs=[SacCardCost(TF.your_artifacts())])],
-    'lifeblood': [Triggered(Lifeblood())],
+    'lifeblood': [GenTrig(On(TapCardEvent).where(CardIsMountain).where(CardIsOpponents).then(GainLife()))],
     'lifeforce': [Activated('GG', CounterSpell(), TF.black_spells())],
     'lifelace': [Spell(SetColor('G'), TF.cards())],
-    'lifetap': [Triggered(Lifetap())],
+    'lifetap': [GenTrig(On(TapCardEvent).where(CardIsForest).where(CardIsOpponents).then(GainLife()))],
     'lightning-bolt': [Spell(DealDamage(3), TF.all_creatures_and_players())],
     'living-armor': [Activated('T', XZeroOneCountersByManaValue(), TF.creatures(), extra_costs=[SacSelfCost()])],
     'living-artifact': [Spell(EmptyResolver(), TF.artifacts()), Triggered(LivingArtifactOnDamage()),

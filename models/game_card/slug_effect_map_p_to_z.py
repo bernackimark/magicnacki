@@ -8,9 +8,9 @@ from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import SelfIsDier, NoCreaturesInPlay, SelfDamagedOpponent, DierIsYourArtifact, DierIsCreature, \
-    CastCardIsArtifact, CastCardIsBlack, CastCardIsGreen
+    CastCardIsArtifact, CastCardIsBlack, CastCardIsGreen, CardIsArtifact, CardIsOpponents
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
-from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent
+from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -35,7 +35,7 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep, PrimordialOoze, TetravusUpkeepCreate, \
     TetravusUpkeepExile
 from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
-    RasputinDreamweaverUntap, TimeVaultOption, PowerleechTap, PhyrexianGremlinsUntaps
+    RasputinDreamweaverUntap, TimeVaultOption, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import SeasonOfTheWitchEndStep, VoodooDollEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
 from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, PuppetMaster
@@ -84,7 +84,8 @@ MAP: dict[str, list[EffSpec]] = {
     'power-leak': [Static(PowerLeak())],
     'power-sink': [Spell(PowerSink(), TF.spells())],
     'power-surge': [Triggered(PowerSurge())],
-    'powerleech': [Triggered(PowerleechActivation()), Triggered(PowerleechTap())],
+    'powerleech': [Triggered(PowerleechActivation()),
+                   GenTrig(On(TapCardEvent).where(CardIsArtifact()).where(CardIsOpponents()).then(GainLife()))],
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), TF.creatures())],
     'preacher': [Activated('T', Steal(return_on_untap=True), TF.opp_creatures()), Triggered(OptionalUntap())],
     'presence-of-the-master': [Static(CounterEnchantments())],

@@ -73,37 +73,6 @@ class Kudzu(Listener):
         aura.host = host
         host.auras.append(aura)
 
-
-class Lifeblood(Listener):
-    """Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card.owner_id == s.owner_id:
-            return
-        if 'Mountain' in event.card.card_sub_types:
-            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
-
-
-class Lifetap(Listener):
-    """Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card.owner_id == s.owner_id:
-            return
-        if 'Forest' in event.card.card_sub_types:
-            gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
-
-class PowerleechTap(Listener):
-    """Whenever an opponent's artifact becomes tapped ... you gain 1 life"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent) -> None:
-        if source.owner_id == event.card.owner_id or not event.card.is_artifact:
-            return
-        gs.score_mgr.increment_life(source.owner_id, 1, source, gs)
-
 class PsychicVenom(Listener):
     """Whenever enchanted land becomes tapped, this Aura deals 2 damage to that land's controller"""
     listens_to = TapCardEvent
@@ -113,7 +82,6 @@ class PsychicVenom(Listener):
             return
         gs.apply_damage(s, 2, event.card.owner_id)
 
-
 class SpiritShackle(Listener):
     """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it"""
     listens_to = TapCardEvent
@@ -122,7 +90,6 @@ class SpiritShackle(Listener):
         if event.card is not s.host:
             return
         s.host.counters.add_counter(MINUS_ZERO_TWO)
-
 
 class WildGrowth(Listener):
     """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""

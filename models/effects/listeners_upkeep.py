@@ -167,7 +167,6 @@ class DropOfHoney(Listener):
             gs.pile_mgr.destroy(creatures_w_min_power[0], allow_regeneration=False)
             return
 
-        # options = [DestroyAction(source.owner_id, gs, source, c, allow_regen=False) for c in creatures_w_min_power]
         options = [CO(f"Destroy {c}", lambda: gs.pile_mgr.destroy(c, False)) for c in creatures_w_min_power]
         gs.choice_mgr.queue(ChoiceAction(options))
 
@@ -186,7 +185,6 @@ class ElderSpawnUpkeep(Listener):
 
         options = [CO(f'Sac {i}', lambda: gs.pile_mgr.sacrifice(i)) for i in your_islands] + \
                   [CO(f'Sac {s} & it deals 6 damage to you', lambda: self.sac_w_damage(gs, s, 6))]
-        # options = [Sac(s.owner_id, gs, island) for island in your_islands] + [Sac(s.owner_id, gs, s, 6)]
         gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
@@ -204,7 +202,6 @@ class EnergyFlux(Listener):
                 gs.pile_mgr.sacrifice(your_artifact)
             options = [CO(f"Pay {{{'2'}}}", lambda: gs.mana_pools[source.owner_id].pay('2')),
                        CO(f"Sac {source}", lambda: gs.pile_mgr.sacrifice(source))]
-            # options = [PayMana(event.active_player, gs, source, '2'), Sac(event.active_player, gs, source)]
             gs.choice_mgr.queue(ChoiceAction(options))
 
 class ErhnamDjinn(Listener):
@@ -222,7 +219,6 @@ class ErhnamDjinn(Listener):
             return
         kwa_mod = KWAMod(s=s, item='Forestwalk')
         options = [CO(f'Give Forestwalk to {t}', lambda: t.modifiers.append(kwa_mod)) for t in targets]
-        # options = [AddKWA(s.owner_id, gs, s, t, KW.FORESTWALK) for t in targets]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class ErosionUpkeep(Listener):
@@ -253,7 +249,6 @@ class Fasting(Listener):
         if source.counters.get_count(HUNGER) > 4:
             gs.pile_mgr.destroy(source)
         options = [CO('Skip Draw Phase & Gain 2 life', lambda: self.skip_draw_phase_gain_life(gs, source.owner_id, 2))]
-        # options = [SkipDrawPhaseGainLife(source.owner_id, gs, 2)]
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
     @staticmethod

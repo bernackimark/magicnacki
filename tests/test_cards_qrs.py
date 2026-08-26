@@ -396,7 +396,7 @@ class TestCardsQRS(unittest.TestCase):
         creature = self.g.battlefield('grizzly-bears')
         bolt = self.g.card('lightning-bolt')
         self.g.cast_and_accept(bolt, creature, bolt.abilities[0])
-        self.assertTrue(any(a.description.endswith('Gain 1 life') for a in self.gs.pending_choice.get_actions()))
+        self.assertTrue(any(a.description.startswith('Pay ') for a in self.gs.pending_choice.get_actions()))
 
     def test_spectral_cloak(self):
         """Enchanted creature has shroud as long as it's untapped. (It can't be the target of spells or abilities.)"""

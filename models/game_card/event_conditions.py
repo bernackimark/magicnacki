@@ -15,10 +15,30 @@ class EventCondition(ABC):
     def matches(self, gs: GameState, source: GameCard, event: Event) -> bool: ...
 
 
+class CardIsArtifact(EventCondition):
+    """This can be used by any Event with the 'card' attr"""
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        return event.card.is_artifact  # type: ignore
+
 class CardIsHost(EventCondition):
     """This can be used by any Event with the 'card' attr"""
     def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
         return event.card is source.host  # type: ignore
+
+class CardIsForest(EventCondition):
+    """This can be used by any Event with the 'card' attr"""
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        return 'Forest' in event.card.card_sub_types  # type: ignore
+
+class CardIsMountain(EventCondition):
+    """This can be used by any Event with the 'card' attr"""
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        return 'Mountain' in event.card.card_sub_types  # type: ignore
+
+class CardIsOpponents(EventCondition):
+    """This can be used by any Event with the 'card' attr"""
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        return event.card.owner_id != source.owner_id  # type: ignore
 
 class CardIsSource(EventCondition):
     """This can be used by any Event with the 'card' attr"""
