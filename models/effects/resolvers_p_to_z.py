@@ -111,17 +111,14 @@ class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        from models.effects.resolvers_generic import DiscardAtRandom
         opp_cards = gs.pile_mgr.hands[t]
         for c in opp_cards:
             c.reveal()
         opp_creatures = [c for c in opp_cards if c.is_creature]
         if not opp_creatures:
             return
-        if len(opp_creatures) == 1:
-            gs.pile_mgr.discard(opp_creatures[0], source)
-            return
-        random_card: GameCard = gs.randomize_event(t, opp_creatures)
-        gs.pile_mgr.discard(random_card, source)
+        DiscardAtRandom().resolve(gs, source)
 
 class Rakalite(Resolver):
     """{2}: Prevent the next 1 damage that would be dealt to any target this turn.

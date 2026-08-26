@@ -97,6 +97,10 @@ class NoCreaturesInPlay(EventCondition):
     def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
         return not gs.card_filter.creatures().in_play().result()
 
+class OppIsDamageReceiver(EventCondition):
+    def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:
+        return event.target == flip(source.owner_id)
+
 class OpponentIsDrawer(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: DrawCardEvent) -> bool:
         return event.player_id == flip(source.owner_id)

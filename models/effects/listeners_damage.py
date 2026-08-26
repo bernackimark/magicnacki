@@ -187,23 +187,6 @@ class GlyphOfLife(Listener):
         gs.score_mgr.increment_life(s.owner_id, event.amt, s, gs)
         self.is_expired = True
 
-class HypnoticSpecter(Listener):
-    """Whenever this creature deals damage to an opponent, that player discards a card at random"""
-    listens_to = DamageResolvedEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
-        opp_id = flip(source.owner_id)
-        if event.source is not source or event.target is not opp_id:
-            return
-        opp_cards = gs.pile_mgr.hands[opp_id]
-        if not opp_cards:
-            return
-        if len(opp_cards) == 1:
-            gs.pile_mgr.discard(opp_cards[0], source)
-            return
-        random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
-        gs.pile_mgr.discard(random_card, source)
-
 class LivingArtifactOnDamage(Listener):
     """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ...
     You can target opponent artifacts. The controller of the Aura controls the Living Artifact ability"""

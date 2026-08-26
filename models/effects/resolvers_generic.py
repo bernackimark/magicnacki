@@ -244,6 +244,21 @@ class Discard(Resolver):
         options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[t]]
         gs.choice_mgr.queue(ChoiceAction(options))
 
+class DiscardAtRandom(Resolver):
+    def __init__(self, cnt: int = 1, opp_is_discarder: bool = True):
+        self.cnt = cnt
+        self.opp_is_discarder = opp_is_discarder
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        p_id = flip(source.owner_id) if self.opp_is_discarder else source.owner_id
+        cards = gs.pile_mgr.hands[p_id]
+        if not cards:
+            return
+        discard_cnt = min(self.cnt, len(cards))
+        for _ in range(discard_cnt):
+            random_card: GameCard = gs.randomize_event(p_id, cards)
+            gs.pile_mgr.discard(random_card, source)
+
 class DrawCards(Resolver):
     def __init__(self, card_cnt: int = 1):
         self.card_cnt = card_cnt

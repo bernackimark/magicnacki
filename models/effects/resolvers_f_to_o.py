@@ -153,14 +153,9 @@ class GwendlynDiCorci(Resolver):
     """{T}: Target player discards a card at random. Activate only during your turn"""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        cards = gs.pile_mgr.hands[t]
-        if not cards:
-            return
-        if len(cards) == 1:
-            gs.pile_mgr.discard(cards[0], source)
-            return
-        random_card: GameCard = gs.randomize_event(t, cards)
-        gs.pile_mgr.discard(random_card, source)
+        from models.effects.resolvers_generic import DiscardAtRandom
+        is_opp = t != source.owner_id
+        DiscardAtRandom(opp_is_discarder=is_opp).resolve(gs, source)
 
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
@@ -318,18 +313,10 @@ class Millstone(Resolver):
 class MindTwist(Resolver):
     """Target player discards X cards at random"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        from models.effects.resolvers_generic import DiscardAtRandom
         x = context.x_value
-        opp_id = flip(source.owner_id)
-        opp_cards = gs.pile_mgr.hands[opp_id]
-        if not opp_cards:
-            return
-        if len(opp_cards) <= x:
-            for c in opp_cards:
-                gs.pile_mgr.discard(c, source)
-            return
-        for _ in range(x):
-            random_card: GameCard = gs.randomize_event(opp_id, opp_cards)
-            gs.pile_mgr.discard(random_card, source)
+        is_opp = t != source.owner_id
+        DiscardAtRandom(x, opp_is_discarder=is_opp).resolve(gs, source)
 
 class MoldDemon(Resolver):
     """When this creature enters, sacrifice this creature unless you sacrifice two Swamps"""

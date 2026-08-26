@@ -11,7 +11,8 @@ from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, L
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT, CantBeTargetedByAuras
 from .event_conditions import SelfIsDier, SelfIsUnblockedAttacker, SelfIsDamageReceiver, YouAreDrawer, CastCardIsWhite, \
-    CastCardIsRed, CardIsMountain, CardIsOpponents, CardIsForest, SelfIsAttacker, IsYourTurn, IsHostTurn
+    CastCardIsRed, CardIsMountain, CardIsOpponents, CardIsForest, SelfIsAttacker, IsYourTurn, IsHostTurn, SelfIsDamager, \
+    OppIsDamageReceiver
 from ..constants import KW
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
     MindTwist, NaturalSelection, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
@@ -24,7 +25,8 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, DestroySelf, MayPayMana, \
-    ExchangeLifeTotals, Do, GraveyardToExile, DealDamageToSourceOwner, PayManaOr, SacSelf, DealDamageToHostOwner
+    ExchangeLifeTotals, Do, GraveyardToExile, DealDamageToSourceOwner, PayManaOr, SacSelf, DealDamageToHostOwner, \
+    DiscardAtRandom
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, TF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -42,7 +44,7 @@ from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import MijaeDjinn, GiantShark, InfernalMedusa, Johan, \
     InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, GlyphOfDoom
 from ..effects.listeners_cost import Gloom, ManaMatrix
-from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, HypnoticSpecter, LivingArtifactOnDamage, \
+from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, LivingArtifactOnDamage, \
     NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import FirestormPhoenix
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, IslandSanctuary
@@ -150,7 +152,7 @@ MAP: dict[str: list[EffSpec]] = {
                                          C_FUNCS['self_is_untapped'])),
                        Static(CantBeTargetedByAuras(TF.your_non_creature_artifacts(),
                                                     condition_func=C_FUNCS['self_is_untapped']))],
-    'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), TF.all_players())],
+    'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), TF.all_players(), allowed_p_turn_func=TF.owner())],
     'halfdane': [Triggered(Halfdane())],
     'hammerheim': [Activated('T', AddMana('R'), TF.owner(), is_mana_ability=True),
                    Activated('T', AllWalksRemoved(), TF.creatures())],
@@ -178,7 +180,8 @@ MAP: dict[str: list[EffSpec]] = {
     'hurr-jackal': [Activated('T', PreventRegenerationEOT(), TF.creatures())],
     'hyperion-blacksmith': [Activated('T', TapCardEffect(), TF.opp_untapped_artifacts()),
                             Activated('T', UntapCardEffect(), TF.opp_tapped_artifacts())],
-    'hypnotic-specter': [Triggered(HypnoticSpecter())],
+    'hypnotic-specter': [GenTrig(On(DamageResolvedEvent).
+                                 where(SelfIsDamager()).where(OppIsDamageReceiver()).then(DiscardAtRandom()))],
     'ichneumon-druid': [Triggered(IchneumonDruid())],
     'icy-manipulator': [Activated('1T', TapCardEffect(), TF.untapped_artifacts_creatures_lands())],
     'ice-storm': [Spell(Destroy(), TF.lands())],

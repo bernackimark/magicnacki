@@ -161,7 +161,6 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.choice_mgr.choose(take_3_damage)
         self.assertEqual(17, self.gs.life[0])
 
-
     def test_haunting_wind(self):
         """Whenever an artifact becomes tapped or a player activates an artifact's ability
         without {T} in its activation cost, HW deals 1 damage to that artifact's controller."""
@@ -187,6 +186,16 @@ class TestCardsGHI(unittest.TestCase):
         self.g.mana('R')
         self.g.activate_ability(aa, non_artifact)
         self.assertEqual(17, self.gs.life[1], '0 damage should be dealt for a non-artifact')
+
+    def test_hypnotic_specter(self):
+        """When HS deals damage to an opp, opp discards a card at random"""
+        card = self.g.battlefield('hypnotic-specter')
+
+        self.g.next_turn()
+        opp_card_cnt = len(self.gs.hands[1])
+        self.gs.combat_mgr.create_combat(card)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertEqual(len(self.gs.hands[1]), opp_card_cnt - 1)
 
     def test_ichneumon_druid(self):
         """Whenever an opponent casts an instant spell other than the first instant spell that player casts each turn,
