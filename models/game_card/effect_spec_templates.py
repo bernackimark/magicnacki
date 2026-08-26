@@ -15,8 +15,12 @@ class On:
         self.conditions = []
         self.resolver = None
 
-    def where(self, condition):
-        self.conditions.append(condition)
+    # def where(self, condition):
+    #     self.conditions.append(condition)
+    #     return self
+
+    def where(self, *conditions):
+        self.conditions.extend(conditions)
         return self
 
     def then(self, resolver):

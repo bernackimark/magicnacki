@@ -84,7 +84,7 @@ MAP: dict[str, list[EffSpec]] = {
     'power-sink': [Spell(PowerSink(), TF.spells())],
     'power-surge': [Triggered(PowerSurge())],
     'powerleech': [Triggered(PowerleechActivation()),
-                   GenTrig(On(TapCardEvent).where(CardIsArtifact()).where(CardIsOpponents()).then(GainLife()))],
+                   GenTrig(On(TapCardEvent).where(CardIsArtifact(), CardIsOpponents()).then(GainLife()))],
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), TF.creatures())],
     'preacher': [Activated('T', Steal(return_on_untap=True), TF.opp_creatures()), Triggered(OptionalUntap())],
     'presence-of-the-master': [Static(CounterEnchantments())],

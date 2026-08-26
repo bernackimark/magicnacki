@@ -98,7 +98,6 @@ MAP: dict[str, list[EffSpec]] = {
     'armageddon-clock': [Activated('4', RemoveCounter(DOOM),
                                    allowed_phases=[Phase.UPKEEP], allowed_activators=A_FUNCS['all_players']),
                          GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(AddCounter(DOOM))),
-                         # Triggered(AddCounterAtTargetUpkeep(TF.self(), DOOM)),
                          Triggered(ArmageddonClockDrawStep())],
     'army-of-allah': [Spell(PumpApplies(TF.attackers(), (2, 0), True))],
     'artifact-blast': [Spell(CounterSpell(), TF.artifact_spells())],
@@ -180,8 +179,7 @@ MAP: dict[str, list[EffSpec]] = {
     'circle-of-protection-green': [Activated('1', PreventNextDamageTo(protected=TF.owner()), TF.green())],
     'circle-of-protection-red': [Activated('1', PreventNextDamageTo(protected=TF.owner()), TF.red())],
     'circle-of-protection-white': [Activated('1', PreventNextDamageTo(protected=TF.owner()), TF.white())],
-    'citanul-druid': [GenTrig(On(CastResolvedEvent).where(CasterIsOpp()).where(CastCardIsArtifact()).
-                              then(AddCounter(PLUS_ONE)))],
+    'citanul-druid': [GenTrig(On(CastResolvedEvent).where(CasterIsOpp(), CastCardIsArtifact()).then(AddCounter(PLUS_ONE)))],
     'city-in-a-bottle': [Static(GlobalSac(TF.city_in_a_bottle())), Static(CantCastAppliesTo(TF.city_in_a_bottle())),
                          Spell(SacAll(TF.city_in_a_bottle()))],
     'city-of-brass': [Activated('T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}') for c in COLOR_LETTERS] +
