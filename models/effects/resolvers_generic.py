@@ -293,7 +293,8 @@ class GainLife(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t = source.owner_id if t is None else t
-        gs.score_mgr.increment_life(t, self.amt, source, gs)
+        amt = context.x_value or self.amt
+        gs.score_mgr.increment_life(t, amt, source, gs)
 
 class GainLifeTargetMV(Resolver):
     @Resolver.target_required
