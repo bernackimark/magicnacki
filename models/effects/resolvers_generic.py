@@ -224,18 +224,41 @@ class DestroyHost(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.destroy(source.host)
 
+class DestroyHostCombatants(Resolver):
+    def __init__(self, allow_regen: bool = True, filter_func: Callable[[GameState, GameCard], list[GameCard]] = None):
+        self.allow_regen = allow_regen
+        self.filter_func = filter_func
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        all_combatants = gs.combat_mgr.get_combatants_against(source.host)
+        if self.filter_func:
+            filtered_cards = self.filter_func(gs, source)
+            for c in all_combatants:
+                if c in filtered_cards:
+                    gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
+        else:
+            for c in all_combatants:
+                gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
+
 class DestroySelf(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.destroy(source)
 
 class DestroySelfCombatants(Resolver):
-    def __init__(self, allow_regen: bool = True):
+    def __init__(self, allow_regen: bool = True, filter_func: Callable[[GameState, GameCard], list[GameCard]] = None):
         self.allow_regen = allow_regen
+        self.filter_func = filter_func
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        combatants = gs.combat_mgr.get_combatants_against(source)
-        for c in combatants:
-            gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
+        all_combatants = gs.combat_mgr.get_combatants_against(source)
+        if self.filter_func:
+            filtered_cards = self.filter_func(gs, source)
+            for c in all_combatants:
+                if c in filtered_cards:
+                    gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
+        else:
+            for c in all_combatants:
+                gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
 
 class Discard(Resolver):
     @Resolver.target_required

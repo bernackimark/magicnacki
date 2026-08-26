@@ -8,9 +8,10 @@ from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import SelfIsDier, NoCreaturesInPlay, SelfDamagedOpponent, DierIsYourArtifact, DierIsCreature, \
-    CastCardIsArtifact, CastCardIsBlack, CastCardIsGreen, CardIsArtifact, CardIsOpponents, IsYourTurn, IsHostTurn
+    CastCardIsArtifact, CastCardIsBlack, CastCardIsGreen, CardIsArtifact, CardIsOpponents, IsYourTurn, IsHostTurn, \
+    SelfIsCombatant, HostIsCombatant, CardIsColor
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
-from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent
+from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -26,7 +27,8 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDama
     ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, DestroySelf, MayPayMana, \
-    GainLife, Do, DealDamageToSourceOwner, PayManaOr, SacSelf, EmptyResolver, DealDamageToHostOwner, AddCounterToHost
+    GainLife, Do, DealDamageToSourceOwner, PayManaOr, SacSelf, EmptyResolver, DealDamageToHostOwner, AddCounterToHost, \
+    DestroySelfCombatants, DestroyHostCombatants
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -43,11 +45,10 @@ from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodygu
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
     TheWretched
-from ..effects.listeners_generic import OnColorSpellGainLife, AddPoisonCounter, UntapRemovesPumpFromAnotherCard, \
+from ..effects.listeners_generic import AddPoisonCounter, UntapRemovesPumpFromAnotherCard, PreventAllDamageToEOT, \
     OptionalUntap, PreventCombatDamageFromItsAttackers, RedirectNextDamageToTarget, \
-    AddCounterPerCreatureDeathAtEndStep, PayManaToUntapUpkeep, \
-    DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, PreventAllDamageToEOT, PreventNextDamageTo, \
-    PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
+    AddCounterPerCreatureDeathAtEndStep, PayManaToUntapUpkeep, PreventAllDamage, PreventAllDamageEOT, \
+    PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
     WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEqualsFuncLen, \
@@ -185,7 +186,7 @@ MAP: dict[str, list[EffSpec]] = {
     'smoke': [Triggered(Smoke())],
     'snake': [Triggered(AddPoisonCounter())],  # token creature created by serpent-generator
     'sol-ring': [Activated('T', AddMana('C', 2), TF.owner(), is_mana_ability=True)],
-    'solkanar-the-swamp-king': [Spell(OnColorSpellGainLife('B'))],
+    'solkanar-the-swamp-king': [GenTrig(On(CastResolvedEvent).where(CardIsColor('B')).then(GainLife()))],
     'sorceress-queen': [Activated('T', BasePT(0, 2, True), TF.other_creatures())],
     'soul-net': [GenTrig(On(DiesEvent).where(DierIsCreature()).then(MayPayMana('1', GainLife(1))))],
     'spectral-cloak': [Spell(SpectralCloak(), TF.creatures())],
@@ -241,7 +242,8 @@ MAP: dict[str, list[EffSpec]] = {
     'the-rack': [Static(TheRack())],
     'the-tabernacle-at-pendrell-vale': [Static(TheTabernacleAtPendrellVale())],
     'the-wretched': [Triggered(TheWretched())],
-    'thicket-basilisk': [Triggered(DestroyCombatantAtCombatEnd(TF.self(), TF.non_wall_creatures()))],
+    'thicket-basilisk': [GenTrig(On(CombatEndEvent).where(SelfIsCombatant()).
+                                 then(DestroySelfCombatants(filter_func=TF.non_wall_creatures())))],
     'thoughtlace': [Spell(SetColor('U'), TF.cards())],
     'throne-of-bone': [GenTrig(On(CastResolvedEvent).where(CastCardIsBlack()).then(MayPayMana('1', GainLife(1))))],
     'time-elemental': [Triggered(TimeElementalAttackedOrBlocked()),
@@ -296,7 +298,9 @@ MAP: dict[str, list[EffSpec]] = {
                         [self_pump(c, 1, 0) for c in 'BRG'],
     'vampire-bats': [Activated('B', Pump(1, 0, True), TF.self(), max_activations_per_turn=2)],
     'venarian-gold': [Spell(VenarianGold(), TF.creatures(), max_x_func=max_x_from_printed_card)],
-    'venom': [Spell(DestroyCombatantAtCombatEnd(TF.host(), TF.non_wall_creatures()), TF.creatures())],
+    'venom': [Spell(EmptyResolver(), TF.creatures()),
+              GenTrig(On(CombatEndEvent).where(HostIsCombatant()).
+                      then(DestroyHostCombatants(filter_func=TF.non_wall_creatures())))],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerUpkeep()), Spell(VesuvanDoppelgangerCast())],
     # TODO: despite being the same code, VesuvanDoppelgangerUpkeep doesn't trigger;

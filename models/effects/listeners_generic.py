@@ -35,33 +35,6 @@ class GenericEventListener(Listener):
             return
         self.resolver.resolve(gs, source, context=ResContext(event=event))
 
-# -- BLOCK EVENT ---
-class DestroyCombatantAtCombatEnd(Listener):
-    """Ex: Destroying combatant func would return Cockatrice; destroyable func would return non-walls;
-    if such a combat is found, all matching creatures against Cockatrice would be destroyed at combat end"""
-    listens_to = BlockEvent
-
-    def __init__(self, destroying_combatant_func: Callable, destroyable_func: Optional[Callable] = None):
-        self.destroying_combatant_func = destroying_combatant_func
-        self.destroyable_func = destroyable_func
-
-    def on_event(self, gs: GameState, source: GameCard, event: BlockEvent) -> None:
-        destroying_combatant = self.destroying_combatant_func(gs, source)
-        com = gs.combat_mgr.get_combat(destroying_combatant)
-        if not com:
-            return
-        combatants_against = gs.combat_mgr.get_combatants_against(destroying_combatant)
-        if not self.destroyable_func:
-            for combatant_against in combatants_against:
-                delayed = DestroyAtCombatEnd(source, combatant_against)
-                gs.event_mgr.register(delayed, source)
-                return
-        to_be_destroyed = self.destroyable_func(gs, source)
-        for combatant_against in combatants_against:
-            if combatant_against in to_be_destroyed:
-                delayed = DestroyAtCombatEnd(source, combatant_against)
-                gs.event_mgr.register(delayed, source)
-
 
 # --- CAN ATTACK QUERY EVENT ---
 class CantAttackIfAttackedLastTurn(Listener):
@@ -76,36 +49,6 @@ class CantAttackIfAttackedLastTurn(Listener):
             if turn_num == p_last_turn_num:
                 if isinstance(e, AttackEvent) and e.attacker is source:
                     event.permission = False
-
-
-# --- CAST EVENT ---
-class OnColorSpellGainLife(Listener):
-    """Whenever a player casts a [certain color] spell, you gain 1 life"""
-    listens_to = CastResolvedEvent
-
-    def __init__(self, color: str, life_amt: int = 1):
-        self.color = color
-        self.life_amt = life_amt
-
-    def on_event(self, gs: GameState, s: GameCard, event: CastResolvedEvent):
-        if self.color not in event.card.colors:
-            return
-        gs.score_mgr.increment_life(s.owner_id, self.life_amt, s, gs)
-
-
-# --- COMBAT END ---
-class DestroyAtCombatEnd(Listener):
-    """Destroys target if it is still on the battlefield; unregisters itself"""
-    listens_to = CombatEndEvent
-
-    def __init__(self, source: GameCard, target: GameCard):
-        self.source = source
-        self.target = target
-
-    def on_event(self, gs: GameState, s: GameCard, event: CombatEndEvent):
-        if self.target.zone == Zone.BATTLEFIELD:
-            gs.pile_mgr.destroy(self.target)
-        gs.event_mgr.unregister_specific_effect(self)
 
 
 # --- DAMAGE PROPOSED EVENT ---

@@ -35,20 +35,21 @@ from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
-from ..effects.listeners_combat import AislingLeprechaun, Arboria
-from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, OptionalUntap, DestroyCombatantAtCombatEnd, \
+from ..effects.listeners_combat import AislingLeprechaun
+from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     PreventAllDamage, PreventAllDamageEOT, PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
 from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
     EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantAttack, \
     WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, HostCanAttack, UnblockableCondition, \
     UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
-    HostCantBeTargetedBySpells
+    HostCantBeTargetedBySpells, Arboria
 from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \
     AspectOfWolfPT, Conversion, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BloodMoon, ManaProdAlter
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
-    'abomination': [Triggered(DestroyCombatantAtCombatEnd(TF.self(), TF.green_and_white_creatures()))],
+    'abomination': [GenTrig(On(CombatEndEvent).where(SelfIsCombatant()).
+                            then(DestroySelfCombatants(filter_func=TF.green_and_white_creatures())))],
     'abu-jafar': [GenTrig(On(DiesEvent).where(SelfIsDier()).then(DestroySelfCombatants(allow_regen=False)))],
     'acid-rain': [Spell(DestroyAll(TF.forests()))],
     'active-volcano': [Spell(Destroy(), TF.blue_permanents()), Spell(Bounce(), TF.islands())],
@@ -203,7 +204,8 @@ MAP: dict[str, list[EffSpec]] = {
     'clone': [Spell(Clone())],
     'coal-golem': [Activated('3', AddMana('R', 3), TF.owner(), is_mana_ability=True,
                              extra_costs=[SacSelfCost()])],
-    'cockatrice': [Triggered(DestroyCombatantAtCombatEnd(TF.self(), TF.non_wall_creatures()))],
+    'cockatrice': [GenTrig(On(CombatEndEvent).where(SelfIsCombatant()).
+                           then(DestroySelfCombatants(filter_func=TF.non_wall_creatures())))],
     'cocoon': [Spell(CocoonCast(), TF.your_creatures()), Static(CocoonUntap()), Static(CocoonUpkeep())],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(TF.self())), Triggered(PayManaToUntapUpkeep('9', TF.self()))],
     'concordant-crossroads': [Static(KWAApplies(TF.creatures(), 'add', KW.HASTE))],

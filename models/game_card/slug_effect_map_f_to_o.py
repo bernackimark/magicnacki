@@ -9,10 +9,10 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, I
     LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BecomeBasicLand
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
-    PreventRegenerationEOT, CantBeTargetedByAuras
+    PreventRegenerationEOT, CantBeTargetedByAuras, GoblinRockSledCanAttack, Lure, MarblePriestForcesBlock
 from .event_conditions import SelfIsDier, SelfIsUnblockedAttacker, SelfIsDamageReceiver, YouAreDrawer, CastCardIsWhite, \
     CastCardIsRed, CardIsMountain, CardIsOpponents, CardIsForest, SelfIsAttacker, IsYourTurn, IsHostTurn, SelfIsDamager, \
-    OppIsDamageReceiver
+    OppIsDamageReceiver, SelfIsBlocker
 from ..constants import KW
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
     MindTwist, NaturalSelection, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
@@ -26,7 +26,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, DestroySelf, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, DealDamageToSourceOwner, PayManaOr, SacSelf, DealDamageToHostOwner, \
-    DiscardAtRandom
+    DiscardAtRandom, DestroySelfCombatants
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, TF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -41,8 +41,8 @@ from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, \
     LeviathanUpkeep, Halfdane, LivingArtifactUpkeep
 from ..effects.listeners_tap_untap import Kudzu, HauntingWindTap
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
-from ..effects.listeners_combat import MijaeDjinn, GiantShark, InfernalMedusa, Johan, \
-    InfiniteAuthorityCombatEnd, Lure, MarblePriestForcesBlock, GoblinRockSledCanAttack, FloralSpuzzem, GlyphOfDoom
+from ..effects.listeners_combat import MijaeDjinn, GiantShark, Johan, \
+    InfiniteAuthorityCombatEnd, FloralSpuzzem, GlyphOfDoom
 from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, LivingArtifactOnDamage, \
     NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
@@ -53,7 +53,7 @@ from ..effects.listeners_generic import AddPoisonCounter, OptionalUntap, CantAtt
     PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
     RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
 from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \
-    TapCardEvent, AttackEvent, UpkeepEvent
+    TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), TF.self(),
@@ -189,7 +189,9 @@ MAP: dict[str: list[EffSpec]] = {
     'immolation': [Spell(Pump(2, -2), TF.creatures())],
     'in-the-eye-of-chaos': [Static(InTheEyeOfChaos())],
     'indestructible-aura': [Spell(PreventAllDamageToEOT(), TF.creatures())],
-    'infernal-medusa': [Triggered(InfernalMedusa())],
+    'infernal-medusa': [GenTrig(On(CombatEndEvent).where(SelfIsAttacker()).
+                                then(DestroySelfCombatants(filter_func=TF.non_wall_creatures()))),
+                        GenTrig(On(CombatEndEvent).where(SelfIsBlocker()).then(DestroySelfCombatants()))],
     'inferno': [Spell(DealDamageToAllCreaturesAndPlayers(6))],
     'infinite-authority': [Triggered(InfiniteAuthorityCombatEnd()), Triggered(InfiniteAuthorityEndStep())],
     'instill-energy': [Spell(KWAModEffect('add', KW.HASTE), TF.creatures()),

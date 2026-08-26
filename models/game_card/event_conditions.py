@@ -20,6 +20,16 @@ class CardIsArtifact(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
         return event.card.is_artifact  # type: ignore
 
+class CardIsColor(EventCondition):
+    """Can be used by any Event with the 'card' attr; any color of the initializer w any o"""
+    def __init__(self, colors: str):
+        self.colors = colors
+
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        matching_colors = set(self.colors)
+        card_colors = set(event.card.colors)  # type: ignore
+        return bool(matching_colors & card_colors)
+
 class CardIsHost(EventCondition):
     """This can be used by any Event with the 'card' attr"""
     def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
@@ -80,6 +90,10 @@ class DierIsCreature(EventCondition):
 class DierIsYourArtifact(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: DiesEvent) -> bool:
         return event.card.is_artifact and source.owner_id == event.card.owner_id
+
+class HostIsCombatant(EventCondition):
+    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
+        return source.host in gs.card_filter.combatants().result()
 
 class HostIsDamager(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:

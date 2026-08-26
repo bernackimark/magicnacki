@@ -3,12 +3,10 @@ from typing import TYPE_CHECKING, Any
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
-from models.constants import KW, Zone
-from models.game_card.counter_tokens import PLUS_ONE_ZERO
+from models.constants import KW
+from models.effects.listeners_permission import WallOfDustAttackerCantAttackNextTurn
 from models.effects.base import Listener
-from models.effects.listeners_generic import DestroyAtCombatEnd
-from models.events_all import AttackEvent, BlockEvent, CanAttackQueryEvent, CombatEndEvent, CanBlockQueryEvent, \
-    CastResolvedEvent, ZoneChangeEvent, UnblockedAttackerEvent, CombatBeginEvent
+from models.events_all import AttackEvent, BlockEvent, CombatEndEvent, UnblockedAttackerEvent, CombatBeginEvent
 from models.game_card.modifiers import PTMod, KWAMod
 from models.utils import flip
 
@@ -48,21 +46,6 @@ class GiantShark(Listener):
             s.modifiers.append(PTMod(s=s, p_adj=2, expires='EOT'))
             s.modifiers.append(KWAMod(s=s, item=KW.TRAMPLE, expires='EOT'))
 
-class InfernalMedusa(Listener):
-    """Whenever this creature blocks, destroy attacker at combat end.
-    Whenever this creature becomes blocked by a non-Wall creature, destroy blocker at combat end."""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if event.attacker is s and 'Wall' not in event.blocker.card_sub_types:
-            other = event.blocker
-        elif event.blocker is s:
-            other = event.attacker
-        else:
-            return
-        delayed = DestroyAtCombatEnd(s, other)
-        gs.event_mgr.register(delayed, s)
-        # this will later get unregistered at combat end
 
 class Sentinel(Listener):
     """Indefinitely change Sentinel's base T to 1 + power of target creature blocking or blocked by this creature"""
@@ -114,68 +97,6 @@ class YdwenEfreet(Listener):
         if result == 'tails':
             gs.combat_mgr.remove_from_combat(s)
 
-
-# --- CAN ATTACK QUERY EVENT ---
-class Arboria(Listener):
-    """Creatures can only attack a player who, in their last turn,
-    cast a spell or put a nontoken permanent onto the battlefield"""
-    listens_to = CanAttackQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        opp = flip(event.attacker.owner_id)
-        p_most_recent_turn = gs.turn_mgr.most_recent_turn_started[opp]
-        events_on_players_last_turn = gs.event_mgr.get_events(p_most_recent_turn)
-        for e in events_on_players_last_turn:
-            if isinstance(e, CastResolvedEvent) and e.owner_id == opp and not e.card.is_land:
-                return
-            if (isinstance(e, ZoneChangeEvent) and e.card.owner_id == opp and not e.card.is_land
-                    and not e.card.is_token and e.to_zone == Zone.BATTLEFIELD):
-                return
-        event.permission = False
-
-class GoblinRockSledCanAttack(Listener):
-    """This creature can't attack unless defending player controls a Mountain"""
-    listens_to = CanAttackQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        if not gs.card_filter.in_play().mountains().on_player_board(flip(source.owner_id)).result():
-            event.permission = False
-
-class WallOfDustAttackerCantAttackNextTurn(Listener):
-    """... can't attack during its controller's next turn"""
-    listens_to = CanAttackQueryEvent
-
-    def __init__(self, target: GameCard):
-        self.target = target
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        if event.attacker is not self.target:
-            return
-        event.permission = False
-        gs.event_mgr.unregister_specific_effect(self)
-        # TODO: this needs expires = 'After Owner Next Turn'
-
-
-# --- CAN BLOCK QUERY EVENT ---
-class Lure(Listener):
-    """All creatures able to block host do so"""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source.host:
-            return
-        if gs.perm_querier.can_block(event.blocker, event.attacker):
-            event.permission = True
-
-class MarblePriestForcesBlock(Listener):
-    """All Walls able to block this creature do so ..."""
-    listens_to = CanBlockQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
-        if event.attacker is not source or 'Wall' not in event.blocker.card_sub_types:
-            return
-        if gs.perm_querier.can_block(event.blocker, event.attacker):
-            event.permission = True
 
 # --- COMBAT BEGIN EVENT ---
 class Johan(Listener):

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Callable, Any
 
 from models.constants import KW, Zone
 from models.game_card.counter_tokens import PUPA
+from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
     CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent, \
-    CanRegenerateQueryEvent
+    CanRegenerateQueryEvent, CastResolvedEvent, ZoneChangeEvent
 
 """
 These are Effects that listens for Events that are XXQueryEvent
@@ -286,6 +287,23 @@ class AkronLegionnaire(Listener):
         if a not in artifact_creatures + akron_legionnaires:
             event.permission = False
 
+class Arboria(Listener):
+    """Creatures can only attack a player who, in their last turn,
+    cast a spell or put a nontoken permanent onto the battlefield"""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        opp = flip(event.attacker.owner_id)
+        p_most_recent_turn = gs.turn_mgr.most_recent_turn_started[opp]
+        events_on_players_last_turn = gs.event_mgr.get_events(p_most_recent_turn)
+        for e in events_on_players_last_turn:
+            if isinstance(e, CastResolvedEvent) and e.owner_id == opp and not e.card.is_land:
+                return
+            if (isinstance(e, ZoneChangeEvent) and e.card.owner_id == opp and not e.card.is_land
+                    and not e.card.is_token and e.to_zone == Zone.BATTLEFIELD):
+                return
+        event.permission = False
+
 class ArtifactWardCanBeTargeted(Listener):
     """Enchanted creature can't be the target of abilities from artifact sources"""
     listens_to = CanTargetQueryEvent
@@ -303,6 +321,29 @@ class CityInABottleCantCast(Listener):
         if event.card in gs.card_filter.by_set_code('AN').result():
             event.permission = False
 
+class CocoonUntap(Listener):
+    """Host doesn't untap during its controller's untap step if it has a pupa counter on it."""
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if event.card != source.host or event.card.owner_id != gs.player_turn_idx:
+            return
+        if source.counters.get_count(PUPA):
+            event.permission = False
+
+class DampingField(Listener):
+    """Players can't untap more than one artifact during their untap steps"""
+    listens_to = CanUntapQueryEvent
+    query = 'can_untap'
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if not event.card.is_artifact:
+            return
+        # TODO: this should probably enter a flow where user can declare which one card they want to untap
+        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
+        if [e for e in events if e.card.is_artifact]:
+            event.permission = False
+
 class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Listener):
     """Non-Eye creatures you control can't attack."""
     listens_to = CanAttackQueryEvent
@@ -313,6 +354,27 @@ class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Listener):
             return
         if a not in gs.card_filter.on_player_board(a.owner_id).creatures().by_sub_type('Eye').result():
             event.permission = False
+
+class GoblinRockSledCanAttack(Listener):
+    """This creature can't attack unless defending player controls a Mountain"""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if not gs.card_filter.in_play().mountains().on_player_board(flip(source.owner_id)).result():
+            event.permission = False
+
+class GoblinRockSledUntap(Listener):
+    """This creature doesn't untap during your untap step if it attacked during your last turn"""
+    listens_to = CanUntapQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if source is not event.card:
+            return
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
+        for e, turn_num in gs.event_mgr.events[::-1]:
+            if turn_num == p_last_turn_num:
+                if isinstance(e, AttackEvent) and e.attacker is source:
+                    event.permission = False
 
 class IronclawOrcs(Listener):
     """This creature can't block creatures with power 2 or greater"""
@@ -346,6 +408,34 @@ class LivonyaSilone(Listener):
         if gs.card_filter.on_player_board(event.blocker.owner_id).legendary().lands().result():
             event.permission = False
 
+class Lure(Listener):
+    """All creatures able to block host do so"""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source.host:
+            return
+        if gs.perm_querier.can_block(event.blocker, event.attacker):
+            event.permission = True
+
+class MarblePriestForcesBlock(Listener):
+    """All Walls able to block this creature do so ..."""
+    listens_to = CanBlockQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        if event.attacker is not source or 'Wall' not in event.blocker.card_sub_types:
+            return
+        if gs.perm_querier.can_block(event.blocker, event.attacker):
+            event.permission = True
+
+class Meekstone(Listener):
+    """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
+    listens_to = CanUntapAtUntapPhaseQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
+        if event.card.owner_id == event.active_player and event.card.is_creature and event.card.power >= 3:
+            event.permission = False
+
 class Moat(Listener):
     """Creatures without flying can't attack"""
     listens_to = CanAttackQueryEvent
@@ -353,6 +443,19 @@ class Moat(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
         if event.attacker in gs.card_filter.in_play().has(KW.FLYING).creatures().result():
+            event.permission = False
+
+class Smoke(Listener):
+    """Players can't untap more than one creature during their untap steps"""
+    listens_to = CanUntapQueryEvent
+    query = 'can_untap'
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
+        if not event.card.is_creature:
+            return
+        # TODO: this should probably enter a flow where user can declare which one card they want to untap
+        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
+        if [e for e in events if e.card.is_creature]:
             event.permission = False
 
 class SpectralCloak(Listener):
@@ -378,66 +481,19 @@ class TowerOfCoireallEOT(Listener):
             return
         event.permission = False
 
+class WallOfDustAttackerCantAttackNextTurn(Listener):
+    """... can't attack during its controller's next turn"""
+    listens_to = CanAttackQueryEvent
 
-# --- CAN UNTAP QUERY EVENT ---
-class DampingField(Listener):
-    """Players can't untap more than one artifact during their untap steps"""
-    listens_to = CanUntapQueryEvent
-    query = 'can_untap'
+    def __init__(self, target: GameCard):
+        self.target = target
 
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if not event.card.is_artifact:
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if event.attacker is not self.target:
             return
-        # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
-        if [e for e in events if e.card.is_artifact]:
-            event.permission = False
-
-class GoblinRockSledUntap(Listener):
-    """This creature doesn't untap during your untap step if it attacked during your last turn"""
-    listens_to = CanUntapQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if source is not event.card:
-            return
-        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
-        for e, turn_num in gs.event_mgr.events[::-1]:
-            if turn_num == p_last_turn_num:
-                if isinstance(e, AttackEvent) and e.attacker is source:
-                    event.permission = False
-
-class Smoke(Listener):
-    """Players can't untap more than one creature during their untap steps"""
-    listens_to = CanUntapQueryEvent
-    query = 'can_untap'
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if not event.card.is_creature:
-            return
-        # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
-        if [e for e in events if e.card.is_creature]:
-            event.permission = False
-
-
-# --- CAN UNTAP AT UNTAP QUERY EVENT ---
-class CocoonUntap(Listener):
-    """Host doesn't untap during its controller's untap step if it has a pupa counter on it."""
-    listens_to = CanUntapAtUntapPhaseQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
-        if event.card != source.host or event.card.owner_id != gs.player_turn_idx:
-            return
-        if source.counters.get_count(PUPA):
-            event.permission = False
-
-class Meekstone(Listener):
-    """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
-    listens_to = CanUntapAtUntapPhaseQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapPhaseQueryEvent) -> None:
-        if event.card.owner_id == event.active_player and event.card.is_creature and event.card.power >= 3:
-            event.permission = False
+        event.permission = False
+        gs.event_mgr.unregister_specific_effect(self)
+        # TODO: this needs expires = 'After Owner Next Turn'
 
 class WinterOrb(Listener):
     """As long as this artifact is untapped, players can't untap more than one land during their untap steps"""
