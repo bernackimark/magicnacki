@@ -4,10 +4,10 @@ from itertools import combinations
 from .card_filter_funcs import C_FUNCS, A_FUNCS, TF
 from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORAGE
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORAGE, STUN
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
-from .event_conditions import SelfIsAttacking, SelfIsDier, SelfIsBlocker, SelfIsCombatant, IsYourTurn, CasterIsOpp, \
-    CastCardIsArtifact, CastCardIsBlue, CardIsHost, CardIsSource
+from .event_conditions import SelfIsAttacker, SelfIsDier, SelfIsBlocker, SelfIsCombatant, IsYourTurn, CasterIsOpp, \
+    CastCardIsArtifact, CastCardIsBlue, CardIsHost, CardIsSource, IsHostTurn
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
     CastResolvedEvent, TapCardEvent
 from ..target import TargetSpec
@@ -17,18 +17,18 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, CocoonC
     AshnodsTransmogrant, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, ConsecrateLand, \
     Crumble, Earthbind, ArenaOfTheAncientsCast, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, \
     Cleansing, DrafnasRestoration, Eureka
-from models.effects.resolvers_generic import AddCounter, DealDamage, DealDamageToTargetAndYou, Destroy, DestroyAll, \
+from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
-    CounterSpell, AddStunCounter, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, SelfPump, \
+    CounterSpell, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, PumpSelf, \
     DestroySelfCombatants, ExileSelf, DestroySelf, MayPayMana, Do, DealDamageToSourceOwner, Reanimate, GainLifeTargetMV, \
-    DestroyHost
+    DestroyHost, PayManaOr, SacSelf, DealDamageToHostOwner, DealDamageToInTurnPlayer
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x, On
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import AnkhOfMishra, DingusEgg
-from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CosmicHorror, CurseArtifact, Cyclone, \
+from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CurseArtifact, Cyclone, \
     DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
 from ..effects.listeners_tap_untap import ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
@@ -36,16 +36,15 @@ from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
 from ..effects.listeners_combat import AislingLeprechaun, Arboria
-from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, OptionalUntap, DealDamageOnHostUpkeep, \
-    PayManaOrSacAtUpkeep, DealDamageOnEveryUpkeep, DestroyCombatantAtCombatEnd, PreventAllDamage, PreventAllDamageEOT, \
-    PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
+from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, OptionalUntap, DestroyCombatantAtCombatEnd, \
+    PreventAllDamage, PreventAllDamageEOT, PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
 from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
     EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantAttack, \
     WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, HostCanAttack, UnblockableCondition, \
     UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
     HostCantBeTargetedBySpells
 from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \
-    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, PumpAppliesEOT, BloodMoon, ManaProdAlter
+    AspectOfWolfPT, Conversion, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BloodMoon, ManaProdAlter
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
@@ -84,7 +83,8 @@ MAP: dict[str, list[EffSpec]] = {
                         Spell(RemoveHostAuras(), TF.creatures())],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), TF.owner(), is_mana_ability=True)],
     'arboria': [Static(Arboria())],
-    'arcades-sabboth': [Triggered(PayManaOrSacAtUpkeep('GWU')), self_pump('W', 0, 1),
+    'arcades-sabboth': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('GWU', SacSelf()))),
+                        self_pump('W', 0, 1),
                         Static(PumpApplies(TF.your_untapped_non_attacking_creatures(), (0, 2)))],
     'arena-of-the-ancients': [Static(DoesntUntapAtUntap(TF.legendary_creatures())),
                               Spell(ArenaOfTheAncientsCast())],
@@ -99,7 +99,7 @@ MAP: dict[str, list[EffSpec]] = {
                          GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(AddCounter(DOOM))),
                          # Triggered(AddCounterAtTargetUpkeep(TF.self(), DOOM)),
                          Triggered(ArmageddonClockDrawStep())],
-    'army-of-allah': [Spell(PumpAppliesEOT(TF.attackers(), (2, 0)))],
+    'army-of-allah': [Spell(PumpApplies(TF.attackers(), (2, 0), True))],
     'artifact-blast': [Spell(CounterSpell(), TF.artifact_spells())],
     'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),
                             Spell(EmptyResolver(), TF.artifacts())],
@@ -122,14 +122,14 @@ MAP: dict[str, list[EffSpec]] = {
     'badlands': dual_land_specs('BR'),
     'ball-lightning': [GenTrig(On(EndStepEvent).then(DestroySelf()))],
     'banshee': [Activated('XT', Banshee(), TF.all_creatures_and_players(), max_x_func=max_x_from_printed_card)],
-    'barls-cage': [Activated('3', AddStunCounter(), TF.creatures())],
+    'barls-cage': [Activated('3', Do(TapCardEffect(), AddCounter(STUN)), TF.creatures())],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras(TF.self()))],
     'basalt-monolith': [Triggered(DoesntUntapAtUntap(TF.self())),
                         Activated('T', AddMana('C', 3), is_mana_ability=True),
                         Activated('3', UntapCardEffect(), TF.self())],
     'bayou': dual_land_specs('BG'),
     'bazaar-of-baghdad': [Activated('2T', BazaarOfBaghdad(), text='Draw 2 cards; discard 3 cards')],
-    'beasts-of-bogardan': [Static(PumpApplies(TF.self(), (1, 1), C_FUNCS['opp_has_non_token_white_perm']))],
+    'beasts-of-bogardan': [Static(PumpApplies(TF.self(), (1, 1), cond=C_FUNCS['opp_has_non_token_white_perm']))],
     'berserk': [Spell(Berserk(), TF.creatures(), allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE])],
     'birds-of-paradise': [Activated('T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}') for c in COLOR_LETTERS],
     'black-lotus': [Activated('T', AddMana(c, 3), is_mana_ability=True, extra_costs=[SacSelfCost()],
@@ -147,7 +147,7 @@ MAP: dict[str, list[EffSpec]] = {
     'blue-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('U')],
     'blue-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_BLUE), TF.creatures())],
     'bog-rats': [Static(UnblockableCondition(TF.self(), TF.walls()))],
-    'bone-flute': [Activated('2T', PumpAppliesEOT(TF.creatures(), (-1, 0)))],
+    'bone-flute': [Activated('2T', PumpApplies(TF.creatures(), (-1, 0), True))],
     'book-of-rass': [Activated('2', Do(DrawCards(), DealDamageToSourceOwner(2)))],
     'boomerang': [Spell(Bounce(), TF.permanents())],
     'boris-devilboon': [Activated('2BRTT', CreateTokenCreature('minor-demon'))],
@@ -158,13 +158,13 @@ MAP: dict[str, list[EffSpec]] = {
     'brass-man': [Triggered(DoesntUntapAtUntap(TF.self())),
                   Triggered(PayManaToUntapUpkeep('1', TF.self()))],
     'brine-hag': [Triggered(BrineHag())],
-    'brothers-of-fire': [Activated('T', DealDamageToTargetAndYou(1, 1), TF.all_creatures_and_players())],
+    'brothers-of-fire': [Activated('T', Do(DealDamage(1), DealDamageToSourceOwner()), TF.all_creatures_and_players())],
     'burrowing': [Spell(KWAModEffect('add', KW.ISLANDWALK), TF.creatures())],
     'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(TF.your_tapped_lands(), 1, None),
                                        max_x_func=your_tapped_land_cnt_and_max_x)],
     'carrion-ants': [self_pump('1', 1, 1)],
     'castle': [Static(PumpApplies(TF.your_untapped_white_creatures(), (0, 2)))],
-    'cave-people': [GenTrig(On(AttackEvent).where(SelfIsAttacking()).then(SelfPump(1, -2, True))),
+    'cave-people': [GenTrig(On(AttackEvent).where(SelfIsAttacker()).then(PumpSelf(1, -2, True))),
                     Activated('1RRT', KWAModEffect('add', KW.ISLANDWALK, True), TF.creatures())],
     'caverns-of-despair': [Static(AttackerCountMax(2)), Static(BlockerCountMax(2))],
     'celestial-prism': [Activated('2T', AddMana(c), TF.owner(), is_mana_ability=True, text=f'Add 1 {c}')
@@ -172,7 +172,7 @@ MAP: dict[str, list[EffSpec]] = {
     'chaos-orb': [Activated('1T', ChaosOrb(), TF.opp_non_token_perms(), extra_costs=[SacSelfCost()],
                             text='If random di roll is 1-4, destroy target')],
     'chaoslace': [Spell(SetColor('R'), TF.cards())],
-    'chromium': [Triggered(PayManaOrSacAtUpkeep('WUB'))],
+    'chromium': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('WUB', SacSelf())))],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageTo(protected=TF.owner()), TF.artifacts())],
     'circle-of-protection-black': [Activated('1', PreventNextDamageTo(protected=TF.owner()), TF.black())],
     'circle-of-protection-blue': [Activated('1', PreventNextDamageTo(protected=TF.owner()), TF.blue())],
@@ -210,11 +210,12 @@ MAP: dict[str, list[EffSpec]] = {
     'consecrate-land': [Spell(ConsecrateLand(), TF.lands())],
     'conservator': [Activated('3T', PreventNextDamageTo(protected=TF.owner()))],
     'control-magic': [Spell(Steal(), TF.opp_creatures())],
-    'conversion': [Triggered(PayManaOrSacAtUpkeep('WW')), Static(Conversion())],
-    'copper-tablet': [Static(DealDamageOnEveryUpkeep(TF.in_turn_player(), 1))],
+    'conversion': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('WW', SacSelf()))), Static(Conversion())],
+    'copper-tablet': [GenTrig(On(UpkeepEvent).then(DealDamageToInTurnPlayer()))],
     'copy-artifact': [Spell(CopyArtifact())],
     'coral-helm': [Activated('3', Pump(2, 2, True), TF.creatures(), extra_costs=[DiscardAtRandomCost()])],
-    'cosmic-horror': [Static(CosmicHorror())],
+    'cosmic-horror': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).
+                              then(PayManaOr('3BBB', Do(DestroySelf(), DealDamageToSourceOwner(7)))))],
     'counterspell': [Spell(CounterSpell(), TF.spells())],
     'crevasse': [Static(WalkRuleRemoved(KW.ISLANDWALK))],
     'creature-bond': [Triggered(CreatureBond())],
@@ -224,13 +225,15 @@ MAP: dict[str, list[EffSpec]] = {
     'crystal-rod': [GenTrig(On(CastResolvedEvent).where(CastCardIsBlue()).then(MayPayMana('1', GainLife(1))))],
     'cuombajj-witches': [Activated('T', CuombajjWitches(), TF.all_creatures_and_players())],
     'curse-artifact': [Spell(CurseArtifact(), TF.artifacts())],
-    'cursed-land': [Spell(DealDamageOnHostUpkeep(1), TF.lands())],
+    'cursed-land': [Spell(EmptyResolver(), TF.lands()),
+                    GenTrig(On(UpkeepEvent).where(IsHostTurn()).then(DealDamageToHostOwner()))],
     'cursed-rack': [Static(CursedRack())],
     'cyclone': [Triggered(Cyclone())],
     'cyclopean-mummy': [GenTrig(On(DiesEvent).where(SelfIsDier()).then(ExileSelf()))],
     'dakkon-blackblade': [Static(SelfPTEqualsFuncLen(TF.your_lands()))],
     'damping-field': [Triggered(DampingField())],
-    'dance-of-many': [Triggered(PayManaOrSacAtUpkeep('UU')), Spell(DanceOfMany(), TF.non_token_creatures())],
+    'dance-of-many': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('UU', SacSelf()))),
+                      Spell(DanceOfMany(), TF.non_token_creatures())],
     'dark-heart-of-the-wood': [Activated('', GainLife(3), extra_costs=[SacCardCost(TF.your_forests())])],
     'dark-ritual': [Spell(AddMana('B', 3))],
     'dark-sphere': [Activated('T', PreventNextDamageTo(protected=TF.owner()), TF.artifacts(),
@@ -283,7 +286,7 @@ MAP: dict[str, list[EffSpec]] = {
     'elder-land-wurm': [GenTrig(On(BlockEvent).where(SelfIsBlocker()).then(KWAModEffect('remove', 'Defender')))],
     'elder-spawn': [Triggered(ElderSpawnUpkeep()), Static(UnblockableCondition(TF.self(), TF.red()))],
     'electric-eel': [Spell(DealDamage(1), TF.owner()),
-                     Activated('RR', Do(SelfPump(0, 2, True), DealDamageToSourceOwner()))],
+                     Activated('RR', Do(PumpSelf(0, 2, True), DealDamageToSourceOwner()))],
     'elephant-graveyard': [Activated('T', AddMana('C'), is_mana_ability=True),
                            Activated('T', Regenerate(), TF.elephants())],
     'elven-riders': [Static(UnblockableCondition(TF.self(), TF.non_wall_non_fliers()))],

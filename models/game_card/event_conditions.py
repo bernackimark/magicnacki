@@ -85,6 +85,10 @@ class HostIsDamager(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:
         return event.source is source.host
 
+class IsHostTurn(EventCondition):
+    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
+        return gs.turn_mgr.player_turn_idx == source.host.owner_id
+
 class IsYourTurn(EventCondition):
     def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
         return gs.turn_mgr.player_turn_idx == source.owner_id
@@ -105,7 +109,7 @@ class SelfDamagedOpponent(EventCondition):
                 return True
         return False
 
-class SelfIsAttacking(EventCondition):
+class SelfIsAttacker(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: AttackEvent) -> bool:
         return event.attacker is source
 

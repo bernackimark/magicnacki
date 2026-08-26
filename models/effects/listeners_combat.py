@@ -17,20 +17,6 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 # --- ATTACK EVENT ---
-class HasranOgress(Listener):
-    """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
-    listens_to = AttackEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: AttackEvent):
-        if event.attacker is not s:
-            return
-        if not gs.mana_pools[s.owner_id].can_pay('2'):
-            gs.apply_damage(s, 3, s.owner_id)
-            return
-        options = [CO(f"Pay {{{'2'}}}", lambda: gs.mana_pools[s.owner_id].pay('2')),
-                   CO(f'{s} deals 3 damage to you', lambda: gs.apply_damage(s, 3, s.owner_id))]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
 class MijaeDjinn(Listener):
     """Whenever this creature attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it"""
     listens_to = AttackEvent

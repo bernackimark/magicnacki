@@ -163,12 +163,13 @@ class PumpApplies(Listener):
     listens_to = ModQueryEvent
     modifies = 'pt'
 
-    def __init__(self, applies_to_func: Callable, pt_adj: tuple[int, int],
-                 condition: Callable[[GameState, GameCard], bool] = None):
+    def __init__(self, applies_to_func: Callable, pt_adj: tuple[int, int], eot: bool = False,
+                 cond: Callable[[GameState, GameCard], bool] = None):
         self.applies_to_func = applies_to_func
         self.p_adj = pt_adj[0]
         self.t_adj = pt_adj[1]
-        self.condition = condition
+        self.expires = 'EOT' if eot else None
+        self.condition = cond
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         if self.condition and not self.condition(gs, source):
@@ -177,29 +178,7 @@ class PumpApplies(Listener):
         if not isinstance(applies_to, list):
             applies_to = [applies_to]
         if event.card in applies_to:
-            event.mods.append(PTMod(s=source, p_adj=self.p_adj, t_adj=self.t_adj))
-
-class PumpAppliesEOT(Listener):
-    """If card is in applies_to_func (and the optional condition isn't False), append PTMod; expires = 'EOT'"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-    expires = 'EOT'
-
-    def __init__(self, applies_to_func: Callable, pt_adj: tuple[int, int],
-                 condition: Callable[[GameState, GameCard], bool] = None):
-        self.applies_to_func = applies_to_func
-        self.p_adj = pt_adj[0]
-        self.t_adj = pt_adj[1]
-        self.condition = condition
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if self.condition and not self.condition(gs, source):
-            return
-        applies_to = self.applies_to_func(gs, source)
-        if not isinstance(applies_to, list):
-            applies_to = [applies_to]
-        if event.card in applies_to:
-            event.mods.append(PTMod(s=source, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT'))
+            event.mods.append(PTMod(s=source, p_adj=self.p_adj, t_adj=self.t_adj, expires=self.expires))
 
 class SelfPTEqualsFuncLen(Listener):
     """For that card, its pt = the len of the T_FUNC provided, append a PTMod for the len;
@@ -254,18 +233,6 @@ class AngryMobPT(Listener):
             opp_swamp_cnt = len(gs.card_filter.on_player_board(flip(source.owner_id)).swamps().result())
             mod = PTMod(s=source, p_adj=2 + opp_swamp_cnt, t_adj=2 + opp_swamp_cnt, expires='EOT')
         event.mods.append(mod)
-
-class ArmyOfAllahEOT(Listener):
-    """This will be called only by ArmyOfAllah(); this effect is stored in GameState and cleared at EOT;
-    Attacking creatures get +2/+0 until end of turn"""
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-    expires = 'EOT'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card not in gs.card_filter.in_play().attackers().result():
-            return
-        event.mods.append(PTMod(s=source, p_adj=2, expires='EOT'))
 
 class AspectOfWolfPT(Listener):
     """Enchant creature Enchanted creature gets +X/+Y, where X is half the number of Forests you control, rounded down,

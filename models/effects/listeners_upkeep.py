@@ -50,28 +50,6 @@ class CocoonUpkeep(Listener):
         host.counters.add_counter(PLUS_ONE)
         host.modifiers.append(KWAMod(s=source, item=KW.FLYING))
 
-class CosmicHorror(Listener):
-    """At your upkeep, destroy unless you pay {3BBB}. If destroyed this way, it deals 7 damage to you."""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        if gs.player_turn_idx != source.owner_id:
-            return
-        if not gs.mana_pools[source.owner_id].can_pay('3BBB'):
-            gs.pile_mgr.destroy(source)
-            gs.apply_damage(source, 7, source.owner_id)
-            return
-        options = [CO(f'Destroy {source}', lambda: self.destroy_and_damage(gs, source, 7)),
-                   CO(f"Pay {{{'3BB'}}}", lambda: gs.pile_mgr.destroy(source))]
-        # options = [DestroyAction(event.active_player, gs, source, source, False),
-        #            PayMana(event.active_player, gs, source, '3BBB')]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
-    @staticmethod
-    def destroy_and_damage(gs: GameState, source: GameCard, damage_amt: int):
-        gs.pile_mgr.destroy(source)
-        gs.apply_damage(source, damage_amt, source.owner_id)
-
 class CurseArtifact(Listener):
     """At enchanted artifact's controller's upkeep, deal 2 damage to that player unless they sacrifice that artifact"""
     listens_to = UpkeepEvent
@@ -255,20 +233,6 @@ class Fasting(Listener):
     def skip_draw_phase_gain_life(gs: GameState, p_id: int, amt: int):
         gs.phase_mgr.set_phase(Phase.MAIN)
         gs.score_mgr.increment_life(p_id, amt, source=None, gs=gs)
-
-class ForceOfNatureUpkeep(Listener):
-    """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        if event.active_player != s.owner_id:
-            return
-        if not gs.mana_pools[s.owner_id].can_pay('GGGG'):
-            gs.apply_damage(s, 8, s.owner_id)
-            return
-        options = [CO(f"Pay {{{'GGGG'}}}", lambda: gs.mana_pools[s.owner_id].pay('GGGG')),
-                   CO(f"{s} deals 8 damage to you", lambda: gs.apply_damage(s, 8, s.owner_id))]
-        gs.choice_mgr.queue(ChoiceAction(options))
 
 class GabrielAngelfire(Listener):
     """At your upkeep, choose flying, first strike, trample, rampage 3. GA gains that ability until your next upkeep."""

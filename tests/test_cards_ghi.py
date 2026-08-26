@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.cast import CastWithNoSpellEffect
-from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent
+from models.events_all import EndStepEvent, CombatEndEvent, DrawStepEvent, AttackEvent
 from models.systems.phase import Phase
 from models.constants import Zone
 from tests.setup_helpers import TestGame
@@ -149,6 +149,18 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.pile_mgr.destroy(creature2)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, card.power)
+
+    def test_hasran_ogress(self):
+        """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
+        card = self.g.battlefield('hasran-ogress')
+        self.g.mana('GG')
+
+        self.g.next_turn()
+        self.gs.event_mgr.emit(AttackEvent(card))
+        take_3_damage = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(take_3_damage)
+        self.assertEqual(17, self.gs.life[0])
+
 
     def test_haunting_wind(self):
         """Whenever an artifact becomes tapped or a player activates an artifact's ability

@@ -38,7 +38,16 @@ class AddCounter(Resolver):
         target = source if not t else t
         target.counters.add_counter(self.counter_type, self.cnt)
 
+class AddCounterToHost(Resolver):
+    def __init__(self, counter_type: CounterType, cnt: int = 1):
+        self.counter_type = counter_type
+        self.cnt = cnt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        source.host.counters.add_counter(self.counter_type, self.cnt)
+
 class AddMana(Resolver):
+    """The source's owner gets the mana"""
     def __init__(self, color: str, cnt: int = 1):
         self.color = color
         self.cnt = cnt
@@ -48,16 +57,6 @@ class AddMana(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.mana_pools[source.owner_id].add_floating(self.color, self.cnt)
-
-class AddStunCounter(Resolver):
-    """Tap and add stun counter to target"""
-    def __init__(self, cnt: int = 1):
-        self.cnt = cnt
-
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.tap()
-        t.counters.add_counter(STUN, self.cnt)
 
 class AllWalksRemoved(Resolver):
     """Target creature loses all landwalk abilities until end of turn"""
@@ -109,7 +108,6 @@ class CounterSpell(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         if not isinstance(t, StackItemType):
             raise TypeError(f'{source.props.name} needs a StackItemType for a target')
-        print('T', t)
         gs.action_stack.remove(t)
         gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
 
@@ -123,7 +121,6 @@ class CounterSpellUnlessManaPaid(Resolver):
             raise ValueError(f"{source.props.name} needs a spell target")
         target_spell = t
         p_id = target_spell.player_idx
-        print('T =', target_spell)
         if not gs.mana_pools[p_id].can_pay(self.mana_cost):
             gs.action_stack.remove(target_spell)
             gs.pile_mgr.move_card(target_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
@@ -173,6 +170,20 @@ class DealDamage(Resolver):
         amt = context.x_value if context and context.x_value is not None else self.amt
         gs.apply_damage(source, amt, t)
 
+class DealDamageToHostOwner(Resolver):
+    def __init__(self, amt: int = 1):
+        self.amt = amt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.apply_damage(source, self.amt, source.host.owner_id)
+
+class DealDamageToInTurnPlayer(Resolver):
+    def __init__(self, amt: int = 1):
+        self.amt = amt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.apply_damage(source, self.amt, gs.player_turn_idx)
+
 class DealDamageToSourceOwner(Resolver):
     def __init__(self, amt: int = 1):
         self.amt = amt
@@ -192,26 +203,6 @@ class DealDamageToAllCreaturesAndPlayers(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         [gs.apply_damage(source, self.amt, p_id, is_combat=False) for p_id in (0, 1)]
         [gs.apply_damage(source, self.amt, creature) for creature in gs.card_filter.in_play().creatures().result()]
-
-class DealDamageToTargetAndSelf(Resolver):
-    def __init__(self, amt_to_target: int, amt_to_source_card: int):
-        self.amt_to_target = amt_to_target
-        self.amt_to_source_card = amt_to_source_card
-
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.apply_damage(source, self.amt_to_target, t)
-        gs.apply_damage(source, self.amt_to_source_card, source)
-
-class DealDamageToTargetAndYou(Resolver):
-    def __init__(self, amt_to_target: int, amt_to_you: int):
-        self.amt_to_target = amt_to_target
-        self.amt_to_you = amt_to_you
-
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.apply_damage(source, self.amt_to_target, t)
-        gs.apply_damage(source, self.amt_to_you, source.owner_id)
 
 class Destroy(Resolver):
     def __init__(self, allow_regen: bool = True):
@@ -344,6 +335,22 @@ class MayPayMana(Resolver):
         gs.mana_pools[source.owner_id].pay(self.mana_cost)
         self.effect.resolve(gs, source, t, context)
 
+class PayManaOr(Resolver):
+    def __init__(self, mana_cost: str, effect: Resolver):
+        self.mana_cost = mana_cost
+        self.effect = effect
+
+    def resolve(self, gs: GameState, source: GameCard, t=None, context=None):
+        if gs.mana_pools[source.owner_id].can_pay(self.mana_cost):
+            options = [CO(f'Pay {{{self.mana_cost}}}', lambda: self._pay(gs, source)),
+                       CO(f'{self.effect.__repr__()}', lambda: self.effect.resolve(gs, source, t, context))]
+            gs.choice_mgr.queue(ChoiceAction(options))
+        else:
+            self.effect.resolve(gs, source, t, context)
+
+    def _pay(self, gs: GameState, source: GameCard):
+        gs.mana_pools[source.owner_id].pay(self.mana_cost)
+
 class Pump(Resolver):
     def __init__(self, power_adj: int, toughness_adj: int, eot: bool = False):
         self.p_adj = power_adj
@@ -353,6 +360,18 @@ class Pump(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(PTMod(s=source, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT' if self.eot else None))
+
+class PumpSelf(Resolver):
+    """Doesn't require a target; using it to ease into the fluent/builder pattern; could later be replaced by:
+    a generic Pump that specifies .to() method"""
+    def __init__(self, power_adj: int, toughness_adj: int, eot: bool = False):
+        self.p_adj = power_adj
+        self.t_adj = toughness_adj
+        self.eot = eot
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        s = source
+        s.modifiers.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT' if self.eot else None))
 
 class Reanimate(Resolver):
     @Resolver.target_required
@@ -431,17 +450,9 @@ class SacAll(Resolver):
         for c in self.card_filter_func(gs, source):
             gs.pile_mgr.sacrifice(c)
 
-class SelfPump(Resolver):
-    """Doesn't require a target; using it to ease into the fluent/builder pattern; could later be replaced by:
-    a generic Pump that specifies .to() method"""
-    def __init__(self, power_adj: int, toughness_adj: int, eot: bool = False):
-        self.p_adj = power_adj
-        self.t_adj = toughness_adj
-        self.eot = eot
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        s = source
-        s.modifiers.append(PTMod(s=s, p_adj=self.p_adj, t_adj=self.t_adj, expires='EOT' if self.eot else None))
+class SacSelf(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.sacrifice(source)
 
 class SetColor(Resolver):
     def __init__(self, color: str, expires: str | None = None):

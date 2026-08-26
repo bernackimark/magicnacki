@@ -341,7 +341,7 @@ class TestCardsMNOP(unittest.TestCase):
     def test_power_leak(self):
         """At host's upkeep, PL deals 2 damage to host owner. Host may pay X mana to prevent X of that damage."""
         card = self.g.battlefield('power-leak')
-        host = self.g.battlefield('unstable-mutation')
+        host = self.g.battlefield('grizzly-bears')
         self.g.mana('GG')
         self.g.attach(card, host)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
@@ -437,6 +437,15 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertTrue(card.is_tapped)
         self.assertEqual(18, self.gs.life[0])
         self.assertFalse(self.gs.pending_choice)
+
+    def test_psionic_blast(self):
+        """Deal 4 damage to any target & 2 to yourself"""
+        card = self.g.hand('psionic-blast')
+        self.g.mana('UUUU')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[1])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual([18, 16], self.gs.life)
 
     # def test_psychic_purge(self):
     #     """... When a spell or ability an opp controls causes you to discard this card, that player loses 5 life."""

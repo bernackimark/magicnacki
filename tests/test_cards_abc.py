@@ -4,7 +4,7 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.constants import KW
 from models.cost import SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
@@ -97,6 +97,16 @@ class TestCardsAtoC(unittest.TestCase):
         aa = artifact.activated_abilities[0]
         self.gs.event_mgr.emit(AbilityActivatedEvent(0, aa))
         self.assertEqual(self.gs.life[0], 18)
+
+    def test_barls_cage(self):
+        """{3}: Tap & add a stun counter to target creature"""
+        card = self.g.battlefield('barls-cage')
+        self.g.mana('UUU')
+        aa = card.activated_abilities[0]
+        target = self.g.battlefield('scryb-sprites', owner=1)
+        self.g.activate_ability(aa, target)
+        self.assertTrue(target.is_tapped)
+        self.assertEqual(1, target.counters.get_count(STUN))
 
     def test_berserk(self):
         """Cast this spell only before the combat damage step. Target creature gains trample and gets +X/+0 EOT,

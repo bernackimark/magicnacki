@@ -480,6 +480,7 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.event_mgr.emit(UpkeepEvent(0))
         sac_stasis_action = self.gs.pending_choice.options[1]
         sac_stasis_action.play()
+        self.assertIn(card, self.g.gy[0])
 
         self.g.next_turn()
         self.assertFalse(tapped_card.is_tapped)
