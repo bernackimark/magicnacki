@@ -9,7 +9,8 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, I
     LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BecomeBasicLand
 from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
-    PreventRegenerationEOT, CantBeTargetedByAuras, GoblinRockSledCanAttack, Lure, MarblePriestForcesBlock
+    PreventRegenerationEOT, CantBeTargetedByAuras, GoblinRockSledCanAttack, Lure, MarblePriestForcesBlock, \
+    CantAttackIfAttackedLastTurn
 from .event_conditions import SelfIsDier, SelfIsUnblockedAttacker, SelfIsDamageReceiver, YouAreDrawer, CastCardIsWhite, \
     CastCardIsRed, CardIsMountain, CardIsOpponents, CardIsForest, SelfIsAttacker, IsYourTurn, IsHostTurn, SelfIsDamager, \
     OppIsDamageReceiver, SelfIsBlocker
@@ -48,8 +49,7 @@ from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, LivingArtif
     NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import FirestormPhoenix
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, IslandSanctuary
-from ..effects.listeners_generic import AddPoisonCounter, OptionalUntap, CantAttackIfAttackedLastTurn, \
-    AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
+from ..effects.listeners_generic import AddPoisonCounter, OptionalUntap, AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
     PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
     RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
 from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \

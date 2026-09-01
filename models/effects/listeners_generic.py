@@ -16,9 +16,9 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_prevent_counter
 from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener, ResContext
-from models.events_all import CastResolvedEvent, CombatEndEvent, DamageResolvedEvent, EndStepEvent, UntapCardEvent, \
-    UntapPhaseEvent, UpkeepEvent, ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, \
-    CanAttackQueryEvent, AttackEvent, BlockEvent, StackAdditionEvent, ModQueryEvent, DiesEvent, Event
+from models.events_all import DamageResolvedEvent, EndStepEvent, UntapCardEvent, UntapPhaseEvent, UpkeepEvent, \
+    ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, StackAdditionEvent, \
+    ModQueryEvent, DiesEvent, Event
 from models.game_card.modifiers import PTMod
 from models.utils import flip
 from models.constants import Zone
@@ -34,21 +34,6 @@ class GenericEventListener(Listener):
         if self.conditions and not all(condition.matches(gs, source, event) for condition in self.conditions):
             return
         self.resolver.resolve(gs, source, context=ResContext(event=event))
-
-
-# --- CAN ATTACK QUERY EVENT ---
-class CantAttackIfAttackedLastTurn(Listener):
-    """This creature can't attack if it attacked during your last turn"""
-    listens_to = CanAttackQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        if source is not event.attacker:
-            return
-        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
-        for e, turn_num in gs.event_mgr.events[::-1]:
-            if turn_num == p_last_turn_num:
-                if isinstance(e, AttackEvent) and e.attacker is source:
-                    event.permission = False
 
 
 # --- DAMAGE PROPOSED EVENT ---
@@ -83,7 +68,6 @@ class PreventAllDamage(Listener):
             event.remaining = 0
 
 class PreventAllDamageEOT(Listener):
-    # new: 7/16/2026: flexible class to consolidate micro-variations
     listens_to = DamageProposedEvent
     expires = 'EOT'
 

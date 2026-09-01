@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from models.events_all import Event, AttackEvent, DiesEvent, BlockEvent, UnblockedAttackerEvent, \
-    DamageResolvedEvent, DrawCardEvent, CastResolvedEvent
+    DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, DamageProposedEvent
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -98,6 +98,14 @@ class HostIsCombatant(EventCondition):
 class HostIsDamager(EventCondition):
     def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:
         return event.source is source.host
+
+class IsBlocker(EventCondition):
+    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
+        return source in gs.card_filter.blockers().result()
+
+class IsCombatDamage(EventCondition):
+    def matches(self, gs: GameState, source: GameCard, event: DamageProposedEvent | DamageResolvedEvent) -> bool:
+        return event.is_combat
 
 class IsHostTurn(EventCondition):
     def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:

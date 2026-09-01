@@ -17,7 +17,7 @@ from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTarget
 """
 These are Effects that listens for Events that are XXQueryEvent
 These query-style effects must have a class-level attribute 'listens_to', implement on_event(gs, card, XXQueryEvent).
-It may set the event.permission = False
+If it passes the guard clauses, it set event.permission (often to False)
 """
 
 
@@ -74,6 +74,19 @@ class CantAttack(Listener):
         if event.attacker is not card:
             return
         event.permission = False
+
+class CantAttackIfAttackedLastTurn(Listener):
+    """This creature can't attack if it attacked during your last turn"""
+    listens_to = CanAttackQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
+        if source is not event.attacker:
+            return
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
+        for e, turn_num in gs.event_mgr.events[::-1]:
+            if turn_num == p_last_turn_num:
+                if isinstance(e, AttackEvent) and e.attacker is source:
+                    event.permission = False
 
 class CantBeTargetedByAuras(Listener):
     """Card can't host an aura"""
