@@ -1,172 +1,108 @@
-from __future__ import annotations
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
-
-from models.events_all import Event, AttackEvent, DiesEvent, BlockEvent, UnblockedAttackerEvent, \
-    DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, DamageProposedEvent
+from models.events_all import DamageResolvedEvent
 from models.utils import flip
 
-if TYPE_CHECKING:
-    from game_state import GameState
-    from models.game_card.game_card import GameCard
+class EC:
+    """Event conditions that return a lambda accepting GameState, source: GameState, event: Event; returns a bool"""
+    @staticmethod
+    def card_is_artifact():
+        return lambda gs, s, e: e.card.is_artifact
 
-class EventCondition(ABC):
-    @abstractmethod
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool: ...
+    @staticmethod
+    def card_is_color(colors: str):
+        """Can be used for multiple colors or a single color"""
+        matching_colors = set(colors)
+        return lambda gs, s, e: bool(matching_colors & set(e.card.colors))
 
+    @staticmethod
+    def card_is_host():
+        return lambda gs, s, e: e.card is s.host
 
-class CardIsArtifact(EventCondition):
-    """This can be used by any Event with the 'card' attr"""
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return event.card.is_artifact  # type: ignore
+    @staticmethod
+    def card_is_forest():
+        return lambda gs, s, e: 'Forest' in e.card.card_sub_types
 
-class CardIsColor(EventCondition):
-    """Can be used by any Event with the 'card' attr; any color of the initializer w any o"""
-    def __init__(self, colors: str):
-        self.colors = colors
+    @staticmethod
+    def card_is_mountain():
+        # TODO: candidate for card_is_sub_type(subp_type: str)
+        return lambda gs, s, e: 'Mountain' in e.card.card_sub_types
 
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        matching_colors = set(self.colors)
-        card_colors = set(event.card.colors)  # type: ignore
-        return bool(matching_colors & card_colors)
+    @staticmethod
+    def card_is_opponents():
+        return lambda gs, s, e: e.card.owner_id != s.owner_id
 
-class CardIsHost(EventCondition):
-    """This can be used by any Event with the 'card' attr"""
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return event.card is source.host  # type: ignore
+    @staticmethod
+    def card_is_source():
+        return lambda gs, s, e: e.card is s
 
-class CardIsForest(EventCondition):
-    """This can be used by any Event with the 'card' attr"""
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return 'Forest' in event.card.card_sub_types  # type: ignore
+    @staticmethod
+    def caster_is_opp():
+        return lambda gs, s, e: e.owner_id != s.owner_id
 
-class CardIsMountain(EventCondition):
-    """This can be used by any Event with the 'card' attr"""
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return 'Mountain' in event.card.card_sub_types  # type: ignore
+    @staticmethod
+    def dier_is_creature():
+        return lambda gs, s, e: e.card.is_creature
 
-class CardIsOpponents(EventCondition):
-    """This can be used by any Event with the 'card' attr"""
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return event.card.owner_id != source.owner_id  # type: ignore
+    @staticmethod
+    def dier_is_your_artifact():
+        return lambda gs, s, e: e.card.is_artifact and s.owner_id == e.card.owner_id
 
-class CardIsSource(EventCondition):
-    """This can be used by any Event with the 'card' attr"""
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return event.card is source  # type: ignore
+    @staticmethod
+    def host_is_combatant():
+        return lambda gs, s, e: s.host in gs.card_filter.combatants().result()
 
-class CastCardIsArtifact(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
-        return event.card.is_artifact
+    @staticmethod
+    def is_host_turn():
+        return lambda gs, s, e: gs.turn_mgr.player_turn_idx == s.host.owner_id
 
-class CastCardIsBlack(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
-        return event.card.is_black
+    @staticmethod
+    def is_your_turn():
+        return lambda gs, s, e: gs.turn_mgr.player_turn_idx == s.owner_id
 
-class CastCardIsBlue(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
-        return event.card.is_blue
+    @staticmethod
+    def no_creatures_in_play():
+        return lambda gs, s, e: not gs.card_filter.creatures().in_play().result()
 
-class CastCardIsGreen(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
-        return event.card.is_green
+    @staticmethod
+    def opp_is_damage_receiver():
+        return lambda gs, s, e: e.target == flip(s.owner_id)
 
-class CastCardIsRed(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
-        return event.card.is_red
+    @staticmethod
+    def source_damaged_opp():
+        return lambda gs, s, _: any(e.source is s and e.target == flip(s.owner_id)
+                                    for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent))
 
-class CastCardIsWhite(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
-        return event.card.is_white
+    @staticmethod
+    def self_is_attacker():
+        return lambda gs, s, e: e.attacker is s
 
-class CasterIsOpp(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> bool:
-        return event.owner_id != source.owner_id
+    @staticmethod
+    def self_is_blocker():
+        return lambda gs, s, e: e.blocker is staticmethod
 
-class DierIsCreature(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DiesEvent) -> bool:
-        return event.card.is_creature
+    @staticmethod
+    def self_is_combatant():
+        return lambda gs, s, e: s in gs.card_filter.combatants().result()
 
-class DierIsYourArtifact(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DiesEvent) -> bool:
-        return event.card.is_artifact and source.owner_id == event.card.owner_id
+    @staticmethod
+    def self_is_damager():
+        return lambda gs, s, e: e.source is s
 
-class HostIsCombatant(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return source.host in gs.card_filter.combatants().result()
+    @staticmethod
+    def self_is_damage_receiver():
+        return lambda gs, s, e: e.target is s
 
-class HostIsDamager(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:
-        return event.source is source.host
+    @staticmethod
+    def self_is_dier():
+        return lambda gs, s, e: e.card is s
 
-class IsBlocker(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
-        return source in gs.card_filter.blockers().result()
+    @staticmethod
+    def self_is_tapped():
+        return lambda gs, s, e: s.is_tapped
 
-class IsCombatDamage(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DamageProposedEvent | DamageResolvedEvent) -> bool:
-        return event.is_combat
+    @staticmethod
+    def self_is_unblocked_attacker():
+        return lambda gs, s, e: e.attacker is s
 
-class IsHostTurn(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
-        return gs.turn_mgr.player_turn_idx == source.host.owner_id
-
-class IsYourTurn(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
-        return gs.turn_mgr.player_turn_idx == source.owner_id
-
-class NoCreaturesInPlay(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
-        return not gs.card_filter.creatures().in_play().result()
-
-class OppIsDamageReceiver(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:
-        return event.target == flip(source.owner_id)
-
-class OpponentIsDrawer(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DrawCardEvent) -> bool:
-        return event.player_id == flip(source.owner_id)
-
-class SelfDamagedOpponent(EventCondition):
-    """Returns true if source dealt damage to opp this turn"""
-    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
-        for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent):
-            if e.source is source and e.target == flip(source.owner_id):
-                return True
-        return False
-
-class SelfIsAttacker(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: AttackEvent) -> bool:
-        return event.attacker is source
-
-class SelfIsBlocker(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: BlockEvent) -> bool:
-        return event.blocker is source
-
-class SelfIsCombatant(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: Event) -> bool:
-        return source in gs.card_filter.combatants().result()
-
-class SelfIsDamager(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:
-        return event.source is source
-
-class SelfIsDamageReceiver(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> bool:
-        return event.target is source
-
-class SelfIsDier(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DiesEvent) -> bool:
-        return event.card is source
-
-class SelfIsTapped(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, _: Event) -> bool:
-        return source.is_tapped
-
-class SelfIsUnblockedAttacker(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: UnblockedAttackerEvent) -> bool:
-        return event.attacker is source
-
-class YouAreDrawer(EventCondition):
-    def matches(self, gs: GameState, source: GameCard, event: DrawCardEvent) -> bool:
-        return event.player_id is source.owner_id
+    @staticmethod
+    def you_are_drawer():
+        return lambda gs, s, e: e.player_id == s.owner_id

@@ -31,7 +31,9 @@ class GenericEventListener(Listener):
         self.resolver = resolver
 
     def on_event(self, gs, source, event: Event):
-        if self.conditions and not all(condition.matches(gs, source, event) for condition in self.conditions):
+        # moving from each EventCondition being a single class to EC class w many methods that return lambdas
+        # if self.conditions and not all(condition.matches(gs, source, event) for condition in self.conditions):
+        if self.conditions and not all(condition(gs, source, event) for condition in self.conditions):
             return
         self.resolver.resolve(gs, source, context=ResContext(event=event))
 

@@ -7,12 +7,9 @@ from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
-from .event_conditions import SelfIsDier, NoCreaturesInPlay, SelfDamagedOpponent, DierIsYourArtifact, DierIsCreature, \
-    CastCardIsArtifact, CastCardIsBlack, CastCardIsGreen, CardIsArtifact, CardIsOpponents, IsYourTurn, IsHostTurn, \
-    SelfIsCombatant, HostIsCombatant, CardIsColor, IsBlocker, IsCombatDamage
+from .event_conditions import EC
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
-from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent, \
-    DamageProposedEvent
+from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -57,7 +54,7 @@ from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT
 from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
-    'palladia-mors': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('RGW', SacSelf())))],
+    'palladia-mors': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('RGW', SacSelf())))],
     'paralyze': [Triggered(DoesntUntapAtUntap(TF.host())), Static(PayManaToUntapUpkeep('4', TF.host())),
                  Spell(TapCardEffect(), TF.host())],
     'part-water': [Spell(KWAModEffect('add', KW.ISLANDWALK, True), TF.creatures(), max_x_func=max_x_from_printed_card)],
@@ -68,8 +65,8 @@ MAP: dict[str, list[EffSpec]] = {
     'personal-incarnation': [Triggered(PersonalIncarnationDies()),
                              Activated('', RedirectNextDamageFromCardToOwnerEOT(TF.self(), 1))],
     'pestilence': [Activated('B', DealDamageToAllCreaturesAndPlayers(1)),
-                   GenTrig(On(EndStepEvent).where(NoCreaturesInPlay()).then(DestroySelf()))],
-    'phantasmal-forces': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('U', SacSelf())))],
+                   GenTrig(On(EndStepEvent).where(EC.no_creatures_in_play()).then(DestroySelf()))],
+    'phantasmal-forces': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('U', SacSelf())))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(), TF.lands())],
     'phyrexian-gremlins': [Triggered(OptionalUntap()), Activated('T', PhyrexianGremlinsTap(), TF.artifacts()),
                            Triggered(PhyrexianGremlinsUntaps())],
@@ -85,7 +82,7 @@ MAP: dict[str, list[EffSpec]] = {
     'power-sink': [Spell(PowerSink(), TF.spells())],
     'power-surge': [Triggered(PowerSurge())],
     'powerleech': [Triggered(PowerleechActivation()),
-                   GenTrig(On(TapCardEvent).where(CardIsArtifact(), CardIsOpponents()).then(GainLife()))],
+                   GenTrig(On(TapCardEvent).where(EC.card_is_artifact(), EC.card_is_opponents()).then(GainLife()))],
     'pradesh-gypsies': [Activated('1GT', Pump(-2, 0, True), TF.creatures())],
     'preacher': [Activated('T', Steal(return_on_untap=True), TF.opp_creatures()), Triggered(OptionalUntap())],
     'presence-of-the-master': [Static(CounterEnchantments())],
@@ -142,7 +139,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), TF.tapped_creatures())],
     'rubinia-soulsinger': [Activated('T', Steal(return_on_untap=True), TF.opp_creatures()), Triggered(OptionalUntap())],
-    'rukh-egg': [GenTrig(On(DiesEvent).where(SelfIsDier()).then(CreateTokenCreature('rukh')))],
+    'rukh-egg': [GenTrig(On(DiesEvent).where(EC.self_is_dier()).then(CreateTokenCreature('rukh')))],
     'sacrifice': [Spell(SacrificeOnCast(), extra_costs=[SacCardCost(TF.your_creatures())])],
     'safe-haven': [Activated('2T', SafeHaven(), TF.your_creatures()), Triggered(SafeHavenUpkeep())],
     'sage-of-lat-nam': [Activated('T', DrawCards(), TF.owner(), extra_costs=[SacCardCost(TF.your_artifacts())])],
@@ -167,7 +164,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sengir-vampire': [Triggered(SengirVampire())],
     'sentinel': [Activated('', Sentinel())],
     'serendib-djinn': [Triggered(SerendibDjinn()), Static(GlobalSac(TF.self(), C_FUNCS['you_have_no_lands']))],
-    'serendib-efreet': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(DealDamageToSourceOwner()))],
+    'serendib-efreet': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(DealDamageToSourceOwner()))],
     'serpent-generator': [Activated('4T', CreateTokenCreature('snake'))],
     'shapeshifter': [Spell(ShapeshifterCast()), Static(ShapeshifterUpkeep())],
     'shatter': [Spell(Destroy(), TF.artifacts())],
@@ -187,9 +184,9 @@ MAP: dict[str, list[EffSpec]] = {
     'smoke': [Triggered(Smoke())],
     'snake': [Triggered(AddPoisonCounter())],  # token creature created by serpent-generator
     'sol-ring': [Activated('T', AddMana('C', 2), TF.owner(), is_mana_ability=True)],
-    'solkanar-the-swamp-king': [GenTrig(On(CastResolvedEvent).where(CardIsColor('B')).then(GainLife()))],
+    'solkanar-the-swamp-king': [GenTrig(On(CastResolvedEvent).where(EC.card_is_color('B')).then(GainLife()))],
     'sorceress-queen': [Activated('T', BasePT(0, 2, True), TF.other_creatures())],
-    'soul-net': [GenTrig(On(DiesEvent).where(DierIsCreature()).then(MayPayMana('1', GainLife(1))))],
+    'soul-net': [GenTrig(On(DiesEvent).where(EC.dier_is_creature()).then(MayPayMana('1', GainLife(1))))],
     'spectral-cloak': [Spell(SpectralCloak(), TF.creatures())],
     'spell-blast': [Spell(CounterSpell(), TF.spells(), min_x_func=target_spell_mv, max_x_func=target_spell_mv)],
     'spinal-villain': [Activated('T', Destroy(), TF.blue_creatures())],
@@ -200,7 +197,7 @@ MAP: dict[str, list[EffSpec]] = {
     'standing-stones': [Activated('1T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}',
                                   extra_costs=[PayLifeCost()]) for c in COLOR_LETTERS],
     'stangg': [Spell(Stangg())],
-    'stasis': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('U', SacSelf()))), Static(SkipUntapPhase())],
+    'stasis': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('U', SacSelf()))), Static(SkipUntapPhase())],
     'steal-artifact': [Spell(Steal(), TF.opp_artifacts())],
     'stone-calendar': [Static(StoneCalendar())],
     'stone-giant': [Activated('T', StoneGiant(), TF.stone_giant())],
@@ -210,17 +207,17 @@ MAP: dict[str, list[EffSpec]] = {
     'stream-of-life': [Spell(StreamOfLife(), TF.all_players(), max_x_func=max_x_from_printed_card)],
     'strip-mine': [Activated('T', AddMana('C'), TF.owner(), is_mana_ability=True),
                    Activated('T', Destroy(), TF.lands(), extra_costs=[SacSelfCost()])],
-    'su-chi': [GenTrig(On(DiesEvent).where(SelfIsDier()).then(AddMana('C', 4)))],
+    'su-chi': [GenTrig(On(DiesEvent).where(EC.self_is_dier()).then(AddMana('C', 4)))],
     'subdue': [Spell(Subdue(), TF.creatures())],
     'sunastian-falconer': [Activated('T', AddMana('C', 2), is_mana_ability=True)],
     'sunglasses-of-urza': [Static(SunglassesOfUrza())],
     'sunken-city': [Static(PumpApplies(TF.blue_creatures(), (1, 1))),
-                    GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('UU', SacSelf())))],
+                    GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('UU', SacSelf())))],
     'swords-to-plowshares': [Spell(SwordsToPlowshares(), TF.creatures())],
     'sylvan-library': [Triggered(SylvanLibrary())],
     'sylvan-paradise': [Spell(SetColor('G', 'EOT'), TargetSpec(TF.creatures(), 1, None))],
     'syphon-soul': [Spell(SyphonSoul(), TF.opp())],
-    'tablet-of-epityr': [GenTrig(On(DiesEvent).where(DierIsYourArtifact()).then(MayPayMana('1', GainLife(1))))],
+    'tablet-of-epityr': [GenTrig(On(DiesEvent).where(EC.dier_is_your_artifact()).then(MayPayMana('1', GainLife(1))))],
     'taiga': dual_land_specs('RG'),
     'tangle-kelp': [Spell(TangleKelp(), TF.creatures())],
     'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()),
@@ -243,10 +240,10 @@ MAP: dict[str, list[EffSpec]] = {
     'the-rack': [Static(TheRack())],
     'the-tabernacle-at-pendrell-vale': [Static(TheTabernacleAtPendrellVale())],
     'the-wretched': [Triggered(TheWretched())],
-    'thicket-basilisk': [GenTrig(On(CombatEndEvent).where(SelfIsCombatant()).
+    'thicket-basilisk': [GenTrig(On(CombatEndEvent).where(EC.self_is_combatant()).
                                  then(DestroySelfCombatants(filter_func=TF.non_wall_creatures())))],
     'thoughtlace': [Spell(SetColor('U'), TF.cards())],
-    'throne-of-bone': [GenTrig(On(CastResolvedEvent).where(CastCardIsBlack()).then(MayPayMana('1', GainLife(1))))],
+    'throne-of-bone': [GenTrig(On(CastResolvedEvent).where(EC.card_is_color('B')).then(MayPayMana('1', GainLife(1))))],
     'time-elemental': [Triggered(TimeElementalAttackedOrBlocked()),
                        Activated('2UUT', Bounce(), TF.unenchanted_perms())],
     'time-vault': [Triggered(DoesntUntapAtUntap(TF.self())), Triggered(TimeVaultOption()),
@@ -279,7 +276,7 @@ MAP: dict[str, list[EffSpec]] = {
     'undertow': [Static(WalkRuleRemoved(KW.ISLANDWALK))],
     'underground-sea': dual_land_specs('BU'),
     'unholy-strength': [Spell(Pump(2, 1), TF.creatures())],
-    'unstable-mutation': [GenTrig(On(UpkeepEvent).where(IsHostTurn()).then(AddCounterToHost(MINUS_ONE))),
+    'unstable-mutation': [GenTrig(On(UpkeepEvent).where(EC.is_host_turn()).then(AddCounterToHost(MINUS_ONE))),
                           Spell(Pump(3, 3), TF.creatures())],
     'unsummon': [Spell(Bounce(), TF.creatures())],
     'ur-drago': [Static(WalkRuleRemoved(KW.SWAMPWALK))],
@@ -289,18 +286,18 @@ MAP: dict[str, list[EffSpec]] = {
     'untamed-wilds': [Spell(UntamedWilds())],
     'urzas-avenger': [Activated('', UrzasAvengerFlying()), Activated('', UrzasAvengerFirstStrike()),
                       Activated('', UrzasAvengerTrample())],
-    'urzas-chalice': [GenTrig(On(CastResolvedEvent).where(CastCardIsArtifact()).then(MayPayMana('1', GainLife(1))))],
+    'urzas-chalice': [GenTrig(On(CastResolvedEvent).where(EC.card_is_artifact()).then(MayPayMana('1', GainLife(1))))],
     'urzas-mine': [Activated('T', UrzasTrio())],
-    'urzas-miter': [GenTrig(On(DiesEvent).where(DierIsYourArtifact()).then(MayPayMana('3', DrawCards(1))))],
+    'urzas-miter': [GenTrig(On(DiesEvent).where(EC.dier_is_your_artifact()).then(MayPayMana('3', DrawCards(1))))],
     'urzas-power-plant': [Activated('T', UrzasTrio())],
     'urzas-tower': [Activated('T', UrzasTrio())],
     'uthden-troll': [Activated('R', Regenerate(), TF.self())],
-    'vaevictis-asmadi': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(PayManaOr('BRG', SacSelf())))] + \
+    'vaevictis-asmadi': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('BRG', SacSelf())))] + \
                         [self_pump(c, 1, 0) for c in 'BRG'],
     'vampire-bats': [Activated('B', Pump(1, 0, True), TF.self(), max_activations_per_turn=2)],
     'venarian-gold': [Spell(VenarianGold(), TF.creatures(), max_x_func=max_x_from_printed_card)],
     'venom': [Spell(EmptyResolver(), TF.creatures()),
-              GenTrig(On(CombatEndEvent).where(HostIsCombatant()).
+              GenTrig(On(CombatEndEvent).where(EC.host_is_combatant()).
                       then(DestroyHostCombatants(filter_func=TF.non_wall_creatures())))],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerUpkeep()), Spell(VesuvanDoppelgangerCast())],
@@ -310,7 +307,7 @@ MAP: dict[str, list[EffSpec]] = {
     'veteran-bodyguard': [Triggered(VeteranBodyguard())],
     'visions': [Spell(Visions(), TF.all_players())],
     'volcanic-island': dual_land_specs('RU'),
-    'voodoo-doll': [GenTrig(On(UpkeepEvent).where(IsYourTurn()).then(AddCounter(PIN))), Triggered(VoodooDollEndStep()),
+    'voodoo-doll': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(AddCounter(PIN))), Triggered(VoodooDollEndStep()),
                     Activated('XXT', DealDamage(), TF.all_creatures_and_players(),
                               min_x_func=voodoo_doll_x, max_x_func=voodoo_doll_x)],
     'walking-dead': [Activated('B', Regenerate(), TF.self())],
@@ -325,16 +322,16 @@ MAP: dict[str, list[EffSpec]] = {
     'wall-of-wonder': [Activated('2UU', WallOfWonder())],
     'wand-of-ith': [Activated('3T', WandOfIth(), allowed_p_turn_func=TF.owner())],
     'wanderlust': [Spell(EmptyResolver(), TF.creatures()),
-                   GenTrig(On(UpkeepEvent).where(IsHostTurn()).then(DealDamageToHostOwner()))],
+                   GenTrig(On(UpkeepEvent).where(EC.is_host_turn()).then(DealDamageToHostOwner()))],
     'war-barge': [Activated('3', WarBarge(), TF.creatures())],
     'warp-artifact': [Spell(EmptyResolver(), TF.artifacts()),
-                      GenTrig(On(UpkeepEvent).where(IsHostTurn()).then(DealDamageToHostOwner()))],
+                      GenTrig(On(UpkeepEvent).where(EC.is_host_turn()).then(DealDamageToHostOwner()))],
     'water-wurm': [Static(PumpApplies(TF.self(), (0, 1), cond=C_FUNCS['opp_has_island']))],
     'weakness': [Spell(Pump(-2, -1), TF.creatures())],
     'weakstone': [Static(PumpApplies(TF.attackers(), (-1, 0)))],
     'web': [Spell(Do(Pump(0, 2), KWAModEffect('add', 'Reach')), TF.creatures())],
     'wheel-of-fortune': [Spell(WheelOfFortune())],
-    'whirling-dervish': [GenTrig(On(EndStepEvent).where(SelfDamagedOpponent()).then(AddCounter(PLUS_ONE)))],
+    'whirling-dervish': [GenTrig(On(EndStepEvent).where(EC.source_damaged_opp()).then(AddCounter(PLUS_ONE)))],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('W')],
     'white-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_WHITE), TF.creatures())],
     'wild-growth': [Spell(WildGrowth(), TF.lands())],
@@ -346,7 +343,7 @@ MAP: dict[str, list[EffSpec]] = {
     'winter-orb': [Static(WinterOrb())],
     'witch-hunter': [Activated('T', DealDamage(1), TF.all_players()), Activated('1WWT', Bounce(), TF.opp_creatures())],
     'wood-elemental': [Spell(WoodElemental())],
-    'wooden-sphere': [GenTrig(On(CastResolvedEvent).where(CastCardIsGreen()).then(MayPayMana('1', GainLife(1))))],
+    'wooden-sphere': [GenTrig(On(CastResolvedEvent).where(EC.card_is_color('G')).then(MayPayMana('1', GainLife(1))))],
     'word-of-binding': [Spell(TapCardsEffect(), TargetSpec(TF.untapped_creatures(), 1, None),
                               max_x_func=max_x_from_printed_card)],
     'worms-of-the-earth': [Static(CantCastAppliesTo(TF.all_lands_in_game())),
