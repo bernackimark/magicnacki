@@ -43,6 +43,8 @@ class GenericEventListener(Listener):
 
 
 # --- DAMAGE PROPOSED EVENT ---
+# All remaining listeners in this Damage Proposed Section rely on the target,
+# which is fed in through the secondary initializer & not yet a good candidate for the fluent pattern
 class PreventAllDamageByEOT(Listener):
     """Declare damage_dealer at initialization if known by the spec;
      if targeted, ability pipeline will append via the secondary initializer"""
@@ -193,6 +195,7 @@ class RedirectNextDamageFromCardToOwnerEOT(Listener):
         self.is_expired = True
 
 # --- DAMAGE RESOLVED EVENT ---
+# TODO: convert to fluent
 class AddPoisonCounter(Listener):
     """Whenever creature deals damage to a player, that player gets poison counter(s)"""
     listens_to = DamageResolvedEvent
@@ -224,22 +227,7 @@ class ExileOnDeath(Listener):
         gs.pile_mgr.exile(event.card)
 
 # --- END STEP ---
-class AddCounterAtEndStep(Listener):
-    """Add counter to target if it is still on the battlefield"""
-    listens_to = EndStepEvent
-
-    def __init__(self, source: GameCard, target: GameCard, counter_type: CounterType, cnt: int = 1):
-        self.source = source
-        self.target = target
-        self.counter_type = counter_type
-        self.cnt = cnt
-
-    def on_event(self, gs: GameState, s: GameCard, event: EndStepEvent):
-        if self.target.zone != Zone.BATTLEFIELD:
-            return
-        self.target.counters.add_counter(self.counter_type, self.cnt)
-        gs.event_mgr.unregister_specific_effect(self)
-
+# TODO: convert to fluent (create the appropriate resolver)
 class AddCounterPerCreatureDeathAtEndStep(Listener):
     """At the beginning of each end step, put a counter on this creature for each creature that died this turn"""
     listens_to = EndStepEvent
@@ -251,6 +239,7 @@ class AddCounterPerCreatureDeathAtEndStep(Listener):
         if death_cnt := len(gs.turn_mgr.cards_that_died) > 0:
             source.counters.add_counter(self.counter_type, death_cnt)
 
+# TODO: convert to fluent (create the appropriate resolver)
 class AddCountersIfAnyCreatureDied(Listener):
     """At each end step, if a creature died this turn, put a counter on this creature"""
     listens_to = EndStepEvent
@@ -373,6 +362,7 @@ class PayManaOrCounterSpellListener(Listener):
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 # --- UNTAP CARD EVENT ---
+# TODO: convert to fluent (separate ReturnToOwner from TapCardEvent for the source)
 class ReturnToOwnerOnUntap(Listener):
     """Ownership by virtue of an aura or the source being on the battlefield will auto-remove the mod upon LTB;
     This effect removes an ownership mod on any card the source was placed & xfers the stolen GameCard across boards"""
@@ -502,6 +492,7 @@ class LTBTandem(Listener):
                 continue
             gs.pile_mgr.destroy(tandem_card, allow_regeneration=False)
 
+# TODO: convert to fluent (like one of the above classes, separate ReturnToOwner from the causing event)
 class ReturnToOwnerOnLTB(Listener):
     """Is generally called from Steal() Resolver; shouldn't be much need to use directly in slug-effect map"""
     listens_to = ZoneChangeEvent
