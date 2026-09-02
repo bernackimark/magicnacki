@@ -1,3 +1,10 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING, TypeVar, Generic, Callable
+
+if TYPE_CHECKING:
+    from models.effects.base import Resolver
+    from models.game_card.game_card import GameCard
+
 from models.cost import RemoveCounterCost
 from models.effects.listeners_generic import GenericEventListener
 from models.events_all import Event
@@ -7,28 +14,32 @@ from models.effects.resolvers_generic import AddMana, AddCounter, ManaBatteriesA
 from models.game_card.card_filter_funcs import TF
 from models.systems.mana import ManaCost
 
+E = TypeVar("E", bound=Event)
 
-class On:
+class On(Generic[E]):
     """Fluent builder for a trigger & a resolver"""
-    def __init__(self, event_type: type[Event]):
+    def __init__(self, event_type: type[E]):
         self.event_type = event_type
-        self.conditions = []
+        self.conditions: list[Callable[[E, GameCard], bool]] = []
         self.resolver = None
+        self.modifier = None  # Event modifier (event.remaining [damage], event.permission [queries], etc)
 
-    # def where(self, condition):
-    #     self.conditions.append(condition)
-    #     return self
-
-    def where(self, *conditions):
+    def where(self, *conditions) -> "On[E]":
         self.conditions.extend(conditions)
         return self
 
-    def then(self, resolver):
+    def then(self, resolver: Resolver):
         self.resolver = resolver
         return self
 
+    # THIS IS THE NEW FUNCTIONALITY SPECIFIC FOR MODIFIYING AN EVENT (event.remaining, event.permission, etc.)
+    def modify(self, modifier):
+        self.modifier = modifier
+        return self
+
     def build(self) -> GenericEventListener:
-        return GenericEventListener(event_type=self.event_type, conditions=self.conditions, resolver=self.resolver)
+        return GenericEventListener(event_type=self.event_type, conditions=self.conditions,
+                                    resolver=self.resolver, modifier=self.modifier)
 
 
 # --- HELPERS THAT BUILD EFFSPEC ---

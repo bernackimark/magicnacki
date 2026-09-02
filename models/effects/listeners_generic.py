@@ -8,7 +8,7 @@ from models.actions.stack_accept_counter import CounterSpellAction
 from models.effects.listeners_mod_queries import OwnershipModQuery
 
 if TYPE_CHECKING:
-    from models.effects.base import Resolver
+    from models.effects.base import Resolver, Modifier
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
@@ -25,17 +25,19 @@ from models.constants import Zone
 
 
 class GenericEventListener(Listener):
-    def __init__(self, event_type: type[Event], conditions: list, resolver: Resolver):
+    def __init__(self, event_type: type[Event], conditions: list, resolver: Resolver, modifier: Modifier):
         self.listens_to = event_type  # used during listener registration
         self.conditions = conditions
         self.resolver = resolver
+        self.modifier = modifier
 
     def on_event(self, gs, source, event: Event):
-        # moving from each EventCondition being a single class to EC class w many methods that return lambdas
-        # if self.conditions and not all(condition.matches(gs, source, event) for condition in self.conditions):
         if self.conditions and not all(condition(gs, source, event) for condition in self.conditions):
             return
-        self.resolver.resolve(gs, source, context=ResContext(event=event))
+        if self.resolver:
+            self.resolver.resolve(gs, source, context=ResContext(event=event))
+        if self.modifier:
+            self.modifier.modify(gs, source, event)
 
 
 # --- DAMAGE PROPOSED EVENT ---

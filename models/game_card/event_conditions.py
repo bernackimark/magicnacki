@@ -51,6 +51,10 @@ class EC:
         return lambda gs, s, e: s.host in gs.card_filter.combatants().result()
 
     @staticmethod
+    def is_combat_damage():
+        return lambda gs, s, e: e.is_combat
+
+    @staticmethod
     def is_host_turn():
         return lambda gs, s, e: gs.turn_mgr.player_turn_idx == s.host.owner_id
 
@@ -72,12 +76,16 @@ class EC:
                                     for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent))
 
     @staticmethod
+    def self_is_a_blocker():
+        return lambda gs, s, e: s in gs.card_filter.blockers().result()
+
+    @staticmethod
     def self_is_attacker():
         return lambda gs, s, e: e.attacker is s
 
     @staticmethod
     def self_is_blocker():
-        return lambda gs, s, e: e.blocker is staticmethod
+        return lambda gs, s, e: e.blocker is s
 
     @staticmethod
     def self_is_combatant():

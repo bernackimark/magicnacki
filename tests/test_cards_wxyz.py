@@ -10,6 +10,18 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_wall_of_vapor(self):
+        """Prevent all damage that would be dealt to this creature by creatures it's blocking"""
+        card = self.g.battlefield('wall-of-vapor')  # 0/1
+        attacker = self.g.battlefield('craw-wurm', owner=1)  #6/4
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(attacker)
+        com = self.gs.combat_mgr.get_combat(attacker)
+        com.add_blocker(card)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertNotIn(card, self.g.gy[0])
+
     def test_wand_of_ith(self):
         """3T: Opponent reveals a random card from their hand. If it's a land, that player pays 1 life or discards.
         If it isn't a land, the player pays life = its MV or discards it. Activate only during your turn."""

@@ -9,7 +9,9 @@ from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DR
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
-from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent
+from ..effects.modifiers_generic import PreventDamage
+from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent, \
+    DamageProposedEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -317,7 +319,8 @@ MAP: dict[str, list[EffSpec]] = {
     'wall-of-opposition': [self_pump('1', 1, 0)],
     'wall-of-putrid-flesh': [Static(PreventAllDamage(TF.self(), TF.enchanted_creatures()))],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
-    'wall-of-vapor': [Triggered(PreventCombatDamageFromItsAttackers())],
+    'wall-of-vapor': [GenTrig(On(DamageProposedEvent).where(EC.is_combat_damage(), EC.self_is_a_blocker()).
+                              modify(PreventDamage()))],
     'wall-of-water': [self_pump('U', 1, 0)],
     'wall-of-wonder': [Activated('2UU', WallOfWonder())],
     'wand-of-ith': [Activated('3T', WandOfIth(), allowed_p_turn_func=TF.owner())],

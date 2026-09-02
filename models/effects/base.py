@@ -70,6 +70,12 @@ class Listener:
         """React to something that just happened (ex: sacrifice if no lands, gain life based el-hajjaj damaging)"""
         raise NotImplementedError()
 
+class Modifier(ABC):
+    @abstractmethod
+    def modify(self, gs: GameState, source: GameCard, event: Event) -> None:
+        """Modify the event (ex: set permission = False or set remaining = 0"""
+        raise NotImplementedError()
+
 
 class ESType(StrEnum):
     """EffSpec types"""
