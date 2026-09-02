@@ -13,6 +13,7 @@ from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, L
     CantAttackIfAttackedLastTurn
 from .event_conditions import EC
 from ..constants import KW
+from ..effects.modifiers_generic import PreventDamage
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
     MindTwist, NaturalSelection, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
     FeldonsCane, GoblinKing, GlyphOfDestruction, HurkylsRecall, Inquisition, \
@@ -47,11 +48,11 @@ from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, LivingArtif
     NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import FirestormPhoenix
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, IslandSanctuary
-from ..effects.listeners_generic import AddPoisonCounter, OptionalUntap, AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, PreventAllDamage, PreventAllDamageEOT, \
+from ..effects.listeners_generic import AddPoisonCounter, OptionalUntap, AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, \
     PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
     RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
 from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \
-    TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent
+    TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent, DamageProposedEvent
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), TF.self(),
@@ -85,7 +86,7 @@ MAP: dict[str: list[EffSpec]] = {
     'flood': [Activated('UU', TapCardEffect(), TF.untapped_creatures_without_flying())],
     'floral-spuzzem': [Triggered(FloralSpuzzem())],
     'flying-carpet': [Activated('2T', KWAModEffect('add', KW.FLYING, True), TF.creatures())],
-    'fog': [Spell(PreventAllDamageEOT(combat_only=True))],
+    'fog': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC.is_combat_damage()).modify(PreventDamage()))],
     'force-of-nature': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).
                                 then(PayManaOr('GGGG', DealDamageToSourceOwner(8))))],
     'force-spike': [Spell(CounterSpellUnlessManaPaid('1'), TF.spells())],
@@ -166,7 +167,7 @@ MAP: dict[str: list[EffSpec]] = {
     'hidden-path': [Static(KWAApplies(TF.green_creatures(), 'add', KW.FORESTWALK))],
     'holy-armor': [Spell(Pump(0, 2), TF.creatures()),
                    Activated('W', Pump(0, 1, True), TF.host())],
-    'holy-day': [Spell(PreventAllDamageEOT(combat_only=True))],
+    'holy-day': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC.is_combat_damage()).modify(PreventDamage()))],
     'holy-light': [Spell(PumpApplies(TF.non_white_creatures(), (-1, -1), True))],
     'holy-strength': [Spell(Pump(1, 2), TF.creatures())],
     'horn-of-deafening': [Activated('2T', PreventNextDamageTo(protected=TF.owner(), combat_only=True), TF.creatures())],
@@ -281,7 +282,9 @@ MAP: dict[str: list[EffSpec]] = {
                    Triggered(ManaVaultDamageIfTapped())],
     'mana-vortex': [Spell(Destroy(), TF.your_lands()), Static(ManaVortexUpkeep()),
                     Static(GlobalSac(TF.self(), C_FUNCS['no_lands']))],
-    'marble-priest': [Static(PreventAllDamage(TF.self(), TF.walls(), combat_only=True)),
+    'marble-priest': [GenTrig(On(DamageProposedEvent).
+                              where(EC.damage_target_in(TF.self()), EC.damage_source_in(TF.walls()),
+                                    EC.is_combat_damage()).modify(PreventDamage())),
                       Static(MarblePriestForcesBlock())],
     'marsh-gas': [Spell(PumpApplies(TF.creatures(), (-2, 0), True))],
     'marsh-viper': [Triggered(AddPoisonCounter(2))],

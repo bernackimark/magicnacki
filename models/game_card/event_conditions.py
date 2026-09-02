@@ -1,3 +1,5 @@
+from typing import Callable
+
 from models.events_all import DamageResolvedEvent
 from models.utils import flip
 
@@ -37,6 +39,18 @@ class EC:
     @staticmethod
     def caster_is_opp():
         return lambda gs, s, e: e.owner_id != s.owner_id
+
+    @staticmethod
+    def damage_source_in(target_filter: Callable):
+        return lambda gs, source, event: (event.source in target_filter(gs, source)
+                                          if isinstance(target_filter(gs, source), list)
+                                          else [target_filter(gs, source)])
+
+    @staticmethod
+    def damage_target_in(target_filter: Callable):
+        return lambda gs, source, event: (event.target in target_filter(gs, source)
+                                          if isinstance(target_filter(gs, source), list)
+                                          else [target_filter(gs, source)])
 
     @staticmethod
     def dier_is_creature():

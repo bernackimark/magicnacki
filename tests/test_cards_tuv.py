@@ -28,6 +28,19 @@ class TestCardsTUV(unittest.TestCase):
         When TC leaves the battlefield or becomes untapped, return that exiled card to the battlefield under its owner's
         control tapped with the original counters & auras on it."""
 
+    def test_telekinesis(self):
+        """Tap target creature. Prevent all combat damage that would be dealt by that creature this turn.
+        It doesn't untap during its controller's next two untap steps."""
+        card = self.g.hand('telekinesis')
+        target = self.g.battlefield('grizzly-bears', owner=1)
+
+        self.g.next_turn(True)
+        self.g.cast_and_accept(card, target, card.abilities[0])
+        self.assertTrue(target.is_tapped)
+
+        self.g.next_turn()
+        self.assertTrue(target.is_tapped)
+
     def test_teleport(self):
         """Cast this spell only during the declare attackers step. Target creature can't be blocked this turn."""
         card = self.g.hand('teleport')

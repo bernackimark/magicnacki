@@ -18,11 +18,12 @@ E = TypeVar("E", bound=Event)
 
 class On(Generic[E]):
     """Fluent builder for a trigger & a resolver"""
-    def __init__(self, event_type: type[E]):
+    def __init__(self, event_type: type[E], expires: str | None = None):
         self.event_type = event_type
         self.conditions: list[Callable[[E, GameCard], bool]] = []
         self.resolver = None
         self.modifier = None  # Event modifier (event.remaining [damage], event.permission [queries], etc)
+        self.expires = expires
 
     def where(self, *conditions) -> "On[E]":
         self.conditions.extend(conditions)
@@ -39,7 +40,7 @@ class On(Generic[E]):
 
     def build(self) -> GenericEventListener:
         return GenericEventListener(event_type=self.event_type, conditions=self.conditions,
-                                    resolver=self.resolver, modifier=self.modifier)
+                                    resolver=self.resolver, modifier=self.modifier, expires=self.expires)
 
 
 # --- HELPERS THAT BUILD EFFSPEC ---

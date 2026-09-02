@@ -25,11 +25,13 @@ from models.constants import Zone
 
 
 class GenericEventListener(Listener):
-    def __init__(self, event_type: type[Event], conditions: list, resolver: Resolver, modifier: Modifier):
+    def __init__(self, event_type: type[Event], conditions: list, resolver: Resolver, modifier: Modifier,
+                 expires: str | None = None):
         self.listens_to = event_type  # used during listener registration
         self.conditions = conditions
         self.resolver = resolver
         self.modifier = modifier
+        self.expires = expires
 
     def on_event(self, gs, source, event: Event):
         if self.conditions and not all(condition(gs, source, event) for condition in self.conditions):
@@ -41,62 +43,6 @@ class GenericEventListener(Listener):
 
 
 # --- DAMAGE PROPOSED EVENT ---
-class PreventCombatDamageFromItsAttackers(Listener):
-    listens_to = DamageProposedEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if not event.is_combat or source is not event.target:
-            return
-        event.prevented += event.remaining
-        event.remaining = 0
-
-class PreventAllDamage(Listener):
-    listens_to = DamageProposedEvent
-
-    def __init__(self, protected_func: Callable, dealer_func: Callable, combat_only: bool = False):
-        self.protected_func = protected_func
-        self.dealer_func = dealer_func
-        self.combay_only = combat_only
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if self.combay_only and not event.is_combat:
-            return
-        protected = self.protected_func(gs, source)
-        if not isinstance(protected, list):
-            protected = [protected]
-        dealers = self.dealer_func(gs, source)
-        if not isinstance(dealers, list):
-            dealers = [dealers]
-        if event.source in dealers and event.target in protected:
-            event.prevented += event.remaining
-            event.remaining = 0
-
-class PreventAllDamageEOT(Listener):
-    listens_to = DamageProposedEvent
-    expires = 'EOT'
-
-    def __init__(self, protected_func: Callable = None, dealer_func: Callable = None, combat_only: bool = False):
-        self.protected_func = protected_func
-        self.dealer_func = dealer_func
-        self.combay_only = combat_only
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if self.combay_only and not event.is_combat:
-            return
-        if not self.protected_func and not self.dealer_func:
-            event.prevented += event.remaining
-            event.remaining = 0
-            return
-        protected = self.protected_func(gs, source)
-        if not isinstance(protected, list):
-            protected = [protected]
-        dealers = self.dealer_func(gs, source)
-        if not isinstance(dealers, list):
-            dealers = [dealers]
-        if event.source in dealers and event.target in protected:
-            event.prevented += event.remaining
-            event.remaining = 0
-
 class PreventAllDamageByEOT(Listener):
     """Declare damage_dealer at initialization if known by the spec;
      if targeted, ability pipeline will append via the secondary initializer"""

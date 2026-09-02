@@ -5,7 +5,7 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
 from .card_filter_funcs import C_FUNCS, TF
 from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
+from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING, STUN
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
@@ -46,8 +46,7 @@ from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
     TheWretched
 from ..effects.listeners_generic import AddPoisonCounter, UntapRemovesPumpFromAnotherCard, PreventAllDamageToEOT, \
-    OptionalUntap, PreventCombatDamageFromItsAttackers, RedirectNextDamageToTarget, \
-    AddCounterPerCreatureDeathAtEndStep, PayManaToUntapUpkeep, PreventAllDamage, PreventAllDamageEOT, \
+    OptionalUntap, RedirectNextDamageToTarget, AddCounterPerCreatureDeathAtEndStep, PayManaToUntapUpkeep, \
     PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
     WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo
@@ -150,7 +149,9 @@ MAP: dict[str, list[EffSpec]] = {
     'sandstorm': [Spell(Sandstorm())],
     'savaen-elves': [Activated('GGT', Destroy(), TF.auras_on_lands())],
     'savannah': dual_land_specs('GW'),
-    'scarecrow': [Activated('6T', PreventAllDamageEOT(TF.owner(), TF.fliers()))],
+    'scarecrow': [Activated('6T', On(DamageProposedEvent, 'EOT').
+                            where(EC.damage_target_in(TF.owner()), EC.damage_source_in(TF.fliers())).
+                            modify(PreventDamage()).build())],
     'scarwood-bandits': [Static(ScarwoodBanditsAAListener()), Activated('2GT', Steal(), TF.opp_artifacts())],
     'scarwood-hag': [Activated('GGGGT', KWAModEffect('add', KW.FORESTWALK, True), TF.creatures_wo_forestwalk()),
                      Activated('T', KWAModEffect('remove', KW.FORESTWALK, True), TF.forestwalkers())],
@@ -274,7 +275,9 @@ MAP: dict[str, list[EffSpec]] = {
     'tunnel': [Spell(Destroy(False), TF.walls())],
     'twiddle': [Spell(Twiddle(), TF.artifacts_creatures_lands())],
     'typhoon': [Spell(Typhoon(), TF.opp())],
-    'uncle-istvan': [Static(PreventAllDamage(TF.self(), TF.creatures()))],
+    'uncle-istvan': [GenTrig(On(DamageProposedEvent).
+                             where(EC.damage_target_in(TF.self()), EC.damage_source_in(TF.creatures())).
+                             modify(PreventDamage()))],
     'undertow': [Static(WalkRuleRemoved(KW.ISLANDWALK))],
     'underground-sea': dual_land_specs('BU'),
     'unholy-strength': [Spell(Pump(2, 1), TF.creatures())],
@@ -317,7 +320,9 @@ MAP: dict[str, list[EffSpec]] = {
     'wall-of-brambles': [Activated('G', Regenerate(), TF.self())],
     'wall-of-dust': [Triggered(WallOfDust())],
     'wall-of-opposition': [self_pump('1', 1, 0)],
-    'wall-of-putrid-flesh': [Static(PreventAllDamage(TF.self(), TF.enchanted_creatures()))],
+    'wall-of-putrid-flesh': [GenTrig(On(DamageProposedEvent).
+                                     where(EC.damage_target_in(TF.self()),
+                                           EC.damage_source_in(TF.enchanted_creatures())).modify(PreventDamage()))],
     'wall-of-tombstones': [Static(WallOfTombstonesPT())],
     'wall-of-vapor': [GenTrig(On(DamageProposedEvent).where(EC.is_combat_damage(), EC.self_is_a_blocker()).
                               modify(PreventDamage()))],

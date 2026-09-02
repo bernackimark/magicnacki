@@ -7,8 +7,9 @@ from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORAGE, STUN
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
+from ..effects.modifiers_generic import PreventDamage
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
-    CastResolvedEvent, TapCardEvent
+    CastResolvedEvent, TapCardEvent, DamageProposedEvent
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
@@ -36,7 +37,7 @@ from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffi
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
 from ..effects.listeners_combat import AislingLeprechaun
 from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, OptionalUntap, \
-    PreventAllDamage, PreventAllDamageEOT, PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
+    PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
 from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
     EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantAttack, \
     WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, HostCanAttack, UnblockableCondition, \
@@ -55,7 +56,9 @@ MAP: dict[str, list[EffSpec]] = {
     'adun-oakenshield': [Activated('BRGT', Bounce(), TF.creatures_in_your_graveyard())],
     'aisling-leprechaun': [Triggered(AislingLeprechaun())],
     'akron-legionnaire': [Static(AkronLegionnaire())],
-    'al-abaras-carpet': [Activated('5T', PreventAllDamageEOT(TF.owner(), TF.non_fliers(), True))],
+    'al-abaras-carpet': [Activated('5T', On(DamageProposedEvent, 'EOT').
+                                   where(EC.damage_target_in(TF.owner()), EC.damage_source_in(TF.non_fliers())).
+                                   modify(PreventDamage()).build())],
     'alabaster-potion': [Spell(GainLife(), TF.all_players(), max_x_func=max_x_from_printed_card,
                                text="Target player gains X life"),
                          Spell(PreventNextDamageTo(), TF.all_creatures_and_players(),
@@ -72,7 +75,8 @@ MAP: dict[str, list[EffSpec]] = {
     'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(preventable_amt=1), TF.all_creatures_and_players())],
     'ancestral-recall': [Spell(DrawCards(3), TF.all_players())],
     'angelic-voices': [Static(AngelicVoices())],
-    'angus-mackenzie': [Activated('GWUT', PreventAllDamageEOT(combat_only=True),
+    'angus-mackenzie': [Activated('GWUT', On(DamageProposedEvent, 'EOT').where(EC.is_combat_damage()).
+                                  modify(PreventDamage()).build(),
                                   allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE])],
     'angry-mob': [Static(AngryMobPT())],
     'animate-artifact': [Spell(BecomeCreaturePTEqualsManaValue(), TF.non_creature_artifacts())],
@@ -91,8 +95,12 @@ MAP: dict[str, list[EffSpec]] = {
     'argivian-archaeologist': [Activated('WWT', Bounce(), TF.artifacts_in_your_graveyard())],
     'argivian-blacksmith': [Activated('T', PreventNextDamageBy(preventable_amt=2), TF.artifact_creatures())],
     'argothian-pixies': [Static(UnblockableCondition(TF.self(), TF.artifact_creatures())),
-                         Static(PreventAllDamage(TF.self(), TF.artifact_creatures()))],
-    'argothian-treefolk': [Static(PreventAllDamage(TF.self(), TF.artifacts()))],
+                         GenTrig(On(DamageProposedEvent).
+                                 where(EC.damage_target_in(TF.self()), EC.damage_source_in(TF.artifact_creatures())).
+                                 modify(PreventDamage()))],
+    'argothian-treefolk': [GenTrig(On(DamageProposedEvent).
+                                   where(EC.damage_target_in(TF.self()), EC.damage_source_in(TF.artifact_creatures())).
+                                   modify(PreventDamage()))],
     'armageddon': [Spell(DestroyAll(TF.lands()))],
     'armageddon-clock': [Activated('4', RemoveCounter(DOOM),
                                    allowed_phases=[Phase.UPKEEP], allowed_activators=A_FUNCS['all_players']),
@@ -104,7 +112,9 @@ MAP: dict[str, list[EffSpec]] = {
                             Spell(EmptyResolver(), TF.artifacts())],
     'artifact-ward': [Spell(EmptyResolver(), TF.creatures()), Static(ArtifactWardCanBeTargeted()),
                       Static(UnblockableCondition(TF.host(), TF.artifact_creatures())),
-                      Static(PreventAllDamage(TF.host(), TF.artifacts()))],
+                      GenTrig(On(DamageProposedEvent).
+                              where(EC.damage_target_in(TF.host()), EC.damage_source_in(TF.artifacts())).
+                              modify(PreventDamage()))],
     'ashes-to-ashes': [Spell(AshesToAshes(), TargetSpec(TF.non_artifact_creatures(), 2, 2))],
     'ashnods-altar': [Activated('', AddMana('C', 2), is_mana_ability=True
                                 , extra_costs=[SacCardCost(TF.your_creatures())])],
@@ -238,7 +248,7 @@ MAP: dict[str, list[EffSpec]] = {
     'dark-ritual': [Spell(AddMana('B', 3))],
     'dark-sphere': [Activated('T', PreventNextDamageTo(protected=TF.owner()), TF.artifacts(),
                               extra_costs=[SacSelfCost()])],
-    'darkness': [Spell(PreventAllDamageEOT(combat_only=True))],
+    'darkness': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC.is_combat_damage()).modify(PreventDamage()))],
     'davenant-archer': [Activated('T', DealDamage(1), TF.combatants())],
     'deadfall': [Static(WalkRuleRemoved(KW.FORESTWALK))],
     'deathgrip': [Activated('BB', CounterSpell(), TF.green_spells())],
@@ -247,7 +257,8 @@ MAP: dict[str, list[EffSpec]] = {
     'deep-water': [Activated('T', ManaProdAlter('U', TF.your_lands(), eot=True))],
     'demonic-hordes': [Activated('T', Destroy(), TF.lands()), Triggered(DemonicHordesUpkeep())],
     'demonic-torment': [Spell(HostCantAttack(), TF.creatures()),
-                        Static(PreventAllDamageEOT(dealer_func=TF.host(), combat_only=True))],
+                        GenTrig(On(DamageProposedEvent, expires='EOT').
+                                where(EC.is_combat_damage(), EC.damage_source_in(TF.host())).modify(PreventDamage()))],
     'demonic-tutor': [Spell(DemonicTutor())],
     'desert': [Activated('T', AddMana('C'), is_mana_ability=True),
                Activated('T', DealDamage(1), TF.attackers(), allowed_phases=[Phase.COMBAT_END])],
@@ -292,7 +303,9 @@ MAP: dict[str, list[EffSpec]] = {
     'elven-riders': [Static(UnblockableCondition(TF.self(), TF.non_wall_non_fliers()))],
     'elves-of-deep-shadow': [Activated('T', Do(AddMana('B'), DealDamageToSourceOwner()), is_mana_ability=True)],
     'emerald-dragonfly': [Activated('GG', KWAModEffect('add', KW.FIRST_STRIKE, True), TF.self())],
-    'enchanted-being': [Static(PreventAllDamage(TF.self(), TF.enchanted_creatures(), combat_only=True))],
+    'enchanted-being': [GenTrig(On(DamageProposedEvent).
+                                where(EC.damage_target_in(TF.self()), EC.damage_source_in(TF.enchanted_creatures()),
+                                      EC.is_combat_damage()).modify(PreventDamage()))],
     'enchantment-alteration': [Spell(EnchantmentAlteration(), TF.auras_on_creatures_or_lands())],
     'energy-flux': [Triggered(EnergyFlux())],
     'energy-tap': [Spell(EnergyTap(), TF.your_untapped_creatures())],
