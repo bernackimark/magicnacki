@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 from dataclasses import dataclass, field
 
 """
-Modifier (attributes: s (source) & expires (defaults to None)
+GCMod (attributes: s (source) & expires (defaults to None)
  |- CollectionMod (attributes: item (str) & add_or_remove (str) (defaults to 'add')
     |- ColorMod
     |- KWAMod
@@ -21,12 +21,12 @@ Modifier (attributes: s (source) & expires (defaults to None)
 
 
 @dataclass(kw_only=True)
-class Modifier:
+class GCMod:
     s: GameCard  # source
     expires: str | None = None  # None, 'EOT', 'UNTIL_SOURCE_LEAVES', 'NEXT_TURN'
 
 @dataclass(kw_only=True)
-class CollectionMod(Modifier):
+class CollectionMod(GCMod):
     item: str
     add_or_remove: str = 'add'
 
@@ -55,14 +55,14 @@ class TypeMod(CollectionMod):
     pass
 
 @dataclass
-class OwnershipMod(Modifier):
+class OwnershipMod(GCMod):
     new_owner_id: int
 
     def __repr__(self):
         return f' stolen by {self.s.props.name}'
 
 @dataclass
-class BasePTMod(Modifier):
+class BasePTMod(GCMod):
     base_p: int | None = None
     base_t: int | None = None
 
@@ -71,7 +71,7 @@ class BasePTMod(Modifier):
         return f" base=({self.base_p}/{self.base_t}){end_of_turn_text}"
 
 @dataclass
-class PTMod(Modifier):
+class PTMod(GCMod):
     p_adj: int = 0
     t_adj: int = 0
 
@@ -82,19 +82,19 @@ class PTMod(Modifier):
         return f" ({power_symbol}{self.p_adj}/{toughness_symbol}{self.t_adj}){end_of_turn_text}"
 
 @dataclass
-class RegenerationMod(Modifier):
+class RegenerationMod(GCMod):
     """Prevents next destruction"""
     def __repr__(self):
         return f"regeneration shield"
 
 
-T = TypeVar('T', bound=Modifier)
+T = TypeVar('T', bound=GCMod)
 ModType = Union[KWAMod | ManaProdMod | OwnershipMod | BasePTMod | PTMod | RegenerationMod | SubTypeMod | TypeMod]
 
 @dataclass
 class Modifiers:
     """Contains general auras (ex Creature Bond), PTModifiers (ex Holy Strength), and KWA Modifiers (ex Flight)"""
-    items: list[Modifier] = field(default_factory=list)
+    items: list[GCMod] = field(default_factory=list)
 
     def __repr__(self):
         return ', '.join([m.__repr__() for m in self.items])
@@ -103,10 +103,10 @@ class Modifiers:
         """True if any modifiers else False"""
         return bool(self.items)
 
-    def append(self, modifier: Modifier) -> None:
+    def append(self, modifier: GCMod) -> None:
         self.items.append(modifier)
 
-    def remove(self, modifier: Modifier) -> None:
+    def remove(self, modifier: GCMod) -> None:
         self.items.remove(modifier)
 
     def get(self, mod_cls: type[T], reverse: bool = False) -> list[T]:
