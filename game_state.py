@@ -133,19 +133,19 @@ class GameState:
         if is_combat and source and 'Trample' in source.keyword_abilities and isinstance(target, GameCard):
             damage_to_card = min(target.toughness, event.remaining)
             target.damage_received_this_turn += damage_to_card
-            resolved_events.append(DamageResolvedEvent(source, damage_to_card, target, True))
+            resolved_events.append(DamageResolvedEvent(event.source, damage_to_card, event.target, True))
 
             damage_to_player = event.remaining - damage_to_card
             if damage_to_player > 0:
                 self.score_mgr.decrement_life(target.owner_id, damage_to_player, source, self)
-                resolved_events.append(DamageResolvedEvent(source, damage_to_player, target.owner_id, True))
+                resolved_events.append(DamageResolvedEvent(event.source, damage_to_player, target.owner_id, True))
         else:
-            if isinstance(target, GameCard):
-                target.damage_received_this_turn += event.remaining
+            if isinstance(event.target, GameCard):
+                event.target.damage_received_this_turn += event.remaining
             else:
                 self.score_mgr.decrement_life(target, event.remaining, source, self)
 
-            resolved_events.append(DamageResolvedEvent(source, event.remaining, target, is_combat))
+            resolved_events.append(DamageResolvedEvent(event.source, event.remaining, event.target, is_combat))
 
         # 4. Emit resolved events, allowing listeners to react
         for e in resolved_events:
