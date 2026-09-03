@@ -145,16 +145,6 @@ class InfiniteAuthorityCombatEnd(Listener):
             if other_creature.toughness <= 3:
                 gs.pile_mgr.destroy(other_creature)
 
-class TimeElementalAttackedOrBlocked(Listener):
-    """When this creature attacks or blocks, at end of combat, sacrifice it & it deals 5 damage to you"""
-    listens_to = CombatEndEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
-        if s not in gs.card_filter.combatants().result():
-            return
-        gs.apply_damage(s, 5, s.owner_id)
-        gs.pile_mgr.sacrifice(s)
-
 class TheWretched(Listener):
     """At combat end, gain control of all creatures blocking this creature for as long as you control TW.
     Note: The blocker must have survived."""

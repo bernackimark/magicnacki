@@ -207,6 +207,13 @@ class DealDamageToSourceOwner(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.apply_damage(source, self.amt, source.owner_id)
 
+class DealDamageToOpp(Resolver):
+    def __init__(self, amt: int = 1):
+        self.amt = amt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.apply_damage(source, self.amt, flip(source.owner_id))
+
 class DealOneDamageToTargetList(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for target in t:
@@ -297,6 +304,20 @@ class DiscardAtRandom(Resolver):
         for _ in range(discard_cnt):
             random_card: GameCard = gs.randomize_event(p_id, cards)
             gs.pile_mgr.discard(random_card, source)
+
+class DiscardHand(Resolver):
+    """Discards entire hand; if a target is not provided it is assumed to be the opponent"""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        target = t if t is not None else flip(source.owner_id)
+        for card in gs.hands[target]:
+            gs.pile_mgr.discard(card, source)
+
+class DrawCardsActivePlayer(Resolver):
+    def __init__(self, card_cnt: int = 1):
+        self.card_cnt = card_cnt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        gs.pile_mgr.draw(gs.turn_mgr.player_turn_idx, self.card_cnt)
 
 class DrawCards(Resolver):
     def __init__(self, card_cnt: int = 1):

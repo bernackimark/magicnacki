@@ -82,18 +82,18 @@ class TestCardsMNOP(unittest.TestCase):
     def test_martyrs_of_korlis(self):
         """As long as MOK is untapped, all damage that would be dealt to you by artifacts is dealt to MOK instead"""
         card = self.g.battlefield('martyrs-of-korlis')  # 1/6
-        juggernaut = self.g.battlefield('juggernaut', owner=1)  # 5/3
-        PassTheTurn(0, self.gs).play()
-        self.g.combat(juggernaut, None)
-        self.assertEqual(5, card.damage_received_this_turn)
-        self.assertEqual(20, self.gs.life[0], 'Damage should be redirected to Martyrs Of Korlis')
+        attacker = self.g.battlefield('colossus-of-sardia', owner=1)  # 9/9
+
+        self.g.next_turn(True)
+        card.tap()
+        self.g.combat(attacker, None)
+        self.assertEqual(11, self.gs.life[0])
 
         self.g.next_turn()
-        card.damage_received_this_turn = 0
-        card.tap()
-        self.g.combat(juggernaut, None)
-        self.assertEqual(0, card.damage_received_this_turn)
-        self.assertEqual(15, self.gs.life[0], 'Damage should not have been redirected to MOK')
+        card.untap()
+        self.g.combat(attacker, None)
+        self.assertEqual(11, self.gs.life[0])
+        self.assertIn(card, self.g.gy[0])
 
     def test_maze_of_ith(self):
         """{T}: Untap target attacker. Prevent all combat damage that would be dealt to and  by that creature EOT."""

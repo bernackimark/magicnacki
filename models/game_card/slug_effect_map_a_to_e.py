@@ -9,7 +9,7 @@ from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, Ge
 from .event_conditions import EC
 from ..effects.modifiers_generic import PreventDamage
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
-    CastResolvedEvent, TapCardEvent, DamageProposedEvent
+    CastResolvedEvent, TapCardEvent, DamageProposedEvent, DamageResolvedEvent
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
@@ -30,7 +30,6 @@ from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import AnkhOfMishra, DingusEgg
 from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CurseArtifact, Cyclone, \
     DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
-from ..effects.listeners_tap_untap import ArtifactPossessionTap
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
@@ -108,7 +107,8 @@ MAP: dict[str, list[EffSpec]] = {
                          Triggered(ArmageddonClockDrawStep())],
     'army-of-allah': [Spell(PumpApplies(TF.attackers(), (2, 0), True))],
     'artifact-blast': [Spell(CounterSpell(), TF.artifact_spells())],
-    'artifact-possession': [Triggered(ArtifactPossessionActivation()), Triggered(ArtifactPossessionTap()),
+    'artifact-possession': [Triggered(ArtifactPossessionActivation()),
+                            GenTrig(On(TapCardEvent).where(EC.card_is_host()).then(DealDamageToHostOwner(2))),
                             Spell(EmptyResolver(), TF.artifacts())],
     'artifact-ward': [Spell(EmptyResolver(), TF.creatures()), Static(ArtifactWardCanBeTargeted()),
                       Static(UnblockableCondition(TF.host(), TF.artifact_creatures())),

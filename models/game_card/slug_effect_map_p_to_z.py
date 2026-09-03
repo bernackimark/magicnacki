@@ -5,13 +5,13 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
 from .card_filter_funcs import C_FUNCS, TF
 from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
+from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING, MINUS_ZERO_TWO
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
-from ..effects.modifiers_generic import PreventDamage
+from ..effects.modifiers_generic import PreventDamage, RedirectToSource
 from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent, \
-    DamageProposedEvent, DamageResolvedEvent
+    DamageProposedEvent, DamageResolvedEvent, DrawCardEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -28,7 +28,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDama
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, DestroySelf, MayPayMana, \
     GainLife, Do, DealDamageToSourceOwner, PayManaOr, SacSelf, EmptyResolver, DealDamageToHostOwner, AddCounterToHost, \
-    DestroySelfCombatants, DestroyHostCombatants, AddPoisonCounter, AddCounterPerCreatureDeath
+    DestroySelfCombatants, DestroyHostCombatants, AddPoisonCounter, AddCounterPerCreatureDeath, DealDamageToOpp
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -36,15 +36,13 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep, PrimordialOoze, TetravusUpkeepCreate, \
     TetravusUpkeepExile
-from ..effects.listeners_tap_untap import PsychicVenom, SpiritShackle, WildGrowth, TawnossCoffinUntap, \
-    RasputinDreamweaverUntap, TimeVaultOption, PhyrexianGremlinsUntaps
+from ..effects.listeners_tap_untap import TawnossCoffinUntap, RasputinDreamweaverUntap, TimeVaultOption, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import SeasonOfTheWitchEndStep, VoodooDollEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
 from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, PuppetMaster
-from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodyguard, SpiritLink, ReverseDamage
+from ..effects.listeners_damage import RockHydraAutoDamagePrevent, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
-from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
-    TheWretched
+from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TheWretched
 from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, PreventAllDamageToEOT, \
     OptionalUntap, RedirectNextDamageToTarget, PayManaToUntapUpkeep, \
     PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
@@ -96,7 +94,8 @@ MAP: dict[str, list[EffSpec]] = {
     'psionic-entity': [Activated('T', Do(DealDamage(2), DealDamageToSourceOwner(3)), TF.all_creatures_and_players())],
     'psychic-allergy': [Triggered(PsychicAllergySac()), Triggered(DeclareAColor()), Spell(PsychicAllergyDamage())],
     'psychic-purge': [Triggered(PsychicPurgeDiscard()), Spell(DealDamage(1), TF.all_creatures_and_players())],
-    'psychic-venom': [Spell(PsychicVenom(), TF.lands())],
+    'psychic-venom': [Spell(EmptyResolver(), TF.lands()),
+                      GenTrig(On(TapCardEvent).where(EC.card_is_host()).then(DealDamageToHostOwner(2)))],
     'puppet-master': [Spell(PuppetMaster(), TF.creatures())],
     'purelace': [Spell(SetColor('W'), TF.cards())],
     'pyrotechnics': [Spell(DealOneDamageToTargetList(), TargetSpec(TF.all_creatures_and_players(), 1, 4,
@@ -195,7 +194,8 @@ MAP: dict[str, list[EffSpec]] = {
     'spell-blast': [Spell(CounterSpell(), TF.spells(), min_x_func=target_spell_mv, max_x_func=target_spell_mv)],
     'spinal-villain': [Activated('T', Destroy(), TF.blue_creatures())],
     'spirit-link': [Spell(SpiritLink(), TF.creatures())],
-    'spirit-shackle': [Spell(SpiritShackle(), TF.creatures())],
+    'spirit-shackle': [Spell(EmptyResolver(), TF.creatures()),
+                       GenTrig(On(TapCardEvent).where(EC.card_is_host()).then(AddCounterToHost(MINUS_ZERO_TWO)))],
     'spiritual-sanctuary': [Triggered(SpiritualSanctuary())],
     'staff-of-zegon': [Activated('3T', Pump(-2, 0, True), TF.creatures())],
     'standing-stones': [Activated('1T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}',
@@ -248,7 +248,8 @@ MAP: dict[str, list[EffSpec]] = {
                                  then(DestroySelfCombatants(filter_func=TF.non_wall_creatures())))],
     'thoughtlace': [Spell(SetColor('U'), TF.cards())],
     'throne-of-bone': [GenTrig(On(CastResolvedEvent).where(EC.card_is_color('B')).then(MayPayMana('1', GainLife(1))))],
-    'time-elemental': [Triggered(TimeElementalAttackedOrBlocked()),
+    'time-elemental': [GenTrig(On(CombatEndEvent).where(EC.self_is_combatant()).
+                               then(Do(SacSelf(), DealDamageToSourceOwner(5)))),
                        Activated('2UUT', Bounce(), TF.unenchanted_perms())],
     'time-vault': [Triggered(DoesntUntapAtUntap(TF.self())), Triggered(TimeVaultOption()),
                    Activated('T', TakeAnotherTurn()), Spell(TapCardEffect(), TF.self())],
@@ -281,6 +282,7 @@ MAP: dict[str, list[EffSpec]] = {
                              modify(PreventDamage()))],
     'undertow': [Static(WalkRuleRemoved(KW.ISLANDWALK))],
     'underground-sea': dual_land_specs('BU'),
+    'underworld-dreams': [GenTrig(On(DrawCardEvent).where(EC.opp_is_drawer()).then(DealDamageToOpp()))],
     'unholy-strength': [Spell(Pump(2, 1), TF.creatures())],
     'unstable-mutation': [GenTrig(On(UpkeepEvent).where(EC.is_host_turn()).then(AddCounterToHost(MINUS_ONE))),
                           Spell(Pump(3, 3), TF.creatures())],
@@ -310,7 +312,9 @@ MAP: dict[str, list[EffSpec]] = {
     # TODO: despite being the same code, VesuvanDoppelgangerUpkeep doesn't trigger;
     #  the card goes to the graveyard during cast as well but gets pulled out somehow;
     #  the SBA looking at 0 toughness may be the culprit
-    'veteran-bodyguard': [Triggered(VeteranBodyguard())],
+    'veteran-bodyguard': [GenTrig(On(DamageProposedEvent).
+                                  where(EC.self_is_untapped(), EC.damage_source_in(TF.unblocked_attackers()),
+                                        EC.damage_target_in(TF.owner())).modify(RedirectToSource()))],
     'visions': [Spell(Visions(), TF.all_players())],
     'volcanic-island': dual_land_specs('RU'),
     'voodoo-doll': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(AddCounter(PIN))), Triggered(VoodooDollEndStep()),
@@ -343,7 +347,8 @@ MAP: dict[str, list[EffSpec]] = {
     'whirling-dervish': [GenTrig(On(EndStepEvent).where(EC.source_damaged_opp()).then(AddCounter(PLUS_ONE)))],
     'white-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('W')],
     'white-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_WHITE), TF.creatures())],
-    'wild-growth': [Spell(WildGrowth(), TF.lands())],
+    'wild-growth': [Spell(EmptyResolver(), TF.lands()),
+                    GenTrig(On(TapCardEvent).where(EC.card_is_host()).then(AddMana('G')))],
     'will-o-the-wisp': [Activated('B', Regenerate(), TF.self())],
     'willow-satyr': [Activated('T', Steal(return_on_untap=True), TF.opp_legendary_creatures()), Static(OptionalUntap())],
     'winds-of-change': [Spell(WindsOfChange())],

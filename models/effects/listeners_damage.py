@@ -78,17 +78,6 @@ class GaseousForm(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
-class MartyrsOfKorlis(Listener):
-    """As long as this creature is untapped, redirect all damage dealt to you by artifacts to this creature instead"""
-    listens_to = DamageProposedEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if event.target is not source.owner_id or source.is_tapped or 'Artifact' not in event.source.card_types:
-            return
-        source.damage_received_this_turn += event.remaining
-        event.prevented += event.remaining
-        event.remaining = 0
-
 class ReverseDamage(Listener):
     """The next time a source of your choice would deal damage to you this turn, prevent that damage.
     You gain life equal to the damage prevented this way."""
@@ -125,16 +114,6 @@ class RockHydraAutoDamagePrevent(Listener):
             event.prevented += 1
             event.remaining -= 1
 
-class VeteranBodyguard(Listener):
-    """As long as VB is untapped, redirect all damage by unblocked creatures to VB instead"""
-    listens_to = DamageProposedEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
-        if source.is_tapped or event.target != source.owner_id or not event.is_combat:
-            return
-        if event.source in gs.card_filter.unblocked_attackers().result():
-            event.target = source
-
 
 # --- DAMAGE RESOLVED EVENT ---
 class Backfire(Listener):
@@ -146,7 +125,7 @@ class Backfire(Listener):
             gs.apply_damage(source, event.amt, source.host.owner_id)
 
 class ElHajjaj(Listener):
-    """Whenever this creature deals damage, you gain that much life"""
+    """Whenever this creature deals damage, you gain that much life (this triggered the stack and is not lifelink)"""
     listens_to = DamageResolvedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
@@ -196,20 +175,6 @@ class LivingArtifactOnDamage(Listener):
         if event.target is not source:
             return
         source.counters.add_counter(VITALITY)
-
-class NicolBolas(Listener):
-    """Whenever this creature deals damage to an opponent, that player discards their hand"""
-    listens_to = DamageResolvedEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
-        opp_id = flip(source.owner_id)
-        if event.source is not source or event.target is not opp_id:
-            return
-        opp_cards = gs.pile_mgr.hands[opp_id]
-        if not opp_cards:
-            return
-        for c in opp_cards:
-            gs.pile_mgr.discard(c, source)
 
 class SpiritLink(Listener):
     """Whenever host deals damage, you gain that much life"""

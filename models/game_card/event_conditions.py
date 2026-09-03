@@ -89,6 +89,10 @@ class EC:
         return lambda gs, s, e: e.target == flip(s.owner_id)
 
     @staticmethod
+    def opp_is_drawer():
+        return lambda gs, s, e: e.player_id != s.owner_id
+
+    @staticmethod
     def source_damaged_opp():
         return lambda gs, s, _: any(e.source is s and e.target == flip(s.owner_id)
                                     for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent))
@@ -128,6 +132,10 @@ class EC:
     @staticmethod
     def self_is_unblocked_attacker():
         return lambda gs, s, e: e.attacker is s
+
+    @staticmethod
+    def self_is_untapped():
+        return lambda gs, s, e: not s.is_tapped
 
     @staticmethod
     def you_are_drawer():

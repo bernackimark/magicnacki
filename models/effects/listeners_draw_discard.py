@@ -47,17 +47,6 @@ class CursedRack(Listener):
         gs.choice_mgr.queue(ChoiceAction(options))
 
 
-# --- DRAW EVENT ---
-class UnderworldDreams(Listener):
-    """Whenever an opponent draws a card, this enchantment deals 1 damage to that player"""
-    listens_to = DrawCardEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DrawCardEvent):
-        if source.owner_id == event.player_id:
-            return
-        gs.apply_damage(source, 1, event.player_id)
-
-
 # --- DRAW STEP EVENT ---
 class ArmageddonClockDrawStep(Listener):
     """... At your draw step, AC deals damage = its doom counters to each player ... """
@@ -69,15 +58,6 @@ class ArmageddonClockDrawStep(Listener):
         if ctr_cnt := source.counters.get_count(DOOM):
             gs.apply_damage(source, ctr_cnt, source.owner_id)
             gs.apply_damage(source, ctr_cnt, flip(source.owner_id))
-
-class HowlingMine(Listener):
-    """At each player's draw step, if this artifact is untapped, that player draws an additional card"""
-    listens_to = DrawStepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent):
-        if source.is_tapped:
-            return
-        gs.pile_mgr.draw(event.active_player)
 
 class IslandSanctuary(Listener):
     """At your draw step, you may skip your draw and until your next turn,
@@ -99,15 +79,6 @@ class IslandSanctuary(Listener):
         listener = IslandSanctuaryRestriction()
         gs.event_mgr.register(listener, s)
         gs.event_mgr.register(UnregisterListenerOnYourNextTurn(listener), s)
-
-class ManaVaultDamageIfTapped(Listener):
-    """... At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
-    listens_to = DrawStepEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: DrawStepEvent):
-        if event.active_player != s.owner_id or not s.is_tapped:
-            return
-        gs.apply_damage(s, 1, s.owner_id)
 
 class SylvanLibrary(Listener):
     """At your draw step, you may draw two additional cards ..."""

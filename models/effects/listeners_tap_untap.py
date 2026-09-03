@@ -15,15 +15,6 @@ if TYPE_CHECKING:
 
 
 # --- TAP CARD EVENT ---
-class ArtifactPossessionTap(Listener):
-    """Enchant artifact Whenever host becomes tapped ... deal 2 damage to host's controller"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent) -> None:
-        if event.card is not source.host:
-            return
-        gs.apply_damage(source, 2, source.host.owner_id)
-
 class HauntingWindTap(Listener):
     """Whenever an artifact becomes tapped ... deal 1 damage to artifact's controller"""
     listens_to = TapCardEvent
@@ -72,33 +63,6 @@ class Kudzu(Listener):
     def attach(aura: GameCard, host: GameCard):
         aura.host = host
         host.auras.append(aura)
-
-class PsychicVenom(Listener):
-    """Whenever enchanted land becomes tapped, this Aura deals 2 damage to that land's controller"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card is not s.host:
-            return
-        gs.apply_damage(s, 2, event.card.owner_id)
-
-class SpiritShackle(Listener):
-    """Whenever enchanted creature becomes tapped, put a -0/-2 counter on it"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: TapCardEvent):
-        if event.card is not s.host:
-            return
-        s.host.counters.add_counter(MINUS_ZERO_TWO)
-
-class WildGrowth(Listener):
-    """Enchant land Whenever enchanted land is tapped for mana, its controller adds another {G}"""
-    listens_to = TapCardEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: TapCardEvent):
-        if source.host is not event.card:
-            return
-        gs.mana_pools[event.card.owner_id].add_floating('G')
 
 
 # --- UNTAP CARD EVENT ---
