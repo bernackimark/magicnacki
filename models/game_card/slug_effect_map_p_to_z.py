@@ -5,13 +5,13 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
 from .card_filter_funcs import C_FUNCS, TF
 from models.constants import COLOR_LETTERS, KW
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING, STUN
+from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
 from ..effects.modifiers_generic import PreventDamage
 from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent, \
-    DamageProposedEvent
+    DamageProposedEvent, DamageResolvedEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
     RockHydraCast, Sandstorm, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
@@ -28,7 +28,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, DealOneDama
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCardsEffect, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, DestroySelf, MayPayMana, \
     GainLife, Do, DealDamageToSourceOwner, PayManaOr, SacSelf, EmptyResolver, DealDamageToHostOwner, AddCounterToHost, \
-    DestroySelfCombatants, DestroyHostCombatants
+    DestroySelfCombatants, DestroyHostCombatants, AddPoisonCounter, AddCounterPerCreatureDeath
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -45,8 +45,8 @@ from ..effects.listeners_damage import RockHydraAutoDamagePrevent, VeteranBodygu
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TimeElementalAttackedOrBlocked, \
     TheWretched
-from ..effects.listeners_generic import AddPoisonCounter, UntapRemovesPumpFromAnotherCard, PreventAllDamageToEOT, \
-    OptionalUntap, RedirectNextDamageToTarget, AddCounterPerCreatureDeathAtEndStep, PayManaToUntapUpkeep, \
+from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, PreventAllDamageToEOT, \
+    OptionalUntap, RedirectNextDamageToTarget, PayManaToUntapUpkeep, \
     PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
     WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo
@@ -73,7 +73,7 @@ MAP: dict[str, list[EffSpec]] = {
                            Triggered(PhyrexianGremlinsUntaps())],
     'piety': [Spell(PumpApplies(TF.blockers(), (0, 3), True))],
     'pirate-ship': [Activated('T', DealDamage(1), TF.all_creatures_and_players())],
-    'pit-scorpion': [Triggered(AddPoisonCounter())],
+    'pit-scorpion': [GenTrig(On(DamageResolvedEvent).where(EC.source_damaged_opp()).then(AddPoisonCounter()))],
     'pixie-queen': [Activated('GGGT', KWAModEffect('add', KW.FLYING), TF.creatures())],
     'plague-rats': [Static(SelfPTEqualsFuncLen(TF.plague_rats()))],
     'planar-gate': [Static(PlanarGate())],
@@ -156,7 +156,8 @@ MAP: dict[str, list[EffSpec]] = {
     'scarwood-hag': [Activated('GGGGT', KWAModEffect('add', KW.FORESTWALK, True), TF.creatures_wo_forestwalk()),
                      Activated('T', KWAModEffect('remove', KW.FORESTWALK, True), TF.forestwalkers())],
     'scavenger-folk': [Activated('GT', Destroy(), TF.artifacts(), extra_costs=[SacSelfCost()])],
-    'scavenging-ghoul': [Triggered(AddCounterPerCreatureDeathAtEndStep(CORPSE)),
+    'scavenging-ghoul': [GenTrig(On(EndStepEvent).where(EC.any_creature_died_this_turn()).
+                             then(AddCounterPerCreatureDeath(CORPSE))),
                          Activated('', Regenerate(), TF.self(), extra_costs=[RemoveCounterCost(CORPSE)])],
     'scrubland': dual_land_specs('BW'),
     'sea-kings-blessing': [Spell(SetColor('U', 'EOT'), TargetSpec(TF.creatures(), 1, None))],
@@ -185,7 +186,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sisters-of-the-flame': [Activated('T', AddMana('R'), TF.owner(), is_mana_ability=True)],
     'skull-of-orm': [Activated('5T', Bounce(), TF.enchants_in_your_graveyard())],
     'smoke': [Triggered(Smoke())],
-    'snake': [Triggered(AddPoisonCounter())],  # token creature created by serpent-generator
+    'snake': [GenTrig(On(DamageResolvedEvent).where(EC.source_damaged_opp()).then(AddPoisonCounter()))],  # token
     'sol-ring': [Activated('T', AddMana('C', 2), TF.owner(), is_mana_ability=True)],
     'solkanar-the-swamp-king': [GenTrig(On(CastResolvedEvent).where(EC.card_is_color('B')).then(GainLife()))],
     'sorceress-queen': [Activated('T', BasePT(0, 2, True), TF.other_creatures())],

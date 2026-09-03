@@ -41,6 +41,10 @@ class EC:
         return lambda gs, s, e: e.owner_id != s.owner_id
 
     @staticmethod
+    def any_creature_died_this_turn():
+        return lambda gs, s, e: len(gs.turn_mgr.cards_that_died) > 0
+
+    @staticmethod
     def damage_source_in(target_filter: Callable):
         return lambda gs, source, event: (event.source in target_filter(gs, source)
                                           if isinstance(target_filter(gs, source), list)

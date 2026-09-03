@@ -9,7 +9,7 @@ from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTE
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
-from models.events_all import StateBasedEvent, ZoneChangeEvent
+from models.events_all import StateBasedEvent, ZoneChangeEvent, ModQueryEvent
 from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
 from models.utils import flip
 
@@ -38,6 +38,15 @@ class AddCounter(Resolver):
         target = source if not t else t
         target.counters.add_counter(self.counter_type, self.cnt)
 
+class AddCounterPerCreatureDeath(Resolver):
+    """Adds a counter per each creature death that turn"""
+    def __init__(self, counter_type: CounterType):
+        self.counter_type = counter_type
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if death_cnt := len(gs.turn_mgr.cards_that_died) > 0:
+            source.counters.add_counter(self.counter_type, death_cnt)
+
 class AddCounterToHost(Resolver):
     def __init__(self, counter_type: CounterType, cnt: int = 1):
         self.counter_type = counter_type
@@ -57,6 +66,13 @@ class AddMana(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.mana_pools[source.owner_id].add_floating(self.color, self.cnt)
+
+class AddPoisonCounter(Resolver):
+    def __init__(self, cnt: int = 1):
+        self.cnt = cnt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.score_mgr.add_poison_counter(flip(source.owner_id), self.cnt)
 
 class AllWalksRemoved(Resolver):
     """Target creature loses all landwalk abilities until end of turn"""

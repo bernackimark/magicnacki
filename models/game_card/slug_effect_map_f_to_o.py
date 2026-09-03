@@ -26,7 +26,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, DestroySelf, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, DealDamageToSourceOwner, PayManaOr, SacSelf, DealDamageToHostOwner, \
-    DiscardAtRandom, DestroySelfCombatants
+    DiscardAtRandom, DestroySelfCombatants, AddPoisonCounter, AddCounterPerCreatureDeath
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, TF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -48,11 +48,10 @@ from ..effects.listeners_damage import GaseousForm, MartyrsOfKorlis, LivingArtif
     NicolBolas, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import FirestormPhoenix
 from ..effects.listeners_draw_discard import HowlingMine, ManaVaultDamageIfTapped, IslandSanctuary
-from ..effects.listeners_generic import AddPoisonCounter, OptionalUntap, AddCounterPerCreatureDeathAtEndStep, AddCountersIfAnyCreatureDied, \
-    PreventAllDamageToEOT, PreventNextDamageTo, PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, \
-    RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
+from ..effects.listeners_generic import OptionalUntap, PreventAllDamageToEOT, PreventNextDamageTo, \
+    PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
 from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \
-    TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent, DamageProposedEvent
+    TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent, DamageProposedEvent, EndStepEvent
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), TF.self(),
@@ -226,7 +225,8 @@ MAP: dict[str: list[EffSpec]] = {
     'karma': [Triggered(Karma())],
     'kei-takahashi': [Activated('T', PreventNextDamageBy(preventable_amt=2), TF.creatures())],
     'keldon-warlord': [Static(SelfPTEqualsFuncLen(TF.your_non_wall_creatures()))],
-    'khabal-ghoul': [AddCounterPerCreatureDeathAtEndStep(PLUS_ONE)],
+    'khabal-ghoul': [GenTrig(On(EndStepEvent).where(EC.any_creature_died_this_turn()).
+                             then(AddCounterPerCreatureDeath(PLUS_ONE)))],
     'killer-bees': [self_pump('G', 1, 1)],
     'king-suleiman': [Activated('T', Destroy(), TF.djinns_and_efreets())],
     'kird-ape': [Static(PumpApplies(TF.self(), (1, 2), cond=C_FUNCS['you_have_a_forest']))],
@@ -287,7 +287,7 @@ MAP: dict[str: list[EffSpec]] = {
                                     EC.is_combat_damage()).modify(PreventDamage())),
                       Static(MarblePriestForcesBlock())],
     'marsh-gas': [Spell(PumpApplies(TF.creatures(), (-2, 0), True))],
-    'marsh-viper': [Triggered(AddPoisonCounter(2))],
+    'marsh-viper': [GenTrig(On(DamageResolvedEvent).where(EC.source_damaged_opp()).then(AddPoisonCounter(2)))],
     'martyrs-cry': [Spell(MartyrsCry())],
     'martyrs-of-korlis': [Static(MartyrsOfKorlis())],
     'maze-of-ith': [Activated('T', RemoveFromCombat(), TF.attackers())],
@@ -337,7 +337,7 @@ MAP: dict[str: list[EffSpec]] = {
     'orcish-mechanics': [Activated('T', DealDamage(2), TF.all_creatures_and_players(),
                                    extra_costs=[SacCardCost(TF.your_artifacts())])],
     'orcish-oriflamme': [Static(PumpApplies(TF.your_attackers(), (1, 0)))],
-    'osai-vultures': [Triggered(AddCountersIfAnyCreatureDied(CARRION)),
+    'osai-vultures': [GenTrig(On(EndStepEvent).where(EC.any_creature_died_this_turn()).then(AddCounter(CARRION))),
                       Activated('', Pump(1, 1, True),
                                 extra_costs=[RemoveCounterCost(CARRION, 2)], text='Remove 2 counters for +1/+1')],
 }
