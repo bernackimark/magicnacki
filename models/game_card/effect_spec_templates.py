@@ -34,7 +34,7 @@ class On(Generic[E]):
         self.resolver = resolver
         return self
 
-    def targets(self, target_func: Callable):
+    def t(self, target_func: Callable):
         self.t_func = target_func
         return self
 

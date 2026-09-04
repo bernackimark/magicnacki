@@ -12,6 +12,7 @@ from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, L
     PreventRegenerationEOT, CantBeTargetedByAuras, GoblinRockSledCanAttack, Lure, MarblePriestForcesBlock, \
     CantAttackIfAttackedLastTurn
 from .event_conditions import EC
+from .target_funcs import ET
 from ..constants import KW
 from ..effects.modifiers_generic import PreventDamage, RedirectToSource
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
@@ -21,13 +22,12 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, Glass
     FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, \
     GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, Necropolis, LifeChisel
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
-    DealDamageToAllCreaturesAndPlayers, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, \
+    DealDamageToAllCreaturesAndPlayers, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
-    CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, DestroySelf, MayPayMana, \
-    ExchangeLifeTotals, Do, GraveyardToExile, DealDamageToSourceOwner, PayManaOr, SacSelf, DealDamageToHostOwner, \
-    DiscardAtRandom, DestroySelfCombatants, AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, \
-    DrawCardsActivePlayer
+    CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, MayPayMana, \
+    ExchangeLifeTotals, Do, GraveyardToExile, PayManaOr, SacSelf, DrawCardsActivePlayer, DiscardAtRandom, \
+    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -40,7 +40,7 @@ from ..effects.listeners_zone_change import FieldOfDreams, GoblinShrineOnLeave, 
 from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, \
     HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, \
     LeviathanUpkeep, Halfdane, LivingArtifactUpkeep
-from ..effects.listeners_tap_untap import Kudzu, HauntingWindTap
+from ..effects.listeners_tap_untap import Kudzu
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import MijaeDjinn, GiantShark, Johan, \
     InfiniteAuthorityCombatEnd, FloralSpuzzem, GlyphOfDoom
@@ -62,10 +62,10 @@ MAP: dict[str: list[EffSpec]] = {
                   Activated('WW', GainLife(), CF.host_owner(), allowed_phases=[Phase.UPKEEP],
                             allowed_p_turn_func=CF.host_owner(), max_activations_per_turn=1)],
     'fasting': [Triggered(Fasting(), CF.self()),
-                GenTrig(On(DrawCardEvent).where(EC.you_are_drawer()).then(DestroySelf()))],
+                GenTrig(On(DrawCardEvent).where(EC.you_are_drawer()).then(Destroy(CF.self())))],
     'fear': [Spell(UnblockableCondition(CF.host(), CF.non_artifact_non_black_creatures()), CF.creatures())],
     'feedback': [Spell(EmptyResolver(), CF.enchants()),
-                 GenTrig(On(UpkeepEvent).where(EC.is_host_turn()).then(DealDamageToHostOwner()))],
+                 GenTrig(On(UpkeepEvent).where(EC.is_host_turn()).then(DealDamage(1)).t(ET.host_owner()))],
     'feint': [Spell(Feint(), CF.attackers())],
     'feldons-cane': [Activated('T', FeldonsCane(), None, extra_costs=[ExileSelfCost()])],
     'fellwar-stone': [Activated('T', FellwarStone(), is_mana_ability=True)],
@@ -77,7 +77,7 @@ MAP: dict[str: list[EffSpec]] = {
     'firebreathing': [Spell(EmptyResolver(), CF.creatures()), self_pump('R', 1, 0)],
     'firestorm-phoenix': [Triggered(FirestormPhoenix())],
     'fishliver-oil': [Spell(KWAModEffect('add', KW.ISLANDWALK), CF.creatures())],
-    'fissure': [Spell(Destroy(False), CF.creatures_and_lands())],
+    'fissure': [Spell(Destroy(allow_regen=False), CF.creatures_and_lands())],
     'flash-counter': [Spell(CounterSpell(), CF.instant_spells())],
     'flash-flood': [Spell(Destroy(), CF.red_permanents()), Spell(Bounce(), CF.mountains())],
     'flashfires': [Spell(DestroyAll(CF.plains()))],
@@ -87,7 +87,7 @@ MAP: dict[str: list[EffSpec]] = {
     'flying-carpet': [Activated('2T', KWAModEffect('add', KW.FLYING, True), CF.creatures())],
     'fog': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC.is_combat_damage()).modify(PreventDamage()))],
     'force-of-nature': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).
-                                then(PayManaOr('GGGG', DealDamageToSourceOwner(8))))],
+                                then(PayManaOr('GGGG', DealDamage(8, CF.owner()))))],
     'force-spike': [Spell(CounterSpellUnlessManaPaid('1'), CF.spells())],
     'forcefield': [Activated('1', Forcefield(), CF.unblocked_attackers())],
     'forethought-amulet': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('3', SacSelf()))),
@@ -142,7 +142,7 @@ MAP: dict[str: list[EffSpec]] = {
     'great-defender': [Spell(GreatDefender(), CF.creatures())],
     'great-wall': [Static(WalkRuleRemoved(KW.PLAINSWALK))],
     'greater-realm-of-preservation': [Activated('1W', PreventNextDamageTo(protected=CF.owner()), CF.black_and_red())],
-    'greed': [Activated('B', Do(DrawCards(), DealDamageToSourceOwner(2)))],
+    'greed': [Activated('B', Do(DrawCards(), DealDamage(2, CF.owner())))],
     'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_GREEN), CF.creatures())],
     'guardian-angel': [Spell(GuardianAngel(), CF.all_creatures_and_players())],
@@ -155,8 +155,10 @@ MAP: dict[str: list[EffSpec]] = {
     'hammerheim': [Activated('T', AddMana('R'), CF.owner(), is_mana_ability=True),
                    Activated('T', AllWalksRemoved(), CF.creatures())],
     'hasran-ogress': [GenTrig(On(AttackEvent).where(EC.self_is_attacker()).
-                              then(PayManaOr('2', DealDamageToSourceOwner(3))))],
-    'haunting-wind': [Triggered(HauntingWindActivation()), Triggered(HauntingWindTap())],
+                              then(PayManaOr('2', DealDamage(3, CF.owner()))))],
+    'haunting-wind': [Triggered(HauntingWindActivation()),
+                      GenTrig(On(TapCardEvent).where(EC.card_is_artifact()).
+                              then(DealDamage(1)).t(ET.event_card_owner()))],
     'hazezon-tamar': [Triggered(HazezonTamarTokenCreation(CF.owner())), Triggered(HazezonTamarLTB())],
     'healing-salve': [Spell(GainLife(3)), Spell(PreventNextDamageTo(3), CF.all_creatures_and_players())],
     'heavens-gate': [Spell(SetColor('W', 'EOT'), TargetSpec(CF.creatures(), 1, None))],
@@ -220,7 +222,7 @@ MAP: dict[str: list[EffSpec]] = {
     'juggernaut': [Static(UnblockableCondition(CF.self(), CF.walls()))],
     'jump': [Spell(KWAModEffect('add', KW.FLYING, True), CF.creatures())],
     'junun-efreet': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('BB', SacSelf())))],
-    'juzam-djinn': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(DealDamageToSourceOwner()))],
+    'juzam-djinn': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(DealDamage(1)).t(ET.s_owner()))],
     'karakas': [Activated('T', AddMana('W'), is_mana_ability=True), Activated('T', Bounce(), CF.legendary_creatures())],
     'karma': [Triggered(Karma())],
     'kei-takahashi': [Activated('T', PreventNextDamageBy(preventable_amt=2), CF.creatures())],
@@ -280,7 +282,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mana-vault': [Triggered(DoesntUntapAtUntap(CF.self())), Triggered(PayManaToUntapUpkeep('4', CF.self())),
                    Activated('T', AddMana('C', 3), CF.owner(), is_mana_ability=True),
                    GenTrig(On(DrawStepEvent).where(EC.is_your_turn(), EC.self_is_tapped()).
-                           then(DealDamageToSourceOwner()))],
+                           then(DealDamage(1, CF.owner())))],
     'mana-vortex': [Spell(Destroy(), CF.your_lands()), Static(ManaVortexUpkeep()),
                     Static(GlobalSac(CF.self(), C_FUNCS['no_lands']))],
     'marble-priest': [GenTrig(On(DamageProposedEvent).
@@ -337,7 +339,7 @@ MAP: dict[str: list[EffSpec]] = {
     'onulet': [GenTrig(On(DiesEvent).where(EC.self_is_dier()).then(GainLife(2)))],
     'orc-general': [Activated('T', Pump(1, 1, True), CF.your_other_orcs(),
                               extra_costs=[SacCardCost(CF.another_orc_or_goblin())])],
-    'orcish-artillery': [Activated('T', Do(DealDamage(2), DealDamageToSourceOwner(3)), CF.all_creatures_and_players())],
+    'orcish-artillery': [Activated('T', Do(DealDamage(2), DealDamage(3, CF.owner())), CF.all_creatures_and_players())],
     'orcish-mechanics': [Activated('T', DealDamage(2), CF.all_creatures_and_players(),
                                    extra_costs=[SacCardCost(CF.your_artifacts())])],
     'orcish-oriflamme': [Static(PumpApplies(CF.your_attackers(), (1, 0)))],

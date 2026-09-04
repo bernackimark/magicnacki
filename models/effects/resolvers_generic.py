@@ -178,41 +178,16 @@ class DeclareAColor(Resolver):
         # TODO: make presentation request, as this selection is public
 
 class DealDamage(Resolver):
-    """Supply a static amount in the initializer or declare x via AbilityPipeline -> ResContext -> .resolve()"""
-    def __init__(self, amt: int = None):
+    """Supply a static amount in the initializer or declare x via AbilityPipeline -> ResContext -> .resolve();
+    target func can be provided in initializer or supplied as a single RTarget in .resolve()"""
+    def __init__(self, amt: int = None, to: Callable | None = None):
         self.amt = amt
+        self.to = to
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         amt = context.x_value if context and context.x_value is not None else self.amt
-        gs.apply_damage(source, amt, t)
-
-class DealDamageToHostOwner(Resolver):
-    def __init__(self, amt: int = 1):
-        self.amt = amt
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.apply_damage(source, self.amt, source.host.owner_id)
-
-class DealDamageToInTurnPlayer(Resolver):
-    def __init__(self, amt: int = 1):
-        self.amt = amt
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.apply_damage(source, self.amt, gs.player_turn_idx)
-
-class DealDamageToSourceOwner(Resolver):
-    def __init__(self, amt: int = 1):
-        self.amt = amt
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.apply_damage(source, self.amt, source.owner_id)
-
-class DealDamageToOpp(Resolver):
-    def __init__(self, amt: int = 1):
-        self.amt = amt
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.apply_damage(source, self.amt, flip(source.owner_id))
+        target = self.to(gs, source) if self.to is not None else t
+        gs.apply_damage(source, amt, target)
 
 class DealOneDamageToTargetList(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -228,11 +203,14 @@ class DealDamageToAllCreaturesAndPlayers(Resolver):
         [gs.apply_damage(source, self.amt, creature) for creature in gs.card_filter.in_play().creatures().result()]
 
 class Destroy(Resolver):
-    def __init__(self, allow_regen: bool = True):
+    """The target can be provided via 'who' [a func(gs, s)] or via .resolve()"""
+    def __init__(self, who: Callable | None = None, allow_regen: bool = True):
+        self.who = who
         self.allow_regen = allow_regen
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.pile_mgr.destroy(t, allow_regeneration=self.allow_regen)
+        target = self.who(gs, source) if self.who is not None else t
+        gs.pile_mgr.destroy(target, allow_regeneration=self.allow_regen)
 
 class DestroyAll(Resolver):
     def __init__(self, card_filter_func: Callable[[GameState, GameCard], list[GameCard]], allow_regen: bool = True):
@@ -242,10 +220,6 @@ class DestroyAll(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         for c in self.card_filter_func(gs, source):
             gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
-
-class DestroyHost(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.pile_mgr.destroy(source.host)
 
 class DestroyHostCombatants(Resolver):
     def __init__(self, allow_regen: bool = True, filter_func: Callable[[GameState, GameCard], list[GameCard]] = None):
@@ -262,10 +236,6 @@ class DestroyHostCombatants(Resolver):
         else:
             for c in all_combatants:
                 gs.pile_mgr.destroy(c, allow_regeneration=self.allow_regen)
-
-class DestroySelf(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.pile_mgr.destroy(source)
 
 class DestroySelfCombatants(Resolver):
     def __init__(self, allow_regen: bool = True, filter_func: Callable[[GameState, GameCard], list[GameCard]] = None):
@@ -404,10 +374,10 @@ class MayPayMana(Resolver):
         self.effect = effect
 
     def resolve(self, gs, source, t=None, context=None):
-        options = [CO(f'Pay {{{self.mana_cost}}}', lambda: self.pay_and_resolve(gs, source, t, context))]
+        options = [CO(f'Pay {{{self.mana_cost}}}', lambda: self._pay_and_resolve(gs, source, t, context))]
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
-    def pay_and_resolve(self, gs: GameState, source: GameCard, t: RTarget, context: ResContext):
+    def _pay_and_resolve(self, gs: GameState, source: GameCard, t: RTarget, context: ResContext):
         gs.mana_pools[source.owner_id].pay(self.mana_cost)
         self.effect.resolve(gs, source, t, context)
 
