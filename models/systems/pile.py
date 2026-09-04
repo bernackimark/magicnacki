@@ -114,6 +114,13 @@ class PileManager:
         for card in cards:
             self.discard(card, source)
 
+    def mill(self, p_id: int, cnt: int = 1):
+        for _ in range(cnt):
+            if not self._has_a_library(p_id):
+                return
+            top_lib_card = self.libraries[p_id][0]
+            self.move_card(top_lib_card, Zone.GRAVEYARD, cause='mill')
+
     def reanimate(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='reanimate')
         print(f'{card} is reanimated')
@@ -126,6 +133,8 @@ class PileManager:
 
     def draw(self, p_id: int, cnt: int = 1, print_output: bool = True):
         for _ in range(cnt):
+            if not self._has_a_library(p_id):
+                return
             top_lib_card = self.libraries[p_id][0]
             self.move_card(top_lib_card, Zone.HAND, cause='draw')
             self._gs.event_mgr.emit(DrawCardEvent(p_id, top_lib_card))
@@ -135,6 +144,14 @@ class PileManager:
 
     def sort_hand(self, p_idx: int):
         self.hands[p_idx].sort(key=lambda x: x.props.mana_value)
+
+    def _has_a_library(self, p_id) -> bool:
+        if not self.libraries[p_id]:
+            self._gs.winner = not p_id
+            self._gs.is_game_over = True
+            print(f'Player #{p_id} has been decked; Player #{not p_id} wins')
+            return False
+        return True
 
     def _add_to_zone(self, card: GameCard, zone: Zone):
         if card.is_token and zone != Zone.BATTLEFIELD:
