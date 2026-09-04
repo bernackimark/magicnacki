@@ -26,18 +26,22 @@ from models.constants import Zone
 
 class GenericEventListener(Listener):
     def __init__(self, event_type: type[Event], conditions: list, resolver: Resolver, modifier: Modifier,
-                 expires: str | None = None):
+                 t_func: Callable, expires: str | None = None):
         self.listens_to = event_type  # used during listener registration
         self.conditions = conditions
         self.resolver = resolver
         self.modifier = modifier
+        self.t_func = t_func
         self.expires = expires
 
     def on_event(self, gs, source, event: Event):
         if self.conditions and not all(condition(gs, source, event) for condition in self.conditions):
             return
-        if self.resolver:
+        if self.resolver and self.t_func is None:
             self.resolver.resolve(gs, source, context=ResContext(event=event))
+        elif self.resolver and self.t_func:
+            t = self.t_func(gs, source, event)
+            self.resolver.resolve(gs, source, t=t, context=ResContext(event=event))
         if self.modifier:
             self.modifier.modify(gs, source, event)
 

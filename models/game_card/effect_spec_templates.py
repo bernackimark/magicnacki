@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, TypeVar, Generic, Callable
 
 if TYPE_CHECKING:
-    from models.effects.base import Resolver
+    from models.effects.base import Resolver, Modifier
     from models.game_card.game_card import GameCard
 
 from models.cost import RemoveCounterCost
@@ -11,7 +11,7 @@ from models.events_all import Event
 from models.game_card.counter_tokens import CHARGE, PIN, PLUS_ONE_ZERO
 from models.effects.base import EffSpec, Activated
 from models.effects.resolvers_generic import AddMana, AddCounter, ManaBatteriesAddMana, Pump
-from models.game_card.card_filter_funcs import TF
+from models.game_card.card_filter_funcs import CF
 from models.systems.mana import ManaCost
 
 E = TypeVar("E", bound=Event)
@@ -21,8 +21,9 @@ class On(Generic[E]):
     def __init__(self, event_type: type[E], expires: str | None = None):
         self.event_type = event_type
         self.conditions: list[Callable[[E, GameCard], bool]] = []
-        self.resolver = None
-        self.modifier = None  # Event modifier (event.remaining [damage], event.permission [queries], etc)
+        self.resolver: Resolver | None = None
+        self.modifier: Modifier | None = None  # Event modifier (.remaining, .permission ...)
+        self.t_func: Callable | None = None  # type: ignore
         self.expires = expires
 
     def where(self, *conditions) -> "On[E]":
@@ -33,6 +34,10 @@ class On(Generic[E]):
         self.resolver = resolver
         return self
 
+    def targets(self, target_func: Callable):
+        self.t_func = target_func
+        return self
+
     # THIS IS THE NEW FUNCTIONALITY SPECIFIC FOR MODIFIYING AN EVENT (event.remaining, event.permission, etc.)
     def modify(self, modifier):
         self.modifier = modifier
@@ -40,30 +45,31 @@ class On(Generic[E]):
 
     def build(self) -> GenericEventListener:
         return GenericEventListener(event_type=self.event_type, conditions=self.conditions,
-                                    resolver=self.resolver, modifier=self.modifier, expires=self.expires)
+                                    resolver=self.resolver, modifier=self.modifier, t_func=self.t_func,
+                                    expires=self.expires)
 
 
 # --- HELPERS THAT BUILD EFFSPEC ---
 def dual_land_specs(colors: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), TF.owner(), is_mana_ability=True,
+    return [Activated('T', AddMana(color), CF.owner(), is_mana_ability=True,
                       text=f'Add {{{color}}}') for color in colors]
 
 def self_pump(activation_cost: str, p: int, t: int):
     """Returns an Activated EffSpec; it is EOT=True, target is the card itself"""
-    return Activated(activation_cost, Pump(power_adj=p, toughness_adj=t, eot=True), TF.self(),
+    return Activated(activation_cost, Pump(power_adj=p, toughness_adj=t, eot=True), CF.self(),
                      text=f'Pump +{p}/+{t}')
 
 def mana_battery_add_mana(color: str) -> EffSpec:
     return Activated('T', ManaBatteriesAddMana(color), extra_costs=[RemoveCounterCost(CHARGE)], is_mana_ability=True,
-                     max_x_func=lambda gs, s: TF.self()(gs, s).counters.get_count(CHARGE),
+                     max_x_func=lambda gs, s: CF.self()(gs, s).counters.get_count(CHARGE),
                      text=f'Remove any number of charge counters from this artifact: Add {color}, '
                           f'then add an additional {color} for each charge counter removed this way')
 
 def mox_specs(color: str) -> list[EffSpec]:
-    return [Activated('T', AddMana(color), TF.owner(), is_mana_ability=True, text=f'Add {{{color}}}')]
+    return [Activated('T', AddMana(color), CF.owner(), is_mana_ability=True, text=f'Add {{{color}}}')]
 
 
-MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), TF.self())
+MANA_BATTERY_ADD_CHARGE = Activated('2T', AddCounter(CHARGE), CF.self())
 
 
 # --- X HELPERS ---

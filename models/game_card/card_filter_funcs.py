@@ -18,22 +18,22 @@ C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
     'host_is_basic_mountain': lambda gs, s: s.host.props.slug == 'mountain',
     'self_is_not_attacking': lambda gs, s: s not in gs.card_filter.attackers().result(),
     'self_is_untapped': lambda gs, s: not s.is_tapped,
-    'no_lands': lambda gs, s: len(TF.lands()(gs, s)) == 0,
+    'no_lands': lambda gs, s: len(CF.lands()(gs, s)) == 0,
     'opp_has_island': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).islands().result(),
     'opp_has_non_token_white_perm': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).non_token().white().permanents().result(),
-    'you_have_a_dwarf': lambda gs, s: len(TF.your_dwarves()(gs, s)) > 0,
+    'you_have_a_dwarf': lambda gs, s: len(CF.your_dwarves()(gs, s)) > 0,
     'you_have_a_forest': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
     'you_have_a_swamp': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
-    'you_have_no_lands': lambda gs, s: len(TF.your_lands()(gs, s)) == 0
+    'you_have_no_lands': lambda gs, s: len(CF.your_lands()(gs, s)) == 0
 }
 
-class TF:
+class CF:
     """A collection of methods that return lambdas, allowing IDE recommended completion in slug-effspec map;
     Always returns "lambda GameState, source: []" (with a couple exceptions like .self() which should be addressed);
-    Ex: TF.black_creatures() (as in 'bad-moon') -> lambda gs, s: gs.card_filter.in_play().creatures().black().result()
+    Ex: CF.black_creatures() (as in 'bad-moon') -> lambda gs, s: gs.card_filter.in_play().creatures().black().result()
     Since 90% of lookups seek cards on battlefield, keys that don't specify will only return those on battlfield.
-    Ex: TF.artifacts() will only return artifact creatures currently on the battlefield.
-    Ex: TF.artifacts_in_graveyards() explicitly indicates that it's looking somewhere besides the battlefield."""
+    Ex: CF.artifacts() will only return artifact creatures currently on the battlefield.
+    Ex: CF.artifacts_in_graveyards() explicitly indicates that it's looking somewhere besides the battlefield."""
 
     @staticmethod
     def all_creatures_and_players():
@@ -453,7 +453,7 @@ class TF:
 
     @staticmethod
     def other_creatures():
-        return lambda gs, s: [c for c in TF.creatures()(gs, s) if c is not s]
+        return lambda gs, s: [c for c in CF.creatures()(gs, s) if c is not s]
 
     @staticmethod
     def other_merfolk():
