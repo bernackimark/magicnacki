@@ -111,14 +111,14 @@ class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        from models.effects.resolvers_generic import DiscardAtRandom
         opp_cards = gs.pile_mgr.hands[t]
         for c in opp_cards:
             c.reveal()
         opp_creatures = [c for c in opp_cards if c.is_creature]
         if not opp_creatures:
             return
-        DiscardAtRandom().resolve(gs, source)
+        random_creature: GameCard = gs.randomize_event(t, opp_creatures)
+        gs.pile_mgr.discard(random_creature, source)
 
 class Rakalite(Resolver):
     """{2}: Prevent the next 1 damage that would be dealt to any target this turn.
@@ -138,12 +138,6 @@ class RapidFire(Resolver):
         if not t.rampage_amt:
             t.modifiers.append(KWAMod(s=source, item=KW.RAMPAGE_2, expires='EOT'))
 
-class Reset(Resolver):
-    """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        for land in gs.card_filter.on_player_board(source.owner_id).lands().tapped().result():
-            land.untap()
-
 class ReversePolarity(Resolver):
     """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -152,12 +146,6 @@ class ReversePolarity(Resolver):
         if not damage_by_artifacts:
             return
         gs.score_mgr.increment_life(source.owner_id, 2 * damage_by_artifacts, source, gs)
-
-class Riptide(Resolver):
-    """Tap all blue creatures"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        for c in gs.card_filter.in_play().creatures().untapped().blue().result():
-            c.tap()
 
 class RockHydraCast(Resolver):
     """This creature enters with X +1/+1 counters on it ..."""
@@ -199,13 +187,6 @@ class SandalsOfAbdallahIslandWalk(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(s=source, item=KW.ISLANDWALK, expires='EOT'))
         gs.event_mgr.register(SandalsOfAbdallahIfCreatureDies(target_creature=t), source)
-
-class Sandstorm(Resolver):
-    """Sandstorm deals 1 damage to each attacking creature.
-    [from Google: it only hits creatures already attacking when it resolves.]"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        for attacker in gs.card_filter.attackers().result():
-            gs.apply_damage(source, 1, attacker)
 
 class ShapeshifterCast(Resolver):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
@@ -286,11 +267,6 @@ class StormSeeker(Resolver):
         opp_idx = flip(source.owner_id)
         gs.apply_damage(source, len(gs.pile_mgr.hands[opp_idx]), opp_idx)
 
-class StreamOfLife(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        x = context.x_value
-        gs.score_mgr.increment_life(t, x, source, gs)
-
 class Subdue(Resolver):
     """Prevent all combat damage that would be dealt by target creature this turn.
     That creature gets +0/+X until end of turn, where X is its mana value."""
@@ -303,12 +279,6 @@ class SwordsToPlowshares(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.exile(t)
         gs.score_mgr.increment_life(t.owner_id, t.power, source, gs)
-
-class SyphonSoul(Resolver):
-    """Syphon Soul deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.apply_damage(source, 2, t)
-        gs.score_mgr.increment_life(source.owner_id, 2, source, gs)
 
 class TangleKelp(Resolver):
     """Tap host. Host doesn't untap during its controller's untap step if it attacked their last turn."""
@@ -357,7 +327,9 @@ class TowerOfCoireall(Resolver):
         gs.event_mgr.register(TowerOfCoireallEOT(t), source)
 
 class Tracker(Resolver):
-    """Tracker deals damage = its power to target creature. That creature deals damage = its power to this creature."""
+    """Tracker deals damage = its power to target creature. That creature deals damage = its power to this creature.
+    According to Google, this is slightly different from modern term 'fight',
+    since this is spelled out as two distinct successive actions."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.apply_damage(source, source.power, t)
@@ -427,23 +399,14 @@ class UrborgLoseSwampwalk(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=KW.SWAMPWALK, expires='EOT'))
 
-class UrzasAvengerFlying(Resolver):
-    """This creature gets -1/-1 and gains your choice of FLYING, first strike, or trample until end of turn"""
+class UrzasAvenger(Resolver):
+    """This creature gets -1/-1 and gains your choice of flying, first strike, or trample until end of turn"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, item=KW.FLYING, expires='EOT'))
-
-class UrzasAvengerFirstStrike(Resolver):
-    """This creature gets -1/-1 and gains your choice of flying, FIRST STRIKE, or trample until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, item=KW.FIRST_STRIKE, expires='EOT'))
-
-class UrzasAvengerTrample(Resolver):
-    """This creature gets -1/-1 and gains your choice of flying, first strike, or TRAMPLE until end of turn"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        source.modifiers.append(PTMod(s=source, p_adj=-1, t_adj=-1, expires='EOT'))
-        source.modifiers.append(KWAMod(s=source, item=KW.TRAMPLE, expires='EOT'))
+        s = source
+        s.modifiers.append(PTMod(s=s, p_adj=-1, t_adj=-1, expires='EOT'))
+        options = [CO(f'{source} gains {kwa}', lambda: s.modifiers.append(KWAMod(s=s, item=KW.FLYING, expires='EOT')))
+                   for kwa in (KW.FLYING, KW.FIRST_STRIKE, KW.TRAMPLE)]
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class UrzasTrio(Resolver):
     """{T}: Add {C}.
@@ -494,7 +457,6 @@ class WallOfWonder(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         source.modifiers.append(PTMod(s=source, p_adj=4, t_adj=-4, expires='EOT'))
         source.modifiers.append(KWAMod(s=source, add_or_remove='remove', item='Defender', expires='EOT'))
-
 
 class WandOfIth(Resolver):
     """Opponent reveals a card at random from their hand. If it's a land, that player pays 1 lift or discards.

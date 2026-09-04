@@ -179,7 +179,7 @@ class DeclareAColor(Resolver):
 
 class DealDamage(Resolver):
     """Supply a static amount in the initializer or declare x via AbilityPipeline -> ResContext -> .resolve();
-    target func can be provided in initializer or supplied as a single RTarget in .resolve()"""
+    target func can be provided in initializer or supplied as an RTarget in .resolve()"""
     def __init__(self, amt: int = None, to: Callable | None = None):
         self.amt = amt
         self.to = to
@@ -187,20 +187,11 @@ class DealDamage(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         amt = context.x_value if context and context.x_value is not None else self.amt
         target = self.to(gs, source) if self.to is not None else t
+        if isinstance(target, list):
+            for tar in target:
+                gs.apply_damage(source, amt, tar)
+            return
         gs.apply_damage(source, amt, target)
-
-class DealOneDamageToTargetList(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        for target in t:
-            gs.apply_damage(source, 1, target)
-
-class DealDamageToAllCreaturesAndPlayers(Resolver):
-    def __init__(self, amt: int):
-        self.amt = amt
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        [gs.apply_damage(source, self.amt, p_id, is_combat=False) for p_id in (0, 1)]
-        [gs.apply_damage(source, self.amt, creature) for creature in gs.card_filter.in_play().creatures().result()]
 
 class Destroy(Resolver):
     """The target can be provided via 'who' [a func(gs, s)] or via .resolve()"""
@@ -261,12 +252,16 @@ class Discard(Resolver):
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class DiscardAtRandom(Resolver):
+    """Target can be received via .resolve() else use opp_is_discarder from init"""
     def __init__(self, cnt: int = 1, opp_is_discarder: bool = True):
         self.cnt = cnt
         self.opp_is_discarder = opp_is_discarder
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        p_id = flip(source.owner_id) if self.opp_is_discarder else source.owner_id
+        if t is not None:
+            p_id = t
+        else:
+            p_id = flip(source.owner_id) if self.opp_is_discarder else source.owner_id
         cards = gs.pile_mgr.hands[p_id]
         if not cards:
             return
@@ -318,6 +313,8 @@ class ExileSelf(Resolver):
         gs.pile_mgr.exile(source)
 
 class GainLife(Resolver):
+    """Amount can be sent through the initializer or via context.x_value;
+    Target can be supplied via .resolve(t) else default to source.owner_id"""
     def __init__(self, amt: int = 1):
         self.amt = amt
 
@@ -380,6 +377,14 @@ class MayPayMana(Resolver):
     def _pay_and_resolve(self, gs: GameState, source: GameCard, t: RTarget, context: ResContext):
         gs.mana_pools[source.owner_id].pay(self.mana_cost)
         self.effect.resolve(gs, source, t, context)
+
+class Mill(Resolver):
+    def __init__(self, cnt: int = 1):
+        self.cnt = cnt
+
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.mill(t, self.cnt)
 
 class PayManaOr(Resolver):
     def __init__(self, mana_cost: str, effect: Resolver):
@@ -457,9 +462,17 @@ class Reveal(Resolver):
         gs.add_presentation_request(flip(t.owner_id), 'view_card', {'cards': [t]})
 
 class RevealHands(Resolver):
+    def __init__(self, p_func: Callable | None = None):
+        self.p_func = p_func
+
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        target = [t] if isinstance(t, int) else [0, 1] if t is None else t
-        for tar in target:
+        if self.p_func:
+            targets = [self.p_func(gs, source)]
+        elif isinstance(t, int):
+            targets = [t]
+        else:
+            targets = [0, 1]
+        for tar in targets:
             for c in gs.pile_mgr.hands[tar]:
                 c.reveal()
 
@@ -542,22 +555,28 @@ class TapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         t.tap()
 
-class TapCardsEffect(Resolver):
-    """Accepts a list of targets and taps each"""
-    @Resolver.target_required
+class TapCards(Resolver):
+    """Targets can be received through a func(gs, s) at init, or via a list of GameCard via .resolve()"""
+    def __init__(self, t_func: Callable | None = None):
+        self.t_func = t_func
+
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        for target in t:
+        targets = self.t_func(gs, source) if self.t_func else t
+        for target in targets:
             target.tap()
 
 class UntapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         t.untap()
 
-class UntapCardsEffect(Resolver):
-    """Accepts a list of targets and untaps each"""
-    @Resolver.target_required
+class UntapCards(Resolver):
+    """Targets can be received through a func(gs, s) at init, or via a list of GameCard via .resolve()"""
+    def __init__(self, t_func: Callable | None = None):
+        self.t_func = t_func
+
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        for target in t:
+        targets = self.t_func(gs, source) if self.t_func else t
+        for target in targets:
             target.untap()
 
 class XZeroOneCountersByManaValue(Resolver):

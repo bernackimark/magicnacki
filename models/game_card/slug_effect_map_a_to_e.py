@@ -10,7 +10,7 @@ from .event_conditions import EC
 from .target_funcs import ET
 from ..effects.modifiers_generic import PreventDamage
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
-    CastResolvedEvent, TapCardEvent, DamageProposedEvent, DamageResolvedEvent
+    CastResolvedEvent, TapCardEvent, DamageProposedEvent
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, CocoonCast, Banshee, \
     Earthquake, EternalFlame, AshesToAshes, DustToDust, EaterOfTheDead, BazaarOfBaghdad, Braingeyser, \
@@ -20,7 +20,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, CocoonC
     Cleansing, DrafnasRestoration, Eureka
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
-    Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCardsEffect, RemoveFromCombat, \
+    Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCards, RemoveFromCombat, \
     CounterSpell, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, PumpSelf,  DestroySelfCombatants, \
     ExileSelf, MayPayMana, Do, Reanimate, GainLifeTargetMV, PayManaOr, SacSelf
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
@@ -170,7 +170,7 @@ MAP: dict[str, list[EffSpec]] = {
     'brine-hag': [Triggered(BrineHag())],
     'brothers-of-fire': [Activated('T', Do(DealDamage(1), DealDamage(1, CF.owner())), CF.all_creatures_and_players())],
     'burrowing': [Spell(KWAModEffect('add', KW.ISLANDWALK), CF.creatures())],
-    'candelabra-of-tawnos': [Activated('XT', UntapCardsEffect(), TargetSpec(CF.your_tapped_lands(), 1, None),
+    'candelabra-of-tawnos': [Activated('XT', UntapCards(), TargetSpec(CF.your_tapped_lands(), 1, None),
                                        max_x_func=your_tapped_land_cnt_and_max_x)],
     'carrion-ants': [self_pump('1', 1, 1)],
     'castle': [Static(PumpApplies(CF.your_untapped_white_creatures(), (0, 2)))],

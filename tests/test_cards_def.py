@@ -192,6 +192,17 @@ class TestCardsDEF(unittest.TestCase):
         self.assertEqual(8, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
 
+    def test_feldons_cane(self):
+        """Shuffle your graveyard into your library"""
+        card = self.g.battlefield('feldons-cane')
+        aa = card.activated_abilities[0]
+        gy1 = self.g.graveyard('lightning-bolt')
+        gy2 = self.g.graveyard('ball-lightning')
+        self.gs.pile_mgr.libraries[0].clear()
+        self.g.activate_ability(aa)
+        self.assertIn(gy1, self.gs.pile_mgr.libraries[0])
+        self.assertEqual(0, len(self.g.gy[0]))
+
     def test_fellwar_stone_1(self):
         """{T}: Add one mana of any color that a land an opponent controls could produce"""
         fellwar_stone = self.g.battlefield('fellwar-stone')

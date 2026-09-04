@@ -12,7 +12,6 @@ from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
-from models.effects.resolvers_generic import GraveyardToExile
 from models.game_card.modifiers import PTMod, KWAMod
 from models.systems.mana import ManaCost
 from models.systems.phase import Phase
@@ -20,6 +19,7 @@ from models.utils import flip
 
 if TYPE_CHECKING:
     from game_state import GameState
+    from models.systems.combat import Combat
     from models.game_card.game_card import GameCard
     from models.effects.base import RTarget, ResContext
 
@@ -40,8 +40,13 @@ class FalseOrders(Resolver):
         gs.combat_mgr.remove_from_combat(t)
         other_combats = [com for com in gs.combat_mgr.combats if t not in com.blockers]
         if other_combats:
-            options = [AssignBlocker(source.owner_id, gs, t, com.attacker) for com in other_combats]
+            options = [CO(f'Reassign {source} to block {com.attacker}',
+                          lambda: self._assign_blocker(t, com)) for com in other_combats]
             gs.choice_mgr.queue(ChoiceAction(options, may=True))
+
+    @staticmethod
+    def _assign_blocker(target: GameCard, com: Combat):
+        com.add_blocker(target)
 
 class Feint(Resolver):
     """Tap all creatures blocking target attacking creature.
@@ -62,8 +67,8 @@ class FeldonsCane(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gy = gs.pile_mgr.graveyards[source.owner_id]
         lib = gs.pile_mgr.libraries[source.owner_id]
-        lib.extend(gy)
-        gy.clear()
+        for c in gy[:]:
+            gs.pile_mgr.move_card(c, Zone.LIBRARY, cause='feldons-cane')
         random.shuffle(lib)
 
 class FellwarStone(Resolver):
@@ -83,12 +88,6 @@ class FireAndBrimstone(Resolver):
         if gs.card_filter.on_player_board(opp).attackers().result():
             gs.apply_damage(source, 4, opp)
             gs.apply_damage(source, 4, source.owner_id)
-
-class GlassesOfUrza(Resolver):
-    """Look at opponent's hand"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        for c in gs.pile_mgr.hands[flip(source.owner_id)]:
-            c.reveal()
 
 class GlyphOfDelusion(Resolver):
     """Put X glyph counters on target creature that target Wall blocked this turn, X = power of that blocked creature"""
@@ -120,17 +119,7 @@ class GlyphOfReincarnation(Resolver):
             gs.pile_mgr.reanimate(attacker_gy_creatures[0])
         else:
             options = [CO(f'Reanimate {c}', lambda: gs.pile_mgr.reanimate(c)) for c in attacker_gy_creatures]
-            # options = [ReanimateAction(source.owner_id, gs, source, t) for t in attacker_gy_creatures]
             gs.choice_mgr.queue(ChoiceAction(options))
-
-class GoblinKing(Resolver):
-    """All of your other Goblins gain +1+/+1 and Mountainwalk"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        targets = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Goblin').result()
-        for t in targets:
-            if source != t:
-                t.modifiers.append(KWAMod(s=source, item=KW.ISLANDWALK))
-                t.modifiers.append(PTMod(s=source, p_adj=1, t_adj=1))
 
 class GreatDefender(Resolver):
     """Target creature gets +0/+X until end of turn, where X is its mana value."""
@@ -148,14 +137,6 @@ class GuardianAngel(Resolver):
         gs.event_mgr.register(PreventNextDamageTo(x, protected=t), source)
         # TODO: the above handles the FIRST next damage;
         #  need to handle subsequent damages via actions.special PayManaToPreventDamage
-
-class GwendlynDiCorci(Resolver):
-    """{T}: Target player discards a card at random. Activate only during your turn"""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        from models.effects.resolvers_generic import DiscardAtRandom
-        is_opp = t != source.owner_id
-        DiscardAtRandom(opp_is_discarder=is_opp).resolve(gs, source)
 
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
@@ -202,15 +183,6 @@ class JovialEvil(Resolver):
         opp_white_creature_cnt = len(gs.card_filter.on_player_board(t).creatures().result())
         gs.apply_damage(source, opp_white_creature_cnt * 2, t)
 
-class KoboldDrillSergeant(Resolver):
-    """Other Kobold creatures you control get +0/+1 and have trample"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        kobolds = gs.card_filter.on_player_board(source.owner_id).creatures().by_sub_type('Kobold').result()
-        for k in kobolds:
-            if source != k:
-                k.modifiers.append(KWAMod(s=source, item=KW.TRAMPLE))
-                k.modifiers.append(PTMod(s=source, p_adj=0, t_adj=1))
-
 class KryShield(Resolver):
     """Prevent all damage that would be dealt this turn by target creature you control.
     That creature gets +0/+X until end of turn, where X is its mana value"""
@@ -254,9 +226,10 @@ class ManaClash(Resolver):
     Repeat this process until both players' coins come up heads on the same flip."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         caster_id, opp_id = source.owner_id, flip(source.owner_id)
+        seq = ['heads', 'tails']
         while True:
-            caster_result = gs.randomize_event(caster_id, ['heads', 'tails'])
-            opp_result = gs.randomize_event(opp_id, ['heads', 'tails'])
+            caster_result = gs.randomize_event(caster_id, seq)
+            opp_result = gs.randomize_event(opp_id, seq)
             print(f"Caster's result is {caster_result}; opponent's result is {opp_result}")
             if caster_result == 'heads' and opp_result == 'heads':
                 print('Since both flips were heads, there are no more flips')
@@ -294,7 +267,7 @@ class MartyrsCry(Resolver):
 
 class MazeOfIth(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        the_combat = next((com for com in gs.combat_mgr.combats if com.attacker is t), None)
+        the_combat = gs.combat_mgr.get_combat(t)
         if not the_combat:
             return
         gs.event_mgr.register(PreventNextDamageBy(the_combat.attacker, combat_only=True))
@@ -302,21 +275,12 @@ class MazeOfIth(Resolver):
             gs.event_mgr.register(PreventNextDamageTo(b, combat_only=True))
         t.untap()
 
-class Millstone(Resolver):
-    """{2}, {T}: Target player mills two cards"""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        for _ in range(2):
-            top_card = gs.pile_mgr.libraries[t][0]  # Warning: if no cards, this pukes
-            gs.pile_mgr.move_card(top_card, Zone.GRAVEYARD, cause='mill')
-
 class MindTwist(Resolver):
     """Target player discards X cards at random"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.effects.resolvers_generic import DiscardAtRandom
         x = context.x_value
-        is_opp = t != source.owner_id
-        DiscardAtRandom(x, opp_is_discarder=is_opp).resolve(gs, source)
+        DiscardAtRandom(x).resolve(gs, source, t)
 
 class MoldDemon(Resolver):
     """When this creature enters, sacrifice this creature unless you sacrifice two Swamps"""

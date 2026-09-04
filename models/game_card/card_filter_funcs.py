@@ -617,6 +617,11 @@ class CF:
         return lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).creatures().result() if c is not s]
 
     @staticmethod
+    def your_other_goblins():
+        return lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Goblin').result()
+                              if c is not s]
+
+    @staticmethod
     def your_other_orcs():
         return lambda gs, s: [c for c in gs.card_filter.on_player_board(s.owner_id).by_sub_type('Orc').result()
                               if c is not s]

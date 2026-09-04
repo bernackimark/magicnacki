@@ -15,19 +15,18 @@ from .event_conditions import EC
 from .target_funcs import ET
 from ..constants import KW
 from ..effects.modifiers_generic import PreventDamage, RedirectToSource
-from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, Millstone, GlassesOfUrza, GwendlynDiCorci, JalumTome, \
-    MindTwist, NaturalSelection, GreatDefender, HowlFromBeyond, LesserWerewolf, FallingStar, Feint, \
-    FeldonsCane, GoblinKing, GlyphOfDestruction, HurkylsRecall, Inquisition, \
-    KoboldDrillSergeant, KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, \
-    FireAndBrimstone, LibraryOfAlexandria, FellwarStone, NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, \
-    GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, Necropolis, LifeChisel
+from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, JalumTome, MindTwist, NaturalSelection, GreatDefender, \
+    HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, GlyphOfDestruction, HurkylsRecall, Inquisition, \
+    KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
+    NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
+    Necropolis, LifeChisel, LandsEdge
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
-    DealDamageToAllCreaturesAndPlayers, Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
+    Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, PayManaOr, SacSelf, DrawCardsActivePlayer, DiscardAtRandom, \
-    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand
+    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -115,7 +114,7 @@ MAP: dict[str: list[EffSpec]] = {
     'giant-strength': [Spell(Pump(2, 2), CF.creatures())],
     'giant-tortoise': [Static(PumpApplies(CF.self(), (0, 3), cond=C_FUNCS['self_is_untapped']))],
     'giant-turtle': [Triggered(CantAttackIfAttackedLastTurn())],
-    'glasses-of-urza': [Activated('T', GlassesOfUrza())],
+    'glasses-of-urza': [Activated('T', RevealHands(CF.opp()))],
     'gloom': [Static(Gloom())],
     'glyph-of-delusion': [Spell(GlyphOfDelusion(), CF.walls())],
     'glyph-of-destruction': [Spell(GlyphOfDestruction(), CF.your_walls())],
@@ -126,7 +125,8 @@ MAP: dict[str: list[EffSpec]] = {
     'goblin-balloon-brigade': [Activated('R', KWAModEffect('add', KW.FLYING, True), CF.self())],
     'goblin-caves': [Static(PumpApplies(CF.goblins(), (0, 2), cond=C_FUNCS['host_is_basic_mountain']))],
     'goblin-digging-team': [Activated('T', Destroy(), CF.walls(), extra_costs=[SacSelfCost()])],
-    'goblin-king': [Spell(GoblinKing())],
+    'goblin-king': [Static(PumpApplies(CF.your_other_goblins(), (1, 1))),
+                    Static(KWAApplies(CF.your_other_goblins(), 'add', KW.MOUNTAINWALK))],
     'goblin-rock-sled': [Static(GoblinRockSledUntap()), Static(GoblinRockSledCanAttack())],
     'goblin-shrine': [Static(PumpApplies(CF.goblins(), (1, 0), cond=C_FUNCS['host_is_basic_mountain'])),
                       Triggered(GoblinShrineOnLeave())],
@@ -150,7 +150,7 @@ MAP: dict[str: list[EffSpec]] = {
                                          C_FUNCS['self_is_untapped'])),
                        Static(CantBeTargetedByAuras(CF.your_non_creature_artifacts(),
                                                     condition_func=C_FUNCS['self_is_untapped']))],
-    'gwendlyn-di-corci': [Activated('T', GwendlynDiCorci(), CF.all_players(), allowed_p_turn_func=CF.owner())],
+    'gwendlyn-di-corci': [Activated('T', DiscardAtRandom(), CF.all_players(), allowed_p_turn_func=CF.owner())],
     'halfdane': [Triggered(Halfdane())],
     'hammerheim': [Activated('T', AddMana('R'), CF.owner(), is_mana_ability=True),
                    Activated('T', AllWalksRemoved(), CF.creatures())],
@@ -192,7 +192,7 @@ MAP: dict[str: list[EffSpec]] = {
     'infernal-medusa': [GenTrig(On(CombatEndEvent).where(EC.self_is_attacker()).
                                 then(DestroySelfCombatants(filter_func=CF.non_wall_creatures()))),
                         GenTrig(On(CombatEndEvent).where(EC.self_is_blocker()).then(DestroySelfCombatants()))],
-    'inferno': [Spell(DealDamageToAllCreaturesAndPlayers(6))],
+    'inferno': [Spell(DealDamage(6, CF.all_creatures_and_players()))],
     'infinite-authority': [Triggered(InfiniteAuthorityCombatEnd()), Triggered(InfiniteAuthorityEndStep())],
     'instill-energy': [Spell(KWAModEffect('add', KW.HASTE), CF.creatures()),
                        Activated('', UntapCardEffect(), CF.host(), allowed_p_turn_func=CF.host_owner(),
@@ -233,7 +233,8 @@ MAP: dict[str: list[EffSpec]] = {
     'king-suleiman': [Activated('T', Destroy(), CF.djinns_and_efreets())],
     'kird-ape': [Static(PumpApplies(CF.self(), (1, 2), cond=C_FUNCS['you_have_a_forest']))],
     'kismet': [Static(Kismet())],
-    'kobold-drill-sergeant': [Spell(KoboldDrillSergeant())],
+    'kobold-drill-sergeant': [Static(PumpApplies(CF.your_other_kobolds(), (0, 1))),
+                              Static(KWAApplies(CF.your_other_kobolds(), 'add', KW.TRAMPLE))],
     'kobold-overlord': [Static(KWAApplies(CF.your_other_kobolds(), 'add', KW.FIRST_STRIKE))],
     'kobold-taskmaster': [Static(PumpApplies(CF.your_other_kobolds(), (0, 1)))],
     'kormus-bell': [Static(KormusBell())],
@@ -244,7 +245,7 @@ MAP: dict[str: list[EffSpec]] = {
     'lance': [Spell(KWAModEffect('add', KW.FIRST_STRIKE), CF.creatures())],
     'land-equilibrium': [Static(LandEquilibrium())],
     'land-tax': [Triggered(LandTax())],
-    'lands-edge': [Activated('', DealDamage(2), CF.all_players(), allowed_activators=A_FUNCS['all_players'],
+    'lands-edge': [Activated('', LandsEdge(), CF.all_players(), allowed_activators=A_FUNCS['all_players'],
                              extra_costs=[DiscardACard(CF.cards_in_your_hand())])],
     'lesser-werewolf': [Activated('B', LesserWerewolf(), CF.combating_against(),
                                   allowed_phases=[Phase.DECLARE_BLOCKERS])],
@@ -301,7 +302,7 @@ MAP: dict[str: list[EffSpec]] = {
     'merfolk-assassin': [Activated('T', Destroy(), CF.islandwalkers())],
     'mightstone': [Static(PumpApplies(CF.attackers(), (1, 0)))],
     'mijae-djinn': [Triggered(MijaeDjinn())],
-    'millstone': [Activated('2T', Millstone(), CF.all_players())],
+    'millstone': [Activated('2T', Mill(2), CF.all_players())],
     'mind-twist': [Spell(MindTwist(), CF.all_players(), max_x_func=max_x_from_printed_card)],
     'miracle-worker': [Activated('T', Destroy(), CF.auras_on_owners_creatures())],
     'mirror-universe': [Activated('T', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],
