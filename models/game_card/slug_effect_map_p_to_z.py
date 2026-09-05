@@ -22,7 +22,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
-    GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCards, \
+    GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, MayPayMana, \
     GainLife, Do, PayManaOr, SacSelf, EmptyResolver, AddCounterToHost, DestroySelfCombatants, DestroyHostCombatants, \
     UntapCards, Exile, Tutor, Register
@@ -55,7 +55,7 @@ from models.systems.phase import Phase
 MAP: dict[str, list[EffSpec]] = {
     'palladia-mors': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('RGW', SacSelf())))],
     'paralyze': [Triggered(DoesntUntapAtUntap(CF.host())), Static(PayManaToUntapUpkeep('4', CF.host())),
-                 Spell(TapCardEffect(), CF.host())],
+                 Spell(TapCard(), CF.host())],
     'part-water': [Spell(KWAModEffect('add', KW.ISLANDWALK, True), CF.creatures(), max_x_func=max_x_from_printed_card)],
     'pavel-maliki': [self_pump('BR', 1, 0)],
     'pendelhaven': [Activated('T', AddMana('G'), CF.owner(), is_mana_ability=True),
@@ -68,7 +68,7 @@ MAP: dict[str, list[EffSpec]] = {
     'phantasmal-forces': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('U', SacSelf())))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(), CF.lands())],
     'phyrexian-gremlins': [Triggered(OptionalUntap()),
-                           Activated('T', Do(TapCardEffect(), Register(DoesntUntapAtUntap, target_attr='target')),
+                           Activated('T', Do(TapCard(), Register(DoesntUntapAtUntap, target_attr='target')),
                                      CF.artifacts()),
                            Triggered(PhyrexianGremlinsUntaps())],
     'piety': [Spell(PumpApplies(CF.blockers(), (0, 3), True))],
@@ -94,7 +94,7 @@ MAP: dict[str, list[EffSpec]] = {
     'prodigal-sorcerer': [Activated('T', DealDamage(1), CF.all_creatures_and_players(), text="Deal 1 Damage}")],
     'psionic-blast': [Spell(Do(DealDamage(4), DealDamage(2, CF.owner())), CF.all_creatures_and_players())],
     'psionic-entity': [Activated('T', Do(DealDamage(2), DealDamage(3, CF.owner())), CF.all_creatures_and_players())],
-    'psychic-allergy': [Triggered(PsychicAllergySac()), Triggered(DeclareAColor()), Spell(PsychicAllergyDamage())],
+    'psychic-allergy': [Triggered(PsychicAllergySac()), Triggered(PsychicAllergyDamage()), Spell(DeclareAColor())],
     'psychic-purge': [Triggered(PsychicPurgeDiscard()), Spell(DealDamage(1), CF.all_creatures_and_players())],
     'psychic-venom': [Spell(EmptyResolver(), CF.lands()),
                       GenTrig(On(TapCardEvent).where(EC.card_is_host()).then(DealDamage(2)).t(ET.host_owner()))],
@@ -121,7 +121,7 @@ MAP: dict[str, list[EffSpec]] = {
     'red-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_RED), CF.creatures())],
     'regeneration': [Activated('G', Regenerate(), CF.host())],
     'regrowth': [Spell(Bounce(), CF.cards_in_your_graveyard())],
-    'relic-barrier': [Activated('T', TapCardEffect(), CF.untapped_artifacts())],
+    'relic-barrier': [Activated('T', TapCard(), CF.untapped_artifacts())],
     'remove-soul': [Spell(CounterSpell(), CF.creature_spells())],
     'reset': [Spell(UntapCards(CF.your_tapped_lands()),
                     allowed_p_turn_func=CF.opp(), allowed_phases=[p for p in Phase if p >= Phase.UPKEEP])],
@@ -230,7 +230,7 @@ MAP: dict[str, list[EffSpec]] = {
     'syphon-soul': [Spell(Do(DealDamage(2, CF.opp()), GainLife(2, CF.owner())))],
     'tablet-of-epityr': [GenTrig(On(DiesEvent).where(EC.dier_is_your_artifact()).then(MayPayMana('1', GainLife(1))))],
     'taiga': dual_land_specs('RG'),
-    'tangle-kelp': [Spell(Do(TapCardEffect(), Register(DoesntUntapAtUntapIfItAttackedLastTurn, target_attr='target')),
+    'tangle-kelp': [Spell(Do(TapCard(), Register(DoesntUntapAtUntapIfItAttackedLastTurn, target_attr='target')),
                           CF.creatures())],
     'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()),
                        Triggered(TawnossCoffinZoneChange())],
@@ -260,7 +260,7 @@ MAP: dict[str, list[EffSpec]] = {
                                then(Do(SacSelf(), DealDamage(5, CF.owner())))),
                        Activated('2UUT', Bounce(), CF.unenchanted_perms())],
     'time-vault': [Triggered(DoesntUntapAtUntap(CF.self())), Triggered(TimeVaultOption()),
-                   Activated('T', TakeAnotherTurn()), Spell(TapCardEffect(), CF.self())],
+                   Activated('T', TakeAnotherTurn()), Spell(TapCard(), CF.self())],
     'time-walk': [Spell(TakeAnotherTurn())],
     'timetwister': [Spell(Timetwister())],
     'tivadars-crusade': [Spell(DestroyAll(CF.goblins()))],

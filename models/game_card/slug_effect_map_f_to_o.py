@@ -23,7 +23,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
-    Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
+    Pump, TapCard, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, PayManaOr, SacSelf, DrawCardsActivePlayer, DiscardAtRandom, \
     AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill, DrawThenDiscard, Register
@@ -82,7 +82,7 @@ MAP: dict[str: list[EffSpec]] = {
     'flash-flood': [Spell(Destroy(), CF.red_permanents()), Spell(Bounce(), CF.mountains())],
     'flashfires': [Spell(DestroyAll(CF.plains()))],
     'flight': [Spell(KWAModEffect('add', KW.FLYING), CF.creatures())],
-    'flood': [Activated('UU', TapCardEffect(), CF.untapped_creatures_without_flying())],
+    'flood': [Activated('UU', TapCard(), CF.untapped_creatures_without_flying())],
     'floral-spuzzem': [Triggered(FloralSpuzzem())],
     'flying-carpet': [Activated('2T', KWAModEffect('add', KW.FLYING, True), CF.creatures())],
     'fog': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC.is_combat_damage()).modify(PreventDamage()))],
@@ -118,7 +118,7 @@ MAP: dict[str: list[EffSpec]] = {
     'glasses-of-urza': [Activated('T', RevealHands(CF.opp()))],
     'gloom': [Static(Gloom())],
     'glyph-of-delusion': [Spell(GlyphOfDelusion(), CF.walls())],
-    'glyph-of-destruction': [Spell(Do(Pump(0, 10, True), Register(PreventAllDamageToEOT, target_attr='target'),
+    'glyph-of-destruction': [Spell(Do(Pump(10, 0, True), Register(PreventAllDamageToEOT, target_attr='target'),
                                       Register(DestroyAtEndStep, target_attr='card_to_be_destroyed')), CF.your_walls())],
     'glyph-of-doom': [Spell(GlyphOfDoom(), CF.walls())],
     'glyph-of-life': [Spell(GlyphOfLife(), CF.walls())],
@@ -180,12 +180,12 @@ MAP: dict[str: list[EffSpec]] = {
     'howling-mine': [GenTrig(On(DrawStepEvent).where(EC.self_is_untapped()).then(DrawCardsActivePlayer()))],
     'hurkyls-recall': [Spell(HurkylsRecall(), CF.all_players())],
     'hurr-jackal': [Activated('T', PreventRegenerationEOT(), CF.creatures())],
-    'hyperion-blacksmith': [Activated('T', TapCardEffect(), CF.opp_untapped_artifacts()),
+    'hyperion-blacksmith': [Activated('T', TapCard(), CF.opp_untapped_artifacts()),
                             Activated('T', UntapCardEffect(), CF.opp_tapped_artifacts())],
     'hypnotic-specter': [GenTrig(On(DamageResolvedEvent).
                                  where(EC.self_is_damager(), EC.opp_is_damage_receiver()).then(DiscardAtRandom()))],
     'ichneumon-druid': [Triggered(IchneumonDruid())],
-    'icy-manipulator': [Activated('1T', TapCardEffect(), CF.untapped_artifacts_creatures_lands())],
+    'icy-manipulator': [Activated('1T', TapCard(), CF.untapped_artifacts_creatures_lands())],
     'ice-storm': [Spell(Destroy(), CF.lands())],
     'ifh-biff-efreet': [Activated('G', IfhBiffEfreet(), allowed_activators=A_FUNCS['all_players'])],
     'immolation': [Spell(Pump(2, -2), CF.creatures())],
@@ -252,7 +252,7 @@ MAP: dict[str: list[EffSpec]] = {
     'lesser-werewolf': [Activated('B', LesserWerewolf(), CF.combating_against(),
                                   allowed_phases=[Phase.DECLARE_BLOCKERS])],
     'leviathan': [Static(DoesntUntapAtUntap(CF.self())), Static(CantAttack(CF.self())),
-                  Triggered(LeviathanUpkeep()), Triggered(LeviathanAttack()), Spell(TapCardEffect(), CF.self())],
+                  Triggered(LeviathanUpkeep()), Triggered(LeviathanAttack()), Spell(TapCard(), CF.self())],
     'ley-druid': [Activated('T', UntapCardEffect(), CF.tapped_lands())],
     'library-of-alexandria': [Activated('T', AddMana('C'), is_mana_ability=True),
                               Activated('T', LibraryOfAlexandria())],
@@ -326,7 +326,7 @@ MAP: dict[str: list[EffSpec]] = {
     'necropolis': [Activated('', Necropolis(), extra_costs=[ExileCardCost(CF.creatures_in_your_graveyard())])],
     'nether-void': [Triggered(PayManaOrCounterSpellListener('3'))],
     'nettling-imp': [Activated('T', NettlingImp(), CF.non_wall_creatures_wo_summoning_sickness())],
-    'nevinyrrals-disk': [Spell(TapCardEffect(), CF.self()),
+    'nevinyrrals-disk': [Spell(TapCard(), CF.self()),
                          Activated('1T', DestroyAll(CF.artifacts_creatures_enchantments()))],
     'niall-silvain': [Activated('GGGGT', Regenerate(), CF.creatures())],
     'nicol-bolas': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('UBR', SacSelf()))),

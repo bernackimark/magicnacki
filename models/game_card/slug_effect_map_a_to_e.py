@@ -18,7 +18,7 @@ from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee
     Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
-    Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCards, RemoveFromCombat, \
+    Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
     CounterSpell, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, PumpSelf, DestroySelfCombatants, \
     MayPayMana, Do, Reanimate, GainLifeTargetMV, PayManaOr, SacSelf, Exile, TapCards, AddType, DrawThenDiscard, Copy, \
     Tutor, SetSubType, Register
@@ -64,7 +64,7 @@ MAP: dict[str, list[EffSpec]] = {
                                text="Prevent the next X damage that would be dealt to any target this turn")],
     'aladdin': [Activated('1RRT', Steal(), CF.opp_artifacts())],
     'aladdins-ring': [Activated('8T', DealDamage(4), CF.all_creatures_and_players())],
-    'ali-baba': [Activated('R', TapCardEffect(), CF.walls())],
+    'ali-baba': [Activated('R', TapCard(), CF.walls())],
     'ali-from-cairo': [Static(AliFromCairo())],
     'alchors-tomb': [Activated('2T', SetColor(c), CF.your_permanents(), text=f'Set color to {{{c}}}')
                      for c in COLOR_LETTERS],
@@ -130,7 +130,7 @@ MAP: dict[str, list[EffSpec]] = {
     'badlands': dual_land_specs('BR'),
     'ball-lightning': [GenTrig(On(EndStepEvent).then(Destroy(CF.self())))],
     'banshee': [Activated('XT', Banshee(), CF.all_creatures_and_players(), max_x_func=max_x_from_printed_card)],
-    'barls-cage': [Activated('3', Do(TapCardEffect(), AddCounter(STUN)), CF.creatures())],
+    'barls-cage': [Activated('3', Do(TapCard(), AddCounter(STUN)), CF.creatures())],
     'bartel-runeaxe': [Static(CantBeTargetedByAuras(CF.self()))],
     'basalt-monolith': [Triggered(DoesntUntapAtUntap(CF.self())),
                         Activated('T', AddMana('C', 3), is_mana_ability=True),
@@ -309,7 +309,7 @@ MAP: dict[str, list[EffSpec]] = {
                                       EC.is_combat_damage()).modify(PreventDamage()))],
     'enchantment-alteration': [Spell(EnchantmentAlteration(), CF.auras_on_creatures_or_lands())],
     'energy-flux': [Triggered(EnergyFlux())],
-    'energy-tap': [Spell(Do(TapCardEffect(), AddMana('C', amt_func=AmtF.t_mv())), CF.your_untapped_creatures())],
+    'energy-tap': [Spell(Do(TapCard(), AddMana('C', amt_func=AmtF.t_mv())), CF.your_untapped_creatures())],
     'erg-raiders': [Triggered(ErgRaiders())],
     'erhnam-djinn': [Triggered(ErhnamDjinn(), CF.opp_non_wall_creatures())],
     'erosion': [Spell(ErosionUpkeep(), CF.lands())],

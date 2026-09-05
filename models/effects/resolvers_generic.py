@@ -637,7 +637,7 @@ class Steal(Resolver):
 
         gs.event_mgr.emit(StateBasedEvent())
 
-class TapCardEffect(Resolver):
+class TapCard(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         t.tap()
 
