@@ -47,8 +47,8 @@ class TurnManager:
         gs.phase_mgr.set_phase(Phase.UNTAP)
 
     def get_players_last_turn_num(self, player_id: int) -> int | None:
-        for turn_num, p_idx in self.turns[::-1]:
-            if turn_num == self.turn_number:
+        for turn in self.turns[::-1]:
+            if turn.turn_number == self.turn_number:
                 continue
-            if p_idx == player_id:
-                return turn_num
+            if turn.in_turn_player_id == player_id:
+                return turn.turn_number
