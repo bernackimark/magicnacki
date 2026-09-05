@@ -10,6 +10,10 @@ class ET:
         return lambda gs, source, event: event.attacker
 
     @staticmethod
+    def event_card():
+        return lambda gs, source, event: event.card
+
+    @staticmethod
     def event_card_owner():
         return lambda gs, source, event: event.card.owner_id
 

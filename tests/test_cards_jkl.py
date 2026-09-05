@@ -46,13 +46,25 @@ class TestCardsJKL(unittest.TestCase):
         self.assertNotIn(KW.VIGILANCE, c1.keyword_abilities)
         self.assertNotIn(KW.VIGILANCE, c2.keyword_abilities)
 
-
     def test_jovial_evil(self):
         """JE deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
         self.g.battlefield('savannah-lions', owner=1)
         card = self.g.hand('jovial-evil')
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         self.assertEqual(18, self.gs.life[1])
+
+    def test_kismet(self):
+        """Artifacts, creatures, and lands your opponents control enter tapped"""
+        self.g.battlefield('kismet')
+
+        artifact = self.g.hand('sol-ring', owner=1)
+        self.g.cast_and_accept(artifact, eff_spec=artifact.abilities[0], owner=1)
+        self.assertTrue(artifact.is_tapped)
+
+        your_card = self.g.hand('prodigal-sorcerer')
+        self.gs.pile_mgr.cast(your_card)
+        self.assertIn(your_card, self.gs.boards[0])
+        self.assertFalse(your_card.is_tapped)
 
     # def test_kudzu(self):
     #     """When host becomes tapped, destroy it. Host may attach this Aura to a land of their choice."""

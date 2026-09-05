@@ -508,6 +508,10 @@ class CF:
         return lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_red]
 
     @staticmethod
+    def sand_warriors():
+        return lambda gs, s: gs.card_filter.in_play().by_sub_type('Sand').by_sub_type('Warrior').result()
+
+    @staticmethod
     def self():
         return lambda gs, s: s
 

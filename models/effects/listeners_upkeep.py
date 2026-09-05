@@ -3,7 +3,7 @@ from __future__ import annotations
 import random
 from collections import defaultdict
 from itertools import combinations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, copy_card
@@ -298,19 +298,15 @@ class HazezonTamarTokenCreation(Listener):
     """Create X 1/1 Sand Warrior tokens at your next upkeep; X is the number of lands you control at that time"""
     listens_to = UpkeepEvent
 
-    def __init__(self, owner_id: int):
-        self.owner_id = owner_id
-
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
         if gs.player_turn_idx != source.owner_id:
             return
 
         from .resolvers_generic import CreateTokenCreature
-        for _ in gs.card_filter.lands().on_player_board(self.owner_id).result():
+        for _ in gs.card_filter.lands().on_player_board(source.owner_id).result():
             CreateTokenCreature('sand-warrior').resolve(gs, source)
 
         gs.event_mgr.unregister_specific_effect(self)
-
 
 class IvoryTower(Listener):
     """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
@@ -322,7 +318,6 @@ class IvoryTower(Listener):
             return
         if (hand_size := len(gs.pile_mgr.hands[p_id])) > 4:
             gs.score_mgr.increment_life(p_id, hand_size - 4, source)
-
 
 class Karma(Listener):
     """At each player's upkeep, this enchantment deals damage to that player = number of Swamps they control."""

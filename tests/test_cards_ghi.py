@@ -107,7 +107,7 @@ class TestCardsGHI(unittest.TestCase):
         goblin = self.g.battlefield('monss-goblin-raiders')  # 1/1
         self.assertEqual(2, goblin.power)
         self.gs.pile_mgr.destroy(card)
-        self.assertIn(goblin, self.g.gy[0])  # this test now fails
+        self.assertIn(goblin, self.g.gy[0])
 
     def test_guardian_beast(self):
         """As long as GB is untapped, noncreature artifacts you control can't be enchanted, they have indestructible, &
@@ -186,6 +186,21 @@ class TestCardsGHI(unittest.TestCase):
         self.g.mana('R')
         self.g.activate_ability(aa, non_artifact)
         self.assertEqual(17, self.gs.life[1], '0 damage should be dealt for a non-artifact')
+
+    def test_hazezon_tamar(self):
+        """When Hazezon enters, create X 1/1 Sand Warrior creature tokens that are RGW at your next upkeep,
+        where X is the number of lands you control at that time.
+        When Hazezon leaves the battlefield, exile all Sand Warriors"""
+        self.g.mana('W')
+        card = self.g.battlefield('hazezon-tamar')
+        self.assertEqual(1, len(self.gs.card_filter.on_player_board(0).creatures().result()))
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(2, len(self.gs.card_filter.on_player_board(0).creatures().result()))
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual(0, len(self.gs.card_filter.on_player_board(0).creatures().result()))
 
     def test_hypnotic_specter(self):
         """When HS deals damage to an opp, opp discards a card at random"""

@@ -531,6 +531,7 @@ class Reveal(Resolver):
         gs.add_presentation_request(flip(t.owner_id), 'view_card', {'cards': [t]})
 
 class RevealHands(Resolver):
+    """If p_func is not provided, both players play w their hands revealed"""
     def __init__(self, p_func: Callable | None = None):
         self.p_func = p_func
 
