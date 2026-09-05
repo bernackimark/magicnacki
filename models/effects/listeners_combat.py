@@ -67,13 +67,14 @@ class AislingLeprechaun(Listener):
     listens_to = BlockEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: BlockEvent):
+        from models.effects.resolvers_generic import SetColor
         if event.attacker == s:
             other = event.blocker
         elif event.blocker == s:
             other = event.attacker
         else:
             return
-        other.colors = 'G'
+        SetColor('G').resolve(gs, s, t=other)
 
 class WallOfDust(Listener):
     """Whenever this creature blocks, the attacker can't attack during its controller's next turn"""

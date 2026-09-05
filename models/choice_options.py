@@ -26,6 +26,7 @@ class CO:
 
 def copy_card(gs: GameState, to: GameCard, from_: GameCard, additional_types: list[str] | None = None,
               copy_color: bool = True):
+    from models.effects.resolvers_generic import SetColor
     the_copy = copy.deepcopy(from_)
     if additional_types:
         to._card_types = list(set(additional_types + the_copy.props.card_types))
@@ -33,7 +34,7 @@ def copy_card(gs: GameState, to: GameCard, from_: GameCard, additional_types: li
         to._card_types = the_copy.props.card_types
     to._card_sub_types = the_copy.props.card_sub_types
     if copy_color:
-        to.colors = the_copy.props.colors
+        SetColor(the_copy.props.colors).resolve(gs, from_, t=to)
     to.base_pt = the_copy.base_pt
     to._base_kwa = the_copy.props.keyword_abilities
     to.abilities = the_copy.abilities
