@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from models.constants import KW
 from models.game_card.counter_tokens import STUN
-from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapPhaseQueryEvent
+from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapQueryEvent
 
 if TYPE_CHECKING:
     from models.actions.base import Action
@@ -77,7 +77,7 @@ class UntapPhase(PhaseState):
                 c.counters.remove_counter(STUN)
                 continue
 
-            query = CanUntapAtUntapPhaseQueryEvent(gs.player_turn_idx, c)
+            query = CanUntapAtUntapQueryEvent(gs.player_turn_idx, c)
             gs.event_mgr.emit(query)
             if query.permission is False:
                 continue

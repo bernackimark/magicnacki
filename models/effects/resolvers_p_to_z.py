@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 import random
 from itertools import combinations
 from typing import TYPE_CHECKING
@@ -10,11 +9,8 @@ from models.choice_options import CO, pay_mana_to_prevent_counter, copy_card
 from models.constants import BASIC_LANDS, KW, Zone
 from models.game_card.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver, RTarget, ResContext
-from models.effects.listeners_dies import SandalsOfAbdallahIfCreatureDies
 from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageBy, \
     BounceAtEndStep, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack, LTBTandem
-from models.effects.listeners_permission import TowerOfCoireallEOT, DoesntUntapAtUntapIfItAttackedLastTurn, \
-    DoesntUntapAtUntap
 from models.effects.resolvers_generic import Reveal, CreateTokenCreature
 from models.events_all import DamageResolvedEvent
 from models.game_card.modifiers import KWAMod, PTMod, SubTypeMod

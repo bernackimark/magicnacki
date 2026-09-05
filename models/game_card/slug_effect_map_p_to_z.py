@@ -10,9 +10,9 @@ from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, Ge
 from .event_conditions import EC
 from .target_funcs import ET
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
-from ..effects.modifiers_generic import PreventDamage, RedirectToSource
+from ..effects.modifiers_generic import PreventDamage, RedirectToSource, Deny
 from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent, \
-    DamageProposedEvent, DamageResolvedEvent, DrawCardEvent, BlockEvent, ZoneChangeEvent
+    DamageProposedEvent, DamageResolvedEvent, DrawCardEvent, BlockEvent, ZoneChangeEvent, CanTargetQueryEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis, VesuvanDoppelgangerCast, RapidFire, \
     RockHydraCast, StormSeeker, Tracker, Typhoon, RagMan, Visions, WheelOfFortune, PhantasmalTerrain, PrimalClay, \
@@ -45,7 +45,7 @@ from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, Prevent
     OptionalUntap, RedirectNextDamageToTarget, PayManaToUntapUpkeep, \
     PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, \
     CounterEnchantments, DestroyAtEndStep
-from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
+from models.effects.listeners_permission import CantBeTargetedByAuras, WalkRuleRemoved, Smoke, \
     WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo, \
     CantAttackIfAttackedLastTurn, DoesntUntapAtUntapIfItAttackedLastTurn, TowerOfCoireallEOT
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEqualsFuncLen, \
@@ -195,7 +195,8 @@ MAP: dict[str, list[EffSpec]] = {
     'solkanar-the-swamp-king': [GenTrig(On(CastResolvedEvent).where(EC().card_is_color('B')).then(GainLife()))],
     'sorceress-queen': [Activated('T', BasePT(0, 2, True), CF.other_creatures())],
     'soul-net': [GenTrig(On(DiesEvent).where(EC().dier_is_creature()).then(MayPayMana('1', GainLife(1))))],
-    'spectral-cloak': [Spell(SpectralCloak(), CF.creatures())],
+    'spectral-cloak': [Spell(EmptyResolver(), CF.creatures()),
+                       GenTrig(On(CanTargetQueryEvent).where(EC().e_target_is_host()).modify(Deny()))],
     'spell-blast': [Spell(CounterSpell(), CF.spells(), min_x_func=target_spell_mv, max_x_func=target_spell_mv)],
     'spinal-villain': [Activated('T', Destroy(), CF.blue_creatures())],
     'spirit-link': [Spell(SpiritLink(), CF.creatures())],

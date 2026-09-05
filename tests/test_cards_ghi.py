@@ -310,6 +310,5 @@ class TestCardsGHI(unittest.TestCase):
         self.assertTrue(self.gs.perm_querier.can_attack(illegal_attacker))
 
 
-
 if __name__ == '__main__':
     unittest.main()

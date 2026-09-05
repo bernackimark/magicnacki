@@ -5,7 +5,7 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.game_card.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
-from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapPhaseQueryEvent
+from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapQueryEvent
 from models.game_card.modifiers import KWAMod
 from models.systems.phase import Phase
 
@@ -64,7 +64,7 @@ class PhyrexianGremlinsUntaps(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UntapCardEvent) -> None:
         if event.card is not source:
             return
-        cant_untap_listeners = gs.event_mgr.event_listeners.get(CanUntapAtUntapPhaseQueryEvent, [])
+        cant_untap_listeners = gs.event_mgr.event_listeners.get(CanUntapAtUntapQueryEvent, [])
         for listener in cant_untap_listeners:
             if listener.source is source:
                 gs.event_mgr.unregister_specific_effect(listener.effect)

@@ -98,6 +98,18 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.event_mgr.emit(AbilityActivatedEvent(0, aa))
         self.assertEqual(self.gs.life[0], 18)
 
+    def test_artifact_ward(self):
+        """Host can't be the target of abilities from artifact sources"""
+        card = self.g.hand('artifact-ward')
+        host = self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.g.cast_and_accept(card, host, card.abilities[0])
+
+        legal_target = self.g.battlefield('air-elemental')
+        artifact = self.g.battlefield('icy-manipulator', owner=1)
+        self.g.mana('UUUUUU', owner=1)
+        self.assertFalse(self.gs.perm_querier.can_target(host, artifact))
+        self.assertTrue(self.gs.perm_querier.can_target(legal_target, artifact))
+
     def test_ashes_to_ashes(self):
         """Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you."""
         card = self.g.hand('ashes-to-ashes')

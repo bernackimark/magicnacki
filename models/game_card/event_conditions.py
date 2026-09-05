@@ -1,17 +1,26 @@
 from typing import Callable
 
-from models.constants import Zone
+from models.constants import Zone, KW
 from models.events_all import DamageResolvedEvent
+from models.game_card.counter_tokens import CounterType
 from models.utils import flip
 
 class EC:
-    """Collectino of event conditions that are: lambdas accepting gs, source, event; returning a bool;
+    """Collection of event conditions that are lambdas accepting gs, source, event; returning a bool;
     method chaining used so a compound predicate ex is: ... where(EC().to_board().card_is_land()) ..."""
     def __init__(self, conditions=None):
         self.conditions = conditions or []
 
     def __call__(self, gs, source, event):
         return all(condition(gs, source, event) for condition in self.conditions)
+
+    def attacker_is_flier(self):
+        self.conditions.append(lambda gs, s, e: KW.FLYING in e.attacker.keyword_abilities)
+        return self
+
+    def attacker_power_ge(self, threshold: int):
+        self.conditions.append(lambda gs, s, e: e.attacker.power >= threshold)
+        return self
 
     def card_is_artifact(self):
         self.conditions.append(lambda gs, s, e: e.card.is_artifact)
@@ -52,6 +61,10 @@ class EC:
         self.conditions.append(lambda gs, s, e: e.card is s)
         return self
 
+    def card_power_ge(self, threshold: int):
+        self.conditions.append(lambda gs, s, e: e.card.power >= threshold)
+        return self
+
     def caster_is_opp(self):
         self.conditions.append(lambda gs, s, e: e.owner_id != s.owner_id)
         return self
@@ -78,6 +91,18 @@ class EC:
         self.conditions.append(lambda gs, s, e: e.card.is_artifact and s.owner_id == e.card.owner_id)
         return self
 
+    def e_card_is_source_host(self):
+        self.conditions.append(lambda gs, s, e: e.card is s.host)
+        return self
+
+    def e_source_is_artifact(self):
+        self.conditions.append(lambda gs, s, e: e.source.is_artifact)
+        return self
+
+    def e_target_is_host(self):
+        self.conditions.append(lambda gs, s, e: e.target is s.host)
+        return self
+
     def from_board(self):
         self.conditions.append(lambda gs, s, e: e.from_zone == Zone.BATTLEFIELD)
         return self
@@ -99,6 +124,10 @@ class EC:
         self.conditions.append(lambda gs, s, e: e.is_combat)
         return self
 
+    def is_e_card_turn(self):
+        self.conditions.append(lambda gs, s, e: gs.turn_mgr.player_turn_idx == e.card.owner_id)
+        return self
+
     def is_host_turn(self):
         self.conditions.append(lambda gs, s, e: gs.turn_mgr.player_turn_idx == s.host.owner_id)
         return self
@@ -114,7 +143,12 @@ class EC:
     def no_creatures_in_play(self):
         self.conditions.append(lambda gs, s, e: not gs.card_filter.creatures().in_play().result())
         return self
-    
+
+    def opp_has_no_mountains(self):
+        self.conditions.append(lambda gs, s, e:
+                               gs.card_filter.in_play().mountains().on_player_board(flip(s.owner_id)).result())
+        return self
+
     def opp_is_damage_receiver(self):
         self.conditions.append(lambda gs, s, e: e.target == flip(s.owner_id))
         return self
@@ -127,7 +161,11 @@ class EC:
         self.conditions.append(lambda gs, s, _: any(e.source is s and e.target == flip(s.owner_id)
                                for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)))
         return self
-    
+
+    def self_has_counter(self, ctr_type: CounterType):
+        self.conditions.append(lambda gs, s, e: s.counters.get_count(ctr_type) > 0)
+        return self
+
     def self_is_a_blocker(self):
         self.conditions.append(lambda gs, s, e: s in gs.card_filter.blockers().result())
         return self

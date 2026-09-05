@@ -18,6 +18,10 @@ class ET:
         return lambda gs, source, event: event.card.owner_id
 
     @staticmethod
+    def event_source_is_artifact():
+        return lambda gs, source, event: event.source.is_artifact
+
+    @staticmethod
     def host_owner():
         return lambda gs, source, event: source.host.owner_id
 

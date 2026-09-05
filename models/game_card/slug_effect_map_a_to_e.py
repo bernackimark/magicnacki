@@ -9,9 +9,10 @@ from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORA
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
 from .target_funcs import ET
-from ..effects.modifiers_generic import PreventDamage
+from ..effects.modifiers_generic import PreventDamage, Deny
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
-    CastResolvedEvent, TapCardEvent, DamageProposedEvent, ZoneChangeEvent
+    CastResolvedEvent, TapCardEvent, DamageProposedEvent, ZoneChangeEvent, CanTargetQueryEvent, \
+    CanUntapAtUntapQueryEvent
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
@@ -35,9 +36,9 @@ from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfT
 from ..effects.listeners_combat import AislingLeprechaun
 from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
-from models.effects.listeners_permission import ArtifactWardCanBeTargeted, AkronLegionnaire, \
+from models.effects.listeners_permission import AkronLegionnaire, \
     EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantAttack, \
-    WalkRuleRemoved, DampingField, DoesntUntapAtUntap, CocoonUntap, HostCanAttack, UnblockableCondition, \
+    WalkRuleRemoved, DampingField, DoesntUntapAtUntap, HostCanAttack, UnblockableCondition, \
     UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
     HostCantBeTargetedBySpells, Arboria
 from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \
@@ -109,7 +110,9 @@ MAP: dict[str, list[EffSpec]] = {
     'artifact-possession': [Triggered(ArtifactPossessionActivation()),
                             GenTrig(On(TapCardEvent).where(EC().card_is_host()).then(DealDamage(2)).t(ET.host_owner())),
                             Spell(EmptyResolver(), CF.artifacts())],
-    'artifact-ward': [Spell(EmptyResolver(), CF.creatures()), Static(ArtifactWardCanBeTargeted()),
+    'artifact-ward': [Spell(EmptyResolver(), CF.creatures()),
+                      GenTrig(On(CanTargetQueryEvent).
+                              where(EC().e_source_is_artifact().e_target_is_host()).modify(Deny())),
                       Static(UnblockableCondition(CF.host(), CF.artifact_creatures())),
                       GenTrig(On(DamageProposedEvent).
                               where(EC().damage_target_in(CF.host()).damage_source_in(CF.artifacts())).
@@ -214,8 +217,9 @@ MAP: dict[str, list[EffSpec]] = {
                              extra_costs=[SacSelfCost()])],
     'cockatrice': [GenTrig(On(CombatEndEvent).where(EC().self_is_combatant()).
                            then(DestroySelfCombatants(filter_func=CF.non_wall_creatures())))],
-    'cocoon': [Spell(Do(TapCards(), AddCounter(PUPA, 3, CF.self())), CF.your_creatures()),
-               Static(CocoonUntap()), Static(CocoonUpkeep())],
+    'cocoon': [Spell(Do(TapCards(), AddCounter(PUPA, 3, CF.self())), CF.your_creatures()), Static(CocoonUpkeep()),
+               GenTrig(On(CanUntapAtUntapQueryEvent).
+                       where(EC().e_card_is_source_host().is_e_card_turn().self_has_counter(PUPA)).modify(Deny()))],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(CF.self())), Triggered(PayManaToUntapUpkeep('9', CF.self()))],
     'concordant-crossroads': [Static(KWAApplies(CF.creatures(), 'add', KW.HASTE))],
     'consecrate-land': [Spell(Do(Register(CantBeTargetedByAuras, target_attr='protected_card'),

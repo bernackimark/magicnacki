@@ -7,15 +7,14 @@ from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, Ge
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, \
     LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BecomeBasicLand
-from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, LivonyaSilone, WalkRuleRemoved, \
+from models.effects.listeners_permission import LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
-    PreventRegenerationEOT, CantBeTargetedByAuras, GoblinRockSledCanAttack, Lure, MarblePriestForcesBlock, \
-    CantAttackIfAttackedLastTurn
+    PreventRegenerationEOT, CantBeTargetedByAuras, Lure, MarblePriestForcesBlock, CantAttackIfAttackedLastTurn
 from .amt_funcs import AmtF
 from .event_conditions import EC
 from .target_funcs import ET
 from ..constants import KW
-from ..effects.modifiers_generic import PreventDamage, RedirectToSource
+from ..effects.modifiers_generic import PreventDamage, RedirectToSource, Deny
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, NaturalSelection, GreatDefender, \
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
@@ -51,7 +50,7 @@ from ..effects.listeners_generic import OptionalUntap, PreventAllDamageToEOT, Pr
     PayManaOrCounterSpellListener, DestroyAtEndStep
 from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \
     TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent, DamageProposedEvent, EndStepEvent, DrawStepEvent, \
-    ZoneChangeEvent
+    ZoneChangeEvent, CanAttackQueryEvent, CanBlockQueryEvent, CanUntapAtUntapQueryEvent
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), CF.self(),
@@ -130,7 +129,9 @@ MAP: dict[str: list[EffSpec]] = {
     'goblin-digging-team': [Activated('T', Destroy(), CF.walls(), extra_costs=[SacSelfCost()])],
     'goblin-king': [Static(PumpApplies(CF.your_other_goblins(), (1, 1))),
                     Static(KWAApplies(CF.your_other_goblins(), 'add', KW.MOUNTAINWALK))],
-    'goblin-rock-sled': [Static(GoblinRockSledUntap()), Static(GoblinRockSledCanAttack())],
+    'goblin-rock-sled': [Static(GoblinRockSledUntap()),
+                         GenTrig(On(CanAttackQueryEvent).
+                                 where(EC().self_is_attacker().opp_has_no_mountains()).modify(Deny()))],
     'goblin-shrine': [Static(PumpApplies(CF.goblins(), (1, 0), cond=C_FUNCS['host_is_basic_mountain'])),
                       GenTrig(On(ZoneChangeEvent).where(EC().card_is_source()).then(DealDamage(1, CF.goblins())))],
     'goblin-wizard': [Activated('T', HandToBoard(), CF.goblin_permanents_in_your_hand()),
@@ -205,7 +206,7 @@ MAP: dict[str: list[EffSpec]] = {
     'inquisition': [Spell(Inquisition(), CF.all_players())],
     'invoke-prejudice': [Static(InvokePrejudice())],
     'iron-star': [GenTrig(On(CastResolvedEvent).where(EC().card_is_color('R')).then(MayPayMana('1', GainLife(1))))],
-    'ironclaw-orcs': [Static(IronclawOrcs())],
+    'ironclaw-orcs': [GenTrig(On(CanBlockQueryEvent).where(EC().self_is_blocker().attacker_power_ge(2)).modify(Deny()))],
     'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(CF.self())),
                               Triggered(PayManaToUntapUpkeep('UU', CF.self()))],
     'island-of-wak-wak': [Activated('T', BasePT(base_p=0, base_t=None, eot=True), CF.fliers())],
@@ -304,7 +305,7 @@ MAP: dict[str: list[EffSpec]] = {
                                   where(EC().self_is_untapped().damage_source_in(CF.artifacts()).
                                         damage_target_in(CF.owner())).modify(RedirectToSource()))],
     'maze-of-ith': [Activated('T', RemoveFromCombat(), CF.attackers())],
-    'meekstone': [Static(Meekstone())],
+    'meekstone': [GenTrig(On(CanUntapAtUntapQueryEvent).where(EC().is_e_card_turn().card_power_ge(3)).modify(Deny()))],
     'merchant-ship': [GenTrig(On(UnblockedAttackerEvent).where(EC().self_is_unblocked_attacker()).then(GainLife(2)))],
     'merfolk-assassin': [Activated('T', Destroy(), CF.islandwalkers())],
     'mightstone': [Static(PumpApplies(CF.attackers(), (1, 0)))],
@@ -317,7 +318,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mishras-factory': [Activated('T', AddMana('C'), CF.owner(), is_mana_ability=True, text='Add {C}'),
                         Activated('1', BecomeCreature(2, 2, 'Assembly-Worker', True), CF.self(), text='Become 2/2'),
                         Activated('T', Pump(1, 1, True), CF.assembly_workers(), text='Pump Assembly-Worker')],
-    'moat': [Static(Moat())],
+    'moat': [GenTrig((On(CanAttackQueryEvent).where(EC().attacker_is_flier()).modify(Deny())))],
     'mold-demon': [Spell(MoldDemon())],
     'morale': [Spell(PumpApplies(CF.attackers(), (1, 1), True))],
     'mox-emerald': mox_specs('G'),
