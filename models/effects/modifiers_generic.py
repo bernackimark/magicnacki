@@ -8,6 +8,10 @@ if TYPE_CHECKING:
 
 from models.effects.base import Modifier
 
+class Deny(Modifier):
+    def modify(self, gs: GameState, source: GameCard, event: Event) -> None:
+        event.permission = False
+
 class PreventDamage(Modifier):
     def modify(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         event.prevented += event.remaining
