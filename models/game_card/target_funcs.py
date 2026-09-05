@@ -6,6 +6,10 @@ class ET:
     returns a single target (int or GameCard)
     Currently used to convey target info from the event to the resolver via On.t()"""
     @staticmethod
+    def attacker():
+        return lambda gs, source, event: event.attacker
+
+    @staticmethod
     def event_card_owner():
         return lambda gs, source, event: event.card.owner_id
 

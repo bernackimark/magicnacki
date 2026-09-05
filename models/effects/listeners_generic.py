@@ -14,9 +14,8 @@ if TYPE_CHECKING:
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_prevent_counter
-from models.game_card.counter_tokens import CounterType
 from models.effects.base import Listener, ResContext
-from models.events_all import DamageResolvedEvent, EndStepEvent, UntapCardEvent, UntapPhaseEvent, UpkeepEvent, \
+from models.events_all import EndStepEvent, UntapCardEvent, UntapPhaseEvent, UpkeepEvent, \
     ZoneChangeEvent, DamageProposedEvent, PassTheTurnEvent, StackAdditionEvent, \
     ModQueryEvent, DiesEvent, Event
 from models.game_card.modifiers import PTMod

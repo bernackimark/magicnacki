@@ -130,9 +130,17 @@ class TestCardsDEF(unittest.TestCase):
         illegal_host = self.g.battlefield('island')
         self.assertNotIn(illegal_host, card.abilities[0].target_spec.get_targets(self.gs, card))
 
-        legal_host = self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.g.battlefield('merfolk-of-the-pearl-trident')
         self.g.cast_and_accept(card, aura, card.abilities[0])
         self.assertEqual(1, len(self.gs.pending_choice.get_actions()))
+
+    def test_energy_tap(self):
+        """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""
+        card = self.g.card('energy-tap')
+        self.g.mana('U')
+        target = self.g.battlefield('grizzly-bears')  # MV = 2
+        self.g.cast_and_accept(card, target, card.abilities[0], add_lots_of_mana=False)
+        self.assertEqual(2, self.gs.mana_pools[0].available_mana.get('C'))
 
     def test_eureka(self):
         """Both players may take any permanent in their hand and put it directly into play.

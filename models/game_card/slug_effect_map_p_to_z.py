@@ -12,21 +12,20 @@ from .target_funcs import ET
 from ..effects.listeners_misc import PowerleechActivation, VerduranEnchantress, ScarwoodBanditsAAListener
 from ..effects.modifiers_generic import PreventDamage, RedirectToSource
 from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEvent, UpkeepEvent, CombatEndEvent, \
-    DamageProposedEvent, DamageResolvedEvent, DrawCardEvent
+    DamageProposedEvent, DamageResolvedEvent, DrawCardEvent, BlockEvent
 from ..target import TargetSpec
-from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
-    RockHydraCast, StormSeeker, Tracker, Typhoon, RagMan, Visions, WheelOfFortune, \
-    PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
+from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis, VesuvanDoppelgangerCast, RapidFire, \
+    RockHydraCast, StormSeeker, Tracker, Typhoon, RagMan, Visions, WheelOfFortune, PhantasmalTerrain, PrimalClay, \
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, UrzasTrio, TriassicEggA, SingingTree, Rakalite, RocketLauncher, \
-    SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
+    SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
-    VenarianGold, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap, PowerSink, UrzasAvenger
+    VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCards, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, MayPayMana, \
     GainLife, Do, PayManaOr, SacSelf, EmptyResolver, AddCounterToHost, DestroySelfCombatants, DestroyHostCombatants, \
-    UntapCards, Exile, Tutor
+    UntapCards, Exile, Tutor, Register
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -37,15 +36,18 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
 from ..effects.listeners_tap_untap import TawnossCoffinUntap, RasputinDreamweaverUntap, TimeVaultOption, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import SeasonOfTheWitchEndStep, VoodooDollEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
-from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, PuppetMaster
+from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, PuppetMaster, \
+    SandalsOfAbdallahIfCreatureDies
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
-from ..effects.listeners_combat import Sentinel, WallOfDust, YdwenEfreet, TheWretched
+from ..effects.listeners_combat import Sentinel, YdwenEfreet, TheWretched
 from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, PreventAllDamageToEOT, \
     OptionalUntap, RedirectNextDamageToTarget, PayManaToUntapUpkeep, \
-    PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, CounterEnchantments
+    PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, \
+    CounterEnchantments, DestroyAtEndStep
 from models.effects.listeners_permission import CantBeTargetedByAuras, SpectralCloak, WalkRuleRemoved, Smoke, \
-    WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo
+    WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo, \
+    CantAttackIfAttackedLastTurn, DoesntUntapAtUntapIfItAttackedLastTurn, TowerOfCoireallEOT
 from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEqualsFuncLen, \
     KWAApplies, Transmutation, SunglassesOfUrza
 from models.systems.phase import Phase
@@ -65,7 +67,9 @@ MAP: dict[str, list[EffSpec]] = {
                    GenTrig(On(EndStepEvent).where(EC.no_creatures_in_play()).then(Destroy(CF.self())))],
     'phantasmal-forces': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('U', SacSelf())))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(), CF.lands())],
-    'phyrexian-gremlins': [Triggered(OptionalUntap()), Activated('T', PhyrexianGremlinsTap(), CF.artifacts()),
+    'phyrexian-gremlins': [Triggered(OptionalUntap()),
+                           Activated('T', Do(TapCardEffect(), Register(DoesntUntapAtUntap, target_attr='target')),
+                                     CF.artifacts()),
                            Triggered(PhyrexianGremlinsUntaps())],
     'piety': [Spell(PumpApplies(CF.blockers(), (0, 3), True))],
     'pirate-ship': [Activated('T', DealDamage(1), CF.all_creatures_and_players())],
@@ -143,7 +147,9 @@ MAP: dict[str, list[EffSpec]] = {
     'safe-haven': [Activated('2T', SafeHaven(), CF.your_creatures()), Triggered(SafeHavenUpkeep())],
     'sage-of-lat-nam': [Activated('T', DrawCards(), CF.owner(), extra_costs=[SacCardCost(CF.your_artifacts())])],
     'samite-healer': [Activated('T', PreventNextDamageBy(preventable_amt=1), CF.cards())],
-    'sandals-of-abdallah': [Activated('2', SandalsOfAbdallahIslandWalk(), CF.creatures())],
+    'sandals-of-abdallah': [Activated('2', Do(KWAModEffect('add', 'Islandwalk', True),
+                                              Register(SandalsOfAbdallahIfCreatureDies, target_attr='target_creature')),
+                                      CF.creatures())],
     'sandstorm': [Spell(DealDamage(1, CF.attackers()))],
     'savaen-elves': [Activated('GGT', Destroy(), CF.auras_on_lands())],
     'savannah': dual_land_specs('GW'),
@@ -203,7 +209,9 @@ MAP: dict[str, list[EffSpec]] = {
     'stasis': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('U', SacSelf()))), Static(SkipUntapPhase())],
     'steal-artifact': [Spell(Steal(), CF.opp_artifacts())],
     'stone-calendar': [Static(StoneCalendar())],
-    'stone-giant': [Activated('T', StoneGiant(), CF.stone_giant())],
+    'stone-giant': [Activated('T', Do(KWAModEffect('add', 'Flying', True),
+                                      Register(DestroyAtEndStep, target_attr='card_to_be_destroyed')),
+                              CF.stone_giant())],
     'stone-rain': [Spell(Destroy(), CF.lands())],
     'storm-seeker': [Spell(StormSeeker(), CF.all_players())],
     'storm-world': [Triggered(StormWorld())],
@@ -222,7 +230,8 @@ MAP: dict[str, list[EffSpec]] = {
     'syphon-soul': [Spell(Do(DealDamage(2, CF.opp()), GainLife(2, CF.owner())))],
     'tablet-of-epityr': [GenTrig(On(DiesEvent).where(EC.dier_is_your_artifact()).then(MayPayMana('1', GainLife(1))))],
     'taiga': dual_land_specs('RG'),
-    'tangle-kelp': [Spell(TangleKelp(), CF.creatures())],
+    'tangle-kelp': [Spell(Do(TapCardEffect(), Register(DoesntUntapAtUntapIfItAttackedLastTurn, target_attr='target')),
+                          CF.creatures())],
     'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()),
                        Triggered(TawnossCoffinZoneChange())],
     'tawnoss-wand': [Activated('2T', UnblockableEOT(), CF.creatures_power_two_or_less())],
@@ -258,7 +267,7 @@ MAP: dict[str, list[EffSpec]] = {
     'tor-wauki': [Activated('T', DealDamage(2), CF.combatants())],
     'tormods-crypt': [Activated('T', GraveyardToExileInItsEntirety(), CF.all_players(), extra_costs=[SacSelfCost()])],
     'touch-of-darkness': [Spell(SetColor('B', 'EOT'), TargetSpec(CF.creatures(), 1, None))],
-    'tower-of-coireall': [Activated('T', TowerOfCoireall(), CF.creatures())],
+    'tower-of-coireall': [Activated('T', Register(TowerOfCoireallEOT, target_attr='target'), CF.creatures())],
     'tracker': [Activated('GGT', Tracker(), CF.creatures())],
     'tranquility': [Spell(DestroyAll(CF.enchants()))],
     'transmutation': [Spell(Transmutation(), CF.creatures())],
@@ -321,7 +330,8 @@ MAP: dict[str, list[EffSpec]] = {
     'walking-dead': [Activated('B', Regenerate(), CF.self())],
     'wall-of-bone': [Activated('B', Regenerate(), CF.self())],
     'wall-of-brambles': [Activated('G', Regenerate(), CF.self())],
-    'wall-of-dust': [Triggered(WallOfDust())],
+    'wall-of-dust': [GenTrig(On(BlockEvent).where(EC.self_is_blocker()).
+                             then(Register(CantAttackIfAttackedLastTurn, event_arg_func=ET.attacker())))],
     'wall-of-opposition': [self_pump('1', 1, 0)],
     'wall-of-putrid-flesh': [GenTrig(On(DamageProposedEvent).
                                      where(EC.damage_target_in(CF.self()),

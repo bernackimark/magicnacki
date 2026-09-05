@@ -41,13 +41,6 @@ class PhantasmalTerrain(Resolver):
         for s_type in s_types:
             target.modifiers.append(SubTypeMod(s=s, add_or_remove='remove', item=s_type))
 
-class PhyrexianGremlinsTap(Resolver):
-    """{T}: Tap target artifact. It doesn't untap during its controller's untap step so long as PG remains tapped."""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.tap()
-        gs.event_mgr.register(DoesntUntapAtUntap(target=t), source)
-
 class PowerSink(Resolver):
     """Counter target spell unless its controller pays {X}.
     If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
@@ -181,13 +174,6 @@ class SafeHaven(Resolver):
             source.extras['cards_exiled'] = set()
         source.extras['cards_exiled'].add(t)
 
-class SandalsOfAbdallahIslandWalk(Resolver):
-    """{T}: Target creature gains islandwalk until end of turn. When that creature dies this turn, destroy Sandals."""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(s=source, item=KW.ISLANDWALK, expires='EOT'))
-        gs.event_mgr.register(SandalsOfAbdallahIfCreatureDies(target_creature=t), source)
-
 class ShapeshifterCast(Resolver):
     """At cast & at your upkeep, choose a number 0-7 (n). Shapeshifter's power = n, toughness = 7 - n"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -254,13 +240,6 @@ class Stangg(Resolver):
                                 if c not in existing_stangg_twins)
         gs.event_mgr.register(LTBTandem([source, this_stangg_twin]), source)
 
-class StoneGiant(Resolver):
-    """{T}: Target creature you control with toughness less than this creature's power gains flying until end of turn.
-    Destroy that creature at the beginning of the next end step."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        t.modifiers.append(KWAMod(s=source, item=KW.FLYING, expires='EOT'))
-        gs.event_mgr.register(DestroyAtEndStep(t), source)
-
 class StormSeeker(Resolver):
     """Storm Seeker deals damage to target player equal to the number of cards in that player's hand"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -279,13 +258,6 @@ class SwordsToPlowshares(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.exile(t)
         gs.score_mgr.increment_life(t.owner_id, t.power, source)
-
-class TangleKelp(Resolver):
-    """Tap host. Host doesn't untap during its controller's untap step if it attacked their last turn."""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.tap()
-        gs.event_mgr.register(DoesntUntapAtUntapIfItAttackedLastTurn(t), source)
 
 class TawnossCoffin(Resolver):
     """... Exile target creature & all its auras. Note the number & kind of counters that were on that creature ..."""
@@ -319,12 +291,6 @@ class Timetwister(Resolver):
             gs.pile_mgr.draw(p_id, 7)
             if p_id == source.owner_id:
                 gs.pile_mgr.move_card(source, Zone.GRAVEYARD, emit_zone_event=False)
-
-class TowerOfCoireall(Resolver):
-    """{T}: Target creature can't be blocked by Walls this turn"""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.event_mgr.register(TowerOfCoireallEOT(t), source)
 
 class Tracker(Resolver):
     """Tracker deals damage = its power to target creature. That creature deals damage = its power to this creature.

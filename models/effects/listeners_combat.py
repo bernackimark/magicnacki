@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.constants import KW
-from models.effects.listeners_permission import WallOfDustAttackerCantAttackNextTurn
+from models.effects.listeners_permission import CantBlockEOT
 from models.effects.base import Listener
 from models.events_all import AttackEvent, BlockEvent, CombatEndEvent, UnblockedAttackerEvent, CombatBeginEvent
 from models.game_card.modifiers import PTMod, KWAMod
@@ -76,15 +76,6 @@ class AislingLeprechaun(Listener):
             return
         SetColor('G').resolve(gs, s, t=other)
 
-class WallOfDust(Listener):
-    """Whenever this creature blocks, the attacker can't attack during its controller's next turn"""
-    listens_to = BlockEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: BlockEvent) -> None:
-        if event.blocker is not source:
-            return
-        gs.event_mgr.register(WallOfDustAttackerCantAttackNextTurn(event.attacker), source)
-
 class YdwenEfreet(Listener):
     """Whenever Ydwen Efreet blocks, flip a coin.
     If you lose, remove Ydwen Efreet from combat who can't block this turn."""
@@ -97,6 +88,7 @@ class YdwenEfreet(Listener):
         print(f'The result of the random event was: {result}')
         if result == 'tails':
             gs.combat_mgr.remove_from_combat(s)
+            gs.event_mgr.register(CantBlockEOT(s), s)
 
 
 # --- COMBAT BEGIN EVENT ---

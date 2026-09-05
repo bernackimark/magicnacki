@@ -76,17 +76,20 @@ class CantAttack(Listener):
         event.permission = False
 
 class CantAttackIfAttackedLastTurn(Listener):
-    """This creature can't attack if it attacked during your last turn"""
+    """A target can be provided at init else default to source"""
     listens_to = CanAttackQueryEvent
 
+    def __init__(self, target: GameCard | None = None):
+        self.target = target
+
     def on_event(self, gs: GameState, source: GameCard, event: CanAttackQueryEvent) -> None:
-        if source is not event.attacker:
+        target = self.target if self.target else source
+        if target is not event.attacker:
             return
-        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(source.owner_id)
-        for e, turn_num in gs.event_mgr.events[::-1]:
-            if turn_num == p_last_turn_num:
-                if isinstance(e, AttackEvent) and e.attacker is source:
-                    event.permission = False
+        p_last_turn_num = gs.turn_mgr.get_players_last_turn_num(target.owner_id)
+        for e in gs.event_mgr.get_events(p_last_turn_num, AttackEvent):
+            if e.attacker is target:
+                event.permission = False
 
 class CantBeTargetedByAuras(Listener):
     """Card can't host an aura"""
@@ -109,6 +112,20 @@ class CantBeTargetedByAuras(Listener):
         if event.target not in protected_cards:
             return
         if self.condition_func and not self.condition_func(gs, source):
+            return
+        event.permission = False
+
+class CantBlockEOT(Listener):
+    """Card can't block this turn; target can be provided at init else defaults to source"""
+    listens_to = CanBlockQueryEvent
+    expires = 'EOT'
+
+    def __init__(self, target: GameCard | None = None):
+        self.target = target
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanBlockQueryEvent) -> None:
+        target = self.target if self.target else source
+        if event.blocker is not target:
             return
         event.permission = False
 

@@ -13,15 +13,15 @@ from ..effects.modifiers_generic import PreventDamage
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
     CastResolvedEvent, TapCardEvent, DamageProposedEvent
 from ..target import TargetSpec
-from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, Earthquake, EternalFlame, DustToDust, EaterOfTheDead, \
-    EvilPresence, DrainPower, EnergyTap, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, ConsecrateLand, \
-    Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration, Eureka
+from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
+    DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
+    Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCardEffect, UntapCardEffect, UntapCards, RemoveFromCombat, \
     CounterSpell, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, PumpSelf, DestroySelfCombatants, \
     MayPayMana, Do, Reanimate, GainLifeTargetMV, PayManaOr, SacSelf, Exile, TapCards, AddType, DrawThenDiscard, Copy, \
-    Tutor
+    Tutor, SetSubType, Register
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x, On
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
@@ -217,7 +217,8 @@ MAP: dict[str, list[EffSpec]] = {
                Static(CocoonUntap()), Static(CocoonUpkeep())],
     'colossus-of-sardia': [Triggered(DoesntUntapAtUntap(CF.self())), Triggered(PayManaToUntapUpkeep('9', CF.self()))],
     'concordant-crossroads': [Static(KWAApplies(CF.creatures(), 'add', KW.HASTE))],
-    'consecrate-land': [Spell(ConsecrateLand(), CF.lands())],
+    'consecrate-land': [Spell(Do(Register(CantBeTargetedByAuras, target_attr='protected_card'),
+                                 KWAModEffect('add', KW.INDESTRUCTIBLE)), CF.lands())],
     'conservator': [Activated('3T', PreventNextDamageTo(protected=CF.owner()))],
     'control-magic': [Spell(Steal(), CF.opp_creatures())],
     'conversion': [GenTrig(On(UpkeepEvent).where(EC.is_your_turn()).then(PayManaOr('WW', SacSelf()))), Static(Conversion())],
@@ -282,7 +283,7 @@ MAP: dict[str, list[EffSpec]] = {
     'drop-of-honey': [Triggered(DropOfHoney())],
     'drowned': [Activated('B', Regenerate(), CF.self())],
     'drudge-skeletons': [Activated('B', Regenerate(), CF.self())],
-    'dust-to-dust': [Spell(DustToDust(), TargetSpec(CF.artifacts(), 2, 2))],
+    'dust-to-dust': [Spell(Exile(), TargetSpec(CF.artifacts(), 2, 2))],
     'dwarven-demolition-team': [Activated('T', Destroy(), CF.walls())],
     'dwarven-song': [Spell(SetColor('R', 'EOT'), TargetSpec(CF.creatures(), 1, None))],
     'dwarven-warriors': [Activated('T', UnblockableEOT(), CF.creatures_power_two_or_less())],
@@ -290,7 +291,7 @@ MAP: dict[str, list[EffSpec]] = {
                                       extra_costs=[SacCardCost(CF.your_artifacts())],
                                       allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=CF.owner())],
     'earthbind': [Spell(Earthbind(), CF.creatures())],
-    'earthquake': [Spell(Earthquake())],
+    'earthquake': [Spell(DealDamage(to=CF.non_fliers_and_all_players()))],
     'eater-of-the-dead': [Activated('', EaterOfTheDead(), CF.creatures_in_all_graveyards())],
     'ebony-horse': [Activated('2T', RemoveFromCombat(), CF.attackers())],
     'el-hajjaj': [Triggered(ElHajjaj(), CF.self())],
@@ -308,7 +309,7 @@ MAP: dict[str, list[EffSpec]] = {
                                       EC.is_combat_damage()).modify(PreventDamage()))],
     'enchantment-alteration': [Spell(EnchantmentAlteration(), CF.auras_on_creatures_or_lands())],
     'energy-flux': [Triggered(EnergyFlux())],
-    'energy-tap': [Spell(EnergyTap(), CF.your_untapped_creatures())],
+    'energy-tap': [Spell(Do(TapCardEffect(), AddMana('C', amt_func=AmtF.t_mv())), CF.your_untapped_creatures())],
     'erg-raiders': [Triggered(ErgRaiders())],
     'erhnam-djinn': [Triggered(ErhnamDjinn(), CF.opp_non_wall_creatures())],
     'erosion': [Spell(ErosionUpkeep(), CF.lands())],
@@ -317,7 +318,7 @@ MAP: dict[str, list[EffSpec]] = {
     'eureka': [Spell(Eureka())],
     'evil-eye-of-orms-by-gore': [Static(UnblockableCondition(CF.self(), CF.non_wall_creatures())),
                                  Static(EvilEyeOfOrmsByGoreMyNonEyeNoAttack())],
-    'evil-presence': [Spell(EvilPresence(), CF.lands())],
+    'evil-presence': [Spell(SetSubType('Swamp'), CF.lands())],
     'exorcist': [Activated('1W', Destroy(), CF.black_creatures())],
     'eye-for-an-eye': [Spell(EyeForAnEye(), CF.cards())],
 }

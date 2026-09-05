@@ -1,20 +1,18 @@
 from __future__ import annotations
 import math
-import random
 from dataclasses import dataclass, field
-from itertools import combinations
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import CO, copy_card
+from models.choice_options import CO
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import STORAGE, PUPA, PLUS_ONE
+from models.game_card.counter_tokens import STORAGE
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem, ExileOnDeath
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.effects.listeners_permission import PreventRegenerationEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
-from models.game_card.modifiers import SubTypeMod, PTMod, KWAMod, TypeMod
+from models.game_card.modifiers import PTMod, KWAMod
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -149,14 +147,6 @@ class Cleansing(Resolver):
         gs.action_on_idx = flip(gs.action_on_idx)
         self.queue_next_choice(gs, s, state)
 
-class ConsecrateLand(Resolver):
-    """Enchanted land has indestructible and can't be enchanted by other Auras"""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        from models.effects.listeners_permission import CantBeTargetedByAuras
-        gs.event_mgr.register(CantBeTargetedByAuras(protected_card=t), source)
-        t.modifiers.append(KWAMod(s=source, item=KW.INDESTRUCTIBLE))
-
 class Crumble(Resolver):
     """Destroy target artifact. It can't be regenerated. That artifact's controller gains life = its MV.
     Can't use Do pattern yet because Destroy doesn't return the target to GainLife (who needs the target's MV)"""
@@ -261,31 +251,15 @@ class DrafnasRestoration(Resolver):
         state.selected_cards.append(card)
         self.queue_next_choice(gs, state)
 
-class DustToDust(Resolver):
-    """Exile two target artifacts"""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        for target in t:
-            gs.pile_mgr.exile(target)
-
 class Earthbind(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=KW.FLYING))
         if KW.FLYING in t.keyword_abilities:
             gs.apply_damage(source, 2, t.owner_id)
-
-class Earthquake(Resolver):
-    """Earthquake deals X damage to each creature without flying and each player"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        x = context.x_value
-        for c in gs.card_filter.in_play().has(KW.FLYING, False).creatures().result():
-            gs.apply_damage(source, x, c)
-        for p_id in (0, 1):
-            gs.apply_damage(source, x, p_id)
+        t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=KW.FLYING))
 
 class EaterOfTheDead(Resolver):
-    """Exile target creature card from a graveyard and untap this creature"""
+    """If EOTD is tapped, exile target creature card from a graveyard and untap this creature"""
     def can_activate(self, _: GameState, source: GameCard):
         return source.is_tapped
 
@@ -311,14 +285,6 @@ class EnchantmentAlteration(Resolver):
     def attach(aura: GameCard, host: GameCard):
         aura.host = host
         host.auras.append(aura)
-
-class EnergyTap(Resolver):
-    """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.tap()
-        gs.mana_pools[source.owner_id].add_floating('C', source.props.mana_value)
-        print(f"{source} taps to add {source.props.mana_value} colorless to your mana pool.")
 
 class EternalFlame(Resolver):
     """X = # of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
@@ -375,12 +341,3 @@ class Eureka(Resolver):
         state.current_player = flip(p_id)
         gs.choice_mgr.clear_current()
         self.queue_next_choice(gs, state)
-
-class EvilPresence(Resolver):
-    """Enchant land Enchanted land is a Swamp"""
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        sub_types = t.card_sub_types.copy()
-        t.modifiers.append(SubTypeMod(s=source, item='Swamp'))
-        for sub_type in sub_types:
-            t.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', item=sub_type))

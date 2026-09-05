@@ -16,7 +16,7 @@ from .target_funcs import ET
 from ..constants import KW
 from ..effects.modifiers_generic import PreventDamage, RedirectToSource
 from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, NaturalSelection, GreatDefender, \
-    HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, GlyphOfDestruction, HurkylsRecall, Inquisition, \
+    HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
     Necropolis, LifeChisel, LandsEdge
@@ -26,7 +26,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, PayManaOr, SacSelf, DrawCardsActivePlayer, DiscardAtRandom, \
-    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill, DrawThenDiscard
+    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill, DrawThenDiscard, Register
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -48,7 +48,8 @@ from ..effects.listeners_damage import GaseousForm, LivingArtifactOnDamage, Fore
 from ..effects.listeners_dies import FirestormPhoenix
 from ..effects.listeners_draw_discard import IslandSanctuary
 from ..effects.listeners_generic import OptionalUntap, PreventAllDamageToEOT, PreventNextDamageTo, \
-    PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, RedirectNextDamageFromCardToOwnerEOT, PayManaOrCounterSpellListener
+    PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, RedirectNextDamageFromCardToOwnerEOT, \
+    PayManaOrCounterSpellListener, DestroyAtEndStep
 from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \
     TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent, DamageProposedEvent, EndStepEvent, DrawStepEvent
 
@@ -117,7 +118,8 @@ MAP: dict[str: list[EffSpec]] = {
     'glasses-of-urza': [Activated('T', RevealHands(CF.opp()))],
     'gloom': [Static(Gloom())],
     'glyph-of-delusion': [Spell(GlyphOfDelusion(), CF.walls())],
-    'glyph-of-destruction': [Spell(GlyphOfDestruction(), CF.your_walls())],
+    'glyph-of-destruction': [Spell(Do(Pump(0, 10, True), Register(PreventAllDamageToEOT, target_attr='target'),
+                                      Register(DestroyAtEndStep, target_attr='card_to_be_destroyed')), CF.your_walls())],
     'glyph-of-doom': [Spell(GlyphOfDoom(), CF.walls())],
     'glyph-of-life': [Spell(GlyphOfLife(), CF.walls())],
     'glyph-of-reincarnation': [Spell(GlyphOfReincarnation(), CF.walls(),

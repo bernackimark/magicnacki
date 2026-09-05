@@ -96,14 +96,6 @@ class GlyphOfDelusion(Resolver):
         com = gs.combat_mgr.get_combat(t)
         com.declared_attacker.counters.add_counter(STUN, com.declared_attacker.power)
 
-class GlyphOfDestruction(Resolver):
-    """Target blocking Wall you control gets +10/+0 until end of combat.
-    Prevent all damage that would be dealt to it this turn. Destroy it at the beginning of the next end step."""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        t.modifiers.append(PTMod(s=source, p_adj=10, expires='EOT'))
-        gs.event_mgr.register(PreventAllDamageToEOT(t), source)
-        gs.event_mgr.register(DestroyAtEndStep(t), source)
-
 class GlyphOfReincarnation(Resolver):
     """Cast this spell only after combat. Destroy attacker blocked by target Wall this turn. It can't be regenerated.
     You put a different creature from the attacker's graveyard onto the battlefield under its owner's control."""

@@ -1,6 +1,7 @@
 import unittest
 
 from models.constants import KW, Zone
+from models.events_all import BlockEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -10,10 +11,25 @@ class TestCardsWXYZ(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_wall_of_dust(self):
+        """Whenever this creature blocks, the attacker can't attack during its controller's next turn"""
+        card = self.g.battlefield('wall-of-dust')  # 1/4
+        attacker = self.g.battlefield('grizzly-bears', owner=1)
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(attacker)
+        self.gs.phase_mgr.set_phase(Phase.DECLARE_BLOCKERS)
+        self.gs.combat_mgr.add_blocker(attacker, card)
+        self.gs.event_mgr.emit(BlockEvent(attacker, card))
+        self.gs.combat_mgr.handle_damage_step(False)
+
+        self.g.next_turn()
+        self.assertFalse(self.gs.perm_querier.can_attack(attacker))
+
     def test_wall_of_vapor(self):
         """Prevent all damage that would be dealt to this creature by creatures it's blocking"""
         card = self.g.battlefield('wall-of-vapor')  # 0/1
-        attacker = self.g.battlefield('craw-wurm', owner=1)  #6/4
+        attacker = self.g.battlefield('craw-wurm', owner=1)  # 6/4
 
         self.g.next_turn(True)
         self.gs.combat_mgr.create_combat(attacker)

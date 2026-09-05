@@ -10,7 +10,7 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_prevent_counter, copy_card
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
-from models.effects.base import Resolver
+from models.effects.base import Resolver, Listener
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
@@ -61,15 +61,17 @@ class AddCounterToHost(Resolver):
 
 class AddMana(Resolver):
     """The source's owner gets the mana"""
-    def __init__(self, color: str, cnt: int = 1):
+    def __init__(self, color: str, cnt: int = 1, amt_func: Callable | None = None):
         self.color = color
         self.cnt = cnt
+        self.amt_func = amt_func
 
         if color not in COLOR_LETTERS_W_COLORLESS:
             raise ValueError(f"Color must be one of: {COLOR_LETTERS_W_COLORLESS}")
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.mana_pools[source.owner_id].add_floating(self.color, self.cnt)
+        cnt = self.amt_func(gs, source, t) if self.amt_func else self.cnt
+        gs.mana_pools[source.owner_id].add_floating(self.color, cnt)
 
 class AddPoisonCounter(Resolver):
     def __init__(self, cnt: int = 1):
@@ -480,6 +482,27 @@ class Regenerate(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(RegenerationMod(s=source, expires='EOT'))
 
+class Register(Resolver):
+    """target_arg is a str that will be passed to the Listener's constructor as a kwarg:
+    ex: Register(CantBeTargetedByAuras, target_arg='protected_card') -> that Listener expects the target in that arg ...
+    event_arg_func provides the Listener a single argument, which is assumed to be the target;
+    ex: 'wall-of-dust': ... Register(CantAttackIfAttackedLastTurn, event_arg_func=ET.attacker())"""
+    def __init__(self, listener_type: type[Listener],
+                 target_attr: str | None = None, event_arg_func: Callable | None = None):
+        self.listener_type = listener_type
+        self.target_attr = target_attr
+        self.event_arg_func = event_arg_func
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        if self.target_attr:
+            listener = self.listener_type(**{self.target_attr: t})
+        elif self.event_arg_func:
+            listener = self.listener_type(self.event_arg_func(gs, source, context.event))
+        else:
+            listener = self.listener_type()
+
+        gs.event_mgr.register(listener, source)
+
 class RemoveCounter(Resolver):
     def __init__(self, counter_type: CounterType):
         self.counter_type = counter_type
@@ -560,13 +583,30 @@ class SacSelf(Resolver):
         gs.pile_mgr.sacrifice(source)
 
 class SetColor(Resolver):
-    def __init__(self, color: str, expires: str | None = None):
-        self.color = color
+    def __init__(self, colors: str | list[str], expires: str | None = None):
+        self.colors = colors
         self.expires = expires
 
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', item=self.color))
+        old_colors = t.colors.copy()
+        for color in self.colors:
+            t.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', item=color))
+        for color in old_colors:
+            t.modifiers.append(ColorMod(s=source, add_or_remove='remove', item=color))
+
+class SetSubType(Resolver):
+    """Remove all existing card subtype's and give it a single provided subtype"""
+
+    def __init__(self, sub_type: str):
+        self.sub_type = sub_type
+
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        sub_types = t.card_sub_types.copy()
+        t.modifiers.append(SubTypeMod(s=source, item=self.sub_type))
+        for sub_type in sub_types:
+            t.modifiers.append(SubTypeMod(s=source, add_or_remove='remove', item=sub_type))
 
 class Steal(Resolver):
     """Registers an OwnershipModQuery.  Default behavior is to transfer the card across boards upon stealer's LTB"""

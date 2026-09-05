@@ -378,6 +378,10 @@ class CF:
         return lambda gs, _: gs.card_filter.in_play().creatures().has(KW.FLYING, False).result()
 
     @staticmethod
+    def non_fliers_and_all_players():
+        return lambda gs, _: gs.card_filter.in_play().creatures().has(KW.FLYING, False).result() + [0, 1]
+
+    @staticmethod
     def non_token_creatures():
         return lambda gs, s: gs.card_filter.in_play().non_token().creatures().result()
 
