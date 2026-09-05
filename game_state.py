@@ -137,13 +137,13 @@ class GameState:
 
             damage_to_player = event.remaining - damage_to_card
             if damage_to_player > 0:
-                self.score_mgr.decrement_life(target.owner_id, damage_to_player, source, self)
+                self.score_mgr.decrement_life(target.owner_id, damage_to_player, source)
                 resolved_events.append(DamageResolvedEvent(event.source, damage_to_player, target.owner_id, True))
         else:
             if isinstance(event.target, GameCard):
                 event.target.damage_received_this_turn += event.remaining
             else:
-                self.score_mgr.decrement_life(target, event.remaining, source, self)
+                self.score_mgr.decrement_life(target, event.remaining, source)
 
             resolved_events.append(DamageResolvedEvent(event.source, event.remaining, event.target, is_combat))
 

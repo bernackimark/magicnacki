@@ -49,7 +49,7 @@ class PowerleechActivation(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: AbilityActivatedEvent) -> None:
         if source.owner_id == event.aa.source.owner_id or not event.aa.source.is_artifact:
             return
-        gs.score_mgr.increment_life(source.owner_id, 1, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, 1, source)
 
 # --- CAST RESOLVED EVENT ---
 class IchneumonDruid(Listener):

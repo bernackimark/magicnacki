@@ -23,7 +23,7 @@ class AxelrodGunnarson(Listener):
         for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent):
             if e.source is not source or e.target is not event.card:
                 continue
-            gs.score_mgr.increment_life(source.owner_id, 1, source, gs)
+            gs.score_mgr.increment_life(source.owner_id, 1, source)
             gs.apply_damage(source, 1, event.card.owner_id)
             return
 

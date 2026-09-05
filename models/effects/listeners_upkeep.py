@@ -210,7 +210,7 @@ class ErosionUpkeep(Listener):
         options = []
         if gs.mana_pools[host_owner].can_pay('1'):
             options.append(CO(f"Pay {{{'1'}}}", lambda: gs.mana_pools[host_owner].pay('1')))
-        options.append(CO(f"Pay 1 life", lambda: gs.score_mgr.decrement_life(host_owner, 1, source, gs)))
+        options.append(CO(f"Pay 1 life", lambda: gs.score_mgr.decrement_life(host_owner, 1, source)))
         options.append(CO(f"Destroy {source.host}", lambda: gs.pile_mgr.destroy(source.host)))
 
         gs.choice_mgr.queue(ChoiceAction(options))
@@ -232,7 +232,7 @@ class Fasting(Listener):
     @staticmethod
     def skip_draw_phase_gain_life(gs: GameState, p_id: int, amt: int):
         gs.phase_mgr.set_phase(Phase.MAIN)
-        gs.score_mgr.increment_life(p_id, amt, source=None, gs=gs)
+        gs.score_mgr.increment_life(p_id, amt, source=None)
 
 class GabrielAngelfire(Listener):
     """At your upkeep, choose flying, first strike, trample, rampage 3. GA gains that ability until your next upkeep."""
@@ -321,7 +321,7 @@ class IvoryTower(Listener):
         if p_id != event.active_player:
             return
         if (hand_size := len(gs.pile_mgr.hands[p_id])) > 4:
-            gs.score_mgr.increment_life(p_id, hand_size - 4, source, gs)
+            gs.score_mgr.increment_life(p_id, hand_size - 4, source)
 
 
 class Karma(Listener):
@@ -397,7 +397,7 @@ class LivingArtifactUpkeep(Listener):
     @staticmethod
     def remove_counter_gain_life(gs: GameState, s: GameCard):
         s.counters.remove_counter(VITALITY)
-        gs.score_mgr.increment_life(s.owner_id, 1, s, gs)
+        gs.score_mgr.increment_life(s.owner_id, 1, s)
 
 class LordOfThePitUpkeep(Listener):
     """At your upkeep, sacrifice a different creature. If you can't, this creature deals 7 damage to you."""
@@ -592,7 +592,7 @@ class SeasonOfTheWitchUpkeep(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if event.active_player != source.owner_id:
             return
-        options = [CO('Pay 2 life', lambda: gs.score_mgr.decrement_life(source.owner_id, 2, source, gs)),
+        options = [CO('Pay 2 life', lambda: gs.score_mgr.decrement_life(source.owner_id, 2, source)),
                    CO(f'Sac {source}', lambda: gs.pile_mgr.sacrifice(source))]
         gs.choice_mgr.queue(ChoiceAction(options))
 
@@ -640,7 +640,7 @@ class SpiritualSanctuary(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
         if 'plains' in gs.card_filter.on_player_board(event.active_player).plains().result():
-            gs.score_mgr.increment_life(event.active_player, 1, source, gs)
+            gs.score_mgr.increment_life(event.active_player, 1, source)
 
 class StormWorld(Listener):
     """At the beginning of each player's upkeep, this enchantment deals X damage to that player,

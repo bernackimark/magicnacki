@@ -118,7 +118,7 @@ class SylvanLibrary(Listener):
         self.queue_next_card_selection(gs, s, state)
 
     def pay_life(self, p_id: int, gs: GameState, s: GameCard, state: SylvanLibraryState):
-        gs.score_mgr.decrement_life(p_id, 4, s, gs)
+        gs.score_mgr.decrement_life(p_id, 4, s)
         gs.choice_mgr.clear_current()
         self.queue_next_card_selection(gs, s, state)
 

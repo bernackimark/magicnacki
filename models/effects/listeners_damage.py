@@ -97,7 +97,7 @@ class ReverseDamage(Listener):
         event.prevented += event.remaining
         event.remaining = 0
         self.is_expired = True
-        gs.score_mgr.increment_life(source.owner_id, the_damage_amt, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, the_damage_amt, source)
 
 class RockHydraAutoDamagePrevent(Listener):
     """For each 1 damage that would be dealt to this creature, if it has a +1/+1 counter on it,
@@ -130,7 +130,7 @@ class ElHajjaj(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
         if event.source is source and event.amt > 0:
-            gs.score_mgr.increment_life(source.owner_id, event.amt, source, gs)
+            gs.score_mgr.increment_life(source.owner_id, event.amt, source)
 
 class EyeForAnEye(Listener):
     """The next time a source of your choice would deal damage to you this turn, also deal damage to source's owner."""
@@ -163,7 +163,7 @@ class GlyphOfLife(Listener):
     def on_event(self, gs: GameState, s: GameCard, event: DamageResolvedEvent):
         if event.target is not self.target or not event.is_combat:
             return
-        gs.score_mgr.increment_life(s.owner_id, event.amt, s, gs)
+        gs.score_mgr.increment_life(s.owner_id, event.amt, s)
         self.is_expired = True
 
 class LivingArtifactOnDamage(Listener):
@@ -182,4 +182,4 @@ class SpiritLink(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent):
         if event.source is source.host and event.amt > 0:
-            gs.score_mgr.increment_life(source.owner_id, event.amt, source, gs)
+            gs.score_mgr.increment_life(source.owner_id, event.amt, source)
