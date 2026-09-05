@@ -53,7 +53,7 @@ class GameState:
         self.phase_mgr = PhaseManager(self)
         self.pile_mgr = PileManager(self)  # handles pile movements (destroy, bounce, etc)
         self.priority_mgr = PriorityManager(self)  # manages action related to the stack
-        self.score_mgr = ScoreManager()  # manages life & poison
+        self.score_mgr = ScoreManager(self)  # manages life & poison
         self.turn_mgr = TurnManager(self.player_cnt, player_turn_idx)
 
         self.action_on_idx: int = self.player_turn_idx
