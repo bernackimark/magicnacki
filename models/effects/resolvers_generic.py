@@ -483,8 +483,8 @@ class Regenerate(Resolver):
         t.modifiers.append(RegenerationMod(s=source, expires='EOT'))
 
 class Register(Resolver):
-    """target_arg is a str that will be passed to the Listener's constructor as a kwarg:
-    ex: Register(CantBeTargetedByAuras, target_arg='protected_card') -> that Listener expects the target in that arg ...
+    """target_attr is the name of the Listener's constructor where the target belongs:
+    ex: Register(CantBeTargetedByAuras, target_attr='protected_card').
     event_arg_func provides the Listener a single argument, which is assumed to be the target;
     ex: 'wall-of-dust': ... Register(CantAttackIfAttackedLastTurn, event_arg_func=ET.attacker())"""
     def __init__(self, listener_type: type[Listener],
