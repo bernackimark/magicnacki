@@ -94,19 +94,25 @@ class DemonicHordesUpkeep(Listener):
             source.tap()
             gs.pile_mgr.destroy(your_lands[0])
         elif not gs.mana_pools[source.owner_id].can_pay('BBB'):
-            source.tap()
-            gs.action_on_idx = flip(source.owner_id)
-            options = [CO(f"Sac opponent's {c}", lambda: gs.pile_mgr.sacrifice(c)) for c in your_lands]
-            gs.choice_mgr.queue(ChoiceAction(options))
+            self._tap_and_opp_sacs_land(gs, source, your_lands)
         else:
-            options = [CO(f"Pay {{{'BBB'}}}", lambda: gs.mana_pools[source.owner_id].pay('BBB'))]
-            # TODO:
-            #  Get the opponent to select a land to sac
-            #  these are its options in the existing AllowOpponentToDestroyALand
-            #          options = [DestroyAction(flip(self.player_idx), self.gs, self.source, land)
-            #                    for land in self.gs.card_filter.lands().on_player_board(self.player_idx).result()]
-
+            options = [CO(f"Pay {{{'BBB'}}}", lambda: gs.mana_pools[source.owner_id].pay('BBB')),
+                       CO("Opponent sacs one of your lands",
+                          lambda: self._tap_and_opp_sacs_land(gs, source, your_lands))]
             gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _tap_and_opp_sacs_land(gs: GameState, source: GameCard, your_lands: list[GameCard]):
+        source.tap()
+        gs.action_on_idx = flip(source.owner_id)
+        options = [CO(f"Sac opponent's {c}",
+                      lambda c=c: DemonicHordesUpkeep._opp_sacrifices_land(gs, source, c)) for c in your_lands]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _opp_sacrifices_land(gs: GameState, source: GameCard, land: GameCard):
+        gs.pile_mgr.sacrifice(land)
+        gs.action_on_idx = source.owner_id
 
 class DropOfHoney(Listener):
     """At your upkeep, destroy the creature with the least power. It can't be regenerated.

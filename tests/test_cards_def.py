@@ -65,6 +65,39 @@ class TestCardsDEF(unittest.TestCase):
         self.gs.pile_mgr.sacrifice(card)
         self.assertNotIn(the_copy, self.gs.boards[0])
 
+    def test_demonic_hordes(self):
+        """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
+        card = self.g.battlefield('demonic-hordes')
+
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertTrue(card.is_tapped)
+
+        card.untap()
+        s1 = self.g.battlefield('swamp')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertTrue(card.is_tapped)
+        self.assertIn(s1, self.g.gy[0])
+
+        card.untap()
+        self.g.battlefield('swamp')
+        self.g.battlefield('swamp')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(1, self.gs.action_on_idx)
+        destroy_s1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(destroy_s1)
+        self.assertTrue(card.is_tapped)
+        self.assertEqual(2, len(self.g.gy[0]))
+        self.assertIsNone(self.gs.pending_choice)
+        self.assertEqual(0, self.gs.action_on_idx)
+
+        card.untap()
+        self.g.mana('BB')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        pay_mana = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(pay_mana)
+        self.assertEqual(0, self.gs.mana_pools[0].available_mana.get('B'))
+        self.assertIsNone(self.gs.pending_choice)
+
     def test_demonic_torment(self):
         """Host can't attack. Prevent all combat damage that would be dealt by host."""
         card = self.g.hand('demonic-torment')
