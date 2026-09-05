@@ -32,7 +32,7 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep, PrimordialOoze, TetravusUpkeepCreate, \
-    TetravusUpkeepExile
+    TetravusUpkeepExile, WallOfTombstonesPT
 from ..effects.listeners_tap_untap import TawnossCoffinUntap, RasputinDreamweaverUntap, TimeVaultOption, PhyrexianGremlinsUntaps
 from ..effects.listeners_end_step import SeasonOfTheWitchEndStep, VoodooDollEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
@@ -48,7 +48,7 @@ from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, Prevent
 from models.effects.listeners_permission import CantBeTargetedByAuras, WalkRuleRemoved, Smoke, \
     WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo, \
     CantAttackIfAttackedLastTurn, DoesntUntapAtUntapIfItAttackedLastTurn, TowerOfCoireallEOT
-from models.effects.listeners_mod_queries import RabidWombat, WallOfTombstonesPT, PumpApplies, SelfPTEqualsFuncLen, \
+from models.effects.listeners_mod_queries import RabidWombat, PumpApplies, SelfPTEqualsFuncLen, \
     KWAApplies, Transmutation, SunglassesOfUrza
 from models.systems.phase import Phase
 

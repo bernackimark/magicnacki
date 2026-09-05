@@ -414,15 +414,3 @@ class Transmutation(Listener):
         power_delta = event.card.toughness - event.card.power
         toughness_delta = event.card.power - event.card.toughness
         event.mods.append(PTMod(s=source, p_adj=power_delta, t_adj=toughness_delta, expires='EOT'))
-
-class WallOfTombstonesPT(Listener):
-    """At your upkeep, change this creature's base toughness to 1 + the number of creature cards in your graveyard."""
-    # TODO: this changes at Upkeep, so it should listen to UpkeepEvent ...
-    listens_to = ModQueryEvent
-    modifies = 'pt'
-
-    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if event.card is not source or gs.player_turn_idx != source.owner_id:
-            return
-        cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
-        event.mods.append(PTMod(s=source, t_adj=1 + cnt))

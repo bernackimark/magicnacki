@@ -5,7 +5,7 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.game_card.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
-from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapQueryEvent
+from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapQueryEvent, Event
 from models.game_card.modifiers import KWAMod
 from models.systems.phase import Phase
 
@@ -90,6 +90,34 @@ class TawnossCoffinUntap(Listener):
 
 
 # --- UNTAP PHASE ---
+class DampingField(Listener):
+    """Players can't untap more than one artifact during their untap steps."""
+    listens_to = UntapPhaseEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent):
+        if source.owner_id != event.active_player:
+            return
+        tapped_artifacts = [c for c in gs.card_filter.on_player_board(event.active_player).artifacts().result()
+                            if c.is_tapped]
+        if len(tapped_artifacts) <= 1:
+            return
+
+        options = [CO(f"Untap {card}", lambda card=card: self.untap_selected(gs, tapped_artifacts, card))
+                   for card in tapped_artifacts]
+        options.append(CO("Leave all artifacts tapped", lambda: self.leave_all_tapped(gs, tapped_artifacts)))
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def untap_selected(gs: GameState, artifacts: list[GameCard], selected: GameCard):
+        selected.untap()
+        for card in artifacts:
+            gs.turn_mgr.untap_decisions_made.add(card.id_)
+
+    @staticmethod
+    def leave_all_tapped(gs: GameState, artifacts: list[GameCard]):
+        for card in artifacts:
+            gs.turn_mgr.untap_decisions_made.add(card.id_)
+
 class RasputinDreamweaverUntap(Listener):
     """... At your upkeep, if RD started the turn (as proxied w the UntapPhaseEvent) untapped &
     w < 7 dream counters on it, put a dream counter on it."""

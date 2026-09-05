@@ -54,8 +54,9 @@ class PowerArtifact(Listener):
         from models.systems.mana import ManaCost
         if event.query != 'activate' or event.card.host is not s:
             return
-        event.cost = ManaCost(event.cost) - ManaCost('2')  # TODO: minimum '1' or a colored equivalent
-
+        event.cost = ManaCost(event.cost) - ManaCost('2')
+        if event.cost == '':
+            event.cost = '1'
 
 class StoneCalendar(Listener):
     """Spells you cast cost {1} less to cast"""

@@ -721,6 +721,16 @@ class VesuvanDoppelgangerUpkeep(Listener):
         options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t, copy_color=False)) for t in card_options]
         gs.choice_mgr.queue(ChoiceAction(options))
 
+class WallOfTombstonesPT(Listener):
+    """At your upkeep, change WOT's base toughness to 1 + the number of creature cards in your graveyard."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        cnt = len(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result())
+        BasePT(base_t=1 + cnt).resolve(gs, source, t=source)
+
 class XenicPoltergeistRelease(Listener):
     """{T}: Until your NEXT upkeep, target noncreature artifact becomes an artifact creature with PT each = its MV.
     This effect removes the registered listener at the next upkeep"""

@@ -14,6 +14,37 @@ class TestCardsDEF(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_damping_field(self):
+        """Players can't untap more than one artifact during their untap steps."""
+        self.g.battlefield('damping-field')
+        a1 = self.g.battlefield('sol-ring')
+        a1.tap()
+
+        self.g.next_turn()
+        self.assertFalse(a1.is_tapped)  # if only one tapped artifact, the choice is not offered
+
+        a2 = self.g.battlefield('colossus-of-sardia')
+        a1.tap()
+        a2.tap()
+
+        self.g.next_turn()
+        untap_a1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(untap_a1)
+        self.assertFalse(a1.is_tapped)
+        self.assertTrue(a2.is_tapped)
+        self.assertIsNone(self.gs.pending_choice)
+
+        a1.tap()
+        a2.tap()
+        self.g.next_turn()
+        self.assertTrue(a1.is_tapped)
+        self.assertTrue(a2.is_tapped)
+        leave_all_tapped = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(leave_all_tapped)
+        self.assertTrue(a1.is_tapped)
+        self.assertTrue(a2.is_tapped)
+        self.assertIsNone(self.gs.pending_choice)
+
     def test_dance_of_many(self):
         """... When DOM ETB, create a token copy of target nontoken creature -- copies its original props w/o mods ...
         When DOM LTB, exile the token. When the token LTB, sac DOM"""

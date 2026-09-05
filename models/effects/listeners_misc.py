@@ -120,7 +120,6 @@ class LeviathanAttack(Listener):
 
 class ManaDrainMainPhase(Listener):
     """... At your next main phase, add an amount of {C} equal to that spell's mana value"""
-    # TODO: Create ManaDrain(Resolver), which would create & register an instance of this class
     listens_to = MainPhaseEvent
 
     def __init__(self, mana_value: int):

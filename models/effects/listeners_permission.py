@@ -1,14 +1,12 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING, Callable, Any
 
-from models.constants import KW, Zone
-from models.game_card.counter_tokens import PUPA
-from models.utils import flip
-
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
+from models.constants import KW, Zone
+from models.utils import flip
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTargetQueryEvent, CanCastQueryEvent, \
     CanUntapQueryEvent, UntapCardEvent, AttackEvent, CanEnterUntapPhaseQueryEvent, CanUntapAtUntapQueryEvent, \
@@ -16,8 +14,8 @@ from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanTarget
 
 """
 These are Effects that listens for Events that are XXQueryEvent
-These query-style effects must have a class-level attribute 'listens_to', implement on_event(gs, card, XXQueryEvent).
-If it passes the guard clauses, it set event.permission (often to False)
+These query-style effects must have a class-level attribute 'listens_to', implement on_event(gs, card, XXQueryEvent)
+If it passes the guard clauses, on_event() sets event.permission (often to False)
 """
 
 
@@ -334,19 +332,6 @@ class Arboria(Listener):
                 return
         event.permission = False
 
-class DampingField(Listener):
-    """Players can't untap more than one artifact during their untap steps"""
-    listens_to = CanUntapQueryEvent
-    query = 'can_untap'
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
-        if not event.card.is_artifact:
-            return
-        # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
-        if [e for e in events if e.card.is_artifact]:
-            event.permission = False
-
 class EvilEyeOfOrmsByGoreMyNonEyeNoAttack(Listener):
     """Non-Eye creatures you control can't attack."""
     listens_to = CanAttackQueryEvent
@@ -417,7 +402,6 @@ class MarblePriestForcesBlock(Listener):
 class Smoke(Listener):
     """Players can't untap more than one creature during their untap steps"""
     listens_to = CanUntapQueryEvent
-    query = 'can_untap'
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapQueryEvent) -> None:
         if not event.card.is_creature:
@@ -430,7 +414,6 @@ class Smoke(Listener):
 class TowerOfCoireallEOT(Listener):
     """Target creature can't be blocked by Walls this turn"""
     listens_to = CanBlockQueryEvent
-    query = 'can_block'
     expires = 'EOT'
 
     def __init__(self, target: GameCard):
@@ -444,7 +427,6 @@ class TowerOfCoireallEOT(Listener):
 class WinterOrb(Listener):
     """As long as this artifact is untapped, players can't untap more than one land during their untap steps"""
     listens_to = CanUntapAtUntapQueryEvent
-    query = 'can_untap'
 
     def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapQueryEvent) -> None:
         if source.is_tapped or 'Land' not in event.card.card_types:

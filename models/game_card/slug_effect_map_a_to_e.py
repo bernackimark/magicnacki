@@ -9,6 +9,7 @@ from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORA
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
 from .target_funcs import ET
+from ..effects.listeners_tap_untap import DampingField
 from ..effects.modifiers_generic import PreventDamage, Deny
 from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, UpkeepEvent, EndStepEvent, \
     CastResolvedEvent, TapCardEvent, DamageProposedEvent, ZoneChangeEvent, CanTargetQueryEvent, \
@@ -38,7 +39,7 @@ from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, Optiona
     PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
 from models.effects.listeners_permission import AkronLegionnaire, \
     EvilEyeOfOrmsByGoreMyNonEyeNoAttack, CantBeTargetedByAuras, HostCantAttack, \
-    WalkRuleRemoved, DampingField, DoesntUntapAtUntap, HostCanAttack, UnblockableCondition, \
+    WalkRuleRemoved, DoesntUntapAtUntap, HostCanAttack, UnblockableCondition, \
     UnblockableEOT, PreventRegenerationEOT, RegenerateSelf, AttackerCountMax, BlockerCountMax, CantCastAppliesTo, \
     HostCantBeTargetedBySpells, Arboria
 from models.effects.listeners_mod_queries import AngelicVoices, AngryMobPT, \

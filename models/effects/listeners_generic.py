@@ -359,7 +359,6 @@ class OptionalUntap(Listener):
             return
         options = [CO(f'Untap {source}', lambda: self.untap_and_log_decision(gs, source)),
                    CO(f'Leave {source} tapped', lambda: self.log_decision(gs, source))]
-        # options = [Untap(event.active_player, gs, source), LeaveTapped(event.active_player, gs, source)]
         gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
