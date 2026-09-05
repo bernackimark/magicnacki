@@ -58,3 +58,6 @@ class ConsoleRenderer(Renderer):
             print("Choose a card:")
             for i, c in enumerate(req.payload['cards']):
                 print(i, c)
+        if req.type_ == 'declare':
+            print("Declaration:")
+            print(req.payload['declaration'])

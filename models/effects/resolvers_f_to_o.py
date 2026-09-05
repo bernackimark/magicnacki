@@ -127,8 +127,8 @@ class GuardianAngel(Resolver):
         from models.effects.listeners_generic import PreventNextDamageTo
         x = context.x_value
         gs.event_mgr.register(PreventNextDamageTo(x, protected=t), source)
-        # TODO: the above handles the FIRST next damage;
-        #  need to handle subsequent damages via actions.special PayManaToPreventDamage
+        # TODO: the above only handles the FIRST next damage; need to handle subsequent damages
+        #  PreventNextDamageTo needs an .on_expire callback
 
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""

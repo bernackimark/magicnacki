@@ -193,14 +193,14 @@ class CreateTokenCreature(Resolver):
 class DeclareAColor(Resolver):
     """Choose a color (ex: when this card ETB, chose a color that can be referenced later)"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        options = [CO(f"Declare {source}'s color as {color}", lambda: self.etb_action(source, color))
+        options = [CO(f"Declare {source}'s color as {color}", lambda: self.etb_action(gs, source, color))
                    for color in COLOR_LETTERS]
         gs.choice_mgr.queue(ChoiceAction(options))
 
     @staticmethod
-    def etb_action(s: GameCard, color: str):
+    def etb_action(gs: GameState, s: GameCard, color: str):
         s.extras['color_declaration'] = color
-        # TODO: make presentation request, as this selection is public
+        gs.add_presentation_request(flip(s.owner_id), 'declaration', {'declaration': color})
 
 class DealDamage(Resolver):
     """Supply a static amount in the initializer or declare x via AbilityPipeline -> ResContext -> .resolve();
