@@ -53,7 +53,7 @@ def pay_mana_to_draw_cards(gs: GameState, p_id: int, mana_cost: str, card_cnt: i
 def pay_mana_to_gain_life(gs: GameState, p_id: int, mana_cost: str, life_amt: int = 1):
     if gs.mana_pools[p_id].can_pay(mana_cost):
         gs.mana_pools[p_id].pay(mana_cost)
-        gs.score_mgr.increment_life(p_id, life_amt, source=None, gs=gs)
+        gs.score_mgr.increment_life(p_id, life_amt, source=None)
 
 def pay_mana_to_prevent_counter(gs: GameState, p_id: int, mana_cost: str, counter_spell: StackItemType):
     if gs.mana_pools[p_id].can_pay(mana_cost):
