@@ -110,6 +110,10 @@ class CF:
                               for a in c.auras]
 
     @staticmethod
+    def basic_lands_in_your_library():
+        return lambda gs, s: [c for c in gs.card_filter.in_play_library(s.owner_id).result() if c.props.is_basic_land]
+
+    @staticmethod
     def black():
         return lambda gs, s: gs.card_filter.in_play().black().result()
 

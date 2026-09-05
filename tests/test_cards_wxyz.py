@@ -122,6 +122,7 @@ class TestCardsWXYZ(unittest.TestCase):
         self.assertFalse(target.is_creature)
         self.assertEqual(0, target.toughness)
 
+
 if __name__ == '__main__':
     unittest.main()
 

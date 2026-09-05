@@ -170,13 +170,6 @@ class Inquisition(Resolver):
         if white_cnt := len([c for c in opp_cards if c.is_white]):
             gs.apply_damage(source, white_cnt, flip(source.owner_id))
 
-class JalumTome(Resolver):
-    """Draw a card, then discard a card"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.pile_mgr.draw(source.owner_id)
-        options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[source.owner_id]]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
 class JovialEvil(Resolver):
     """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
@@ -219,7 +212,7 @@ class LifeChisel(Resolver):
     """Sac a creature: You gain life equal to the sacrificed creature's toughness. Activate only during your upkeep."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         amt = context.cost_result.paid_cards[0].toughness
-        gs.score_mgr.increment_life(source.owner_id, amt, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, amt, source)
 
 class ManaClash(Resolver):
     """You and target opponent each flip a coin. Mana Clash deals 1 damage to each player whose coin comes up tails.
@@ -312,7 +305,7 @@ class NamelessRace(Resolver):
     @staticmethod
     def etb_action(gs: GameState, s: GameCard, amt: int):
         s.base_pt = (amt, amt)
-        gs.score_mgr.decrement_life(s.owner_id, amt, s, gs)
+        gs.score_mgr.decrement_life(s.owner_id, amt, s)
 
 class NaturalSelection(Resolver):
     """Look at the top 3 cards of target player's library, put them back in any order. You may shuffle."""

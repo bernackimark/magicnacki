@@ -14,7 +14,7 @@ from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTa
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.effects.listeners_permission import PreventRegenerationEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
-from models.game_card.modifiers import SubTypeMod, PTMod, KWAMod
+from models.game_card.modifiers import SubTypeMod, PTMod, KWAMod, TypeMod
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -32,30 +32,6 @@ class Amnesia(Resolver):
             if 'Land' not in c.card_types:
                 gs.pile_mgr.discard(c, source)
 
-class ArenaOfTheAncientsCast(Resolver):
-    """When this artifact enters, tap all legendary creatures"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        for c in gs.card_filter.in_play().creatures().untapped().legendary().result():
-            c.tap()
-
-class AshesToAshes(Resolver):
-    """Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you."""
-
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        for t in t:
-            gs.pile_mgr.exile(t)
-        gs.apply_damage(source, 5, source.owner_id)
-
-class AshnodsTransmogrant(Resolver):
-    """{T}, Sacrifice this artifact: Put a +1/+1 counter on target nonartifact creature.
-    That creature becomes an artifact in addition to its other types."""
-
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.counters.add_counter(PLUS_ONE)
-        t.card_types.append('Artifact')
-
 class Banshee(Resolver):
     """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
 
@@ -66,18 +42,6 @@ class Banshee(Resolver):
         damage_to_you = x - damage_to_target
         gs.apply_damage(source, damage_to_target, t)
         gs.apply_damage(source, damage_to_you, source.owner_id)
-
-class BazaarOfBaghdad(Resolver):
-    """Draw two cards, then discard three cards"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.pile_mgr.draw(source.owner_id, 2)
-        cards = gs.pile_mgr.hands[source.owner_id]
-        if len(cards) <= 3:
-            gs.pile_mgr.discards(cards, source=source)
-            return
-        combos = [list(combo) for combo in combinations(cards, 3)]
-        options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
-        gs.choice_mgr.queue(ChoiceAction(options))
 
 class Berserk(Resolver):
     """Cast this spell only before the combat damage step.
@@ -104,17 +68,9 @@ class BottleOfSuleiman(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         result: str = gs.randomize_event(source.owner_id, ['heads', 'tails'])
         if result == 'heads':
-            obj = CreateTokenCreature('djinn')
-            obj.resolve(gs, source)
+            CreateTokenCreature('djinn').resolve(gs, source)
         else:
             gs.apply_damage(source, 5, source.owner_id)
-
-class Braingeyser(Resolver):
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        if t is not None:
-            x = context.x_value
-            gs.pile_mgr.draw(t, x)
 
 class ChaosOrb(Resolver):
     """{1}, {T}, Sac: Choose an opponent's non-token permanent. If random di roll is 1-4, destroy target."""
@@ -185,29 +141,13 @@ class Cleansing(Resolver):
         self.queue_next_choice(gs, s, state)
 
     def pay_cleansing(self, gs: GameState, p_id: int, s: GameCard, state: CleansingState):
-        gs.score_mgr.decrement_life(p_id, 1, s, gs)
+        gs.score_mgr.decrement_life(p_id, 1, s)
         state.saved_lands.append(state.active_land)
 
         # Move immediately to next land
         state.land_idx += 1
         gs.action_on_idx = flip(gs.action_on_idx)
         self.queue_next_choice(gs, s, state)
-
-
-class Clone(Resolver):
-    """You may have this creature enter as a copy of any creature on the battlefield"""
-    def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None):
-        card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
-        if not card_options:
-            return
-        options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
-class CocoonCast(Resolver):
-    @Resolver.target_required
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t.tap()
-        source.counters.add_counter(PUPA, 3)
 
 class ConsecrateLand(Resolver):
     """Enchanted land has indestructible and can't be enchanted by other Auras"""
@@ -217,22 +157,13 @@ class ConsecrateLand(Resolver):
         gs.event_mgr.register(CantBeTargetedByAuras(protected_card=t), source)
         t.modifiers.append(KWAMod(s=source, item=KW.INDESTRUCTIBLE))
 
-class CopyArtifact(Resolver):
-    """You may have this enchantment enter as a copy of any artifact on the battlefield,
-    except it's an enchantment in addition to its other types"""
-    def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None):
-        card_options = [c for c in gs.card_filter.in_play().artifacts().result() if c is not s]
-        if not card_options:
-            return
-        options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t)) for t in card_options]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
 class Crumble(Resolver):
-    """Destroy target artifact. It can't be regenerated. That artifact's controller gains life = its MV."""
+    """Destroy target artifact. It can't be regenerated. That artifact's controller gains life = its MV.
+    Can't use Do pattern yet because Destroy doesn't return the target to GainLife (who needs the target's MV)"""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.destroy(t, allow_regeneration=False)
-        gs.score_mgr.increment_life(t.owner_id, t.props.mana_value, source, gs)
+        gs.score_mgr.increment_life(t.owner_id, t.props.mana_value, source)
 
 class CuombajjWitches(Resolver):
     """{T}: CW deals 1 damage to any target and 1 damage to any target of an opponent's choice"""
@@ -258,26 +189,11 @@ class DanceOfMany(Resolver):
         gs.event_mgr.register_card(the_copy)
         gs.event_mgr.register(LTBTandem([source, the_copy]), source)
 
-class DemonicTutor(Resolver):
-    """Search your library for a card, put that card into your hand, then shuffle"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        p_id = source.owner_id
-        lib = gs.pile_mgr.libraries[p_id]
-        gs.add_presentation_request(p_id, 'search_library', {'cards': lib})
-        options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in lib]
-        # options = [Tutor(p_id, gs, source, c, Zone.HAND) for c in lib]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
-    @staticmethod
-    def tutor(gs: GameState, lib: list[GameCard], card: GameCard, to_zone: Zone):
-        gs.pile_mgr.move_card(card, to_zone)
-        random.shuffle(lib)
-
 class DiamondValley(Resolver):
     """{T}, Sacrifice a creature: You gain life equal to the sacrificed creature's toughness"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         amt = context.cost_result.paid_cards[0].toughness
-        gs.score_mgr.increment_life(source.owner_id, amt, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, amt, source)
 
 class Disharmony(Resolver):
     """Cast this spell only during combat before blockers are declared.

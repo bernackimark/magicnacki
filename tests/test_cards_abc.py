@@ -98,6 +98,19 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.event_mgr.emit(AbilityActivatedEvent(0, aa))
         self.assertEqual(self.gs.life[0], 18)
 
+    def test_ashes_to_ashes(self):
+        """Exile two target nonartifact creatures. Ashes to Ashes deals 5 damage to you."""
+        card = self.g.hand('ashes-to-ashes')
+        self.g.mana('BBBB')
+        t1 = self.g.battlefield('grizzly-bears', owner=1)
+        t2 = self.g.battlefield('scryb-sprites', owner=1)
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[t1, t2])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(15, self.gs.life[0])
+        self.assertIn(t1, self.gs.exiles[1])
+        self.assertIn(t2, self.gs.exiles[1])
+
     def test_barls_cage(self):
         """{3}: Tap & add a stun counter to target creature"""
         card = self.g.battlefield('barls-cage')
@@ -402,6 +415,13 @@ class TestCardsAtoC(unittest.TestCase):
     #     self.gs.pile_mgr.destroy(host)
     #     self.assertEqual(self.gs.life[0], 19)
 
+    def test_crumble(self):
+        """Destroy target artifact. It can't be regenerated. That artifact's controller gains life = its MV."""
+        card = self.g.card('crumble')
+        target = self.g.battlefield('colossus-of-sardia', owner=1)  # MV = 9
+        self.g.cast_and_accept(card, target, card.abilities[0])
+        self.assertEqual(29, self.gs.life[1])
+
     def test_cuombajj_witches(self):
         """{T}: CW deals 1 damage to any target and 1 damage to any target of an opponent's choice."""
         card = self.g.battlefield('cuombajj-witches')
@@ -409,6 +429,7 @@ class TestCardsAtoC(unittest.TestCase):
         target = self.g.battlefield('savannah-lions', owner=1)
         self.g.activate_ability(aa, target)
         self.assertIn(target, self.g.gy[1])
+        print('-------------')
         print(self.gs.action_on_idx)
         print(self.gs.pending_choice.get_actions())
         deal_1_damage_to_play_0 = self.gs.pending_choice.get_actions()[1]

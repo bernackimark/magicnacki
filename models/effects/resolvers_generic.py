@@ -1,15 +1,18 @@
 from __future__ import annotations
+
+import random
+from itertools import combinations
 from typing import TYPE_CHECKING, Callable, Literal
 
 from models.action_stack import StackItemType
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
-from models.choice_options import CO, pay_mana_to_prevent_counter
+from models.choice_options import CO, pay_mana_to_prevent_counter, copy_card
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
-from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE, STUN
-from models.effects.base import Resolver, RTarget, ResContext
+from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
+from models.effects.base import Resolver
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
-from models.events_all import StateBasedEvent, ZoneChangeEvent, ModQueryEvent
+from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
 from models.utils import flip
 
@@ -29,13 +32,14 @@ class Do(Resolver):
 
 
 class AddCounter(Resolver):
-    """If no target is provided, the source card will receive the counter"""
-    def __init__(self, counter_type: CounterType, cnt: int = 1):
+    """Target can be provided through intializer func or .resolve(t) else defaults to source"""
+    def __init__(self, counter_type: CounterType, cnt: int = 1, t_func: Callable | None = None):
         self.counter_type = counter_type
         self.cnt = cnt
+        self.t_func = t_func
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        target = source if not t else t
+        target = self.t_func(gs, source) if self.t_func else source if not t else t
         target.counters.add_counter(self.counter_type, self.cnt)
 
 class AddCounterPerCreatureDeath(Resolver):
@@ -73,6 +77,13 @@ class AddPoisonCounter(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.score_mgr.add_poison_counter(flip(source.owner_id), self.cnt)
+
+class AddType(Resolver):
+    def __init__(self, type_: str):
+        self.type = type_
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        t.modifiers.append(TypeMod(s=source, item=self.type))
 
 class AllWalksRemoved(Resolver):
     """Target creature loses all landwalk abilities until end of turn"""
@@ -118,6 +129,18 @@ class Bounce(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.bounce(t)
+
+class Copy(Resolver):
+    """You may have this card enter as a copy of any [type] on the battlefield; provide valid target func in init"""
+    def __init__(self, target_func: Callable):
+        self.target_func = target_func
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        card_options = [c for c in self.target_func(gs, source) if c is not source]
+        if not card_options:
+            return
+        options = [CO(f'{source} copies {t}', lambda: copy_card(gs, source, t)) for t in card_options]
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 class CounterSpell(Resolver):
     """This can be used by all counter spells, not just the card named 'Counterspell'"""
@@ -285,12 +308,31 @@ class DrawCardsActivePlayer(Resolver):
         gs.pile_mgr.draw(gs.turn_mgr.player_turn_idx, self.card_cnt)
 
 class DrawCards(Resolver):
+    """Target can be passed in via .resolve(t) else defaults to source owner;
+    Card count can be received via context.x_value or initializer"""
     def __init__(self, card_cnt: int = 1):
         self.card_cnt = card_cnt
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t = source.owner_id if t is None else t
-        gs.pile_mgr.draw(t, self.card_cnt)
+        cnt = context.x_value if context and context.x_value else self.card_cnt
+        gs.pile_mgr.draw(t, cnt)
+
+class DrawThenDiscard(Resolver):
+    """Target is the source owner"""
+    def __init__(self, draw_cnt: int = 1, discard_cnt: int = 1):
+        self.draw_cnt = draw_cnt
+        self.discard_cnt = discard_cnt
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.pile_mgr.draw(source.owner_id, self.draw_cnt)
+        cards = gs.pile_mgr.hands[source.owner_id]
+        if len(cards) <= self.discard_cnt:
+            gs.pile_mgr.discards(cards, source=source)
+            return
+        combos = [list(combo) for combo in combinations(cards, self.discard_cnt)]
+        options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class EmptyResolver(Resolver):
     """Used by auras that have complex Listeners but no resolver"""
@@ -303,30 +345,34 @@ class ExchangeLifeTotals(Resolver):
         opp_life = gs.life[flip(source.owner_id)]
         gs.life[source.owner_id], gs.life[flip(source.owner_id)] = opp_life, your_life
 
-class ExileAllCreatures(Resolver):
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        for c in gs.card_filter.in_play().creatures().result():
-            gs.pile_mgr.exile(c)
+class Exile(Resolver):
+    """The target can be provided via 'who' [a func(gs, s)] or via .resolve()"""
+    def __init__(self, who: Callable | None = None):
+        self.who = who
 
-class ExileSelf(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        gs.pile_mgr.exile(source)
+        target = self.who(gs, source) if self.who is not None else t
+        targets = [target] if not isinstance(target, list) else target
+        for t in targets:
+            gs.pile_mgr.exile(t)
 
 class GainLife(Resolver):
-    """Amount can be sent through the initializer or via context.x_value;
+    """Amount can be sent through the initor via context.x_value;
     Target can be supplied via .resolve(t) else default to source.owner_id"""
-    def __init__(self, amt: int = 1):
+    def __init__(self, amt: int = 1, p_func: Callable | None = None):
         self.amt = amt
+        self.p_func = p_func
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        t = source.owner_id if t is None else t
-        amt = context.x_value or self.amt
-        gs.score_mgr.increment_life(t, amt, source, gs)
+        s = source
+        t = self.p_func(gs, s) if self.p_func else s.owner_id if t is None else t
+        amt = context.x_value if context and context.x_value else self.amt
+        gs.score_mgr.increment_life(t, amt, s)
 
 class GainLifeTargetMV(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.score_mgr.increment_life(source.owner_id, t.props.mana_value, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, t.props.mana_value, source)
 
 class GraveyardToExile(Resolver):
     @Resolver.target_required
@@ -556,14 +602,37 @@ class TapCardEffect(Resolver):
         t.tap()
 
 class TapCards(Resolver):
-    """Targets can be received through a func(gs, s) at init, or via a list of GameCard via .resolve()"""
+    """Targets can be received through a func(gs, s) at init, or via .resolve() either GameCard or list[GameCard]"""
     def __init__(self, t_func: Callable | None = None):
         self.t_func = t_func
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         targets = self.t_func(gs, source) if self.t_func else t
+        if not isinstance(targets, list):
+            targets = [targets]
         for target in targets:
-            target.tap()
+            target.tap()  # type: ignore
+
+class Tutor(Resolver):
+    """Search your library for a card matching the filter_func, move it to the specified Zone, shuffle library;
+    if no filter_func is specified, all cards in library are an option;
+    it is assumed we are using the source owner's library"""
+    def __init__(self, filter_func: Callable | None = None, to_zone: Zone = Zone.HAND):
+        self.filter_func = filter_func
+        self.to_zone = to_zone
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        p_id = source.owner_id
+        lib = gs.pile_mgr.libraries[p_id]
+        cards = lib if not self.filter_func else self.filter_func(gs, source)
+        gs.add_presentation_request(p_id, 'search_library', {'cards': cards})
+        options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, self.to_zone)) for c in lib]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def tutor(gs: GameState, lib: list[GameCard], card: GameCard, to_zone: Zone):
+        gs.pile_mgr.move_card(card, to_zone)
+        random.shuffle(lib)
 
 class UntapCardEffect(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:

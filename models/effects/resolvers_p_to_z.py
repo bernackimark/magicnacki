@@ -145,7 +145,7 @@ class ReversePolarity(Resolver):
                                    if isinstance(e, DamageResolvedEvent) and e.target == source.owner_id])
         if not damage_by_artifacts:
             return
-        gs.score_mgr.increment_life(source.owner_id, 2 * damage_by_artifacts, source, gs)
+        gs.score_mgr.increment_life(source.owner_id, 2 * damage_by_artifacts, source)
 
 class RockHydraCast(Resolver):
     """This creature enters with X +1/+1 counters on it ..."""
@@ -212,7 +212,7 @@ class Simulacrum(Resolver):
         if not damage_taken_this_turn:
             return
 
-        gs.score_mgr.increment_life(s.owner_id, damage_taken_this_turn, s, gs)
+        gs.score_mgr.increment_life(s.owner_id, damage_taken_this_turn, s)
 
         your_creatures = gs.card_filter.creatures().on_player_board(s.owner_id).result()
         if your_creatures:
@@ -278,7 +278,7 @@ class SwordsToPlowshares(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         gs.pile_mgr.exile(t)
-        gs.score_mgr.increment_life(t.owner_id, t.power, source, gs)
+        gs.score_mgr.increment_life(t.owner_id, t.power, source)
 
 class TangleKelp(Resolver):
     """Tap host. Host doesn't untap during its controller's untap step if it attacked their last turn."""
@@ -372,20 +372,6 @@ class Typhoon(Resolver):
         if opp_island_cnt:
             gs.apply_damage(source, opp_island_cnt, opp)
 
-class UntamedWilds(Resolver):
-    """Search your library for a basic land card, put that card onto the battlefield, then shuffle"""
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        lib = gs.pile_mgr.libraries[source.owner_id]
-        basic_lands = [c for c in lib if c.props.is_basic_land]
-        gs.add_presentation_request(source.owner_id, 'search_library', {'cards': basic_lands})
-        options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, Zone.HAND)) for c in basic_lands]
-        gs.choice_mgr.queue(ChoiceAction(options))
-
-    @staticmethod
-    def tutor(gs: GameState, lib: list[GameCard], card: GameCard, to_zone: Zone):
-        gs.pile_mgr.move_card(card, to_zone)
-        random.shuffle(lib)
-
 class UrborgLoseFirstStrike(Resolver):
     """{T}: Target creature loses First Strike or Swampwalk until end of turn"""
 
@@ -468,7 +454,7 @@ class WandOfIth(Resolver):
             return
         the_card = gs.randomize_event(opp, opp_cards) if len(opp_cards) > 1 else opp_cards[0]
         life_amt = the_card.props.mana_value if 'Land' not in the_card.card_types else 1
-        options = [CO(f'Pay {life_amt} life', lambda: gs.score_mgr.decrement_life(opp, life_amt, source, gs)),
+        options = [CO(f'Pay {life_amt} life', lambda: gs.score_mgr.decrement_life(opp, life_amt, source)),
                    CO(f'Discard {the_card}', lambda: gs.pile_mgr.discard(the_card, source))]
         gs.choice_mgr.queue(ChoiceAction(options))
 

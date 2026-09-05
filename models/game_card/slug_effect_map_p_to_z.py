@@ -3,7 +3,7 @@ from __future__ import annotations
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     voodoo_doll_x, max_x_from_printed_card, target_spell_mv, On
 from .card_filter_funcs import C_FUNCS, CF
-from models.constants import COLOR_LETTERS, KW
+from models.constants import COLOR_LETTERS, KW, Zone
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING, MINUS_ZERO_TWO
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
@@ -15,18 +15,18 @@ from ..events_all import DiesEvent, EndStepEvent, CastResolvedEvent, TapCardEven
     DamageProposedEvent, DamageResolvedEvent, DrawCardEvent
 from ..target import TargetSpec
 from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, TangleKelp, Telekinesis, TowerOfCoireall, \
-    RockHydraCast, StormSeeker, Tracker, Typhoon, RagMan, UntamedWilds, Visions, WheelOfFortune, \
+    RockHydraCast, StormSeeker, Tracker, Typhoon, RagMan, Visions, WheelOfFortune, \
     PhantasmalTerrain, PrimalClay, VesuvanDoppelgangerCast, RapidFire, SandalsOfAbdallahIslandWalk, \
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, UrzasTrio, TriassicEggA, SingingTree, Rakalite, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, StoneGiant, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PhyrexianGremlinsTap, PowerSink, UrzasAvenger
-from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, AddCounterPerCreatureDeath, \
-    ExileAllCreatures, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
+from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
+    AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCardEffect, TapCards, \
     DeclareAColor, CounterSpell, RevealHands, BecomeCreaturePTEqualsManaValue, BasePT, MayPayMana, \
     GainLife, Do, PayManaOr, SacSelf, EmptyResolver, AddCounterToHost, DestroySelfCombatants, DestroyHostCombatants, \
-    UntapCards
+    UntapCards, Exile, Tutor
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_zone_change import Revelation, TawnossCoffinZoneChange
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
@@ -138,7 +138,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Triggered(RogahhOfKherKeepUpkeep())],
     'royal-assassin': [Activated('T', Destroy(), CF.tapped_creatures())],
     'rubinia-soulsinger': [Activated('T', Steal(return_on_untap=True), CF.opp_creatures()), Triggered(OptionalUntap())],
-    'rukh-egg': [GenTrig(On(DiesEvent).where(EC.self_is_dier()).then(CreateTokenCreature('rukh')))],
+    'rukh-egg': [GenTrig(On(DiesEvent).where(EC.card_is_source()).then(CreateTokenCreature('rukh')))],
     'sacrifice': [Spell(SacrificeOnCast(), extra_costs=[SacCardCost(CF.your_creatures())])],
     'safe-haven': [Activated('2T', SafeHaven(), CF.your_creatures()), Triggered(SafeHavenUpkeep())],
     'sage-of-lat-nam': [Activated('T', DrawCards(), CF.owner(), extra_costs=[SacCardCost(CF.your_artifacts())])],
@@ -210,7 +210,7 @@ MAP: dict[str, list[EffSpec]] = {
     'stream-of-life': [Spell(GainLife(), CF.all_players(), max_x_func=max_x_from_printed_card)],
     'strip-mine': [Activated('T', AddMana('C'), CF.owner(), is_mana_ability=True),
                    Activated('T', Destroy(), CF.lands(), extra_costs=[SacSelfCost()])],
-    'su-chi': [GenTrig(On(DiesEvent).where(EC.self_is_dier()).then(AddMana('C', 4)))],
+    'su-chi': [GenTrig(On(DiesEvent).where(EC.card_is_source()).then(AddMana('C', 4)))],
     'subdue': [Spell(Subdue(), CF.creatures())],
     'sunastian-falconer': [Activated('T', AddMana('C', 2), is_mana_ability=True)],
     'sunglasses-of-urza': [Static(SunglassesOfUrza())],
@@ -219,7 +219,7 @@ MAP: dict[str, list[EffSpec]] = {
     'swords-to-plowshares': [Spell(SwordsToPlowshares(), CF.creatures())],
     'sylvan-library': [Triggered(SylvanLibrary())],
     'sylvan-paradise': [Spell(SetColor('G', 'EOT'), TargetSpec(CF.creatures(), 1, None))],
-    'syphon-soul': [Spell(Do(DealDamage(2, CF.opp()), GainLife(2)))],
+    'syphon-soul': [Spell(Do(DealDamage(2, CF.opp()), GainLife(2, CF.owner())))],
     'tablet-of-epityr': [GenTrig(On(DiesEvent).where(EC.dier_is_your_artifact()).then(MayPayMana('1', GainLife(1))))],
     'taiga': dual_land_specs('RG'),
     'tangle-kelp': [Spell(TangleKelp(), CF.creatures())],
@@ -290,7 +290,7 @@ MAP: dict[str, list[EffSpec]] = {
     'urborg': [Activated('T', AddMana('B'), is_mana_ability=True),
                Activated('T', UrborgLoseFirstStrike(), CF.creatures_with_first_strike()),
                Activated('T', UrborgLoseSwampwalk(), CF.creatures_with_swampwalk())],
-    'untamed-wilds': [Spell(UntamedWilds())],
+    'untamed-wilds': [Spell(Tutor(CF.basic_lands_in_your_library(), Zone.BATTLEFIELD))],
     'urzas-avenger': [Activated('', UrzasAvenger())],
     'urzas-chalice': [GenTrig(On(CastResolvedEvent).where(EC.card_is_artifact()).then(MayPayMana('1', GainLife(1))))],
     'urzas-mine': [Activated('T', UrzasTrio())],
@@ -362,7 +362,7 @@ MAP: dict[str, list[EffSpec]] = {
                            Static(GlobalSac(CF.all_lands_in_game())), Triggered(WormsOfTheEarthUpkeep())],
     'wormwood-treefolk': [Activated('GG', Do(KWAModEffect('add', 'Forestwalk', True), DealDamage(2, CF.owner()))),
                           Activated('BB', Do(KWAModEffect('add', 'Swampwalk', True), DealDamage(2, CF.owner())))],
-    'wrath-of-god': [Spell(ExileAllCreatures())],
+    'wrath-of-god': [Spell(Exile(CF.creatures()))],
     'wyluli-wolf': [Activated('T', Pump(1, 1, True), CF.creatures())],
     'xira-arien': [Activated('BRGT', DrawCards(), CF.all_players())],
     'yawgmoth-demon': [Static(YawgmothDemon())],

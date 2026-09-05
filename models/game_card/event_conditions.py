@@ -122,10 +122,6 @@ class EC:
         return lambda gs, s, e: e.target is s
 
     @staticmethod
-    def self_is_dier():
-        return lambda gs, s, e: e.card is s
-
-    @staticmethod
     def self_is_tapped():
         return lambda gs, s, e: s.is_tapped
 

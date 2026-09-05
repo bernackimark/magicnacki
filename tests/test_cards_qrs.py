@@ -543,8 +543,6 @@ class TestCardsQRS(unittest.TestCase):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
         card = self.g.hand('syphon-soul')
         card.abilities[0].effect.resolve(self.gs, card, 1)
-        # self.g.mana('BBB')
-        # self.g.cast_and_accept(card, 1, card.abilities[0])
         self.assertEqual([22, 18], self.gs.life)
 
     def test_tablet_of_epityr(self):

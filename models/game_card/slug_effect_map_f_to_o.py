@@ -15,7 +15,7 @@ from .event_conditions import EC
 from .target_funcs import ET
 from ..constants import KW
 from ..effects.modifiers_generic import PreventDamage, RedirectToSource
-from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, JalumTome, MindTwist, NaturalSelection, GreatDefender, \
+from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, NaturalSelection, GreatDefender, \
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, GlyphOfDestruction, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
@@ -26,7 +26,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     Pump, TapCardEffect, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, PayManaOr, SacSelf, DrawCardsActivePlayer, DiscardAtRandom, \
-    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill
+    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill, DrawThenDiscard
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -212,7 +212,7 @@ MAP: dict[str: list[EffSpec]] = {
     'jacques-le-vert': [Static(PumpApplies(CF.your_green_creatures(), (0, 2)))],
     'jade-monolith': [Activated('1', RedirectNextDamageFromCardToOwnerEOT(), CF.creatures())],
     'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), CF.self(), allowed_phases=[Phase.MAIN])],
-    'jalum-tome': [Activated('2T', JalumTome(), text='Draw one card; discard one card')],
+    'jalum-tome': [Activated('2T', DrawThenDiscard(), text='Draw one card; discard one card')],
     'jandors-ring': [Activated('2T', DrawCards(), CF.owner(), extra_costs=[DiscardLastCardDrawnThisTurn()])],
     'jandors-saddlebags': [Activated('3T', UntapCardEffect(), CF.tapped_creatures())],
     'jayemdae-tome': [Activated('4T', DrawCards(), CF.owner())],
@@ -337,7 +337,7 @@ MAP: dict[str: list[EffSpec]] = {
     'old-man-of-the-sea': [Activated('T', Steal(return_on_untap=True),
                                      CF.opp_creatures_power_not_greater_than_source()),
                            Triggered(OptionalUntap()), Static(OldManOfTheSeaPowerCheck())],
-    'onulet': [GenTrig(On(DiesEvent).where(EC.self_is_dier()).then(GainLife(2)))],
+    'onulet': [GenTrig(On(DiesEvent).where(EC.card_is_source()).then(GainLife(2)))],
     'orc-general': [Activated('T', Pump(1, 1, True), CF.your_other_orcs(),
                               extra_costs=[SacCardCost(CF.another_orc_or_goblin())])],
     'orcish-artillery': [Activated('T', Do(DealDamage(2), DealDamage(3, CF.owner())), CF.all_creatures_and_players())],
