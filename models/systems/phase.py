@@ -68,6 +68,15 @@ class UntapPhase(PhaseState):
 
         from models.events_all import UntapPhaseEvent
         gs.event_mgr.emit(UntapPhaseEvent(gs.player_turn_idx))
+
+        # TODO: implement this here (the problem is that the choice produced from the emission never halts this
+        #  if gs.pending_choice:
+        #     # the choice selected is reponsible for calling untap_cards() below
+        #     return
+
+        self.untap_cards(gs)
+
+    def untap_cards(self, gs: GameState):
         for c in gs.pile_mgr.boards[gs.player_turn_idx]:
             if not c.is_tapped or c.id_ in gs.turn_mgr.untap_decisions_made:
                 continue
