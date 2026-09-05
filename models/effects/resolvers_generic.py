@@ -205,13 +205,19 @@ class DeclareAColor(Resolver):
 class DealDamage(Resolver):
     """Supply a static amount in the initializer or declare x via AbilityPipeline -> ResContext -> .resolve();
     target func can be provided in initializer or supplied as an RTarget in .resolve()"""
-    def __init__(self, amt: int = None, to: Callable | None = None):
+    def __init__(self, amt: int = None, to: Callable | None = None, amt_func: Callable | None = None):
         self.amt = amt
         self.to = to
+        self.amt_func = amt_func
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        amt = context.x_value if context and context.x_value is not None else self.amt
         target = self.to(gs, source) if self.to is not None else t
+        if self.amt_func:
+            amt = self.amt_func(gs, source, target)
+        elif context and context.x_value is not None:
+            amt = context.x_value
+        else:
+            amt = self.amt
         if isinstance(target, list):
             for tar in target:
                 gs.apply_damage(source, amt, tar)
@@ -361,14 +367,20 @@ class Exile(Resolver):
 class GainLife(Resolver):
     """Amount can be sent through the initor via context.x_value;
     Target can be supplied via .resolve(t) else default to source.owner_id"""
-    def __init__(self, amt: int = 1, p_func: Callable | None = None):
+    def __init__(self, amt: int = 1, p_func: Callable | None = None, amt_func: Callable | None = None):
         self.amt = amt
         self.p_func = p_func
+        self.amt_func = amt_func
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         s = source
         t = self.p_func(gs, s) if self.p_func else s.owner_id if t is None else t
-        amt = context.x_value if context and context.x_value else self.amt
+        if self.amt_func:
+            amt = self.amt_func(gs, source, t)
+        elif context and context.x_value is not None:
+            amt = context.x_value
+        else:
+            amt = self.amt
         gs.score_mgr.increment_life(t, amt, s)
 
 class GainLifeTargetMV(Resolver):

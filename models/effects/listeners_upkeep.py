@@ -20,22 +20,9 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
-
-class BlackVise(Listener):
-    """As opponent's upkeep, this artifact deals X damage to that player, X is = cards in their hand minus 4"""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
-        opp_id = flip(s.owner_id)
-        if event.active_player != opp_id:
-            return
-        opp_hand_len = len(gs.pile_mgr.hands[opp_id])
-        if opp_hand_len > 4:
-            gs.apply_damage(s, opp_hand_len - 4, opp_id)
-
 class CocoonUpkeep(Listener):
     """At your upkeep, remove a pupa counter from this Aura.
-        If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
+    If you can't, sac it, put a +1/+1 counter on enchanted creature, and that creature gains flying."""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
@@ -92,9 +79,6 @@ class Cyclone(Listener):
 
         for p_id in range(2):
             gs.apply_damage(source, wind_counters, p_id)
-
-        # options = [CyclonePayManaPerCounterDealDamage(source.owner_id, gs, source), Sac(source.owner_id, gs, source)]
-        # gs.choice_mgr.queue(ChoiceAction(options))
 
 class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
@@ -307,27 +291,6 @@ class HazezonTamarTokenCreation(Listener):
             CreateTokenCreature('sand-warrior').resolve(gs, source)
 
         gs.event_mgr.unregister_specific_effect(self)
-
-class IvoryTower(Listener):
-    """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4"""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        p_id = source.owner_id
-        if p_id != event.active_player:
-            return
-        if (hand_size := len(gs.pile_mgr.hands[p_id])) > 4:
-            gs.score_mgr.increment_life(p_id, hand_size - 4, source)
-
-class Karma(Listener):
-    """At each player's upkeep, this enchantment deals damage to that player = number of Swamps they control."""
-    listens_to = UpkeepEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent):
-        swamp_cnt = len(gs.card_filter.on_player_board(event.active_player).swamps().result())
-        if swamp_cnt:
-            gs.apply_damage(source, swamp_cnt, event.active_player)
-
 
 class LandTax(Listener):
     """At your upkeep, if an opponent controls more lands than you, you may:

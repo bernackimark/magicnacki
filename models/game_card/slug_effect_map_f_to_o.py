@@ -11,6 +11,7 @@ from models.effects.listeners_permission import Moat, Meekstone, IronclawOrcs, L
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT, CantBeTargetedByAuras, GoblinRockSledCanAttack, Lure, MarblePriestForcesBlock, \
     CantAttackIfAttackedLastTurn
+from .amt_funcs import AmtF
 from .event_conditions import EC
 from .target_funcs import ET
 from ..constants import KW
@@ -35,9 +36,8 @@ from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, Lev
     InvokePrejudice
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import LandEquilibrium
-from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, \
-    HazezonTamarTokenCreation, IvoryTower, Karma, LandTax, LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, \
-    LeviathanUpkeep, Halfdane, LivingArtifactUpkeep
+from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, HazezonTamarTokenCreation, LandTax, \
+    LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, LeviathanUpkeep, Halfdane, LivingArtifactUpkeep
 from ..effects.listeners_tap_untap import Kudzu
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import MijaeDjinn, GiantShark, Johan, InfiniteAuthorityCombatEnd, FloralSpuzzem, \
@@ -212,7 +212,8 @@ MAP: dict[str: list[EffSpec]] = {
     'island-sanctuary': [Static(IslandSanctuary())],
     'ivory-cup': [GenTrig(On(CastResolvedEvent).where(EC().card_is_color('W')).then(MayPayMana('1', GainLife(1))))],
     'ivory-guardians': [Static(IvoryGuardians())],
-    'ivory-tower': [Triggered(IvoryTower())],
+    'ivory-tower': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn().hand_size_greater_than(CF.owner(), 4)).
+                            then(GainLife(p_func=CF.owner(), amt_func=AmtF.t_hand_size(-4))))],
     'jacques-le-vert': [Static(PumpApplies(CF.your_green_creatures(), (0, 2)))],
     'jade-monolith': [Activated('1', RedirectNextDamageFromCardToOwnerEOT(), CF.creatures())],
     'jade-statue': [Activated('2', BecomeCreature(3, 6, 'Golem', True), CF.self(), allowed_phases=[Phase.MAIN])],
@@ -228,7 +229,8 @@ MAP: dict[str: list[EffSpec]] = {
     'junun-efreet': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('BB', SacSelf())))],
     'juzam-djinn': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(DealDamage(1)).t(ET.s_owner()))],
     'karakas': [Activated('T', AddMana('W'), is_mana_ability=True), Activated('T', Bounce(), CF.legendary_creatures())],
-    'karma': [Triggered(Karma())],
+    'karma': [GenTrig(On(UpkeepEvent).where(EC().in_turn_p_has_swamps()).
+                      then(DealDamage(to=CF.in_turn_player(), amt_func=AmtF.t_swamp_cnt())))],
     'kei-takahashi': [Activated('T', PreventNextDamageBy(preventable_amt=2), CF.creatures())],
     'keldon-warlord': [Static(SelfPTEqualsFuncLen(CF.your_non_wall_creatures()))],
     'khabal-ghoul': [GenTrig(On(EndStepEvent).where(EC().any_creature_died_this_turn()).

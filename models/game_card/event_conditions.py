@@ -81,9 +81,18 @@ class EC:
     def from_board(self):
         self.conditions.append(lambda gs, s, e: e.from_zone == Zone.BATTLEFIELD)
         return self
+
+    def hand_size_greater_than(self, p_id_func: Callable, threshold: int):
+        self.conditions.append(lambda gs, s, e: len(gs.hands[p_id_func(gs, s)]) > threshold)
+        return self
     
     def host_is_combatant(self):
         self.conditions.append(lambda gs, s, e: s.host in gs.card_filter.combatants().result())
+        return self
+
+    def in_turn_p_has_swamps(self):
+        self.conditions.append(lambda gs, s, e:
+                               len(gs.card_filter.on_player_board(gs.turn_mgr.player_turn_idx).swamps().result()) > 0)
         return self
 
     def is_combat_damage(self):
@@ -92,6 +101,10 @@ class EC:
 
     def is_host_turn(self):
         self.conditions.append(lambda gs, s, e: gs.turn_mgr.player_turn_idx == s.host.owner_id)
+        return self
+
+    def is_opp_turn(self):
+        self.conditions.append(lambda gs, s, e: gs.turn_mgr.player_turn_idx != s.owner_id)
         return self
 
     def is_your_turn(self):

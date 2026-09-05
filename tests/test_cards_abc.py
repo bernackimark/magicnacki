@@ -139,6 +139,13 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(target, self.g.gy[0])
 
+    def test_black_vise(self):
+        """As opponent's upkeep, this artifact deals X damage to that player, X is = cards in their hand minus 4"""
+        card = self.g.battlefield('black-vise')
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(17, self.gs.life[1])
+
     def test_blazing_effigy(self):
         """When BE dies, it deals X damage to target creature.
         X = 3 + the amount of damage dealt to BE this turn by other sources named 'Blazing Effigy'."""

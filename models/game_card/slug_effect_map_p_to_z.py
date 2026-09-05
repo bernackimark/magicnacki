@@ -27,7 +27,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, De
     GainLife, Do, PayManaOr, SacSelf, EmptyResolver, AddCounterToHost, DestroySelfCombatants, DestroyHostCombatants, \
     UntapCards, Exile, Tutor, Register
 from ..effects.listeners_state_change import GlobalSac
-from ..effects.listeners_zone_change import TawnossCoffinZoneChange
+from ..effects.listeners_zone_change import TawnossCoffinLTB
 from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, PsychicAllergySac, RasputinDreamweaverUpkeep, \
     RogahhOfKherKeepUpkeep, SafeHavenUpkeep, SeasonOfTheWitchUpkeep, SpiritualSanctuary, StormWorld, TheAbyss, \
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
@@ -232,8 +232,7 @@ MAP: dict[str, list[EffSpec]] = {
     'taiga': dual_land_specs('RG'),
     'tangle-kelp': [Spell(Do(TapCard(), Register(DoesntUntapAtUntapIfItAttackedLastTurn, target_attr='target')),
                           CF.creatures())],
-    'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()),
-                       Triggered(TawnossCoffinZoneChange())],
+    'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()), Triggered(TawnossCoffinLTB())],
     'tawnoss-wand': [Activated('2T', UnblockableEOT(), CF.creatures_power_two_or_less())],
     'tawnoss-weaponry': [Triggered(OptionalUntap()), Triggered(UntapRemovesPumpFromAnotherCard()),
                          Activated('2T', Pump(1, 1, True), CF.creatures())],

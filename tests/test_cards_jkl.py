@@ -53,6 +53,19 @@ class TestCardsJKL(unittest.TestCase):
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         self.assertEqual(18, self.gs.life[1])
 
+    def test_karma(self):
+        """At each player's upkeep, this enchantment deals damage to that player = number of Swamps they control."""
+        self.g.battlefield('karma')
+        self.g.mana('BB', owner=1)
+
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(18, self.gs.life[1])
+
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(20, self.gs.life[0])
+
     def test_kismet(self):
         """Artifacts, creatures, and lands your opponents control enter tapped"""
         self.g.battlefield('kismet')

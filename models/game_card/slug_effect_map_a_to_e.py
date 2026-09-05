@@ -26,8 +26,8 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x, On
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
 from ..effects.listeners_state_change import GlobalSac
-from ..effects.listeners_upkeep import BlackVise, CocoonUpkeep, CurseArtifact, Cyclone, \
-    DemonicHordesUpkeep, DropOfHoney, ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
+from ..effects.listeners_upkeep import CocoonUpkeep, CurseArtifact, Cyclone, DemonicHordesUpkeep, DropOfHoney, \
+    ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
@@ -143,7 +143,8 @@ MAP: dict[str, list[EffSpec]] = {
     'black-lotus': [Activated('T', AddMana(c, 3), is_mana_ability=True, extra_costs=[SacSelfCost()],
                               text=f'Add {{3{c}}}') for c in COLOR_LETTERS],
     'black-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('B')],
-    'black-vise': [Triggered(BlackVise())],
+    'black-vise': [GenTrig(On(UpkeepEvent).where(EC().is_opp_turn().hand_size_greater_than(CF.opp(), 4)).
+                           then(DealDamage(amt_func=AmtF.t_hand_size(-4), to=CF.opp())))],
     'black-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_BLACK), CF.creatures())],
     'blazing-effigy': [Triggered(BlazingEffigy())],
     'blessing': [Activated('W', Pump(1, 1, True), CF.host())],

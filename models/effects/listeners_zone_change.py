@@ -1,10 +1,8 @@
 from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
-from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import ZoneChangeEvent
 from models.constants import Zone
@@ -29,7 +27,7 @@ class LandEquilibrium(Listener):
         options = [CO(f'Sac {land}', lambda: gs.pile_mgr.sacrifice(land)) for land in opp_lands]
         gs.choice_mgr.queue(ChoiceAction(options))
 
-class TawnossCoffinZoneChange(Listener):
+class TawnossCoffinLTB(Listener):
     """When this artifact LTB, return its exiled card to the battlefield tapped with the noted number &
      kind of counters on it and re-attach all auras.
      Note: all of this code is repeated in TawnossCoffinUntap"""
