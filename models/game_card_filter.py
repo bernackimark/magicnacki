@@ -43,6 +43,11 @@ class CardFilter:
         self._cards = [c for c in self._cards if c in gy]
         return self
 
+    def in_player_library(self, p_id: int):
+        lib = self._gs.pile_mgr.libraries[p_id]
+        self._cards = [c for c in self._cards if c in lib]
+        return self
+
     # --- by slug ---
     def by_slug(self, slug: str):
         self._cards = [c for c in self._cards if c.props.slug == slug]
