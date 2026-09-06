@@ -297,6 +297,57 @@ class Tracker(Resolver):
         gs.apply_damage(source, source.power, t)
         gs.apply_damage(t, t.power, source)
 
+class TransmuteArtifact(Resolver):
+    """Sac an artifact: tutor an artifact. If that card's MV <= the sacrificed artifact's MV, put on battlefield.
+    If >, you may pay {X} as the difference. If you do, put on battlefield. If you don't, put it in graveyard.
+    Shuffle."""
+    def __init__(self):
+        self.tutored_card: GameCard | None = None
+        self._gs: GameState | None = None
+        self._sac_mv: int | None = None
+        self._lib: list[GameCard] | None = None
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        self._gs = gs
+        self._sac_mv = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
+        self._lib = gs.pile_mgr.libraries[source.owner_id]
+        lib_artifacts = [c for c in self._lib if c.is_artifact]
+        gs.add_presentation_request(source.owner_id, 'search_library', {'cards': lib_artifacts})
+        options = [CO(f'Tutor {c}', lambda c=c: self._select_card(c)) for c in lib_artifacts]
+        gs.choice_mgr.queue(ChoiceAction(options))
+        return
+
+    def coordinate(self):
+        if not self.tutored_card:
+            raise ValueError("Transmute Artifact should have a selected card by here")
+
+        mv_diff = ManaCost(self.tutored_card.casting_cost).mana_value - self._sac_mv
+
+        if mv_diff <= 0:
+            self._tutor()
+            return
+
+        if not self._gs.mana_pools[self.tutored_card.owner_id].can_pay(str(mv_diff)):
+            self._to_gy()
+            return
+
+        options = [CO(f'{{{str(mv_diff)}}}: {self.tutored_card} to battlefield', lambda: self._tutor()),
+                   CO(f'Place {self.tutored_card} in your graveyard', lambda: self._to_gy())]
+        self._gs.choice_mgr.queue(ChoiceAction(options))
+
+    def _select_card(self, c: GameCard):
+        self.tutored_card = c
+        self.coordinate()
+
+    def _tutor(self):
+        self._gs.pile_mgr.move_card(self.tutored_card, Zone.BATTLEFIELD)
+        random.shuffle(self._lib)
+
+    def _to_gy(self):
+        self._gs.pile_mgr.move_card(self.tutored_card, Zone.GRAVEYARD)
+        random.shuffle(self._lib)
+
+
 class TriassicEggA(Resolver):
     """Choose one (activate only if there are two or more hatchling counters on this artifact.):
     * You may put a creature card from your hand onto the battlefield ... """

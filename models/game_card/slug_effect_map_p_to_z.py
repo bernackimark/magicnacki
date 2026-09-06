@@ -19,7 +19,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, UrzasTrio, TriassicEggA, SingingTree, Rakalite, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
-    VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger
+    VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -271,6 +271,7 @@ MAP: dict[str, list[EffSpec]] = {
     'tracker': [Activated('GGT', Tracker(), CF.creatures())],
     'tranquility': [Spell(DestroyAll(CF.enchants()))],
     'transmutation': [Spell(Transmutation(), CF.creatures())],
+    'transmute-artifact': [Spell(TransmuteArtifact())],
     'triassic-egg': [Activated('3T', AddCounter(HATCHLING)),
                      Activated('', TriassicEggA(), extra_costs=[SacSelfCost()],
                                text='Sac to move a creature card from your hand to the battlefield'),

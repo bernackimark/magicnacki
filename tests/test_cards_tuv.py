@@ -1,6 +1,7 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
+from models.cost import SacCardCost, CostResult
 from models.game_card.counter_tokens import HATCHLING, STUN, PLUS_ONE
 from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
 from models.systems.phase import Phase
@@ -165,6 +166,69 @@ class TestCardsTUV(unittest.TestCase):
         self.assertTrue(7, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
         self.assertNotEqual(hand_snapshot, self.gs.pile_mgr.hands[0])
+
+    def test_transmute_artifact_1(self):
+        """Sac an artifact: tutor an artifact. If that card's MV <= the sacrificed artifact's MV,
+        put it onto the battlefield. If >, you may pay {X}, as the difference.
+        If you do, put it onto the battlefield.
+        If you don't, put it into its owner's graveyard.
+        Shuffle."""
+        self.gs.pile_mgr.libraries[0].clear()
+        self.g.mana('UUUU')
+        a2 = self.g.library('colossus-of-sardia')  # MV = 9
+        sac = self.g.battlefield('chaos-orb')  # MV = 2
+        card = self.g.hand('transmute-artifact')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
+                                   selected_extra_costs=[SacCardCost(selected_card=sac)],
+                                   cost_result=CostResult([sac]))
+        pipeline.advance()
+        pipeline.resolve_ability()
+        select_a2 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(select_a2)
+        self.assertIn(a2, self.g.gy[0])
+
+    def test_transmute_artifact_2(self):
+        """Sac an artifact: tutor an artifact. If that card's MV <= the sacrificed artifact's MV,
+        put it onto the battlefield. If >, you may pay {X}, as the difference.
+        If you do, put it onto the battlefield.
+        If you don't, put it into its owner's graveyard.
+        Shuffle."""
+        self.gs.pile_mgr.libraries[0].clear()
+        self.g.mana('UUUU')
+        a1 = self.g.library('sol-ring')  # MV = 1
+        sac = self.g.battlefield('chaos-orb')  # MV = 2
+        card = self.g.hand('transmute-artifact')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
+                                   selected_extra_costs=[SacCardCost(selected_card=sac)],
+                                   cost_result=CostResult([sac]))
+        pipeline.advance()
+        pipeline.resolve_ability()
+        select_a1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(select_a1)
+        self.assertIn(a1, self.gs.boards[0])
+
+    def test_transmute_artifact_3(self):
+        """Sac an artifact: tutor an artifact. If that card's MV <= the sacrificed artifact's MV,
+        put it onto the battlefield. If >, you may pay {X}, as the difference.
+        If you do, put it onto the battlefield.
+        If you don't, put it into its owner's graveyard.
+        Shuffle."""
+        self.gs.pile_mgr.libraries[0].clear()
+        self.g.mana('UUUU')
+        a1 = self.g.library('basalt-monolith')  # MV = 3
+        sac = self.g.battlefield('chaos-orb')  # MV = 2
+        card = self.g.hand('transmute-artifact')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
+                                   selected_extra_costs=[SacCardCost(selected_card=sac)],
+                                   cost_result=CostResult([sac]))
+        pipeline.advance()
+        pipeline.resolve_ability()
+        select_a1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(select_a1)
+        pay_1_to_put_on_battlefield = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(pay_1_to_put_on_battlefield)
+        self.assertIn(a1, self.gs.boards[0])
+        self.assertIsNone(self.gs.pending_choice)
 
     def test_triassic_egg(self):
         """... Sac TE: Choose one. Activate only if there are two or more hatchling counters on this artifact.
