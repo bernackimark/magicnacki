@@ -253,8 +253,9 @@ class TestCardsQRS(unittest.TestCase):
         pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[target])
         pipeline.advance()
         prevent_steal_action = self.gs.pending_choice.get_actions()[0]
-        prevent_steal_action.play()
+        self.gs.choice_mgr.choose(prevent_steal_action)
         self.assertEqual(1, target.owner_id)
+        self.assertIsNone(self.gs.pending_choice)
 
         self.g.next_turn()
         pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[target])
@@ -498,9 +499,12 @@ class TestCardsQRS(unittest.TestCase):
         self.assertTrue(tapped_card.is_tapped)
 
         self.gs.event_mgr.emit(UpkeepEvent(0))
-        sac_stasis_action = self.gs.pending_choice.options[1]
-        sac_stasis_action.play()
+        sac_stasis = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(sac_stasis)
         self.assertIn(card, self.g.gy[0])
+        self.assertIsNone(self.gs.pending_choice,
+                          "Statis uses a generic PayManaOr('U', SacSelf()). SacSelf doesn't know that it needs a"
+                          "callback to gs.choice_mgr.complete()")
 
         self.g.next_turn()
         self.assertFalse(tapped_card.is_tapped)

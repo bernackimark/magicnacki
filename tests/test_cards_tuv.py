@@ -289,10 +289,9 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.hand('venarian-gold')
         self.g.mana('UUUUUUUU')
         host = self.g.battlefield('monss-goblin-raiders', owner=1)
-        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=1)
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=1, targets=[host])
         card.extras['x'] = 1
         pipeline.advance()
-        pipeline.targets.append(host)
         pipeline.finish()
         pipeline.resolve_ability()
         self.assertTrue(host.is_tapped)
@@ -302,6 +301,7 @@ class TestCardsTUV(unittest.TestCase):
         self.assertTrue(host.is_tapped)
 
         self.g.next_turn()
+        self.assertEqual(0, host.counters.get_count(STUN))
         self.assertFalse(host.is_tapped)
 
     def test_venom_vs_non_wall(self):

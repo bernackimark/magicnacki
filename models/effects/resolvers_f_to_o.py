@@ -321,7 +321,7 @@ class NaturalSelection(Resolver):
 class Necropolis(Resolver):
     """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        mv = ManaCost(context.cost_results.paid_cards[0].casting_cost).mana_value
+        mv = ManaCost(context.cost_results[0].paid_cards[0].casting_cost).mana_value
         source.counters.add_counter(PLUS_ZERO_ONE, mv)
 
 class NettlingImp(Resolver):

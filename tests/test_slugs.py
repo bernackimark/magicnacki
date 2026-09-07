@@ -16,7 +16,7 @@ class TestSlugs(unittest.TestCase):
         with open('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/testing/card_statuses.json', 'r') as f:
             all_cards: dict[str: str] = json.load(f)
 
-        with open('/models/card/tokens.json', 'r') as f:
+        with open('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/models/card/tokens.json', 'r') as f:
             tokens: dict[str: str] = json.load(f)
 
         for slug in INVOCATIONS:
@@ -27,7 +27,7 @@ class TestSlugs(unittest.TestCase):
     def test_lands_have_no_spells(self):
         """This assumption is made in casting pipeline logic"""
         cu = CardUniverse(OS_SCRYFALL_SETS)
-        with open('/models/card/tokens.json', 'r') as f:
+        with open('/Users/Bernacki_Laptop/PycharmProjects/magicnacki/models/card/tokens.json', 'r') as f:
             tokens: dict[str: str] = json.load(f)
         for slug, eff_specs in INVOCATIONS.items():
             if slug in tokens:
