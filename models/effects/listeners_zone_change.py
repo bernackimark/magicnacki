@@ -39,8 +39,8 @@ class TawnossCoffinLTB(Listener):
         exiled_card: GameCard = source.extras.get('exiled_card')
         deep_copy: GameCard = source.extras.get('exiled_card_deep_copy')
         exiled_card.tap()
-        for ctr in deep_copy.counters:
-            exiled_card.counters.add_counter(ctr)
-        for aura in deep_copy.modifiers.items:
-            if isinstance(aura, GameCard):
-                exiled_card.modifiers.append(aura)
+        for ctr_type, cnt in deep_copy.counters:
+            exiled_card.counters.add_counter(ctr_type, cnt)
+        for aura in deep_copy.auras:
+            exiled_card.modifiers.append(aura)
+        gs.pile_mgr.move_card(exiled_card, Zone.BATTLEFIELD, cause='released_from_exile')

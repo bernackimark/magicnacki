@@ -277,6 +277,8 @@ class TawnossCoffin(Resolver):
         source.extras['exiled_card'] = t
         source.extras['exiled_card_deep_copy'] = my_deep_copy
         gs.pile_mgr.exile(t)
+        for aura in t.auras:
+            gs.pile_mgr.exile(aura)
 
 class Telekinesis(Resolver):
     """Tap target creature. Prevent all combat damage that would be dealt by that creature this turn.

@@ -28,6 +28,21 @@ class TestCardsTUV(unittest.TestCase):
         3T: Exile target creature and all attached auras. Note the number & kind of counters that were on that creature.
         When TC leaves the battlefield or becomes untapped, return that exiled card to the battlefield under its owner's
         control tapped with the original counters & auras on it."""
+        card = self.g.battlefield('tawnoss-coffin')
+        aa = card.activated_abilities[0]
+        self.g.mana('UUU')
+        target = self.g.battlefield('tundra-wolves', owner=1)  # 1/1
+        aura = self.g.hand('holy-strength', owner=1)  # +1/+2
+        self.g.cast_and_accept(aura, target, aura.abilities[0], owner=1)
+        target.counters.add_counter(PLUS_ONE)  # +1/+1
+
+        self.g.activate_ability(aa, target)
+        self.assertIn(target, self.gs.exiles[1])
+
+        card.untap()
+        self.assertIn(target, self.gs.boards[1])
+        self.assertEqual(3, target.power)
+        self.assertTrue(target.is_tapped)
 
     def test_telekinesis(self):
         """Tap target creature. Prevent all combat damage that would be dealt by that creature this turn.
@@ -180,7 +195,7 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.hand('transmute-artifact')
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
                                    selected_extra_costs=[SacCardCost(selected_card=sac)],
-                                   cost_results=CostResult([sac]))
+                                   cost_results=[CostResult([sac])])
         pipeline.advance()
         pipeline.resolve_ability()
         select_a2 = self.gs.pending_choice.get_actions()[0]
@@ -200,7 +215,7 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.hand('transmute-artifact')
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
                                    selected_extra_costs=[SacCardCost(selected_card=sac)],
-                                   cost_results=CostResult([sac]))
+                                   cost_results=[CostResult([sac])])
         pipeline.advance()
         pipeline.resolve_ability()
         select_a1 = self.gs.pending_choice.get_actions()[0]
@@ -220,7 +235,7 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.hand('transmute-artifact')
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
                                    selected_extra_costs=[SacCardCost(selected_card=sac)],
-                                   cost_results=CostResult([sac]))
+                                   cost_results=[CostResult([sac])])
         pipeline.advance()
         pipeline.resolve_ability()
         select_a1 = self.gs.pending_choice.get_actions()[0]

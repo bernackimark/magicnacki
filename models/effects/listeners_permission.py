@@ -423,15 +423,3 @@ class TowerOfCoireallEOT(Listener):
         if event.attacker is not self.target or event.blocker not in gs.card_filter.walls().result():
             return
         event.permission = False
-
-class WinterOrb(Listener):
-    """As long as this artifact is untapped, players can't untap more than one land during their untap steps"""
-    listens_to = CanUntapAtUntapQueryEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CanUntapAtUntapQueryEvent) -> None:
-        if source.is_tapped or 'Land' not in event.card.card_types:
-            return
-        # TODO: this should probably enter a flow where user can declare which one card they want to untap
-        events = gs.event_mgr.get_events(gs.turn_mgr.turn_number, UntapCardEvent)
-        if [e for e in events if e.card.is_land]:
-            event.permission = False

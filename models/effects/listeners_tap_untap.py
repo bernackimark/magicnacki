@@ -1,8 +1,11 @@
 from __future__ import annotations
+
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
+from models.constants import Zone
 from models.game_card.counter_tokens import MINUS_ZERO_TWO
 from models.effects.base import Listener
 from models.events_all import TapCardEvent, UntapCardEvent, UntapPhaseEvent, CanUntapAtUntapQueryEvent, Event
@@ -82,12 +85,11 @@ class TawnossCoffinUntap(Listener):
         exiled_card: GameCard = source.extras.get('exiled_card')
         deep_copy: GameCard = source.extras.get('exiled_card_deep_copy')
         exiled_card.tap()
-        for ctr in deep_copy.counters:
-            exiled_card.counters.add_counter(ctr)
-        for aura in deep_copy.modifiers.items:
-            if isinstance(aura, GameCard):
-                exiled_card.modifiers.append(aura)
-
+        for ctr_type, cnt in deep_copy.counters:
+            exiled_card.counters.add_counter(ctr_type, cnt)
+        for aura in deep_copy.auras:
+            exiled_card.modifiers.append(aura)
+        gs.pile_mgr.move_card(exiled_card, Zone.BATTLEFIELD, cause='released_from_exile')
 
 # --- UNTAP PHASE ---
 class DampingField(Listener):
@@ -140,3 +142,47 @@ class TimeVaultOption(Listener):
     def untap_and_skip_turn(gs: GameState, c: GameCard):
         c.untap()
         gs.phase_mgr.set_phase(Phase.PASS_THE_TURN)
+
+class WinterOrb(Listener):
+    """As long as this artifact is untapped, players can't untap more than one land during their untap steps"""
+    listens_to = UntapPhaseEvent
+
+    @dataclass
+    class _State:
+        subject_cards: list[GameCard]
+        left_tapped: list[GameCard] = field(default_factory=list)
+        untapped_card: GameCard = None
+
+        @property
+        def remaining_cards(self) -> list[GameCard | None]:
+            return [c for c in self.subject_cards if c not in self.left_tapped and c is not self.untapped_card]
+
+    def on_event(self, gs: GameState, source: GameCard, event: UntapPhaseEvent) -> None:
+        lands = gs.card_filter.on_player_board(event.active_player).lands().result()
+        if len(lands) <= 1:
+            return
+
+        state = self._State(lands)
+        self.queue_next_choice(gs, state)
+
+    def queue_next_choice(self, gs: GameState, state: WinterOrb._State):
+        if not state.remaining_cards or state.untapped_card:
+            for c in state.left_tapped + state.remaining_cards:
+                gs.turn_mgr.untap_decisions_made.add(c.id_)
+                print('From inside Winter Orb, leaving tapped:', c)
+            gs.phase_mgr.state.untap_cards(gs)
+            return
+        card = state.remaining_cards[0]
+        options = [CO(f"Leave {card} tapped", lambda c=card: self.leave_tapped(gs, state, c)),
+                   CO(f"Untap {card}", lambda c=card: self.untap_card(gs, state, c))]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    def untap_card(self, gs: GameState, state: WinterOrb._State, c: GameCard):
+        c.untap()
+        state.untapped_card = c
+        self.queue_next_choice(gs, state)
+
+    def leave_tapped(self, gs: GameState, state: WinterOrb._State, c: GameCard):
+        state.left_tapped.append(c)
+        gs.turn_mgr.untap_decisions_made.add(c.id_)
+        self.queue_next_choice(gs, state)

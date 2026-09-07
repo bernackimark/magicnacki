@@ -93,6 +93,32 @@ class TestCardsWXYZ(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertEqual(2, wd.power)
 
+    def test_winter_orb(self):
+        """As long as this artifact is untapped, players can't untap more than one land during their untap steps"""
+        self.g.battlefield('winter-orb')
+        plains = self.g.battlefield('plains')
+        swamp = self.g.battlefield('swamp')
+
+        plains.tap()
+        swamp.tap()
+        self.g.next_turn()
+        untap_plains = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(untap_plains)
+        self.assertFalse(plains.is_tapped)
+        self.assertTrue(swamp.is_tapped)
+        self.assertIsNone(self.gs.pending_choice)
+
+        plains.tap()
+        swamp.tap()
+        self.g.next_turn()
+        leave_plains_tapped = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(leave_plains_tapped)
+        untap_swamp = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(untap_swamp)
+        self.assertTrue(plains.is_tapped)
+        self.assertFalse(swamp.is_tapped)
+        self.assertIsNone(self.gs.pending_choice)
+
     def test_worms_of_the_earth(self):
         """Players can't play lands. Lands can't ETB.
         At each upkeep, any player may: do nothing, sac two choice lands, or WOTE deals 5 damage to that player.

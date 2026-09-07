@@ -6,7 +6,7 @@ from models.choice_options import CO
 from models.constants import KW
 from models.effects.listeners_permission import CantBlockEOT
 from models.effects.base import Listener
-from models.events_all import AttackEvent, BlockEvent, CombatEndEvent, UnblockedAttackerEvent, CombatBeginEvent
+from models.events_all import AttackEvent, BlockEvent, CombatEndEvent, UnblockedAttackerEvent, CombatBeginEvent, Event
 from models.game_card.modifiers import PTMod, KWAMod
 from models.utils import flip
 
@@ -60,6 +60,40 @@ class Sentinel(Listener):
             return
         new_t = other.power + 1
         s.modifiers.append(PTMod(s=s, p_adj=0, t_adj=new_t - s.toughness))
+
+class SpittingSlugA(Listener):
+    """Whenever SS is blocked, {1G} to grant SS first strike EOT, else each blocker gains first strike EOT"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: BlockEvent) -> None:
+        s = source
+        if s is not event.attacker:
+            return
+        if not gs.mana_pools[source.owner_id].can_pay('1G'):
+            event.blocker.modifiers.append(KWAMod(s=s, item='First Strike', expires='EOT'))
+            return
+        options = [CO(f"{{{'1G'}}}: Grant First Strike to {s}",
+                   lambda: s.modifiers.append(KWAMod(s=s, item='First Strike', expires='EOT'))),
+                   CO(f"{event.blocker} gets First Strike",
+                   lambda: event.blocker.modifiers.append(KWAMod(s=s, item='First Strike', expires='EOT')))]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+class SpittingSlugB(Listener):
+    """Whenever SS blocks, {1G} to grant SS first strike EOT, else attacker gains first strike EOT"""
+    listens_to = BlockEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: BlockEvent) -> None:
+        s = source
+        if s is not event.blocker:
+            return
+        if not gs.mana_pools[source.owner_id].can_pay('1G'):
+            event.attacker.modifiers.append(KWAMod(s=s, item='First Strike', expires='EOT'))
+            return
+        options = [CO(f"{{{'1G'}}}: Grant First Strike to {s}",
+                   lambda: s.modifiers.append(KWAMod(s=s, item='First Strike', expires='EOT'))),
+                   CO(f"{event.attacker} gets First Strike",
+                   lambda: event.attacker.modifiers.append(KWAMod(s=s, item='First Strike', expires='EOT')))]
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class AislingLeprechaun(Listener):
     """Whenever this creature blocks or becomes blocked, that creature becomes green indefinitely;

@@ -48,6 +48,9 @@ class Counters:
         """True if anything counter exist"""
         return bool(sum(self._counters.values()))
 
+    def __iter__(self):
+        return iter(self._counters.items())
+
     def add_counter(self, counter: CounterType, n: int = 1):
         self._counters[counter] += n
 

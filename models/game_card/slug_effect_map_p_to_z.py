@@ -19,7 +19,8 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, UrzasTrio, TriassicEggA, SingingTree, Rakalite, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
-    VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges
+    VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
+    TawnossCoffin
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -33,20 +34,21 @@ from ..effects.listeners_upkeep import PowerSurge, PsychicAllergyDamage, Psychic
     TheFallen, TheRack, TheTabernacleAtPendrellVale, VesuvanDoppelgangerUpkeep, XenicPoltergeistRelease, YawgmothDemon, \
     PowerLeak, SerendibDjinn, ShapeshifterUpkeep, WormsOfTheEarthUpkeep, PrimordialOoze, TetravusUpkeepCreate, \
     TetravusUpkeepExile, WallOfTombstonesPT
-from ..effects.listeners_tap_untap import TawnossCoffinUntap, RasputinDreamweaverUntap, TimeVaultOption, PhyrexianGremlinsUntaps
+from ..effects.listeners_tap_untap import TawnossCoffinUntap, RasputinDreamweaverUntap, TimeVaultOption, \
+    PhyrexianGremlinsUntaps, WinterOrb
 from ..effects.listeners_end_step import SeasonOfTheWitchEndStep, VoodooDollEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
 from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, PuppetMaster, \
     SandalsOfAbdallahIfCreatureDies
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
-from ..effects.listeners_combat import Sentinel, YdwenEfreet, TheWretched
+from ..effects.listeners_combat import Sentinel, YdwenEfreet, TheWretched, SpittingSlugA, SpittingSlugB
 from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, PreventAllDamageToEOT, \
     OptionalUntap, RedirectNextDamageToTarget, PayManaToUntapUpkeep, \
     PreventNextDamageTo, PreventNextDamageBy, RedirectNextDamageFromCardToOwnerEOT, TakeAnotherTurn, \
     CounterEnchantments, DestroyAtEndStep
 from models.effects.listeners_permission import CantBeTargetedByAuras, WalkRuleRemoved, Smoke, \
-    WinterOrb, DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo, \
+    DoesntUntapAtUntap, SkipUntapPhase, UnblockableCondition, UnblockableEOT, CantCastAppliesTo, \
     CantAttackIfAttackedLastTurn, DoesntUntapAtUntapIfItAttackedLastTurn, TowerOfCoireallEOT
 from models.effects.listeners_mod_queries import RabidWombat, PumpApplies, SelfPTEqualsFuncLen, \
     KWAApplies, Transmutation, SunglassesOfUrza
@@ -203,6 +205,7 @@ MAP: dict[str, list[EffSpec]] = {
     'spirit-shackle': [Spell(EmptyResolver(), CF.creatures()),
                        GenTrig(On(TapCardEvent).where(EC().card_is_host()).then(AddCounterToHost(MINUS_ZERO_TWO)))],
     'spiritual-sanctuary': [Triggered(SpiritualSanctuary())],
+    'spitting-slug': [Triggered(SpittingSlugA()), Triggered(SpittingSlugB())],
     'staff-of-zegon': [Activated('3T', Pump(-2, 0, True), CF.creatures())],
     'standing-stones': [Activated('1T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}',
                                   extra_costs=[PayLifeCost()]) for c in COLOR_LETTERS],
@@ -234,7 +237,8 @@ MAP: dict[str, list[EffSpec]] = {
     'taiga': dual_land_specs('RG'),
     'tangle-kelp': [Spell(Do(TapCard(), Register(DoesntUntapAtUntapIfItAttackedLastTurn, target_attr='target')),
                           CF.creatures())],
-    'tawnoss-coffin': [Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()), Triggered(TawnossCoffinLTB())],
+    'tawnoss-coffin': [Activated('3T', TawnossCoffin(), CF.creatures()),
+                       Triggered(OptionalUntap()), Triggered(TawnossCoffinUntap()), Triggered(TawnossCoffinLTB())],
     'tawnoss-wand': [Activated('2T', UnblockableEOT(), CF.creatures_power_two_or_less())],
     'tawnoss-weaponry': [Triggered(OptionalUntap()), Triggered(UntapRemovesPumpFromAnotherCard()),
                          Activated('2T', Pump(1, 1, True), CF.creatures())],

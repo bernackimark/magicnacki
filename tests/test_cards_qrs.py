@@ -8,7 +8,7 @@ from models.cost import SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.resolvers_generic import RevealHands
 from models.effects.resolvers_p_to_z import Sindbad
-from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent
+from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent, BlockEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -447,6 +447,26 @@ class TestCardsQRS(unittest.TestCase):
         self.g.attach(spirit_shackle, host)
         host.tap()
         self.assertEqual(2, host.toughness)
+
+    def test_spitting_slug_is_blocked(self):
+        """Whenever SS is blocked, {1G} to grant SS first strike EOT, else each blocker gains first strike EOT"""
+        card = self.g.battlefield('spitting-slug')  # 2/4
+        blocker1 = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)  # 1/1
+        blocker2 = self.g.battlefield('monss-goblin-raiders')  # 1/1
+        self.gs.event_mgr.emit(BlockEvent(card, blocker1))
+        self.gs.event_mgr.emit(BlockEvent(card, blocker2))
+        self.assertIn('First Strike', blocker1.keyword_abilities)
+        self.assertIn('First Strike', blocker2.keyword_abilities)
+
+    def test_spitting_slug_is_blocker(self):
+        """Whenever SS blocks, {1G} to grant SS first strike EOT, else attacker gains first strike EOT"""
+        card = self.g.battlefield('spitting-slug')  # 2/4
+        self.g.mana('GG')
+        attacker = self.g.battlefield('phantom-monster', owner=1)  # 3/3
+        self.gs.event_mgr.emit(BlockEvent(attacker, card))
+        grant_fs_to_ss = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(grant_fs_to_ss)
+        self.assertIn('First Strike', card.keyword_abilities)
 
     def test_stangg(self):
         """When S enters, create Stangg Twin, a legendary 3/4 red and green Human Warrior creature token.
