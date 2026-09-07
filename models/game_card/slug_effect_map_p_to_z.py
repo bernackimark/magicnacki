@@ -20,7 +20,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
-    TawnossCoffin
+    TawnossCoffin, Reverberation
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -129,6 +129,7 @@ MAP: dict[str, list[EffSpec]] = {
                     allowed_p_turn_func=CF.opp(), allowed_phases=[p for p in Phase if p >= Phase.UPKEEP])],
     'resurrection': [Spell(Reanimate(), CF.creatures_in_your_graveyard())],
     'revelation': [GenTrig(On(ZoneChangeEvent).where(EC().to_hand()).then(RevealHands())), Spell(RevealHands())],
+    'reverberation': [Spell(Reverberation(), CF.sorcery_spells())],
     'reverse-damage': [Spell(ReverseDamage(), CF.cards())],
     'reverse-polarity': [Spell(ReversePolarity())],
     'ring-of-immortals': [Activated('3T', CounterSpell(), CF.spells_aura_or_instant_targeting_your_perm())],

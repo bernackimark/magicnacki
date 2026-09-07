@@ -271,6 +271,10 @@ class CF:
         return lambda gs, _: gs.card_filter.in_play().creatures().has(KW.FLYING).result()
 
     @staticmethod
+    def fliers_and_players():
+        return lambda gs, _: gs.card_filter.in_play().creatures().has(KW.FLYING).result() + [0, 1]
+
+    @staticmethod
     def forests():
         return lambda gs, _: gs.card_filter.in_play().forests().result()
 
@@ -516,6 +520,10 @@ class CF:
         return lambda gs, s: s
 
     @staticmethod
+    def sorcery_spells():
+        return lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_sorcery]
+
+    @staticmethod
     def spells():
         return lambda gs, s: gs.action_stack.spells
 
@@ -525,10 +533,6 @@ class CF:
                               if (('Instant' in spell.types or 'Aura' in spell.types)
                                   and any(isinstance(t, GameCard) and t.owner_id == s.owner_id
                                           and t.zone == Zone.BATTLEFIELD for t in spell.targets))]
-
-    @staticmethod
-    def spells_instants():
-        return lambda gs, s: [spell for spell in gs.action_stack.spells if 'Instant' in spell.types]
 
     @staticmethod
     def stone_giant():

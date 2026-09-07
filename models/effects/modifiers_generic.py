@@ -20,3 +20,7 @@ class PreventDamage(Modifier):
 class RedirectToSource(Modifier):
     def modify(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
         event.target = source
+
+class RedirectToSourceOwner(Modifier):
+    def modify(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        event.target = source.owner_id

@@ -10,7 +10,8 @@ from models.constants import BASIC_LANDS, KW, Zone
 from models.game_card.counter_tokens import PLUS_ONE, HATCHLING, STUN
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEndStep, PreventNextDamageBy, \
-    BounceAtEndStep, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack, LTBTandem
+    BounceAtEndStep, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack, LTBTandem, \
+    RedirectNextDamageToDamageSourceOwnerEOT
 from models.effects.resolvers_generic import Reveal, CreateTokenCreature
 from models.events_all import DamageResolvedEvent
 from models.game_card.modifiers import KWAMod, PTMod, SubTypeMod
@@ -127,6 +128,12 @@ class RapidFire(Resolver):
         t.modifiers.append(KWAMod(s=source, item=KW.FIRST_STRIKE, expires='EOT'))
         if not t.rampage_amt:
             t.modifiers.append(KWAMod(s=source, item=KW.RAMPAGE_2, expires='EOT'))
+
+class Reverberation(Resolver):
+    """All damage that would be dealt this turn by target sorcery spell is redirected to that spell's controller"""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.event_mgr.register(RedirectNextDamageToDamageSourceOwnerEOT(t.source), source)
 
 class ReversePolarity(Resolver):
     """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts"""

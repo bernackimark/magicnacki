@@ -202,6 +202,18 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(0, len(self.gs.card_filter.on_player_board(0).creatures().result()))
 
+    def test_hurricane(self):
+        """Hurricane deals X damage to each creature with flying and each player"""
+        card = self.g.card('hurricane')
+        self.g.mana('GGG')
+        flier = self.g.battlefield('ornithopter')  # 0/2
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=2)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(flier, self.g.gy[0])
+        self.assertEqual(18, self.gs.life[1])
+
+
     def test_hypnotic_specter(self):
         """When HS deals damage to an opp, opp discards a card at random"""
         card = self.g.battlefield('hypnotic-specter')

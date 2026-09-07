@@ -197,6 +197,19 @@ class RedirectNextDamageFromCardToOwnerEOT(Listener):
             self.redirectable_amt -= redirect_amt
         self.is_expired = True
 
+class RedirectNextDamageToDamageSourceOwnerEOT(Listener):
+    """Redirects damage from the source of the damage (not the source registering this effect)
+    to the damage source's owner"""
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, damage_source: GameCard):
+        self.damage_source = damage_source
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        print(f"I am redirecting from {event.target} to {self.damage_source.owner_id}")
+        event.target = self.damage_source.owner_id
+
 # --- DIES EVENT ---
 class ExileOnDeath(Listener):
     """If a card would die, it is exiled instead"""

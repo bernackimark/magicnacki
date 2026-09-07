@@ -183,6 +183,7 @@ MAP: dict[str: list[EffSpec]] = {
     'howling-mine': [GenTrig(On(DrawStepEvent).where(EC().self_is_untapped()).then(DrawCardsActivePlayer()))],
     'hurkyls-recall': [Spell(HurkylsRecall(), CF.all_players())],
     'hurr-jackal': [Activated('T', PreventRegenerationEOT(), CF.creatures())],
+    'hurricane': [Spell(DealDamage(to=CF.fliers_and_players()))],
     'hyperion-blacksmith': [Activated('T', TapCard(), CF.opp_untapped_artifacts()),
                             Activated('T', UntapCardEffect(), CF.opp_tapped_artifacts())],
     'hypnotic-specter': [GenTrig(On(DamageResolvedEvent).

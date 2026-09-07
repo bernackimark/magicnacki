@@ -82,6 +82,24 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.pile_mgr.draw(0, 1)
         self.assertTrue(all(c.is_face_up for c in hand))
 
+    def test_reverberation(self):
+        """All damage that would be dealt this turn by target sorcery spell is redirected to that spell's controller"""
+        card = self.g.hand('reverberation')
+        self.g.mana('UUUU')
+        sorcery = self.g.hand('hurricane', owner=1)  # deals X to each flier & player
+        self.g.mana('GGG', owner=1)
+
+        sorcery_pipeline = AbilityPipeline(1, self.gs, sorcery, sorcery.abilities[0], x_value=2)
+        sorcery_pipeline.advance()
+        sorcery_spell = self.gs.action_stack.last_action
+
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[sorcery_spell])
+        card_pipeline.advance()
+        card_pipeline.resolve_ability()
+
+        sorcery_pipeline.resolve_ability()
+        self.assertEqual(16, self.gs.life[1])
+
     def test_reverse_damage(self):
         """The next time a source of your choice would deal damage to you this turn, prevent that damage.
         You gain life equal to the damage prevented this way."""
