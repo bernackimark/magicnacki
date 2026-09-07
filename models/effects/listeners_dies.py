@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_draw_cards, pay_mana_to_bounce, pay_mana_to_gain_life
 from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
-from models.events_all import DiesEvent, DamageResolvedEvent
+from models.events_all import DiesEvent, DamageResolvedEvent, Event
 from models.game_card.modifiers import BasePTMod
 
 if TYPE_CHECKING:
@@ -101,6 +101,26 @@ class PuppetMaster(Listener):
             options = [CO(f"Pay {{{'UUU'}}} to bounce {source}",
                           lambda: pay_mana_to_bounce(gs, source.owner_id, 'UUU', source))]
             gs.choice_mgr.queue(ChoiceAction(options, may=True))
+
+class Reincarnation(Listener):
+    """Choose target creature. When that creature dies this turn, reanimate a creature from that creature's graveyard"""
+    listens_to = DiesEvent
+    expires = 'EOT'
+
+    def __init__(self):
+        self.target_creature: GameCard | None = None
+
+    def initialize(self, gs: GameState, source: GameCard, target: list[GameCard | int]):
+        self.target_creature = target[0]
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if event.card is not self.target_creature:
+            return
+        creatures_in_that_gy = [c for c in gs.graveyards[event.card.owner_id] if c.is_creature and c is not event.card]
+        if not creatures_in_that_gy:
+            return
+        options = [CO(f'Reanimate {card}', lambda c=card: gs.pile_mgr.reanimate(c)) for card in creatures_in_that_gy]
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class SandalsOfAbdallahIfCreatureDies(Listener):
     """When that creature [that Sandals gave Islandwalk to] dies this turn, destroy this artifact"""

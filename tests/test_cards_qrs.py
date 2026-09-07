@@ -57,6 +57,21 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(card, self.gs.pile_mgr.hands[0])
 
+    def test_reincarnation(self):
+        """Choose target creature. When that creature dies EOT, reanimate a creature from that creature's graveyard"""
+        card = self.g.hand('reincarnation')
+        gy1 = self.g.graveyard('serra-angel')
+        self.g.graveyard('shivan-dragon')
+        target = self.g.battlefield('merfolk-of-the-pearl-trident')
+        self.g.cast_and_accept(card, target, card.abilities[0])
+        self.gs.pile_mgr.destroy(target)
+
+        reanimate_serra = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(reanimate_serra)
+
+        self.assertIn(target, self.g.gy[0])
+        self.assertIn(gy1, self.gs.boards[0])
+
     def test_reset(self):
         """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control."""
         card = self.g.hand('reset')

@@ -39,7 +39,7 @@ from ..effects.listeners_tap_untap import TawnossCoffinUntap, RasputinDreamweave
 from ..effects.listeners_end_step import SeasonOfTheWitchEndStep, VoodooDollEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
 from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, PuppetMaster, \
-    SandalsOfAbdallahIfCreatureDies
+    SandalsOfAbdallahIfCreatureDies, Reincarnation
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, YdwenEfreet, TheWretched, SpittingSlugA, SpittingSlugB
@@ -123,6 +123,7 @@ MAP: dict[str, list[EffSpec]] = {
     'red-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_RED), CF.creatures())],
     'regeneration': [Activated('G', Regenerate(), CF.host())],
     'regrowth': [Spell(Bounce(), CF.cards_in_your_graveyard())],
+    'reincarnation': [Spell(Reincarnation(), CF.creatures())],
     'relic-barrier': [Activated('T', TapCard(), CF.untapped_artifacts())],
     'remove-soul': [Spell(CounterSpell(), CF.creature_spells())],
     'reset': [Spell(UntapCards(CF.your_tapped_lands()),
