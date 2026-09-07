@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from models.deck import OLD_SCHOOL_DB_RULE_SET, Deck
+from models.card.deck import Deck
 import pygame as pg
 from renderer_pygame.config import COLOR_DICT
 from renderer_pygame.scenes.scene_abc import Scene

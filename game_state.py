@@ -11,7 +11,7 @@ from models.systems.priority import PriorityManager
 from models.utils import flip
 
 if TYPE_CHECKING:
-    from models.game_card.card import Card
+    from models.card.card import Card
 
 from models.action_stack import ActionStack
 from models.actions.stack_accept_counter import PassPriority

@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 from data.user_data import get_user
-from models.deck import CardUniverse, Deck
+from models.card.deck import CardUniverse, Deck
 from game_state import GameState
 from models.constants import Mulligan
 from models.systems.match import MatchManager

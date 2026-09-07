@@ -7,7 +7,7 @@ from ..constants import KW, Zone
 
 if TYPE_CHECKING:
     from game_state import GameState
-    from .card import Card
+    from models.card.card import Card
 
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
