@@ -23,7 +23,7 @@ RTarget: TypeAlias = "GameCard | int | StackItemType | list[GameCard] | None"
 @dataclass
 class ResContext:
     """Resolution Context passes information from Ability Pipeline to the Resolver"""
-    cost_result: CostResult | None = None
+    cost_results: list[CostResult] = field(default_factory=list)
     x_value: int | None = None
     chosen_mode: int | None = None
     event: Event | None = None

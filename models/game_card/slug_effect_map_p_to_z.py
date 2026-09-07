@@ -19,7 +19,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     UrborgLoseFirstStrike, UrborgLoseSwampwalk, UrzasTrio, TriassicEggA, SingingTree, Rakalite, RocketLauncher, \
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
-    VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact
+    VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -225,6 +225,7 @@ MAP: dict[str, list[EffSpec]] = {
     'sunglasses-of-urza': [Static(SunglassesOfUrza())],
     'sunken-city': [Static(PumpApplies(CF.blue_creatures(), (1, 1))),
                     GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('UU', SacSelf())))],
+    'sword-of-the-ages': [Activated('T', SwordOfTheAges(), CF.all_creatures_and_players())],
     'swords-to-plowshares': [Spell(SwordsToPlowshares(), CF.creatures())],
     'sylvan-library': [Triggered(SylvanLibrary())],
     'sylvan-paradise': [Spell(SetColor('G', 'EOT'), TargetSpec(CF.creatures(), 1, None))],

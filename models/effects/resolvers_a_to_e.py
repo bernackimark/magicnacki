@@ -182,7 +182,7 @@ class DanceOfMany(Resolver):
 class DiamondValley(Resolver):
     """{T}, Sacrifice a creature: You gain life equal to the sacrificed creature's toughness"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        amt = context.cost_result.paid_cards[0].toughness
+        amt = context.cost_results[0].paid_cards[0].toughness
         gs.score_mgr.increment_life(source.owner_id, amt, source)
 
 class Disharmony(Resolver):

@@ -42,11 +42,7 @@ class AbilityPipeline(Action):
     selected_extra_costs: list[Cost] = field(default_factory=list)
 
     # information produced by paying costs
-    cost_result: CostResult | None = None
-
-    # def __post_init__(self):
-    #     if self.eff_spec and self.eff_spec.effect and not isinstance(self.eff_spec.effect, Resolver):
-    #         raise TypeError(f"Effects in AbilityPipeline must be type Resolver, was provided: {self.eff_spec.effect}")
+    cost_results: list[CostResult] = field(default_factory=list)
 
     def __repr__(self):
         if self.eff_spec.is_spell:
@@ -147,14 +143,14 @@ class AbilityPipeline(Action):
         if mana_cost:
             self.gs.mana_pools[self.player_idx].pay(mana_cost)
         for extra_cost in self.selected_extra_costs:
-            extra_cost.pay(self.gs, self.source)
-
+            cr = extra_cost.pay(self.gs, self.source)
+            self.cost_results.append(cr)
         action = AbilityAction(self.player_idx, self.gs, self)
         self.gs.action_stack.push(action, self.gs)
 
     def resolve_ability(self):
         if isinstance(self.eff_spec.effect, Resolver):
-            context = ResContext(cost_result=self.cost_result, x_value=self.x_value, chosen_mode=self.chosen_mode)
+            context = ResContext(cost_results=self.cost_results, x_value=self.x_value, chosen_mode=self.chosen_mode)
             orig_target = self.target_argument()
             if orig_target is not None and not self.is_target_still_legal(orig_target):
                 print(f"{self.source.props.name} fizzled; {orig_target} is no longer a legal target")

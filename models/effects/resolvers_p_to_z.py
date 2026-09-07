@@ -63,7 +63,7 @@ class PowerSink(Resolver):
 class PriestOfYawgmoth(Resolver):
     """Sac an artifact: Add an amount of {B} equal to the sacrificed creature's mana value."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        mana_value = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
+        mana_value = ManaCost(context.cost_results[0].paid_cards[0].casting_cost).mana_value
         gs.mana_pools[source.owner_id].add_floating('B', mana_value)
 
 class PrimalClay(Resolver):
@@ -159,7 +159,7 @@ class SacrificeOnCast(Resolver):
     """Sac a creature: Add an amount of {B} equal to the sacrificed creature's mana value.
     Note "sacrifice" refers to the card called sacrifice, not the game action of sacrifice"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        mana_value = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
+        mana_value = ManaCost(context.cost_results[0].paid_cards[0].casting_cost).mana_value
         gs.mana_pools[source.owner_id].add_floating('B', mana_value)
 
 class SafeHaven(Resolver):
@@ -250,6 +250,18 @@ class Subdue(Resolver):
         gs.event_mgr.register(PreventNextDamageBy(t, combat_only=True), source)
         t.modifiers.append(PTMod(s=source, p_adj=0, t_adj=t.props.mana_value))
 
+class SwordOfTheAges(Resolver):
+    """{T}, Sac SOTA & any number of your creatures: SOTA deals X damage to any target,
+    X = total power of the sac'ed creatures. Exile SOTA and those creature cards."""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        sac_creatures = [card for cr in context.cost_results for card in cr.paid_cards]
+        x = sum([c.power for c in sac_creatures])
+        gs.apply_damage(source, x, t)
+        gs.pile_mgr.exile(source)
+        for creature in sac_creatures:
+            gs.pile_mgr.exile(creature)
+
 class SwordsToPlowshares(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
@@ -310,7 +322,7 @@ class TransmuteArtifact(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         self._gs = gs
-        self._sac_mv = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
+        self._sac_mv = ManaCost(context.cost_results[0].paid_cards[0].casting_cost).mana_value
         self._lib = gs.pile_mgr.libraries[source.owner_id]
         lib_artifacts = [c for c in self._lib if c.is_artifact]
         gs.add_presentation_request(source.owner_id, PresentationReqType.SEARCH_LIBRARY, {'cards': lib_artifacts})

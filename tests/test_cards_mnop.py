@@ -137,7 +137,7 @@ class TestCardsMNOP(unittest.TestCase):
 
         pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[card])
         exile_air_elemental = ExileCardCost(selected_card=air_elemental)
-        pipeline.cost_result = exile_air_elemental.pay(self.gs, card)
+        pipeline.cost_results = [exile_air_elemental.pay(self.gs, card)]
         pipeline.advance()
         pipeline.resolve_ability()
 

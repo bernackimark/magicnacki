@@ -180,7 +180,7 @@ class LandsEdge(Resolver):
     """Discard a card: If the discarded card was a land, LE deals 2 damage to target player.
     Any player may activate this ability."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        discarded = context.cost_result.paid_cards[0]
+        discarded = context.cost_results[0].paid_cards[0]
         if discarded.is_land:
             gs.apply_damage(source, 2, t)
 
@@ -204,7 +204,7 @@ class LibraryOfAlexandria(Resolver):
 class LifeChisel(Resolver):
     """Sac a creature: You gain life equal to the sacrificed creature's toughness. Activate only during your upkeep."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        amt = context.cost_result.paid_cards[0].toughness
+        amt = context.cost_results[0].paid_cards[0].toughness
         gs.score_mgr.increment_life(source.owner_id, amt, source)
 
 class ManaClash(Resolver):
@@ -321,7 +321,7 @@ class NaturalSelection(Resolver):
 class Necropolis(Resolver):
     """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        mv = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
+        mv = ManaCost(context.cost_results.paid_cards[0].casting_cost).mana_value
         source.counters.add_counter(PLUS_ZERO_ONE, mv)
 
 class NettlingImp(Resolver):

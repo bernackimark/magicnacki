@@ -180,7 +180,7 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.hand('transmute-artifact')
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
                                    selected_extra_costs=[SacCardCost(selected_card=sac)],
-                                   cost_result=CostResult([sac]))
+                                   cost_results=CostResult([sac]))
         pipeline.advance()
         pipeline.resolve_ability()
         select_a2 = self.gs.pending_choice.get_actions()[0]
@@ -200,7 +200,7 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.hand('transmute-artifact')
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
                                    selected_extra_costs=[SacCardCost(selected_card=sac)],
-                                   cost_result=CostResult([sac]))
+                                   cost_results=CostResult([sac]))
         pipeline.advance()
         pipeline.resolve_ability()
         select_a1 = self.gs.pending_choice.get_actions()[0]
@@ -220,7 +220,7 @@ class TestCardsTUV(unittest.TestCase):
         card = self.g.hand('transmute-artifact')
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
                                    selected_extra_costs=[SacCardCost(selected_card=sac)],
-                                   cost_result=CostResult([sac]))
+                                   cost_results=CostResult([sac]))
         pipeline.advance()
         pipeline.resolve_ability()
         select_a1 = self.gs.pending_choice.get_actions()[0]

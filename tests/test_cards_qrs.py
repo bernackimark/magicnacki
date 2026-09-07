@@ -193,7 +193,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.mana('B')
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
         sac = SacCardCost(selected_card=mv_5_card)
-        pipeline.cost_result = sac.pay(self.gs, card)
+        pipeline.cost_results = [sac.pay(self.gs, card)]
         pipeline.finish()
         pipeline.resolve_ability()
 
@@ -504,6 +504,22 @@ class TestCardsQRS(unittest.TestCase):
         card = self.g.hand('storm-seeker')
         card.abilities[0].effect.resolve(self.gs, card, 1)
         self.assertEqual(13, self.gs.life[1])
+
+    def test_sword_of_the_ages(self):
+        """{T}, Sac SOTA & any number of your creatures: SOTA deals X damage to any target,
+        X = total power of the sac'ed creatures. Exile SOTA and those creature cards."""
+        card = self.g.battlefield('sword-of-the-ages')
+        c1 = self.g.battlefield('tundra-wolves')  # 1/1
+        c2 = self.g.battlefield('savannah-lions')  # 2/1
+        target = self.g.battlefield('phantom-monster', owner=1)  # 3/3
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.activated_abilities[0].eff_spec, targets=[target],
+                                   selected_extra_costs=[SacCardCost(selected_card=c1), SacCardCost(selected_card=c2)])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(card, self.gs.exiles[0])
+        self.assertIn(c2, self.gs.exiles[0])
+        self.assertIn(target, self.g.gy[1])
 
     def test_sylvan_library_2(self):
         """At your draw step, you may draw two additional cards.
