@@ -13,6 +13,7 @@ from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal, BasePT
 from models.events_all import UpkeepEvent, Event, StateBasedEvent
 from models.game_card.modifiers import KWAMod, BasePTMod, PTMod
+from models.presentation_request import PresentationReqType
 from models.systems.phase import Phase
 from models.utils import flip
 
@@ -311,7 +312,7 @@ class LandTax(Listener):
         if not opp_land_cnt > your_land_cnt:
             return
         your_basic_lands = [c for c in gs.pile_mgr.libraries[s.owner_id] if c.props.is_basic_land]
-        gs.add_presentation_request(s.owner_id, 'view_library', {'cards': your_basic_lands})
+        gs.add_presentation_request(s.owner_id, PresentationReqType.SEARCH_LIBRARY, {'cards': your_basic_lands})
         basic_slug_lands = defaultdict(list)
         for c in your_basic_lands:
             if len(basic_slug_lands.get(c.props.slug)) < 3:

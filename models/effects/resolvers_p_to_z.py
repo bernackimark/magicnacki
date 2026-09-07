@@ -14,6 +14,7 @@ from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEnd
 from models.effects.resolvers_generic import Reveal, CreateTokenCreature
 from models.events_all import DamageResolvedEvent
 from models.game_card.modifiers import KWAMod, PTMod, SubTypeMod
+from models.presentation_request import PresentationReqType
 from models.systems.mana import ManaCost
 from models.utils import flip
 
@@ -312,7 +313,7 @@ class TransmuteArtifact(Resolver):
         self._sac_mv = ManaCost(context.cost_result.paid_cards[0].casting_cost).mana_value
         self._lib = gs.pile_mgr.libraries[source.owner_id]
         lib_artifacts = [c for c in self._lib if c.is_artifact]
-        gs.add_presentation_request(source.owner_id, 'search_library', {'cards': lib_artifacts})
+        gs.add_presentation_request(source.owner_id, PresentationReqType.SEARCH_LIBRARY, {'cards': lib_artifacts})
         options = [CO(f'Tutor {c}', lambda c=c: self._select_card(c)) for c in lib_artifacts]
         gs.choice_mgr.queue(ChoiceAction(options))
         return
@@ -447,7 +448,7 @@ class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.add_presentation_request(source.owner_id, 'view_library', {'cards': gs.pile_mgr.libraries[t][:5]})
+        gs.add_presentation_request(source.owner_id, PresentationReqType.VIEW_LIBRARY, {'cards': gs.pile_mgr.libraries[t][:5]})
         options = [CO(f'Shuffle', lambda: random.shuffle(gs.pile_mgr.libraries[t]))]
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
 

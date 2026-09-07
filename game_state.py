@@ -27,7 +27,7 @@ from models.game_history import GameHistory
 from models.systems.mana import ManaPool
 from models.mulligan import MulliganChoice
 from models.systems.pile import PileManager
-from models.presentation_request import PresentationRequest
+from models.presentation_request import PresentationRequest, PresentationReqType
 from models.systems.permission import PermissionQuerier
 from models.systems.score import ScoreManager
 from models.systems.turn import TurnManager
@@ -112,7 +112,7 @@ class GameState:
     def queue_choice(self, choice: ChoiceAction) -> None:
         self.choice_mgr.queue(choice)
 
-    def add_presentation_request(self, viewer_id: int, type_: str, payload: Any):
+    def add_presentation_request(self, viewer_id: int, type_: PresentationReqType, payload: Any):
         self.presentation_requests.append(PresentationRequest(viewer_id, type_, payload))
 
     # --- DAMAGE ---

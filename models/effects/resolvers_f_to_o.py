@@ -13,6 +13,7 @@ from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
 from models.game_card.modifiers import PTMod, KWAMod
+from models.presentation_request import PresentationReqType
 from models.systems.mana import ManaCost
 from models.systems.phase import Phase
 from models.utils import flip
@@ -305,7 +306,7 @@ class NaturalSelection(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         lib = gs.pile_mgr.libraries[t]
         top_3_cards = lib[:3]
-        gs.add_presentation_request(source.owner_id, 'show_library', {'cards': top_3_cards})
+        gs.add_presentation_request(source.owner_id, PresentationReqType.VIEW_LIBRARY, {'cards': top_3_cards})
         options = [CO(f"Order top of library top -> bottom: {', '.join(list(perm))}",
                       lambda: self.order_lib(lib, list(perm))) for perm in permutations(top_3_cards, r=3)] + \
                   [CO(f"Shuffle", lambda: random.shuffle(lib))]

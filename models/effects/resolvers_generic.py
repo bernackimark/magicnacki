@@ -14,6 +14,7 @@ from models.effects.base import Resolver, Listener
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
+from models.presentation_request import PresentationReqType
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -200,7 +201,7 @@ class DeclareAColor(Resolver):
     @staticmethod
     def etb_action(gs: GameState, s: GameCard, color: str):
         s.extras['color_declaration'] = color
-        gs.add_presentation_request(flip(s.owner_id), 'declaration', {'declaration': color})
+        gs.add_presentation_request(flip(s.owner_id), PresentationReqType.VIEW_LIBRARY, {'declaration': color})
 
 class DealDamage(Resolver):
     """Supply a static amount in the initializer or declare x via AbilityPipeline -> ResContext -> .resolve();
@@ -540,7 +541,7 @@ class RemoveHostAuras(Resolver):
 class Reveal(Resolver):
     @Resolver.target_required
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        gs.add_presentation_request(flip(t.owner_id), 'view_card', {'cards': [t]})
+        gs.add_presentation_request(flip(t.owner_id), PresentationReqType.VIEW_LIBRARY, {'cards': [t]})
 
 class RevealHands(Resolver):
     """If p_func is not provided, both players play w their hands revealed"""
@@ -557,20 +558,6 @@ class RevealHands(Resolver):
         for tar in targets:
             for c in gs.pile_mgr.hands[tar]:
                 c.reveal()
-
-class RevealLibrary(Resolver):
-    def __init__(self, viewer_id: int | None = None, top_x: int | None = None):
-        self.viewer_id = viewer_id
-        self.top_x = top_x
-
-    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
-        if self.viewer_id is None:
-            self.viewer_id = source.owner_id
-        if self.top_x:
-            cards = gs.pile_mgr.libraries[source.owner_id][:self.top_x]
-        else:
-            cards = gs.pile_mgr.libraries[source.owner_id]
-        gs.add_presentation_request(self.viewer_id, 'view_library', {'cards': cards})
 
 class RevealTopLibraryCard(Resolver):
     """Reveal top card of each library; if library_id is not provided, reveal for all libraries"""
@@ -678,7 +665,7 @@ class Tutor(Resolver):
         p_id = source.owner_id
         lib = gs.pile_mgr.libraries[p_id]
         cards = lib if not self.filter_func else self.filter_func(gs, source)
-        gs.add_presentation_request(p_id, 'search_library', {'cards': cards})
+        gs.add_presentation_request(p_id, PresentationReqType.SEARCH_LIBRARY, {'cards': cards})
         options = [CO(f'Tutor {c}', lambda: self.tutor(gs, lib, c, self.to_zone)) for c in lib]
         gs.choice_mgr.queue(ChoiceAction(options))
 

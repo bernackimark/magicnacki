@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from game_state import GameState
-from models.presentation_request import PresentationRequest
+from models.presentation_request import PresentationRequest, PresentationReqType
 from players import Player
 
 
@@ -46,18 +46,14 @@ class ConsoleRenderer(Renderer):
 
     @staticmethod
     def render_presentation_request(req: PresentationRequest):
-        if req.type_ == 'view_card':
-            print("Viewing card:")
-            for c in req.payload['cards']:
-                print(c)
-        if req.type_ == 'view_library':
+        if req.type_ == PresentationReqType.DECLARE:
+            print("Declaration:")
+            print(req.payload['declaration'])
+        elif req.type_ == PresentationReqType.SEARCH_LIBRARY:
+            print("Choose card(s):")
+            for i, c in enumerate(req.payload['cards']):
+                print(i, c)
+        elif req.type_ == PresentationReqType.VIEW_LIBRARY:
             print("Viewing library:")
             for c in req.payload['cards']:
                 print(c)
-        if req.type_ == 'search_library':
-            print("Choose a card:")
-            for i, c in enumerate(req.payload['cards']):
-                print(i, c)
-        if req.type_ == 'declare':
-            print("Declaration:")
-            print(req.payload['declaration'])
