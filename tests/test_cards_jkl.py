@@ -53,6 +53,32 @@ class TestCardsJKL(unittest.TestCase):
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         self.assertEqual(18, self.gs.life[1])
 
+    def test_juxtapose(self):
+        """You & opp exchange control of the creature you each control with the greatest MV.
+        Then exchange control of artifacts the same way.
+        (If 2+ cards of that type are tied for greatest, their controller chooses one of them.)
+        MTG ruling: 'If one player doesn't control of the types, the other type exchange is still valid'"""
+        card = self.g.hand('juxtapose')
+        self.g.mana('UUUU')
+        p0_c1 = self.g.battlefield('merfolk-of-the-pearl-trident')
+        p1_c1 = self.g.battlefield('serra-angel', owner=1)
+        p0_a1 = self.g.battlefield('sol-ring')  # MV = 1
+        self.g.battlefield('meekstone')  # MV = 1
+        p1_a1 = self.g.battlefield('colossus-of-sardia', owner=1)
+
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        card_pipeline.resolve_ability()
+        self.assertEqual(1, p1_c1.owner_id)
+        self.assertEqual(0, p0_c1.owner_id)
+
+        select_sol_ring = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(select_sol_ring)
+        self.assertEqual(1, p0_a1.owner_id)
+        self.assertEqual(0, p1_a1)
+        self.assertIsNone(self.gs.pending_choice)
+
+        # TODO: write the Effect class
+
     def test_karma(self):
         """At each player's upkeep, this enchantment deals damage to that player = number of Swamps they control."""
         self.g.battlefield('karma')

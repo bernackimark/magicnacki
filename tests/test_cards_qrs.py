@@ -57,6 +57,31 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(card, self.gs.pile_mgr.hands[0])
 
+    def test_recall(self):
+        """Discard X cards, then return X cards from your graveyard to your hand. Exile Recall."""
+        self.gs.pile_mgr.hands[0].clear()
+        card = self.g.hand('recall')
+        h1 = self.g.hand('merfolk-of-the-pearl-trident')
+        self.g.hand('monss-goblin-raiders')
+        self.g.graveyard('serra-angel')
+        gy2 = self.g.graveyard('shivan-dragon')
+        self.g.mana('UUUUUUUUU')
+
+        card_pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=2)
+        card_pipeline.resolve_ability()
+        discard_h1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(discard_h1)
+        discard_h2 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(discard_h2)
+        reanimate_gy1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(reanimate_gy1)
+        reanimate_gy2 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(reanimate_gy2)
+
+        self.assertIn(h1, self.g.gy[0])
+        self.assertIn(gy2, self.gs.hands[0])
+        self.assertIsNone(self.gs.pending_choice)
+
     def test_reincarnation(self):
         """Choose target creature. When that creature dies EOT, reanimate a creature from that creature's graveyard"""
         card = self.g.hand('reincarnation')

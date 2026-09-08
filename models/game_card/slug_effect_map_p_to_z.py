@@ -20,7 +20,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
-    TawnossCoffin, Reverberation
+    TawnossCoffin, Reverberation, Recall
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -117,6 +117,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Activated('', PreventNextDamageTo(1), CF.self(), extra_costs=[RemoveCounterCost(DREAM)]),
                              Triggered(RasputinDreamweaverUntap()), Triggered(RasputinDreamweaverUpkeep()),
                              Spell(AddCounter(DREAM, 7))],
+    'recall': [Spell(Recall())],
     'reconstruction': [Spell(Bounce(), CF.artifacts_in_your_graveyard())],
     'red-elemental-blast': [Spell(CounterSpell(), CF.blue_spells()), Spell(Destroy(), CF.blue_permanents())],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('R')],

@@ -1,7 +1,9 @@
 from __future__ import annotations
+
+from dataclasses import dataclass
 import random
 from itertools import combinations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from models.actions.stack_accept_counter import CounterSpellAction
 from models.choice_actions_all import ChoiceAction
@@ -128,6 +130,53 @@ class RapidFire(Resolver):
         t.modifiers.append(KWAMod(s=source, item=KW.FIRST_STRIKE, expires='EOT'))
         if not t.rampage_amt:
             t.modifiers.append(KWAMod(s=source, item=KW.RAMPAGE_2, expires='EOT'))
+
+class Recall(Resolver):
+    """Discard X cards, then return X cards from your graveyard to your hand. Exile Recall."""
+
+    @dataclass
+    class _State:
+        gs: GameState
+        source: GameCard
+        x: int
+        phase: Literal['discarding', 'reanimating'] = 'discarding'
+        discard_cnt: int = 0
+        reanimate_cnt: int = 0
+
+        @property
+        def hand(self) -> list[GameCard]:
+            return self.gs.pile_mgr.hands[self.source.owner_id]
+
+        @property
+        def graveyard(self) -> list[GameCard]:
+            return self.gs.pile_mgr.graveyards[self.source.owner_id]
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        x = context.x_value
+        state = Recall._State(gs, source, x)
+        options = [CO(f'Discard {c}', lambda card=c: self._discard(card, state)) for c in state.hand if c is not source]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    def _discard(self, selected_card: GameCard, state: Recall._State):
+        state.gs.pile_mgr.discard(selected_card, state.source)
+        state.discard_cnt += 1
+        if state.discard_cnt == state.x:
+            state.phase = 'reanimating'
+            options = [CO(f'Return {card} from your graveyard to your hand',
+                          lambda c=card: self._reanimate(c, state)) for card in state.graveyard]
+            state.gs.choice_mgr.queue(ChoiceAction(options))
+        else:
+            options = [CO(f'Discard {card}', lambda c=card: self._discard(c, state)) for card in state.hand]
+            state.gs.choice_mgr.queue(ChoiceAction(options))
+
+    def _reanimate(self, selected_card: GameCard, state: Recall._State):
+        state.gs.pile_mgr.move_card(selected_card, Zone.HAND, cause='reanimate')
+        state.reanimate_cnt += 1
+        if state.reanimate_cnt == state.x:
+            return
+        options = [CO(f'Return {card} from your graveyard to your hand',
+                      lambda c=card: self._reanimate(c, state)) for card in state.graveyard]
+        state.gs.choice_mgr.queue(ChoiceAction(options))
 
 class Reverberation(Resolver):
     """All damage that would be dealt this turn by target sorcery spell is redirected to that spell's controller"""
