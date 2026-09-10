@@ -142,21 +142,30 @@ class ManaProdAlter(Listener):
             event.mods.append(ManaProdMod(s=source, item=self.mana_color))
 
 class OwnershipModQuery(Listener):
-    """Returns an OwnershipMod where new owner is the source owner"""
+    """Appends an OwnershipMod; the new owner can be declared in init, else defaults to the source owner"""
     listens_to = ModQueryEvent
     modifies = 'ownership'
 
-    def __init__(self, stolen_card: GameCard, new_controller_func: Optional[Callable] = None, eot: bool = False):
+    def __init__(self, stolen_card: GameCard, new_controller_func: Optional[Callable] = None, eot: bool = False,
+                 new_controller_id: int = None):
         self.stolen_card = stolen_card
         self.new_controller_func = new_controller_func
         if eot:
             self.expires = 'EOT'
+        self.new_controller_id = new_controller_id
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
         if event.card is not self.stolen_card:
             return
-        new_controller_id = self.new_controller_func(gs, source) if self.new_controller_func else source.owner_id
-        event.mods.append(OwnershipMod(s=source, new_owner_id=new_controller_id))
+        if self.new_controller_id is not None:
+            'New Controller ID was provided'
+            event.mods.append(OwnershipMod(s=source, new_owner_id=self.new_controller_id))
+        elif self.new_controller_func:
+            'New Controller Func was provided'
+            event.mods.append(OwnershipMod(s=source, new_owner_id=self.new_controller_func(gs, source)))
+        else:
+            'Default new controller ID to the source owner'
+            event.mods.append(OwnershipMod(s=source, new_owner_id=source.owner_id))
 
 class PumpApplies(Listener):
     """If card is in applies_to_func (and the optional condition isn't False), append a PTMod for the provided pt_adj"""

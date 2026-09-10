@@ -1,13 +1,16 @@
 from __future__ import annotations
 import random
+from dataclasses import dataclass, field
 from itertools import combinations, permutations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Union
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.combat import AssignBlocker
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.constants import KW, Zone
+from models.effects.listeners_mod_queries import OwnershipModQuery
+from models.events_all import StateBasedEvent
 from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
@@ -164,10 +167,109 @@ class Inquisition(Resolver):
             gs.apply_damage(source, white_cnt, flip(source.owner_id))
 
 class JovialEvil(Resolver):
-    """deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
+    """Deals X damage to target opponent, where X is twice the number of white creatures that player controls"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         opp_white_creature_cnt = len(gs.card_filter.on_player_board(t).creatures().result())
         gs.apply_damage(source, opp_white_creature_cnt * 2, t)
+
+class Juxtapose(Resolver):
+    """You & opp exchange control of the creature you each control with the greatest MV.
+    Then exchange control of artifacts the same way.
+    (If 2+ cards of that type are tied for greatest, their controller chooses one of them.)
+    MTG ruling: 'If one player doesn't control of the types, the other type exchange is still valid'"""
+
+    FRESH_SELECTIONS = ['unprocessed', 'unprocessed']
+
+    class _State:
+        FRESH_SELECTIONS = ['unprocessed', 'unprocessed']
+
+        def __init__(self, gs: GameState, source: GameCard):
+            self.gs = gs
+            self.source = source
+            self.type_: Literal['Creature', 'Artifact'] = 'Creature'
+            self.selections: list[GameCard | list[GameCard] | str | None] = self.FRESH_SELECTIONS
+            self.is_done = False
+
+        def handle(self):
+            print('---')
+            from models.game_card.game_card import GameCard
+            if self.is_done:
+                print('I am done and completely exiting the flow; the rest of this method should NOT execute')
+                # self.gs.event_mgr.emit(StateBasedEvent())
+                return
+            if self.selections == self.FRESH_SELECTIONS:
+                for p_id in (0, 1):
+                    self.selections[p_id] = self.get_highest_mv_cards(p_id)
+            print('Juxtapose state', self.type_, self.selections)
+            if not all(self.selections):
+                print('One of the values is None', self.selections)
+                self.advance()  # one player doesn't have a matching card, do not swap, advance
+                self.handle()
+                return
+            elif isinstance(self.selections[0], GameCard) and isinstance(self.selections[1], GameCard):
+                print('Swapping')
+                self.swap()  # each player naturally has one matching card or has selected down to a single card
+                self.advance()
+                self.handle()
+                return
+            print('self.selections', self.selections)
+            for p_id, selection in enumerate(self.selections):
+                if isinstance(selection, list):
+                    print('Getting user selection')
+                    self.get_selection(p_id, selection)  # a player must downselect to one card
+                    return
+
+        def advance(self):
+            if self.type_ == 'Creature':
+                self.type_ = 'Artifact'
+                self.reset_selections()
+                return
+            else:
+                print('Setting is_done = True')
+                self.is_done = True
+                return
+
+        def get_selection(self, p_id: int, cards: list[GameCard]):
+            if p_id != self.gs.action_on_idx:
+                self.gs.action_on_idx = flip(self.gs.action_on_idx)
+            options = [CO(f'Swap {c}', self._make_selection_callback(c)) for c in cards]
+            self.gs.choice_mgr.queue(ChoiceAction(options))
+
+        def _make_selection_callback(self, card: GameCard):
+            return lambda: self.select_card(card)
+
+        def reset_selections(self):
+            self.selections = self.FRESH_SELECTIONS
+
+        def select_card(self, c: GameCard):
+            print('Selected', c)
+            p_idx = c.owner_id
+            self.selections[p_idx] = c
+            self.gs.choice_mgr.complete()
+            self.handle()
+
+        def swap(self):
+            """ZoneChangeEvent isn't called but OwnershipModQuery does raise an event"""
+            for p_id, c in enumerate(self.selections):
+                original_owner_id = int(c.owner_id)
+                new_owner = flip(c.owner_id)
+                self.gs.event_mgr.register(OwnershipModQuery(c, new_controller_id=new_owner), self.source)
+                c.turn_entered_for_owner = self.gs.turn_mgr.turn_number
+                self.gs.pile_mgr.boards[original_owner_id].remove(c)
+                self.gs.pile_mgr.boards[new_owner].append(c)
+                print('Swapped', c, 'to', new_owner)
+
+        def get_highest_mv_cards(self, p_id) -> GameCard | list[GameCard] | None:
+            cards = [c for c in self.gs.boards[p_id] if self.type_ in c.card_types]
+            if not cards:
+                return None
+            max_mv_cards = [c for c in cards if c.props.mana_value == max(c.props.mana_value for c in cards)]
+            return max_mv_cards[0] if len(max_mv_cards) == 1 else max_mv_cards
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        print('Entering Juxtapose state')
+        state = self._State(gs, source)
+        state.handle()
 
 class KryShield(Resolver):
     """Prevent all damage that would be dealt this turn by target creature you control.

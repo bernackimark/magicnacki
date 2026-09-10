@@ -19,7 +19,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
-    Necropolis, LifeChisel, LandsEdge
+    Necropolis, LifeChisel, LandsEdge, Juxtapose
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -229,6 +229,7 @@ MAP: dict[str: list[EffSpec]] = {
     'juggernaut': [Static(UnblockableCondition(CF.self(), CF.walls()))],
     'jump': [Spell(KWAModEffect('add', KW.FLYING, True), CF.creatures())],
     'junun-efreet': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('BB', SacSelf())))],
+    'juxtapose': [Spell(Juxtapose())],
     'juzam-djinn': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(DealDamage(1)).t(ET.s_owner()))],
     'karakas': [Activated('T', AddMana('W'), is_mana_ability=True), Activated('T', Bounce(), CF.legendary_creatures())],
     'karma': [GenTrig(On(UpkeepEvent).where(EC().in_turn_p_has_swamps()).
