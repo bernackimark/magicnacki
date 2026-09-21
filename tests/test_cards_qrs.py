@@ -97,6 +97,18 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(target, self.g.gy[0])
         self.assertIn(gy1, self.gs.boards[0])
 
+    def test_relic_bind(self):
+        """Enchant artifact an opponent controls; Whenever host becomes tapped, choose one -
+        * This Aura deals 1 damage to target player. * Target player gains 1 life."""
+        card = self.g.hand('relic-bind')
+        host = self.g.battlefield('sol-ring', owner=1)
+        self.g.cast_and_accept(card, host, card.abilities[0])
+
+        host.tap()
+        p1_gain_one_life = self.gs.pending_choice.get_actions()[2]
+        self.gs.choice_mgr.choose(p1_gain_one_life)
+        self.assertEqual(21, self.gs.life[0])
+
     def test_reset(self):
         """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control."""
         card = self.g.hand('reset')

@@ -178,6 +178,15 @@ class Recall(Resolver):
                       lambda c=card: self._reanimate(c, state)) for card in state.graveyard]
         state.gs.choice_mgr.queue(ChoiceAction(options))
 
+class RelicBind(Resolver):
+    """... choose one - * This Aura deals 1 damage to target player. * Target player gains 1 life."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        options = [CO(f'{source.props.name} deals 1 damage to Player #{p_id}',
+                      lambda p_id=p_id: gs.apply_damage(source, 1, p_id)) for p_id in (0, 1)] + \
+                  [CO(f'{source.props.name}: Player #{p_id} gains 1 life',
+                      lambda p_id=p_id: gs.score_mgr.increment_life(p_id, 1, source)) for p_id in (0, 1)]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
 class Reverberation(Resolver):
     """All damage that would be dealt this turn by target sorcery spell is redirected to that spell's controller"""
     @Resolver.target_required

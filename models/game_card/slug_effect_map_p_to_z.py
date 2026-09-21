@@ -20,7 +20,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
-    TawnossCoffin, Reverberation, Recall
+    TawnossCoffin, Reverberation, Recall, RelicBind
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -126,6 +126,8 @@ MAP: dict[str, list[EffSpec]] = {
     'regrowth': [Spell(Bounce(), CF.cards_in_your_graveyard())],
     'reincarnation': [Spell(Reincarnation(), CF.creatures())],
     'relic-barrier': [Activated('T', TapCard(), CF.untapped_artifacts())],
+    'relic-bind': [Spell(EmptyResolver(), CF.opp_artifacts()),
+                   GenTrig(On(TapCardEvent).where(EC().card_is_host()).then(RelicBind()))],
     'remove-soul': [Spell(CounterSpell(), CF.creature_spells())],
     'reset': [Spell(UntapCards(CF.your_tapped_lands()),
                     allowed_p_turn_func=CF.opp(), allowed_phases=[p for p in Phase if p >= Phase.UPKEEP])],
