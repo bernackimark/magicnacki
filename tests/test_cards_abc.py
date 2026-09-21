@@ -123,6 +123,40 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertIn(t1, self.gs.exiles[1])
         self.assertIn(t2, self.gs.exiles[1])
 
+    def test_balance(self):
+        """The player who owns more lands must sac lands down to the count owned by the player with the fewest;
+        Discard in the same manner for cards in hand; sac in the same manner for creatures;
+        If a player has no cards in that cat, all are disposed; if the players are tied, move to the next category"""
+        [h.clear() for h in self.gs.hands]
+
+        # Lands: [3, 1]; Hand: [0, 1]; Creatures: [1, 1]
+        bears = self.g.hand('grizzly-bears', owner=1)
+        swamp = self.g.battlefield('swamp')
+        mountain = self.g.battlefield('mountain')
+        plains = self.g.battlefield('plains')
+        self.g.mana('BRW')
+        self.g.mana('G', owner=1)
+        self.g.battlefield('savannah-lions')
+        self.g.battlefield('scryb-sprites', owner=1)
+
+        card = self.g.hand('balance')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertNotIn(card, self.gs.hands[0])
+
+        keep_swamp = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(keep_swamp)
+        self.assertIn(swamp, self.gs.boards[0])
+        self.assertIn(mountain, self.g.gy[0])
+        self.assertIn(plains, self.g.gy[0])
+
+        self.assertEqual(0, len(self.gs.hands[0]))
+
+        self.assertNotIn(bears, self.gs.hands[1])
+        self.assertIsNone(self.gs.pending_choice)
+
+
     def test_barls_cage(self):
         """{3}: Tap & add a stun counter to target creature"""
         card = self.g.battlefield('barls-cage')

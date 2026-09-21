@@ -178,8 +178,6 @@ class Juxtapose(Resolver):
     (If 2+ cards of that type are tied for greatest, their controller chooses one of them.)
     MTG ruling: 'If one player doesn't control of the types, the other type exchange is still valid'"""
 
-    FRESH_SELECTIONS = ['unprocessed', 'unprocessed']
-
     class _State:
         FRESH_SELECTIONS = ['unprocessed', 'unprocessed']
 
@@ -187,7 +185,7 @@ class Juxtapose(Resolver):
             self.gs = gs
             self.source = source
             self.type_: Literal['Creature', 'Artifact'] = 'Creature'
-            self.selections: list[GameCard | list[GameCard] | str | None] = self.FRESH_SELECTIONS
+            self.selections: list[GameCard | list[GameCard] | str | None] = self.FRESH_SELECTIONS.copy()
             self.is_done = False
 
         def handle(self):
@@ -239,13 +237,14 @@ class Juxtapose(Resolver):
             return lambda: self.select_card(card)
 
         def reset_selections(self):
-            self.selections = self.FRESH_SELECTIONS
+            self.selections = self.FRESH_SELECTIONS.copy()
 
         def select_card(self, c: GameCard):
             print('Selected', c)
             p_idx = c.owner_id
             self.selections[p_idx] = c
-            self.gs.choice_mgr.complete()
+            print('This shows only [SOL RING, PYRAMIDS], which is correct', self.selections)
+            self.gs.choice_mgr.complete()  # i've tried .complete(), .clear(), and .clear_current()
             self.handle()
 
         def swap(self):
@@ -362,6 +361,59 @@ class MazeOfIth(Resolver):
         for b in the_combat.blockers:
             gs.event_mgr.register(PreventNextDamageTo(b, combat_only=True))
         t.untap()
+
+class MindBomb(Resolver):
+    """Each player may discard up to three cards. MB deals damage to each player = 3 - card count discarded this way."""
+
+    class _State:
+        def __init__(self, gs: GameState, source: GameCard, first_player_to_select: int):
+            self.gs = gs
+            self.source = source
+            self.selecting_player = first_player_to_select
+            self.discard_selections: list[list[GameCard]] = [[], []]
+            self.players_who_are_done = []
+
+        @property
+        def is_done(self) -> bool:
+            return len(self.players_who_are_done) == 2
+
+        def _queue_selection(self):
+            options = [CO(f'Discard {c}',
+                          lambda card=c: self._select_card(card)) for c in self.gs.hands[self.selecting_player]
+                       if c not in self.discard_selections[self.selecting_player]] + \
+                       [CO(f'Finishing Discarding', lambda: self._advance())]
+            self.gs.choice_mgr.queue(ChoiceAction(options))
+
+        def _select_card(self, card: GameCard):
+            self.discard_selections[self.selecting_player].append(card)
+            if len(self.discard_selections[self.selecting_player]) == 3:
+                self._advance()
+            else:
+                self.handle()
+
+        def _advance(self):
+            self.players_who_are_done.append(self.selecting_player)
+            self.selecting_player = flip(self.selecting_player)
+            self.gs.choice_mgr.complete()
+            self.handle()
+
+        def handle(self):
+            if self.is_done:
+                for p_id, discard_selections in enumerate(self.discard_selections):
+                    for c in discard_selections:
+                        self.gs.pile_mgr.discard(c, self.source)
+                for p_id, discard_selections in enumerate(self.discard_selections):
+                    if len(discard_selections) < 3:
+                        self.gs.apply_damage(self.source, 3 - len(discard_selections), p_id)
+                return
+            if len(self.gs.hands[self.selecting_player]) in (0, len(self.discard_selections[self.selecting_player])):
+                self._advance()
+            else:
+                self._queue_selection()
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        state = MindBomb._State(gs, source, flip(source.owner_id))
+        state.handle()
 
 class MindTwist(Resolver):
     """Target player discards X cards at random"""

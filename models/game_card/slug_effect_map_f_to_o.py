@@ -19,7 +19,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
-    Necropolis, LifeChisel, LandsEdge, Juxtapose
+    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -313,6 +313,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mightstone': [Static(PumpApplies(CF.attackers(), (1, 0)))],
     'mijae-djinn': [Triggered(MijaeDjinn())],
     'millstone': [Activated('2T', Mill(2), CF.all_players())],
+    'mind-bomb': [Spell(MindBomb())],
     'mind-twist': [Spell(MindTwist(), CF.all_players(), max_x_func=max_x_from_printed_card)],
     'miracle-worker': [Activated('T', Destroy(), CF.auras_on_owners_creatures())],
     'mirror-universe': [Activated('T', ExchangeLifeTotals(), allowed_phases=[Phase.UPKEEP],

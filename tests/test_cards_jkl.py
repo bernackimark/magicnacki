@@ -75,8 +75,7 @@ class TestCardsJKL(unittest.TestCase):
 
         select_sol_ring = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(select_sol_ring)
-        print(self.gs.pending_choice.get_actions())
-        self.assertIsNone(self.gs.pending_choice, 'Why am I still seeing this pending_choice?')
+        self.assertIsNone(self.gs.pending_choice)
         self.assertEqual(1, p0_a1.owner_id)  # exchanged
         self.assertEqual(0, p0_a2.owner_id)  # unexchanged
         self.assertEqual(0, p1_a1.owner_id)  # exchanged

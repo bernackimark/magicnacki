@@ -17,7 +17,8 @@ from ..events_all import AttackEvent, DiesEvent, BlockEvent, CombatEndEvent, Upk
 from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
-    Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, DrafnasRestoration
+    Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, \
+    DrafnasRestoration, Balance
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
@@ -132,6 +133,7 @@ MAP: dict[str, list[EffSpec]] = {
     'backfire': [Triggered(Backfire())],
     'bad-moon': [Static(PumpApplies(CF.black_creatures(), (1, 1)))],
     'badlands': dual_land_specs('BR'),
+    'balance': [Spell(Balance())],
     'ball-lightning': [GenTrig(On(EndStepEvent).then(Destroy(CF.self())))],
     'banshee': [Activated('XT', Banshee(), CF.all_creatures_and_players(), max_x_func=max_x_from_printed_card)],
     'barls-cage': [Activated('3', Do(TapCard(), AddCounter(STUN)), CF.creatures())],

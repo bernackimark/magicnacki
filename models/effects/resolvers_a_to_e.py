@@ -30,6 +30,127 @@ class Amnesia(Resolver):
             if 'Land' not in c.card_types:
                 gs.pile_mgr.discard(c, source)
 
+class Balance(Resolver):
+    """The player who owns more lands must sac lands down to the count owned by the player with the fewest;
+    Discard in the same manner for cards in hand; sac in the same manner for creatures;
+    If a player has no cards in that category, all are disposed; if the players are tied, move to the next category"""
+
+    class _State:
+        def __init__(self, gs: GameState, source: GameCard):
+            self.gs = gs
+            self.source = source
+
+            self.category = 'land'
+            self.keep_count = None
+            self.selections = [None, None]
+            self.is_done = False
+
+        def handle(self):
+            if self.is_done:
+                return
+
+            if self.keep_count is None:
+                self.keep_count = self._get_keep_count()
+
+            for p_id in (0, 1):
+                if self.selections[p_id] is None:
+                    cards = self._get_cards(p_id)
+
+                    if self.keep_count == 0:
+                        self.selections[p_id] = []
+                        continue
+
+                    if len(cards) <= self.keep_count:
+                        self.selections[p_id] = list(cards)
+                        continue
+
+                    self._queue_selection(p_id)
+                    return
+
+            self._process_selections()
+            self.advance()
+            return self.handle()
+
+        def _get_cards(self, p_id: int) -> list[GameCard]:
+            if self.category == 'land':
+                return self.gs.card_filter.on_player_board(p_id).lands().result()
+            if self.category == 'creature':
+                return self.gs.card_filter.on_player_board(p_id).creatures().result()
+            if self.category == 'hand':
+                return self.gs.pile_mgr.hands[p_id]
+
+        def _get_keep_count(self) -> int:
+            if self.category == 'land':
+                counts = [len(self.gs.card_filter.on_player_board(p).lands().result()) for p in (0, 1)]
+            elif self.category == 'creature':
+                counts = [len(self.gs.card_filter.on_player_board(p).creatures().result()) for p in (0, 1)]
+            else:
+                counts = [len(self.gs.pile_mgr.hands[p]) for p in (0, 1)]
+            return min(counts)
+
+        def _queue_selection(self, p_id: int):
+            cards = self._get_cards(p_id)
+
+            options = [CO(f"Keep {c}", self._make_selection_callback(p_id, c)) for c in cards]
+
+            if p_id != self.gs.action_on_idx:
+                self.gs.action_on_idx = p_id
+
+            self.gs.choice_mgr.queue(ChoiceAction(options))
+
+        def _make_selection_callback(self, p_id: int, card: GameCard):
+            return lambda: self._select_card(p_id, card)
+
+        def _select_card(self, p_id: int, card: GameCard):
+            if self.selections[p_id] is None:
+                self.selections[p_id] = []
+
+            self.selections[p_id].append(card)
+
+            # Still need to select more cards.
+            if len(self.selections[p_id]) < self.keep_count:
+                self.gs.choice_mgr.complete()
+                return self._queue_selection(p_id)
+
+            # This player's selection is complete.
+            self.gs.choice_mgr.complete()
+            self.handle()
+
+        def _process_selections(self):
+            for p_id in (0, 1):
+                cards = self._get_cards(p_id)
+                kept = self.selections[p_id]
+                sacrificed = [c for c in cards if c not in kept]
+
+                if self.category == 'land':
+                    for c in sacrificed:
+                        self.gs.pile_mgr.sacrifice(c)
+
+                elif self.category == 'creature':
+                    for c in sacrificed:
+                        self.gs.pile_mgr.sacrifice(c)
+
+                elif self.category == 'hand':
+                    for c in sacrificed:
+                        print("DISCARDING", c)
+                        self.gs.pile_mgr.discard(c)
+
+        def advance(self):
+            if self.category == 'land':
+                self.category = 'hand'
+            elif self.category == 'hand':
+                self.category = 'creature'
+            else:
+                self.is_done = True
+                return
+
+            self.keep_count = None
+            self.selections = [None, None]
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
+        state = self._State(gs, source)
+        state.handle()
+
 class Banshee(Resolver):
     """{X}, {T}: This creature deals half X damage, rounded down, to any target, and half X damage, rounded up to you"""
 
@@ -115,7 +236,7 @@ class Cleansing(Resolver):
             for land in state.lands:
                 if land not in state.saved_lands:
                     gs.pile_mgr.destroy(land)
-            self.gs.choice_mgr.clear_current()
+            gs.choice_mgr.clear_current()
             return
 
         # Move to next land if both players declined to save or someone did save it

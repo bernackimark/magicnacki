@@ -108,6 +108,23 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertFalse(attacker.is_tapped)
         self.assertEqual(20, self.gs.life[0])
 
+    def test_mind_bomb(self):
+        """Each player may discard <= 3 cards. MB deals damage to each player = 3 - card count discarded this way."""
+        self.gs.pile_mgr.hands[0].clear()
+        card = self.g.hand('mind-bomb')
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0])
+
+        # Hand card count: [0, 7]
+        discard_card = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(discard_card)
+        discard_card = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(discard_card)
+        finish_discarding = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(finish_discarding)
+
+        self.assertEqual(5, len(self.gs.hands[1]))
+        self.assertEqual([17, 19], self.gs.life)
+
     def test_mirror_universe(self):
         """{T}, Sacrifice this artifact: Exchange life totals with target opponent. Activate only during your upkeep."""
         card = self.g.battlefield('mirror-universe')
