@@ -30,6 +30,31 @@ class Amnesia(Resolver):
             if 'Land' not in c.card_types:
                 gs.pile_mgr.discard(c, source)
 
+class Backdraft(Resolver):
+    """Choose a player who cast one or more sorcery spells this turn. B deals damage to that player =
+    1/2 damage (rounded down) dealt by one of those sorceries."""
+    from models.events_all import DamageResolvedEvent
+
+    def can_cast(self, gs: GameState, source: GameCard) -> bool:
+        damage_events = self._this_turn_sorceries(gs)
+        casters = sorted({e.source.owner_id for e in damage_events})
+        print(f"Can Backdraft be cast? {bool(casters)}")
+        return bool(casters)
+
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        damage_events = self._this_turn_sorceries(gs)
+        damage_owners_and_amounts = sorted({(e.source.owner_id, e.amt // 2) for e in damage_events})
+        options = [CO(f'{source.props.name} deals {amt} deals to {owner}',
+                      lambda o=owner, a=amt: gs.apply_damage(source, amt, owner))
+                   for owner, amt in damage_owners_and_amounts]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _this_turn_sorceries(gs) -> list[DamageResolvedEvent]:
+        from models.events_all import DamageResolvedEvent
+        return [e for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DamageResolvedEvent)]
+
 class Balance(Resolver):
     """The player who owns more lands must sac lands down to the count owned by the player with the fewest;
     Discard in the same manner for cards in hand; sac in the same manner for creatures;
@@ -190,6 +215,36 @@ class BottleOfSuleiman(Resolver):
             CreateTokenCreature('djinn').resolve(gs, source)
         else:
             gs.apply_damage(source, 5, source.owner_id)
+
+class ChainLightning(Resolver):
+    """CL deals 3 damage to any target. Then that player/target's owner may pay {RR}.
+    If the player does, they may copy this spell and may choose a new target for that copy."""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.apply_damage(source, 3, t)
+        player_idx = t if isinstance(t, int) else t.controller_id
+        if not gs.mana_pools[player_idx].can_pay('RR'):
+            return
+
+        options = [CO('Pay {RR} and copy Chain Lightning', lambda p=player_idx, target=t: self._copy(gs, source, p))]
+        gs.action_on_idx = player_idx
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
+
+    def _copy(self, gs, s, player_idx):
+        gs.choice_mgr.complete()
+        gs.mana_pools[player_idx].pay('RR')
+
+        targets = gs.card_filter.in_play().creatures().result() + [0, 1]
+        options = [CO(f'{s.props.name} deals 3 damage to {t}',
+                      lambda chosen_target=t: self._resolve_copy(gs, s, chosen_target)) for t in targets]
+        gs.action_on_idx = player_idx
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    def _resolve_copy(self, gs, source, target):
+        gs.choice_mgr.complete()
+        # Resolve the copy's damage & recur
+        self.resolve(gs, source, target)
+
 
 class ChaosOrb(Resolver):
     """{1}, {T}, Sac: Choose an opponent's non-token permanent. If random di roll is 1-4, destroy target."""
@@ -408,11 +463,11 @@ class EnchantmentAlteration(Resolver):
         host.auras.append(aura)
 
 class EternalFlame(Resolver):
-    """X = # of mountains caster controls; deal x damage to opponent and round(x/2) to caster"""
+    """ET deals X damage to target opponent/planeswalker & round(x/2) to you; X = Mountains you control"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        x = len(gs.card_filter.on_player_board(gs.player_turn_idx).mountains().result())
-        gs.apply_damage(source, x, flip(gs.player_turn_idx))
-        gs.apply_damage(source, math.ceil(x/2), gs.player_turn_idx)
+        amt = len(gs.card_filter.on_player_board(source.owner_id).mountains().result())
+        gs.apply_damage(source, amt, t)
+        gs.apply_damage(source, math.ceil(amt/2), source.owner_id)
 
 class Eureka(Resolver):
     """Both players may take any permanent in their hand and put it directly into play.

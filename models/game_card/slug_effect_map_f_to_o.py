@@ -19,7 +19,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
-    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb
+    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -106,6 +106,7 @@ MAP: dict[str: list[EffSpec]] = {
     'gate-to-phyrexia': [Activated('', Destroy(), CF.artifacts(), extra_costs=[SacCardCost(CF.your_creatures())],
                                    allowed_phases=[Phase.UPKEEP], max_activations_per_turn=1,
                                    allowed_p_turn_func=CF.owner())],
+    'gauntlets-of-chaos': [Activated('5', GauntletsOfChaos(), extra_costs=[SacSelfCost()])],
     'ghazban-ogre': [Triggered(GhazbanOgre())],
     'ghost-ship': [Activated('UUU', Regenerate(), CF.self())],
     'ghosts-of-the-damned': [Activated('T', Pump(-1, 0, True), CF.creatures())],

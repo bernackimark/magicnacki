@@ -15,7 +15,7 @@ from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE
 from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
     PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
-from models.game_card.modifiers import PTMod, KWAMod
+from models.game_card.modifiers import PTMod, KWAMod, OwnershipMod
 from models.presentation_request import PresentationReqType
 from models.systems.mana import ManaCost
 from models.systems.phase import Phase
@@ -92,6 +92,46 @@ class FireAndBrimstone(Resolver):
         if gs.card_filter.on_player_board(opp).attackers().result():
             gs.apply_damage(source, 4, opp)
             gs.apply_damage(source, 4, source.owner_id)
+
+class GauntletsOfChaos(Resolver):
+    """{5}, Sac GOT: Exchange control of target artifact, creature, or land you control with
+    target permanent opp controls that shares one of those types with it.
+    If those permanents are exchanged this way, destroy all Auras attached to them."""
+
+    @dataclass
+    class _State:
+        your_card: GameCard = None
+        opp_card: GameCard = None
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        state = GauntletsOfChaos._State()
+        types = ('Artifact', 'Creature', 'Land')
+        your_acl = [c for c in gs.card_filter.on_player_board(source.owner_id).by_type(types).result()
+                    if c is not source]
+        options = [CO(f'Select {c} for exchange',
+                      lambda card=c: self._select_your_card(state, card, gs, source)) for c in your_acl]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    def _select_your_card(self, state: GauntletsOfChaos._State, card: GameCard, gs: GameState, s: GameCard):
+        state.your_card = card
+        opp_cards = [c for c in gs.card_filter.on_player_board(flip(card.owner_id)).by_type(card.card_types).result()]
+        options = [CO(f'Select {t} for exchange', lambda c=t: self._select_their_card(state, c, s, gs)) for t in opp_cards]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _select_their_card(state: GauntletsOfChaos._State, card: GameCard, s: GameCard, gs: GameState):
+        state.opp_card = card
+        for t in (state.your_card, state.opp_card):
+            orig_owner_id = int(t.owner_id)
+            new_owner_id = flip(orig_owner_id)
+            gs.event_mgr.register(OwnershipModQuery(t, new_controller_id=new_owner_id), source_card=s)
+            t.turn_entered_for_owner = gs.turn_mgr.turn_number
+            if t.zone == Zone.BATTLEFIELD:
+                gs.pile_mgr.boards[orig_owner_id].remove(t)
+                gs.pile_mgr.boards[new_owner_id].append(t)
+            for a in t.auras:
+                gs.pile_mgr.destroy(a)
+                t.auras.remove(a)
 
 class GlyphOfDelusion(Resolver):
     """Put X glyph counters on target creature that target Wall blocked this turn, X = power of that blocked creature"""

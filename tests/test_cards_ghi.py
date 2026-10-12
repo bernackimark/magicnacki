@@ -45,6 +45,33 @@ class TestCardsGHI(unittest.TestCase):
         self.assertTrue(host.zone == Zone.BATTLEFIELD)
         self.assertTrue(blocker.zone == Zone.BATTLEFIELD)
 
+    def test_gauntlets_of_chaos(self):
+        """{5}, Sac GOT: Exchange control of target artifact, creature, or land you control with
+        target permanent opp controls that shares one of those types with it.
+        If those permanents are exchanged this way, destroy all Auras attached to them."""
+        self.g.mana('WWWWW')
+        self.g.mana('W', owner=1)
+        card = self.g.battlefield('gauntlets-of-chaos')
+        aa = card.activated_abilities[0]
+        aura = self.g.hand('holy-strength', owner=1)
+        your_card = self.g.battlefield('ornithopter')
+        opp_card = self.g.battlefield('grizzly-bears', owner=1)
+        self.g.cast_and_accept(aura, opp_card, aura.abilities[0], owner=1, add_lots_of_mana=False)
+        self.g.battlefield('sol-ring', owner=1)
+
+        self.g.activate_ability(aa)
+        select_ornithopter = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(select_ornithopter)
+
+        self.assertEqual(2, len(self.gs.pending_choice.get_actions()))  # grizzly-bears & sol-ring, not plains
+        select_grizzly_bears = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(select_grizzly_bears)
+
+        self.assertEqual(0, opp_card.owner_id)
+        self.assertEqual(1, your_card.owner_id)
+        self.assertIn(aura, self.g.gy[1])
+        self.assertIsNone(self.gs.pending_choice)
+
     def test_giant_slug(self):
         """{5}: At your next upkeep, GS gains landwalk of any type until the end of that turn."""
         card = self.g.battlefield('giant-slug')

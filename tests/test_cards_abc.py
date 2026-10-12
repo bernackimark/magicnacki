@@ -123,6 +123,49 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertIn(t1, self.gs.exiles[1])
         self.assertIn(t2, self.gs.exiles[1])
 
+    def test_backdraft(self):
+        """Choose a player who cast one or more sorcery spells this turn. B deals damage to that player =
+        1/2 damage (rounded down) dealt by one of those sorceries."""
+        self.gs.hands[0].clear()
+        self.g.mana('RR')
+        self.g.mana('RRRR', owner=1)
+        card = self.g.hand('backdraft')
+
+        # not castable; no one has played a sorcery this turn
+        self.gs.action_on_idx = 0
+        castable_cards = {a.source for a in self.gs.available_actions_from_hand() if isinstance(a, AbilityPipeline)}
+        self.assertNotIn(card, castable_cards)
+
+        self.g.next_turn(True)
+
+        # Player #1 deals 4 damage via sorcery (and 2 to itself)
+        s1 = self.g.hand('eternal-flame', owner=1)
+        self.g.cast_and_accept(s1, 0, s1.abilities[0], 1, False)
+        self.assertEqual([16, 18], self.gs.life)
+
+        # Player #1 deals 9 damage via sorcery (and 5 to itself)
+        s2 = self.g.hand('eternal-flame', owner=1)
+        self.g.mana('RRRRR', owner=1)
+        self.g.cast_and_accept(s2, 0, s2.abilities[0], 1, False)
+        self.assertEqual([7, 13], self.gs.life)
+
+        # force the action back onto P# 0
+        self.gs.action_on_idx = 0
+
+        # spell is now castable
+        castable_cards = {a.source for a in self.gs.available_actions_from_hand()}
+        self.assertIn(card, castable_cards)
+
+        # cast Backdraft
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[1])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        # options are to deal 4//2 or 9//2 damage to Player #1 (the options are sorted by p_id, damage); deal 9//2
+        deal_4_damage = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(deal_4_damage)
+        self.assertEqual([7, 9], self.gs.life)
+
     def test_balance(self):
         """The player who owns more lands must sac lands down to the count owned by the player with the fewest;
         Discard in the same manner for cards in hand; sac in the same manner for creatures;
@@ -155,7 +198,6 @@ class TestCardsAtoC(unittest.TestCase):
 
         self.assertNotIn(bears, self.gs.hands[1])
         self.assertIsNone(self.gs.pending_choice)
-
 
     def test_barls_cage(self):
         """{3}: Tap & add a stun counter to target creature"""
@@ -314,6 +356,48 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertTrue(self.gs.perm_querier.can_attack(a2))
         self.gs.combat_mgr.create_combat(a2)
         self.assertFalse(self.gs.perm_querier.can_attack(a3))
+
+    def test_chain_lightning_last_player_declines_copy(self):
+        """CL deals 3 damage to any target. Then that player/target's owner may pay {RR}.
+        If the player does, they may copy this spell and may choose a new target for that copy."""
+        self.g.mana('RRRR')
+        self.g.mana('RRRR', owner=1)
+        card = self.g.hand('chain-lightning')
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[1])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(17, self.gs.life[1])
+        self.assertEqual(1, self.gs.action_on_idx)
+
+        pay_and_copy = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(pay_and_copy)
+        damage_p0 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(damage_p0)
+        self.assertEqual(17, self.gs.life[0])
+
+        pay_and_copy = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(pay_and_copy)
+        damage_p1 = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(damage_p1)
+        self.assertEqual(14, self.gs.life[1])
+
+        decline_pay_and_copy = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(decline_pay_and_copy)
+        self.assertIsNone(self.gs.pending_choice)
+
+    def test_chain_lightning_last_player_cant_pay(self):
+        """CL deals 3 damage to any target. Then that player/target's owner may pay {RR}.
+        If the player does, they may copy this spell and may choose a new target for that copy."""
+        self.g.mana('RRRR')
+        card = self.g.hand('chain-lightning')
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[1])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(17, self.gs.life[1])
+        self.assertEqual(1, self.gs.action_on_idx)
+        self.assertIsNone(self.gs.pending_choice)
 
     def test_city_in_a_bottle(self):
         """Whenever a nontoken permanent with a name originally printed in Arabian Nights is on battlefield, sac it"""

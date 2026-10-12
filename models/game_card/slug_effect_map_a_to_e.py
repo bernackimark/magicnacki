@@ -18,7 +18,7 @@ from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
     Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, \
-    DrafnasRestoration, Balance
+    DrafnasRestoration, Balance, ChainLightning, Backdraft
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
@@ -130,6 +130,7 @@ MAP: dict[str, list[EffSpec]] = {
     'atog': [Activated('', Pump(2, 2), CF.self(), extra_costs=[SacCardCost(CF.your_artifacts())])],
     'avoid-fate': [Spell(CounterSpell(), CF.spells_aura_or_instant_targeting_your_perm())],
     'axelrod-gunnarson': [Triggered(AxelrodGunnarson())],
+    'backdraft': [Spell(Backdraft())],
     'backfire': [Triggered(Backfire())],
     'bad-moon': [Static(PumpApplies(CF.black_creatures(), (1, 1)))],
     'badlands': dual_land_specs('BR'),
@@ -187,6 +188,7 @@ MAP: dict[str, list[EffSpec]] = {
                         for c in COLOR_LETTERS],
     'chaos-orb': [Activated('1T', ChaosOrb(), CF.opp_non_token_perms(), extra_costs=[SacSelfCost()],
                             text='If random di roll is 1-4, destroy target')],
+    'chain-lightning': [Spell(ChainLightning(), CF.all_creatures_and_players())],
     'chaoslace': [Spell(SetColor('R'), CF.cards())],
     'chromium': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('WUB', SacSelf())))],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageTo(protected=CF.owner()), CF.artifacts())],
