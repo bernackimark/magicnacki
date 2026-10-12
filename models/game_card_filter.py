@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -108,8 +108,8 @@ class CardFilter:
         self._cards = [c for c in self._cards if not c.is_token]
         return self
 
-    def by_type(self, type_: str | list):
-        if isinstance(type_, list):
+    def by_type(self, type_: str | Iterable):
+        if not isinstance(type_, str):
             self._cards = [c for c in self._cards for t in type_ if t in c.card_types]
         else:
             self._cards = [c for c in self._cards if type_ in c.card_types]
