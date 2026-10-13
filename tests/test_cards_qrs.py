@@ -188,7 +188,7 @@ class TestCardsQRS(unittest.TestCase):
         self.g.mana('RRR')
         aa_add_ctr = card.activated_abilities[1]
         self.g.activate_ability(aa_add_ctr, card)
-        self.assertEqual(2, card.counters.get_count(PLUS_ONE))
+        self.assertEqual(2, card.counters.get_count(PLUS_ONE))  # RH = 2/2
 
         random_source = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
         self.g.next_turn(True)
@@ -197,10 +197,6 @@ class TestCardsQRS(unittest.TestCase):
         self.g.activate_ability(aa_prevent, card)
         self.g.combat(random_source, card)
         self.assertEqual(0, card.damage_received_this_turn)
-
-        # TODO: the auto damage reduction is competing w the activated ability that is creating a diff damage reducer
-        #  need to lookup the rule on this
-        # self.assertEqual(2, card.power)
 
     def test_rocket_launcher(self):
         """{2}: RL deals 1 damage to any target. Destroy this artifact at end step.

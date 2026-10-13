@@ -44,6 +44,7 @@ class PhantasmalTerrain(Resolver):
 class PowerSink(Resolver):
     """Counter target spell unless its controller pays {X}.
     If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
+    from models.action_stack import StackItemType
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         from models.action_stack import StackItemType
@@ -54,14 +55,19 @@ class PowerSink(Resolver):
             raise ValueError(f"Power Sink's X wasn't registered yet")
         p_id = t.player_idx
         if not gs.mana_pools[p_id].can_pay(str(power_sink_x)):
-            gs.action_stack.remove(t)
-            gs.pile_mgr.move_card(t.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
             return
         mana_cost = str(power_sink_x)
         options = [CO(f'Pay {{{mana_cost}}} to prevent counterspell by {source}',
                       lambda: pay_mana_to_prevent_counter(gs, p_id, mana_cost, t)),
-                   CounterSpellAction(p_id, gs, t)]
+                   CO(f"Counter {t}", lambda: self._counter_and_tap_all_opp_land_w_mana_abilities(gs, t))]
         gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _counter_and_tap_all_opp_land_w_mana_abilities(gs: GameState, t_spell: StackItemType):
+        gs.action_stack.remove(t_spell)
+        gs.pile_mgr.move_card(t_spell.source, Zone.GRAVEYARD, cause='fizzled', emit_zone_event=False)
+        for c in gs.card_filter.on_player_board(t_spell.player_idx).has_a_mana_ability().result():
+            c.tap()
 
 class PriestOfYawgmoth(Resolver):
     """Sac an artifact: Add an amount of {B} equal to the sacrificed creature's mana value."""

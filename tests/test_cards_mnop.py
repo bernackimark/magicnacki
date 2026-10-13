@@ -368,7 +368,6 @@ class TestCardsMNOP(unittest.TestCase):
     def test_power_sink_1_controller_pays_path(self):
         """Counter target spell unless its controller pays {X}.
         If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
-        # TODO: The land tapping part ...
         card = self.g.hand('power-sink')  # casting_cost = XU
         self.g.mana('UUU')
         bolt = self.g.hand('lightning-bolt', owner=1)
@@ -390,11 +389,12 @@ class TestCardsMNOP(unittest.TestCase):
     def test_power_sink_2_spell_countered_path(self):
         """Counter target spell unless its controller pays {X}.
         If opponent doesn't, they tap all lands with mana abilities they control and lose all unspent mana."""
-        # TODO: The land tapping part ...
         card = self.g.hand('power-sink')  # casting_cost = XU
         self.g.mana('UUU')
         bolt = self.g.hand('lightning-bolt', owner=1)
         self.g.mana('RRR', owner=1)
+        land_w_mana_ability = self.g.battlefield('hammerheim', owner=1)
+        land_w_no_mana_ability = self.g.battlefield('maze-of-ith', owner=1)
 
         bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
         bolt_pipeline.advance()
@@ -404,9 +404,11 @@ class TestCardsMNOP(unittest.TestCase):
         x_action.play()
         card_pipeline.advance()
         card_pipeline.resolve_ability()
-        bolt_countered_action = self.gs.pending_choice.get_actions()[1]
-        bolt_countered_action.play()
+        bolt_countered_tap_all_mana_lands = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(bolt_countered_tap_all_mana_lands)
         self.assertEqual(20, self.gs.life[0])
+        self.assertTrue(land_w_mana_ability.is_tapped)
+        self.assertFalse(land_w_no_mana_ability.is_tapped)
 
     def test_powerleech(self):
         """Whenever an opp's artifact becomes tapped or an opponent activates an artifact's ability without {T}
