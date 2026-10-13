@@ -247,6 +247,11 @@ class CardFilter:
             self._cards = [c for c in self._cards if kwa not in c.keyword_abilities]
         return self
 
+    def has_a_mana_ability(self):
+        self._cards = [c for c in self._cards
+                       if c.props.slug in BASIC_LANDS or any(a.is_mana_ability for a in c.abilities)]
+        return self
+
     # -- by set code ---
     def by_set_code(self, set_code: str):
         self._cards = [c for c in self._cards if set_code in c.props.set_codes]
