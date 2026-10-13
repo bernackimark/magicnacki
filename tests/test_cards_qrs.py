@@ -445,7 +445,6 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.combat_mgr.create_combat(snake)
         self.gs.combat_mgr.handle_damage_step(False)
         self.assertEqual(1, self.gs.score_mgr.poison_counters[1])
-        # TODO: The above fails ... Am I ever looking up 'snake' in slug-effect map??
 
     def test_shimian_night_stalker(self):
         """All damage that would be dealt to you this turn by target attacking creature is dealt to SNS instead"""
