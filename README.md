@@ -1,0 +1,7 @@
+- rock-hydra:
+  - If its controller activates its damage prevention shield (<i>{R}: Prevent the next 1 damage that would be dealt to RH EOT</i>), the auto prevention shield still takes precedence (<i>For each 1 damage that would be dealt to this creature, if it has a +1/+1 counter on it, remove a +1/+1 counter</i>)
+  - This engine does not currently support player priority on overlapping shields
+- excluded cards (2026-10-12):
+  - banding ['adventurers-guildhouse', 'ayesha-tanaka', 'battering-ram', 'benalish-hero', 'camel', 'cathedral-of-serra', 'fortified-area', 'helm-of-chatzuk', 'knights-of-thorn', 'master-of-the-hunt', 'mesa-pegasus', 'mishras-war-machine', 'mountain-stronghold', 'pikemen', 'seafarers-quay', 'shelkin-brownie', 'timber-wolves', 'tolaria', 'unholy-citadel', 'wall-of-caltrops', 'war-elephant']
+  - MTG banned ['bronze-tablet', 'contract-from-below', 'darkpact', 'demonic-attorney', 'divine-intervention', 'jeweled-bird', 'rebirth', 'shahrazad', 'tempest-efreet']
+  - out of scope ['blaze-of-glory', 'camouflage', 'desert-nomads', 'detonate', 'equinox', 'illusionary-mask', 'imprison', 'knowledge-vault', 'magical-hack', 'nether-shadow', 'nova-pentacle', 'raging-river', 'ring-of-marûf', 'runesword', 'two-headed-giant-of-foriys', 'wall-of-shadows', 'whippoorwill']
