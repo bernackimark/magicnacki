@@ -343,6 +343,23 @@ class TestCardsTUV(unittest.TestCase):
         self.gs.event_mgr.emit(cast_event)
         self.assertTrue(len([a for a in self.gs.pending_choice.options if a.description == 'Draw a card']))
 
+    def test_volcanic_eruption(self):
+        """Destroy X target mountains. VE deals damage to all creatures & players = mountains put into a GY this way."""
+        from models.effects.resolvers_generic import Regenerate
+        card = self.g.hand('volcanic-eruption')  # XUUU
+        self.g.mana('U' * 5)
+        m1 = self.g.battlefield('mountain', owner=1)
+        m2 = self.g.battlefield('mountain', owner=1)
+        Regenerate().resolve(self.gs, m2, m2)
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], 2, targets=[m1, m2])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.assertEqual([19, 19], self.gs.life)
+        self.assertIn(m1, self.g.gy[1])
+        self.assertIn(m2, self.gs.boards[1])
+
 
 if __name__ == '__main__':
     unittest.main()

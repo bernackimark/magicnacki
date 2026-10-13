@@ -20,7 +20,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
-    TawnossCoffin, Reverberation, Recall, RelicBind
+    TawnossCoffin, Reverberation, Recall, RelicBind, RemoveEnchantments, VolcanicEruption
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -102,6 +102,7 @@ MAP: dict[str, list[EffSpec]] = {
                       GenTrig(On(TapCardEvent).where(EC().card_is_host()).then(DealDamage(2)).t(ET.host_owner()))],
     'puppet-master': [Spell(PuppetMaster(), CF.creatures())],
     'purelace': [Spell(SetColor('W'), CF.cards())],
+    'pyramids': [Activated('2', Destroy(), CF.auras_on_lands()), Activated('2', Regenerate(), CF.lands())],
     'pyrotechnics': [Spell(DealDamage(1), TargetSpec(CF.all_creatures_and_players(), 1, 4,
                                                      allow_duplicate_targets=True))],
     'quagmire': [Static(WalkRuleRemoved(KW.SWAMPWALK))],
@@ -128,6 +129,7 @@ MAP: dict[str, list[EffSpec]] = {
     'relic-barrier': [Activated('T', TapCard(), CF.untapped_artifacts())],
     'relic-bind': [Spell(EmptyResolver(), CF.opp_artifacts()),
                    GenTrig(On(TapCardEvent).where(EC().card_is_host()).then(RelicBind()))],
+    'remove-enchantments': [Spell(RemoveEnchantments())],
     'remove-soul': [Spell(CounterSpell(), CF.creature_spells())],
     'reset': [Spell(UntapCards(CF.your_tapped_lands()),
                     allowed_p_turn_func=CF.opp(), allowed_phases=[p for p in Phase if p >= Phase.UPKEEP])],
@@ -333,6 +335,8 @@ MAP: dict[str, list[EffSpec]] = {
     'veteran-bodyguard': [GenTrig(On(DamageProposedEvent).
                                   where(EC().self_is_untapped().damage_source_in(CF.unblocked_attackers()).damage_target_in(CF.owner())).modify(RedirectToSource()))],
     'visions': [Spell(Visions(), CF.all_players())],
+    'volcanic-eruption': [Spell(VolcanicEruption(), TargetSpec(CF.mountains(), max_cnt=None),
+                                max_x_func=max_x_from_printed_card)],
     'volcanic-island': dual_land_specs('RU'),
     'voodoo-doll': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(AddCounter(PIN))), Triggered(VoodooDollEndStep()),
                     Activated('XXT', DealDamage(), CF.all_creatures_and_players(),

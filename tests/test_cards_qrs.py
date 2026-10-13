@@ -6,7 +6,7 @@ from models.actions.advance_phase import PassTheTurn
 from models.constants import KW, Zone
 from models.cost import SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE
-from models.effects.resolvers_generic import RevealHands
+from models.effects.resolvers_generic import RevealHands, Steal
 from models.effects.resolvers_p_to_z import Sindbad
 from models.events_all import StateBasedEvent, EndStepEvent, UpkeepEvent, BlockEvent
 from models.systems.phase import Phase
@@ -108,6 +108,46 @@ class TestCardsQRS(unittest.TestCase):
         p1_gain_one_life = self.gs.pending_choice.get_actions()[2]
         self.gs.choice_mgr.choose(p1_gain_one_life)
         self.assertEqual(21, self.gs.life[0])
+
+    def test_remove_enchantments(self):
+        """Return to your hand:
+        1) all enchantments you both own & control,
+        2) all Auras you own attached to perms you control,
+        3) all Auras you own attached to attacking creatures your opponents control.
+        Then destroy all:
+        4) all other Auras attached to permanents you control,
+        5) other enchantments you control,
+        6) all other Auras attached to attacking creatures your opponents control."""
+        your_hand = self.gs.hands[0]
+        card = self.g.hand('remove-enchantments')
+        self.g.mana('WW')
+        c1 = self.g.battlefield('sunken-city')
+        h2 = self.g.battlefield('island')
+        c2 = self.g.battlefield('phantasmal-terrain')
+        self.g.attach(c2, h2)
+        attacker = self.g.battlefield('craw-wurm', owner=1)
+        self.gs.combat_mgr.create_combat(attacker)
+        c3 = self.g.battlefield('weakness')
+        self.g.attach(c3, attacker)
+        c4 = self.g.battlefield('weakness', owner=1)
+        h4 = self.g.battlefield('shivan-dragon')
+        self.g.attach(c4, h4)
+        c5 = self.g.battlefield('kismet', owner=1)
+        stealer = self.g.battlefield('merfolk-of-the-pearl-trident')
+        Steal().resolve(self.gs, stealer, c5)
+        c6 = self.g.battlefield('holy-strength', owner=1)
+        self.g.attach(c6, attacker)
+        unaffected = self.g.battlefield('crusade')
+        Steal().resolve(self.gs, attacker, unaffected)
+
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0], add_lots_of_mana=False)
+        self.assertIn(c1, your_hand)
+        self.assertIn(c2, your_hand)
+        self.assertIn(c3, your_hand)
+        self.assertIn(c4, self.g.gy[1])
+        self.assertIn(c5, self.g.gy[1])
+        self.assertIn(c6, self.g.gy[1])
+        self.assertIn(unaffected, self.gs.boards[1])
 
     def test_reset(self):
         """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control."""

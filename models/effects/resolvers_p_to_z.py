@@ -193,6 +193,39 @@ class RelicBind(Resolver):
                       lambda p_id=p_id: gs.score_mgr.increment_life(p_id, 1, source)) for p_id in (0, 1)]
         gs.choice_mgr.queue(ChoiceAction(options))
 
+class RemoveEnchantments(Resolver):
+    """Return to your hand all enchantments you both own & control, all Auras you own attached to perms you control,
+    and all Auras you own attached to attacking creatures your opponents control.
+    Then destroy all other enchantments you control, all other Auras attached to permanents you control,
+    and all other Auras attached to attacking creatures your opponents control."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        you = source.owner_id
+        # bounce auras owned & attached to perms you control
+        for perm in gs.card_filter.on_player_board(you).permanents().is_enchanted().result():
+            for a in perm.auras:
+                if a.orig_owner_id == you:
+                    gs.pile_mgr.bounce(a)
+        # bounce auras you own whose host is attacking you
+        for attacker in gs.card_filter.on_player_board(flip(you)).attackers().result():
+            for a in attacker.auras:
+                if a.orig_owner_id == you:
+                    gs.pile_mgr.bounce(a)
+        # bounce enchantments you both own & control
+        for e in gs.card_filter.on_player_board(you).enchantments().result():
+            if e.orig_owner_id == you:
+                gs.pile_mgr.bounce(e)
+        # destroy remaining auras attached to permanents you control
+        for perm in gs.card_filter.on_player_board(you).permanents().is_enchanted().result():
+            for a in perm.auras:
+                gs.pile_mgr.destroy(a)
+        # destroy auras whose host is attacking you
+        for attacker in gs.card_filter.on_player_board(flip(you)).attackers().result():
+            for a in attacker.auras:
+                gs.pile_mgr.destroy(a)
+        # destroy all remaining enchantments you control
+        for e in gs.card_filter.on_player_board(you).enchantments().result():
+            gs.pile_mgr.destroy(e)
+
 class Reverberation(Resolver):
     """All damage that would be dealt this turn by target sorcery spell is redirected to that spell's controller"""
     @Resolver.target_required
@@ -536,6 +569,25 @@ class Visions(Resolver):
         gs.add_presentation_request(source.owner_id, PresentationReqType.VIEW_LIBRARY, {'cards': gs.pile_mgr.libraries[t][:5]})
         options = [CO(f'Shuffle', lambda: random.shuffle(gs.pile_mgr.libraries[t]))]
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
+
+class VolcanicEruption(Resolver):
+    """Destroy X target mountains. VE deals damage to all creatures & players = mountains put into a GY this way."""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        targets = t if isinstance(t, list) else [t]
+        destroyed_cnt = 0
+
+        for mountain in targets:
+            gs.pile_mgr.destroy(mountain)
+            # count only those that actually reached a graveyard
+            if mountain in gs.pile_mgr.graveyards[mountain.owner_id]:
+                destroyed_cnt += 1
+
+        if not destroyed_cnt:
+            return
+
+        for target in gs.card_filter.in_play().creatures().result() + [0, 1]:
+            gs.apply_damage(source, destroyed_cnt, target)
 
 class WallOfWonder(Resolver):
     """{2UU}: This creature gets +4/-4 until end of turn and can attack this turn as though it didn't have defender"""
