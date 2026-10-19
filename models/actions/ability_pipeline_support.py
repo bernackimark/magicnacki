@@ -45,18 +45,6 @@ class SelectXAction2(Action):
 
 
 @dataclass
-class SelectTargetAction2(Action):
-    pipeline: AbilityPipeline
-    target: Any
-
-    def __repr__(self):
-        return f'{self.pipeline}, add target: {self.target}'
-
-    def play(self):
-        self.pipeline.targets.append(self.target)
-
-
-@dataclass
 class SelectExtraCostAction2(Action):
     pipeline: AbilityPipeline
     cost: Cost

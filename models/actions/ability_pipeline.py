@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from typing import Any, TYPE_CHECKING
 
 from models.actions.base import Action
+from models.choice_actions_all import ChoiceAction
+from models.choice_options import CO
 from models.effects.base import Resolver, ActivatedAbility, Listener, ResContext
 from models.events_all import StateBasedEvent, CastResolvedEvent, AbilityActivatedEvent
 from models.systems.mana import ManaCost
@@ -118,14 +120,20 @@ class AbilityPipeline(Action):
             self.gs.choice_mgr.queue(ModeChoice2(self))
         elif self.needs_targets:
             print('Entering Needs Targets')
-            from models.choice_actions_all import TargetChoice2
-            self.gs.choice_mgr.queue(TargetChoice2(self))
+            targets = self.eff_spec.target_spec.get_targets(self.gs, self.source)
+            options = [CO(f'Add target: {t}', lambda tar=t: self._add_target(tar))
+                       for t in targets if t not in self.targets]
+            self.gs.choice_mgr.queue(ChoiceAction(options))
         elif self.needs_extra_cost_choices:
             print('Entering Needs Extra Cost')
             from models.choice_actions_all import ExtraCostChoice2
             self.gs.choice_mgr.queue(ExtraCostChoice2(self))
         else:
             self.finish()
+
+    def _add_target(self, t: Target) -> None:
+        self.targets.append(t)
+        self.advance()
 
     def target_argument(self) -> Target:
         if not self.targets:

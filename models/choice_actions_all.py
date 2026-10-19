@@ -61,26 +61,6 @@ class ModeChoice2(ChoiceAction):
     def get_actions(self) -> list[Action]:
         ...
 
-class TargetChoice2(ChoiceAction):
-    def __init__(self, pipeline: AbilityPipeline):
-        self.pipeline = pipeline
-
-    @property
-    def targets(self) -> list[GameCard]:
-        return [a.target for a in self.get_actions()]
-
-    def choose(self, target):
-        for action in self.get_actions():
-            if action.target is target:
-                action.play()
-                return
-
-    def get_actions(self) -> list[Action]:
-        from models.actions.ability_pipeline_support import SelectTargetAction2
-        p = self.pipeline
-        targets = p.eff_spec.target_spec.get_targets(p.gs, p.source)
-        return [SelectTargetAction2(p.player_idx, p.gs, p, target) for target in targets]
-
 class ExtraCostChoice2(ChoiceAction):
     def __init__(self, pipeline: AbilityPipeline):
         self.pipeline = pipeline
