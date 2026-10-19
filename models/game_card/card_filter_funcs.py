@@ -22,8 +22,8 @@ C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
     'opp_has_island': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).islands().result(),
     'opp_has_non_token_white_perm': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).non_token().white().permanents().result(),
     'you_have_a_dwarf': lambda gs, s: len(CF.your_dwarves()(gs, s)) > 0,
-    'you_have_a_forest': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
-    'you_have_a_swamp': lambda gs, s: gs.card_filter.on_player_board(s.owner_id).forests().result(),
+    'you_have_a_forest': lambda gs, s: len(gs.card_filter.on_player_board(s.owner_id).forests().result()) > 0,
+    'you_have_a_swamp': lambda gs, s: len(gs.card_filter.on_player_board(s.owner_id).forests().result()) > 0,
     'you_have_no_lands': lambda gs, s: len(CF.your_lands()(gs, s)) == 0
 }
 
