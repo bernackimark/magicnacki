@@ -497,6 +497,69 @@ class TestCardsQRS(unittest.TestCase):
         self.assertNotIn(wall, self.g.gy[1])
         self.assertNotIn(has_sickness, self.g.gy[1])
 
+    def test_sorrows_path_blockers_can_swap(self):
+        """{T}: Choose two target blocking creatures controlled by opp. If each of those creatures could block the
+        creature that the other is blocking, each blocks other's attacker.
+        Whenever this land becomes tapped, it deals 2 damage to you and each creature you control."""
+        card = self.g.battlefield('sorrows-path')
+        aa = card.activated_abilities[0]
+        a1 = self.g.battlefield('azure-drake')  # 2/4 flier
+        a2 = self.g.battlefield('giant-spider')  # 2/4 non-flier
+        b1 = self.g.battlefield('wall-of-air', owner=1)  # 1/5 flier
+        b2 = self.g.battlefield('shivan-dragon', owner=1)  # 5/5 flier
+
+        self.g.next_turn()
+        self.gs.combat_mgr.create_combat(a1)
+        self.gs.combat_mgr.add_blocker(a1, b1)
+        self.gs.combat_mgr.create_combat(a2)
+        self.gs.combat_mgr.add_blocker(a2, b2)
+
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[b1, b2])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertIn(a1, self.g.gy[0], "Sorrow's Path swap failed; see SorrowsPath()")
+        self.assertNotIn(a2, self.g.gy[0])
+
+    def test_sorrows_path_blockers_cannot_swap(self):
+        """{T}: Choose two target blocking creatures controlled by opp. If each of those creatures could block the
+        creature that the other is blocking, each blocks other's attacker.
+        Whenever this land becomes tapped, it deals 2 damage to you and each creature you control."""
+        card = self.g.battlefield('sorrows-path')
+        aa = card.activated_abilities[0]
+        a1 = self.g.battlefield('azure-drake')  # 2/4 flier
+        a2 = self.g.battlefield('air-elemental')  # 4/4 flier
+        b1 = self.g.battlefield('tundra-wolves', owner=1)  # 1/1 non-flier, making the blocker swap illegal
+        b2 = self.g.battlefield('shivan-dragon', owner=1)  # 5/5 flier
+
+        self.g.next_turn()
+        self.gs.combat_mgr.create_combat(a1)
+        self.gs.combat_mgr.add_blocker(a1, b1)
+        self.gs.combat_mgr.create_combat(a2)
+        self.gs.combat_mgr.add_blocker(a2, b2)
+
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        pipeline.advance()
+        choose_bears = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(choose_bears)
+        choose_dragon = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(choose_dragon)
+        pipeline.resolve_ability()
+
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertEqual([a2], self.g.gy[0])
+        self.assertEqual([b1], self.g.gy[1])
+
+    def test_sorrows_path_any_tap_deals_damage(self):
+        """... Whenever this land becomes tapped, it deals 2 damage to you and each creature you control.
+        Testing this happens even when its primary ability isn't used"""
+        card = self.g.battlefield('sorrows-path')
+        creature = self.g.battlefield('scryb-sprites')
+        card.tap()
+        self.assertIn(creature, self.g.gy[0])
+        self.assertEqual(18, self.gs.life[0])
+
     def test_soul_net(self):
         self.g.battlefield('soul-net')
         creature = self.g.battlefield('grizzly-bears')

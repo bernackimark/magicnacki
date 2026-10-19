@@ -331,6 +331,19 @@ class SirensCall(Resolver):
                 creature.modifiers.append(KWAMod(item=KW.GOAD, s=source, expires='EOT'))
                 gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(creature), source)
 
+class SorrowsPath(Resolver):
+    """{T}: Choose two target blocking creatures controlled by opp. If each of those creatures could block the
+    creature that the other is blocking, each blocks other's attacker.
+    Whenever this land becomes tapped, it deals 2 damage to you and each creature you control."""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        b1_com = gs.combat_mgr.get_combat(t[0])
+        b2_com = gs.combat_mgr.get_combat(t[1])
+        if not gs.perm_querier.can_block(t[0], b2_com.attacker) or not gs.perm_querier.can_block(t[1], b1_com.attacker):
+            print("Sorrow's Path believes this blocker exhange is illegal and is exiting")
+            return
+        # TODO: the above will always fail: CanBlockRule(BaseRule), a card already blocking gets permission = False
+
 class Stangg(Resolver):
     """When S ETB, create Stangg Twin, a legendary 3/4 red & green Human Warrior creature token.
     Exile that token when S LTB. Sac S when that token LTB"""

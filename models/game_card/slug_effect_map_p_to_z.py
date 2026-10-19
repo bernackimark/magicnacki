@@ -20,7 +20,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
-    TawnossCoffin, Reverberation, Recall, RelicBind, RemoveEnchantments, VolcanicEruption
+    TawnossCoffin, Reverberation, Recall, RelicBind, RemoveEnchantments, VolcanicEruption, SorrowsPath
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -203,6 +203,9 @@ MAP: dict[str, list[EffSpec]] = {
     'sol-ring': [Activated('T', AddMana('C', 2), CF.owner(), is_mana_ability=True)],
     'solkanar-the-swamp-king': [GenTrig(On(CastResolvedEvent).where(EC().card_is_color('B')).then(GainLife()))],
     'sorceress-queen': [Activated('T', BasePT(0, 2, True), CF.other_creatures())],
+    'sorrows-path': [Activated('T', SorrowsPath(), TargetSpec(CF.blockers(), 2, 2)),
+                     GenTrig(On(TapCardEvent).where(EC().card_is_source()).
+                             then(Do(DealDamage(2, CF.owner()), DealDamage(2, CF.your_creatures()))))],
     'soul-net': [GenTrig(On(DiesEvent).where(EC().dier_is_creature()).then(MayPayMana('1', GainLife(1))))],
     'spectral-cloak': [Spell(EmptyResolver(), CF.creatures()),
                        GenTrig(On(CanTargetQueryEvent).where(EC().e_target_is_host()).modify(Deny()))],
