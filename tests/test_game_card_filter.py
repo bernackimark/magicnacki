@@ -96,6 +96,22 @@ class TestCardFilter(unittest.TestCase):
         result = self.gs.card_filter.in_player_hand(0).red().result()
         self.assertEqual(2, len(result))
 
+    def test_multiple_card_types_dont_dupe(self):
+        self.g.battlefield('ornithopter')  # Artifact & Creature
+        types = ('Artifact', 'Creature')
+        result = self.gs.card_filter.in_play().by_type(types).result()
+        self.assertEqual(1, len(result))
+
+    def test_multiple_card_sub_types_dont_dupe(self):
+        self.g.battlefield('nebuchadnezzar')  # Human, Wizard
+        result = self.gs.card_filter.in_play().by_sub_type(('Human', 'Wizard')).result()
+        self.assertEqual(1, len(result))
+
+    def test_multiple_card_colors_dont_dupe(self):
+        self.g.battlefield('nicol-bolas')  # U, B, R
+        result = self.gs.card_filter.in_play().by_color(('U', 'B', 'R')).result()
+        self.assertEqual(1, len(result))
+
 
 if __name__ == '__main__':
     unittest.main()

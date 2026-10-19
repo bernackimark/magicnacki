@@ -49,7 +49,7 @@ class CF:
 
     @staticmethod
     def another_orc_or_goblin():
-        return lambda gs, s: [c for c in gs.card_filter.in_play().by_sub_type(['Orc', 'Golbin']).result() if c is not s]
+        return lambda gs, s: [c for c in gs.card_filter.in_play().by_sub_type(('Orc', 'Goblin')).result() if c is not s]
 
     @staticmethod
     def artifact_creatures():
@@ -61,15 +61,15 @@ class CF:
 
     @staticmethod
     def artifacts_and_enchantments():
-        return lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Enchantment']).result()
+        return lambda gs, s: gs.card_filter.in_play().by_type(('Artifact', 'Enchantment')).result()
 
     @staticmethod
     def artifacts_creatures_enchantments():
-        return lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Enchantment']).result()
+        return lambda gs, s: gs.card_filter.in_play().by_type(('Artifact', 'Creature', 'Enchantment')).result()
 
     @staticmethod
     def artifacts_creatures_lands():
-        return lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).result()
+        return lambda gs, s: gs.card_filter.in_play().by_type(('Artifact', 'Creature', 'Land')).result()
 
     @staticmethod
     def artifacts():
@@ -101,8 +101,8 @@ class CF:
 
     @staticmethod
     def auras_on_creatures_or_lands():
-        return lambda gs, s: [a for c in gs.card_filter.in_play().creatures().result() for a in c.auras] + \
-                             [a for c in gs.card_filter.in_play().lands().result() for a in c.auras]
+        return lambda gs, s: [a for c in gs.card_filter.in_play().by_type(('Creature', 'Land')).result()
+                              for a in c.auras]
 
     @staticmethod
     def auras_on_owners_creatures():
@@ -118,8 +118,8 @@ class CF:
         return lambda gs, s: gs.card_filter.in_play().black().result()
 
     @staticmethod
-    def black_and_red():
-        return lambda gs, s: gs.card_filter.in_play().black().result() + gs.card_filter.in_play().red().result()
+    def black_or_red():
+        return lambda gs, s: gs.card_filter.in_play().by_color(('B', 'R')).result()
 
     @staticmethod
     def black_creatures():
@@ -209,11 +209,11 @@ class CF:
 
     @staticmethod
     def creatures_and_enchantments():
-        return lambda gs, s: gs.card_filter.in_play().by_type(['Creature', 'Enchantment']).result()
+        return lambda gs, s: gs.card_filter.in_play().by_type(('Creature', 'Enchantment')).result()
 
     @staticmethod
     def creatures_and_lands():
-        return lambda gs, s: gs.card_filter.in_play().creatures().result() + gs.card_filter.in_play().lands.result()
+        return lambda gs, s: gs.card_filter.in_play().by_type(('Creature', 'Land')).creatures().result()
 
     @staticmethod
     def creatures_and_players():
@@ -304,9 +304,8 @@ class CF:
         return lambda gs, s: gs.card_filter.in_play().green().result()
 
     @staticmethod
-    def green_and_white_creatures():
-        return lambda gs, s: (gs.card_filter.in_play().green().creatures().result() +
-                              gs.card_filter.in_play().white().creatures().result())
+    def green_or_white_creatures():
+        return lambda gs, s: gs.card_filter.in_play().creatures().by_color(('G', 'W')).result()
 
     @staticmethod
     def green_creatures():
@@ -465,7 +464,7 @@ class CF:
 
     @staticmethod
     def other_creatures():
-        return lambda gs, s: [c for c in CF.creatures()(gs, s) if c is not s]
+        return lambda gs, s: [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
 
     @staticmethod
     def other_merfolk():
@@ -513,7 +512,7 @@ class CF:
 
     @staticmethod
     def sand_warriors():
-        return lambda gs, s: gs.card_filter.in_play().by_sub_type('Sand').by_sub_type('Warrior').result()
+        return lambda gs, s: gs.card_filter.in_play().by_sub_type(('Sand', 'Warrior')).result()
 
     @staticmethod
     def self():
@@ -566,7 +565,7 @@ class CF:
 
     @staticmethod
     def untapped_artifacts_creatures_lands():
-        return lambda gs, s: gs.card_filter.in_play().by_type(['Artifact', 'Creature', 'Land']).untapped().result()
+        return lambda gs, s: gs.card_filter.in_play().by_type(('Artifact', 'Creature', 'Land')).untapped().result()
 
     @staticmethod
     def untapped_creatures():

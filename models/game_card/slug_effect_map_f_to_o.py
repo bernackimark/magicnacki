@@ -146,7 +146,7 @@ MAP: dict[str: list[EffSpec]] = {
     'gravity-sphere': [Static(KWAApplies(CF.creatures(), 'remove', KW.FLYING))],
     'great-defender': [Spell(GreatDefender(), CF.creatures())],
     'great-wall': [Static(WalkRuleRemoved(KW.PLAINSWALK))],
-    'greater-realm-of-preservation': [Activated('1W', PreventNextDamageTo(protected=CF.owner()), CF.black_and_red())],
+    'greater-realm-of-preservation': [Activated('1W', PreventNextDamageTo(protected=CF.owner()), CF.black_or_red())],
     'greed': [Activated('B', Do(DrawCards(), DealDamage(2, CF.owner())))],
     'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_GREEN), CF.creatures())],

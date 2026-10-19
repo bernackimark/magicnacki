@@ -109,17 +109,15 @@ class CardFilter:
         return self
 
     def by_type(self, type_: str | Iterable):
-        if not isinstance(type_, str):
-            self._cards = [c for c in self._cards for t in type_ if t in c.card_types]
-        else:
-            self._cards = [c for c in self._cards if type_ in c.card_types]
+        if isinstance(type_, str):
+            type_ = [type_]
+        self._cards = [c for c in self._cards if any(t in c.card_types for t in type_)]
         return self
 
-    def by_sub_type(self, type_: str | list):
-        if isinstance(type_, list):
-            self._cards = [c for c in self._cards for t in type_ if t in c.card_sub_types]
-        else:
-            self._cards = [c for c in self._cards if type_ in c.card_sub_types]
+    def by_sub_type(self, sub_type: str | Iterable):
+        if isinstance(sub_type, str):
+            sub_type = [sub_type]
+        self._cards = [c for c in self._cards if any(s in c.card_sub_types for s in sub_type)]
         return self
 
     def legendaries(self):
@@ -127,7 +125,7 @@ class CardFilter:
         return self
 
     # --- by color ---
-    def by_color(self, colors: str | list):
+    def by_color(self, colors: str | Iterable):
         if isinstance(colors, str):
             colors = [colors]
         self._cards = [c for c in self._cards if any(color in c.colors for color in colors)]

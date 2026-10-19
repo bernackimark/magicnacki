@@ -49,7 +49,7 @@ from models.systems.phase import Phase
 
 MAP: dict[str, list[EffSpec]] = {
     'abomination': [GenTrig(On(CombatEndEvent).where(EC().self_is_combatant()).
-                            then(DestroySelfCombatants(filter_func=CF.green_and_white_creatures())))],
+                            then(DestroySelfCombatants(filter_func=CF.green_or_white_creatures())))],
     'abu-jafar': [GenTrig(On(DiesEvent).where(EC().card_is_source()).then(DestroySelfCombatants(allow_regen=False)))],
     'acid-rain': [Spell(DestroyAll(CF.forests()))],
     'active-volcano': [Spell(Destroy(), CF.blue_permanents()), Spell(Bounce(), CF.islands())],
