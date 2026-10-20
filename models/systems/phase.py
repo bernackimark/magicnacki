@@ -5,11 +5,12 @@ from typing import TYPE_CHECKING
 
 from models.constants import KW
 from models.game_card.counter_tokens import STUN
-from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapQueryEvent
+from models.events_all import CanEnterUntapPhaseQueryEvent, CanUntapAtUntapQueryEvent, MaxHandSizeQueryEvent
 
 if TYPE_CHECKING:
     from models.actions.base import Action
     from game_state import GameState
+    from models.game_card.game_card import GameCard
 
 from models.utils import flip
 
@@ -348,19 +349,32 @@ class DiscardPhase(PhaseState):
     phase = Phase.DISCARD
 
     def on_enter(self, gs: GameState):
+        print('Entering Discard Phase')
         from models.events_all import DiscardStepEvent
         gs.event_mgr.emit(DiscardStepEvent(active_player=gs.player_turn_idx))
 
     def get_actions(self, p_id: int, gs: GameState):
+        print('Inside DiscardPhase.get_actions()')
         from models.choice_actions_all import ChoiceAction
         from models.choice_options import CO
         hand = gs.pile_mgr.hands[p_id]
-        if len(hand) > 7:
-            options = [CO(f'Discard {c}', lambda: gs.pile_mgr.discard(c)) for c in gs.hands[gs.player_turn_idx]]
-            gs.choice_mgr.queue(ChoiceAction(options))
+        event = MaxHandSizeQueryEvent(active_player=gs.player_turn_idx)
+        gs.event_mgr.emit(event)
+        max_hand_size = event.cnt
+        if len(hand) > max_hand_size:
+            print('You need to discard')
+            options = [CO(f'Discard {c}', lambda card=c: self._discard(gs, card)) for c in hand]
+            choice = ChoiceAction(options)
+            gs.choice_mgr.queue(choice)
+            return choice.get_actions()
 
     def next(self, gs: GameState):
         return CreaturesHealPhase()
+
+    @staticmethod
+    def _discard(gs: GameState, card: GameCard):
+        gs.pile_mgr.discard(card)
+        gs.choice_mgr.complete()
 
 class CreaturesHealPhase(PhaseState):
     phase = Phase.CREATURES_HEAL
@@ -447,9 +461,9 @@ PHASE_MAP = {
 
 class PhaseManager:
     """Responsible for storing the current phase, getting avilable actions; can directly set phase"""
-    def __init__(self, gs: GameState, state: PhaseState = PHASE_MAP[Phase.UNTAP]):
+    def __init__(self, gs: GameState, state: PhaseState = None):
         self._gs = gs
-        self.state: PhaseState = state
+        self.state: PhaseState = state if state is not None else PHASE_MAP[Phase.UNTAP]()
 
     @property
     def phase(self) -> Phase:

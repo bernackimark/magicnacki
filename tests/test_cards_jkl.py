@@ -227,6 +227,27 @@ class TestCardsJKL(unittest.TestCase):
         ability = AbilityPipeline(0, self.gs, card, aa_draw_card.eff_spec)
         self.assertFalse(ability.can_begin())
 
+    def test_library_of_leng(self):
+        """You have no maximum hand size.
+        If an effect causes you to discard a card, you may put it atop your library instead of your gy."""
+        h = self.gs.hands[0]
+        self.gs.pile_mgr.draw(0, 1, print_output=False)
+        self.assertEqual(8, len(h))
+
+        # validates that discarding works normally
+        move_to_end_step = self.gs.get_available_actions(0)[0]
+        move_to_end_step.play()
+        self.assertTrue(self.gs.get_available_actions(0)[0].description.startswith('Discard'))
+        discard_card = self.gs.get_available_actions(0)[0]
+        discard_card.play()
+
+        self.g.next_turn()
+        self.gs.pile_mgr.draw(0, 10, print_output=False)
+        self.g.battlefield('library-of-leng')
+        move_to_end_step = self.gs.get_available_actions(0)[0]
+        move_to_end_step.play()
+        self.assertTrue(1, self.gs.player_turn_idx)
+
 
 if __name__ == '__main__':
     unittest.main()

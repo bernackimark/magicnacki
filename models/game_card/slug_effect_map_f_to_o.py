@@ -32,7 +32,7 @@ from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
     max_x_from_printed_card, On
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos, \
-    InvokePrejudice
+    InvokePrejudice, LibraryOfLengMaxHandSize
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, HazezonTamarTokenCreation, LandTax, \
@@ -266,6 +266,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ley-druid': [Activated('T', UntapCardEffect(), CF.tapped_lands())],
     'library-of-alexandria': [Activated('T', AddMana('C'), is_mana_ability=True),
                               Activated('T', LibraryOfAlexandria())],
+    'library-of-leng': [Static(LibraryOfLengMaxHandSize())],
     'life-chisel': [Spell(LifeChisel(), allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=CF.owner(),
                           extra_costs=[SacCardCost(CF.your_artifacts())])],
     'lifeblood': [GenTrig(On(TapCardEvent).where(EC().card_is_mountain().card_is_opponents()).then(GainLife()))],

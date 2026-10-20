@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, \
-    StackAdditionEvent
+    StackAdditionEvent, MaxHandSizeQueryEvent, Event
 from models.utils import flip
 
 
@@ -130,6 +130,15 @@ class ManaDrainMainPhase(Listener):
             return
         gs.mana_pools[source.owner_id].add_floating('C', self.mana_value)
         gs.event_mgr.unregister_specific_effect(self)
+
+
+# --- MAX HAND SIZE QUERY EVENT ---
+class LibraryOfLengMaxHandSize(Listener):
+    """You have no maximum hand size"""
+    listens_to = MaxHandSizeQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: MaxHandSizeQueryEvent) -> None:
+        event.cnt = 999
 
 
 # -- STACK ADDITION EVENT ---

@@ -191,6 +191,11 @@ class MainPhaseEvent(Event):
     active_p_id: int
 
 @dataclass
+class MaxHandSizeQueryEvent(Event):
+    active_player: int
+    cnt: int = 7
+
+@dataclass
 class QueryEvent(Event):
     query: str
     card: GameCard
