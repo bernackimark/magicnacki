@@ -44,7 +44,7 @@ from ..effects.listeners_combat import MijaeDjinn, GiantShark, Johan, InfiniteAu
 from ..effects.listeners_cost import Gloom, ManaMatrix
 from ..effects.listeners_damage import GaseousForm, LivingArtifactOnDamage, ForethoughtAmulet, Forcefield, GlyphOfLife
 from ..effects.listeners_dies import FirestormPhoenix
-from ..effects.listeners_draw_discard import IslandSanctuary
+from ..effects.listeners_draw_discard import IslandSanctuary, LibraryOfLengDiscard
 from ..effects.listeners_generic import OptionalUntap, PreventAllDamageToEOT, PreventNextDamageTo, \
     PreventAllDamageByEOT, PreventNextDamageBy, PayManaToUntapUpkeep, RedirectNextDamageFromCardToOwnerEOT, \
     PayManaOrCounterSpellListener, DestroyAtEndStep
@@ -266,7 +266,7 @@ MAP: dict[str: list[EffSpec]] = {
     'ley-druid': [Activated('T', UntapCardEffect(), CF.tapped_lands())],
     'library-of-alexandria': [Activated('T', AddMana('C'), is_mana_ability=True),
                               Activated('T', LibraryOfAlexandria())],
-    'library-of-leng': [Static(LibraryOfLengMaxHandSize())],
+    'library-of-leng': [Static(LibraryOfLengMaxHandSize()), Static(LibraryOfLengDiscard())],
     'life-chisel': [Spell(LifeChisel(), allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=CF.owner(),
                           extra_costs=[SacCardCost(CF.your_artifacts())])],
     'lifeblood': [GenTrig(On(TapCardEvent).where(EC().card_is_mountain().card_is_opponents()).then(GainLife()))],

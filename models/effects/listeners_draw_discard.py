@@ -9,7 +9,7 @@ from models.choice_options import CO
 from models.constants import Zone
 from models.game_card.counter_tokens import DOOM
 from models.effects.base import Listener
-from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent
+from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent, Event
 from models.systems.phase import Phase
 from models.utils import flip
 
@@ -19,6 +19,18 @@ if TYPE_CHECKING:
 
 
 # --- DISCARD EVENT ---
+class LibraryOfLengDiscard(Listener):
+    """If an effect causes you to discard a card, discard it,
+    but you may put it on top of your library instead of into your graveyard."""
+    listens_to = DiscardEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiscardEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        options = [CO(f'Move {event.card} to the top of your library instead of your graveyard',
+                   lambda: gs.pile_mgr.move_card(event.card, Zone.LIBRARY))]
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
+
 class PsychicPurgeDiscard(Listener):
     """... When a spell or ability an opponent controls causes you to discard this card, that player loses 5 life"""
     listens_to = DiscardEvent
