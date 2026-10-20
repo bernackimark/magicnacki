@@ -34,8 +34,8 @@ class CardFilter:
         return self
 
     def in_graveyards(self):
-        board = self._gs.pile_mgr.graveyards
-        self._cards = [c for c in self._cards if c in board]
+        graveyards = self._gs.pile_mgr.graveyards
+        self._cards = [c for c in self._cards for gy in graveyards if c in gy]
         return self
 
     def in_player_graveyard(self, p_id: int):
