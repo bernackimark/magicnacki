@@ -4,7 +4,7 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.constants import KW
 from models.cost import SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
@@ -17,6 +17,26 @@ class TestCardsAtoC(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_all_hallows_eve(self):
+        """Exile AHE with 2 scream counters on it. At your upkeep, if this card is in exile with >=1 scream counters,
+        remove a scream counter from it.
+        If there's 0 scream counters, move it into your gy & all players' creatures from their gy to the battlefield."""
+        card = self.g.hand('all-hallows-eve')
+        creature_in_gy = self.g.graveyard('grizzly-bears')
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0])
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+        self.assertIn(card, self.gs.exiles[0])
+        self.assertEqual(2, card.counters.get_count(SCREAM))
+
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(1, card.counters.get_count(SCREAM))
+
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(0, card.counters.get_count(SCREAM))
+        self.assertIn(card, self.g.gy[0])
+        self.assertIn(creature_in_gy, self.gs.boards[0])
+        self.assertFalse(self.g.card_has_a_registered_listener(card))
 
     def test_animate_artifact(self):
         card = self.g.hand('animate-artifact')

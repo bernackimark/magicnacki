@@ -18,7 +18,7 @@ from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
     Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, \
-    DrafnasRestoration, Balance, ChainLightning, Backdraft
+    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
@@ -70,6 +70,7 @@ MAP: dict[str, list[EffSpec]] = {
     'ali-from-cairo': [Static(AliFromCairo())],
     'alchors-tomb': [Activated('2T', SetColor(c), CF.your_permanents(), text=f'Set color to {{{c}}}')
                      for c in COLOR_LETTERS],
+    'all-hallows-eve': [Spell(AllHallowsEve())],
     'amnesia': [Spell(Amnesia(), CF.all_players())],
     'amrou-kithkin': [Static(UnblockableCondition(CF.self(), CF.creatures_power_three_or_more()))],
     'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(preventable_amt=1), CF.all_creatures_and_players())],

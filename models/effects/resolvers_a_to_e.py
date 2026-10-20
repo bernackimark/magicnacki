@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import STORAGE
+from models.game_card.counter_tokens import STORAGE, SCREAM
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem, ExileOnDeath
 from models.effects.listeners_mod_queries import OwnershipModQuery
@@ -19,6 +19,17 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
+
+class AllHallowsEve(Resolver):
+    """Exile AHE with 2 scream counters on it. At your upkeep, if this card is in exile with >=1 scream counters,
+    remove a scream counter from it.
+    If there's 0 scream counters, move it into your gy & all players' creatures from their gy to the battlefield."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        from models.effects.listeners_upkeep import AllHallowsEveUpkeep
+        gs.pile_mgr.exile(source)
+        source.counters.add_counter(SCREAM, 2)
+        listener = AllHallowsEveUpkeep()
+        gs.event_mgr.register(listener, source)
 
 class Amnesia(Resolver):
     """Target player reveals their hand and discards all nonland cards"""

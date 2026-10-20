@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Callable
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, copy_card
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM, VITALITY
+from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM, VITALITY, SCREAM
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal, BasePT
 from models.events_all import UpkeepEvent, Event, StateBasedEvent
@@ -20,6 +20,26 @@ from models.utils import flip
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
+
+class AllHallowsEveUpkeep(Listener):
+    """At your upkeep, if this card is in exile with >=1 scream counters, remove a scream counter from it.
+    If there's 0 scream counters, move it into your gy & all players' creatures from their gy to the battlefield."""
+    listens_to = UpkeepEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if source.owner_id != event.active_player:
+            return
+        if not source.counters.get_count(SCREAM) or source.zone != Zone.EXILE:
+            return
+
+        source.counters.remove_counter(SCREAM)
+        if source.counters.get_count(SCREAM):
+            return
+
+        gs.pile_mgr.move_card(source, Zone.GRAVEYARD, cause='all_hallows_eve_out_of_counters')
+        for creature in gs.card_filter.in_graveyards().creatures().result():
+            gs.pile_mgr.reanimate(creature)
+        self.is_expired = True
 
 class CocoonUpkeep(Listener):
     """At your upkeep, remove a pupa counter from this Aura.
