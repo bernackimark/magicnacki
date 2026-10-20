@@ -174,6 +174,20 @@ class GuardianAngel(Resolver):
         # TODO: the above only handles the FIRST next damage; need to handle subsequent damages
         #  PreventNextDamageTo needs an .on_expire callback
 
+class Hellfire(Resolver):
+    """Destroy all nonblack creatures. H deals X plus 3 damage to you, X = creature count that died this way."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        non_black_creatures = [c for c in gs.card_filter.in_play().creatures().result().copy() if 'B' not in c.colors]
+        destroyed_cnt = 0
+
+        for creature in non_black_creatures[:]:
+            gs.pile_mgr.destroy(creature)
+            # count only those that actually reached a graveyard
+            if creature in gs.pile_mgr.graveyards[creature.owner_id]:
+                destroyed_cnt += 1
+
+        gs.apply_damage(source, 3 + destroyed_cnt, source.owner_id)
+
 class HowlFromBeyond(Resolver):
     """Target creature gets +X/+0 until end of turn"""
     @Resolver.target_required

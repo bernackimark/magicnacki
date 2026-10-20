@@ -229,6 +229,26 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(0, len(self.gs.card_filter.on_player_board(0).creatures().result()))
 
+    def test_hellfire(self):
+        """Destroy all nonblack creatures. H deals X plus 3 damage to you, X = creature count that died this way."""
+        card = self.g.hand('hellfire')
+        self.g.mana('BBBBBBBB')
+        regen_creature = self.g.battlefield('sedge-troll', owner=1)
+        aa = regen_creature.activated_abilities[0]
+        self.g.mana('B', owner=1)
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+
+        regen_pipeline = AbilityPipeline(1, self.gs, regen_creature, aa.eff_spec, targets=[regen_creature])
+        regen_pipeline.advance()
+
+        regen_pipeline.resolve_ability()
+        pipeline.resolve_ability()
+
+        self.assertNotIn(regen_creature, self.g.gy[0])
+        self.assertEqual(17, self.gs.life[0])
+
     def test_hurricane(self):
         """Hurricane deals X damage to each creature with flying and each player"""
         card = self.g.card('hurricane')
@@ -239,7 +259,6 @@ class TestCardsGHI(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertIn(flier, self.g.gy[0])
         self.assertEqual(18, self.gs.life[1])
-
 
     def test_hypnotic_specter(self):
         """When HS deals damage to an opp, opp discards a card at random"""

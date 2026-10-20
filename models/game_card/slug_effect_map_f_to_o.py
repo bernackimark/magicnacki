@@ -19,7 +19,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
-    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos
+    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -168,6 +168,7 @@ MAP: dict[str: list[EffSpec]] = {
                       GenTrig(On(ZoneChangeEvent).where(EC().card_is_source()).then(Exile(CF.sand_warriors())))],
     'healing-salve': [Spell(GainLife(3)), Spell(PreventNextDamageTo(3), CF.all_creatures_and_players())],
     'heavens-gate': [Spell(SetColor('W', 'EOT'), TargetSpec(CF.creatures(), 1, None))],
+    'hellfire': [Spell(Hellfire())],
     'hell-swarm': [Spell(PumpApplies(CF.creatures(), (-1, 0), True))],
     'hells-caretaker': [Activated('T', Reanimate(), CF.creatures_in_your_graveyard(), allowed_phases=[Phase.UPKEEP],
                                   allowed_p_turn_func=CF.owner(), extra_costs=[SacCardCost(CF.your_creatures())])],
