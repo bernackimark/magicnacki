@@ -147,7 +147,7 @@ class AbilityPipeline(Action):
         if self.eff_spec.is_aa and 'T' in self.eff_spec.cost:
             self.source.tap()
         mana_cost = self.ability_cost[::]
-        mana_cost = mana_cost.replace('X', str(self.x_value)) if self.x_value else mana_cost
+        mana_cost = mana_cost.replace('X', str(self.x_value)) if self.x_value is not None else mana_cost
         if mana_cost:
             self.gs.mana_pools[self.player_idx].pay(mana_cost)
         for extra_cost in self.selected_extra_costs:
