@@ -735,8 +735,8 @@ class TheTabernacleAtPendrellVale(Listener):
             gs.choice_mgr.queue(ChoiceAction(options))
 
 class VesuvanDoppelgangerUpkeep(Listener):
-    """You may have this creature enter as a copy of any creature on the battlefield,
-    except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
+    """At each of your upkeeps, you may have this creature enter as a copy of any creature on the battlefield,
+    except it doesn't copy that creature's color"""
     listens_to = UpkeepEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UpkeepEvent):
@@ -745,7 +745,7 @@ class VesuvanDoppelgangerUpkeep(Listener):
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t, copy_color=False)) for t in card_options]
+        options = [CO(f'{s} copies {t}', lambda tar=t: copy_card(gs, s, tar, copy_color=False)) for t in card_options]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class WallOfTombstonesPT(Listener):

@@ -332,9 +332,6 @@ MAP: dict[str, list[EffSpec]] = {
                       then(DestroyHostCombatants(filter_func=CF.non_wall_creatures())))],
     'verduran-enchantress': [Static(VerduranEnchantress())],
     'vesuvan-doppelganger': [Triggered(VesuvanDoppelgangerUpkeep()), Spell(VesuvanDoppelgangerCast())],
-    # TODO: despite being the same code, VesuvanDoppelgangerUpkeep doesn't trigger;
-    #  the card goes to the graveyard during cast as well but gets pulled out somehow;
-    #  the SBA looking at 0 toughness may be the culprit
     'veteran-bodyguard': [GenTrig(On(DamageProposedEvent).
                                   where(EC().self_is_untapped().damage_source_in(CF.unblocked_attackers()).damage_target_in(CF.owner())).modify(RedirectToSource()))],
     'visions': [Spell(Visions(), CF.all_players())],

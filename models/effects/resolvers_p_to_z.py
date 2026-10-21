@@ -564,16 +564,15 @@ class VenarianGold(Resolver):
             t.counters.add_counter(STUN, x)
 
 class VesuvanDoppelgangerCast(Resolver):
-    """You may have this creature enter as a copy of any creature on the battlefield,
-    except it doesn't copy that creature's color & you may select a different creature on each of your upkeeps"""
+    """You may have VD enter as a copy of any creature on the battlefield (copy_color=False) ..."""
     def resolve(self, gs: GameState, s: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         if gs.player_turn_idx != s.owner_id:
             return
         card_options = [c for c in gs.card_filter.in_play().creatures().result() if c is not s]
         if not card_options:
             return
-        options = [CO(f'{s} copies {t}', lambda: copy_card(gs, s, t, copy_color=False)) for t in card_options]
-        gs.choice_mgr.queue(ChoiceAction(options))
+        options = [CO(f'{s} copies {t}', lambda tar=t: copy_card(gs, s, tar, copy_color=False)) for t in card_options]
+        gs.choice_mgr.queue(ChoiceAction(options, may=True))
 
 class Visions(Resolver):
     """Look at the top five cards of target player's library. You may then have that player shuffle that library."""

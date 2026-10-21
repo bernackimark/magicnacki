@@ -343,6 +343,49 @@ class TestCardsTUV(unittest.TestCase):
         self.gs.event_mgr.emit(cast_event)
         self.assertTrue(len([a for a in self.gs.pending_choice.options if a.description == 'Draw a card']))
 
+    def test_vesuvan_doppelganger(self):
+        """You may have VD enter as a copy of any creature on the battlefield (copy_color=False), and it has:
+        'At your upkeep, you may have VD become a copy of target creature (- the color) & its has this ability'"""
+        card = self.g.hand('vesuvan-doppelganger')  # 3UUU, 0/0
+        self.g.mana('UUUUUU')
+        self.g.battlefield('grizzly-bears')  # 2/2
+        self.g.battlefield('savannah-lions')  # 2/1
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[1])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.assertTrue(self.g.card_has_a_registered_listener(card),
+                        "Because VD is going to the gy and getting resurrected; its listener ain't registering")
+
+        copy_bears = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(copy_bears)
+        self.assertEqual((2, 2), (card.power, card.toughness))
+        self.assertEqual(['U'], card.colors)
+
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertIn(card, self.gs.boards[0])
+        copy_lions = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(copy_lions)
+        self.assertEqual((2, 1), (card.power, card.toughness))
+
+
+    def test_vesuvan_doppelganger_dont_copy_a_card(self):
+        """You may have VD enter as a copy of any creature on the battlefield (copy_color=False), and it has:
+        'At your upkeep, you may have VD become a copy of target creature (- the color) & its has this ability'"""
+        # Since VD's toughness is 0, this should go straight to the gy
+        card = self.g.hand('vesuvan-doppelganger')  # 3UUU
+        self.g.mana('UUUUUU')
+        self.g.battlefield('grizzly-bears')  # unused
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[1])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        decline_copy_go_to_gy = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(decline_copy_go_to_gy)
+        self.assertIn(card, self.g.gy[0])
+
     def test_volcanic_eruption(self):
         """Destroy X target mountains. VE deals damage to all creatures & players = mountains put into a GY this way."""
         from models.effects.resolvers_generic import Regenerate
