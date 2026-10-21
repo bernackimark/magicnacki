@@ -19,7 +19,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
-    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire
+    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire, FrankensteinsMonster
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -93,6 +93,8 @@ MAP: dict[str: list[EffSpec]] = {
     'forethought-amulet': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('3', SacSelf()))),
                            Static(ForethoughtAmulet())],
     'fountain-of-youth': [Activated('2T', GainLife(), CF.owner())],
+    'frankensteins-monster': [Spell(FrankensteinsMonster(),
+                                    min_x_func=lambda gs, s: 0, max_x_func=max_x_from_printed_card)],
     'frozen-shade': [self_pump('B', 1, 1)],
     'fungusaur': [GenTrig(On(DamageResolvedEvent).where(EC().self_is_damage_receiver()).then(AddCounter(PLUS_ONE)))],
     'gabriel-angelfire': [Triggered(GabrielAngelfire())],

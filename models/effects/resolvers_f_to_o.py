@@ -2,20 +2,18 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 from itertools import combinations, permutations
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.combat import AssignBlocker
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.constants import KW, Zone
 from models.effects.listeners_mod_queries import OwnershipModQuery
-from models.events_all import StateBasedEvent
-from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE
+from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE, CounterType, PLUS_ONE, PLUS_TWO_ZERO, \
+    PLUS_ZERO_TWO
 from models.effects.base import Resolver
-from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, \
-    PreventAllDamageToEOT, DestroyAtEndStep, DestroyAtEndStepIfItDidntAttack
-from models.game_card.modifiers import PTMod, KWAMod, OwnershipMod
+from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack
+from models.game_card.modifiers import PTMod, KWAMod
 from models.presentation_request import PresentationReqType
 from models.systems.mana import ManaCost
 from models.systems.phase import Phase
@@ -92,6 +90,60 @@ class FireAndBrimstone(Resolver):
         if gs.card_filter.on_player_board(opp).attackers().result():
             gs.apply_damage(source, 4, opp)
             gs.apply_damage(source, 4, source.owner_id)
+
+class FrankensteinsMonster(Resolver):
+    """As FM enters, exile X creatures from your gy. If you can't, put FM into in gy instead of battlefield. X >= 0.
+    For each creature card exiled this way, this creature enters with a +2/+0, +1/+1, or +0/+2 counter on it."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        x = context.x_value
+        if not x:
+            return
+        creatures_in_your_gy = gs.card_filter.creatures().in_player_graveyard(source.owner_id).result()
+        if len(creatures_in_your_gy) < x:
+            gs.pile_mgr.destroy(source)
+            return
+        FrankensteinsMonster._State(gs, source, x, creatures_in_your_gy)
+
+    @dataclass
+    class _State:
+        gs: GameState
+        source: GameCard
+        x: int
+        creatures_in_your_gy: list[GameCard]
+        selected: list[GameCard] = field(default_factory=list)
+        counters: list[CounterType] = field(default_factory=list)
+
+        def __post_init__(self):
+            self._choose_a_card()
+
+        def _choose_a_card(self):
+            options = [CO(f'Reanimate {c}', lambda card=c: self._select_a_card(card))
+                       for c in self.creatures_in_your_gy if c not in self.selected]
+            self.gs.choice_mgr.queue(ChoiceAction(options))
+
+        def _choose_a_counter(self):
+            ctr_options = (PLUS_ONE, PLUS_TWO_ZERO, PLUS_ZERO_TWO)
+            options = [CO(f"Add {ctr} to Frankestein's Monster",
+                          lambda counter=ctr: self._select_a_counter(counter)) for ctr in ctr_options]
+            self.gs.choice_mgr.queue(ChoiceAction(options))
+
+        def _select_a_card(self, c: GameCard):
+            self.selected.append(c)
+            self._choose_a_counter()
+
+        def _select_a_counter(self, ctr: CounterType):
+            self.counters.append(ctr)
+            if len(self.counters) >= self.x:
+                self._finish()
+                return
+            self._choose_a_card()
+
+        def _finish(self):
+            for c in self.selected:
+                self.gs.pile_mgr.reanimate(c)
+            for ctr in self.counters:
+                self.source.counters.add_counter(ctr)
+            self.gs.choice_mgr.complete()
 
 class GauntletsOfChaos(Resolver):
     """{5}, Sac GOT: Exchange control of target artifact, creature, or land you control with

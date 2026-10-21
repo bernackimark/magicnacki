@@ -436,6 +436,57 @@ class TestCardsDEF(unittest.TestCase):
         sac_fa.play()
         self.assertIn(card, self.g.gy[0])
 
+    def test_frankensteins_monster(self):
+        """As FM enters, exile X creatures from your gy. If you can't, put FM into in gy instead of battlefield. X >= 0.
+        For each creature card exiled this way, this creature enters with a +2/+0, +1/+1, or +0/+2 counter on it."""
+        card = self.g.hand('frankensteins-monster')  # 0/1
+        c1 = self.g.graveyard('savannah-lions')
+        c2 = self.g.graveyard('tundra-wolves')
+        self.g.mana('BBBB')
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=2)
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        reanimate_c1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(reanimate_c1)
+        add_0_2 = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(add_0_2)
+        reanimate_c2 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(reanimate_c2)
+        add_1_1 = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(add_1_1)
+
+        self.assertIn(c1, self.gs.boards[0])
+        self.assertIn(c2, self.gs.boards[0])
+        self.assertEqual((1, 4), (card.power, card.toughness))
+        self.assertIsNone(self.gs.pending_choice)
+
+    def test_frankensteins_monster_x_eq_0(self):
+        """As FM enters, exile X creatures from your gy. If you can't, put FM into in gy instead of battlefield. X >= 0.
+        For each creature card exiled this way, this creature enters with a +2/+0, +1/+1, or +0/+2 counter on it."""
+        card = self.g.hand('frankensteins-monster')  # 0/1
+        self.g.mana('BB')
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=0)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual((0, 1), (card.power, card.toughness))
+        self.assertIn(card, self.gs.boards[0])
+
+    def test_frankensteins_monster_cant_exile_x(self):
+        """As FM enters, exile X creatures from your gy. If you can't, put FM into in gy instead of battlefield ... """
+        card = self.g.hand('frankensteins-monster')  # 0/1
+        self.g.mana('BBBB')
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=2)
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        print(len(self.g.gy[0]), pipeline.x_value, card.zone)
+        self.assertIn(card, self.g.gy[0],
+                      "AP.resolve_ability() happens after .resolve() & moves FM from gy to board")
+
 
 if __name__ == '__main__':
     unittest.main()
