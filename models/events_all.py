@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Iterable, Any
 
 if TYPE_CHECKING:
     from models.action_stack import StackItemType
-    from models.effects.base import ActivatedAbility
+    from models.effects.base import ActivatedAbility, EffSpec
     from models.constants import Target, Zone
     from models.game_card.game_card import GameCard
     from models.game_card.modifiers import ModType
@@ -25,6 +25,11 @@ class Event:
 class AbilityActivatedEvent(Event):
     activator: int
     aa: ActivatedAbility
+
+@dataclass
+class ActivatedAbilitiesQueryEvent(Event):
+    card: GameCard
+    abilities: list[EffSpec] = field(default_factory=list)
 
 @dataclass(frozen=True)
 class AttackEvent(Event):

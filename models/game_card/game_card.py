@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
-from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent
+from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent, ActivatedAbilitiesQueryEvent
 from models.game_card.counter_tokens import Counters
 from models.game_card.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
     BasePTMod
@@ -48,7 +48,8 @@ class GameCard:
         self.extras: dict[str, Any] = {}  # declarations of X, color upon entry, etc
 
         self.abilities: list[EffSpec | None] = deepcopy(INVOCATIONS.get(self.props.slug, []))
-        self.activated_abilities: list[ActivatedAbility | None] = [ActivatedAbility(self, aa) for aa in self.aas]
+        self._activated_abilities: list[ActivatedAbility | None] = [ActivatedAbility(self, a) for a in self.abilities
+                                                                    if a.is_aa]
 
     def __repr__(self) -> str:
         text = self.props.name
@@ -77,8 +78,13 @@ class GameCard:
         return self._orig_owner_id
 
     @property
-    def aas(self) -> list[EffSpec | None]:
-        return [e for e in self.abilities if e.is_aa]
+    def activated_abilities(self) -> list[ActivatedAbility | None]:
+        """Returns list of ActivatedAbility from printed card & by querying ActivatedAbilitiesQueryEvent"""
+        base = self._activated_abilities
+        event = ActivatedAbilitiesQueryEvent(card=self)
+        self.game_state.event_mgr.emit(event)
+        queried_aas = [ActivatedAbility(self, aa) for aa in event.abilities]
+        return base + queried_aas
 
     @property
     def spells(self) -> list[EffSpec | None]:
