@@ -2,6 +2,8 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.constants import KW, Zone
+from models.cost import DiscardACard
+from models.game_card.card_filter_funcs import CF
 from models.game_card.counter_tokens import MINUS_ZERO_ONE, MATRIX
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -154,6 +156,34 @@ class TestCardsJKL(unittest.TestCase):
         opp_land = self.g.hand('swamp', owner=1)
         self.gs.pile_mgr.move_card(opp_land, Zone.BATTLEFIELD, cause='cast', emit_zone_event=True)
         self.assertEqual(None, self.gs.pending_choice, 'Should not trigger if you own more lands')
+
+    def test_lands_edge_discard_a_land(self):
+        """Discard a card: If the discarded card was a land card, LE deals 2 damage to target player ..."""
+        self.gs.hands[0].clear()
+        island = self.g.hand('island')
+        card = self.g.battlefield('lands-edge')
+        aa = card.activated_abilities[0]
+
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[1],
+                                   selected_extra_costs=[DiscardACard(CF.cards_in_your_hand(), selected_card=island)])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(island, self.g.gy[0])
+        self.assertEqual(18, self.gs.life[1])
+
+    def test_lands_edge_discard_a_non_land(self):
+        """Discard a card: If the discarded card was a land card, LE deals 2 damage to target player ..."""
+        self.gs.hands[0].clear()
+        lions = self.g.hand('savannah-lions')
+        card = self.g.battlefield('lands-edge')
+        aa = card.activated_abilities[0]
+
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[1],
+                                   selected_extra_costs=[DiscardACard(CF.cards_in_your_hand(), selected_card=lions)])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(lions, self.g.gy[0])
+        self.assertEqual(20, self.gs.life[1])
 
     def test_lesser_werewolf(self):
         """{B}: If LW's power is >= 1, it gets -1/-0 EOT &
