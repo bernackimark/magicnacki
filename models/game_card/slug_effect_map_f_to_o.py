@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from models.cost import SacSelfCost, ExileSelfCost, RemoveCounterCost, SacCardCost, DiscardLastCardDrawnThisTurn, \
     ExileCardCost, DiscardACard
-from models.game_card.counter_tokens import CARRION, PLUS_ONE
+from models.game_card.counter_tokens import CARRION, PLUS_ONE, MATRIX
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, \
@@ -26,7 +26,8 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     Pump, TapCard, UntapCardEffect, DeclareAColor, CounterSpell, RevealTopLibraryCard, EmptyResolver, \
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, PayManaOr, SacSelf, DrawCardsActivePlayer, DiscardAtRandom, \
-    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill, DrawThenDiscard, Register, Exile
+    AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill, DrawThenDiscard, Register, Exile, \
+    AddAA
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -71,7 +72,7 @@ MAP: dict[str: list[EffSpec]] = {
     'festival': [Spell(NoAttacksAllowedEOT(), None, allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=CF.opp())],
     'field-of-dreams': [GenTrig(On(ZoneChangeEvent).where(EC().zone_is_library()).then(RevealTopLibraryCard())),
                         Spell(RevealTopLibraryCard())],
-    'fire-and-brimstone': [Spell(FireAndBrimstone(),)],
+    'fire-and-brimstone': [Spell(FireAndBrimstone(), )],
     'fire-drake': [Activated('R', Pump(1, 0, True), CF.self(), max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), CF.owner(), is_mana_ability=True)],
     'firebreathing': [Spell(EmptyResolver(), CF.creatures()), self_pump('R', 1, 0)],
@@ -122,7 +123,8 @@ MAP: dict[str: list[EffSpec]] = {
     'gloom': [Static(Gloom())],
     'glyph-of-delusion': [Spell(GlyphOfDelusion(), CF.walls())],
     'glyph-of-destruction': [Spell(Do(Pump(10, 0, True), Register(PreventAllDamageToEOT, target_attr='target'),
-                                      Register(DestroyAtEndStep, target_attr='card_to_be_destroyed')), CF.your_walls())],
+                                      Register(DestroyAtEndStep, target_attr='card_to_be_destroyed')),
+                                   CF.your_walls())],
     'glyph-of-doom': [Spell(GlyphOfDoom(), CF.walls())],
     'glyph-of-life': [Spell(GlyphOfLife(), CF.walls())],
     'glyph-of-reincarnation': [Spell(GlyphOfReincarnation(), CF.walls(),
@@ -177,7 +179,8 @@ MAP: dict[str: list[EffSpec]] = {
     'hidden-path': [Static(KWAApplies(CF.green_creatures(), 'add', KW.FORESTWALK))],
     'holy-armor': [Spell(Pump(0, 2), CF.creatures()),
                    Activated('W', Pump(0, 1, True), CF.host())],
-    'holy-day': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC().is_combat_damage()).modify(PreventDamage()))],
+    'holy-day': [
+        GenTrig(On(DamageProposedEvent, expires='EOT').where(EC().is_combat_damage()).modify(PreventDamage()))],
     'holy-light': [Spell(PumpApplies(CF.non_white_creatures(), (-1, -1), True))],
     'holy-strength': [Spell(Pump(1, 2), CF.creatures())],
     'horn-of-deafening': [Activated('2T', PreventNextDamageTo(protected=CF.owner(), combat_only=True), CF.creatures())],
@@ -211,7 +214,8 @@ MAP: dict[str: list[EffSpec]] = {
     'inquisition': [Spell(Inquisition(), CF.all_players())],
     'invoke-prejudice': [Static(InvokePrejudice())],
     'iron-star': [GenTrig(On(CastResolvedEvent).where(EC().card_is_color('R')).then(MayPayMana('1', GainLife(1))))],
-    'ironclaw-orcs': [GenTrig(On(CanBlockQueryEvent).where(EC().self_is_blocker().attacker_power_ge(2)).modify(Deny()))],
+    'ironclaw-orcs': [
+        GenTrig(On(CanBlockQueryEvent).where(EC().self_is_blocker().attacker_power_ge(2)).modify(Deny()))],
     'island-fish-jasconius': [Triggered(DoesntUntapAtUntap(CF.self())),
                               Triggered(PayManaToUntapUpkeep('UU', CF.self()))],
     'island-of-wak-wak': [Activated('T', BasePT(base_p=0, base_t=None, eot=True), CF.fliers())],
@@ -271,6 +275,10 @@ MAP: dict[str: list[EffSpec]] = {
     'library-of-leng': [Static(LibraryOfLengMaxHandSize()), Static(LibraryOfLengDiscard())],
     'life-chisel': [Spell(LifeChisel(), allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=CF.owner(),
                           extra_costs=[SacCardCost(CF.your_artifacts())])],
+    'life-matrix': [Activated('4T',
+                              Do(AddCounter(MATRIX), AddAA(Activated('', Regenerate(), CF.self(),
+                                                                     extra_costs=[RemoveCounterCost(MATRIX)]))),
+                              CF.creatures(), allowed_phases=[Phase.UPKEEP])],
     'lifeblood': [GenTrig(On(TapCardEvent).where(EC().card_is_mountain().card_is_opponents()).then(GainLife()))],
     'lifeforce': [Activated('GG', CounterSpell(), CF.black_spells())],
     'lifelace': [Spell(SetColor('G'), CF.cards())],
@@ -334,7 +342,8 @@ MAP: dict[str: list[EffSpec]] = {
     'mox-pearl': mox_specs('W'),
     'mox-ruby': mox_specs('R'),
     'mox-sapphire': mox_specs('U'),
-    'murk-dwellers': [GenTrig(On(UnblockedAttackerEvent).where(EC().self_is_unblocked_attacker()).then(PumpSelf(2, 0, True)))],
+    'murk-dwellers': [
+        GenTrig(On(UnblockedAttackerEvent).where(EC().self_is_unblocked_attacker()).then(PumpSelf(2, 0, True)))],
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), CF.all_players())],
     'necropolis': [Activated('', Necropolis(), extra_costs=[ExileCardCost(CF.creatures_in_your_graveyard())])],

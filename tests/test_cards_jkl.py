@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import MINUS_ZERO_ONE
+from models.game_card.counter_tokens import MINUS_ZERO_ONE, MATRIX
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -258,6 +258,22 @@ class TestCardsJKL(unittest.TestCase):
         self.gs.choice_mgr.choose(move_atop_lib)
         self.assertIn(card_in_hand, self.gs.pile_mgr.libraries[0])
         self.assertEqual([], self.g.gy[0])
+
+    def test_life_matrix(self):
+        """... Put a matrix counter on target creature & that creature gains
+        'Remove a matrix counter from this creature: Regenerate this creature.' ..."""
+        card = self.g.battlefield('life-matrix')
+        aa = card.activated_abilities[0]
+        creature = self.g.battlefield('grizzly-bears')  # vanilla creature w no abilities
+        self.g.mana('WWWW')
+        self.assertEqual([], creature.activated_abilities)
+
+        self.g.activate_ability(aa, creature)
+        self.assertEqual(1, creature.counters.get_count(MATRIX))
+        self.assertEqual(1, len(creature.activated_abilities))
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual(1, len(creature.activated_abilities))  # verify the ability remains on card
 
 
 if __name__ == '__main__':
