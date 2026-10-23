@@ -1,6 +1,6 @@
 import unittest
 
-from models.constants import KW, Zone
+from models.constants import KW
 from models.events_all import BlockEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -164,7 +164,17 @@ class TestCardsWXYZ(unittest.TestCase):
         self.assertFalse(target.is_creature)
         self.assertEqual(0, target.toughness)
 
+    def test_zombie_master(self):
+        """Other Zombie creatures have swampwalk.  Other Zombies have '{B}: Regenerate this permanent.'"""
+        card = self.g.battlefield('zombie-master')
+        zombie = self.g.battlefield('scathe-zombies')  # vanilla card w no abilities
+        self.assertIn(KW.SWAMPWALK, zombie.keyword_abilities)
+        self.assertNotEqual([], zombie.activated_abilities)
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertNotIn(KW.SWAMPWALK, zombie.keyword_abilities)
+        self.assertEqual([], zombie.activated_abilities)
+
 
 if __name__ == '__main__':
     unittest.main()
-
