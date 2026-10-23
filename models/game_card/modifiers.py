@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Union, TypeVar
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
+    from models.effects.base import Activated
 
 from dataclasses import dataclass, field
 
@@ -17,6 +18,7 @@ GCMod (attributes: s (source) & expires (defaults to None)
  |- BasePTMod (special because of its integer attributes)
  |- PTMod (special because of its integer attributes)
  |- RegenerationMod (possesses no other attributes)
+ |- AAMod (adds an Activated EffSpec)
 """
 
 
@@ -87,9 +89,15 @@ class RegenerationMod(GCMod):
     def __repr__(self):
         return f"regeneration shield"
 
+@dataclass
+class AAMod(GCMod):
+    """Adds an Activated(EffSpec)"""
+    added_activated: Activated
+
 
 T = TypeVar('T', bound=GCMod)
-ModType = Union[KWAMod | ManaProdMod | OwnershipMod | BasePTMod | PTMod | RegenerationMod | SubTypeMod | TypeMod]
+ModType = Union[KWAMod | ManaProdMod | OwnershipMod | BasePTMod | PTMod |
+                RegenerationMod | SubTypeMod | TypeMod | AAMod]
 
 @dataclass
 class Modifiers:

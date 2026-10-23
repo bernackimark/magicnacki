@@ -13,8 +13,9 @@ from .slug_effect_map import INVOCATIONS
 from ..effects.base import EffSpec, ActivatedAbility
 from ..events_all import ModQueryEvent, TapCardEvent, UntapCardEvent, ActivatedAbilitiesQueryEvent
 from models.game_card.counter_tokens import Counters
-from models.game_card.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, PTMod, \
-    BasePTMod
+from models.game_card.modifiers import Modifiers, KWAMod, SubTypeMod, TypeMod, ManaProdMod, ColorMod, CollectionMod, \
+    PTMod, \
+    BasePTMod, AAMod
 
 
 class GameCard:
@@ -79,12 +80,17 @@ class GameCard:
 
     @property
     def activated_abilities(self) -> list[ActivatedAbility | None]:
-        """Returns list of ActivatedAbility from printed card & by querying ActivatedAbilitiesQueryEvent"""
+        """Returns list of ActivatedAbility from printed card, from any modifier it possesses, &
+        by querying ActivatedAbilitiesQueryEvent"""
         base = self._activated_abilities
+
+        mods = [ActivatedAbility(self, aa_mod.added_activated) for aa_mod in self.modifiers.get(AAMod)]
+
         event = ActivatedAbilitiesQueryEvent(card=self)
         self.game_state.event_mgr.emit(event)
         queried_aas = [ActivatedAbility(self, aa) for aa in event.abilities]
-        return base + queried_aas
+
+        return base + mods + queried_aas
 
     @property
     def spells(self) -> list[EffSpec | None]:

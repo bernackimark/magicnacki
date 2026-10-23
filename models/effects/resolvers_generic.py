@@ -10,10 +10,10 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_prevent_counter, copy_card
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
-from models.effects.base import Resolver, Listener
+from models.effects.base import Resolver, Listener, Activated
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
-from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod
+from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod, AAMod
 from models.presentation_request import PresentationReqType
 from models.utils import flip
 
@@ -31,6 +31,17 @@ class Do(Resolver):
         for resolver in self.resolvers:
             resolver.resolve(gs, source, t, context)
 
+
+class AddAA(Resolver):
+    """Target can be provided through intializer func or .resolve(t) else defaults to source"""
+    def __init__(self, activated_eff_spec: Activated, t_func: Callable | None = None):
+        self.activated_eff_spec = activated_eff_spec
+        self.t_func = t_func
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        target = self.t_func(gs, source) if self.t_func else source if not t else t
+        activated_mod = AAMod(self.activated_eff_spec, s=source)
+        target.modifiers.append(activated_mod)
 
 class AddCounter(Resolver):
     """Target can be provided through intializer func or .resolve(t) else defaults to source"""
