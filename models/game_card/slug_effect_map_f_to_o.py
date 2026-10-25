@@ -19,7 +19,8 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     HowlFromBeyond, LesserWerewolf, FallingStar, Feint, FeldonsCane, HurkylsRecall, Inquisition, \
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
-    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire, FrankensteinsMonster
+    Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire, FrankensteinsMonster, \
+    Metamorphosis
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -323,6 +324,7 @@ MAP: dict[str: list[EffSpec]] = {
     'meekstone': [GenTrig(On(CanUntapAtUntapQueryEvent).where(EC().is_e_card_turn().card_power_ge(3)).modify(Deny()))],
     'merchant-ship': [GenTrig(On(UnblockedAttackerEvent).where(EC().self_is_unblocked_attacker()).then(GainLife(2)))],
     'merfolk-assassin': [Activated('T', Destroy(), CF.islandwalkers())],
+    'metamorphosis': [Spell(Metamorphosis(), extra_costs=[SacCardCost(CF.your_creatures())])],
     'mightstone': [Static(PumpApplies(CF.attackers(), (1, 0)))],
     'mijae-djinn': [Triggered(MijaeDjinn())],
     'millstone': [Activated('2T', Mill(2), CF.all_players())],
@@ -334,6 +336,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mishras-factory': [Activated('T', AddMana('C'), CF.owner(), is_mana_ability=True, text='Add {C}'),
                         Activated('1', BecomeCreature(2, 2, 'Assembly-Worker', True), CF.self(), text='Become 2/2'),
                         Activated('T', Pump(1, 1, True), CF.assembly_workers(), text='Pump Assembly-Worker')],
+    'mishras-workshop': [Activated('T', AddMana('C', 3), is_mana_ability=True)],
     'moat': [GenTrig((On(CanAttackQueryEvent).where(EC().attacker_is_flier()).modify(Deny())))],
     'mold-demon': [Spell(MoldDemon())],
     'morale': [Spell(PumpApplies(CF.attackers(), (1, 1), True))],

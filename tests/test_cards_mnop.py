@@ -5,7 +5,7 @@ from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.cast import CastWithNoSpellEffect
 from models.actions.advance_phase import PassTheTurn
 from models.constants import KW
-from models.cost import ExileCardCost
+from models.cost import ExileCardCost, SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
 from models.systems.phase import Phase
@@ -107,6 +107,22 @@ class TestCardsMNOP(unittest.TestCase):
         self.gs.combat_mgr.handle_damage_step(False)
         self.assertFalse(attacker.is_tapped)
         self.assertEqual(20, self.gs.life[0])
+
+    def test_metamorphosis(self):
+        """As an additional cost to cast this spell, sac a creature.
+        Add X mana of any one color, X = 1 + sac'ed creature's MV.
+        Spend this mana only to cast creature spells. <- This part is at large"""
+        card = self.g.hand('metamorphosis')
+        self.g.mana('G')
+        sac_target = self.g.battlefield('tundra-wolves')  # MV=1
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0],
+                                   selected_extra_costs=[SacCardCost(selected_card=sac_target)])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        add_mana = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(add_mana)
+        self.assertEqual(2, sum(self.gs.mana_pools[0].available_mana.values()))
 
     def test_mind_bomb(self):
         """Each player may discard <= 3 cards. MB deals damage to each player = 3 - card count discarded this way."""

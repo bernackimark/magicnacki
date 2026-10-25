@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Literal
 from models.actions.ability_pipeline import AbilityPipeline
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
-from models.constants import KW, Zone
+from models.constants import KW, Zone, COLOR_LETTERS
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.game_card.counter_tokens import MINUS_ZERO_ONE, STUN, PLUS_ZERO_ONE, CounterType, PLUS_ONE, PLUS_TWO_ZERO, \
     PLUS_ZERO_TWO
@@ -467,6 +467,17 @@ class MazeOfIth(Resolver):
         for b in the_combat.blockers:
             gs.event_mgr.register(PreventNextDamageTo(b, combat_only=True))
         t.untap()
+
+class Metamorphosis(Resolver):
+    """(As an additional cost to cast this spell, sac a creature <- handled during casting)
+    Add X mana of any one color, X = 1 + sac'ed creature's MV.
+    Spend this mana only to cast creature spells. <- This part is at large"""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        p_id = source.owner_id
+        x = context.cost_results[0].paid_cards[0].props.mana_value + 1
+        options = [CO(f'Add {{{color * x}}}',
+                      lambda col=color: gs.mana_pools[p_id].add_floating(col, x)) for color in COLOR_LETTERS]
+        gs.choice_mgr.queue(ChoiceAction(options))
 
 class MindBomb(Resolver):
     """Each player may discard up to three cards. MB deals damage to each player = 3 - card count discarded this way."""
