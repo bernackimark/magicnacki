@@ -527,8 +527,14 @@ class CF:
         return lambda gs, s: gs.action_stack.spells
 
     @staticmethod
+    def spells_artifact_aa():
+        from models.actions.ability_pipeline_support import AbilityAction
+        return lambda gs, s: [a for a in gs.action_stack.actions if isinstance(a, AbilityAction) and
+                              'Artifact' in a.source.card_types and a.pipeline.eff_spec.is_aa]
+
+    @staticmethod
     def spells_aura_or_instant_targeting_your_perm():
-        return lambda gs, s: [spell for spell in gs.stack
+        return lambda gs, s: [spell for spell in gs.action_stack.spells
                               if (('Instant' in spell.types or 'Aura' in spell.types)
                                   and any(isinstance(t, GameCard) and t.owner_id == s.owner_id
                                           and t.zone == Zone.BATTLEFIELD for t in spell.targets))]
