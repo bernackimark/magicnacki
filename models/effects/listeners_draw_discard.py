@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from itertools import combinations
+import random
 from typing import TYPE_CHECKING
 
 from models.choice_actions_all import ChoiceAction
@@ -9,7 +10,9 @@ from models.choice_options import CO
 from models.constants import Zone
 from models.game_card.counter_tokens import DOOM
 from models.effects.base import Listener
-from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent, Event
+from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent, DrawCardAllowedQueryEvent, \
+    Event
+from models.presentation_request import PresentationReqType
 from models.systems.phase import Phase
 from models.utils import flip
 
@@ -58,6 +61,58 @@ class CursedRack(Listener):
                       lambda: gs.pile_mgr.discards(combo)) for combo in combos]
         gs.choice_mgr.queue(ChoiceAction(options))
 
+
+# --- DRAW CARD PROPOSED EVENT ---
+class AladdinsLampListener(Listener):
+    """The next time you would draw a card this turn, instead look at the top X (X > 0) cards of your library,
+    put all but one of them on the bottom of your library in a random order, then draw a card."""
+    listens_to = DrawCardAllowedQueryEvent
+
+    def __init__(self, x_value: int):
+        self.x_value = x_value
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawCardAllowedQueryEvent) -> None:
+        if event.player_id != source.owner_id:
+            return
+        lib = gs.pile_mgr.libraries[source.owner_id]
+        x = min(len(lib), self.x_value)
+        top_x_cards = lib[:x]
+        gs.add_presentation_request(source.owner_id, PresentationReqType.VIEW_LIBRARY, {'cards': top_x_cards})
+        options = [CO(f'Place {c} atop your library',
+                      lambda card=c: self._select_card(card, lib, top_x_cards)) for c in top_x_cards]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _select_card(selected_card: GameCard, lib: list[GameCard], top_x_cards: list[GameCard]):
+        unselected_cards = [c for c in top_x_cards if c is not selected_card]
+        [lib.remove(c) for c in unselected_cards]
+        random.shuffle(unselected_cards)
+        [lib.append(c) for c in unselected_cards]
+
+class ChainsOfMephistopheles(Listener):
+    """If a player would draw a 2nd card in a turn ... If no cards in hand, mill; else, discard then draw."""
+    listens_to = DrawCardAllowedQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawCardAllowedQueryEvent) -> None:
+        p_id = event.player_id
+        hand = gs.hands[p_id]
+        drawn_cnt = len([e for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, DrawCardEvent)
+                         if e.player_id == p_id])
+        if not drawn_cnt:
+            return
+
+        event.permission = False
+        if not hand:
+            gs.pile_mgr.mill(p_id)
+            return
+        options = [CO(f'Discard {c}', lambda card=c: self._discard_then_draw(gs, p_id, card)) for c in hand]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _discard_then_draw(gs: GameState, p_id: int, selected_discard: GameCard):
+        gs.pile_mgr.discard(selected_discard)
+        top_lib_card = gs.pile_mgr.libraries[p_id][0]
+        gs.pile_mgr.move_card(top_lib_card, Zone.HAND, cause='chains-of-mephistopheles')
 
 # --- DRAW STEP EVENT ---
 class ArmageddonClockDrawStep(Listener):

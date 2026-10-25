@@ -18,7 +18,7 @@ from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
     Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, \
-    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve
+    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve, AladdinsLamp
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
@@ -32,7 +32,7 @@ from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_upkeep import CocoonUpkeep, CurseArtifact, Cyclone, DemonicHordesUpkeep, DropOfHoney, \
     ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
-from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep
+from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep, ChainsOfMephistopheles
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
 from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
 from ..effects.listeners_combat import AislingLeprechaun
@@ -65,6 +65,7 @@ MAP: dict[str, list[EffSpec]] = {
                                max_x_func=max_x_from_printed_card,
                                text="Prevent the next X damage that would be dealt to any target this turn")],
     'aladdin': [Activated('1RRT', Steal(), CF.opp_artifacts())],
+    'aladdins-lamp': [Activated('XT', AladdinsLamp())],
     'aladdins-ring': [Activated('8T', DealDamage(4), CF.all_creatures_and_players())],
     'ali-baba': [Activated('R', TapCard(), CF.walls())],
     'ali-from-cairo': [Static(AliFromCairo())],
@@ -190,6 +191,7 @@ MAP: dict[str, list[EffSpec]] = {
     'chaos-orb': [Activated('1T', ChaosOrb(), CF.opp_non_token_perms(), extra_costs=[SacSelfCost()],
                             text='If random di roll is 1-4, destroy target')],
     'chain-lightning': [Spell(ChainLightning(), CF.all_creatures_and_players())],
+    'chains-of-mephistopheles': [Static(ChainsOfMephistopheles())],
     'chaoslace': [Spell(SetColor('R'), CF.cards())],
     'chromium': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('WUB', SacSelf())))],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageTo(protected=CF.owner()), CF.artifacts())],

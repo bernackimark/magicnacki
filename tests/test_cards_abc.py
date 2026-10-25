@@ -2,7 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
-from models.constants import KW
+from models.constants import KW, Zone
 from models.cost import SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM
 from models.effects.listeners_misc import ArtifactPossessionActivation
@@ -17,6 +17,28 @@ class TestCardsAtoC(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_aladdins_lamp(self):
+        """The next time you would draw a card this turn, instead look at the top X (X > 0) cards of your library,
+        put all but one of them on the bottom of your library in a random order, then draw a card."""
+        card = self.g.battlefield('aladdins-lamp')
+        aa = card.activated_abilities[0]
+        self.g.mana('UUU')
+        c3 = self.g.library('savannah-lions')
+        c2 = self.g.library('grizzly-bears')
+        c1 = self.g.library('shivan-dragon')
+
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, x_value=3)
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.gs.phase_mgr.set_phase(Phase.DRAW)
+        dragon_atop_lib = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(dragon_atop_lib)
+        self.assertIn(c1, self.gs.hands[0])
+        bottom_2_cards = self.gs.pile_mgr.libraries[0][-2:]
+        self.assertIn(c2, bottom_2_cards)
+        self.assertIn(c3, bottom_2_cards)
 
     def test_all_hallows_eve(self):
         """Exile AHE with 2 scream counters on it. At your upkeep, if this card is in exile with >=1 scream counters,
@@ -417,6 +439,34 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertEqual(17, self.gs.life[1])
         self.assertEqual(1, self.gs.action_on_idx)
         self.assertIsNone(self.gs.pending_choice)
+
+    def test_chains_of_mephistopheles(self):
+        """If a player would draw a 2nd card in a turn ... If no cards in hand, mill; else, discard then draw."""
+        self.gs.hands[0].clear()
+        self.g.battlefield('chains-of-mephistopheles')
+
+        self.g.next_turn()
+        island = self.g.library('island')
+        self.gs.pile_mgr.draw(0)
+        self.g.cast_and_accept(island)
+
+        # hand is empty; mill a card
+        swamp = self.g.library('swamp')
+        self.gs.pile_mgr.draw(0)
+        self.assertIn(swamp, self.g.gy[0])
+
+        # hand is not empty; discard then draw
+        self.g.next_turn()
+        mountain = self.g.library('mountain')
+        _ = self.g.library('plains')
+        forest = self.g.library('forest')
+        self.gs.pile_mgr.move_card(forest, Zone.HAND, cause='setting_up_the_test', emit_zone_event=False)
+        self.gs.pile_mgr.draw(0)  # now forest & plains in hand
+        self.gs.pile_mgr.draw(0)  # this attempt to draw mountain should emit to the Listener & create a pending_choice
+        discard_forest = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(discard_forest)
+        self.assertIn(forest, self.g.gy[0])
+        self.assertIn(mountain, self.gs.hands[0])
 
     def test_city_in_a_bottle(self):
         """Whenever a nontoken permanent with a name originally printed in Arabian Nights is on battlefield, sac it"""

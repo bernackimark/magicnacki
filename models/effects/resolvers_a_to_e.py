@@ -20,6 +20,12 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
+class AladdinsLamp(Resolver):
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        from models.effects.listeners_draw_discard import AladdinsLampListener
+        listener = AladdinsLampListener(context.x_value)
+        gs.event_mgr.register(listener, source)
+
 class AllHallowsEve(Resolver):
     """Exile AHE with 2 scream counters on it. At your upkeep, if this card is in exile with >=1 scream counters,
     remove a scream counter from it.
