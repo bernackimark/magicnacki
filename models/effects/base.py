@@ -55,6 +55,7 @@ class Resolver(ABC):
         return wrapper
 
 class Listener:
+    """Expires can be EOT, PERPETUAL, None (None is the default behavior and is removed upon source's removal)"""
     listens_to: type[Event] | None = None  # used by event listeners
     expires: str | None = None
     is_expired: bool = False
