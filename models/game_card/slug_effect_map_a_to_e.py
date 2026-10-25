@@ -18,7 +18,7 @@ from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
     Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, \
-    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve, AladdinsLamp
+    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve, AladdinsLamp, DrainLife
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
@@ -290,7 +290,8 @@ MAP: dict[str, list[EffSpec]] = {
     'drafnas-restoration': [Spell(DrafnasRestoration(), CF.all_players())],
     'dragon-engine': [self_pump('2', 1, 0)],
     'dragon-whelp': [self_pump('R', 1, 0), Triggered(DragonWhelpEndStep())],
-    'drain-power': [Spell(DrainPower(), CF.opp())],
+    'drain-life': [Spell(DrainLife(), CF.all_creatures_and_players())],
+    'drain-power': [Spell(DrainPower())],
     'dream-coat': [Spell(EmptyResolver(), CF.creatures())] +
                   [Activated('', SetColor(''.join(combo)), CF.host(), max_activations_per_turn=1, text=f'{{{combo}}}')
                    for r in range(1, len(COLOR_LETTERS) + 1) for combo in combinations(COLOR_LETTERS, r)],

@@ -18,6 +18,7 @@ from models.utils import flip
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
+    from models.systems.mana import ManaPool
 
 
 class AladdinsLamp(Resolver):
@@ -399,15 +400,41 @@ class Disintegrate(Resolver):
             gs.event_mgr.register(PreventRegenerationEOT(t), source)
         gs.apply_damage(source, damage_amt, t)
 
-class DrainPower(Resolver):
-    """Target player activates a mana ability of each land they control.
-    Then that player loses all unspent mana & you add the mana lost this way."""
+class DrainLife(Resolver):
+    """Spend only black mana on X (at large).
+    Drain Life deals X damage to any target. You gain life equal to the damage dealt, but not more life than:
+    the player's life total before the damage was dealt (if you targeted a player) or,
+    the creature's toughness (if you targeted a creature)."""
     @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        x = context.x_value
+        gs.apply_damage(source, x, t)
+        life_gain = min(x, gs.life[t]) if isinstance(t, int) else min(x, t.toughness)
+        gs.score_mgr.increment_life(source.owner_id, life_gain, source)
+
+class DrainPower(Resolver):
+    """Opp activates a mana ability of each land they control. (If it produces multiple types, opp chooses which mana.)
+    Then that player loses all unspent mana & you add the mana lost this way."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
-        """target = player_id whose available mana will be targeted & given to the other player"""
-        land_giver_mana = gs.mana_pools[t].available_mana.copy()
-        for color, amt in land_giver_mana.items():
-            gs.mana_pools[source.owner_id].add_floating(color, amt)
+        opp = flip(source.owner_id)
+        mana_lands = [land for land in gs.card_filter.on_player_board(opp).lands().result()[:] if land.mana_produced]
+        if any(len(land.mana_produced) > 1 for land in mana_lands):
+            state = DrainPower._MultiManaState([[land, land.mana_produced] for land in mana_lands])  # type: ignore
+            # TODO: code the mana produced selection process
+        else:
+            self._tap_and_transfer(gs.mana_pools[source.owner_id], mana_lands, gs.mana_pools[opp].available_mana.copy())
+            return
+
+    @dataclass
+    class _MultiManaState:
+        lands_and_colors: list[list[GameCard, list[str]]] = field(default_factory=list)  # [[dual_land, ['R', 'U']],...]
+
+    @staticmethod
+    def _tap_and_transfer(receiving_mana_pool: ManaPool, mana_lands: list[GameCard], mana_dict: dict[str, int]):
+        for land in mana_lands:
+            land.tap()
+        for color, amt in mana_dict.items():
+            receiving_mana_pool.add_floating(color, amt)
 
 class DrafnasRestoration(Resolver):
     """Put any number of target artifact cards from target player's graveyard on top of their library in ANY ORDER"""

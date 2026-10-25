@@ -161,6 +161,75 @@ class TestCardsDEF(unittest.TestCase):
         self.assertEqual([colossus, aladdins_lamp], self.gs.pile_mgr.libraries[0][:2])
         self.assertFalse(self.gs.pending_choice)
 
+    def test_drain_life(self):
+        """Spend only black mana on X (at large).
+        Drain Life deals X damage to any target. You gain life equal to the damage dealt, but not more life than:
+        the player's life total before the damage was dealt (if you targeted a player) or,
+        the creature's toughness (if you targeted a creature)."""
+        card_1 = self.g.hand('drain-life')
+        card_2 = self.g.hand('drain-life')
+        self.g.mana('B' * 100)
+
+        damage_p1_pipeline = AbilityPipeline(0, self.gs, card_1, card_1.abilities[0], x_value=1, targets=[1])
+        damage_p1_pipeline.advance()
+        damage_p1_pipeline.resolve_ability()
+        self.assertEqual([21, 19], self.gs.life)
+
+        bears = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
+        damage_bears_pipe = AbilityPipeline(0, self.gs, card_2, card_2.abilities[0], x_value=4, targets=[bears])
+        damage_bears_pipe.advance()
+        damage_bears_pipe.resolve_ability()
+        self.assertIn(bears, self.g.gy[1])
+        self.assertEqual([23, 19], self.gs.life)
+
+    def test_drain_power_simple(self):
+        """Opp activates a mana ability of each land they control.
+        Then that player loses all unspent mana, and you add the mana lost this way."""
+        card = self.g.hand('drain-power')  # UU
+        self.g.mana('UU')
+        plains = self.g.battlefield('plains', owner=1)
+        swamp = self.g.battlefield('swamp', owner=1)
+        maze = self.g.battlefield('maze-of-ith', owner=1)
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.assertTrue(swamp.is_tapped)
+        self.assertTrue(plains.is_tapped)
+        self.assertFalse(maze.is_tapped)
+        self.assertEqual(0, sum(self.gs.mana_pools[1].available_mana.values()))
+        self.assertEqual({'B': 1, 'W': 1}, {k: v for k, v in self.gs.mana_pools[0].available_mana.items() if v})
+
+    def test_drain_power_multi_lands(self):
+        """Opp activates a mana ability of each land they control.
+        (If it produces multiple mana types, opp chooses which mana.)
+        Then that player loses all unspent mana, and you add the mana lost this way."""
+        card = self.g.hand('drain-power')  # UU
+        self.g.mana('UU')
+        plains = self.g.battlefield('plains', owner=1)
+        swamp = self.g.battlefield('swamp', owner=1)
+        volcanic_island = self.g.battlefield('volcanic-island', owner=1)  # produces ['R', 'U']
+        random_spell = self.g.hand('holy-day', owner=1)  # W
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+
+        cast_random_spell = AbilityPipeline(1, self.gs, random_spell, random_spell.abilities[0])
+        cast_random_spell.advance()
+        cast_random_spell.resolve_ability()
+        self.assertTrue(plains.is_tapped, "Why didn't the plains tap?")
+
+
+        pipeline.resolve_ability()
+        volcanic_produces_red = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(volcanic_produces_red)
+
+        self.assertTrue(swamp.is_tapped)
+        self.assertTrue(volcanic_island.is_tapped)
+        self.assertEqual(0, sum(self.gs.mana_pools[1].available_mana.values()))
+        self.assertEqual({'B': 1, 'R': 1}, {k: v for k, v in self.gs.mana_pools[0].available_mana.values() if v})
+
     def test_dwarven_warriors(self):
         """{T}: Target creature with power 2 or less can't be blocked this turn"""
         card = self.g.battlefield('dwarven-warriors')
