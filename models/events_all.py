@@ -159,6 +159,12 @@ class DrawCardEvent(Event):
     player_id: int
     card: GameCard
 
+@dataclass
+class DrawCardAllowedQueryEvent(Event):
+    player_id: int
+    card: GameCard
+    permission: bool = None
+
 @dataclass(frozen=True)
 class DrawStepEvent(Event):
     active_player: int

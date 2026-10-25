@@ -3,7 +3,8 @@ from copy import copy
 from typing import TYPE_CHECKING
 
 from models.constants import KW, Zone
-from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, CanRegenerateQueryEvent
+from models.events_all import ZoneChangeEvent, DiesEvent, DiscardEvent, DrawCardEvent, CanRegenerateQueryEvent, \
+    DrawCardAllowedQueryEvent
 from models.game_card.modifiers import RegenerationMod
 
 if TYPE_CHECKING:
@@ -114,12 +115,15 @@ class PileManager:
         for card in cards:
             self.discard(card, source)
 
-    def mill(self, p_id: int, cnt: int = 1):
+    def mill(self, p_id: int, cnt: int = 1, print_output: bool = True):
         for _ in range(cnt):
             if not self._has_a_library(p_id):
                 return
             top_lib_card = self.libraries[p_id][0]
             self.move_card(top_lib_card, Zone.GRAVEYARD, cause='mill')
+            if print_output:
+                print(f'Player #{p_id} mills')
+            self._gs.game_history.append_non_action(self._gs, text=f'Player #{p_id} mills')
 
     def reanimate(self, card: GameCard):
         self.move_card(card, Zone.BATTLEFIELD, cause='reanimate')
@@ -136,6 +140,11 @@ class PileManager:
             if not self._has_a_library(p_id):
                 return
             top_lib_card = self.libraries[p_id][0]
+            event = DrawCardAllowedQueryEvent(p_id, top_lib_card)
+            self._gs.event_mgr.emit(event)
+            if event.permission is False:
+                print('Draw was disallowed')
+                return
             self.move_card(top_lib_card, Zone.HAND, cause='draw')
             self._gs.event_mgr.emit(DrawCardEvent(p_id, top_lib_card))
             if print_output:
