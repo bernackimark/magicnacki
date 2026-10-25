@@ -89,7 +89,8 @@ class EventManager:
         """Remove any event listeners tied to this card"""
         for event_type, entries in self._event_listeners.items():
             # Keep only effects whose source_card is not the leaving card
-            self._event_listeners[event_type] = [entry for entry in entries if entry.source != card]
+            self._event_listeners[event_type] = [entry for entry in entries if entry.source != card
+                                                 or entry.effect.expires == 'PERPETUAL']
 
     def unregister_specific_effect(self, effect: Listener):
         """Used when an effect is neither unregistered when the source leaves the battlefield nor at EOT

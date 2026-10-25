@@ -125,4 +125,4 @@ class Modifiers:
         self.items = [m for m in self.items if m.expires != 'EOT']
 
     def clear_all(self) -> None:
-        self.items.clear()
+        self.items = [m for m in self.items if m.expires == 'PERPETUAL']
