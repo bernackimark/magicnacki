@@ -1,8 +1,9 @@
 import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
-from models.actions.cast import CastPermanentAction
+from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.actions.advance_phase import PassTheTurn
+from models.actions.stack_accept_counter import PassPriority
 from models.constants import KW, Zone
 from models.cost import SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE
@@ -17,6 +18,25 @@ class TestCardsQRS(unittest.TestCase):
     def setUp(self):
         self.g = TestGame()
         self.gs = self.g.gs
+
+    def test_quarum_trench_gnomes(self):
+        """{T}: If target Plains is tapped for mana, it produces colorless mana instead of white mana.
+            (This effect lasts indefinitely.)"""
+        card = self.g.battlefield('quarum-trench-gnomes')
+        aa = card.activated_abilities[0]
+        plains = self.g.battlefield('plains', owner=1)
+
+        self.g.activate_ability(aa, plains)
+        self.assertEqual(['C'], plains.mana_produced)
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual(['C'], plains.mana_produced)
+
+        self.gs.pile_mgr.destroy(plains)
+        self.assertEqual(['C'], plains.mana_produced)
+
+        self.gs.pile_mgr.reanimate(plains)
+        self.assertEqual(['C'], plains.mana_produced)
 
     def test_rag_man(self):
         """{BBB}, {T}: Opp reveals their hand and discards a creature card at random. Activate only during your turn"""
@@ -291,6 +311,35 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(0, target.owner_id)
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(1, target.owner_id)
+
+    def test_rust(self):
+        """Counter target activated ability from an artifact source. (Mana abilities can't be targeted.)"""
+        self.gs.hands[0].clear()
+        card = self.g.hand('rust')
+        standard_counterspell = self.g.hand('counterspell')
+        self.g.mana('GUU')
+        self.g.mana('W' * 10, owner=1)
+        self.g.next_turn(True)
+
+        # spell is an artifact but not an AA
+        artifact = self.g.hand('relic-barrier', owner=1)  # {T}: Tap target artifact
+        aa = artifact.activated_abilities[0]
+        CastWithNoSpellEffect(1, self.gs, artifact).play()
+        castable_cards = [a.source for a in self.gs.get_available_actions(0) if isinstance(a, AbilityPipeline)]
+        self.assertIn(standard_counterspell, castable_cards)
+        self.assertNotIn(card, castable_cards)
+
+        PassPriority(0, self.gs).play()
+        PassPriority(1, self.gs).play()
+        self.assertEqual([], self.gs.action_stack.actions)
+
+        # spell is an artifact activated ability
+        target_for_aa = self.g.battlefield('ornithopter', owner=1)
+        pipeline = AbilityPipeline(1, self.gs, artifact, eff_spec=aa.eff_spec, targets=[target_for_aa])
+        pipeline.advance()
+        castable_cards = [a.source for a in self.gs.get_available_actions(0) if isinstance(a, AbilityPipeline)]
+        self.assertNotIn(standard_counterspell, castable_cards)
+        self.assertIn(card, castable_cards)
 
     def test_sacrifice(self):
         """Sac a creature to add {B} = to sac'd card MV"""

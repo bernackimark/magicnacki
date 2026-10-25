@@ -21,7 +21,8 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     SacrificeOnCast, SafeHaven, ShapeshifterCast, Subdue, SwordsToPlowshares, Timetwister, WallOfWonder, \
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
-    TawnossCoffin, Reverberation, Recall, RelicBind, RemoveEnchantments, VolcanicEruption, SorrowsPath
+    TawnossCoffin, Reverberation, Recall, RelicBind, RemoveEnchantments, VolcanicEruption, SorrowsPath, \
+    QuarumTrenchGnomes
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -107,6 +108,7 @@ MAP: dict[str, list[EffSpec]] = {
     'pyrotechnics': [Spell(DealDamage(1), TargetSpec(CF.all_creatures_and_players(), 1, 4,
                                                      allow_duplicate_targets=True))],
     'quagmire': [Static(WalkRuleRemoved(KW.SWAMPWALK))],
+    'quarum-trench-gnomes': [Activated('T', QuarumTrenchGnomes(), CF.plains())],
     'rabid-wombat': [Static(RabidWombat())],
     'radjan-spirit': [Activated('T', KWAModEffect('remove', KW.FLYING, True), CF.creatures())],
     'rag-man': [Activated('BBBT', RagMan(), CF.opp(), allowed_p_turn_func=CF.owner())],
@@ -153,6 +155,7 @@ MAP: dict[str, list[EffSpec]] = {
     'royal-assassin': [Activated('T', Destroy(), CF.tapped_creatures())],
     'rubinia-soulsinger': [Activated('T', Steal(return_on_untap=True), CF.opp_creatures()), Triggered(OptionalUntap())],
     'rukh-egg': [GenTrig(On(DiesEvent).where(EC().card_is_source()).then(CreateTokenCreature('rukh')))],
+    'rust': [Spell(CounterSpell(), CF.spells_artifact_aa())],
     'sacrifice': [Spell(SacrificeOnCast(), extra_costs=[SacCardCost(CF.your_creatures())])],
     'safe-haven': [Activated('2T', SafeHaven(), CF.your_creatures()), Triggered(SafeHavenUpkeep())],
     'sage-of-lat-nam': [Activated('T', DrawCards(), CF.owner(), extra_costs=[SacCardCost(CF.your_artifacts())])],

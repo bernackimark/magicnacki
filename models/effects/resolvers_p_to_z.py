@@ -16,7 +16,7 @@ from models.effects.listeners_generic import PreventAllDamageByEOT, DestroyAtEnd
     RedirectNextDamageToDamageSourceOwnerEOT
 from models.effects.resolvers_generic import Reveal, CreateTokenCreature
 from models.events_all import DamageResolvedEvent
-from models.game_card.modifiers import KWAMod, PTMod, SubTypeMod
+from models.game_card.modifiers import KWAMod, PTMod, SubTypeMod, ManaProdMod
 from models.presentation_request import PresentationReqType
 from models.systems.mana import ManaCost
 from models.utils import flip
@@ -105,6 +105,16 @@ class PrimalClay(Resolver):
         kwa.append('Defender')
         s._base_kwa = kwa
         gs.pile_mgr.cast(s)
+
+class QuarumTrenchGnomes(Resolver):
+    """{T}: If target Plains is tapped for mana, it produces colorless mana instead of white mana.
+    (This effect lasts indefinitely.)"""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        add_colorless = ManaProdMod(s=source, expires='PERPETUAL', item='C', add_or_remove='add')
+        remove_white = ManaProdMod(s=source, expires='PERPETUAL', item='W', add_or_remove='remove')
+        t.modifiers.append(add_colorless)
+        t.modifiers.append(remove_white)
 
 class RagMan(Resolver):
     """Opponent reveals their hand and discards a creature card at random. Activate only during your turn."""
