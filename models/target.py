@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
     from models.actions.ability_pipeline import AbilityPipeline
+    from models.effects.base import EffSpec
 
 
 def create_target_text(targets: int | GameCard | AbilityPipeline | tuple | list | None):
@@ -44,7 +45,7 @@ class TargetSpec:
     max_cnt: int | None = 1
     allow_duplicate_targets: bool = False  # used in pyrotechnics/fireball where we always add 1 damage at a time
 
-    def get_targets(self, gs: GameState, source: GameCard) -> list[GameCard | int | None]:
+    def get_targets(self, gs: GameState, source: GameCard, eff_spec: EffSpec = None) -> list[GameCard | int | None]:
         """Execute the effect's filter func;
         If target is an int, let it through; if target is a GameCard, check can_target();
         If there are enough targets, return all targets, else return []"""
@@ -54,11 +55,11 @@ class TargetSpec:
         if isinstance(candidates, int):
             return [candidates]
         if isinstance(candidates, GameCard):
-            return [candidates] if gs.perm_querier.can_target(candidates, source) else []
+            return [candidates] if gs.perm_querier.can_target(candidates, source, eff_spec) else []
         for c in candidates:
             if isinstance(c, int):
                 legal_targets.append(c)
                 continue
-            if gs.perm_querier.can_target(c, source):
+            if gs.perm_querier.can_target(c, source, eff_spec):
                 legal_targets.append(c)
         return legal_targets if len(legal_targets) >= self.min_cnt else []

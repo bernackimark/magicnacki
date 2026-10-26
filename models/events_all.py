@@ -78,6 +78,7 @@ class CanTargetQueryEvent(Event):
     source: GameCard
     target: GameCard | int
     permission: bool | None = None
+    eff_spec: EffSpec | None = None
 
 @dataclass
 class CanUntapQueryEvent(Event):

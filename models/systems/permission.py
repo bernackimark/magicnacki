@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
+    from models.effects.base import EffSpec
 
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanTargetQueryEvent, \
     CanUntapQueryEvent, CanDamageQueryEvent
@@ -38,10 +39,10 @@ class PermissionQuerier:
         self._gs.event_mgr.emit(event)
         return event.permission is not False
 
-    def can_target(self, target: GameCard | int, source: GameCard) -> bool:
+    def can_target(self, target: GameCard | int, source: GameCard, eff_spec: EffSpec | None = None) -> bool:
         if isinstance(target, int):
             return True
-        event = CanTargetQueryEvent(source=source, target=target)
+        event = CanTargetQueryEvent(source=source, target=target, eff_spec=eff_spec)
         self._gs.event_mgr.emit(event)
         return False if event.permission is False else True
 

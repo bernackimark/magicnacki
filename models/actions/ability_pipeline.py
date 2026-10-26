@@ -86,7 +86,7 @@ class AbilityPipeline(Action):
 
         target_spec = self.eff_spec.target_spec
         if target_spec:
-            targets = target_spec.get_targets(self.gs, self.source)
+            targets = target_spec.get_targets(self.gs, self.source, self.eff_spec)
             if len(targets) < target_spec.min_cnt:
                 return False
 
@@ -120,7 +120,7 @@ class AbilityPipeline(Action):
             self.gs.choice_mgr.queue(ModeChoice2(self))
         elif self.needs_targets:
             print('Entering Needs Targets')
-            targets = self.eff_spec.target_spec.get_targets(self.gs, self.source)
+            targets = self.eff_spec.target_spec.get_targets(self.gs, self.source, self.eff_spec)
             options = [CO(f'Add target: {t}', lambda tar=t: self._add_target(tar))
                        for t in targets if t not in self.targets]
             self.gs.choice_mgr.queue(ChoiceAction(options))
@@ -264,6 +264,7 @@ class AbilityPipeline(Action):
         from models.game_card.game_card import GameCard
         if not isinstance(target, GameCard) or self.eff_spec.target_spec is None:
             return True
-        if isinstance(target, GameCard) and target not in self.eff_spec.target_spec.get_targets(self.gs, self.source):
+        if isinstance(target, GameCard) and target not in self.eff_spec.target_spec.get_targets(self.gs, self.source,
+                                                                                                self.eff_spec):
             return False
         return True
