@@ -113,6 +113,31 @@ class CantBeTargetedByAuras(Listener):
             return
         event.permission = False
 
+class CantBeTargetedBySpells(Listener):
+    """Subject card(s) can't be targeted by spells -- but can be targeted by acitvated abilities"""
+    listens_to = CanTargetQueryEvent
+
+    def __init__(self, protected_card_func: Callable[[GameState, GameCard], GameCard] = None,
+                 protected_card: GameCard | None = None, condition_func: Callable[[GameState, GameCard], bool] = None):
+        self.protected_card_func = protected_card_func
+        self.protected_card = protected_card
+        self.condition_func = condition_func
+
+    def initialize(self, gs: GameState, source: GameCard, target: Any):
+        if not self.protected_card_func and self.protected_card is None:
+            self.protected_card = target[0]
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
+        if not event.eff_spec or not event.eff_spec.is_spell:
+            return
+        protected_cards = [self.protected_card] if self.protected_card else self.protected_card_func(gs, source)
+        protected_cards = [protected_cards] if not isinstance(protected_cards, list) else protected_cards
+        if event.target not in protected_cards:
+            return
+        if self.condition_func and not self.condition_func(gs, source):
+            return
+        event.permission = False
+
 class CantBlockEOT(Listener):
     """Card can't block this turn; target can be provided at init else defaults to source"""
     listens_to = CanBlockQueryEvent

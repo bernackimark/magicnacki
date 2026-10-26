@@ -102,6 +102,42 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(gy2, self.gs.hands[0])
         self.assertIsNone(self.gs.pending_choice)
 
+    def test_reflecting_mirror(self):
+        """{XX}, {T}: Change the target of target spell from you to your opponent, X = MV of that spell"""
+        card = self.g.battlefield('reflecting-mirror')
+        aa = card.activated_abilities[0]
+        self.g.mana('W' * 30)
+        self.g.mana('RR')
+        bolt_1 = self.g.hand('lightning-bolt')
+        random_creature = self.g.battlefield('savannah-lions')
+
+        # can't activate: bolt doesn't target RM's owner
+        bolt_v_creature = AbilityPipeline(0, self.gs, bolt_1, bolt_1.abilities[0], targets=[random_creature])
+        bolt_v_creature.advance()
+        self.assertFalse(aa.eff_spec.effect.can_activate(self.gs, card))  # spell must target you
+        bolt_v_creature.resolve_ability()
+
+        # can activate: bolt targets RM's owner & there's enough mana
+        bolt_2 = self.g.hand('lightning-bolt')
+        bolt_v_you = AbilityPipeline(0, self.gs, bolt_2, bolt_2.abilities[0], targets=[0])
+        bolt_v_you.advance()
+        bolt_on_stack = self.gs.action_stack.last_action
+        self.assertTrue(aa.eff_spec.effect.can_activate(self.gs, card))  # enough mana & spell targets you
+        aa_pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[bolt_on_stack], x_value=1)
+        aa_pipeline.advance()
+        aa_pipeline.resolve_ability()
+        bolt_v_you.resolve_ability()
+        self.assertEqual([20, 17], self.gs.life)
+
+        # can't activate: not enough mana (XXT) to activate
+        self.g.next_turn()
+        [self.gs.pile_mgr.destroy(c) for c in self.gs.card_filter.on_player_board(0).lands().result()]
+        self.g.mana('R')
+        bolt_3 = self.g.hand('lightning-bolt')
+        bolt_v_you = AbilityPipeline(0, self.gs, bolt_3, bolt_3.abilities[0], targets=[0])
+        bolt_v_you.advance()
+        self.assertFalse(aa.eff_spec.effect.can_activate(self.gs, card))
+
     def test_reincarnation(self):
         """Choose target creature. When that creature dies EOT, reanimate a creature from that creature's graveyard"""
         card = self.g.hand('reincarnation')

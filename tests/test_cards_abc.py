@@ -347,6 +347,27 @@ class TestCardsAtoC(unittest.TestCase):
         self.assertEqual((2, 4), (globally_pumped_creature.power, globally_pumped_creature.toughness))
         self.assertIn(globally_pumped_creature, self.gs.boards[1])
 
+    def test_bronze_horse(self):
+        """If you control another creature, prevent all damage that would be dealt to BH by spells that target it"""
+        # WARNING: this is a shortcut for "is the source a spell", since DamageProposedEvent doesn't carry eff_spec
+        # This incorrectly handles instants/sorceries that deal damage w/o targeting
+        card = self.g.battlefield('bronze-horse')  # 4/4
+        bolt_1 = self.g.hand('lightning-bolt')
+
+        self.g.cast_and_accept(bolt_1, card, eff_spec=bolt_1.abilities[0])  # BH's ability is off
+        self.assertEqual(3, card.damage_received_this_turn)
+
+        self.g.battlefield('grizzly-bears')  # BH's ability is on
+        bolt_2 = self.g.hand('lightning-bolt')
+        self.g.cast_and_accept(bolt_2, card, eff_spec=bolt_2.abilities[0])
+        self.assertEqual(3, card.damage_received_this_turn)
+
+        prodigal = self.g.battlefield('prodigal-sorcerer')
+        aa = prodigal.activated_abilities[0]
+        self.g.activate_ability(aa, card)  # BH's ability only covers spells not AAs
+        self.assertIn(card, self.g.gy[0])
+
+
     def test_candelabra_of_tawnos(self):
         """{X}, {T}: Untap X target lands"""
         card = self.g.battlefield('candelabra-of-tawnos')

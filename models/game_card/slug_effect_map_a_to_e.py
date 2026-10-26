@@ -34,7 +34,7 @@ from ..effects.listeners_upkeep import CocoonUpkeep, CurseArtifact, Cyclone, Dem
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep, ChainsOfMephistopheles
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
-from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr
+from ..effects.listeners_damage import Backfire, ElHajjaj, EyeForAnEye, BloodOfTheMartyr, BronzeHorse
 from ..effects.listeners_combat import AislingLeprechaun
 from ..effects.listeners_generic import UntapRemovesPumpFromAnotherCard, OptionalUntap, \
     PreventNextDamageTo, PreventNextDamageBy, PayManaToUntapUpkeep
@@ -177,6 +177,7 @@ MAP: dict[str, list[EffSpec]] = {
     'brass-man': [Triggered(DoesntUntapAtUntap(CF.self())),
                   Triggered(PayManaToUntapUpkeep('1', CF.self()))],
     'brine-hag': [Triggered(BrineHag())],
+    'bronze-horse': [Static(BronzeHorse())],
     'brothers-of-fire': [Activated('T', Do(DealDamage(1), DealDamage(1, CF.owner())), CF.all_creatures_and_players())],
     'burrowing': [Spell(KWAModEffect('add', KW.ISLANDWALK), CF.creatures())],
     'candelabra-of-tawnos': [Activated('XT', UntapCards(), TargetSpec(CF.your_tapped_lands(), 1, None),

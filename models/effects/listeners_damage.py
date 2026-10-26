@@ -6,7 +6,7 @@ from models.choice_options import CO
 from models.constants import KW
 from models.game_card.counter_tokens import PLUS_ONE, VITALITY
 from models.effects.base import Listener
-from models.events_all import DamageProposedEvent, DamageResolvedEvent
+from models.events_all import DamageProposedEvent, DamageResolvedEvent, Event
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -31,6 +31,20 @@ class BloodOfTheMartyr(Listener):
     @staticmethod
     def redirect(source: GameCard, event: DamageProposedEvent):
         event.target = source.owner_id
+
+class BronzeHorse(Listener):
+    """If you control another creature, prevent all damage that would be dealt to BH by spells that target it"""
+    listens_to = DamageProposedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        # WARNING: this is a shortcut for "is the source a spell", since DamageProposedEvent doesn't carry eff_spec
+        # This incorrectly handles instants/sorceries that deal damage w/o targeting
+        if not [c for c in gs.card_filter.on_player_board(source.owner_id).creatures().result() if c is not source]:
+            return
+        if 'Sorcery' not in event.source.card_types and 'Instant' not in event.source.card_types:
+            return
+        event.prevented += event.remaining
+        event.remaining = 0
 
 class Forcefield(Listener):
     """(1): Next time an unblocked creature of your choice would deal you combat damage this turn, reduce damage to 1"""

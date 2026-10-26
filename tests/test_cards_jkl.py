@@ -305,6 +305,19 @@ class TestCardsJKL(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(1, len(creature.activated_abilities))  # verify the ability remains on card
 
+    def test_lurker(self):
+        """This creature can't be the target of spells (not AAs) unless it attacked or blocked this turn"""
+        card = self.g.battlefield('lurker')
+        bolt = self.g.hand('lightning-bolt')
+        orcish_artillery = self.g.battlefield('orcish-artillery')  # {T}: do damage to any target
+        aa = orcish_artillery.activated_abilities[0]
+
+        self.assertFalse(self.gs.perm_querier.can_target(card, bolt, eff_spec=bolt.abilities[0]))
+        self.assertTrue(self.gs.perm_querier.can_target(card, orcish_artillery, eff_spec=aa.eff_spec))
+
+        self.g.combat(card, None)
+        self.assertTrue(self.gs.perm_querier.can_target(card, bolt, eff_spec=bolt.abilities[0]))
+
 
 if __name__ == '__main__':
     unittest.main()

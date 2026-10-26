@@ -17,6 +17,7 @@ A_FUNCS: [str, Callable[[GameState, GameCard], tuple[int | None]]] = {
 C_FUNCS: [str, Callable[[GameState, GameCard], bool]] = {
     'host_is_basic_mountain': lambda gs, s: s.host.props.slug == 'mountain',
     'self_is_not_attacking': lambda gs, s: s not in gs.card_filter.attackers().result(),
+    'self_is_not_combatant': lambda gs, s: s not in gs.card_filter.combatants().result(),
     'self_is_untapped': lambda gs, s: not s.is_tapped,
     'no_lands': lambda gs, s: len(CF.lands()(gs, s)) == 0,
     'opp_has_island': lambda gs, s: gs.card_filter.on_player_board(flip(s.owner_id)).islands().result(),
@@ -538,6 +539,10 @@ class CF:
                               if (('Instant' in spell.types or 'Aura' in spell.types)
                                   and any(isinstance(t, GameCard) and t.owner_id == s.owner_id
                                           and t.zone == Zone.BATTLEFIELD for t in spell.targets))]
+
+    @staticmethod
+    def spells_targeting_you():
+        return lambda gs, s: [spell for spell in gs.action_stack.spells if s.owner_id in spell.targets]
 
     @staticmethod
     def stone_giant():

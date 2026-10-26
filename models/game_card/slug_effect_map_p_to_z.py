@@ -22,7 +22,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
     TawnossCoffin, Reverberation, Recall, RelicBind, RemoveEnchantments, VolcanicEruption, SorrowsPath, \
-    QuarumTrenchGnomes
+    QuarumTrenchGnomes, ReflectingMirror
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -126,6 +126,7 @@ MAP: dict[str, list[EffSpec]] = {
     'red-elemental-blast': [Spell(CounterSpell(), CF.blue_spells()), Spell(Destroy(), CF.blue_permanents())],
     'red-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('R')],
     'red-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_RED), CF.creatures())],
+    'reflecting-mirror': [Activated('XXT', ReflectingMirror(), CF.spells_targeting_you())],
     'regeneration': [Activated('G', Regenerate(), CF.host())],
     'regrowth': [Spell(Bounce(), CF.cards_in_your_graveyard())],
     'reincarnation': [Spell(Reincarnation(), CF.creatures())],

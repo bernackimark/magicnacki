@@ -9,7 +9,8 @@ from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, I
     LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BecomeBasicLand
 from models.effects.listeners_permission import LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
-    PreventRegenerationEOT, CantBeTargetedByAuras, Lure, MarblePriestForcesBlock, CantAttackIfAttackedLastTurn
+    PreventRegenerationEOT, CantBeTargetedByAuras, Lure, MarblePriestForcesBlock, CantAttackIfAttackedLastTurn, \
+    CantBeTargetedBySpells
 from .amt_funcs import AmtF
 from .event_conditions import EC
 from .target_funcs import ET
@@ -298,6 +299,7 @@ MAP: dict[str: list[EffSpec]] = {
     'lord-of-the-pit': [Triggered(LordOfThePitUpkeep())],
     'lord-magnus': [Static(WalkRuleRemoved(KW.PLAINSWALK)), Static(WalkRuleRemoved(KW.FORESTWALK))],
     'lure': [Spell(Lure(), CF.creatures())],
+    'lurker': [Static(CantBeTargetedBySpells(CF.self(), condition_func=C_FUNCS['self_is_not_combatant']))],
     'magnetic-mountain': [Triggered(DoesntUntapAtUntap(CF.in_turn_player_tapped_blue_creatures())),
                           Triggered(PayManaToUntapUpkeep('4', CF.in_turn_player_tapped_blue_creatures()))],
     'mana-clash': [Spell(ManaClash())],

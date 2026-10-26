@@ -194,6 +194,29 @@ class Recall(Resolver):
                       lambda c=card: self._reanimate(c, state)) for card in state.graveyard]
         state.gs.choice_mgr.queue(ChoiceAction(options))
 
+class ReflectingMirror(Resolver):
+    """{XX}, {T}: Change the target of target spell from you to your opponent, X = MV of that spell"""
+    def can_activate(self, gs: GameState, source: GameCard) -> bool:
+        for spell in gs.action_stack.spells:
+            if source.owner_id not in spell.pipeline.targets:
+                continue
+            spell_mv = spell.pipeline.source.props.mana_value
+            available_mana = sum(gs.mana_pools[source.owner_id].available_mana.values())
+            if available_mana // 2 >= spell_mv:
+                return True
+        return False
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        from models.actions.ability_pipeline_support import AbilityAction
+        if not isinstance(t, AbilityAction):
+            print(type(t))
+            raise ValueError(f"{source.props.name}'s target must be an Ability; received target: {t}")
+        for idx, target in enumerate(t.pipeline.targets):
+            if target == source.owner_id:
+                t.pipeline.targets[idx] = flip(source.owner_id)
+                print('ZZZ')
+                print(t.pipeline.targets[idx])
+
 class RelicBind(Resolver):
     """... choose one - * This Aura deals 1 damage to target player. * Target player gains 1 life."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
