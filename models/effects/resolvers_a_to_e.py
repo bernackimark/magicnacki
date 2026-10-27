@@ -373,6 +373,17 @@ class DanceOfMany(Resolver):
         gs.event_mgr.register_card(the_copy)
         gs.event_mgr.register(LTBTandem([source, the_copy]), source)
 
+class Detonate(Resolver):
+    """Destroy target artifact with MV X (no regen allowed). D deals X damage to that artifact's controller.
+    Note: if X does not match the target MV, the effect will fizzle."""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        x = context.x_value
+        if x != t.props.mana_value:
+            return
+        gs.pile_mgr.destroy(t, allow_regeneration=False)
+        gs.apply_damage(source, x, t.owner_id)
+
 class DiamondValley(Resolver):
     """{T}, Sacrifice a creature: You gain life equal to the sacrificed creature's toughness"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:

@@ -92,6 +92,30 @@ class GaseousForm(Listener):
         event.prevented += event.remaining
         event.remaining = 0
 
+class NovaPentacleListener(Listener):
+    """{3}, {T}: The next time a source of your choice would deal damage to you this turn,
+    that damage is dealt to target creature of an opponent's choice instead"""
+    listens_to = DamageProposedEvent
+    expires = 'EOT'
+
+    def __init__(self, damage_dealer: GameCard, damage_receiver: int):
+        self.damage_dealer = damage_dealer
+        self.damage_receiver = damage_receiver
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageProposedEvent) -> None:
+        if event.source is not self.damage_dealer or event.target != self.damage_receiver:
+            return
+        creatures = gs.card_filter.in_play().creatures().result()
+        if not creatures:
+            return
+        options = [CO(f'Redirect damage to {c}', lambda creature=c: self._redirect(event, creature)) for c in creatures]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _redirect(event: DamageProposedEvent, creature: GameCard):
+        event.target = creature
+        print("I am redirecting damage to", event.target)
+
 class ReverseDamage(Listener):
     """The next time a source of your choice would deal damage to you this turn, prevent that damage.
     You gain life equal to the damage prevented this way."""

@@ -412,6 +412,20 @@ class ManaVortexUpkeep(Listener):
         options = [CO(f'Sac {land}', lambda: gs.pile_mgr.sacrifice(land)) for land in your_lands]
         gs.choice_mgr.queue(ChoiceAction(options))
 
+class NetherShadow(Listener):
+    """At your upkeep, if NS is in your gy w >=3 creatures above it, you may put this card onto the battlefield"""
+    listens_to = UpkeepEvent
+    expires = 'PERPETUAL'
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if event.active_player != source.owner_id:
+            return
+        for idx, creature in enumerate(gs.card_filter.in_player_graveyard(source.owner_id).creatures().result()[::-1]):
+            if idx >= 3 and creature is source:
+                options = [CO(f'Reanimate {source}', lambda: gs.pile_mgr.reanimate(source))]
+                gs.choice_mgr.queue(ChoiceAction(options, may=True))
+                return
+
 class PowerLeak(Listener):
     """At host owner's upkeep, host owner may pay 0, 1, or 2 mana. PL deals 2 - the mana paid damage to host owner"""
     listens_to = UpkeepEvent

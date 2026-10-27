@@ -112,6 +112,42 @@ class TestCardsDEF(unittest.TestCase):
         self.g.combat(attacker, host)
         self.assertIn(host, self.gs.pile_mgr.boards[0])
 
+    def test_detonate(self):
+        """Destroy target artifact with MV X (no regen allowed). D deals X damage to that artifact's controller.
+        Note: if X does not match the target MV, the effect will fizzle."""
+        self.gs.hands[0].clear()
+        card = self.g.hand('detonate')  # XR
+        self.g.mana('R')
+        mox = self.g.battlefield('mox-emerald', owner=1)  # MV=0
+
+        # The target's MV matches X, proceed.  X=0
+        pipeline_v_mox = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=0, targets=[mox])
+        pipeline_v_mox.advance()
+        pipeline_v_mox.resolve_ability()
+        self.assertIn(mox, self.g.gy[1])
+        self.assertEqual(20, self.gs.life[1])
+
+        # The target's MV does not match X, fizzle
+        card = self.g.hand('detonate')  # XR
+        self.g.mana('R')
+        juggernaut = self.g.battlefield('juggernaut', owner=1)  # MV=4
+        pipeline_v_juggernaut = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=0, targets=[juggernaut])
+        pipeline_v_juggernaut.advance()
+        pipeline_v_juggernaut.resolve_ability()
+        self.assertNotIn(juggernaut, self.g.gy[1])
+        self.assertEqual(20, self.gs.life[1])
+
+        # The target's MV matches X, proceed.  X>1
+        self.gs.hands[0].clear()
+        card = self.g.hand('detonate')  # XR
+        self.g.mana('RRR')
+        mine = self.g.battlefield('howling-mine', owner=1)  # MV=2
+        pipeline_v_mine = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=2, targets=[mine])
+        pipeline_v_mine.advance()
+        pipeline_v_mine.resolve_ability()
+        self.assertIn(mine, self.g.gy[1])
+        self.assertEqual(18, self.gs.life[1])
+
     def test_disharmony(self):
         """Cast this spell only during combat before blockers are declared.
         Untap target attacking creature and remove it from combat. Gain control of that creature EOT."""

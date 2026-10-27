@@ -21,7 +21,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
     Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire, FrankensteinsMonster, \
-    Metamorphosis
+    Metamorphosis, NovaPentacle
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -39,7 +39,7 @@ from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, Lev
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import LandEquilibrium
 from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, HazezonTamarTokenCreation, LandTax, \
-    LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, LeviathanUpkeep, Halfdane, LivingArtifactUpkeep
+    LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, LeviathanUpkeep, Halfdane, LivingArtifactUpkeep, NetherShadow
 from ..effects.listeners_tap_untap import Kudzu
 from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import MijaeDjinn, GiantShark, Johan, InfiniteAuthorityCombatEnd, FloralSpuzzem, \
@@ -352,6 +352,7 @@ MAP: dict[str: list[EffSpec]] = {
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), CF.all_players())],
     'necropolis': [Activated('', Necropolis(), extra_costs=[ExileCardCost(CF.creatures_in_your_graveyard())])],
+    'nether-shadow': [Triggered(NetherShadow())],
     'nether-void': [Triggered(PayManaOrCounterSpellListener('3'))],
     'nettling-imp': [Activated('T', NettlingImp(), CF.non_wall_creatures_wo_summoning_sickness())],
     'nevinyrrals-disk': [Spell(TapCard(), CF.self()),
@@ -362,6 +363,7 @@ MAP: dict[str: list[EffSpec]] = {
                             then(DiscardHand()))],
     'nightmare': [Static(SelfPTEqualsFuncLen(CF.your_swamps()))],
     'northern-paladin': [Activated('WW', Destroy(), CF.black_permanents())],
+    'nova-pentacle': [Activated('3T', NovaPentacle(), CF.in_play_or_spell_on_stack())],
     'oasis': [Activated('T', PreventNextDamageBy(preventable_amt=1), CF.creatures())],
     'obelisk-of-undoing': [Activated('6T', Bounce(), CF.perms_you_own_and_control())],
     'old-man-of-the-sea': [Activated('T', Steal(return_on_untap=True),

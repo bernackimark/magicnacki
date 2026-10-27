@@ -18,7 +18,7 @@ from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
     Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, \
-    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve, AladdinsLamp, DrainLife
+    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve, AladdinsLamp, DrainLife, Detonate
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
@@ -278,6 +278,7 @@ MAP: dict[str, list[EffSpec]] = {
     'desert': [Activated('T', AddMana('C'), is_mana_ability=True),
                Activated('T', DealDamage(1), CF.attackers(), allowed_phases=[Phase.COMBAT_END])],
     'desert-twister': [Spell(Destroy(), CF.permanents())],
+    'detonate': [Spell(Detonate(), CF.artifacts())],
     'diabolic-machine': [Activated('3', Regenerate(), CF.self())],
     'diamond-valley': [Activated('T', DiamondValley(), extra_costs=[SacCardCost(CF.your_creatures())])],
     'dingus-egg': [GenTrig(On(ZoneChangeEvent).where(EC().from_board().to_gy().card_is_land()).

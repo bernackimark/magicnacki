@@ -177,6 +177,26 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(card.toughness, 6)
         self.assertIn(air_elemental, self.gs.exiles[0])
 
+    def test_nether_shadow(self):
+        """At your upkeep, if NS is in your gy w >=3 creatures above it, you may put this card onto the battlefield"""
+        # TODO: WARNING: if this card never goes to the battlefield, its Listener is never registered
+        card = self.g.battlefield('nether-shadow')
+        self.gs.pile_mgr.destroy(card)
+        self.g.graveyard('ornithopter')
+        self.g.graveyard('grizzly-bears')
+
+        # not enough creatures above NS
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertIsNone(self.gs.pending_choice)
+
+        # enough above NS, give owner option to reanimate
+        self.g.graveyard('shivan-dragon')
+        print('Dragon in gy')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        reanimate_nether_shadow = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(reanimate_nether_shadow)
+        self.assertIn(card, self.gs.boards[0])
+
     def test_nether_void(self):
         """Whenever a player casts a spell, counter it unless that player pays {3}"""
         self.g.battlefield('nether-void')
@@ -225,6 +245,38 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.activate_ability(aa, legal_target_2)
         self.gs.event_mgr.emit(EndStepEvent(1))
         self.assertIn(legal_target_2, self.g.gy[1])
+
+    def test_nova_pentacle(self):
+        """{3}, {T}: The next time a source of your choice would deal damage to you this turn,
+        that damage is dealt to target creature of an opponent's choice instead"""
+        [h.clear() for h in self.gs.hands]
+        card = self.g.battlefield('nova-pentacle')
+        aa = card.activated_abilities[0]
+        self.g.mana('WWW')
+        random_creature = self.g.battlefield('grizzly-bears', owner=1)
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('R', owner=1)
+
+        self.g.next_turn(True)
+        bolt_pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[0])
+        bolt_pipeline.advance()
+
+        nova_pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, targets=[bolt_pipeline])
+        nova_pipeline.advance()
+        nova_pipeline.resolve_ability()
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+
+        # The Listener is created, listening to DamageProposedEvent ...
+        # however: that event has already been emitted; we don't trigger DamageProposedEvent a second time,
+        # so NovaPentacle's on_event(DamageProposedEvent) is never called ...
+        # This isn't specific to this Effect its true for any Listener so ...
+        # Create this test again in a generic test script
+
+        bolt_pipeline.resolve_ability()
+        self.assertIn(random_creature, self.g.gy[1])
+        self.assertEqual([20, 20], self.gs.life)
+
+        raise ValueError()
 
     def test_obelisk_of_undoing(self):
         """{6}, {T}: Return target permanent you both own and control to your hand"""

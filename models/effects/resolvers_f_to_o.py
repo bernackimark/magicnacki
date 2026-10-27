@@ -606,3 +606,12 @@ class NettlingImp(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         t.modifiers.append(KWAMod(item=KW.GOAD, s=source, expires='EOT'))
         gs.event_mgr.register(DestroyAtEndStepIfItDidntAttack(t), source)
+
+class NovaPentacle(Resolver):
+    """{3}, {T}: The next time a source of your choice would deal damage to you this turn,
+    that damage is dealt to target creature of an opponent's choice instead"""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        from models.effects.listeners_damage import NovaPentacleListener
+        listener = NovaPentacleListener(damage_dealer=t, damage_receiver=source.owner_id)
+        gs.event_mgr.register(listener, source)
