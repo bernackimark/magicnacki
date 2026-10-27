@@ -4,13 +4,27 @@ from typing import TYPE_CHECKING
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.effects.base import Listener
-from models.events_all import ZoneChangeEvent
+from models.events_all import ZoneChangeEvent, Event, CastResolvedEvent
 from models.constants import Zone
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
     from game_state import GameState
 
+
+class FastbondDamager(Listener):
+    """... For any land after the first in a turn, FB deals 1 damage to you."""
+    listens_to = ZoneChangeEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: ZoneChangeEvent) -> None:
+        if gs.player_turn_idx != source.owner_id or event.card.owner_id != source.owner_id:
+            return
+        if 'Land' not in event.card.card_types:
+            return
+        lands_played = [e for e in gs.event_mgr.get_events(gs.turn_mgr.turn_number, CastResolvedEvent)
+                        if e.owner_id == source.owner_id and 'Land' in e.card.card_types]
+        if lands_played:
+            gs.apply_damage(source, 1, source.owner_id)
 
 class LandEquilibrium(Listener):
     """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,

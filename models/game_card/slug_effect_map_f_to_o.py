@@ -35,9 +35,9 @@ from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
     max_x_from_printed_card, On
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos, \
-    InvokePrejudice, LibraryOfLengMaxHandSize
+    InvokePrejudice, LibraryOfLengMaxHandSize, FastbondMaxLands
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
-from ..effects.listeners_zone_change import LandEquilibrium
+from ..effects.listeners_zone_change import LandEquilibrium, FastbondDamager
 from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, HazezonTamarTokenCreation, LandTax, \
     LordOfThePitUpkeep, ManaVortexUpkeep, GiantSlugUpkeep, LeviathanUpkeep, Halfdane, LivingArtifactUpkeep, NetherShadow
 from ..effects.listeners_tap_untap import Kudzu
@@ -63,6 +63,7 @@ MAP: dict[str: list[EffSpec]] = {
     'farmstead': [Spell(EmptyResolver(), CF.lands()),
                   Activated('WW', GainLife(), CF.host_owner(), allowed_phases=[Phase.UPKEEP],
                             allowed_p_turn_func=CF.host_owner(), max_activations_per_turn=1)],
+    'fastbond': [Spell(Do(Register(FastbondMaxLands), Register(FastbondDamager)))],
     'fasting': [Triggered(Fasting(), CF.self()),
                 GenTrig(On(DrawCardEvent).where(EC().you_are_drawer()).then(Destroy(CF.self())))],
     'fear': [Spell(UnblockableCondition(CF.host(), CF.non_artifact_non_black_creatures()), CF.creatures())],

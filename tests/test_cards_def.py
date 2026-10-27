@@ -348,6 +348,36 @@ class TestCardsDEF(unittest.TestCase):
         self.g.combat(attacker, None)
         self.assertEqual([18, 18], self.gs.life)
 
+    def test_fastbond(self):
+        """You may play any number of lands on each of your turns.
+        For any land after the first in a turn, F deals 1 damage to you."""
+        [h.clear() for h in self.gs.hands]
+        self.g.mana('G')
+        f1 = self.g.hand('forest')
+        f2 = self.g.hand('forest')
+        card = self.g.hand('fastbond')
+
+        print('Next turn')
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0], add_lots_of_mana=False)
+        pass_priority = self.gs.get_available_actions(0)[0]
+        pass_priority.play()
+        print('I played the Fastbond')
+
+        play_f1 = self.gs.get_available_actions(0)[1]
+        play_f1.play()
+
+        # I'm not sure .play() is correct ... that doesn't allow P0 to play any more cards that turn and passes turn
+
+        self.assertEqual(0, self.gs.player_turn_idx)
+        self.assertEqual(0, self.gs.action_on_idx)
+
+        print('A', self.gs.action_on_idx, self.gs.get_available_actions(0))
+        print(self.gs.boards[0])
+        print(self.gs.get_available_actions(0))
+        raise ValueError()
+
     def test_fasting(self):
         """At your upkeep, put a hunger counter on F. Destroy F if it has >=5 hunger counters.
         If you would begin your draw step, you may skip that step instead to gain 2 life.

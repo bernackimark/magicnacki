@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, \
-    StackAdditionEvent, MaxHandSizeQueryEvent, Event
+    StackAdditionEvent, MaxHandSizeQueryEvent, Event, MaxLandPlayedQueryEvent
 from models.utils import flip
 
 
@@ -140,6 +140,14 @@ class LibraryOfLengMaxHandSize(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: MaxHandSizeQueryEvent) -> None:
         event.cnt = 999
 
+
+# -- MAX LANDS PLAYED QUERY EVENT ---
+class FastbondMaxLands(Listener):
+    """You may play any number of lands on each of your turns ..."""
+    listens_to = MaxLandPlayedQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: MaxLandPlayedQueryEvent) -> None:
+        event.cnt = 999
 
 # -- STACK ADDITION EVENT ---
 class InTheEyeOfChaos(Listener):
