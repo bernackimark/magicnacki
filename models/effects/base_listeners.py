@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from models.constants import BASIC_LANDS, KW, Zone
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanDamageQueryEvent, \
-    CanTargetQueryEvent, StateBasedEvent
+    CanTargetQueryEvent, StateBasedEvent, MaxLandPlayedQueryEvent
 from models.utils import flip
 
 
@@ -90,7 +90,10 @@ class CanCastRule(BaseRule):
         if not gs.mana_pools[event.p_id].can_pay(cost):
             event.permission = False
         elif c.props.is_land and gs.turn_mgr.has_played_land:
-            event.permission = False
+            max_lands = MaxLandPlayedQueryEvent(gs.player_turn_idx)
+            gs.event_mgr.emit(max_lands)
+            if max_lands.cnt < 999:  # TODO: shoe-horned; really need to count the cards drawn this turn
+                event.permission = False
         elif gs.player_turn_idx != event.p_id and 'Instant' not in c.props.card_types:
             event.permission = False
 

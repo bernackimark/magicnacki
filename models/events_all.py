@@ -208,6 +208,11 @@ class MaxHandSizeQueryEvent(Event):
     cnt: int = 7
 
 @dataclass
+class MaxLandPlayedQueryEvent(Event):
+    active_player: int
+    cnt: int = 1
+
+@dataclass
 class QueryEvent(Event):
     query: str
     card: GameCard
