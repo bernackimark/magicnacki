@@ -48,6 +48,14 @@ class CardFilter:
         self._cards = [c for c in self._cards if c in lib]
         return self
 
+    def in_play_or_spell_on_stack(self):
+        """All cards in play & spell cards on stack"""
+        board = [c for b in self._gs.pile_mgr.boards for c in b]
+        in_play = [c for c in self._cards if c in board]
+        cards_on_stack = [a.source for a in self._gs.action_stack.spells if a.pipeline.eff_spec.is_spell]
+        self._cards = in_play + cards_on_stack
+        return self
+
     # --- by slug ---
     def by_slug(self, slug: str):
         self._cards = [c for c in self._cards if c.props.slug == slug]

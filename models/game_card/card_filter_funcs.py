@@ -45,6 +45,10 @@ class CF:
         return lambda gs, s: gs.card_filter.lands().result()
 
     @staticmethod
+    def in_play_or_spell_on_stack():
+        return lambda gs, s: gs.card_filter.in_play_or_spell_on_stack().result()
+
+    @staticmethod
     def all_players():
         return lambda gs, s: [0, 1]
 
