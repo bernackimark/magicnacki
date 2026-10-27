@@ -390,6 +390,10 @@ class CF:
         return lambda gs, _: gs.card_filter.in_play().creatures().has(KW.FLYING, False).result() + [0, 1]
 
     @staticmethod
+    def non_swamp_lands():
+        return lambda gs, s: [c for c in gs.card_filter.in_play().lands().result() if 'Swamp' not in c.card_sub_types]
+
+    @staticmethod
     def non_token_creatures():
         return lambda gs, s: gs.card_filter.in_play().non_token().creatures().result()
 
