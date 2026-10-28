@@ -46,6 +46,8 @@ class AbilityPipeline(Action):
     # information produced by paying costs
     cost_results: list[CostResult] = field(default_factory=list)
 
+    is_emblem: bool = False
+
     def __repr__(self):
         if self.eff_spec.is_spell:
             return f'Cast {self.source.props.name}'
@@ -166,7 +168,10 @@ class AbilityPipeline(Action):
                 self.eff_spec.effect.resolve(self.gs, self.source, orig_target, context)
 
         if self.eff_spec.is_aa:
-            aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
+            if self.is_emblem:
+                aa = ActivatedAbility(self.source, self.eff_spec)
+            else:
+                aa = next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
             aa.activations_this_turn += 1
             print(f"Successfully activated ability for {self.source.props.name}")
             self.gs.event_mgr.emit(AbilityActivatedEvent(self.player_idx, aa))
@@ -223,7 +228,9 @@ class AbilityPipeline(Action):
         return ManaCost(self.ability_cost) + ManaCost(str(self.x_value))
 
     @property
-    def aa(self) -> ActivatedAbility | None:
+    def aa(self) -> ActivatedAbility:
+        if self.is_emblem:
+            return ActivatedAbility(self.source, self.eff_spec)
         return next(aa for aa in self.source.activated_abilities if aa.eff_spec is self.eff_spec)
 
     @property

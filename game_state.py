@@ -182,7 +182,7 @@ class GameState:
         for em in self.emblem_mgr.emblems:
             if p_id != em.player_id:
                 continue
-            pipeline = AbilityPipeline(em.player_id, self, em.source, em.eff_spec)
+            pipeline = AbilityPipeline(em.player_id, self, em.source, em.eff_spec, is_emblem=True)
             if pipeline.can_begin():
                 actions.append(pipeline)
         return actions
