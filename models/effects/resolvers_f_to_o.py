@@ -224,8 +224,6 @@ class GuardianAngel(Resolver):
         from models.effects.listeners_generic import PreventNextDamageTo
         x = context.x_value
         gs.event_mgr.register(PreventNextDamageTo(x, protected=t), source)
-        # TODO: the above only handles the FIRST next damage; need to handle subsequent damages
-        #  PreventNextDamageTo needs an .on_expire callback
 
 class Hellfire(Resolver):
     """Destroy all nonblack creatures. H deals X plus 3 damage to you, X = creature count that died this way."""

@@ -29,7 +29,7 @@ from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDa
     CounterSpellUnlessManaPaid, RemoveFromCombat, BasePT, PumpSelf, AddCounter, MayPayMana, \
     ExchangeLifeTotals, Do, GraveyardToExile, PayManaOr, SacSelf, DrawCardsActivePlayer, DiscardAtRandom, \
     AddPoisonCounter, AddCounterPerCreatureDeath, DiscardHand, RevealHands, Mill, DrawThenDiscard, Register, Exile, \
-    AddAA
+    AddAA, AddEmblem
 from models.systems.phase import Phase
 from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
@@ -158,7 +158,9 @@ MAP: dict[str: list[EffSpec]] = {
     'greed': [Activated('B', Do(DrawCards(), DealDamage(2, CF.owner())))],
     'green-mana-battery': [MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana('G')],
     'green-ward': [Spell(KWAModEffect('add', KW.PROTECTION_FROM_GREEN), CF.creatures())],
-    'guardian-angel': [Spell(GuardianAngel(), CF.all_creatures_and_players())],
+    'guardian-angel': [Spell(Do(GuardianAngel(),
+                                AddEmblem(CF.owner(), Activated('1', PreventNextDamageTo(1)), expires='EOT')),
+                             CF.all_creatures_and_players())],
     'guardian-beast': [Static(KWAApplies(CF.your_non_creature_artifacts(), 'add', KW.INDESTRUCTIBLE,
                                          C_FUNCS['self_is_untapped'])),
                        Static(CantBeTargetedByAuras(CF.your_non_creature_artifacts(),
