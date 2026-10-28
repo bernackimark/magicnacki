@@ -172,6 +172,7 @@ class MainPhase(PhaseState):
         # hand actions + abilities
         actions.extend(gs.available_actions_from_hand())
         actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_player_emblems(p_id))
 
         # combat option
         if any(gs.perm_querier.can_attack(c) for c in gs.pile_mgr.boards[gs.player_turn_idx]):
@@ -237,6 +238,7 @@ class DeclareBlockersPhase(PhaseState):
 
         actions.extend(gs.available_actions_from_hand())
         actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_player_emblems(p_id))
 
         # only "finish blocking" exists → auto advance
         if all(isinstance(a, FinishBlocking) for a in actions):
@@ -260,6 +262,7 @@ class PreCombatDamagePhase(PhaseState):
         actions = []
         actions.extend(gs.available_actions_from_hand())
         actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_player_emblems(p_id))
         return actions or None
 
     def next(self, gs: GameState):
@@ -319,6 +322,7 @@ class SecondMainPhase(PhaseState):
         # hand actions + abilities
         actions.extend(gs.available_actions_from_hand())
         actions.extend(gs.add_activated_abilities_from_board())
+        actions.extend(gs.get_player_emblems(p_id))
 
         # auto-advance safety:
         if all(isinstance(a, MoveToEndStep) for a in actions):
@@ -396,8 +400,8 @@ class EndTurnEffectsPhase(PhaseState):
 
     def on_enter(self, gs: GameState):
         from models.effects.base import ActivatedAbility
-        # clean up effects
         gs.event_mgr.cleanup_eot()
+        gs.emblem_mgr.clear_eots()
 
         for c in gs.card_filter.result():
             c.modifiers.clear_eots()

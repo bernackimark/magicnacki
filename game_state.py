@@ -7,6 +7,7 @@ from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.choice_options import CO
 from models.effects.base import Activated
 from models.systems.choice import ChoiceManager
+from models.systems.emblem import EmblemManager
 from models.systems.priority import PriorityManager
 from models.utils import flip
 
@@ -48,6 +49,7 @@ class GameState:
         # ChoiceMgr is for forced actions that don't hit the stack (ex: it's resolved that you must discard, select one)
         self.choice_mgr = ChoiceManager(self, MulliganChoice(player_turn_idx, self, self.rules['mulligan']))
         self.combat_mgr = CombatManager(self)
+        self.emblem_mgr = EmblemManager(self)  # effects for cards not on battlefield
         self.event_mgr = EventManager(self)  # houses, emits, registers, unregisters Listener(Effect)
         self.perm_querier = PermissionQuerier(self)  # convenience for dealing with permission-based queries
         self.phase_mgr = PhaseManager(self)
@@ -174,6 +176,17 @@ class GameState:
         self.event_mgr.emit(event)
         return event.cost
 
+    # --- AVAILABLE ACTIONS FOR A PLAYER ---
+    def get_player_emblems(self, p_id: int) -> list[AbilityPipeline | None]:
+        actions: list[AbilityPipeline | None] = []
+        for em in self.emblem_mgr.emblems:
+            if p_id != em.player_id:
+                continue
+            pipeline = AbilityPipeline(em.player_id, self, em.source, em.eff_spec)
+            if pipeline.can_begin():
+                actions.append(pipeline)
+        return actions
+
     def get_available_activated_abilities(self, c: GameCard) -> list[AbilityPipeline | None]:
         actions: list[AbilityPipeline | None] = []
         for aa in c.activated_abilities:
@@ -270,6 +283,7 @@ class GameState:
 
             available_actions: list[AbilityPipeline | Action] = [PassPriority(p_id, self)]
             available_actions.extend(self.add_activated_abilities_from_board())
+            available_actions.extend(self.get_player_emblems(p_id))
 
             # Check instants & sorceries
             hand_instants = [c for c in self.pile_mgr.hands[p_id] if c.is_instant]
