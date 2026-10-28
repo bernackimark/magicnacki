@@ -325,9 +325,9 @@ class SecondMainPhase(PhaseState):
         actions.extend(gs.get_player_emblems(p_id))
 
         # auto-advance safety:
-        if all(isinstance(a, MoveToEndStep) for a in actions):
-            gs.phase_mgr.set_phase(Phase.END_STEP)
-            return
+        # if all(isinstance(a, MoveToEndStep) for a in actions):
+        #     gs.phase_mgr.set_phase(Phase.END_STEP)
+        #     return
 
         return actions
 
