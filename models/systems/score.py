@@ -39,4 +39,8 @@ class ScoreManager:
             return
         self._gs.event_mgr.emit(event)
         self.life[p_id] -= amt
+        if source is None:
+            print("Warning: Please ensure this is one of the rare cases where the source is None")
+            print(f"Player #{p_id} is dealt {amt} damage.  Life is now at {self.life}")
+            return
         print(f"{source.props.name} deals {amt} damage to player #{p_id}. Life is now at {self.life}")
