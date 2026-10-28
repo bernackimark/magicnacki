@@ -5,8 +5,9 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.constants import KW
 from models.game_card.counter_tokens import PLUS_ONE, VITALITY
-from models.effects.base import Listener
+from models.effects.base import Listener, Activated
 from models.events_all import DamageProposedEvent, DamageResolvedEvent, Event
+from models.systems.emblem import Emblem
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -213,6 +214,24 @@ class LivingArtifactOnDamage(Listener):
         if event.target is not source:
             return
         source.counters.add_counter(VITALITY)
+
+class NafsAsp(Listener):
+    """Whenever NA deals damage to opp, at any point up to their next draw phase, opp pays {1} or loses 1 life.
+    Once this DamageResolvedEvent listener triggers:
+        1) create NafsAspUnpaid(Listener): triggers at opp's Draw Step, deals 1 damage, removes Emblem, removes itself
+        2) create emblem allowing opp to pay 1 to remove NafsAspUnpaid"""
+    listens_to = DamageResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> None:
+        paying_player = flip(source.owner_id)
+        if event.source is not source or event.target != paying_player:
+            return
+        from models.effects.resolvers_generic import RemoveListener
+        from models.effects.listeners_draw_discard import NafsAspUnpaid
+        listener = NafsAspUnpaid(paying_player)
+        gs.event_mgr.register(listener, source)
+        em = Emblem(paying_player, source, Activated('1', RemoveListener(listener), text='Remove Emblem'))
+        gs.emblem_mgr.add_emblem(em)
 
 class SpiritLink(Listener):
     """Whenever host deals damage, you gain that much life"""

@@ -13,6 +13,7 @@ from models.effects.base import Listener
 from models.events_all import DiscardEvent, DiscardStepEvent, DrawCardEvent, DrawStepEvent, DrawCardAllowedQueryEvent, \
     Event
 from models.presentation_request import PresentationReqType
+from models.systems.emblem import Emblem
 from models.systems.phase import Phase
 from models.utils import flip
 
@@ -146,6 +147,26 @@ class IslandSanctuary(Listener):
         listener = IslandSanctuaryRestriction()
         gs.event_mgr.register(listener, s)
         gs.event_mgr.register(UnregisterListenerOnYourNextTurn(listener), s)
+
+class NafsAspUnpaid(Listener):
+    """Whenever NA deals damage to opp, at any point up to their next draw phase, opp pays {1} or loses 1 life.
+    This Listener triggers at the opponent's draw phase, deals 1 damage, and removes the emblem"""
+    listens_to = DrawStepEvent
+
+    def __init__(self, paying_player: int):
+        self.paying_player = paying_player
+
+    def on_event(self, gs: GameState, source: GameCard, event: DrawStepEvent) -> None:
+        if event.active_player != self.paying_player:
+            return
+
+        # Source of the damage cannot be Nafs Asp because it will create an infinte loop of creating this Listener
+        gs.apply_damage(None, 1, self.paying_player)
+        for em in gs.emblem_mgr.emblems:
+            if em.source is source:
+                gs.emblem_mgr.remove_emblem(em)
+                gs.event_mgr.unregister_specific_effect(self)
+                return
 
 class SylvanLibrary(Listener):
     """At your draw step, you may draw two additional cards ..."""

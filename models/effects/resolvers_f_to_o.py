@@ -15,6 +15,7 @@ from models.effects.base import Resolver
 from models.effects.listeners_generic import PreventNextDamageBy, PreventNextDamageTo, DestroyAtEndStepIfItDidntAttack
 from models.game_card.modifiers import PTMod, KWAMod
 from models.presentation_request import PresentationReqType
+from models.systems.emblem import Emblem
 from models.systems.mana import ManaCost
 from models.systems.phase import Phase
 from models.utils import flip

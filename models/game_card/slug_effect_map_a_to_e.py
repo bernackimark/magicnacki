@@ -4,7 +4,7 @@ from itertools import combinations
 from .amt_funcs import AmtF
 from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from models.constants import COLOR_LETTERS, KW
-from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost
+from models.cost import SacSelfCost, DiscardAtRandomCost, SacCardCost, PayLifeCost
 from models.game_card.counter_tokens import PLUS_ONE_ZERO, PLUS_ONE, DOOM, STORAGE, STUN, PUPA
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
@@ -25,7 +25,7 @@ from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, De
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
     CounterSpell, BecomeCreaturePTEqualsManaValue, EmptyResolver, RemoveCounter, PumpSelf, DestroySelfCombatants, \
     MayPayMana, Do, Reanimate, GainLifeTargetMV, PayManaOr, SacSelf, Exile, TapCards, AddType, DrawThenDiscard, Copy, \
-    Tutor, SetSubType, Register
+    Tutor, SetSubType, Register, AddEmblem
 from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, self_pump, \
     clockwork_avian_x, clockwork_beast_x, max_x_from_printed_card, your_tapped_land_cnt_and_max_x, On
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
@@ -194,6 +194,7 @@ MAP: dict[str, list[EffSpec]] = {
                             text='If random di roll is 1-4, destroy target')],
     'chain-lightning': [Spell(ChainLightning(), CF.all_creatures_and_players())],
     'chains-of-mephistopheles': [Static(ChainsOfMephistopheles())],
+    'channel': [Spell(AddEmblem(CF.owner(), Activated('', AddMana('C'), extra_costs=[PayLifeCost()]), expires='EOT'))],
     'chaoslace': [Spell(SetColor('R'), CF.cards())],
     'chromium': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('WUB', SacSelf())))],
     'circle-of-protection-artifacts': [Activated('1', PreventNextDamageTo(protected=CF.owner()), CF.artifacts())],

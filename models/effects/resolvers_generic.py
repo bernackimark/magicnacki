@@ -10,11 +10,12 @@ from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_prevent_counter, copy_card
 from models.constants import COLOR_LETTERS_W_COLORLESS, BASIC_LANDS, COLOR_LETTERS, Zone
 from models.game_card.counter_tokens import CounterType, CHARGE, PLUS_ZERO_ONE
-from models.effects.base import Resolver, Listener, Activated
+from models.effects.base import Resolver, Listener, Activated, EffSpec
 from models.effects.listeners_mod_queries import AddCreatureType, PTModEqualsManaValue, OwnershipModQuery
 from models.events_all import StateBasedEvent, ZoneChangeEvent
 from models.game_card.modifiers import RegenerationMod, TypeMod, SubTypeMod, ColorMod, KWAMod, PTMod, BasePTMod, AAMod
 from models.presentation_request import PresentationReqType
+from models.systems.emblem import Emblem
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -70,6 +71,17 @@ class AddCounterToHost(Resolver):
 
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         source.host.counters.add_counter(self.counter_type, self.cnt)
+
+class AddEmblem(Resolver):
+    def __init__(self, p_id_func: Callable[[GameState, GameCard], int], eff_spec: EffSpec, expires: str = None):
+        self.p_id_func = p_id_func
+        self.eff_spec = eff_spec
+        self.expires = expires
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        player_id = self.p_id_func(gs, source)
+        em = Emblem(player_id, source, self.eff_spec, self.expires)
+        gs.emblem_mgr.add_emblem(em)
 
 class AddMana(Resolver):
     """The source's owner gets the mana"""
@@ -548,6 +560,14 @@ class RemoveHostAuras(Resolver):
             gs.event_mgr.emit(ZoneChangeEvent(aura, aura.zone, Zone.GRAVEYARD, cause='detach_aura'))
             gs.pile_mgr.move_card(aura, Zone.GRAVEYARD, cause='detach_aura')
             gs.event_mgr.unregister_effects(aura)
+
+class RemoveListener(Resolver):
+    """Removes registered listener from GameState.EventManager"""
+    def __init__(self, listener: Listener):
+        self.listener = listener
+
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.event_mgr.unregister_specific_effect(self.listener)
 
 class Reveal(Resolver):
     @Resolver.target_required

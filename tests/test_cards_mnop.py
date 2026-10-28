@@ -6,6 +6,7 @@ from models.actions.cast import CastWithNoSpellEffect
 from models.actions.advance_phase import PassTheTurn
 from models.constants import KW
 from models.cost import ExileCardCost, SacCardCost
+from models.effects.base import ActivatedAbility
 from models.game_card.counter_tokens import PLUS_ONE
 from models.events_all import UpkeepEvent, StateBasedEvent, EndStepEvent, DrawStepEvent
 from models.systems.phase import Phase
@@ -160,6 +161,40 @@ class TestCardsMNOP(unittest.TestCase):
         sac_two_swamps.play()
         swamp_cnt_after = len(self.gs.card_filter.on_player_board(0).swamps().result())
         self.assertEqual(2, swamp_cnt_before - swamp_cnt_after)
+
+    def test_nafs_asp_pays_path(self):
+        """Whenever NA deals damage to opp, at any point up to opp's next draw phase, opp pays {1} or loses 1 life"""
+        [h.clear() for h in self.gs.hands]
+        card = self.g.battlefield('nafs-asp')  # 1/1
+        plains = self.g.battlefield('plains', owner=1)
+
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+        self.g.combat(card, None)
+        self.assertEqual(19, self.gs.life[1])
+
+        emblem = self.gs.emblem_mgr.emblems[0]
+        pipeline = AbilityPipeline(1, self.gs, card, emblem.eff_spec, is_emblem=True)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertTrue(plains.is_tapped)
+
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.DRAW)
+        self.assertEqual(19, self.gs.life[1])
+
+    def test_nafs_asp_unpaid_path(self):
+        """Whenever NA deals damage to opp, at any point up to opp's next draw phase, opp pays {1} or loses 1 life"""
+        [h.clear() for h in self.gs.hands]
+        card = self.g.battlefield('nafs-asp')  # 1/1
+
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+        self.g.combat(card, None)
+        self.assertEqual(19, self.gs.life[1])
+
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.DRAW)
+        self.assertEqual(18, self.gs.life[1])
+        self.assertEqual(0, len(self.gs.emblem_mgr.emblems))
 
     def test_necropolis(self):
         """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""

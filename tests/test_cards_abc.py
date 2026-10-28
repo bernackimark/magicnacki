@@ -2,6 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
+from models.actions.stack_accept_counter import PassPriority
 from models.constants import KW, Zone
 from models.cost import SacCardCost
 from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM, MIRE
@@ -488,6 +489,26 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.choice_mgr.choose(discard_forest)
         self.assertIn(forest, self.g.gy[0])
         self.assertIn(mountain, self.gs.hands[0])
+
+    def test_channel(self):
+        """Until EOT, any time you could activate a mana ability, you may: pay 1 life: add {C}"""
+        self.gs.hands[0].clear()
+        self.g.mana('GG')
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+
+        card = self.g.hand('channel')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
+
+        self.assertIn(card, [em.source for em in self.gs.emblem_mgr.emblems])
+        activate_channel = self.gs.get_available_actions(0)[-1]
+        activate_channel.play()
+        PassPriority(1, self.gs).play()
+        PassPriority(0, self.gs).play()
+        self.assertEqual(1, self.gs.mana_pools[0].available_mana['C'])
+        self.assertEqual(19, self.gs.life[0], "Where are costs paid in Action.play()?")
 
     def test_city_in_a_bottle(self):
         """Whenever a nontoken permanent with a name originally printed in Arabian Nights is on battlefield, sac it"""

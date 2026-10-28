@@ -45,7 +45,8 @@ from ..effects.listeners_end_step import InfiniteAuthorityEndStep
 from ..effects.listeners_combat import MijaeDjinn, GiantShark, Johan, InfiniteAuthorityCombatEnd, FloralSpuzzem, \
     GlyphOfDoom
 from ..effects.listeners_cost import Gloom, ManaMatrix
-from ..effects.listeners_damage import GaseousForm, LivingArtifactOnDamage, ForethoughtAmulet, Forcefield, GlyphOfLife
+from ..effects.listeners_damage import GaseousForm, LivingArtifactOnDamage, ForethoughtAmulet, Forcefield, GlyphOfLife, \
+    NafsAsp
 from ..effects.listeners_dies import FirestormPhoenix
 from ..effects.listeners_draw_discard import IslandSanctuary, LibraryOfLengDiscard
 from ..effects.listeners_generic import OptionalUntap, PreventAllDamageToEOT, PreventNextDamageTo, \
@@ -350,6 +351,7 @@ MAP: dict[str: list[EffSpec]] = {
     'mox-sapphire': mox_specs('U'),
     'murk-dwellers': [
         GenTrig(On(UnblockedAttackerEvent).where(EC().self_is_unblocked_attacker()).then(PumpSelf(2, 0, True)))],
+    'nafs-asp': [Triggered(NafsAsp())],
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), CF.all_players())],
     'necropolis': [Activated('', Necropolis(), extra_costs=[ExileCardCost(CF.creatures_in_your_graveyard())])],
