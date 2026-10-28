@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Callable
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, copy_card
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM, VITALITY, SCREAM
+from models.game_card.counter_tokens import PUPA, PLUS_ONE, WIND, HUNGER, DREAM, VITALITY, SCREAM, MIRE
 from models.effects.base import Listener
 from models.effects.resolvers_generic import Steal, BasePT
 from models.events_all import UpkeepEvent, Event, StateBasedEvent
@@ -100,6 +100,29 @@ class Cyclone(Listener):
 
         for p_id in range(2):
             gs.apply_damage(source, wind_counters, p_id)
+
+class CyclopeanTombUpkeep(Listener):
+    """... At each of your upkeeps for the rest of the game,
+    remove all mire counters from target land that this card put on it"""
+    # WARNING: Counters does not store the source of the counter
+    listens_to = UpkeepEvent
+    expires = 'PERPETUAL'
+
+    def on_event(self, gs: GameState, source: GameCard, event: UpkeepEvent) -> None:
+        if gs.player_turn_idx != source.owner_id:
+            return
+        mired_by_source = [c for c in gs.card_filter.in_play().result() if c.counters.get_count(MIRE)]
+        if not mired_by_source:
+            gs.event_mgr.unregister_specific_effect(self)
+            return
+        options = [CO(f'Remove all mire counters from {c}',
+                      lambda card=c: self._remove_mires(card)) for c in mired_by_source]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _remove_mires(c: GameCard):
+        n = c.counters.get_count(MIRE)
+        c.counters.remove_counter(MIRE, n)
 
 class DemonicHordesUpkeep(Listener):
     """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""

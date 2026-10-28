@@ -18,7 +18,8 @@ from ..target import TargetSpec
 from ..effects.resolvers_a_to_e import Disharmony, CityOfShadowsAddMana, Banshee, EternalFlame, EaterOfTheDead, \
     DrainPower, Berserk, BloodLust, Amnesia, BottleOfSuleiman, ChaosOrb, DiamondValley, Eureka, \
     Crumble, Earthbind, EnchantmentAlteration, DanceOfMany, Disintegrate, CuombajjWitches, Cleansing, \
-    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve, AladdinsLamp, DrainLife, Detonate
+    DrafnasRestoration, Balance, ChainLightning, Backdraft, AllHallowsEve, AladdinsLamp, DrainLife, Detonate, \
+    CyclopeanTomb
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, \
     Regenerate, SacAll, DrawCards, Discard, SetColor, KWAModEffect, GainLife, AddMana, Bounce, Steal, \
     Pump, CreateTokenCreature, RemoveHostAuras, TapCard, UntapCardEffect, UntapCards, RemoveFromCombat, \
@@ -30,7 +31,7 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
 from ..effects.listeners_misc import AliFromCairo, ArtifactPossessionActivation
 from ..effects.listeners_state_change import GlobalSac
 from ..effects.listeners_upkeep import CocoonUpkeep, CurseArtifact, Cyclone, DemonicHordesUpkeep, DropOfHoney, \
-    ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep
+    ElderSpawnUpkeep, EnergyFlux, ErhnamDjinn, ErosionUpkeep, CyclopeanTombUpkeep
 from ..effects.listeners_end_step import DragonWhelpEndStep, ErgRaiders
 from ..effects.listeners_draw_discard import CursedRack, ArmageddonClockDrawStep, ChainsOfMephistopheles
 from ..effects.listeners_dies import AxelrodGunnarson, CreatureBond, BlazingEffigy, BrineHag
@@ -255,6 +256,9 @@ MAP: dict[str, list[EffSpec]] = {
     'cursed-rack': [Static(CursedRack())],
     'cyclone': [Triggered(Cyclone())],
     'cyclopean-mummy': [GenTrig(On(DiesEvent).where(EC().card_is_source()).then(Exile(CF.self())))],
+    'cyclopean-tomb': [Activated('2T', CyclopeanTomb(), CF.non_swamp_lands(),
+                                 allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=CF.owner()),
+                       GenTrig(On(DiesEvent).where(EC().card_is_source()).then(Register(CyclopeanTombUpkeep)))],
     'dakkon-blackblade': [Static(SelfPTEqualsFuncLen(CF.your_lands()))],
     'damping-field': [Triggered(DampingField())],
     'dance-of-many': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('UU', SacSelf()))),

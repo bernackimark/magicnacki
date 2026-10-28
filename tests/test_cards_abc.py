@@ -4,7 +4,7 @@ from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
 from models.constants import KW, Zone
 from models.cost import SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM, MIRE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
@@ -705,6 +705,43 @@ class TestCardsAtoC(unittest.TestCase):
         self.gs.pile_mgr.destroy(forest)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertIn(card, self.g.gy[0])
+
+    def test_cyclopean_tomb(self):
+        """Put a mire counter on target non-Swamp land; it's a Swamp for as long as it has a mire counter on it ...
+        When CT is put into a graveyard from the battlefield: At of each of your upkeeps for the rest of the game,
+        remove all mire counters from a land that this card placed a mire counter on"""
+        card = self.g.battlefield('cyclopean-tomb')
+        aa = card.activated_abilities[0]
+        self.g.mana('BBBB')
+        t1 = self.g.battlefield('maze-of-ith', owner=1)
+        t2 = self.g.battlefield('island', owner=1)
+
+        self.g.activate_ability(aa, t1)
+        self.g.activate_ability(aa, t2)
+        self.assertTrue(t1.counters.get_count(MIRE))
+        self.assertTrue(t2.counters.get_count(MIRE))
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        remove_mires_from_one_land = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(remove_mires_from_one_land)
+        self.assertEqual(1, t1.counters.get_count(MIRE) + t2.counters.get_count(MIRE))
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        remove_mires_from_one_land = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(remove_mires_from_one_land)
+        self.assertEqual(0, t1.counters.get_count(MIRE) + t2.counters.get_count(MIRE))
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertFalse(self.g.card_has_a_registered_listener(card))
+
+
+
 
 
 if __name__ == '__main__':

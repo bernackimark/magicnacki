@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO
 from models.constants import KW, Zone
-from models.game_card.counter_tokens import STORAGE, SCREAM
+from models.game_card.counter_tokens import STORAGE, SCREAM, MIRE
 from models.effects.base import Resolver, RTarget, ResContext
 from models.effects.listeners_generic import DestroyAtEndStepIfItAttacked, LTBTandem, ExileOnDeath
 from models.effects.listeners_mod_queries import OwnershipModQuery
 from models.effects.listeners_permission import PreventRegenerationEOT
 from models.effects.resolvers_generic import GraveyardToExile, CreateTokenCreature
-from models.game_card.modifiers import PTMod, KWAMod
+from models.game_card.modifiers import PTMod, KWAMod, SubTypeMod
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -358,6 +358,13 @@ class CuombajjWitches(Resolver):
         options = [CO(f'{s.props.name} deals 1 damage to {target}',
                       lambda chosen_target=target: gs.apply_damage(s, 1, chosen_target)) for target in targets]
         gs.choice_mgr.queue(ChoiceAction(options))
+
+class CyclopeanTomb(Resolver):
+    """Put a mire counter on target non-Swamp land; it's a Swamp for as long as it has a mire counter on it ... """
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        t.counters.add_counter(MIRE)
+        t.modifiers.append(SubTypeMod(s=source, item='Swamp', add_or_remove='add'))
 
 class DanceOfMany(Resolver):
     """When DOM ETB, create a token copy of target nontoken creature -- copies its original props w/o mods ...
