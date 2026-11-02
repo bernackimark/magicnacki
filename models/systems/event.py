@@ -48,7 +48,7 @@ class EventManager:
             return [e for e in self.events if isinstance(e, event)]  # type: ignore
         return [e for e, turn_num in self._events if turn_num == turn_number and isinstance(e, event)]  # type: ignore
 
-    def emit(self, event: Event):
+    def emit(self, event: Event, suppress_print: bool = False):
         """Call all effects listening to a certain type of event (ex: EndStepEvent); log that Event in Event Mgr"""
         self._events.append((event, self._gs.turn_mgr.turn_number))
 
@@ -65,7 +65,8 @@ class EventManager:
                         continue
                     if isinstance(e.effect.modifies, tuple) and event.query not in e.effect.modifies:
                         continue
-            print(f'Emitting {type(event).__name__}, possible responder {e}')
+            if not suppress_print:
+                print(f'Emitting {type(event).__name__}, possible responder {e}')
             e.effect.on_event(self._gs, e.source, event)
 
         self.cleanup_expired()
