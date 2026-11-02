@@ -45,6 +45,28 @@ class TestCardsGHI(unittest.TestCase):
         self.assertTrue(host.zone == Zone.BATTLEFIELD)
         self.assertTrue(blocker.zone == Zone.BATTLEFIELD)
 
+    def test_gauntlet_of_might(self):
+        """Red creatures get +1/+1. Whenever a Mountain is tapped for mana, its controller adds an additional {R}"""
+        self.g.battlefield('gauntlet-of-might')
+        goblin = self.g.battlefield('monss-goblin-raiders')  # 1/1
+        self.assertEqual((2, 2), (goblin.power, goblin.toughness))
+
+        # mountain tapped for mana, extra {R} added
+        mountain = self.g.battlefield('mountain')
+        bolt = self.g.hand('lightning-bolt')
+        self.g.cast_and_accept(bolt, 1, bolt.abilities[0], add_lots_of_mana=False)
+        self.assertTrue(mountain.is_tapped)
+        self.assertEqual(1, self.gs.mana_pools[0].available_mana['R'])
+
+        # plains tapped for mana, doesn't add {W} & doesn't add {R}
+        plains = self.g.battlefield('plains')
+        holy_day = self.g.hand('holy-day')
+        self.g.cast_and_accept(holy_day, eff_spec=holy_day.abilities[0], add_lots_of_mana=False)
+        self.assertTrue(plains.is_tapped)
+        self.assertEqual(0, self.gs.mana_pools[0].available_mana['W'])
+        self.assertEqual(1, self.gs.mana_pools[0].available_mana['R'])
+
+
     def test_gauntlets_of_chaos(self):
         """{5}, Sac GOT: Exchange control of target artifact, creature, or land you control with
         target permanent opp controls that shares one of those types with it.

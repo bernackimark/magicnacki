@@ -43,6 +43,23 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertTrue(blue2.is_tapped)
         self.assertFalse(self.gs.pending_choice)
 
+    def test_mana_flare(self):
+        """Whenever a player taps a land for mana, it produces one additional mana of the same type."""
+        self.g.battlefield('mana-flare')
+        holy_day = self.g.hand('holy-day')
+        self.g.mana('W')
+
+        # a land is tapped for mana
+        pipeline = AbilityPipeline(0, self.gs, holy_day, holy_day.abilities[0])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(1, self.gs.mana_pools[0].available_mana['W'])
+
+        # a land tapped but not for mana
+        land = self.g.battlefield('island')
+        land.tap()
+        self.assertEqual(0, self.gs.mana_pools[0].available_mana['U'])
+
     def test_mana_vault(self):
         """... MV doesn't untap during your untap step. At your upkeep, you may pay {4} to untap this artifact.
         At your draw step, if this artifact is tapped, it deals 1 damage to you ..."""
@@ -79,6 +96,23 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertIn(opp_land, self.g.gy[1])
         self.gs.event_mgr.emit(StateBasedEvent())
         self.assertIn(card, self.g.gy[0])
+
+    def test_manabarbs(self):
+        """Whenever a player taps a land for mana, M deals 1 damage to that player"""
+        self.g.battlefield('manabarbs')
+        holy_day = self.g.hand('holy-day')
+        self.g.mana('W')
+
+        # a land is tapped for mana
+        pipeline = AbilityPipeline(0, self.gs, holy_day, holy_day.abilities[0])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(19, self.gs.life[0])
+
+        # a land tapped but not for mana
+        land = self.g.battlefield('island')
+        land.tap()
+        self.assertEqual(19, self.gs.life[0])
 
     def test_martyrs_of_korlis(self):
         """As long as MOK is untapped, all damage that would be dealt to you by artifacts is dealt to MOK instead"""

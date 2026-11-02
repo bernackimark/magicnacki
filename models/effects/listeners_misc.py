@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, \
-    StackAdditionEvent, MaxHandSizeQueryEvent, Event, MaxLandPlayedQueryEvent
+    StackAdditionEvent, MaxHandSizeQueryEvent, Event, MaxLandPlayedQueryEvent, LandTappedForManaEvent
 from models.utils import flip
 
 
@@ -79,6 +79,27 @@ class VerduranEnchantress(Listener):
             return
         options = [CO('Draw a card', lambda: gs.pile_mgr.draw(event.owner_id))]
         gs.choice_mgr.queue(ChoiceAction(options, may=True))
+
+
+# --- LAND TAPPED FOR MANA ---
+class GauntletOfMightMana(Listener):
+    """Whenever a Mountain is tapped for mana, its controller adds an additional {R}"""
+    # Note: this is not a generic Listener,
+    # because AddMana() always adds the mana to the source's owner (not the owner of the tapped card)
+    listens_to = LandTappedForManaEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: LandTappedForManaEvent) -> None:
+        if event.card not in gs.card_filter.in_play().mountains().result().copy():
+            return
+        gs.mana_pools[event.card.owner_id].add_floating('R')
+
+class ManaFlare(Listener):
+    """Whenever a player taps a land for mana, it produces one additional mana of the same type."""
+    listens_to = LandTappedForManaEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: LandTappedForManaEvent) -> None:
+        gs.mana_pools[event.card.owner_id].add_floating(event.mana_produced)
+
 
 # --- LIFE LOSS ---
 class AliFromCairo(Listener):

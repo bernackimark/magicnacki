@@ -35,7 +35,7 @@ from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
     max_x_from_printed_card, On
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos, \
-    InvokePrejudice, LibraryOfLengMaxHandSize, FastbondMaxLands
+    InvokePrejudice, LibraryOfLengMaxHandSize, FastbondMaxLands, ManaFlare, GauntletOfMightMana
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import LandEquilibrium, FastbondDamager
 from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, HazezonTamarTokenCreation, LandTax, \
@@ -54,7 +54,7 @@ from ..effects.listeners_generic import OptionalUntap, PreventAllDamageToEOT, Pr
     PayManaOrCounterSpellListener, DestroyAtEndStep
 from ..events_all import DiesEvent, UnblockedAttackerEvent, DamageResolvedEvent, DrawCardEvent, CastResolvedEvent, \
     TapCardEvent, AttackEvent, UpkeepEvent, CombatEndEvent, DamageProposedEvent, EndStepEvent, DrawStepEvent, \
-    ZoneChangeEvent, CanAttackQueryEvent, CanBlockQueryEvent, CanUntapAtUntapQueryEvent
+    ZoneChangeEvent, CanAttackQueryEvent, CanBlockQueryEvent, CanUntapAtUntapQueryEvent, LandTappedForManaEvent
 
 MAP: dict[str: list[EffSpec]] = {
     'fallen-angel': [Activated('', Pump(2, 1, True), CF.self(),
@@ -114,7 +114,7 @@ MAP: dict[str: list[EffSpec]] = {
     'gate-to-phyrexia': [Activated('', Destroy(), CF.artifacts(), extra_costs=[SacCardCost(CF.your_creatures())],
                                    allowed_phases=[Phase.UPKEEP], max_activations_per_turn=1,
                                    allowed_p_turn_func=CF.owner())],
-    'guantlet-of-might': [Static(PumpApplies(CF.red_creatures(), (1, 1)))],
+    'gauntlet-of-might': [Static(PumpApplies(CF.red_creatures(), (1, 1))), Triggered(GauntletOfMightMana())],
     'gauntlets-of-chaos': [Activated('5', GauntletsOfChaos(), extra_costs=[SacSelfCost()])],
     'ghazban-ogre': [Triggered(GhazbanOgre())],
     'ghost-ship': [Activated('UUU', Regenerate(), CF.self())],
@@ -310,6 +310,7 @@ MAP: dict[str: list[EffSpec]] = {
                           Triggered(PayManaToUntapUpkeep('4', CF.in_turn_player_tapped_blue_creatures()))],
     'mana-clash': [Spell(ManaClash())],
     'mana-drain': [Spell(ManaDrain(), CF.spells())],
+    'mana-flare': [Triggered(ManaFlare())],
     'mana-matrix': [Static(ManaMatrix())],
     'mana-short': [Spell(ManaShort(), CF.all_players())],
     'mana-vault': [Triggered(DoesntUntapAtUntap(CF.self())), Triggered(PayManaToUntapUpkeep('4', CF.self())),
@@ -318,6 +319,7 @@ MAP: dict[str: list[EffSpec]] = {
                            then(DealDamage(1, CF.owner())))],
     'mana-vortex': [Spell(Destroy(), CF.your_lands()), Static(ManaVortexUpkeep()),
                     Static(GlobalSac(CF.self(), C_FUNCS['no_lands']))],
+    'manabarbs': [GenTrig(On(LandTappedForManaEvent).then(DealDamage(1)).t(ET.event_card_owner()))],
     'marble-priest': [GenTrig(On(DamageProposedEvent).
                               where(EC().damage_target_in(CF.self()).damage_source_in(CF.walls()).is_combat_damage()).
                               modify(PreventDamage())),
