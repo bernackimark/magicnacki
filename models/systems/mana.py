@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from game_state import GameState
 
 from models.constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTER_SLUG, BASIC_LAND_MANA_PRODUCED, COLOR_LETTERS
+from models.events_all import LandTappedForManaEvent
 
 @dataclass
 class ManaCost:
@@ -119,7 +120,7 @@ class ManaPool:
 
             paid = min(self._untapped_basic_land_mana[c], cost[c])
             self._untapped_basic_land_mana[c] -= paid
-            self._tap_lands_for_color(c, paid)
+            self._tap_lands_for_mana(c, paid)
             cost[c] -= paid
 
         # 2. Pay colorless cost using ANY remaining mana
@@ -141,7 +142,7 @@ class ManaPool:
                     continue
                 paid = min(self._untapped_basic_land_mana[c], remaining)
                 self._untapped_basic_land_mana[c] -= paid
-                self._tap_lands_for_color(c, paid)
+                self._tap_lands_for_mana(c, paid)
                 remaining -= paid
                 if not remaining:
                     break
@@ -182,23 +183,16 @@ class ManaPool:
         non_x_casting_weight = sum(non_x_cost_dict.values())
         available_for_x: int = available_mana_amt - non_x_casting_weight
         max_x = available_for_x // x_cnt
-        print('mana_pool.get_max_x() =', max(max_x, 0))
         return max(max_x, 0)
 
-    def _tap_lands_for_color(self, color: str, amount: int):
+    def _tap_lands_for_mana(self, color: str, amount: int):
         lands = self.gs.card_filter.on_player_board(self.owner_id).by_slug(COLOR_LETTER_SLUG[color]).untapped().result()
         if len(lands) < amount:
             raise RuntimeError("Not enough untapped lands")
         for land in lands[:amount]:
             land.tap()
-
-    def _tap_lands_for_colorless(self, amount: int):
-        # currently unused, but may be helpful if functionality is added?
-        lands = self.gs.card_filter.on_player_board(self.owner_id).basic_lands().tapped(False).result()
-        if len(lands) < amount:
-            raise RuntimeError("Not enough untapped lands")
-        for land in lands[:amount]:
-            land.tap()
+            event = LandTappedForManaEvent(land, color)
+            self.gs.event_mgr.emit(event, suppress_print=True)
 
 
 # TODO:

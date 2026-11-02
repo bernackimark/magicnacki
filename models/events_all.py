@@ -186,6 +186,11 @@ class EnterBattlefieldEvent(Event):
     card: GameCard
 
 @dataclass(frozen=True)
+class LandTappedForManaEvent(Event):
+    card: GameCard
+    mana_produced: str
+
+@dataclass(frozen=True)
 class LifeGainEvent(Event):
     p_id_gaining_life: int
     amt: int
