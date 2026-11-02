@@ -512,6 +512,10 @@ class CF:
         return lambda gs, s: gs.card_filter.in_play().red().result()
 
     @staticmethod
+    def red_creatures():
+        return lambda gs, s: gs.card_filter.in_play().creatures().red().result()
+
+    @staticmethod
     def red_permanents():
         return lambda gs, s: gs.card_filter.in_play().permanents().red().result()
 

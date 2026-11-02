@@ -114,6 +114,7 @@ MAP: dict[str: list[EffSpec]] = {
     'gate-to-phyrexia': [Activated('', Destroy(), CF.artifacts(), extra_costs=[SacCardCost(CF.your_creatures())],
                                    allowed_phases=[Phase.UPKEEP], max_activations_per_turn=1,
                                    allowed_p_turn_func=CF.owner())],
+    'guantlet-of-might': [Static(PumpApplies(CF.red_creatures(), (1, 1)))],
     'gauntlets-of-chaos': [Activated('5', GauntletsOfChaos(), extra_costs=[SacSelfCost()])],
     'ghazban-ogre': [Triggered(GhazbanOgre())],
     'ghost-ship': [Activated('UUU', Regenerate(), CF.self())],
