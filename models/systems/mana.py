@@ -11,6 +11,7 @@ from models.constants import COLOR_LETTERS_W_COLORLESS, COLOR_LETTER_SLUG, BASIC
 @dataclass
 class ManaCost:
     cost: str
+    x_value: int = 0
 
     def __add__(self, other: ManaCost) -> str:
         """Sums ManaCost objects; ex ManaCost('2U') + ManaCost('1GG') -> '3UGG'"""
@@ -26,22 +27,25 @@ class ManaCost:
 
     @property
     def decoded(self) -> dict[str, int]:
-        return self._decode(self.cost)
+        return self._decode(self.cost, self.x_value)
 
     @property
     def mana_value(self) -> int:
         return sum(self.decoded.values())
 
     @staticmethod
-    def _decode(cost_str: str) -> dict[str, int]:
-        """ex '2U' returns {'U': 1, 'G': 0, ... 'C': 2} where C = colorless; 'C' is guaranteed to be the last key"""
+    def _decode(cost_str: str, x_value: int = 0) -> dict[str, int]:
+        """ex '2U' returns {'U': 1, 'G': 0, ... 'C': 2} where C = colorless; 'C' is guaranteed to be the last key;
+        ex 'XU', x_value = 2 returns {'U': 1 ... 'C': 2}; ex 'XXU', x_value = 1 returns {'U': 1, 'C': 2}"""
         result = {c: 0 for c in COLOR_LETTERS_W_COLORLESS}
 
         if not cost_str:
             return result
 
-        if 'X' in cost_str:
-            result['X'] = 0
+        if x_value:
+            result['C'] += cost_str.count('X') * x_value
+
+        cost_str = cost_str.replace('X', '')
 
         # convert numbers to colorless & letters to colors
         for num in re.findall(r'\d+', cost_str):
@@ -64,38 +68,6 @@ class ManaCost:
         return ''.join(values)
 
 
-def parse_casting_cost(casting_cost: str) -> dict[str, int]:
-    """ex '2U' returns {'U': 1, 'G': 0, ... 'C': 2} where C = colorless; 'C' is guaranteed to be the last key"""
-    result = {c: 0 for c in COLOR_LETTERS_W_COLORLESS}
-
-    if not casting_cost:
-        return result
-
-    if 'X' in casting_cost:
-        result['X'] = 0
-
-    # convert numbers to colorless & letters to colors
-    for num in re.findall(r'\d+', casting_cost):
-        result['C'] += int(num)
-    for letter in re.findall(r'[A-Za-z]', casting_cost):
-        if letter == 'T':
-            continue
-        result[letter] += 1
-    return result
-
-def _encode_casting_cost(cost_dict: dict[str, int]) -> str:
-    """Ex {'U': 1, 'G': 0, ... 'C': 2} returns '2U';
-    iterate backward since 'C' is the last key; and colorless is expressed first in a cost string"""
-    values = []
-    for color, amt in reversed(cost_dict.items()):
-        if color == 'C':
-            values.append(str(amt)) if amt > 0 else '0'
-        elif amt > 0:
-            values.append(color * amt)
-        else:
-            values.append('0')
-    return ''.join(values)
-
 @dataclass
 class ManaPool:
     gs: GameState
@@ -109,10 +81,10 @@ class ManaPool:
         for c in COLOR_LETTERS_W_COLORLESS:
             self._floating_mana[c] = 0
 
-    def can_pay(self, cost: str) -> bool:
+    def can_pay(self, cost: str, x_value: int = 0) -> bool:
         if cost in {None, ''}:
             return True
-        cost = ManaCost(cost).decoded
+        cost = ManaCost(cost, x_value=x_value).decoded
         available = self.available_mana.copy()
 
         # Pay colored first
@@ -124,17 +96,17 @@ class ManaPool:
         # Can/Can't Pay colorless
         return sum(available.values()) >= cost['C']
 
-    def pay(self, cost: str):
+    def pay(self, cost: str, x_value: int = 0) -> None:
         """Payment order: pay color cost w floating, pay color w basic land,
         pay colorless w floating, pay colorless w random basic land.
         Other land sources (ex: colorless producers) are not yet considered."""
-        if cost in (None, ''):
+        if cost in {None, ''}:
             return
 
-        if not self.can_pay(cost):
+        if not self.can_pay(cost, x_value=x_value):
             raise ValueError("Cannot pay mana cost")
 
-        cost = ManaCost(cost).decoded
+        cost = ManaCost(cost, x_value=x_value).decoded
 
         # 1. Pay colored costs (everything except 'C')
         for c in cost:
@@ -200,14 +172,17 @@ class ManaPool:
                 for color in self._untapped_basic_land_mana}
 
     def get_max_x(self, casting_cost: str) -> int:
-        """Return the maximum X value the player can pay for a card with X in its casting cost."""
-        if 'X' not in casting_cost:
-            print("Warning: X not found in the cost")
-        cost = parse_casting_cost(casting_cost)  # {'X': 0, 'U': 2, ...}
-        cost['X'] = 0  # since 'X' is in the cast cost, it's being treated as {'X': 1 ...}
-        non_x_casting_weight = sum(cost.values())
+        """Return the maximum X value the player can pay for a card with at least one X in its casting cost;
+        If X is not in the provided casting cost, this will raise a ValueError"""
+        x_cnt = casting_cost.count('X')
+        if not x_cnt:
+            raise ValueError("X not found in the cost")
         available_mana_amt = sum(self.available_mana.values())
-        max_x = available_mana_amt - non_x_casting_weight
+        non_x_cost_dict = ManaCost(casting_cost).decoded
+        non_x_casting_weight = sum(non_x_cost_dict.values())
+        available_for_x: int = available_mana_amt - non_x_casting_weight
+        max_x = available_for_x // x_cnt
+        print('mana_pool.get_max_x() =', max(max_x, 0))
         return max(max_x, 0)
 
     def _tap_lands_for_color(self, color: str, amount: int):

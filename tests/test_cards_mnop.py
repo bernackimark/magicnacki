@@ -387,16 +387,13 @@ class TestCardsMNOP(unittest.TestCase):
         card = self.g.hand('part-water')
         c_1 = self.g.battlefield('savannah-lions')
         self.g.battlefield('serendib-efreet')
-        self.g.mana('U')
-        self.assertFalse(any(a for a in self.gs.available_actions_from_hand()
-                             if isinstance(a, AbilityPipeline) and a.source is card))
-
         self.g.mana('UU')
-        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
-        pipeline.advance()
-        possible_actions = self.gs.pending_choice.get_actions()
-        self.assertEqual(1, len(possible_actions))  # 'UUU' -> X=1 only
-        self.gs.choice_mgr.clear_current()
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=1)
+        self.assertFalse(pipeline.can_begin())
+
+        self.g.mana('U')
+        self.assertTrue(pipeline.can_begin())
 
         self.g.next_turn()
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
