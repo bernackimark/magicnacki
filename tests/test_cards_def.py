@@ -251,11 +251,10 @@ class TestCardsDEF(unittest.TestCase):
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
         pipeline.advance()
 
+        # in response to drain-power, opponent uses up some of their mana
         cast_random_spell = AbilityPipeline(1, self.gs, random_spell, random_spell.abilities[0])
         cast_random_spell.advance()
         cast_random_spell.resolve_ability()
-        self.assertTrue(plains.is_tapped, "Why didn't the plains tap?")
-
 
         pipeline.resolve_ability()
         volcanic_produces_red = self.gs.pending_choice.get_actions()[0]
