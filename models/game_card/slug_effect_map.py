@@ -17,6 +17,9 @@ Here are the different styles of EffSpec declarations:
    - ex: On(DamageProposedEvent, 'EOT').
                                    where(EC().damage_target_in(CF.owner()).damage_source_in(CF.non_fliers())).
                                    modify(PreventDamage()).build()  <-- sometimes .build() is needed at the end
+   - NOTE: A sorcery/instant cannot have GenTrig as its lone Effect; must come with a Spell, use Spell(EmptyResolver()):
+     - ex: 'darkness': [Spell(EmptyResolver()), GenTrig(On(DamageProposedEvent, expires='EOT').
+                                                 where(EC().is_combat_damage()).modify(PreventDamage()))]
  - Register adds a Listener to GameState.EventManager:
    - ex: Register(CantBeTargetedByAuras, target_attr='protected_card')
  - Spell ... executes via its own .resolve() method:

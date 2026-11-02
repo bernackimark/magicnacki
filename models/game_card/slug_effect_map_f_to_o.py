@@ -90,7 +90,8 @@ MAP: dict[str: list[EffSpec]] = {
     'flood': [Activated('UU', TapCard(), CF.untapped_creatures_without_flying())],
     'floral-spuzzem': [Triggered(FloralSpuzzem())],
     'flying-carpet': [Activated('2T', KWAModEffect('add', KW.FLYING, True), CF.creatures())],
-    'fog': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC().is_combat_damage()).modify(PreventDamage()))],
+    'fog': [Spell(EmptyResolver()), GenTrig(On(DamageProposedEvent, expires='EOT').
+                                            where(EC().is_combat_damage()).modify(PreventDamage()))],
     'force-of-nature': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).
                                 then(PayManaOr('GGGG', DealDamage(8, CF.owner()))))],
     'force-spike': [Spell(CounterSpellUnlessManaPaid('1'), CF.spells())],
@@ -185,8 +186,8 @@ MAP: dict[str: list[EffSpec]] = {
     'hidden-path': [Static(KWAApplies(CF.green_creatures(), 'add', KW.FORESTWALK))],
     'holy-armor': [Spell(Pump(0, 2), CF.creatures()),
                    Activated('W', Pump(0, 1, True), CF.host())],
-    'holy-day': [
-        GenTrig(On(DamageProposedEvent, expires='EOT').where(EC().is_combat_damage()).modify(PreventDamage()))],
+    'holy-day': [Spell(EmptyResolver()), GenTrig(On(DamageProposedEvent, expires='EOT').
+                                                 where(EC().is_combat_damage()).modify(PreventDamage()))],
     'holy-light': [Spell(PumpApplies(CF.non_white_creatures(), (-1, -1), True))],
     'holy-strength': [Spell(Pump(1, 2), CF.creatures())],
     'horn-of-deafening': [Activated('2T', PreventNextDamageTo(protected=CF.owner(), combat_only=True), CF.creatures())],

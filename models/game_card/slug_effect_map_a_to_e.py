@@ -268,7 +268,8 @@ MAP: dict[str, list[EffSpec]] = {
     'dark-ritual': [Spell(AddMana('B', 3))],
     'dark-sphere': [Activated('T', PreventNextDamageTo(protected=CF.owner()), CF.artifacts(),
                               extra_costs=[SacSelfCost()])],
-    'darkness': [GenTrig(On(DamageProposedEvent, expires='EOT').where(EC().is_combat_damage()).modify(PreventDamage()))],
+    'darkness': [Spell(EmptyResolver()), GenTrig(On(DamageProposedEvent, expires='EOT').
+                                                 where(EC().is_combat_damage()).modify(PreventDamage()))],
     'davenant-archer': [Activated('T', DealDamage(1), CF.combatants())],
     'deadfall': [Static(WalkRuleRemoved(KW.FORESTWALK))],
     'deathgrip': [Activated('BB', CounterSpell(), CF.green_spells())],
