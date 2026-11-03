@@ -82,17 +82,13 @@ class AbilityPipeline(Action):
         if max_x < min_x:
             return False
 
-        if (self.source.casting_cost and 'X' in self.source.casting_cost
-                and not self.gs.mana_pools[self.player_idx].can_pay(str(min_x))):
-            return False
-
         target_spec = self.eff_spec.target_spec
         if target_spec:
             targets = target_spec.get_targets(self.gs, self.source, self.eff_spec)
             if len(targets) < target_spec.min_cnt:
                 return False
 
-        if not self.gs.mana_pools[self.player_idx].can_pay(self.ability_cost):
+        if not self.gs.mana_pools[self.player_idx].can_pay(self.ability_cost, x_value=self.x_value):
             return False
 
         for extra_cost in self.eff_spec.extra_costs:
@@ -149,9 +145,8 @@ class AbilityPipeline(Action):
         if self.eff_spec.is_aa and 'T' in self.eff_spec.cost:
             self.source.tap()
         mana_cost = self.ability_cost[::]
-        mana_cost = mana_cost.replace('X', str(self.x_value)) if self.x_value is not None else mana_cost
         if mana_cost:
-            self.gs.mana_pools[self.player_idx].pay(mana_cost)
+            self.gs.mana_pools[self.player_idx].pay(mana_cost, x_value=self.x_value)
         for extra_cost in self.selected_extra_costs:
             cr = extra_cost.pay(self.gs, self.source)
             self.cost_results.append(cr)
