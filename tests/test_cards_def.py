@@ -445,6 +445,21 @@ class TestCardsDEF(unittest.TestCase):
         top_card = self.gs.pile_mgr.libraries[0][0]
         self.assertTrue(top_card.is_face_up)
 
+    def test_fireball_one_target(self):
+        """This spell costs {1} more to cast for each target beyond the first.
+        F deals X damage divided evenly, rounded down, among any number of targets."""
+        card = self.g.hand('fireball')  # XR
+
+    def test_fireball_multi_target(self):
+        """This spell costs {1} more to cast for each target beyond the first.
+        F deals X damage divided evenly, rounded down, among any number of targets."""
+        card = self.g.hand('fireball')  # XR
+
+    def test_fireball_couldnt_pay_the_1_extra(self):
+        """This spell costs {1} more to cast for each target beyond the first.
+        F deals X damage divided evenly, rounded down, among any number of targets."""
+        card = self.g.hand('fireball')  # XR
+
     def test_firestorm_phoenix(self):
         """If this card would die, bounce it instead; it cannot be re-summoned this turn"""
         self.gs.hands[0].clear()

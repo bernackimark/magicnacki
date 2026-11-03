@@ -21,7 +21,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
     Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire, FrankensteinsMonster, \
-    Metamorphosis, NovaPentacle
+    Metamorphosis, NovaPentacle, Fireball
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -79,6 +79,8 @@ MAP: dict[str: list[EffSpec]] = {
     'fire-and-brimstone': [Spell(FireAndBrimstone(), )],
     'fire-drake': [Activated('R', Pump(1, 0, True), CF.self(), max_activations_per_turn=1)],
     'fire-sprites': [Activated('GT', AddMana('R'), CF.owner(), is_mana_ability=True)],
+    'fireball': [Spell(Fireball(), TargetSpec(CF.all_creatures_and_players(), 1, None),
+                       max_x_func=max_x_from_printed_card)],
     'firebreathing': [Spell(EmptyResolver(), CF.creatures()), self_pump('R', 1, 0)],
     'firestorm-phoenix': [Triggered(FirestormPhoenix())],
     'fishliver-oil': [Spell(KWAModEffect('add', KW.ISLANDWALK), CF.creatures())],

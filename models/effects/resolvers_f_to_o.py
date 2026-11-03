@@ -92,6 +92,28 @@ class FireAndBrimstone(Resolver):
             gs.apply_damage(source, 4, opp)
             gs.apply_damage(source, 4, source.owner_id)
 
+class Fireball(Resolver):
+    """This spell costs {1} more to cast for each target beyond the first.
+    Fireball deals X damage divided evenly, rounded down, among any number of targets."""
+    # TODO: Declare in release notes: it's user's responsibility to ensure they have {1} to pay for each add'l target
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        t = [t] if not isinstance(t, list) else t
+        target_cnt = len(t)
+
+        if target_cnt > 1:
+            mp = gs.mana_pools[source.owner_id]
+            if not mp.can_pay(str(target_cnt - 1)):
+                print(f'{source.props.name} {{{target_cnt}}} cannot be paid; spell fizzles')
+                return
+            mp.pay(str(target_cnt - 1))
+
+        x = context.x_value
+        damage_per_target = x // target_cnt
+        for tar in t:
+            gs.apply_damage(source, damage_per_target, tar)
+
+
 class FrankensteinsMonster(Resolver):
     """As FM enters, exile X creatures from your gy. If you can't, put FM into in gy instead of battlefield. X >= 0.
     For each creature card exiled this way, this creature enters with a +2/+0, +1/+1, or +0/+2 counter on it."""
