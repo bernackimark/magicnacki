@@ -449,16 +449,44 @@ class TestCardsDEF(unittest.TestCase):
         """This spell costs {1} more to cast for each target beyond the first.
         F deals X damage divided evenly, rounded down, among any number of targets."""
         card = self.g.hand('fireball')  # XR
+        self.g.mana('RRR')
+        bears = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=2, targets=[bears])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(bears, self.g.gy[1])
 
     def test_fireball_multi_target(self):
         """This spell costs {1} more to cast for each target beyond the first.
         F deals X damage divided evenly, rounded down, among any number of targets."""
         card = self.g.hand('fireball')  # XR
+        self.g.mana('R' * 6)
+        bears = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
+        lions = self.g.battlefield('savannah-lions', owner=1)  # 2/1
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=4, targets=[bears, lions])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(lions, self.g.gy[1])
+        self.assertIn(bears, self.g.gy[1])
+        self.assertEqual(0, len(self.gs.card_filter.on_player_board(0).untapped().mountains().result()))
 
     def test_fireball_couldnt_pay_the_1_extra(self):
         """This spell costs {1} more to cast for each target beyond the first.
         F deals X damage divided evenly, rounded down, among any number of targets."""
+        # Casting uses the R and x=4, tapping all lands; since there is no mana to pay the extra {1}; spell fizzles
         card = self.g.hand('fireball')  # XR
+        self.g.mana('R' * 5)
+        bears = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
+        lions = self.g.battlefield('savannah-lions', owner=1)  # 2/1
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=4, targets=[bears, lions])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertNotIn(lions, self.g.gy[1])
+        self.assertNotIn(bears, self.g.gy[1])
+        self.assertEqual(0, len(self.gs.card_filter.on_player_board(0).untapped().mountains().result()))
 
     def test_firestorm_phoenix(self):
         """If this card would die, bounce it instead; it cannot be re-summoned this turn"""

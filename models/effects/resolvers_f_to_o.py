@@ -104,7 +104,7 @@ class Fireball(Resolver):
         if target_cnt > 1:
             mp = gs.mana_pools[source.owner_id]
             if not mp.can_pay(str(target_cnt - 1)):
-                print(f'{source.props.name} {{{target_cnt}}} cannot be paid; spell fizzles')
+                print(f'{source.props.name} {{{target_cnt - 1}}} cannot be paid; spell fizzles')
                 return
             mp.pay(str(target_cnt - 1))
 
