@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 from models.constants import BASIC_LANDS, KW, Zone
 from models.effects.base import Listener
 from models.events_all import CanBlockQueryEvent, CanAttackQueryEvent, CanCastQueryEvent, CanDamageQueryEvent, \
-    CanTargetQueryEvent, StateBasedEvent, MaxLandPlayedQueryEvent
+    CanTargetQueryEvent, StateBasedEvent, MaxLandPlayedQueryEvent, CanPlayerLoseForZeroLifeQueryEvent
 from models.utils import flip
 
 
@@ -162,17 +162,28 @@ class LifeAndPoisonCheck(BaseRule):
     listens_to = StateBasedEvent
 
     def on_event(self, gs: GameState, source: GameCard, event: StateBasedEvent) -> None:
+        """If a player has <= 0 life, emit CanPlayerLoseForZeroLifeQueryEvent;
+        Returns None if game is not over;
+        else -1 if a draw, 0 for player #0, 1 for player #1, updates gs.is_game_over"""
         if gs.is_game_over:  # there could be a win condition that sets is_game_over to True elsewhere
             return
 
-        """Returns None if game is not over;
-        else -1 if a draw, 0 for player #0, 1 for player #1, updates gs.is_game_over"""
-        zero_life = [idx for idx, life in enumerate(gs.life) if life <= 0]
+        zero_life_losers = []
+        for p_id, life in enumerate(gs.life):
+            if life > 0:
+                continue
+            event = CanPlayerLoseForZeroLifeQueryEvent(player_id=p_id)
+            gs.event_mgr.emit(event)
+            if not event.can_player_lose:
+                continue
+            zero_life_losers.append(p_id)
+
         ten_poison = [idx for idx, poison in enumerate(gs.score_mgr.poison_counters) if poison >= 10]
 
-        losers = tuple(set(zero_life + ten_poison))
+        losers = tuple(set(zero_life_losers + ten_poison))
         if not losers:
             return
+
         if len(losers) > 1:
             gs.winner = -1
             gs.is_game_over = True

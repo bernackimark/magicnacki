@@ -9,6 +9,7 @@ from models.game_card.counter_tokens import PLUS_ONE
 from models.effects.base import Listener
 from models.events_all import DiesEvent, DamageResolvedEvent, Event
 from models.game_card.modifiers import BasePTMod
+from models.utils import flip
 
 if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
@@ -78,6 +79,16 @@ class FirestormPhoenix(Listener):
         gs.pile_mgr.bounce(source)
         from models.effects.listeners_permission import CantCastEOT
         gs.event_mgr.register(CantCastEOT(source), source)
+
+class LichDies(Listener):
+    """... When L is put into a graveyard from the battlefield, you lose the game ..."""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if event.card is not source:
+            return
+        gs.is_game_over = True
+        gs.winner = flip(source.owner_id)
 
 class PersonalIncarnationDies(Listener):
     """... When this creature dies, its owner loses half their life, rounding up the loss amount"""

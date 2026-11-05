@@ -429,6 +429,24 @@ class LibraryOfAlexandria(Resolver):
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
         gs.pile_mgr.draw(source.owner_id)
 
+class Lich(Resolver):
+    """As L ETB, you lose life equal to your life total. You don't lose the game for having <= 0 life.
+    If you would gain life, draw that many cards instead.
+    Whenever you're dealt Y damage, sac Y nontoken permanents. If you can't, you lose the game.
+    When L is put into a graveyard from the battlefield, you lose the game (handled in slug-effect definition)."""
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        from models.effects.listeners_damage import LichDamageSac
+        from models.effects.listeners_dies import LichDies
+        from models.effects.listeners_misc import LichGainLifeDraw, LichLoseForZeroLifeCheck
+
+        gs.event_mgr.register(LichLoseForZeroLifeCheck(), source)
+        gs.event_mgr.register(LichGainLifeDraw(), source)
+        gs.event_mgr.register(LichDamageSac(), source)
+        gs.event_mgr.register(LichDies(), source)
+
+        gs.score_mgr.decrement_life(source.owner_id, gs.life[source.owner_id], source)
+
+
 class LifeChisel(Resolver):
     """Sac a creature: You gain life equal to the sacrificed creature's toughness. Activate only during your upkeep."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:

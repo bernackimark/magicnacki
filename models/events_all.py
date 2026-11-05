@@ -69,6 +69,11 @@ class CanEnterUntapPhaseQueryEvent(Event):
     permission: bool | None = None
 
 @dataclass
+class CanPlayerLoseForZeroLifeQueryEvent(Event):
+    player_id: int
+    can_player_lose: bool = True
+
+@dataclass
 class CanRegenerateQueryEvent(Event):
     card: GameCard
     permission: bool | None = None
@@ -190,8 +195,9 @@ class LandTappedForManaEvent(Event):
     card: GameCard
     mana_produced: str
 
-@dataclass(frozen=True)
+@dataclass
 class LifeGainEvent(Event):
+    """Is not frozen as it may be modified (ex: lich)"""
     p_id_gaining_life: int
     amt: int
     source: GameCard

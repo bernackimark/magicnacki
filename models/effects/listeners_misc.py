@@ -13,7 +13,8 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, \
-    StackAdditionEvent, MaxHandSizeQueryEvent, Event, MaxLandPlayedQueryEvent, LandTappedForManaEvent
+    StackAdditionEvent, MaxHandSizeQueryEvent, Event, MaxLandPlayedQueryEvent, LandTappedForManaEvent, \
+    CanPlayerLoseForZeroLifeQueryEvent, LifeGainEvent
 from models.utils import flip
 
 
@@ -50,6 +51,17 @@ class PowerleechActivation(Listener):
         if source.owner_id == event.aa.source.owner_id or not event.aa.source.is_artifact:
             return
         gs.score_mgr.increment_life(source.owner_id, 1, source)
+
+
+# --- CAN PLAYER LOSE FOR ZERO LIFE QUERY EVENT ---
+class LichLoseForZeroLifeCheck(Listener):
+    """... You don't lose the game for having 0 or less life ..."""
+    listens_to = CanPlayerLoseForZeroLifeQueryEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: CanPlayerLoseForZeroLifeQueryEvent) -> None:
+        if source.owner_id != event.player_id:
+            return
+        event.can_player_lose = False
 
 # --- CAST RESOLVED EVENT ---
 class IchneumonDruid(Listener):
@@ -99,6 +111,19 @@ class ManaFlare(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: LandTappedForManaEvent) -> None:
         gs.mana_pools[event.card.owner_id].add_floating(event.mana_produced)
+
+
+# --- LIFE GAIN ---
+class LichGainLifeDraw(Listener):
+    """... If you would gain life, draw that many cards instead ..."""
+    listens_to = LifeGainEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: LifeGainEvent) -> None:
+        if source.owner_id != event.p_id_gaining_life:
+            return
+        draw_cnt = event.amt
+        event.amt = 0
+        gs.pile_mgr.draw(source.owner_id, draw_cnt)
 
 
 # --- LIFE LOSS ---

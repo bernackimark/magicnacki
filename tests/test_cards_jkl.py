@@ -289,6 +289,49 @@ class TestCardsJKL(unittest.TestCase):
         self.assertIn(card_in_hand, self.gs.pile_mgr.libraries[0])
         self.assertEqual([], self.g.gy[0])
 
+    def test_lich(self):
+        """As L ETB, you lose life equal to your life total. You don't lose the game for having 0 or less life.
+        If you would gain life, draw that many cards instead.
+        Whenever you're dealt Y damage, sac Y nontoken permanents. If you can't, you lose the game ...
+        (continued in another test)"""
+        # play Lich; score = 0; game is not over
+        hand = self.gs.hands[0]
+        hand.clear()
+        card = self.g.hand('lich')
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0])
+        self.assertEqual(0, self.gs.life[0])
+        self.assertFalse(self.gs.is_game_over)
+
+        # try to gain 1 life; score is still 0; draw 1 card instead
+        self.gs.score_mgr.increment_life(p_id=0, amt=1, source=None)
+        self.assertEqual(0, self.gs.life[0])
+        self.assertEqual(1, len(hand))
+
+        # damage is dealt; sac that many perms
+        bears = self.g.battlefield('grizzly-bears')
+        random_source = self.g.battlefield('tundra-wolves', owner=1)
+        self.gs.apply_damage(random_source, 1, 0)
+        self.assertEqual(-1, self.gs.life[0])
+        self.assertIn(bears, self.g.gy[0])  # TODO: see listeners_damage.py LichDamageSac
+
+        # damage is dealt; not enough perms; game is over
+        self.gs.apply_damage(random_source, 15, 0)
+        self.assertTrue(self.gs.is_game_over)
+
+    def test_lich_2(self):
+        """... When L is put into a graveyard from the battlefield, you lose the game."""
+        # play Lich; score = 0; game is not over
+        hand = self.gs.hands[0]
+        hand.clear()
+        card = self.g.hand('lich')
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0])
+        self.assertEqual(0, self.gs.life[0])
+        self.assertFalse(self.gs.is_game_over)
+
+        # send Lich to gy; game is over
+        self.gs.pile_mgr.destroy(card)
+        self.assertTrue(self.gs.is_game_over)
+
     def test_life_matrix(self):
         """... Put a matrix counter on target creature & that creature gains
         'Remove a matrix counter from this creature: Regenerate this creature.' ..."""

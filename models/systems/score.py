@@ -25,9 +25,9 @@ class ScoreManager:
         """Increments player life; no event is raised/emitted, as there's seemingly no cards w increased life effects;
         some implementers of increment_life don't capture the source, so it may be None"""
         event = LifeGainEvent(p_id, amt, source)
+        self._gs.event_mgr.emit(event)
         if event.amt <= 0:
             return
-        self._gs.event_mgr.emit(event)
         self.life[p_id] += amt
         print(f"Increasing player #{p_id}'s life by {amt}. Life is now at {self.life}")
 

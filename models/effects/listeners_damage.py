@@ -205,6 +205,20 @@ class GlyphOfLife(Listener):
         gs.score_mgr.increment_life(s.owner_id, event.amt, s)
         self.is_expired = True
 
+class LichDamageSac(Listener):
+    """... Whenever you're dealt Y damage, sac Y nontoken permanents. If you can't, you lose the game ..."""
+    listens_to = DamageResolvedEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> None:
+        your_perms = gs.card_filter.non_token().permanents().on_player_board(source.owner_id).result()
+        if event.amt > len(your_perms):
+            gs.is_game_over = True
+            gs.winner = flip(source.owner_id)
+            return
+
+        # TODO: since we're asking for multiple options, handle thru choice_mgr, but need to carry state
+
+
 class LivingArtifactOnDamage(Listener):
     """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ...
     You can target opponent artifacts. The controller of the Aura controls the Living Artifact ability"""

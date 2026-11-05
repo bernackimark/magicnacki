@@ -21,7 +21,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
     Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire, FrankensteinsMonster, \
-    Metamorphosis, NovaPentacle, Fireball
+    Metamorphosis, NovaPentacle, Fireball, Lich
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -283,6 +283,7 @@ MAP: dict[str: list[EffSpec]] = {
     'library-of-alexandria': [Activated('T', AddMana('C'), is_mana_ability=True),
                               Activated('T', LibraryOfAlexandria())],
     'library-of-leng': [Static(LibraryOfLengMaxHandSize()), Static(LibraryOfLengDiscard())],
+    'lich': [Spell(Lich())],
     'life-chisel': [Spell(LifeChisel(), allowed_phases=[Phase.UPKEEP], allowed_p_turn_func=CF.owner(),
                           extra_costs=[SacCardCost(CF.your_artifacts())])],
     'life-matrix': [Activated('4T',
