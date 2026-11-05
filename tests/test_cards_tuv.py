@@ -3,7 +3,7 @@ import unittest
 from models.actions.ability_pipeline import AbilityPipeline
 from models.cost import SacCardCost, CostResult
 from models.game_card.counter_tokens import HATCHLING, STUN, PLUS_ONE
-from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent
+from models.events_all import CastResolvedEvent, UpkeepEvent, CombatEndEvent, StateBasedEvent
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
 
@@ -22,6 +22,53 @@ class TestCardsTUV(unittest.TestCase):
         pay_1_gain_1 = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(pay_1_gain_1)
         self.assertEqual(21, self.gs.life[0])
+
+    def test_takkemaggot(self):
+        """At host's upkeep, put a -0/-1 counter on host.
+        If they can, return T to the battlefield under your control attached to that creature.
+        If they can't, return T to the battlefield under your control as a non-Aura enchantment &
+        it loses 'enchant creature' and gains 'At host's upkeep, T deals 1 damage to that player.'"""
+        card = self.g.hand('takklemaggot')
+        self.g.mana('BBBB')
+        lions = self.g.battlefield('savannah-lions', owner=1)  # 2/1
+        merfolk = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
+        wolves = self.g.battlefield('tundra-wolves', owner=1)
+
+        # attach to lions; at lions' upkeep, toughness drops to 0, lions die
+        cast = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[lions])
+        cast.advance()
+        cast.resolve_ability()
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.gs.event_mgr.emit(StateBasedEvent())  # <- should I really need to manually trigger this here?
+        self.assertIn(lions, self.g.gy[1])
+
+        # two targets remain: merfolk & wolves; choose merfolk;
+        # at upkeep, merfolk dies, takkle is auto-attached to wolves (the sole remaining target)
+        attach_to_merfolk = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(attach_to_merfolk)
+        self.assertIs(merfolk, card.host)
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.gs.event_mgr.emit(StateBasedEvent())
+        self.assertIn(merfolk, self.g.gy[0])
+
+        # one target remains (still making user select the last remaining target); choose wolves
+        # at upkeep, wolves die, takkle becomes a non-aura enchantment
+        attach_to_wolves = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(attach_to_wolves)
+        self.assertIs(wolves, card.host)
+        self.g.next_turn(True)
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.gs.event_mgr.emit(StateBasedEvent())
+        self.assertIn(wolves, self.g.gy[1])
+        self.assertNotIn('Aura', card.card_sub_types,
+                         "Notice how takkle's sub_types print as []; from where does it re-gain its 'Aura'?")
+
+        # at next upkeep of the last host, deal that host 1 damage
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(19, self.gs.life[1])
 
     def test_tawnoss_coffin(self):
         """You may choose not to untap TC during your untap step.

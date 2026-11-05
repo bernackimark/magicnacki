@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Any
 
 from models.choice_actions_all import ChoiceAction
 from models.choice_options import CO, pay_mana_to_draw_cards, pay_mana_to_bounce, pay_mana_to_gain_life
-from models.game_card.counter_tokens import PLUS_ONE
-from models.effects.base import Listener
-from models.events_all import DiesEvent, DamageResolvedEvent, Event
-from models.game_card.modifiers import BasePTMod
+from models.game_card.counter_tokens import PLUS_ONE, MINUS_ZERO_ONE
+from models.effects.base import Listener, GenTrig
+from models.events_all import DiesEvent, DamageResolvedEvent, Event, UpkeepEvent
+from models.game_card.modifiers import BasePTMod, SubTypeMod
 from models.utils import flip
 
 if TYPE_CHECKING:
@@ -158,3 +158,53 @@ class SengirVampire(Listener):
             source.counters.add_counter(PLUS_ONE)
             return
 
+class TakklemaggotHostDies(LichDies):
+    """... When host dies, that creature's controller chooses a creature T could enchant.
+    If they can, return T to the battlefield under your control attached to that creature.
+    If they can't, return T to the battlefield under your control as a non-Aura enchantment &
+    it loses 'enchant creature' and gains 'At host's upkeep, T deals 1 damage to that player.'"""
+    listens_to = DiesEvent
+
+    def on_event(self, gs: GameState, source: GameCard, event: DiesEvent) -> None:
+        if event.card is not source.host:
+            return
+        print("Inside TakkleHostDies")
+        targets = [c for c in gs.card_filter.in_play().creatures().result()
+                   if gs.perm_querier.can_target(c, source) and c is not source.host]
+        if not targets:
+            print('I have no more legal targets; I should be converting into a non-aura enchantment')
+            self._reanimate_and_convert_to_non_aura(gs, source)
+            return
+        options = [CO(f'Attach {source.props.name} to {t}',
+                   lambda tar=t: self._reanimate_and_attach(gs, source, tar)) for t in targets]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    def _reanimate_and_attach(self, gs: GameState, takkle: GameCard, host: GameCard):
+        """Reanimate, attach;
+        Re-register the 0/-1 Upkeep Listener (originally register by the card's definition),
+        Re-register this Listener class"""
+        from models.effects.resolvers_generic import Attach
+        print('Inside reanimate & attach, attaching to', host)
+        gs.pile_mgr.reanimate(takkle)
+        a = Attach()
+        a.resolve(gs, takkle, host)
+        from models.game_card.effect_spec_templates import On
+        from models.game_card.event_conditions import EC
+        from models.effects.resolvers_generic import AddCounter
+        from models.game_card.target_funcs import ET
+        listener = GenTrig(On(UpkeepEvent).where(EC().is_host_turn()).then(AddCounter(MINUS_ZERO_ONE)).t(ET.host()))
+        gs.event_mgr.register(listener.effect, takkle)
+        gs.event_mgr.register(self, takkle)
+
+    @staticmethod
+    def _reanimate_and_convert_to_non_aura(gs: GameState, takkle: GameCard):
+        gs.pile_mgr.reanimate(takkle)
+        print("Takkle's zone is", takkle.zone)
+        takkle.modifiers.append(SubTypeMod(s=takkle, add_or_remove='remove', item='Aura'))
+        print('Inside Takkle, should now not have Aura in its sub_types', takkle.card_sub_types)
+        from models.game_card.effect_spec_templates import On
+        from models.game_card.event_conditions import EC
+        from models.effects.resolvers_generic import DealDamage
+        from models.game_card.target_funcs import ET
+        listener = GenTrig(On(UpkeepEvent).where(EC().is_host_turn()).then(DealDamage(1, to=ET.s_owner())))
+        gs.event_mgr.register(listener.effect, takkle)

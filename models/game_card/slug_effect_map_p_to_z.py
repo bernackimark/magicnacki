@@ -5,7 +5,8 @@ from .effect_spec_templates import dual_land_specs, MANA_BATTERY_ADD_CHARGE, man
 from .card_filter_funcs import C_FUNCS, CF
 from models.constants import COLOR_LETTERS, KW, Zone
 from models.cost import SacSelfCost, PayLifeCost, RemoveCounterCost, SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING, MINUS_ZERO_TWO
+from models.game_card.counter_tokens import PLUS_ONE, CORPSE, MINUS_ONE, PIN, DREAM, HATCHLING, MINUS_ZERO_TWO, \
+    MINUS_ZERO_ONE
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from .event_conditions import EC
 from .target_funcs import ET
@@ -41,7 +42,7 @@ from ..effects.listeners_tap_untap import TawnossCoffinUntap, RasputinDreamweave
 from ..effects.listeners_end_step import SeasonOfTheWitchEndStep, VoodooDollEndStep
 from ..effects.listeners_draw_discard import PsychicPurgeDiscard, SylvanLibrary
 from ..effects.listeners_dies import PersonalIncarnationDies, SengirVampire, PuppetMaster, \
-    SandalsOfAbdallahIfCreatureDies, Reincarnation
+    SandalsOfAbdallahIfCreatureDies, Reincarnation, TakklemaggotHostDies
 from ..effects.listeners_damage import RockHydraAutoDamagePrevent, SpiritLink, ReverseDamage
 from ..effects.listeners_cost import PlanarGate, PowerArtifact, StoneCalendar
 from ..effects.listeners_combat import Sentinel, YdwenEfreet, TheWretched, SpittingSlugA, SpittingSlugB
@@ -251,6 +252,9 @@ MAP: dict[str, list[EffSpec]] = {
     'syphon-soul': [Spell(Do(DealDamage(2, CF.opp()), GainLife(2, CF.owner())))],
     'tablet-of-epityr': [GenTrig(On(DiesEvent).where(EC().dier_is_your_artifact()).then(MayPayMana('1', GainLife(1))))],
     'taiga': dual_land_specs('RG'),
+    'takklemaggot': [Spell(EmptyResolver()),
+                     GenTrig(On(UpkeepEvent).where(EC().is_host_turn()).then(AddCounter(MINUS_ZERO_ONE)).t(ET.host())),
+                     Static(TakklemaggotHostDies())],
     'tangle-kelp': [Spell(Do(TapCard(), Register(DoesntUntapAtUntapIfItAttackedLastTurn, target_attr='target')),
                           CF.creatures())],
     'tawnoss-coffin': [Activated('3T', TawnossCoffin(), CF.creatures()),

@@ -22,6 +22,10 @@ class ET:
         return lambda gs, source, event: event.source.is_artifact
 
     @staticmethod
+    def host():
+        return lambda gs, source, event: source.host
+
+    @staticmethod
     def host_owner():
         return lambda gs, source, event: source.host.owner_id
 
