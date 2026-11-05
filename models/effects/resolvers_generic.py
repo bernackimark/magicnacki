@@ -117,6 +117,14 @@ class AllWalksRemoved(Resolver):
         for land in BASIC_LANDS:
             t.modifiers.append(KWAMod(s=source, add_or_remove='remove', item=f'{land.capitalize()}walk', expires='EOT'))
 
+class Attach(Resolver):
+    """Associate aura to host & host to aura"""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        host = t
+        source.host = host
+        host.auras.append(source)
+
 class BasePT(Resolver):
     def __init__(self, base_p: int = None, base_t: int = None, eot: bool = False):
         self.base_p = base_p
