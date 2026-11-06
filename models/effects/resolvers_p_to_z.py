@@ -26,6 +26,23 @@ if TYPE_CHECKING:
     from models.game_card.game_card import GameCard
 
 
+class PetraSphinx(Resolver):
+    """{T}: Target player chooses a card name, then reveals the top card of their library.
+    If that card has the chosen name, put it into their hand. If it doesn't, put it into their graveyard."""
+    @Resolver.target_required
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        gs.action_on_idx = t
+        names = sorted({c.props.name for c in gs.all_player_cards[t]})
+        options = [CO(f'Name {name}', lambda n=name: self._choose_card_name(gs, t, n)) for name in names]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _choose_card_name(gs: GameState, p_id: int, card_name: str):
+        top_of_lib = gs.pile_mgr.libraries[p_id][0]
+        gs.add_presentation_request(flip(p_id), PresentationReqType.VIEW_LIBRARY, {'cards': [top_of_lib]})
+        to_zone = Zone.HAND if top_of_lib.props.name == card_name else Zone.GRAVEYARD
+        gs.pile_mgr.move_card(top_of_lib, to_zone, cause='petra_sphinx')
+
 class PhantasmalTerrain(Resolver):
     """Enchant land As this Aura enters, choose a basic land type. Enchanted land is the chosen type."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:

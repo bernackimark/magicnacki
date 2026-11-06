@@ -628,6 +628,25 @@ class NaturalSelection(Resolver):
         for c in ordered_cards[::-1]:
             lib.insert(0, c)
 
+class Nebuchadnezzar(Resolver):
+    """{X}, {T}: Choose a card name. Opp reveals X cards at random from their hand.
+    Then that player discards all cards with that name revealed this way."""
+    # TODO: this doesn't pull in every card name in the Universe
+    def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:
+        opp = flip(source.owner_id)
+        x = context.x_value
+        names = sorted({c.props.name for player_cards in gs.all_player_cards for c in player_cards})
+        options = [CO(f'Name {name}', lambda n=name: self._choose_card_name(gs, source, opp, n, x)) for name in names]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    @staticmethod
+    def _choose_card_name(gs: GameState, neb: GameCard, p_id: int, card_name: str, x_value: int):
+        random_cards = random.sample(gs.hands[p_id], k=x_value)
+        gs.add_presentation_request(flip(p_id), PresentationReqType.VIEW_LIBRARY, {'cards': [random_cards]})
+        for c in random_cards:
+            if c.props.name == card_name:
+                gs.pile_mgr.discard(c, neb)
+
 class Necropolis(Resolver):
     """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None) -> None:

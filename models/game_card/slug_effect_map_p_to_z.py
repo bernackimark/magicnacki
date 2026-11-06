@@ -23,7 +23,7 @@ from ..effects.resolvers_p_to_z import ReversePolarity, Simulacrum, Telekinesis,
     WandOfIth, WindsOfChange, WinterBlast, WoodElemental, PriestOfYawgmoth, Twiddle, Sindbad, SirensCall, \
     VenarianGold, TriassicEggB, Stangg, WarBarge, PowerSink, UrzasAvenger, TransmuteArtifact, SwordOfTheAges, \
     TawnossCoffin, Reverberation, Recall, RelicBind, RemoveEnchantments, VolcanicEruption, SorrowsPath, \
-    QuarumTrenchGnomes, ReflectingMirror
+    QuarumTrenchGnomes, ReflectingMirror, PetraSphinx
 from models.effects.resolvers_generic import AddCounter, DealDamage, Destroy, DestroyAll, AddPoisonCounter, \
     AddCounterPerCreatureDeath, Regenerate, DrawCards, SetColor, KWAModEffect, AddMana, Bounce, Reanimate, Steal, \
     GraveyardToExileInItsEntirety, Pump, CreateTokenCreature, TapCard, TapCards, \
@@ -70,6 +70,7 @@ MAP: dict[str, list[EffSpec]] = {
                              Activated('', RedirectNextDamageFromCardToOwnerEOT(CF.self(), 1))],
     'pestilence': [Activated('B', DealDamage(1, CF.all_creatures_and_players())),
                    GenTrig(On(EndStepEvent).where(EC().no_creatures_in_play()).then(Destroy(CF.self())))],
+    'petra-sphinx': [Activated('', PetraSphinx())],
     'phantasmal-forces': [GenTrig(On(UpkeepEvent).where(EC().is_your_turn()).then(PayManaOr('U', SacSelf())))],
     'phantasmal-terrain': [Spell(PhantasmalTerrain(), CF.lands())],
     'phyrexian-gremlins': [Triggered(OptionalUntap()),

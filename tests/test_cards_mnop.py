@@ -230,6 +230,38 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(18, self.gs.life[1])
         self.assertEqual(0, len(self.gs.emblem_mgr.emblems))
 
+    def test_nebuchadnezzar(self):
+        """{X}, {T}: Choose a card name. Opp reveals X cards at random from their hand.
+        Then that player discards all cards with that name revealed this way."""
+        self.gs.hands[1].clear()
+        island = self.g.hand('island', owner=1)
+        swamp1 = self.g.hand('swamp', owner=1)
+        swamp2 = self.g.hand('swamp', owner=1)
+        card = self.g.battlefield('nebuchadnezzar')
+        aa = card.activated_abilities[0]
+        self.g.mana('BBB')
+
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, x_value=3)
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        name_swamp = next(a for a in self.gs.pending_choice.get_actions() if a.description == 'Name Swamp')
+        self.gs.choice_mgr.choose(name_swamp)
+        self.assertIn(swamp1, self.g.gy[1])
+        self.assertIn(swamp2, self.g.gy[1])
+        self.assertIn(island, self.gs.hands[1])
+
+        self.g.next_turn()
+        self.gs.hands[1].clear()
+        island = self.g.hand('island', owner=1)
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec, x_value=1)
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        name_swamp = next(a for a in self.gs.pending_choice.get_actions() if a.description == 'Name Swamp')
+        self.gs.choice_mgr.choose(name_swamp)
+        self.assertIn(island, self.gs.hands[1])
+
     def test_necropolis(self):
         """Exile a creature card from your graveyard: Put X +0/+1 counters on this creature, X = the exiled card's MV"""
         self.g.graveyard('merfolk-of-the-pearl-trident')  # U
@@ -463,6 +495,26 @@ class TestCardsMNOP(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertEqual(1, card.damage_received_this_turn)
         self.assertEqual(18, self.gs.life[0])
+
+    def test_petra_sphinx(self):
+        """{T}: Target player chooses a card name, then reveals the top card of their library.
+        If that card has the chosen name, put it into their hand. If it doesn't, put it into their graveyard."""
+        self.gs.pile_mgr.libraries[0].clear()
+        card = self.g.battlefield('petra-sphinx')
+        aa = card.activated_abilities[0]
+
+        swamp = self.g.library('swamp')
+        island = self.g.library('island')
+        self.g.activate_ability(aa, 0)
+        name_swamp = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(name_swamp)
+        self.assertIn(island, self.g.gy[0])
+
+        card.untap()
+        self.g.activate_ability(aa, 0)
+        name_swamp = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(name_swamp)
+        self.assertIn(swamp, self.gs.hands[0])
 
     def test_phantasmal_terrain(self):
         """As this Aura enters, choose a basic land type. Host is the chosen type."""

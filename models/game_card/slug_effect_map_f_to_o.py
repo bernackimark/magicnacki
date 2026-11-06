@@ -21,7 +21,7 @@ from ..effects.resolvers_f_to_o import FalseOrders, JovialEvil, MindTwist, Natur
     KryShield, ManaClash, MartyrsCry, NamelessRace, ManaShort, FireAndBrimstone, LibraryOfAlexandria, FellwarStone, \
     NettlingImp, MoldDemon, ManaDrain, IfhBiffEfreet, GlyphOfDelusion, GlyphOfReincarnation, GuardianAngel, \
     Necropolis, LifeChisel, LandsEdge, Juxtapose, MindBomb, GauntletsOfChaos, Hellfire, FrankensteinsMonster, \
-    Metamorphosis, NovaPentacle, Fireball, Lich
+    Metamorphosis, NovaPentacle, Fireball, Lich, Nebuchadnezzar
 from models.effects.resolvers_generic import XZeroOneCountersByManaValue, DealDamage, \
     Destroy, DestroyAll, Regenerate, SacAll, DrawCards, DestroySelfCombatants, \
     BecomeCreature, SetColor, AllWalksRemoved, KWAModEffect, GainLife, AddMana, Bounce, Reanimate, Steal, HandToBoard, \
@@ -363,6 +363,7 @@ MAP: dict[str: list[EffSpec]] = {
     'nafs-asp': [Triggered(NafsAsp())],
     'nameless-race': [Spell(NamelessRace())],
     'natural-selection': [Spell(NaturalSelection(), CF.all_players())],
+    'nebuchadnezzar': [Activated('XT', Nebuchadnezzar(), allowed_p_turn_func=CF.owner())],
     'necropolis': [Activated('', Necropolis(), extra_costs=[ExileCardCost(CF.creatures_in_your_graveyard())])],
     'nether-shadow': [Triggered(NetherShadow())],
     'nether-void': [Triggered(PayManaOrCounterSpellListener('3'))],
