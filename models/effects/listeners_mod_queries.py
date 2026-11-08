@@ -3,13 +3,13 @@ import math
 from functools import cached_property
 from typing import TYPE_CHECKING, Callable, Any, Optional
 
-from models.events_all import ModQueryEvent
+from models.events_all import ModQueryEvent, Event
 
 if TYPE_CHECKING:
     from game_state import GameState
     from models.game_card.game_card import GameCard
 
-from models.constants import BASIC_LAND_MANA_PRODUCED, BASIC_LANDS
+from models.constants import BASIC_LAND_MANA_PRODUCED, BASIC_LANDS, COLOR_LETTERS
 from models.effects.base import Listener
 from models.game_card.modifiers import TypeMod, SubTypeMod, PTMod, KWAMod, OwnershipMod, ManaProdMod
 from models.utils import flip
@@ -382,6 +382,17 @@ class LivingPlane(Listener):
         elif event.query == 'pt':
             event.mods.append(PTMod(s=source, p_adj=1, t_adj=1))
 
+class NorthStarManaProd(Listener):
+    """For one spell this turn, you may spend mana as though it were mana of any type to pay that spell's mana cost
+    (see readme.md)"""
+    listens_to = ModQueryEvent
+    modifies = 'mana_produced'
+
+    def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
+        for color in COLOR_LETTERS:
+            if color not in event.card.mana_produced:
+                event.mods.append(ManaProdMod(s=source, item=color))
+
 class RabidWombat(Listener):
     """This creature gets +2/+2 for each Aura attached to it"""
     listens_to = ModQueryEvent
@@ -401,7 +412,7 @@ class SunglassesOfUrza(Listener):
     modifies = 'mana_produced'
 
     def on_event(self, gs: GameState, source: GameCard, event: ModQueryEvent) -> None:
-        if 'W' not in event.card._mana_produced:
+        if 'W' not in event.card.mana_produced:
             return
         event.mods.append(ManaProdMod(s=source, item='R'))
 

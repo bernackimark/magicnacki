@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 
 from models.effects.base import Listener
 from models.events_all import LifeLossEvent, CastResolvedEvent, MainPhaseEvent, AbilityActivatedEvent, \
-    StackAdditionEvent, MaxHandSizeQueryEvent, Event, MaxLandPlayedQueryEvent, LandTappedForManaEvent, \
-    CanPlayerLoseForZeroLifeQueryEvent, LifeGainEvent
+    StackAdditionEvent, MaxHandSizeQueryEvent, MaxLandPlayedQueryEvent, LandTappedForManaEvent, \
+    CanPlayerLoseForZeroLifeQueryEvent, LifeGainEvent, ModQueryEvent
 from models.utils import flip
 
 
@@ -74,6 +74,17 @@ class IchneumonDruid(Listener):
                                     if e.owner_id == opp and 'Instant' in e.card.card_types])
         if instants_cast_in_turn > 1:
             gs.apply_damage(source, 4, opp)
+
+class NorthStarExpiry(Listener):
+    """For one spell this turn, you may spend mana as though it were mana of any type to pay that spell's mana cost;
+    this listener expires itself & the ModQueryEvent listener"""
+    listens_to = CastResolvedEvent
+    expires = 'EOT'
+
+    def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> None:
+        if event.owner_id != source.owner_id:
+            return
+        gs.event_mgr.unregister_effects(source)
 
 class PresenceOfTheMaster(Listener):
     """Whenever a player casts an enchantment spell, counter it"""

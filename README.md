@@ -1,3 +1,7 @@
+- north-star:
+  - <i>For one spell this turn, you may spend mana as though it were mana of any type to pay that spell's mana cost.</i>
+  - It is presumed that you will use this ability on your <i>next</i> action
+  - The ability will trigger right away and won't expire until after you cast a spell that turn, so you can abuse it by activating abilities before your next spell
 - rock-hydra:
   - If its controller activates its damage prevention shield (<i>{R}: Prevent the next 1 damage that would be dealt to RH EOT</i>), the auto prevention shield still takes precedence (<i>For each 1 damage that would be dealt to this creature, if it has a +1/+1 counter on it, remove a +1/+1 counter</i>)
   - This engine does not currently support player priority on overlapping shields

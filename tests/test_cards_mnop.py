@@ -347,6 +347,28 @@ class TestCardsMNOP(unittest.TestCase):
         self.gs.event_mgr.emit(EndStepEvent(1))
         self.assertIn(legal_target_2, self.g.gy[1])
 
+    def test_north_star(self):
+        """For 1 spell EOT, you may spend mana as though it were mana of any type to pay that spell's mana cost.
+        (Additional costs are still paid normally.) (see readme.md)"""
+        self.gs.hands[0].clear()
+        card = self.g.battlefield('north-star')
+        aa = card.activated_abilities[0]
+        self.g.mana('BBBB')
+        self.g.mana('R')
+        wolves = self.g.hand('tundra-wolves')  # W
+        bolt = self.g.hand('lightning-bolt')  # R
+
+        self.gs.phase_mgr.set_phase(Phase.MAIN)
+        pipeline = AbilityPipeline(0, self.gs, card, aa.eff_spec)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+
+        self.gs.action_on_idx = 0
+        print(self.gs.available_actions_from_hand())
+        raise ValueError("Fails in GameState line 252 (self.mana_pools[self.action_on_idx].can_pay(c.casting_cost)), "
+                         "which probably nevers queries for mana produced")
+
     def test_nova_pentacle(self):
         """{3}, {T}: The next time a source of your choice would deal damage to you this turn,
         that damage is dealt to target creature of an opponent's choice instead"""

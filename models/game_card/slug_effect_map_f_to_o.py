@@ -6,7 +6,7 @@ from models.game_card.counter_tokens import CARRION, PLUS_ONE, MATRIX
 from models.effects.base import EffSpec, Activated, Triggered, Static, Spell, GenTrig
 from models.target import TargetSpec
 from models.effects.listeners_mod_queries import GaeasAvengerPT, GaeasLiegePT, IvoryGuardians, KormusBell, \
-    LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BecomeBasicLand
+    LivingLands, LivingPlane, JihadPT, PumpApplies, SelfPTEqualsFuncLen, KWAApplies, BecomeBasicLand, NorthStarManaProd
 from models.effects.listeners_permission import LivonyaSilone, WalkRuleRemoved, \
     DoesntUntapAtUntap, GoblinRockSledUntap, UnblockableCondition, NoAttacksAllowedEOT, CantAttack, \
     PreventRegenerationEOT, CantBeTargetedByAuras, Lure, MarblePriestForcesBlock, CantAttackIfAttackedLastTurn, \
@@ -35,7 +35,7 @@ from .card_filter_funcs import C_FUNCS, A_FUNCS, CF
 from .effect_spec_templates import MANA_BATTERY_ADD_CHARGE, mana_battery_add_mana, mox_specs, self_pump, \
     max_x_from_printed_card, On
 from ..effects.listeners_misc import IchneumonDruid, HauntingWindActivation, LeviathanAttack, InTheEyeOfChaos, \
-    InvokePrejudice, LibraryOfLengMaxHandSize, FastbondMaxLands, ManaFlare, GauntletOfMightMana
+    InvokePrejudice, LibraryOfLengMaxHandSize, FastbondMaxLands, ManaFlare, GauntletOfMightMana, NorthStarExpiry
 from ..effects.listeners_state_change import JihadSac, OldManOfTheSeaPowerCheck, GlobalSac
 from ..effects.listeners_zone_change import LandEquilibrium, FastbondDamager
 from ..effects.listeners_upkeep import Fasting, GabrielAngelfire, GhazbanOgre, HazezonTamarTokenCreation, LandTax, \
@@ -375,6 +375,7 @@ MAP: dict[str: list[EffSpec]] = {
                     GenTrig(On(DamageResolvedEvent).where(EC().damage_target_in(CF.opp()).damage_source_in(CF.self())).
                             then(DiscardHand()))],
     'nightmare': [Static(SelfPTEqualsFuncLen(CF.your_swamps()))],
+    'north-star': [Activated('4T', Do(Register(NorthStarManaProd), Register(NorthStarExpiry)))],
     'northern-paladin': [Activated('WW', Destroy(), CF.black_permanents())],
     'nova-pentacle': [Activated('3T', NovaPentacle(), CF.in_play_or_spell_on_stack())],
     'oasis': [Activated('T', PreventNextDamageBy(preventable_amt=1), CF.creatures())],
