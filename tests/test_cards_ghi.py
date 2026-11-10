@@ -12,6 +12,18 @@ class TestCardsGHI(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_gabriel_angelfire(self):
+        """At your upkeep, choose flying, first strike, trample, or rampage 3.
+        GA gains that ability until your next upkeep"""
+
+    def test_gaeas_avenger(self):
+        """GA PT are each equal to 1 plus the number of artifacts your opponents control."""
+
+    def test_gaeas_liege(self):
+        """As long as GL isn't attacking, PT are each = of Forests you control.
+        As long as GL is attacking, PT are each equal = Forests defending player controls.
+        {T}: Target land becomes a Forest until GL leaves the battlefield."""
+
     def test_gaeas_touch_forest_to_battlefield(self):
         """{0}: You may put a basic Forest card from your hand onto the battlefield.
         Activate only as a sorcery and only once each turn."""
@@ -45,6 +57,9 @@ class TestCardsGHI(unittest.TestCase):
         self.assertTrue(host.zone == Zone.BATTLEFIELD)
         self.assertTrue(blocker.zone == Zone.BATTLEFIELD)
 
+    def test_gate_to_phyrexia(self):
+        """Sacrifice a creature: Destroy target artifact. Activate only during your upkeep and only once each turn."""
+
     def test_gauntlet_of_might(self):
         """Red creatures get +1/+1. Whenever a Mountain is tapped for mana, its controller adds an additional {R}"""
         self.g.battlefield('gauntlet-of-might')
@@ -65,7 +80,6 @@ class TestCardsGHI(unittest.TestCase):
         self.assertTrue(plains.is_tapped)
         self.assertEqual(0, self.gs.mana_pools[0].available_mana['W'])
         self.assertEqual(1, self.gs.mana_pools[0].available_mana['R'])
-
 
     def test_gauntlets_of_chaos(self):
         """{5}, Sac GOT: Exchange control of target artifact, creature, or land you control with
@@ -94,6 +108,21 @@ class TestCardsGHI(unittest.TestCase):
         self.assertIn(aura, self.g.gy[1])
         self.assertIsNone(self.gs.pending_choice)
 
+    def test_ghazban_ogre(self):
+        """At your upkeep, transfer ownership of GO to the player with _solo_ the most life"""
+
+    def test_ghost_ship(self):
+        """Flying {UUU}: Regenerate this creature."""
+
+    def test_ghosts_of_the_damned(self):
+        """{T}: Target creature gets -1/-0 until end of turn."""
+
+    def test_giant_growth(self):
+        """Target creature gets +3/+3 until end of turn."""
+
+    def test_giant_shark(self):
+        """Islandhome. Whenever GS combats a creature that's been dealt damage this turn, GS gets +2/+0 & trample EOT"""
+
     def test_giant_slug(self):
         """{5}: At your next upkeep, GS gains landwalk of any type until the end of that turn."""
         card = self.g.battlefield('giant-slug')
@@ -103,6 +132,26 @@ class TestCardsGHI(unittest.TestCase):
         self.g.next_turn()
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(5, len(self.gs.pending_choice.get_actions()))
+
+    def test_giant_strength(self):
+        """Enchant creature Enchanted creature gets +2/+2."""
+
+    def test_giant_tortoise(self):
+        """This creature gets +0/+3 as long as it's untapped."""
+
+    def test_giant_turtle(self):
+        """This creature can't attack if it attacked during your last turn."""
+
+    def test_glasses_of_urza(self):
+        """{T}: Look at target player's hand."""
+
+    def test_gloom(self):
+        """White spells cost {3} more to cast. Activated abilities of white enchantments cost {3} more to activate."""
+
+    def test_glyph_of_delusion(self):
+        """Put X glyph counters on target creature that target Wall blocked this turn; X = power of blocked creature.
+        The creature gains 'This creature doesn't untap during your untap step if it has a glyph counter on it' &
+        'At your upkeep, remove a glyph counter from this creature.'"""
 
     def test_glyph_of_destruction(self):
         """Target blocking Wall you control gets +10/+0 until end of combat.
@@ -148,6 +197,27 @@ class TestCardsGHI(unittest.TestCase):
         self.g.combat(attacker, wall)
         self.assertEqual(26, self.gs.life[0])
 
+    def test_glyph_of_reincarnation(self):
+        """Cast this spell only after combat. Destroy all creatures blocked by target Wall this turn w/o regen.
+        For each creature that died this way, put a creature card from the graveyard of the player who controlled
+        that creature the last time it became blocked by that Wall onto the battlefield under its owner's control."""
+
+    def test_goblin_balloon_brigade(self):
+        """{R}: This creature gains flying until end of turn."""
+
+    def test_goblin_caves(self):
+        """Enchant land As long as enchanted land is a basic Mountain, Goblin creatures get +0/+2."""
+
+    def test_goblin_digging_team(self):
+        """{T}, Sacrifice this creature: Destroy target Wall."""
+
+    def test_goblin_king(self):
+        """Other Goblins get +1/+1 and have mountainwalk."""
+
+    def test_goblin_rock_sled(self):
+        """GRS doesn't untap during your untap step if it attacked during your last turn.
+        GRS can't attack unless defending player controls a Mountain."""
+
     def test_goblin_shrine(self):
         """As long as host is a basic Mountain, all Goblins get +1/+0. When GS LTB, it deals 1 damage to each Goblin"""
         card = self.g.hand('goblin-shrine')
@@ -157,6 +227,55 @@ class TestCardsGHI(unittest.TestCase):
         self.assertEqual(2, goblin.power)
         self.gs.pile_mgr.destroy(card)
         self.assertIn(goblin, self.g.gy[0])
+
+    def test_goblin_wizard(self):
+        """{T}: You may put a Goblin permanent card from your hand onto the battlefield.
+        {R}: Target Goblin gains protection from white EOT."""
+
+    def test_goblins_of_the_flarg(self):
+        """When you control a Dwarf, sacrifice this creature."""
+
+    def test_golgothian_sylex(self):
+        """{1}, {T}: Each nontoken permanent with a name originally printed in the Antiquities expansion is sac'ed"""
+
+    def test_gosta_dirk(self):
+        """First strike Creatures with islandwalk can be blocked as though they didn't have islandwalk."""
+
+    def test_granite_gargoyle(self):
+        """Flying {R}: This creature gets +0/+1 until end of turn."""
+
+    def test_grapeshot_catapult(self):
+        """{T}: This creature deals 1 damage to target creature with flying."""
+
+    def test_grave_robbers(self):
+        """{B}, {T}: Exile target artifact card from a graveyard. You gain 2 life."""
+
+    def test_gravity_sphere(self):
+        """All creatures lose flying."""
+
+    def test_great_defender(self):
+        """Target creature gets +0/+X until end of turn, where X is its mana value."""
+
+    def test_great_wall(self):
+        """Creatures with plainswalk can be blocked as though they didn't have plainswalk."""
+
+    def test_greater_realm_of_preservation(self):
+        """{1W}: The next time a black or red source of your choice would deal you damage EOT, prevent that damage."""
+
+    def test_greed(self):
+        """{B}, Pay 2 life: Draw a card."""
+
+    def test_green_mana_battery(self):
+        """{2}, {T}: Put a charge counter on GMB.
+        {T}, Remove x charge counters from this artifact: Add {G}, + {G} * x"""
+
+    def test_green_ward(self):
+        """Enchant creature Enchanted creature has protection from green. This effect doesn't remove this Aura."""
+
+    def test_guardian_angel(self):
+        """Prevent the next X damage that would be dealt to any target EOT.
+        EOT, you may pay {1} any time you could cast an instant to prevent the next 1 damage that would be dealt to
+        that permanent or player EOT."""
 
     def test_guardian_beast(self):
         """As long as GB is untapped, noncreature artifacts you control can't be enchanted, they have indestructible, &
@@ -179,6 +298,9 @@ class TestCardsGHI(unittest.TestCase):
         destroy_pipeline.resolve_ability()
         self.assertIn(protected, self.gs.boards[0])
 
+    def test_gwendlyn_di_corci(self):
+        """{T}: Target player discards a card at random. Activate only during your turn."""
+
     def test_halfdane(self):
         """H's base PT = (3, 3)
         At your upkeep, change H's base PT = PT of target creature other than H until end of your NEXT upkeep
@@ -198,6 +320,9 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.pile_mgr.destroy(creature2)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(3, card.power)
+
+    def test_hammerheim(self):
+        """{T}: Add {R}. {T}: Target creature loses all landwalk abilities until end of turn."""
 
     def test_hasran_ogress(self):
         """Whenever this creature attacks, it deals 3 damage to you unless you pay {2}"""
@@ -251,6 +376,12 @@ class TestCardsGHI(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(0, len(self.gs.card_filter.on_player_board(0).creatures().result()))
 
+    def test_healing_salve(self):
+        """Choose 1 - * Target player gains 3 life. * Prevent next 3 damage that would be dealt to any target EOT."""
+
+    def test_heavens_gate(self):
+        """One or more target creatures become white until end of turn."""
+
     def test_hellfire(self):
         """Destroy all nonblack creatures. H deals X plus 3 damage to you, X = creature count that died this way."""
         card = self.g.hand('hellfire')
@@ -271,6 +402,46 @@ class TestCardsGHI(unittest.TestCase):
         self.assertNotIn(regen_creature, self.g.gy[0])
         self.assertEqual(17, self.gs.life[0])
 
+    def test_hell_swarm(self):
+        """All creatures get -1/-0 until end of turn."""
+
+    def test_hells_caretaker(self):
+        """{T}, sac a creature: Reanimate target creature card from your gy. Activate only during your upkeep."""
+
+    def test_hidden_path(self):
+        """Green creatures have forestwalk"""
+
+    def test_holy_armor(self):
+        """Enchant creature Enchanted creature gets +0/+2. {W}: Enchanted creature gets +0/+1 until end of turn."""
+
+    def test_holy_day(self):
+        """Prevent all combat damage that would be dealt this turn."""
+
+    def test_holy_light(self):
+        """Nonwhite creatures get -1/-1 until end of turn."""
+
+    def test_holy_strength(self):
+        """Enchant creature Enchanted creature gets +1/+2."""
+
+    def test_horn_of_deafening(self):
+        """{2}, {T}: Prevent all combat damage that would be dealt by target creature this turn."""
+
+    def test_horror_of_horrors(self):
+        """Sacrifice a Swamp: Regenerate target black creature
+        The next time that creature would be destroyed EOT, instead tap, remove from combat, and heal all its damage"""
+
+    def test_howl_from_beyond(self):
+        """Target creature gets +X/+0 until end of turn."""
+
+    def test_howling_mine(self):
+        """At each player's draw step, if this artifact is untapped, that player draws an additional card."""
+
+    def test_hurkyls_recall(self):
+        """Return all artifacts target player owns to their hand."""
+
+    def test_hurr_jackal(self):
+        """{T}: Target creature can't be regenerated this turn."""
+
     def test_hurricane(self):
         """Hurricane deals X damage to each creature with flying and each player"""
         card = self.g.card('hurricane')
@@ -281,6 +452,9 @@ class TestCardsGHI(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertIn(flier, self.g.gy[0])
         self.assertEqual(18, self.gs.life[1])
+
+    def test_hyperion_blacksmith(self):
+        """{T}: You may tap or untap target artifact an opponent controls."""
 
     def test_hypnotic_specter(self):
         """When HS deals damage to an opp, opp discards a card at random"""
@@ -303,6 +477,18 @@ class TestCardsGHI(unittest.TestCase):
         self.g.cast_and_accept(bolt_2, 0, bolt_2.abilities[0], owner=1)
         self.assertEqual(16, self.gs.life[1])
 
+    def test_icy_manipulator(self):
+        """{1}, {T}: Tap target artifact, creature, or land."""
+
+    def test_ice_storm(self):
+        """Destroy target land."""
+
+    def test_ifh_biff_efreet(self):
+        """{G}: IBE deals 1 damage to each creature with flying & each player. Any player may activate this ability."""
+
+    def test_immolation(self):
+        """Enchant creature Enchanted creature gets +2/-2."""
+
     def test_in_the_eye_of_chaos(self):
         """Whenever a player casts an instant spell, counter it unless that player pays {X}, where X = its mana value"""
         self.g.battlefield('in-the-eye-of-chaos')
@@ -323,6 +509,20 @@ class TestCardsGHI(unittest.TestCase):
         sorcery_pipeline.advance()
         self.assertFalse(self.gs.pending_choice)
 
+    def test_indestructible_aura(self):
+        """Prevent all damage that would be dealt to target creature this turn."""
+
+    def test_infernal_medusa(self):
+        """Whenever IM blocks a creature, destroy that creature at end of combat.
+        Whenever IM becomes blocked by a non-Wall creature, destroy that creature at end of combat."""
+
+    def test_inferno(self):
+        """Inferno deals 6 damage to each creature and each player."""
+
+    def test_infinite_authority(self):
+        """Whenever host combats a creature with toughness <= 3, destroy the other creature at end of combat.
+        At end step, if that creature was destroyed this way, put a +1/+1 counter on the first creature."""
+
     def test_instill_energy(self):
         """Enchanted creature can attack as though it had haste.
         {0}: Untap enchanted creature. Activate only during your turn and only once each turn."""
@@ -342,6 +542,12 @@ class TestCardsGHI(unittest.TestCase):
         ability = AbilityPipeline(0, self.gs, card, aa.eff_spec)
         self.assertFalse(ability.can_begin(), 'Should not be able to activate 2x in a turn')
 
+    def test_invisibility(self):
+        """Enchant creature Enchanted creature can't be blocked except by Walls."""
+
+    def test_inquisition(self):
+        """Target player reveals their hand. I deals damage = the number of white cards in their hand."""
+
     def test_invoke_prejudice(self):
         """Whenever an opponent casts a creature spell that DOESN'T SHARE A COLOR with a creature you control,
         counter that spell unless that player pays {X}, X = its mana value"""
@@ -359,6 +565,18 @@ class TestCardsGHI(unittest.TestCase):
 
         CastWithNoSpellEffect(1, self.gs, affected).play()
         self.assertTrue(self.gs.pending_choice.get_actions())
+
+    def test_iron_star(self):
+        """Whenever a player casts a red spell, you may pay {1}. If you do, you gain 1 life."""
+
+    def test_ironclaw_orcs(self):
+        """This creature can't block creatures with power 2 or greater."""
+
+    def test_island_fish_jasconius(self):
+        """Islandhome. IFJ doesn't untap during your untap step. At your upkeep, you may pay {UUU} to untap IFJ."""
+
+    def test_island_of_wak_wak(self):
+        """{T}: Target creature with flying has base power 0 until end of turn."""
 
     def test_island_sanctuary(self):
         """At your draw step, you may skip your draw and until your next turn,
@@ -388,6 +606,15 @@ class TestCardsGHI(unittest.TestCase):
         self.g.next_turn(True)
         self.assertTrue(self.gs.perm_querier.can_attack(legal_attacker))
         self.assertTrue(self.gs.perm_querier.can_attack(illegal_attacker))
+
+    def test_ivory_cup(self):
+        """Whenever a player casts a white spell, you may pay {1}. If you do, you gain 1 life."""
+
+    def test_ivory_guardians(self):
+        """Creatures named Ivory Guardians get +1/+1 as long as an opponent controls a nontoken red permanent."""
+
+    def test_ivory_tower(self):
+        """At the beginning of your upkeep, you gain X life, where X is the number of cards in your hand minus 4."""
 
 
 if __name__ == '__main__':

@@ -14,6 +14,9 @@ class TestCardsDEF(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_dakkon_blackblade(self):
+        """Dakkon Blackblade's power and toughness are each equal to the number of lands you control."""
+
     def test_damping_field(self):
         """Players can't untap more than one artifact during their untap steps."""
         self.g.battlefield('damping-field')
@@ -65,6 +68,36 @@ class TestCardsDEF(unittest.TestCase):
         self.gs.pile_mgr.sacrifice(card)
         self.assertNotIn(the_copy, self.gs.boards[0])
 
+    def test_dark_heart_of_the_wood(self):
+        """Sacrifice a Forest: You gain 3 life."""
+
+    def test_dark_ritual(self):
+        """Add {BBB}."""
+
+    def test_dark_sphere(self):
+        """{T}, sac DS: The next time a source of your choice would deal damage to you this turn, prevent it // 2"""
+
+    def test_darkness(self):
+        """Prevent all combat damage that would be dealt this turn."""
+
+    def test_davenant_archer(self):
+        """{T}: This creature deals 1 damage to target attacking or blocking creature."""
+
+    def test_deadfall(self):
+        """Creatures with forestwalk can be blocked as though they didn't have forestwalk."""
+
+    def test_deathgrip(self):
+        """{BB}: Counter target green spell."""
+
+    def test_deathlace(self):
+        """Target spell or permanent becomes black"""
+
+    def test_death_ward(self):
+        """Regenerate target creature."""
+
+    def test_deep_water(self):
+        """{U}: Until end of turn, if you tap a land you control for mana, it produces {U} instead of any other type."""
+
     def test_demonic_hordes(self):
         """... At your upkeep, pay {BBB} or tap this creature and sacrifice a land of an opponent's choice"""
         card = self.g.battlefield('demonic-hordes')
@@ -112,6 +145,15 @@ class TestCardsDEF(unittest.TestCase):
         self.g.combat(attacker, host)
         self.assertIn(host, self.gs.pile_mgr.boards[0])
 
+    def test_demonic_tutor(self):
+        """Search your library for a card, put that card into your hand, then shuffle."""
+
+    def test_desert(self):
+        """{T}: Add {C}. {T}: D deals 1 damage to target attacker. Activate only during the end of combat step."""
+
+    def test_desert_twister(self):
+        """Destroy target permanent."""
+
     def test_detonate(self):
         """Destroy target artifact with MV X (no regen allowed). D deals X damage to that artifact's controller.
         Note: if X does not match the target MV, the effect will fizzle."""
@@ -148,6 +190,15 @@ class TestCardsDEF(unittest.TestCase):
         self.assertIn(mine, self.g.gy[1])
         self.assertEqual(18, self.gs.life[1])
 
+    def test_diabolic_machine(self):
+        """{3}: Regenerate this creature."""
+
+    def test_diamond_valley(self):
+        """{T}, Sacrifice a creature: You gain life equal to the sacrificed creature's toughness."""
+
+    def test_dingus_egg(self):
+        """Whenever a land is put into a graveyard from the battlefield, DE deals 2 damage to that land's controller."""
+
     def test_disharmony(self):
         """Cast this spell only during combat before blockers are declared.
         Untap target attacking creature and remove it from combat. Gain control of that creature EOT."""
@@ -177,6 +228,18 @@ class TestCardsDEF(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertIn(target, self.gs.exiles[1])
 
+    def test_disrupting_scepter(self):
+        """{3}, {T}: Target player discards a card. Activate only during your turn."""
+
+    def test_disenchant(self):
+        """Destroy target artifact or enchantment."""
+
+    def test_divine_offering(self):
+        """Destroy target artifact. You gain life equal to its mana value."""
+
+    def test_divine_transformation(self):
+        """Enchant creature Enchanted creature gets +3/+3."""
+
     def test_drafnas_restoration(self):
         """Put any number of target artifact cards from target player's graveyard atop of their library in ANY ORDER"""
         card = self.g.hand('drafnas-restoration')
@@ -196,6 +259,12 @@ class TestCardsDEF(unittest.TestCase):
         self.gs.choice_mgr.choose(finish_action)
         self.assertEqual([colossus, aladdins_lamp], self.gs.pile_mgr.libraries[0][:2])
         self.assertFalse(self.gs.pending_choice)
+
+    def test_dragon_engine(self):
+        """{2}: This creature gets +1/+0 until end of turn."""
+
+    def test_dragon_whelp(self):
+        """{R}: DW gets +1/+0 until end of turn. If this ability has been activated > 3x EOT, sac DW at end step"""
 
     def test_drain_life(self):
         """Spend only black mana on X (at large).
@@ -265,6 +334,30 @@ class TestCardsDEF(unittest.TestCase):
         self.assertEqual(0, sum(self.gs.mana_pools[1].available_mana.values()))
         self.assertEqual({'B': 1, 'R': 1}, {k: v for k, v in self.gs.mana_pools[0].available_mana.values() if v})
 
+    def test_dream_coat(self):
+        """{0}: Host becomes the color or colors of your choice. Activate only once each turn."""
+
+    def test_drop_of_honey(self):
+        """At your upkeep, destroy the creature with the least power w/o regen.
+        If two or more creatures are tied for least power, you choose one of them.
+        When there are no creatures on the battlefield, sac DOH"""
+
+    def test_drowned(self):
+        """{B}: Regenerate this creature."""
+
+    def test_drudge_skeletons(self):
+        """{B}: Regenerate this creature
+        (The next time DS would be destroyed EOT, instead tap it, remove it from combat, and heal all damage on it.)"""
+
+    def test_dust_to_dust(self):
+        """Exile two target artifacts."""
+
+    def test_dwarven_demolition_team(self):
+        """{T}: Destroy target Wall."""
+
+    def test_dwarven_song(self):
+        """One or more target creatures become red until end of turn."""
+
     def test_dwarven_warriors(self):
         """{T}: Target creature with power 2 or less can't be blocked this turn"""
         card = self.g.battlefield('dwarven-warriors')
@@ -275,6 +368,46 @@ class TestCardsDEF(unittest.TestCase):
         self.g.next_turn()
         self.g.activate_ability(aa, attacker)
         self.assertFalse(self.gs.perm_querier.can_block(blocker, attacker))
+
+    def test_dwarven_weaponsmith(self):
+        """{T}, Sacrifice an artifact: Put a +1/+1 counter on target creature. Activate only during your upkeep."""
+
+    def test_earthbind(self):
+        """When E ETB, if host has flying, E deals 2 damage to host and E gains 'Host loses flying.'"""
+
+    def test_earthquake(self):
+        """Earthquake deals X damage to each creature without flying and each player."""
+
+    def test_eater_of_the_dead(self):
+        """{0}: If this creature is tapped, exile target creature card from a graveyard and untap this creature."""
+
+    def test_ebony_horse(self):
+        """Untap target attacking creature you control.
+        Prevent all combat damage that would be dealt to and dealt by that creature EOT."""
+
+    def test_el_hajjaj(self):
+        """Whenever this creature deals damage, you gain that much life."""
+
+    def test_elder_land_wurm(self):
+        """Defender, trample When this creature blocks, it loses defender."""
+
+    def test_elder_spawn(self):
+        """At your upkeep, unless you sac an Island, sac ES & it deals 6 damage to you. Red creatures can't block ES"""
+
+    def test_electric_eel(self):
+        """When EE ETB, it deals 1 damage to you. {RR}: EE gets +2/+0 EOT and deals 1 damage to you."""
+
+    def test_elephant_graveyard(self):
+        """{T}: Add {C}. {T}: Regenerate target Elephant."""
+
+    def test_elven_riders(self):
+        """This creature can't be blocked except by Walls and/or creatures with flying."""
+
+    def test_elves_of_deep_shadow(self):
+        """{T}: Add {B}. This creature deals 1 damage to you."""
+
+    def test_emerald_dragonfly(self):
+        """Flying {GG}: This creature gains first strike until end of turn."""
 
     def test_enchanted_being(self):
         """"Prevent all combat damage that would be dealt to this creature by enchanted creatures"""
@@ -302,6 +435,9 @@ class TestCardsDEF(unittest.TestCase):
         self.g.cast_and_accept(card, aura, card.abilities[0])
         self.assertEqual(1, len(self.gs.pending_choice.get_actions()))
 
+    def test_energy_flux(self):
+        """All artifacts have 'At your upkeep, sacrifice this artifact unless you pay {2}.'"""
+
     def test_energy_tap(self):
         """Tap target untapped creature you control to add an amount of {C} equal to that creature's mana value."""
         card = self.g.card('energy-tap')
@@ -309,6 +445,21 @@ class TestCardsDEF(unittest.TestCase):
         target = self.g.battlefield('grizzly-bears')  # MV = 2
         self.g.cast_and_accept(card, target, card.abilities[0], add_lots_of_mana=False)
         self.assertEqual(2, self.gs.mana_pools[0].available_mana.get('C'))
+
+    def test_erg_raiders(self):
+        """At your end step, if ER didn't attack, it deals you 2 damage unless it came under your control this turn."""
+
+    def test_erhnam_djinn(self):
+        """At your upkeep, target opp non-Wall gains forestwalk until your next upkeep"""
+
+    def test_erosion(self):
+        """At host's upkeep, destroy that land unless that player pays {1} or 1 life."""
+
+    def test_eternal_flame(self):
+        """EF deals X damage to opp and roundup(X/2) to you; X = Mountains you control."""
+
+    def test_eternal_warrior(self):
+        """Enchant creature Enchanted creature has vigilance."""
 
     def test_eureka(self):
         """Both players may take any permanent in their hand and put it directly into play.
@@ -336,6 +487,15 @@ class TestCardsDEF(unittest.TestCase):
         self.gs.choice_mgr.choose(p1_finish_playing)
         self.assertFalse(self.gs.pending_choice)
 
+    def test_evil_eye_of_orms_by_gore(self):
+        """Non-Eye creatures you control can't attack. This creature can't be blocked except by Walls."""
+
+    def test_evil_presence(self):
+        """Enchant land Enchanted land is a Swamp."""
+
+    def test_exorcist(self):
+        """{1W}, {T}: Destroy target black creature."""
+
     def test_eye_for_an_eye(self):
         """The next time a source of your choice would deal damage to you this turn,
         instead that source deals that much damage to you and EYAE deals that much damage to that source's controller"""
@@ -346,6 +506,22 @@ class TestCardsDEF(unittest.TestCase):
         self.g.cast_and_accept(card, attacker, card.abilities[0])
         self.g.combat(attacker, None)
         self.assertEqual([18, 18], self.gs.life)
+
+    def test_fallen_angel(self):
+        """Flying Sacrifice a creature: This creature gets +2/+1 until end of turn."""
+
+    def test_falling_star(self):
+        """Flip FS onto the playing area from >= 1 ft. FS deals 3 damage to each creature it lands on.
+        Tap all creatures dealt damage by FS. If FS doesn't turn completely over at least once, it has no effect."""
+
+    def test_false_orders(self):
+        """Cast this spell only during the declare blockers step.
+        Remove target creature defending player controls from combat.
+        Creatures it was blocking that had become blocked by only that creature this combat become unblocked.
+        You may have it block an attacking creature of your choice."""
+
+    def test_farmstead(self):
+        """Host has 'At your upkeep, you may pay {WW} to gain 1 life.'"""
 
     def test_fastbond(self):
         """You may play any number of lands on each of your turns.
@@ -398,6 +574,16 @@ class TestCardsDEF(unittest.TestCase):
         self.assertEqual(8, len(self.gs.pile_mgr.hands[0]))
         self.assertIn(card, self.g.gy[0])
 
+    def test_fear(self):
+        """Host has fear (It can't be blocked except by artifact creatures and/or black creatures.)"""
+
+    def test_feedback(self):
+        """At host's upkeep, F deals 1 damage to that player."""
+
+    def test_feint(self):
+        """Tap all creatures blocking target attacking creature.
+        Prevent all combat damage that would be dealt this turn by that creature and each creature blocking it."""
+
     def test_feldons_cane(self):
         """Shuffle your graveyard into your library"""
         card = self.g.battlefield('feldons-cane')
@@ -445,6 +631,15 @@ class TestCardsDEF(unittest.TestCase):
         top_card = self.gs.pile_mgr.libraries[0][0]
         self.assertTrue(top_card.is_face_up)
 
+    def test_fire_and_brimstone(self):
+        """Fire and Brimstone deals 4 damage to target player who attacked this turn and 4 damage to you."""
+
+    def test_fire_drake(self):
+        """Flying {R}: This creature gets +1/+0 until end of turn. Activate only once each turn."""
+
+    def test_fire_sprites(self):
+        """Flying {G}, {T}: Add {R}."""
+
     def test_fireball_one_target(self):
         """This spell costs {1} more to cast for each target beyond the first.
         F deals X damage divided evenly, rounded down, among any number of targets."""
@@ -488,6 +683,9 @@ class TestCardsDEF(unittest.TestCase):
         self.assertNotIn(bears, self.g.gy[1])
         self.assertEqual(0, len(self.gs.card_filter.on_player_board(0).untapped().mountains().result()))
 
+    def test_firebreathing(self):
+        """Enchant creature {R}: Enchanted creature gets +1/+0 until end of turn."""
+
     def test_firestorm_phoenix(self):
         """If this card would die, bounce it instead; it cannot be re-summoned this turn"""
         self.gs.hands[0].clear()
@@ -500,6 +698,65 @@ class TestCardsDEF(unittest.TestCase):
 
         self.g.next_turn()
         self.assertTrue(any(a.source is card for a in self.gs.available_actions_from_hand()))
+
+    def test_fishliver_oil(self):
+        """Host has islandwalk"""
+
+    def test_fissure(self):
+        """Destroy target creature or land. It can't be regenerated."""
+
+    def test_flash_counter(self):
+        """Counter target instant spell."""
+
+    def test_flash_flood(self):
+        """Choose one - * Destroy target red permanent. * Return target Mountain to its owner's hand."""
+
+    def test_flashfires(self):
+        """Destroy all Plains."""
+
+    def test_flight(self):
+        """Enchant creature Enchanted creature has flying."""
+
+    def test_flood(self):
+        """{UU}: Tap target creature without flying."""
+
+    def test_floral_spuzzem(self):
+        """Whenever FS attacks & isn't blocked, you may destroy target opp artifact & FS assigns no combat damage EOT"""
+
+    def test_flying_carpet(self):
+        """{2}, {T}: Target creature gains flying until end of turn."""
+
+    def test_fog(self):
+        """Prevent all combat damage this turn"""
+        card = self.g.hand('fog')
+        attacker = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
+        bolt = self.g.hand('lightning-bolt', owner=1)
+
+        self.g.next_turn(True)
+        self.g.cast_and_accept(card, None, card.abilities[0])
+        self.assertTrue(self.g.card_has_a_registered_listener(card))
+        self.g.combat(attacker, None)
+        self.assertEqual(20, self.gs.life[0])
+
+        self.g.cast_and_accept(bolt, 0, bolt.abilities[0], owner=1)
+        self.assertEqual(17, self.gs.life[0])  # doesn't prevent non-combat damage
+
+        self.g.next_turn()
+        self.g.combat(attacker, None)
+        self.assertEqual(15, self.gs.life[0])  # effect wears off EOT
+
+    def test_force_of_nature(self):
+        """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
+        self.g.battlefield('force-of-nature')
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        self.assertEqual(12, self.gs.life[0])
+
+        self.g.mana('GGGGG')  # five forests
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        pay_gggg = self.gs.pending_choice.get_actions()[0]
+        pay_gggg.play()
+        self.assertEqual(1, len([c for c in self.gs.pile_mgr.boards[0]
+                                 if c.props.slug == 'forest' and not c.is_tapped]))
 
     def test_force_spike_1(self):
         """Counter target spell unless its controller pays {1} ... This is the counter test"""
@@ -550,38 +807,6 @@ class TestCardsDEF(unittest.TestCase):
         self.assertEqual(17, self.gs.life[0])
         self.assertIsNone(self.gs.pending_choice)
 
-    def test_fog(self):
-        """Prevent all combat damage this turn"""
-        card = self.g.hand('fog')
-        attacker = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
-        bolt = self.g.hand('lightning-bolt', owner=1)
-
-        self.g.next_turn(True)
-        self.g.cast_and_accept(card, None, card.abilities[0])
-        self.assertTrue(self.g.card_has_a_registered_listener(card))
-        self.g.combat(attacker, None)
-        self.assertEqual(20, self.gs.life[0])
-
-        self.g.cast_and_accept(bolt, 0, bolt.abilities[0], owner=1)
-        self.assertEqual(17, self.gs.life[0])  # doesn't prevent non-combat damage
-
-        self.g.next_turn()
-        self.g.combat(attacker, None)
-        self.assertEqual(15, self.gs.life[0])  # effect wears off EOT
-
-    def test_force_of_nature(self):
-        """At your upkeep, this creature deals 8 damage to you unless you pay {GGGG}"""
-        self.g.battlefield('force-of-nature')
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
-        self.assertEqual(12, self.gs.life[0])
-
-        self.g.mana('GGGGG')  # five forests
-        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
-        pay_gggg = self.gs.pending_choice.get_actions()[0]
-        pay_gggg.play()
-        self.assertEqual(1, len([c for c in self.gs.pile_mgr.boards[0]
-                                 if c.props.slug == 'forest' and not c.is_tapped]))
-
     def test_forcefield(self):
         """{1}: The next time an unblocked creature of your choice would deal combat damage to you this turn,
         prevent all but 1 of that damage"""
@@ -612,6 +837,9 @@ class TestCardsDEF(unittest.TestCase):
         sac_fa = self.gs.pending_choice.get_actions()[1]
         sac_fa.play()
         self.assertIn(card, self.g.gy[0])
+
+    def test_fountain_of_youth(self):
+        """{2}, {T}: You gain 1 life."""
 
     def test_frankensteins_monster(self):
         """As FM enters, exile X creatures from your gy. If you can't, put FM into in gy instead of battlefield. X >= 0.
@@ -663,6 +891,12 @@ class TestCardsDEF(unittest.TestCase):
         print(len(self.g.gy[0]), pipeline.x_value, card.zone)
         self.assertIn(card, self.g.gy[0],
                       "AP.resolve_ability() happens after .resolve() & moves FM from gy to board")
+
+    def test_frozen_shade(self):
+        """{B}: This creature gets +1/+1 until end of turn."""
+
+    def test_fungusaur(self):
+        """Whenever this creature is dealt damage, put a +1/+1 counter on it."""
 
 
 if __name__ == '__main__':
