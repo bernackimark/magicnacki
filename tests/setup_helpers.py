@@ -156,14 +156,18 @@ class TestGame:
         if self.gs.combat_mgr.has_first_strike_step:
             self.gs.phase_mgr.set_phase(Phase.FIRST_STRIKE_DAMAGE)
         self.gs.phase_mgr.set_phase(Phase.COMBAT_DAMAGE)
+        self.gs.phase_mgr.set_phase(Phase.COMBAT_END)
 
     def next_turn(self, go_to_opp_turn: bool = False):
         """Passes the current turn; passes the next turn; returning action back to the original player"""
         self.gs.phase_mgr.set_phase(Phase.CREATURES_HEAL)
+        self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS)
         PassTheTurn(self.gs.player_turn_idx, self.gs).play()
         if go_to_opp_turn:
             return
         self.gs.phase_mgr.set_phase(Phase.CREATURES_HEAL)
+        self.gs.phase_mgr.set_phase(Phase.END_TURN_EFFECTS)
+
         PassTheTurn(self.gs.player_turn_idx, self.gs).play()
 
     def resolve_spell(self, card: GameCard, target: Any = None, spell: EffSpec | None = None):
