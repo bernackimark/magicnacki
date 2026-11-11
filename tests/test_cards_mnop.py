@@ -43,6 +43,13 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertTrue(blue2.is_tapped)
         self.assertFalse(self.gs.pending_choice)
 
+    def test_mana_clash(self):
+        """You and target opponent each flip a coin. MC deals 1 damage to each player whose coin comes up tails.
+        Repeat this process until both players' coins come up heads on the same flip."""
+
+    def test_mana_drain(self):
+        """Counter target spell. At your next main phase, add an amount of {C} equal to that spell's mana value."""
+
     def test_mana_flare(self):
         """Whenever a player taps a land for mana, it produces one additional mana of the same type."""
         self.g.battlefield('mana-flare')
@@ -59,6 +66,12 @@ class TestCardsMNOP(unittest.TestCase):
         land = self.g.battlefield('island')
         land.tap()
         self.assertEqual(0, self.gs.mana_pools[0].available_mana['U'])
+
+    def test_mana_matrix(self):
+        """Instant and enchantment spells you cast cost {2} less to cast."""
+
+    def test_mana_short(self):
+        """Tap all lands target player controls and that player loses all unspent mana."""
 
     def test_mana_vault(self):
         """... MV doesn't untap during your untap step. At your upkeep, you may pay {4} to untap this artifact.
@@ -114,6 +127,18 @@ class TestCardsMNOP(unittest.TestCase):
         land.tap()
         self.assertEqual(19, self.gs.life[0])
 
+    def test_marble_priest(self):
+        """All Walls able to block this creature do so. Prevent all combat damage that would be dealt to MP by Walls."""
+
+    def test_marsh_gas(self):
+        """All creatures get -2/-0 until end of turn."""
+
+    def test_marsh_viper(self):
+        """Whenever MV deals damage to a player, that player gets two poison counters. (>= 10 poison = a loss)"""
+
+    def test_martyrs_cry(self):
+        """Exile all white creatures. For each creature exiled this way, its controller draws a card."""
+
     def test_martyrs_of_korlis(self):
         """As long as MOK is untapped, all damage that would be dealt to you by artifacts is dealt to MOK instead"""
         card = self.g.battlefield('martyrs-of-korlis')  # 1/6
@@ -143,6 +168,15 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertFalse(attacker.is_tapped)
         self.assertEqual(20, self.gs.life[0])
 
+    def test_meekstone(self):
+        """Creatures with power 3 or greater don't untap during their controllers' untap steps."""
+
+    def test_merchant_ship(self):
+        """Islandhome. Whenever this creature attacks and isn't blocked, you gain 2 life."""
+
+    def test_merfolk_assassin(self):
+        """{T}: Destroy target creature with islandwalk."""
+
     def test_metamorphosis(self):
         """As an additional cost to cast this spell, sac a creature.
         Add X mana of any one color, X = 1 + sac'ed creature's MV.
@@ -158,6 +192,15 @@ class TestCardsMNOP(unittest.TestCase):
         add_mana = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(add_mana)
         self.assertEqual(2, sum(self.gs.mana_pools[0].available_mana.values()))
+
+    def test_mightstone(self):
+        """Attacking creatures get +1/+0."""
+
+    def test_mijae_djinn(self):
+        """Whenever MD attacks, flip a coin. If you lose the flip, remove this creature from combat and tap it."""
+
+    def test_millstone(self):
+        """{2}, {T}: Target player mills two cards."""
 
     def test_mind_bomb(self):
         """Each player may discard <= 3 cards. MB deals damage to each player = 3 - card count discarded this way."""
@@ -176,6 +219,12 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(5, len(self.gs.hands[1]))
         self.assertEqual([17, 19], self.gs.life)
 
+    def test_mind_twist(self):
+        """Target player discards X cards at random."""
+
+    def test_miracle_worker(self):
+        """{T}: Destroy target Aura attached to a creature you control."""
+
     def test_mirror_universe(self):
         """{T}, Sacrifice this artifact: Exchange life totals with target opponent. Activate only during your upkeep."""
         card = self.g.battlefield('mirror-universe')
@@ -184,6 +233,17 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.activate_ability(aa)
         self.assertIn(card, self.g.gy[0])
         self.assertEqual([19, 20], self.gs.life)
+
+    def test_mishras_factory(self):
+        """{T}: Add {C}.
+        {1}: MF becomes a 2/2 Assembly-Worker artifact creature EOT. It's still a land.
+        {T}: Target Assembly-Worker creature gets +1/+1 EOT."""
+
+    def test_mishras_workshop(self):
+        """{T}: Add {CCC}. Spend this mana only to cast artifact spells."""
+
+    def test_moat(self):
+        """Creatures without flying can't attack."""
 
     def test_mold_demon(self):
         """When this creature enters, sacrifice it unless you sacrifice two Swamps"""
@@ -195,6 +255,27 @@ class TestCardsMNOP(unittest.TestCase):
         sac_two_swamps.play()
         swamp_cnt_after = len(self.gs.card_filter.on_player_board(0).swamps().result())
         self.assertEqual(2, swamp_cnt_before - swamp_cnt_after)
+
+    def test_morale(self):
+        """Attacking creatures get +1/+1 until end of turn."""
+
+    def test_mox_emerald(self):
+        """{T}: Add {G}."""
+
+    def test_mox_jet(self):
+        """{T}: Add {B}."""
+
+    def test_mox_pearl(self):
+        """{T}: Add {W}."""
+
+    def test_mox_ruby(self):
+        """{T}: Add {R}."""
+
+    def test_mox_sapphire(self):
+        """{T}: Add {U}."""
+
+    def test_murk_dwellers(self):
+        """Whenever this creature attacks and isn't blocked, it gets +2/+0 until end of combat."""
 
     def test_nafs_asp_pays_path(self):
         """Whenever NA deals damage to opp, at any point up to opp's next draw phase, opp pays {1} or loses 1 life"""
@@ -229,6 +310,15 @@ class TestCardsMNOP(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.DRAW)
         self.assertEqual(18, self.gs.life[1])
         self.assertEqual(0, len(self.gs.emblem_mgr.emblems))
+
+    def test_nameless_race(self):
+        """As NR ETB, pay any amount of life <=
+        the count of white nontoken permanents your opponents control + count of white cards in their graveyards.
+        NR's power and toughness are each equal to the life paid as it entered."""
+
+    def test_natural_selection(self):
+        """Look at the top 3 cards of target player's library, then put them back in any order.
+        You may have that player shuffle."""
 
     def test_nebuchadnezzar(self):
         """{X}, {T}: Choose a card name. Opp reveals X cards at random from their hand.
@@ -347,6 +437,18 @@ class TestCardsMNOP(unittest.TestCase):
         self.gs.event_mgr.emit(EndStepEvent(1))
         self.assertIn(legal_target_2, self.g.gy[1])
 
+    def test_nevinyrrals_disk(self):
+        """This artifact enters tapped. {1}, {T}: Destroy all artifacts, creatures, and enchantments."""
+
+    def test_niall_silvain(self):
+        """{GGGG}, {T}: Regenerate target creature."""
+
+    def test_nicol_bolas(self):
+        """At your upkeep, sac MB unless you pay {UBR}. Whenever NB deals damage to an opp, opp discards their hand."""
+
+    def test_nightmare(self):
+        """N's power and toughness are each equal to the number of Swamps you control."""
+
     def test_north_star(self):
         """For 1 spell EOT, you may spend mana as though it were mana of any type to pay that spell's mana cost.
         (Additional costs are still paid normally.) (see readme.md)"""
@@ -368,6 +470,9 @@ class TestCardsMNOP(unittest.TestCase):
         print(self.gs.available_actions_from_hand())
         raise ValueError("Fails in GameState line 252 (self.mana_pools[self.action_on_idx].can_pay(c.casting_cost)), "
                          "which probably nevers queries for mana produced")
+
+    def test_northern_paladin(self):
+        """{WW}, {T}: Destroy target black permanent."""
 
     def test_nova_pentacle(self):
         """{3}, {T}: The next time a source of your choice would deal damage to you this turn,
@@ -400,6 +505,9 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual([20, 20], self.gs.life)
 
         raise ValueError()
+
+    def test_oasis(self):
+        """{T}: Prevent the next 1 damage that would be dealt to target creature this turn."""
 
     def test_obelisk_of_undoing(self):
         """{6}, {T}: Return target permanent you both own and control to your hand"""
@@ -440,6 +548,12 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(1, target.owner_id, 'Target should have been returned to original owner when pumped')
         self.assertIn(target, self.gs.boards[1])
 
+    def test_onulet(self):
+        """When this creature dies, you gain 2 life."""
+
+    def test_orc_general(self):
+        """{T}, Sacrifice another Orc or Goblin: Other Orc creatures get +1/+1 until end of turn."""
+
     def test_orcish_artillery(self):
         """{T}: This creature deals 2 damage to any target and 3 damage to you"""
         card = self.g.battlefield('orcish-artillery')
@@ -453,6 +567,19 @@ class TestCardsMNOP(unittest.TestCase):
         self.g.next_turn()
         self.g.activate_ability(aa, 1)
         self.assertEqual([14, 18], self.gs.life)
+
+    def test_orcish_mechanics(self):
+        """{T}, Sacrifice an artifact: This creature deals 2 damage to any target."""
+
+    def test_orcish_oriflamme(self):
+        """Attacking creatures you control get +1/+0."""
+
+    def test_osai_vultures(self):
+        """At each end step, if a creature died this turn, put a carrion counter on OV.
+        Remove two carrion counters from this creature: OV gets +1/+1 until end of turn."""
+
+    def test_palladia_mors(self):
+        """Flying, trample At the beginning of your upkeep, sacrifice Palladia-Mors unless you pay {RGW}."""
 
     def test_paralyze(self):
         """When this Aura enters, tap host. Host doesn't untap during its untap step.
@@ -490,6 +617,9 @@ class TestCardsMNOP(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertIn(KW.ISLANDWALK, c_1.keyword_abilities)
 
+    def test_pavel_maliki(self):
+        """{BR}: Pavel Maliki gets +1/+0 until end of turn."""
+
     def test_pendelhaven(self):
         """{T}: Add {G}. {T}: Target 1/1 creature gets +1/+2 until end of turn."""
         card = self.g.battlefield('pendelhaven')
@@ -500,6 +630,9 @@ class TestCardsMNOP(unittest.TestCase):
         legal_target = self.g.battlefield('merfolk-of-the-pearl-trident')  # 1/1
         self.g.activate_ability(aa, legal_target)
         self.assertEqual((2, 3), (legal_target.power, legal_target.toughness))
+
+    def test_people_of_the_woods(self):
+        """People of the Woods's toughness is equal to the number of Forests you control."""
 
     def test_personal_incarnation(self):
         """{0}: The next 1 damage that would be dealt to PI this turn is dealt to its owner instead.
@@ -517,6 +650,10 @@ class TestCardsMNOP(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertEqual(1, card.damage_received_this_turn)
         self.assertEqual(18, self.gs.life[0])
+
+    def test_pestilence(self):
+        """At end step, if no creatures are on the battlefield, sac P.
+        {B}: This enchantment deals 1 damage to each creature and each player."""
 
     def test_petra_sphinx(self):
         """{T}: Target player chooses a card name, then reveals the top card of their library.
@@ -537,6 +674,9 @@ class TestCardsMNOP(unittest.TestCase):
         name_swamp = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(name_swamp)
         self.assertIn(swamp, self.gs.hands[0])
+
+    def test_phantasmal_forces(self):
+        """Flying At the beginning of your upkeep, sacrifice this creature unless you pay {U}."""
 
     def test_phantasmal_terrain(self):
         """As this Aura enters, choose a basic land type. Host is the chosen type."""
@@ -562,6 +702,30 @@ class TestCardsMNOP(unittest.TestCase):
 
         self.g.next_turn()
         self.assertFalse(target.is_tapped)
+
+    def test_piety(self):
+        """Blocking creatures get +0/+3 until end of turn."""
+
+    def test_pirate_ship(self):
+        """Islandhome. {T}: This creature deals 1 damage to any target."""
+
+    def test_pit_scorpion(self):
+        """Whenever PS deals damage to a player, that player gets a poison counter. (>= 10 poison counters is a loss)"""
+
+    def test_pixie_queen(self):
+        """Flying {GGG}, {T}: Target creature gains flying until end of turn."""
+
+    def test_plague_rats(self):
+        """PR's power and toughness are each equal to the number of creatures named Plague Rats on the battlefield."""
+
+    def test_planar_gate(self):
+        """Creature spells you cast cost {2} less to cast."""
+
+    def test_plateau(self):
+        """u003ciu003e({T}: Add {R} or {W}.)u003c/iu003e"""
+
+    def test_power_artifact(self):
+        """Host's activated abilities cost {2} less to activate. This effect can't reduce that cost to < one mana"""
 
     def test_power_leak(self):
         """At host's upkeep, PL deals 2 damage to host owner. Host may pay X mana to prevent X of that damage."""
@@ -618,6 +782,10 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertTrue(land_w_mana_ability.is_tapped)
         self.assertFalse(land_w_no_mana_ability.is_tapped)
 
+    def test_power_surge(self):
+        """At each player's upkeep, PS deals X damage to that player;
+        X = untapped land count they controlled at the beginning of this turn."""
+
     def test_powerleech(self):
         """Whenever an opp's artifact becomes tapped or an opponent activates an artifact's ability without {T}
         in its activation cost, you gain 1 life."""
@@ -638,6 +806,13 @@ class TestCardsMNOP(unittest.TestCase):
         not_an_artifact.tap()
         self.assertEqual(22, self.gs.life[0])
 
+    def test_pradesh_gypsies(self):
+        """{1G}, {T}: Target creature gets -2/-0 until end of turn."""
+
+    def test_preacher(self):
+        """You may choose not to untap this creature during your untap step.
+        {T}: For as long as P remains tapped, gain control of target creature of an opponent's choice they control."""
+
     def test_presence_of_the_master(self):
         """Whenever a player casts an enchantment spell, counter it"""
         self.g.battlefield('presence-of-the-master')
@@ -646,6 +821,13 @@ class TestCardsMNOP(unittest.TestCase):
         ap = AbilityPipeline(1, self.gs, enchantment, enchantment.abilities[0])
         ap.advance()
         self.assertIn(enchantment, self.g.gy[1])
+
+    def test_priest_of_yawgmoth(self):
+        """{T}, Sacrifice an artifact: Add an amount of {B} equal to the sacrificed artifact's mana value."""
+
+    def test_primal_clay(self):
+        """As PC ETB, it becomes your choice of a 3/3 artifact creature, a 2/2 artifact creature with flying,
+        or a 1/6 Wall artifact creature with defender in addition to its other types."""
 
     def test_primordial_ooze(self):
         """At your upkeep, put a +1/+1 counter on PO.
@@ -665,6 +847,12 @@ class TestCardsMNOP(unittest.TestCase):
         self.assertEqual(18, self.gs.life[0])
         self.assertFalse(self.gs.pending_choice)
 
+    def test_princess_lucrezia(self):
+        """{T}: Add {U}."""
+
+    def test_prodigal_sorcerer(self):
+        """{T}: This creature deals 1 damage to any target."""
+
     def test_psionic_blast(self):
         """Deal 4 damage to any target & 2 to yourself"""
         card = self.g.hand('psionic-blast')
@@ -674,15 +862,26 @@ class TestCardsMNOP(unittest.TestCase):
         pipeline.resolve_ability()
         self.assertEqual([18, 16], self.gs.life)
 
-    # def test_psychic_purge(self):
-    #     """... When a spell or ability an opp controls causes you to discard this card, that player loses 5 life."""
-    #     # TODO: this card needs to be registered upon entry to hand and de-registered upon exit from hand
-    #     card = self.g.hand('psychic-purge')
-    #     spell_card = self.g.hand('wheel-of-fortune', owner=1)
-    #     self.g.mana('RRRRRR', owner=1)
-    #     pipeline = self.g.begin_cast(spell_card)
-    #     AcceptAction(0, self.gs).play()
-    #     self.assertEqual(15, self.gs.life[1])
+    def test_psionic_entity(self):
+        """{T}: This creature deals 2 damage to any target and 3 damage to itself."""
+
+    def test_psychic_allergy(self):
+        """As PA ETB, choose a color. At opp's upkeep, PA deals X damage to opp;
+        X = nontoken perm count of the chosen color they control. At your upkeep, sac two Islands or destroy PA."""
+
+    def test_psychic_purge(self):
+        """... When a spell or ability an opp controls causes you to discard this card, that player loses 5 life."""
+        # TODO: this card needs to be registered upon entry to hand and de-registered upon exit from hand
+        # card = self.g.hand('psychic-purge')
+        # spell_card = self.g.hand('wheel-of-fortune', owner=1)
+        # self.g.mana('RRRRRR', owner=1)
+        # pipeline = self.g.begin_cast(spell_card)
+        # AcceptAction(0, self.gs).play()
+        # self.assertEqual(15, self.gs.life[1])
+        raise ValueError()
+
+    def test_psychic_venom(self):
+        """Enchant land Whenever enchanted land becomes tapped, this Aura deals 2 damage to that land's controller."""
 
     def test_puppet_master(self):
         """When host dies, bounce host instead. You may pay {UUU} to bounce this aura."""
@@ -694,6 +893,16 @@ class TestCardsMNOP(unittest.TestCase):
         bounce_aura.play()
         self.assertIn(host, self.gs.hands[0])
         self.assertIn(card, self.gs.hands[0])
+
+    def test_purelace(self):
+        """Target spell or permanent becomes white. (Mana symbols on that permanent remain unchanged.)"""
+
+    def test_pyramids(self):
+        """{2}: Choose one - * Destroy target Aura attached to a land.
+        * The next time target land would be destroyed this turn, remove all damage marked on it instead."""
+
+    def test_pyrotechnics(self):
+        """Pyrotechnics deals 4 damage divided as you choose among any number of targets."""
 
 
 if __name__ == '__main__':

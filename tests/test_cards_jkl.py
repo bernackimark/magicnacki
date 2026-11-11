@@ -13,6 +13,9 @@ class TestCardsJKL(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_jacques_le_vert(self):
+        """Green creatures you control get +0/+2."""
+
     def test_jade_monolith(self):
         """{1}: The next time a source of your choice would deal damage to target creature this turn,
         that source deals that damage to you instead"""
@@ -28,6 +31,25 @@ class TestCardsJKL(unittest.TestCase):
         bolt_pipeline.resolve_ability()
         self.assertIn(target, self.gs.boards[0])
         self.assertEqual(17, self.gs.life[0])
+
+    def test_jade_statue(self):
+        """{2}: This artifact becomes a 3/6 Golem artifact creature until end of combat. Activate only during combat."""
+
+    def test_jalum_tome(self):
+        """{2}, {T}: Draw a card, then discard a card."""
+
+    def test_jandors_ring(self):
+        """{2}, {T}, Discard the last card you drew this turn: Draw a card."""
+
+    def test_jandors_saddlebags(self):
+        """{3}, {T}: Untap target creature."""
+
+    def test_jayemdae_tome(self):
+        """{4}, {T}: Draw a card."""
+
+    def test_jihad(self):
+        """As J ETB, choose a color. White creatures get +2/+1 as long as opp controls a nontoken perm of that color.
+        When opp controls no nontoken permanents of the chosen color, sac J."""
 
     def test_johan(self):
         """At your combat begin step, you may have J gain Defender & your creatures gain Vigilance EOT.
@@ -54,6 +76,15 @@ class TestCardsJKL(unittest.TestCase):
         card = self.g.hand('jovial-evil')
         card.abilities[0].effect.resolve(self.gs, card, 1)  # type: ignore
         self.assertEqual(18, self.gs.life[1])
+
+    def test_juggernaut(self):
+        """This creature attacks each combat if able. This creature can't be blocked by Walls."""
+
+    def test_jump(self):
+        """Target creature gains flying until end of turn."""
+
+    def test_junun_efreet(self):
+        """Flying At the beginning of your upkeep, sacrifice this creature unless you pay {BB}."""
 
     def test_juxtapose_players_have_both_types(self):
         """You & opp exchange control of the creature you each control with the greatest MV.
@@ -102,6 +133,12 @@ class TestCardsJKL(unittest.TestCase):
         self.assertEqual(1, p1_a1.owner_id)  # not exchanged since Player #0 had no artifacts
         self.assertIsNone(self.gs.pending_choice)
 
+    def test_juzam_djinn(self):
+        """At the beginning of your upkeep, this creature deals 1 damage to you."""
+
+    def test_karakas(self):
+        """{T}: Add {W}. {T}: Return target legendary creature to its owner's hand."""
+
     def test_karma(self):
         """At each player's upkeep, this enchantment deals damage to that player = number of Swamps they control."""
         self.g.battlefield('karma')
@@ -114,6 +151,24 @@ class TestCardsJKL(unittest.TestCase):
         self.g.next_turn(True)
         self.gs.phase_mgr.set_phase(Phase.UPKEEP)
         self.assertEqual(20, self.gs.life[0])
+
+    def test_kei_takahashi(self):
+        """{T}: Prevent the next 2 damage that would be dealt to target creature this turn."""
+
+    def test_keldon_warlord(self):
+        """Keldon Warlord's power and toughness are each equal to the number of non-Wall creatures you control."""
+
+    def test_khabal_ghoul(self):
+        """At each end step, put a +1/+1 counter on this creature for each creature that died this turn."""
+
+    def test_killer_bees(self):
+        """Flying {G}: This creature gets +1/+1 until end of turn."""
+
+    def test_king_suleiman(self):
+        """{T}: Destroy target Djinn or Efreet."""
+
+    def test_kird_ape(self):
+        """This creature gets +1/+2 as long as you control a Forest."""
 
     def test_kismet(self):
         """Artifacts, creatures, and lands your opponents control enter tapped"""
@@ -128,17 +183,42 @@ class TestCardsJKL(unittest.TestCase):
         self.assertIn(your_card, self.gs.boards[0])
         self.assertFalse(your_card.is_tapped)
 
-    # def test_kudzu(self):
-    #     """When host becomes tapped, destroy it. Host may attach this Aura to a land of their choice."""
-    #     # TODO: aura is already sent to graveyard upon its host being destroyed, just like creature-bond
-    #     card = self.g.hand('kudzu')
-    #     target = self.g.battlefield('island', owner=1)
-    #     other_target_1 = self.g.battlefield('swamp', owner=1)
-    #     other_target_2 = self.g.battlefield('plains', owner=1)
-    #     self.g.cast_and_accept(card, target, card.abilities[1])
-    #     target.tap()
-    #     self.assertIn(target, self.g.gy[1])
-    #     print(self.gs.pending_choice)
+    def test_kobold_drill_sergeant(self):
+        """Other Kobold creatures you control get +0/+1 and have trample."""
+
+    def test_kobold_overlord(self):
+        """First strike Other Kobold creatures you control have first strike."""
+
+    def test_kobold_taskmaster(self):
+        """Other Kobold creatures you control get +1/+0."""
+
+    def test_kormus_bell(self):
+        """All Swamps are 1/1 black creatures that are still lands."""
+
+    def test_kry_shield(self):
+        """{2}, {T}: Prevent all damage that would be dealt EOT by target creature you control.
+        That creature gets +0/+X until end of turn, where X is its mana value."""
+
+    def test_kudzu(self):
+        """When host becomes tapped, destroy it. Host may attach this Aura to a land of their choice."""
+        # TODO: aura is already sent to graveyard upon its host being destroyed, just like creature-bond
+        card = self.g.hand('kudzu')
+        target = self.g.battlefield('island', owner=1)
+        other_target_1 = self.g.battlefield('swamp', owner=1)
+        other_target_2 = self.g.battlefield('plains', owner=1)
+        self.g.cast_and_accept(card, target, card.abilities[1])
+        target.tap()
+        self.assertIn(target, self.g.gy[1])
+        print(self.gs.pending_choice)
+
+    def test_lady_caleria(self):
+        """{T}: Lady Caleria deals 3 damage to target attacking or blocking creature."""
+
+    def test_lady_evangela(self):
+        """{WB}, {T}: Prevent all combat damage that would be dealt by target creature this turn."""
+
+    def test_lance(self):
+        """Enchant creature Enchanted creature has first strike."""
 
     def test_land_equilibrium(self):
         """If an opponent who controls at least as many lands as you do would put a land onto the battlefield,
@@ -156,6 +236,10 @@ class TestCardsJKL(unittest.TestCase):
         opp_land = self.g.hand('swamp', owner=1)
         self.gs.pile_mgr.move_card(opp_land, Zone.BATTLEFIELD, cause='cast', emit_zone_event=True)
         self.assertEqual(None, self.gs.pending_choice, 'Should not trigger if you own more lands')
+
+    def test_land_tax(self):
+        """At your upkeep, if an opp controls more lands than you,
+        you may search your library for up to 3 basic land cards, reveal them, put them into your hand, then shuffle."""
 
     def test_lands_edge_discard_a_land(self):
         """Discard a card: If the discarded card was a land card, LE deals 2 damage to target player ..."""
@@ -235,6 +319,9 @@ class TestCardsJKL(unittest.TestCase):
 
         self.g.next_turn()
         self.assertTrue(card.is_tapped)
+
+    def test_ley_druid(self):
+        """{T}: Untap target land."""
 
     def test_library_of_alexandria(self):
         """{T}: Add {C}.
@@ -332,6 +419,9 @@ class TestCardsJKL(unittest.TestCase):
         self.gs.pile_mgr.destroy(card)
         self.assertTrue(self.gs.is_game_over)
 
+    def test_life_chisel(self):
+        """Sac a creature: You gain life = sacrificed creature's toughness. Activate only during your upkeep."""
+
     def test_life_matrix(self):
         """... Put a matrix counter on target creature & that creature gains
         'Remove a matrix counter from this creature: Regenerate this creature.' ..."""
@@ -347,6 +437,55 @@ class TestCardsJKL(unittest.TestCase):
 
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(1, len(creature.activated_abilities))  # verify the ability remains on card
+
+    def test_lifeblood(self):
+        """Whenever a Mountain an opponent controls becomes tapped, you gain 1 life."""
+
+    def test_lifeforce(self):
+        """{GG}: Counter target black spell."""
+
+    def test_lifelace(self):
+        """Target spell or permanent becomes green. (Mana symbols on that permanent remain unchanged.)"""
+
+    def test_lifetap(self):
+        """Whenever a Forest an opponent controls becomes tapped, you gain 1 life."""
+
+    def test_lightning_bolt(self):
+        """Lightning Bolt deals 3 damage to any target."""
+
+    def test_living_armor(self):
+        """{T}, sac LA: Put X +0/+1 counters on target creature, where X is that creature's mana value."""
+
+    def test_living_artifact(self):
+        """Whenever you're dealt damage, put that many vitality counters on this LA.
+        At your upkeep, you may remove a vitality counter from this Aura. If you do, you gain 1 life."""
+
+    def test_living_lands(self):
+        """All Forests are 1/1 creatures that are still lands."""
+
+    def test_living_plane(self):
+        """All lands are 1/1 creatures that are still lands."""
+
+    def test_living_wall(self):
+        """Defender u003ciu003e(This creature can't attack.)u003c/iu003e {1}: Regenerate this creature."""
+
+    def test_livonya_silone(self):
+        """Legendary landwalk (This creature can't be blocked as long as defending player controls a legendary land.)"""
+
+    def test_llanowar_elves(self):
+        """{T}: Add {G}."""
+
+    def test_lord_of_atlantis(self):
+        """Other Merfolk get +1/+1 and have islandwalk"""
+
+    def test_lord_of_the_pit(self):
+        """At your upkeep, sac a creature other than this creature. If you can't, LOTP deals 7 damage to you."""
+
+    def test_lord_magnus(self):
+        """Creatures with plainswalk or forestwalk can be blocked as though they didn't have that walk"""
+
+    def test_lure(self):
+        """Enchant creature All creatures able to block enchanted creature do so."""
 
     def test_lurker(self):
         """This creature can't be the target of spells (not AAs) unless it attacked or blocked this turn"""

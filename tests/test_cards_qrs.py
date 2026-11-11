@@ -19,6 +19,9 @@ class TestCardsQRS(unittest.TestCase):
         self.g = TestGame()
         self.gs = self.g.gs
 
+    def test_quagmire(self):
+        """Creatures with swampwalk can be blocked as though they didn't have swampwalk."""
+
     def test_quarum_trench_gnomes(self):
         """{T}: If target Plains is tapped for mana, it produces colorless mana instead of white mana.
             (This effect lasts indefinitely.)"""
@@ -37,6 +40,12 @@ class TestCardsQRS(unittest.TestCase):
 
         self.gs.pile_mgr.reanimate(plains)
         self.assertEqual(['C'], plains.mana_produced)
+
+    def test_rabid_wombat(self):
+        """Vigilance This creature gets +2/+2 for each Aura attached to it."""
+
+    def test_radjan_spirit(self):
+        """{T}: Target creature loses flying until end of turn."""
 
     def test_rag_man(self):
         """{BBB}, {T}: Opp reveals their hand and discards a creature card at random. Activate only during your turn"""
@@ -64,6 +73,12 @@ class TestCardsQRS(unittest.TestCase):
         opp_hand.clear()
         self.g.activate_ability(aa, 1)  # just make sure nothing blows up if the hand is empty
 
+    def test_ragnar(self):
+        """{GWU}, {T}: Regenerate target creature."""
+
+    def test_raise_dead(self):
+        """Return target creature card from your graveyard to your hand."""
+
     def test_rakalite(self):
         """{2}: Prevent the next 1 damage that would be dealt to any target this turn. Bounce Rakalite at end step."""
         card = self.g.battlefield('rakalite')
@@ -76,6 +91,19 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(19, self.gs.life[0])
         self.gs.phase_mgr.set_phase(Phase.END_STEP)
         self.assertIn(card, self.gs.pile_mgr.hands[0])
+
+    def test_ramses_overdark(self):
+        """{T}: Destroy target enchanted creature."""
+
+    def test_rapid_fire(self):
+        """Cast this spell only before blockers are declared.
+        Target creature gains first strike EOT. If it doesn't have rampage, that creature gains rampage 2 EOT."""
+
+    def test_rasputin_dreamweaver(self):
+        """RD ETB w 7 dream counters.
+        Remove a dream counter from R: Add {C}.
+        Remove a dream counter from R: Prevent the next 1 damage that would be dealt to R EOT.
+        At your upkeep, if R started the turn untapped, add a dream ctr. R can't have > 7 dream counters on it."""
 
     def test_recall(self):
         """Discard X cards, then return X cards from your graveyard to your hand. Exile Recall."""
@@ -101,6 +129,19 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(h1, self.g.gy[0])
         self.assertIn(gy2, self.gs.hands[0])
         self.assertIsNone(self.gs.pending_choice)
+
+    def test_reconstruction(self):
+        """Return target artifact card from your graveyard to your hand."""
+
+    def test_red_elemental_blast(self):
+        """Choose one - * Counter target blue spell. * Destroy target blue permanent."""
+
+    def test_red_mana_battery(self):
+        """{2}, {T}: Put a charge counter on RMB.
+        {T}, Remove any number of charge counters from RMB: Add {R} + {R} * each charge counter removed this way."""
+
+    def test_red_ward(self):
+        """Enchant creature Enchanted creature has protection from red. This effect doesn't remove this Aura."""
 
     def test_reflecting_mirror(self):
         """{XX}, {T}: Change the target of target spell from you to your opponent, X = MV of that spell"""
@@ -138,6 +179,13 @@ class TestCardsQRS(unittest.TestCase):
         bolt_v_you.advance()
         self.assertFalse(aa.eff_spec.effect.can_activate(self.gs, card))
 
+    def test_regeneration(self):
+        """{G}: Regenerate host.
+        (The next time host would be destroyed EOT, instead tap & remove it from combat, and heal all damage on it.)"""
+
+    def test_regrowth(self):
+        """Return target card from your graveyard to your hand."""
+
     def test_reincarnation(self):
         """Choose target creature. When that creature dies EOT, reanimate a creature from that creature's graveyard"""
         card = self.g.hand('reincarnation')
@@ -152,6 +200,9 @@ class TestCardsQRS(unittest.TestCase):
 
         self.assertIn(target, self.g.gy[0])
         self.assertIn(gy1, self.gs.boards[0])
+
+    def test_relic_barrier(self):
+        """{T}: Tap target artifact."""
 
     def test_relic_bind(self):
         """Enchant artifact an opponent controls; Whenever host becomes tapped, choose one -
@@ -205,6 +256,9 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(c6, self.g.gy[1])
         self.assertIn(unaffected, self.gs.boards[1])
 
+    def test_remove_soul(self):
+        """Counter target creature spell."""
+
     def test_reset(self):
         """Cast this spell only during an opponent's turn after their upkeep step. Untap all lands you control."""
         card = self.g.hand('reset')
@@ -219,6 +273,9 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.phase_mgr.set_phase(Phase.MAIN)
         card.abilities[0].effect.resolve(self.gs, card)
         self.assertFalse(island_1.is_tapped)
+
+    def test_resurrection(self):
+        """Return target creature card from your graveyard to the battlefield."""
 
     def test_revelation(self):
         """Players play with their hands revealed"""
@@ -257,6 +314,21 @@ class TestCardsQRS(unittest.TestCase):
         self.g.cast_and_accept(card, damage_dealer, card.abilities[0])
         self.g.combat(damage_dealer, None)
         self.assertEqual(22, self.gs.life[0])
+
+    def test_reverse_polarity(self):
+        """You gain X life, where X is twice the damage dealt to you so far this turn by artifacts."""
+
+    def test_ring_of_immortals(self):
+        """{3}, {T}: Counter target instant or Aura spell that targets a permanent you control."""
+
+    def test_righteousness(self):
+        """Target blocking creature gets +7/+7 until end of turn."""
+
+    def test_riptide(self):
+        """Tap all blue creatures."""
+
+    def test_riven_turnbull(self):
+        """{T}: Add {B}."""
 
     def test_rock_hydra(self):
         """XRR RH enters with X +1/+1 counters.
@@ -310,6 +382,9 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.event_mgr.emit(EndStepEvent(0))
         self.assertIn(card, self.g.gy[0])
 
+    def test_rod_of_ruin(self):
+        """{3}, {T}: This artifact deals 1 damage to any target."""
+
     def test_rohgahh_of_kher_keep(self):
         """At your upkeep, you may pay {RRR} or: tap ROKK, all Kobolds of Kher Keep & opponent gains control of them.
         Creatures you control named Kobolds of Kher Keep get +2/+2."""
@@ -325,6 +400,9 @@ class TestCardsQRS(unittest.TestCase):
         self.assertTrue(kobold.is_tapped)
         self.assertEqual(1, card.owner_id)
         self.assertEqual(1, kobold.owner_id)
+
+    def test_royal_assassin(self):
+        """{T}: Destroy target tapped creature."""
 
     def test_rubinia_soulsinger(self):
         """You may choose not to untap Rubinia Soulsinger during your untap step.
@@ -347,6 +425,9 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(0, target.owner_id)
         self.gs.pile_mgr.destroy(card)
         self.assertEqual(1, target.owner_id)
+
+    def test_rukh_egg(self):
+        """When RE dies, create a 4/4 red Bird creature token with flying at the beginning of the next end step."""
 
     def test_rust(self):
         """Counter target activated ability from an artifact source. (Mana abilities can't be targeted.)"""
@@ -405,6 +486,12 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.pending_choice.get_actions()[0].play()
         self.assertIn(target, self.gs.pile_mgr.boards[0])
 
+    def test_sage_of_lat_nam(self):
+        """{T}, Sacrifice an artifact: Draw a card."""
+
+    def test_samite_healer(self):
+        """{T}: Prevent the next 1 damage that would be dealt to any target this turn."""
+
     def test_sandals_of_abdallah(self):
         """{2}, {T}: Target creature gains islandwalk until EOT. When that creature dies this turn, destroy SOA."""
         card = self.g.battlefield('sandals-of-abdallah')
@@ -416,6 +503,15 @@ class TestCardsQRS(unittest.TestCase):
 
         self.gs.pile_mgr.destroy(target)
         self.assertIn(card, self.g.gy[0])
+
+    def test_sandstorm(self):
+        """Sandstorm deals 1 damage to each attacking creature."""
+
+    def test_savaen_elves(self):
+        """{GG}, {T}: Destroy target Aura attached to a land."""
+
+    def test_savannah(self):
+        """u003ciu003e({T}: Add {G} or {W}.)u003c/iu003e"""
 
     def test_scarecrow(self):
         """{6}, {T}: Prevent all damage that would be dealt to you this turn by creatures with flying"""
@@ -473,6 +569,19 @@ class TestCardsQRS(unittest.TestCase):
         self.g.activate_ability(lose_aa, forest_walker)
         self.assertNotIn(KW.FORESTWALK, forest_walker.keyword_abilities)
 
+    def test_scavenger_folk(self):
+        """{G}, {T}, Sacrifice this creature: Destroy target artifact."""
+
+    def test_scavenging_ghoul(self):
+        """At each end step, put a corpse counter on SG for each creature that died this turn.
+        Remove a corpse counter from this creature: Regenerate this creature."""
+
+    def test_scrubland(self):
+        """u003ciu003e({T}: Add {W} or {B}.)u003c/iu003e"""
+
+    def test_sea_kings_blessing(self):
+        """One or more target creatures become blue until end of turn."""
+
     def test_season_of_the_witch(self):
         """At your upkeep, sac SOTW unless you pay 2 life. At end step,
         destroy all untapped creatures that didn't attack this turn, except for creatures that couldn't attack."""
@@ -495,6 +604,9 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(regular, gy)
         self.assertNotIn(wall, gy)
 
+    def test_sedge_troll(self):
+        """This creature gets +1/+1 as long as you control a Swamp. {B}: Regenerate this creature."""
+
     def test_seeker(self):
         """Host can't be blocked except by artifact creatures and/or white creatures"""
         host = self.g.battlefield('giant-spider')
@@ -504,6 +616,12 @@ class TestCardsQRS(unittest.TestCase):
         eligible_blocker = self.g.battlefield('savannah-lions', owner=1)
         self.assertFalse(self.gs.perm_querier.can_block(ineligible_blocker, host))
         self.assertTrue(self.gs.perm_querier.can_block(eligible_blocker, host))
+
+    def test_sengir_vampire(self):
+        """Whenever a creature dealt damage by this creature this turn dies, put a +1/+1 counter on this creature."""
+
+    def test_sentinel(self):
+        """{0}: Change S's base T to 1 + power of target S's combatant. (This effect lasts indefinitely.)"""
 
     def test_serendib_djinn(self):
         """At your upkeep, sac a land. If you sac an Island, SD deals 3 damage to you.
@@ -516,6 +634,9 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.event_mgr.emit(StateBasedEvent())
         self.assertEqual(17, self.gs.life[0])
         self.assertIn(sd, self.g.gy[0])
+
+    def test_serendib_efreet(self):
+        """Flying At the beginning of your upkeep, this creature deals 1 damage to you."""
 
     def test_serpent_generator(self):
         """{4}, {T}: Create a 1/1 colorless Snake artifact creature token w
@@ -530,6 +651,19 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.combat_mgr.create_combat(snake)
         self.gs.combat_mgr.handle_damage_step(False)
         self.assertEqual(1, self.gs.score_mgr.poison_counters[1])
+
+    def test_shapeshifter(self):
+        """As S ETB, choose a number 0-7. At your upkeep, you may choose a number between 0-7.
+        S's power is equal to the last chosen number and its toughness is equal to 7 minus that number."""
+
+    def test_shatter(self):
+        """Destroy target artifact."""
+
+    def test_shatterstorm(self):
+        """Destroy all artifacts. They can't be regenerated."""
+
+    def test_shield_wall(self):
+        """Creatures you control get +0/+2 until end of turn."""
 
     def test_shimian_night_stalker(self):
         """All damage that would be dealt to you this turn by target attacking creature is dealt to SNS instead"""
@@ -551,6 +685,17 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(2, card.damage_received_this_turn)
         self.assertEqual(20, self.gs.life[0])
 
+    def test_shivan_dragon(self):
+        """Flying {R}: This creature gets +1/+0 until end of turn."""
+
+    def test_silhouette(self):
+        """Choose target creature. If a spell or ability that targets that creature would cause a source
+        to deal damage to that creature EOT, prevent that damage."""
+
+    def test_simulacrum(self):
+        """You gain life = damage dealt to you EOT.
+        S deals damage to target creature you control = damage dealt to you EOT."""
+
     def test_sindbad(self):
         """{T}: Draw a card and reveal it. If it isn't a land card, discard it."""
         card = self.g.battlefield('sindbad')
@@ -560,6 +705,12 @@ class TestCardsQRS(unittest.TestCase):
         non_land_atop_lib = self.g.library('serendib-efreet')
         Sindbad().resolve(self.gs, card, None)
         self.assertIn(non_land_atop_lib, self.g.gy[0])
+
+    def test_singing_tree(self):
+        """{T}: Target attacking creature has base power 0 until end of turn."""
+
+    def test_sinkhole(self):
+        """Destroy target land."""
 
     def test_sirens_call(self):
         """All non-Wall creatures the active player has controlled continuously since BOT must attack.
@@ -581,6 +732,24 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(non_attacker, self.g.gy[1])
         self.assertNotIn(wall, self.g.gy[1])
         self.assertNotIn(has_sickness, self.g.gy[1])
+
+    def test_sisters_of_the_flame(self):
+        """{T}: Add {R}."""
+
+    def test_skull_of_orm(self):
+        """{5}, {T}: Return target enchantment card from your graveyard to your hand."""
+
+    def test_smoke(self):
+        """Players can't untap more than one creature during their untap steps."""
+
+    def test_sol_ring(self):
+        """{T}: Add {CC}."""
+
+    def test_solkanar_the_swamp_king(self):
+        """Whenever a player casts a black spell, you gain 1 life."""
+
+    def test_sorceress_queen(self):
+        """{T}: Target creature other than this creature has base power and toughness 0/2 until end of turn."""
 
     def test_sorrows_path_blockers_can_swap(self):
         """{T}: Choose two target blocking creatures controlled by opp. If each of those creatures could block the
@@ -686,6 +855,9 @@ class TestCardsQRS(unittest.TestCase):
         self.assertEqual(0, self.gs.action_on_idx)
         self.assertTrue(any(a.source is card for a in self.gs.available_actions_from_hand()))
 
+    def test_spinal_villain(self):
+        """{T}: Destroy target blue creature."""
+
     def test_spirit_link(self):
         """Whenever enchanted creature deals damage, you gain that much life"""
         host = self.g.battlefield('giant-spider')  # 4/4
@@ -701,6 +873,9 @@ class TestCardsQRS(unittest.TestCase):
         self.g.attach(spirit_shackle, host)
         host.tap()
         self.assertEqual(2, host.toughness)
+
+    def test_spiritual_sanctuary(self):
+        """At the beginning of each player's upkeep, if that player controls a Plains, they gain 1 life."""
 
     def test_spitting_slug_is_blocked(self):
         """Whenever SS is blocked, {1G} to grant SS first strike EOT, else each blocker gains first strike EOT"""
@@ -721,6 +896,12 @@ class TestCardsQRS(unittest.TestCase):
         grant_fs_to_ss = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(grant_fs_to_ss)
         self.assertIn('First Strike', card.keyword_abilities)
+
+    def test_staff_of_zegon(self):
+        """{3}, {T}: Target creature gets -2/-0 until end of turn."""
+
+    def test_standing_stones(self):
+        """{1}, {T}, Pay 1 life: Add one mana of any color."""
 
     def test_stangg(self):
         """When S enters, create Stangg Twin, a legendary 3/4 red and green Human Warrior creature token.
@@ -762,6 +943,12 @@ class TestCardsQRS(unittest.TestCase):
         self.g.next_turn()
         self.assertFalse(tapped_card.is_tapped)
 
+    def test_steal_artifact(self):
+        """Enchant artifact You control enchanted artifact."""
+
+    def test_stone_calendar(self):
+        """Spells you cast cost {1} less to cast."""
+
     def test_stone_giant(self):
         """{T}: Target creature you control with toughness < SG's power gains flying EOT. Destroy target at end step."""
         card = self.g.card('stone-giant')  # 3/4
@@ -776,11 +963,39 @@ class TestCardsQRS(unittest.TestCase):
         self.gs.event_mgr.emit(EndStepEvent(0))
         self.assertEqual(legal_target.zone, Zone.GRAVEYARD)
 
+    def test_stone_rain(self):
+        """Destroy target land."""
+
     def test_storm_seeker(self):
         """SS deals damage to target player equal to the number of cards in that player's hand"""
         card = self.g.hand('storm-seeker')
         card.abilities[0].effect.resolve(self.gs, card, 1)
         self.assertEqual(13, self.gs.life[1])
+
+    def test_storm_world(self):
+        """At each player's upkeep, SW deals X damage to that player; X 4 - number of cards in their hand"""
+
+    def test_stream_of_life(self):
+        """Target player gains X life."""
+
+    def test_strip_mine(self):
+        """{T}: Add {C}. {T}, Sacrifice this land: Destroy target land."""
+
+    def test_su_chi(self):
+        """When this creature dies, add {CCCC}."""
+
+    def test_subdue(self):
+        """Prevent all combat damage that would be dealt by target creature EOT.
+        That creature gets +0/+X until end of turn, where X is its mana value."""
+
+    def test_sunastian_falconer(self):
+        """{T}: Add {CC}."""
+
+    def test_sunglasses_of_urza(self):
+        """You may spend white mana as though it were red mana."""
+
+    def test_sunken_city(self):
+        """At the beginning of your upkeep, sacrifice this enchantment unless you pay {UU}. Blue creatures get +1/+1."""
 
     def test_sword_of_the_ages(self):
         """{T}, Sac SOTA & any number of your creatures: SOTA deals X damage to any target,
@@ -797,6 +1012,9 @@ class TestCardsQRS(unittest.TestCase):
         self.assertIn(card, self.gs.exiles[0])
         self.assertIn(c2, self.gs.exiles[0])
         self.assertIn(target, self.g.gy[1])
+
+    def test_swords_to_plowshares(self):
+        """Exile target creature. Its controller gains life equal to its power."""
 
     def test_sylvan_library_2(self):
         """At your draw step, you may draw two additional cards.
@@ -832,20 +1050,14 @@ class TestCardsQRS(unittest.TestCase):
 
         self.assertIsNone(self.gs.pending_choice)
 
+    def test_sylvan_paradise(self):
+        """One or more target creatures become green until end of turn."""
+
     def test_syphon_soul(self):
         """SS deals 2 damage to each other player. You gain life equal to the damage dealt this way."""
         card = self.g.hand('syphon-soul')
         card.abilities[0].effect.resolve(self.gs, card, 1)
         self.assertEqual([22, 18], self.gs.life)
-
-    def test_tablet_of_epityr(self):
-        """Whenever an artifact you control is put into a graveyard from battlefield, you may pay {1} to gain 1 life."""
-        self.g.battlefield('tablet-of-epityr')
-        your_artifact = self.g.battlefield('barls-cage')
-        self.g.mana('U')
-        self.gs.pile_mgr.destroy(your_artifact)
-        self.gs.pending_choice.options[0].play()
-        self.assertEqual(21, self.gs.life[0])
 
 
 if __name__ == '__main__':

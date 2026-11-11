@@ -405,11 +405,11 @@ MAP: dict[str, list[EffSpec]] = {
                           Activated('BB', Do(KWAModEffect('add', 'Swampwalk', True), DealDamage(2, CF.owner())))],
     'wrath-of-god': [Spell(Exile(CF.creatures()))],
     'wyluli-wolf': [Activated('T', Pump(1, 1, True), CF.creatures())],
+    'xenic-poltergeist': [Activated('T', BecomeCreaturePTEqualsManaValue(), CF.non_creature_artifacts()),
+                          Triggered(XenicPoltergeistRelease())],
     'xira-arien': [Activated('BRGT', DrawCards(), CF.all_players())],
     'yawgmoth-demon': [Static(YawgmothDemon())],
     'ydwen-efreet': [Static(YdwenEfreet())],
-    'xenic-poltergeist': [Activated('T', BecomeCreaturePTEqualsManaValue(), CF.non_creature_artifacts()),
-                          Triggered(XenicPoltergeistRelease())],
     'zombie-master': [Static(KWAApplies(CF.other_zombies(), 'add', KW.SWAMPWALK)),
                       Static(AAApplies(CF.other_zombies(), Activated('B', Regenerate(), CF.self())))],
 }
