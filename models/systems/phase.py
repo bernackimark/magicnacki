@@ -384,10 +384,9 @@ class CreaturesHealPhase(PhaseState):
     phase = Phase.CREATURES_HEAL
 
     def on_enter(self, gs: GameState):
-        for player_cards in gs.all_player_cards:
-            for c in player_cards:
-                c.damage_dealt_this_turn = 0
-                c.damage_received_this_turn = 0
+        for c in gs.pile_mgr.all_cards:
+            c.damage_dealt_this_turn = 0
+            c.damage_received_this_turn = 0
 
     def get_actions(self, p_id: int, gs: GameState):
         return None
