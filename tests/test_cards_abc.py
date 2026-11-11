@@ -21,6 +21,20 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_abomination(self):
         """Whenever A blocks or becomes blocked by a green or white creature, destroy that creature at end of combat."""
+        card = self.g.battlefield('abomination')  # 2/6
+        non_green_white = self.g.battlefield('juggernaut', owner=1)  # 5/3
+        self.g.combat(card, non_green_white)
+        self.assertNotIn(non_green_white, self.g.gy[1])
+
+        self.g.next_turn(True)
+        self.g.combat(non_green_white, card)
+        self.assertNotIn(non_green_white, self.g.gy[1])
+
+        self.g.next_turn(True)
+        green = self.g.battlefield('war-mammoth', owner=1)  # 3/3
+        self.g.combat(card, green)
+        self.assertIn(green, self.g.gy[1])
+
 
     def test_abu_jafar(self):
         """When this creature dies, destroy all creatures blocking or blocked by it. They can't be regenerated."""
