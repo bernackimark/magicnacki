@@ -154,8 +154,10 @@ class CombatManager:
     def blockers(self) -> list[GameCard | None]:
         return [b for com in self.combats for b in com.blockers]
 
-    def create_combat(self, attacker: GameCard) -> None:
-        self.combats.append(Combat(attacker))
+    def create_combat(self, attacker: GameCard) -> Combat:
+        com = Combat(attacker)
+        self.combats.append(com)
+        return com
 
     def add_blocker(self, attacker: GameCard, blocker: GameCard):
         combat = self.get_combat(attacker)
