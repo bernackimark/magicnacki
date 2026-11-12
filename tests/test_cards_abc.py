@@ -5,7 +5,7 @@ from models.actions.ability_pipeline_support import SelectXAction2
 from models.actions.stack_accept_counter import PassPriority
 from models.constants import KW, Zone
 from models.cost import SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM, MIRE
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM, MIRE, PLUS_ONE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
@@ -35,9 +35,30 @@ class TestCardsAtoC(unittest.TestCase):
         self.g.combat(card, green)
         self.assertIn(green, self.g.gy[1])
 
-
     def test_abu_jafar(self):
         """When this creature dies, destroy all creatures blocking or blocked by it. They can't be regenerated."""
+        card = self.g.battlefield('abu-jafar')  # 0/1
+        blocker = self.g.battlefield('drudge-skeletons', owner=1)  # 1/1, {B}: Regenerate
+        self.g.mana('B', owner=1)
+        self.g.activate_ability(blocker.activated_abilities[0], blocker, 1)
+
+        # despite abu-jafar having 0 power, its combatant is sent to the graveyard w its regeneration shield ignored
+        com = self.gs.combat_mgr.create_combat(card)
+        com.add_blocker(blocker)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertIn(blocker, self.g.gy[1])
+
+        # test the negative condition; a creature besides abu-jafar allows the combatants regeneration
+        self.g.next_turn()
+        card = self.g.battlefield('monss-goblin-raiders')  # 1/1
+        blocker = self.g.battlefield('drudge-skeletons', owner=1)  # 1/1, {B}: Regenerate
+        self.g.mana('B', owner=1)
+        self.g.activate_ability(blocker.activated_abilities[0], blocker, 1)
+
+        com = self.gs.combat_mgr.create_combat(card)
+        com.add_blocker(blocker)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertNotIn(blocker, self.g.gy[1])
 
     def test_acid_rain(self):
         """Destroy all Forests."""
