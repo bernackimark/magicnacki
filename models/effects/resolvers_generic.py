@@ -632,7 +632,7 @@ class SetColor(Resolver):
         for color in self.colors:
             t.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='add', item=color))
         for color in old_colors:
-            t.modifiers.append(ColorMod(s=source, add_or_remove='remove', item=color))
+            t.modifiers.append(ColorMod(s=source, expires=self.expires, add_or_remove='remove', item=color))
 
 class SetSubType(Resolver):
     """Remove all existing card subtype's and give it a single provided subtype"""
