@@ -70,12 +70,12 @@ MAP: dict[str, list[EffSpec]] = {
     'aladdins-ring': [Activated('8T', DealDamage(4), CF.all_creatures_and_players())],
     'ali-baba': [Activated('R', TapCard(), CF.walls())],
     'ali-from-cairo': [Static(AliFromCairo())],
-    'alchors-tomb': [Activated('2T', SetColor(c), CF.your_permanents(), text=f'Set color to {{{c}}}')
-                     for c in COLOR_LETTERS],
+    'alchors-tomb': [Activated('2T', SetColor(c, expires='PERPETUAL'), CF.your_permanents(),
+                               text=f'Set color to {{{c}}}') for c in COLOR_LETTERS],
     'all-hallows-eve': [Spell(AllHallowsEve())],
     'amnesia': [Spell(Amnesia(), CF.all_players())],
     'amrou-kithkin': [Static(UnblockableCondition(CF.self(), CF.creatures_power_three_or_more()))],
-    'amulet-of-kroog': [Activated('2T', PreventNextDamageBy(preventable_amt=1), CF.all_creatures_and_players())],
+    'amulet-of-kroog': [Activated('2T', PreventNextDamageTo(preventable_amt=1), CF.all_creatures_and_players())],
     'ancestral-recall': [Spell(DrawCards(3), CF.all_players())],
     'angelic-voices': [Static(AngelicVoices())],
     'angus-mackenzie': [Activated('GWUT', On(DamageProposedEvent, 'EOT').where(EC().is_combat_damage()).
