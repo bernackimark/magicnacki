@@ -62,27 +62,110 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_acid_rain(self):
         """Destroy all Forests."""
+        your_forest = self.g.battlefield('forest')
+        their_forest = self.g.battlefield('forest', owner=1)
+        taiga = self.g.battlefield('taiga')
+        self.g.mana('U' * 4)
+        bears = self.g.battlefield('grizzly-bears')
+        card = self.g.hand('acid-rain')
+
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0], add_lots_of_mana=False)
+        self.assertIn(your_forest, self.g.gy[0])
+        self.assertIn(their_forest, self.g.gy[1])
+        self.assertIn(taiga, self.g.gy[0])
+        self.assertFalse(any(c.props.name == 'island' for c in self.g.gy[0]))
+        self.assertNotIn(bears, self.g.gy[0])
 
     def test_active_volcano(self):
         """Choose one - * Destroy target blue permanent. * Return target Island to its owner's hand."""
 
     def test_adun_oakenshield(self):
         """{BRG}, {T}: Return target creature card from your graveyard to your hand."""
+        card = self.g.battlefield('adun-oakenshield')
+        legal = self.g.graveyard('grizzly-bears')
+        illegal_1 = self.g.graveyard('sol-ring')
+        illegal_2 = self.g.graveyard('savannah-lions', owner=1)
+        self.g.mana('BRG')
+
+        # validate targeting
+        eff_spec = card.activated_abilities[0].eff_spec
+        targets = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        self.assertIn(legal, targets)
+        self.assertNotIn(illegal_1, targets)
+        self.assertNotIn(illegal_2, targets)
+
+        # bounce target
+        eff_spec.effect.resolve(self.gs, card, legal)
+        self.assertIn(legal, self.gs.hands[0])
 
     def test_aisling_leprechaun(self):
         """Whenever AL blocks or becomes blocked by a creature, that creature becomes green indefinitely"""
+        card = self.g.battlefield('aisling-leprechaun')  # 1/1
+        combatant = self.g.battlefield('savannah-lions')  # 2/1 White
+
+        self.g.combat(card, combatant)
+        self.assertEqual(['G'], combatant.colors)
+
+        self.gs.pile_mgr.reanimate(combatant)
+        self.assertEqual(['G'], combatant.colors)
+
+        self.gs.pile_mgr.reanimate(card)
+        self.assertEqual(['G'], combatant.colors)
 
     def test_akron_legionnaire(self):
         """Except for creatures named AL and artifact creatures, creatures you control can't attack."""
+        card = self.g.battlefield('akron-legionnaire')
+        can_attack = self.g.battlefield('ornithopter')
+        cant_attack = self.g.battlefield('savannah-lions')
+
+        self.g.next_turn()
+        self.assertTrue(self.gs.perm_querier.can_attack(card))
+        self.assertTrue(self.gs.perm_querier.can_attack(can_attack))
+        self.assertFalse(self.gs.perm_querier.can_attack(cant_attack))
 
     def test_al_abaras_carpet(self):
         """{5}, {T}: Prevent all damage that would be dealt to you this turn by attacking creatures without flying."""
+        card = self.g.battlefield('al-abaras-carpet')
+        self.g.mana('U' * 5)
+        non_flier = self.g.battlefield('savannah-lions', owner=1)  # 2/1
+        flier = self.g.battlefield('serra-angel', owner=1)  # 4/4
+
+        self.g.next_turn(True)
+        self.gs.combat_mgr.create_combat(non_flier)
+        self.gs.combat_mgr.create_combat(flier)
+        self.g.activate_ability(card.activated_abilities[0])
+        self.gs.combat_mgr.handle_damage_step(False)
+
+        self.assertEqual(16, self.gs.life[0])
 
     def test_alabaster_potion(self):
         """Choose 1 - * Target player gains X life. * Prevent the next X damage that would be dealt to any target EOT"""
 
     def test_aladdin(self):
         """{1RR}, {T}: Gain control of target artifact for as long as you control this creature."""
+        card = self.g.battlefield('aladdin')
+        target = self.g.battlefield('sol-ring', owner=1)
+        illegal_1 = self.g.battlefield('grizzly-bears', owner=1)
+        illegal_2 = self.g.battlefield('savannah-lions')
+
+        # validate targeting
+        eff_spec = card.activated_abilities[0].eff_spec
+        targets = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        self.assertIn(target, targets)
+        self.assertNotIn(illegal_1, targets)
+        self.assertNotIn(illegal_2, targets)
+
+        # steal
+        eff_spec.effect.resolve(self.gs, card, target)
+        self.assertIn(target, self.gs.boards[0])
+
+        # still stolen
+        self.g.next_turn()
+        self.assertIn(target, self.gs.boards[0])
+
+        # returned
+        self.gs.pile_mgr.destroy(card)
+        self.assertIn(target, self.gs.boards[1])
 
     def test_aladdins_lamp(self):
         """The next time you would draw a card this turn, instead look at the top X (X > 0) cards of your library,
@@ -108,15 +191,78 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_aladdins_ring(self):
         """{8}, {T}: This artifact deals 4 damage to any target."""
+        card = self.g.battlefield('aladdins-ring')
+        target = self.g.battlefield('serra-angel', owner=1)  # 4/4
+
+        # validate targeting
+        eff_spec = card.activated_abilities[0].eff_spec
+        targets = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        self.assertIn(target, targets)
+        self.assertIn(0, targets)
+        self.assertIn(1, targets)
+
+        eff_spec.effect.resolve(self.gs, card, target)
+        self.assertIn(target, self.g.gy[1])
 
     def test_ali_baba(self):
         """{R}: Tap target Wall."""
+        card = self.g.battlefield('ali-baba')
+        your_wall = self.g.battlefield('wall-of-water')
+        their_wall = self.g.battlefield('wall-of-wood', owner=1)
+        non_wall = self.g.battlefield('grizzly-bears', owner=1)
+
+        # validate targeting
+        eff_spec = card.activated_abilities[0].eff_spec
+        targets = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        self.assertIn(your_wall, targets)
+        self.assertIn(their_wall, targets)
+        self.assertNotIn(non_wall, targets)
+
+        eff_spec.effect.resolve(self.gs, card, their_wall)
+        self.assertTrue(their_wall.is_tapped)
 
     def test_ali_from_cairo(self):
         """Damage that would reduce your life total to less than 1 reduces it to 1 instead."""
+        card = self.g.battlefield('ali-from-cairo')
+        random_source = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+
+        # reduces life to 1 instead of -10
+        self.gs.apply_damage(random_source, 30, 0)
+        self.assertEqual(1, self.gs.life[0])
+
+        # ali-from-cairo to graveyard, life loss proceeds as normal
+        self.gs.pile_mgr.destroy(card)
+        self.gs.apply_damage(random_source, 2, 0)
+        self.assertEqual(-1, self.gs.life[0])
 
     def test_alchors_tomb(self):
         """{2}, {T}: Target permanent you control becomes the color of your choice. (This effect lasts indefinitely.)"""
+        card = self.g.battlefield('alchors-tomb')
+        aa = card.activated_abilities[0]  # sets color to G, since 'G' is the first element in COLOR_LETTERS
+        target = self.g.battlefield('savannah-lions')
+        illegal = self.g.battlefield('merfolk-of-the-pearl-trident', owner=1)
+
+        # validate targeting
+        eff_spec = aa.eff_spec
+        targets = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        self.assertIn(target, targets)
+        self.assertNotIn(illegal, targets)
+
+        # execute color change
+        eff_spec.effect.resolve(self.gs, card, target)
+        self.assertEqual(['G'], target.colors)
+
+        # send source to graveyard, validate target is still ['G'], reanimate source and re-check
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual(['G'], target.colors)
+        self.gs.pile_mgr.reanimate(card)
+        self.assertEqual(['G'], target.colors)
+
+        # send target to graveyard, validate target is still ['G'], reanimate target and re-check
+        self.gs.pile_mgr.destroy(target)
+        self.assertEqual(['G'], target.colors)
+        self.gs.pile_mgr.reanimate(target)
+        self.assertEqual(['G'], target.colors)
 
     def test_all_hallows_eve(self):
         """Exile AHE with 2 scream counters on it. At your upkeep, if this card is in exile with >=1 scream counters,
@@ -140,15 +286,51 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_amnesia(self):
         """Target player reveals their hand and discards all nonland cards."""
+        self.gs.hands[1].clear()
+        land = self.g.hand('maze-of-ith', owner=1)
+        non_land = self.g.hand('sol-ring', owner=1)
+        card = self.g.hand('amnesia')
+
+        eff_spec = card.abilities[0]
+        eff_spec.effect.resolve(self.gs, card, 1)
+        self.assertTrue(land.is_face_up)
+        self.assertTrue(non_land.is_face_up)
+        self.assertIn(non_land, self.g.gy[1])
+        self.assertNotIn(land, self.g.gy[1])
 
     def test_amrou_kithkin(self):
         """This creature can't be blocked by creatures with power 3 or greater."""
+        card = self.g.battlefield('amrou-kithkin')
+        can_block = self.g.battlefield('savannah-lions', owner=1)  # 2/1
+        cant_block = self.g.battlefield('serra-angel', owner=1)  # 4/4
+
+        self.g.next_turn()
+        self.assertTrue(self.gs.perm_querier.can_block(can_block, card))
+        self.assertFalse(self.gs.perm_querier.can_block(cant_block, card))
 
     def test_amulet_of_kroog(self):
         """{2}, {T}: Prevent the next 1 damage that would be dealt to any target this turn."""
+        card = self.g.battlefield('amulet-of-kroog')
+        self.g.mana('WW')
+        attacker = self.g.battlefield('savannah-lions', owner=1)  # 2/1
+        target = self.g.battlefield('repentant-blacksmith')  # 1/2
+
+        self.g.next_turn(True)
+        pipeline = AbilityPipeline(0, self.gs, card, card.activated_abilities[0].eff_spec, targets=[target])
+        pipeline.advance()
+        pipeline.resolve_ability()
+
+        self.g.combat(attacker, target)
+        self.assertIn(attacker, self.g.gy[1])
+        self.assertNotIn(target, self.g.gy[0])
+        self.assertEqual(1, target.damage_received_this_turn)
 
     def test_ancestral_recall(self):
         """Target player draws three cards."""
+        card = self.g.hand('ancestral-recall')
+        eff_spec = card.abilities[0]
+        eff_spec.effect.resolve(self.gs, card, 1)
+        self.assertEqual(10, len(self.gs.hands[1]))
 
     def test_angelic_voices(self):
         """Creatures you control get +1/+1 as long as you control no nonartifact, nonwhite creatures."""
