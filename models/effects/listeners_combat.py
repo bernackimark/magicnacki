@@ -108,7 +108,7 @@ class AislingLeprechaun(Listener):
             other = event.attacker
         else:
             return
-        SetColor('G').resolve(gs, s, t=other)
+        SetColor('G', expires='PERPETUAL').resolve(gs, s, t=other)
 
 class YdwenEfreet(Listener):
     """Whenever Ydwen Efreet blocks, flip a coin.
