@@ -327,7 +327,7 @@ class TestCardsDEF(unittest.TestCase):
 
         # resolve drain-power, which produces choices since player controls a multi-land
         pipeline.resolve_ability()
-        volcanic_produces_red = self.gs.pending_choice.get_actions()[0]
+        volcanic_produces_red = next(a for a in self.gs.pending_choice.get_actions() if 'Select R' in a.description)
         self.gs.choice_mgr.choose(volcanic_produces_red)
         finish_declaring_colors = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(finish_declaring_colors)
@@ -530,32 +530,27 @@ class TestCardsDEF(unittest.TestCase):
     def test_fastbond(self):
         """You may play any number of lands on each of your turns.
         For any land after the first in a turn, F deals 1 damage to you."""
-        [h.clear() for h in self.gs.hands]
-        self.g.mana('G')
-        f1 = self.g.hand('forest')
-        f2 = self.g.hand('forest')
+        self.g.clear_hands()
         card = self.g.hand('fastbond')
+        self.g.mana('G')
+        forest = self.g.hand('forest')
+        island = self.g.hand('island')
+        plains = self.g.hand('plains')
 
-        print('Next turn')
         self.g.next_turn()
-        self.gs.phase_mgr.set_phase(Phase.MAIN)
-        self.g.cast_and_accept(card, eff_spec=card.abilities[0], add_lots_of_mana=False)
-        pass_priority = self.gs.get_available_actions(0)[0]
-        pass_priority.play()
-        print('I played the Fastbond')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0])
+        pipeline.advance()
+        pipeline.resolve_ability()
 
-        play_f1 = self.gs.get_available_actions(0)[1]
-        play_f1.play()
+        self.g.cast_and_accept(forest, add_lots_of_mana=False)
+        self.assertEqual(20, self.gs.life[0])
+        self.assertTrue(self.gs.perm_querier.can_cast(island, 0))
 
-        # I'm not sure .play() is correct ... that doesn't allow P0 to play any more cards that turn and passes turn
+        self.g.cast_and_accept(island, add_lots_of_mana=False)
+        self.assertEqual(19, self.gs.life[0])
 
-        self.assertEqual(0, self.gs.player_turn_idx)
-        self.assertEqual(0, self.gs.action_on_idx)
-
-        print('A', self.gs.action_on_idx, self.gs.get_available_actions(0))
-        print(self.gs.boards[0])
-        print(self.gs.get_available_actions(0))
-        raise ValueError()
+        self.gs.pile_mgr.destroy(card)
+        self.assertFalse(self.gs.perm_querier.can_cast(plains, 0))
 
     def test_fasting(self):
         """At your upkeep, put a hunger counter on F. Destroy F if it has >=5 hunger counters.
@@ -891,10 +886,7 @@ class TestCardsDEF(unittest.TestCase):
         pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=2)
         pipeline.advance()
         pipeline.resolve_ability()
-
-        print(len(self.g.gy[0]), pipeline.x_value, card.zone)
-        self.assertIn(card, self.g.gy[0],
-                      "AP.resolve_ability() happens after .resolve() & moves FM from gy to board")
+        self.assertIn(card, self.g.gy[0])
 
     def test_frozen_shade(self):
         """{B}: This creature gets +1/+1 until end of turn."""

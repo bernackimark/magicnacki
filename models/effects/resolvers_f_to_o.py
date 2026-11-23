@@ -123,7 +123,7 @@ class FrankensteinsMonster(Resolver):
             return
         creatures_in_your_gy = gs.card_filter.creatures().in_player_graveyard(source.owner_id).result()
         if len(creatures_in_your_gy) < x:
-            gs.pile_mgr.destroy(source)
+            gs.pile_mgr.move_card(source, Zone.GRAVEYARD, cause="put_into_gy_instead_of_battlefield")
             return
         FrankensteinsMonster._State(gs, source, x, creatures_in_your_gy)
 
