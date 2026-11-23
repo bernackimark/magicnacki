@@ -312,7 +312,7 @@ class TestCardsDEF(unittest.TestCase):
         Then that player loses all unspent mana, and you add the mana lost this way."""
         card = self.g.hand('drain-power')  # UU
         self.g.mana('UU')
-        plains = self.g.battlefield('plains', owner=1)
+        self.g.battlefield('plains', owner=1)
         swamp = self.g.battlefield('swamp', owner=1)
         volcanic_island = self.g.battlefield('volcanic-island', owner=1)  # produces ['R', 'U']
         random_spell = self.g.hand('holy-day', owner=1)  # W
@@ -325,14 +325,18 @@ class TestCardsDEF(unittest.TestCase):
         cast_random_spell.advance()
         cast_random_spell.resolve_ability()
 
+        # resolve drain-power, which produces choices since player controls a multi-land
         pipeline.resolve_ability()
         volcanic_produces_red = self.gs.pending_choice.get_actions()[0]
         self.gs.choice_mgr.choose(volcanic_produces_red)
+        finish_declaring_colors = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(finish_declaring_colors)
 
         self.assertTrue(swamp.is_tapped)
         self.assertTrue(volcanic_island.is_tapped)
         self.assertEqual(0, sum(self.gs.mana_pools[1].available_mana.values()))
-        self.assertEqual({'B': 1, 'R': 1}, {k: v for k, v in self.gs.mana_pools[0].available_mana.values() if v})
+        self.assertEqual({'B': 1, 'R': 1}, {k: v for k, v in self.gs.mana_pools[0].available_mana.items() if v})
+        self.assertIsNone(self.gs.pending_choice)
 
     def test_dream_coat(self):
         """{0}: Host becomes the color or colors of your choice. Activate only once each turn."""

@@ -435,24 +435,60 @@ class DrainPower(Resolver):
     Then that player loses all unspent mana & you add the mana lost this way."""
     def resolve(self, gs: GameState, source: GameCard, t: RTarget = None, context: ResContext = None):
         opp = flip(source.owner_id)
-        mana_lands = [land for land in gs.card_filter.on_player_board(opp).lands().result()[:] if land.mana_produced]
+        mana_lands = [land for land in gs.card_filter.on_player_board(opp).lands().untapped().result()[:]
+                      if land.mana_produced]
         if any(len(land.mana_produced) > 1 for land in mana_lands):
-            state = DrainPower._MultiManaState([[land, land.mana_produced] for land in mana_lands])  # type: ignore
-            # TODO: code the mana produced selection process
+            multi_lands = [land for land in mana_lands if len(land.mana_produced) > 1]
+            state = DrainPower._MultiManaState(opp, multi_lands)
+            self.queue_next_choice(gs, state)
         else:
-            self._tap_and_transfer(gs.mana_pools[source.owner_id], mana_lands, gs.mana_pools[opp].available_mana.copy())
+            for land in mana_lands:
+                land.tap()
+                gs.mana_pools[source.owner_id].add_floating(land.mana_produced[0])
             return
 
     @dataclass
     class _MultiManaState:
-        lands_and_colors: list[list[GameCard, list[str]]] = field(default_factory=list)  # [[dual_land, ['R', 'U']],...]
+        """State that tracks giving players selections for which mana each multi-land should produce.
+         Is not used if giving player controls no untapped multi-lands"""
+        giving_player: int
+        multi_lands: list[GameCard] = field(default_factory=list)
+        selected_lands_and_color: list[tuple[GameCard, str]] = field(default_factory=list)
+
+        @property
+        def remaining(self) -> list[GameCard]:
+            return [land for land in self.multi_lands
+                    if land not in [sel_land for sel_land, _ in self.selected_lands_and_color]]
+
+        @property
+        def current_card(self) -> GameCard:
+            return self.remaining[0]
+
+    def queue_next_choice(self, gs: GameState, state: _MultiManaState):
+        if not state.remaining:
+            options = [CO("Finish selecting mana colors", lambda: self._finish_selecting(gs, state))]
+        else:
+            options = [CO(f"Select {color} for {state.current_card}",
+                          lambda col=color: self._select_color(gs, state, state.current_card, col))
+                       for color in state.current_card.mana_produced]
+        gs.choice_mgr.queue(ChoiceAction(options))
+
+    def _select_color(self, gs: GameState, state: _MultiManaState, card: GameCard, color: str):
+        state.selected_lands_and_color.append((card, color))
+        self.queue_next_choice(gs, state)
 
     @staticmethod
-    def _tap_and_transfer(receiving_mana_pool: ManaPool, mana_lands: list[GameCard], mana_dict: dict[str, int]):
-        for land in mana_lands:
+    def _finish_selecting(gs: GameState, state: _MultiManaState):
+        """Tap & add mana for all manually selected cards; do the same for all other untapped mana producers"""
+        receiving_mana_pool = gs.mana_pools[flip(state.giving_player)]
+        for land, color in state.selected_lands_and_color:
             land.tap()
-        for color, amt in mana_dict.items():
-            receiving_mana_pool.add_floating(color, amt)
+            receiving_mana_pool.add_floating(color)
+        for land in gs.card_filter.on_player_board(state.giving_player).lands().untapped().result()[:]:
+            if not land.mana_produced:
+                continue
+            land.tap()
+            receiving_mana_pool.add_floating(land.mana_produced[0])
 
 class DrafnasRestoration(Resolver):
     """Put any number of target artifact cards from target player's graveyard on top of their library in ANY ORDER"""
