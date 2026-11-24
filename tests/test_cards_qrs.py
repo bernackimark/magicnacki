@@ -922,23 +922,18 @@ class TestCardsQRS(unittest.TestCase):
     def test_stasis(self):
         """Players skip their untap steps. At your upkeep, pay {U} or sac Stasis."""
         card = self.g.battlefield('stasis')
-        self.gs.event_mgr.register(card.abilities[0].effect, card)
-        self.gs.event_mgr.register(card.abilities[1].effect, card)
         self.g.mana('U')
         tapped_card = self.g.battlefield('nether-void')
         tapped_card.tap()
         self.g.battlefield('grizzly-bears')
 
-        self.g.next_turn()
+        self.g.next_turn()  # this gets us to Upkeep; don't set phase to Upkeep again
         self.assertTrue(tapped_card.is_tapped)
 
-        self.gs.event_mgr.emit(UpkeepEvent(0))
         sac_stasis = self.gs.pending_choice.get_actions()[1]
         self.gs.choice_mgr.choose(sac_stasis)
         self.assertIn(card, self.g.gy[0])
-        self.assertIsNone(self.gs.pending_choice,
-                          "Statis uses a generic PayManaOr('U', SacSelf()). SacSelf doesn't know that it needs a"
-                          "callback to gs.choice_mgr.complete()")
+        self.assertIsNone(self.gs.pending_choice, "Too many PayManaOr('U', SacSelf()) are being created")
 
         self.g.next_turn()
         self.assertFalse(tapped_card.is_tapped)
