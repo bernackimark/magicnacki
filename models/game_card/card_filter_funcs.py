@@ -62,7 +62,7 @@ class CF:
 
     @staticmethod
     def artifact_spells():
-        return lambda gs, s: [s for s in gs.action_stack.spells if s.card.is_artifact]
+        return lambda gs, s: [spell for spell in gs.action_stack.spells if spell.source.is_artifact]
 
     @staticmethod
     def artifacts_and_enchantments():
