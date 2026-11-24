@@ -86,13 +86,6 @@ class NorthStarExpiry(Listener):
             return
         gs.event_mgr.unregister_effects(source)
 
-class PresenceOfTheMaster(Listener):
-    """Whenever a player casts an enchantment spell, counter it"""
-    listens_to = CastResolvedEvent
-
-    def on_event(self, gs: GameState, source: GameCard, event: CastResolvedEvent) -> None:
-        ...
-
 class VerduranEnchantress(Listener):
     """Whenever you cast an enchantment spell, you may draw a card"""
     listens_to = CastResolvedEvent
