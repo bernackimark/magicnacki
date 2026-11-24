@@ -89,7 +89,10 @@ class CardUniverse:
         self.token_cards = self.create_tokens_from_json()
 
     def __getitem__(self, slug: str) -> Card:
-        return next(c for c in self.cards if slug == c.slug)
+        try:
+            return next(c for c in self.cards if slug == c.slug)
+        except StopIteration:
+            raise ValueError("You probably have a spelling error in", slug)
 
     def __iter__(self) -> Iterator:
         return iter(self.cards)
