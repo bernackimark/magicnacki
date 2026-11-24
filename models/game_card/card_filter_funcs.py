@@ -548,9 +548,9 @@ class CF:
     @staticmethod
     def spells_aura_or_instant_targeting_your_perm():
         return lambda gs, s: [spell for spell in gs.action_stack.spells
-                              if (('Instant' in spell.types or 'Aura' in spell.types)
-                                  and any(isinstance(t, GameCard) and t.owner_id == s.owner_id
-                                          and t.zone == Zone.BATTLEFIELD for t in spell.targets))]
+                              if (('Instant' in spell.source.card_types or 'Aura' in spell.source.card_types)
+                                  and any(not isinstance(t, int) and t.owner_id == s.owner_id
+                                          and t.zone == Zone.BATTLEFIELD for t in spell.pipeline.targets))]
 
     @staticmethod
     def spells_targeting_you():
