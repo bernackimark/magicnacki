@@ -334,9 +334,40 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_angelic_voices(self):
         """Creatures you control get +1/+1 as long as you control no nonartifact, nonwhite creatures."""
+        self.g.battlefield('angelic-voices')
+        wolves = self.g.battlefield('tundra-wolves')  # 1/1
+        self.assertEqual((2, 2), (wolves.power, wolves.toughness))
+
+        self.g.battlefield('ornithopter')  # artifact creature
+        self.assertEqual((2, 2), (wolves.power, wolves.toughness))
+
+        self.g.battlefield('grizzly-bears', owner=1)  # opponent can have nonartifact, nonwhite creatures
+        self.assertEqual((2, 2), (wolves.power, wolves.toughness))
+
+        other_creature = self.g.battlefield('bog-wraith')  # a nonartifact, nonwhite creature
+        self.assertEqual((1, 1), (wolves.power, wolves.toughness))
+
+        self.gs.pile_mgr.destroy(other_creature)
+        self.assertEqual((2, 2), (wolves.power, wolves.toughness))
 
     def test_angus_mackenzie(self):
         """{GWUT}: Prevent all combat damage that would be dealt EOT. Activate only before the combat damage step."""
+        card = self.g.battlefield('angus-mackenzie')
+        aa = card.activated_abilities[0]
+        self.g.mana('GWU')
+        attacker = self.g.battlefield('grizzly-bears')
+        self.g.activate_ability(aa)
+        self.g.combat(attacker, None)
+        self.assertEqual(20, self.gs.life[0])  # combat damage is prevented
+
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.cast_and_accept(bolt, 0, bolt.abilities[0], 1)
+        self.assertEqual(17, self.gs.life[0])  # non-combat damage is unaffected
+
+        self.g.next_turn()
+        self.assertEqual(1, len(self.gs.get_available_activated_abilities(card)))  # before combat damage
+        self.gs.phase_mgr.set_phase(Phase.SECOND_MAIN)
+        self.assertEqual(0, len(self.gs.get_available_activated_abilities(card)))  # after combat damage
 
     def test_angry_mob(self):
         """During your turn, AM's P & T are = 2 plus + Swamps your opponents control. On not your turn, AM is 2/2."""
