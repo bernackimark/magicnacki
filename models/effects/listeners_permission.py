@@ -106,7 +106,12 @@ class CantBeTargetedByAuras(Listener):
     def on_event(self, gs: GameState, source: GameCard, event: CanTargetQueryEvent) -> None:
         if 'Aura' not in event.source.card_sub_types:
             return
-        protected_cards = [self.protected_card] if self.protected_card else self.protected_card_func(gs, source)
+        if self.protected_card:
+            protected_cards = [self.protected_card]
+        else:
+            protected_cards = self.protected_card_func(gs, source)
+            if not isinstance(protected_cards, list):
+                protected_cards = [protected_cards]
         if event.target not in protected_cards:
             return
         if self.condition_func and not self.condition_func(gs, source):
