@@ -357,10 +357,12 @@ class UntapRemovesPumpFromAnotherCard(Listener):
     listens_to = UntapCardEvent
 
     def on_event(self, gs: GameState, s: GameCard, event: UntapCardEvent):
+        if event.card is not s:
+            return
         for c in gs.card_filter.in_play().result():
-            for mod in list(c.modifiers):
-                if mod.source is s and isinstance(mod, PTMod):
-                    event.card.modifiers.remove(mod)
+            for mod in c.modifiers.get(PTMod)[:]:
+                if mod.s is s:
+                    c.modifiers.remove(mod)
 
 
 # --- UNTAP PHASE ---
