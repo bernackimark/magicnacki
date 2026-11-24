@@ -130,7 +130,7 @@ MAP: dict[str, list[EffSpec]] = {
     'ashnods-transmogrant': [Activated('T', Do(AddCounter(PLUS_ONE), AddType('Artifact')), CF.non_artifact_creatures(),
                                        extra_costs=[SacSelfCost()])],
     'aspect-of-wolf': [Static(AspectOfWolfPT())],
-    'atog': [Activated('', Pump(2, 2), CF.self(), extra_costs=[SacCardCost(CF.your_artifacts())])],
+    'atog': [Activated('', Pump(2, 2, True), CF.self(), extra_costs=[SacCardCost(CF.your_artifacts())])],
     'avoid-fate': [Spell(CounterSpell(), CF.spells_aura_or_instant_targeting_your_perm())],
     'axelrod-gunnarson': [Triggered(AxelrodGunnarson())],
     'backdraft': [Spell(Backdraft())],
