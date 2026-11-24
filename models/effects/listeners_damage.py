@@ -1,4 +1,6 @@
 from __future__ import annotations
+
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from models.choice_actions_all import ChoiceAction
@@ -211,13 +213,42 @@ class LichDamageSac(Listener):
 
     def on_event(self, gs: GameState, source: GameCard, event: DamageResolvedEvent) -> None:
         your_perms = gs.card_filter.non_token().permanents().on_player_board(source.owner_id).result()
+
         if event.amt > len(your_perms):
             gs.is_game_over = True
             gs.winner = flip(source.owner_id)
             return
 
-        # TODO: since we're asking for multiple options, handle thru choice_mgr, but need to carry state
+        if event.amt == len(your_perms):
+            for perm in your_perms:
+                gs.pile_mgr.sacrifice(perm)
+            return
 
+        LichDamageSac._State(source.owner_id, gs, event.amt)
+
+    @dataclass
+    class _State:
+        owner_id: int
+        gs: GameState
+        must_sac_cnt: int
+        selected: list[GameCard] = field(default_factory=list)
+
+        def __post_init__(self):
+            self.queue_next_choice()
+
+        def queue_next_choice(self):
+            options = [CO(f'Sacrifice {c}', lambda card=c: self.select_card(card))
+                       for c in self.gs.card_filter.non_token().permanents().on_player_board(self.owner_id).result()]
+            self.gs.choice_mgr.queue(ChoiceAction(options))
+
+        def select_card(self, c: GameCard):
+            self.selected.append(c)
+            if len(self.selected) >= self.must_sac_cnt:
+                for c in self.selected:
+                    self.gs.pile_mgr.sacrifice(c)
+                self.gs.choice_mgr.complete()
+            else:
+                self.queue_next_choice()
 
 class LivingArtifactOnDamage(Listener):
     """Enchant artifact Whenever you're dealt damage, put that many vitality counters on this Aura ...

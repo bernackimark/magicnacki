@@ -399,7 +399,9 @@ class TestCardsJKL(unittest.TestCase):
         random_source = self.g.battlefield('tundra-wolves', owner=1)
         self.gs.apply_damage(random_source, 1, 0)
         self.assertEqual(-1, self.gs.life[0])
-        self.assertIn(bears, self.g.gy[0])  # TODO: see listeners_damage.py LichDamageSac
+        sac_bears = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(sac_bears)
+        self.assertIn(bears, self.g.gy[0])
 
         # damage is dealt; not enough perms; game is over
         self.gs.apply_damage(random_source, 15, 0)
