@@ -2,6 +2,7 @@ import unittest
 
 from models.actions.ability_pipeline import AbilityPipeline
 from models.actions.ability_pipeline_support import SelectXAction2
+from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.actions.stack_accept_counter import PassPriority
 from models.constants import KW, Zone
 from models.cost import SacCardCost
@@ -371,6 +372,12 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_angry_mob(self):
         """During your turn, AM's P & T are = 2 plus + Swamps your opponents control. On not your turn, AM is 2/2."""
+        card = self.g.battlefield('angry-mob')
+        self.g.battlefield('swamp')
+        self.g.battlefield('swamp', owner=1)
+        self.assertEqual((3, 3), (card.power, card.toughness))
+        self.g.next_turn(True)
+        self.assertEqual((2, 2), (card.power, card.toughness))
 
     def test_animate_artifact(self):
         card = self.g.hand('animate-artifact')
@@ -406,6 +413,12 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_ankh_of_mishra(self):
         """Whenever a land enters, this artifact deals 2 damage to that land's controller."""
+        self.g.battlefield('ankh-of-mishra')
+        swamp = self.g.hand('swamp')
+        CastPermanentAction(0, self.gs, swamp).play()
+        maze = self.g.hand('maze-of-ith', owner=1)
+        CastPermanentAction(1, self.gs, maze).play()
+        self.assertEqual([18, 18], self.gs.life)
 
     def test_anti_aura_magic(self):
         card = self.g.hand('anti-magic-aura')
@@ -418,33 +431,127 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_apprentice_wizard(self):
         """{U}, {T}: Add {CCC}."""
+        self.g.mana('U')
+        card = self.g.battlefield('apprentice-wizard')
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual({'C': 3}, {k: v for k, v in self.gs.mana_pools[0].available_mana.items() if v})
 
     def test_arboria(self):
         """Creatures can't attack a player unless that player cast a spell or put a nontoken permanent onto
         the battlefield during their last turn."""
+        card = self.g.battlefield('arboria')
+        creature = self.g.battlefield('tundra-wolves')
+
+        self.g.next_turn()
+        self.g.battlefield('grizzly-bears', owner=1)
+        self.assertFalse(self.gs.perm_querier.can_attack(creature))
+        self.gs.pile_mgr.destroy(card)
+        self.assertTrue(self.gs.perm_querier.can_attack(creature))
 
     def test_arcades_sabboth(self):
         """At your upkeep, sac AS unless you pay {GWU}. Each untapped non-attacking creature you control gets +0/+2.
         {W}: Arcades Sabboth gets +0/+1 until end of turn."""
+        card = self.g.battlefield('arcades-sabboth')  # 7/7
+        self.g.mana('GWWU')
+        angel = self.g.battlefield('serra-angel')  # 4/4
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        pay_upkeep = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(pay_upkeep)
+
+        self.assertEqual(6, angel.toughness)
+        self.g.combat(angel, None)
+        self.assertEqual(4, angel.toughness)
+
+        self.g.activate_ability(card.activated_abilities[0], target=card)
+        self.assertEqual(10, card.toughness)
 
     def test_arena_of_the_ancients(self):
         """Legendary creatures don't untap during their untap steps. When AOTA enters, tap all legendary creatures."""
+        legend = self.g.battlefield('arcades-sabboth')
+        non_legend = self.g.battlefield('grizzly-bears')
+        non_legend.tap()
+
+        card = self.g.battlefield('arena-of-the-ancients')
+        self.g.resolve_spell(card, spell=card.abilities[-1])
+        self.assertTrue(legend.is_tapped)
+
+        self.g.next_turn()
+        self.assertFalse(non_legend.is_tapped)
+        self.assertTrue(legend.is_tapped)
+
+        self.gs.pile_mgr.destroy(card)
+        self.g.next_turn()
+        self.assertFalse(legend.is_tapped)
 
     def test_argivian_archaeologist(self):
         """{WW}, {T}: Return target artifact card from your graveyard to your hand."""
+        card = self.g.battlefield('argivian-archaeologist')
+        c1 = self.g.graveyard('scryb-sprites')
+        c2 = self.g.graveyard('sol-ring')
+        c3 = self.g.graveyard('juggernaut')
+        self.g.mana('WW')
+
+        eff_spec = card.activated_abilities[0].eff_spec
+        self.assertNotIn(c1, eff_spec.target_spec.get_targets(self.gs, card, eff_spec))
+        self.assertIn(c2, eff_spec.target_spec.get_targets(self.gs, card, eff_spec))
+        self.assertIn(c3, eff_spec.target_spec.get_targets(self.gs, card, eff_spec))
+
+        self.g.activate_ability(card.activated_abilities[0], c3)
+        self.assertIn(c3, self.gs.hands[0])
 
     def test_argivian_blacksmith(self):
         """{T}: Prevent the next 2 damage that would be dealt to target artifact creature this turn."""
+        card = self.g.battlefield('argivian-blacksmith')
+        artifact_creature = self.g.battlefield('ornithopter')  # 0/2
+        non_artifact_creature = self.g.battlefield('grizzly-bears')
+
+        eff_spec = card.activated_abilities[0].eff_spec
+        self.assertNotIn(non_artifact_creature, eff_spec.target_spec.get_targets(self.gs, card, eff_spec))
+        self.assertIn(artifact_creature, eff_spec.target_spec.get_targets(self.gs, card, eff_spec))
+
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.g.mana('R', owner=1)
+        pipeline = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[artifact_creature])
+        pipeline.advance()
+        self.g.activate_ability(card.activated_abilities[0], artifact_creature)
+        pipeline.resolve_ability()
+        self.assertEqual(1, artifact_creature.damage_received_this_turn)
 
     def test_argothian_pixies(self):
         """AP can't be blocked by artifact creatures. Prevent all damage that would be dealt to AP by
         artifact creatures."""
+        card = self.g.battlefield('argothian-pixies')
+        juggernaut = self.g.battlefield('juggernaut', owner=1)
+        self.assertFalse(self.gs.perm_querier.can_block(juggernaut, card))
+
+        self.g.next_turn(True)
+        self.g.combat(juggernaut, card)
+        self.assertEqual(0, card.damage_received_this_turn)
+        self.assertIn(card, self.gs.boards[0])
 
     def test_argothian_treefolk(self):
         """Prevent all damage that would be dealt to this creature by artifact sources."""
+        card = self.g.battlefield('argothian-treefolk')  # 5/3
+        juggernaut = self.g.battlefield('juggernaut', owner=1)  # 5/3
+
+        self.g.next_turn(True)
+        self.g.combat(juggernaut, card)
+        self.assertIn(juggernaut, self.g.gy[1])
+        self.assertNotIn(card, self.g.gy[0])
 
     def test_armageddon(self):
         """Destroy all lands."""
+        card = self.g.hand('armageddon')
+        self.g.mana('WWWW')
+        l1 = self.g.battlefield('island')
+        l2 = self.g.battlefield('maze-of-ith', owner=1)
+        non_land = self.g.battlefield('scryb-sprites')
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0], add_lots_of_mana=False)
+        self.assertIn(l1, self.g.gy[0])
+        self.assertIn(l2, self.g.gy[1])
+        self.assertNotIn(non_land, self.g.gy[0])
 
     def test_armageddon_clock(self):
         """At your upkeep, put a doom counter on AC.
@@ -475,9 +582,44 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_army_of_allah(self):
         """Attacking creatures get +2/+0 until end of turn."""
+        card = self.g.hand('army-of-allah')
+        angel = self.g.hand('serra-angel')  # 4/4
+
+        self.gs.combat_mgr.create_combat(angel)
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0])
+        self.assertEqual(6, angel.power)
+        self.gs.combat_mgr.handle_damage_step(False)
+        self.assertEqual(14, self.gs.life[1])
+
+        self.g.next_turn(True)
+        self.assertEqual(4, angel.power)
 
     def test_artifact_blast(self):
         """Counter target artifact spell."""
+        card = self.g.battlefield('artifact-blast')
+        self.g.mana('R')
+        artifact = self.g.hand('sol-ring', owner=1)
+        non_artifact = self.g.hand('grizzly-bears', owner=1)
+        self.g.mana('RRGG', owner=1)
+
+        # push artifact spell & non-artifact spell onto stack
+        CastWithNoSpellEffect(1, self.gs, artifact).play()
+        CastWithNoSpellEffect(1, self.gs, non_artifact).play()
+
+        # validate that the artifact -- and non the non-artifact spell -- can be targeted
+        eff_spec = card.abilities[0]
+        targets = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        self.assertIn(artifact, [spell.source for spell in targets])  # type: ignore
+        self.assertNotIn(non_artifact, [spell.source for spell in targets])  # type: ignore
+
+        # push artifact-blast (countering the artifact spell) onto the stack
+        card_pipe = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[targets[0]])
+        card_pipe.advance()
+
+        # resolve the stack & validate sol-ring was countered but grizzly-bears was not
+        self.g.resolve_stack()
+        self.assertIn(artifact, self.g.gy[1])
+        self.assertIn(non_artifact, self.gs.boards[1])
 
     def test_artifact_possession(self):
         """Whenever enchanted artifact becomes tapped or a player activates an ability of enchanted artifact without {T}
@@ -518,26 +660,139 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_ashnods_altar(self):
         """Sacrifice a creature: Add {CC}."""
+        card = self.g.battlefield('ashnods-altar')
+        c1 = self.g.battlefield('ornithopter')
+
+        pipe = AbilityPipeline(0, self.gs, card, card.activated_abilities[0].eff_spec,
+                               selected_extra_costs=[SacCardCost(selected_card=c1)])
+        pipe.advance()
+        pipe.resolve_ability()
+
+        self.assertIn(c1, self.g.gy[0])
+        self.assertEqual(2, self.gs.mana_pools[0].available_mana['C'])
 
     def test_ashnods_battle_gear(self):
         """You may choose not to untap ABG during your untap step.
         {2}, {T}: Target creature you control gets +2/-2 for as long as ABG remains tapped."""
+        card = self.g.battlefield('ashnods-battle-gear')
+        target = self.g.battlefield('air-elemental')  # 4/4
+        self.g.mana('UU')
+        self.g.activate_ability(card.activated_abilities[0], target)
+        self.assertEqual((6, 2), (target.power, target.toughness))
+
+        self.g.next_turn()
+        leave_abg_tapped = self.gs.pending_choice.get_actions()[1]
+        self.gs.choice_mgr.choose(leave_abg_tapped)
+        self.assertEqual((6, 2), (target.power, target.toughness))
+
+        self.g.next_turn()
+        untap_abg = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(untap_abg)
+        self.assertEqual((4, 4), (target.power, target.toughness))
 
     def test_ashnods_transmogrant(self):
-        """{T}, Sacrifice AT Put a +1/+1 counter on target nonartifact creature.
+        """{T}, Sacrifice AT: Put a +1/+1 counter on target nonartifact creature.
         That creature becomes an artifact in addition to its other types."""
+        card = self.g.battlefield('ashnods-transmogrant')
+        artifact = self.g.battlefield('ornithopter')
+        non_artifact = self.g.battlefield('air-elemental')  # 4/4
+
+        eff_spec = card.activated_abilities[0].eff_spec
+        targets = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        self.assertNotIn(artifact, targets)
+        self.assertIn(non_artifact, targets)
+
+        self.g.activate_ability(card.activated_abilities[0], non_artifact)
+        self.assertTrue(non_artifact.is_artifact)
+        self.assertEqual((5, 5), (non_artifact.power, non_artifact.toughness))
 
     def test_aspect_of_wolf(self):
         """Host gets +X/+Y, X = your forest count // 2, Y = roundup(the number of Forests you control / 2)"""
+        self.g.mana('GGG')
+        host = self.g.battlefield('scryb-sprites')  # 1/1
+        card = self.g.battlefield('aspect-of-wolf')
+        self.g.attach(card, host)
+        self.assertEqual((2, 3), (host.power, host.toughness))
+
+        self.g.mana('GGG')
+        self.assertEqual((4, 4), (host.power, host.toughness))
 
     def test_atog(self):
         """Sacrifice an artifact: This creature gets +2/+2 until end of turn."""
+        card = self.g.battlefield('atog')  # 1/2
+        a1 = self.g.battlefield('ornithopter')
+        a2 = self.g.battlefield('sol-ring')
+
+        pipe1 = AbilityPipeline(0, self.gs, card, card.activated_abilities[0].eff_spec, targets=[card],
+                                selected_extra_costs=[SacCardCost(selected_card=a1)])
+        pipe1.advance()
+        pipe1.resolve_ability()
+
+        pipe2 = AbilityPipeline(0, self.gs, card, card.activated_abilities[0].eff_spec, targets=[card],
+                                selected_extra_costs=[SacCardCost(selected_card=a2)])
+        pipe2.advance()
+        pipe2.resolve_ability()
+
+        self.assertEqual((5, 6), (card.power, card.toughness))
+        self.g.next_turn()
+        self.assertEqual((1, 2), (card.power, card.toughness))
 
     def test_avoid_fate(self):
         """Counter target instant or Aura spell that targets a permanent you control."""
+        card = self.g.hand('avoid-fate')
+        perm = self.g.battlefield('grizzly-bears')
+        forest = self.g.battlefield('forest')
+        self.g.mana('RRRRUUU', owner=1)
+        illegal_1 = self.g.hand('stone-rain', owner=1)  # is a sorcery, not an instant or aura
+        illegal_2 = self.g.hand('lightning-bolt', owner=1)  # is an instant but will target the player
+        legal = self.g.hand('jump', owner=1)
+
+        i1_pipe = AbilityPipeline(1, self.gs, illegal_1, illegal_1.abilities[0], targets=[forest])
+        i1_pipe.advance()
+
+        i2_pipe = AbilityPipeline(1, self.gs, illegal_2, illegal_2.abilities[0], targets=[0])
+        i2_pipe.advance()
+
+        legal_pipe = AbilityPipeline(1, self.gs, legal, legal.abilities[0], targets=[perm])
+        legal_pipe.advance()
+
+        # validate targets
+        eff_spec = card.abilities[0]
+        target_spells = eff_spec.target_spec.get_targets(self.gs, card, eff_spec)
+        target_spell_cards = [spell.source for spell in target_spells]  # type: ignore
+        self.assertNotIn(illegal_1, target_spell_cards)
+        self.assertNotIn(illegal_2, target_spell_cards)
+        self.assertIn(legal, target_spell_cards)
+
+        # push avoid-fate (countering jump) onto the stack
+        card_pipe = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[target_spells[-1]])
+        card_pipe.advance()
+
+        # resolve the stack & validate jump was countered but stone-rain and lightning-bolt were not
+        self.g.resolve_stack()
+        self.assertNotIn(KW.FLYING, perm.keyword_abilities)  # jump was countered
+        self.assertIn(forest, self.g.gy[0])  # stone-rain resolved
+        self.assertEqual(17, self.gs.life[0])  # lightning-bolt
 
     def test_axelrod_gunnarson(self):
-        """Whenever a creature dealt damage by AG dies EOT, you gain 1 life & AG deals 1 damage to target player"""
+        """Whenever a creature dealt damage by AG dies EOT, you gain 1 life & AG deals 1 damage to [opponent]"""
+        card = self.g.battlefield('axelrod-gunnarson')  # 5/5
+        blocker = self.g.battlefield('air-elemental', owner=1)  # 4/4
+        self.g.combat(card, blocker)
+        self.assertIn(blocker, self.g.gy[1])
+        self.assertEqual([21, 18], self.gs.life)
+        """
+        Damage Proposed Event DamageProposedEvent(source=AXELROD GUNNARSON (5/5) TRAMPLE, target=AIR ELEMENTAL (4/4) FLYING, amt=4, remaining=4, prevented=0, is_combat=True)
+        Damage Resolved Event DamageResolvedEvent(source=AXELROD GUNNARSON (5/5) TRAMPLE, amt=4, target=AIR ELEMENTAL (4/4) FLYING, is_combat=True)
+        ZeroToughnessSBR calls gs.pile_mgr.destroy() for AIR ELEMENTAL (4/4) FLYING <-- this shouldn't happen here ... it still needs to deal its damage to AG
+        Entering destroy() for AIR ELEMENTAL (4/4) FLYING
+        Emitting DiesEvent, possible responder Axelrod Gunnarson's AxelrodGunnarson
+        Increasing player #0's life by 1. Life is now at [21, 20]
+        Damage Proposed Event DamageProposedEvent(source=AXELROD GUNNARSON (5/5) TRAMPLE, target=1, amt=1, remaining=1, prevented=0, is_combat=False)
+        Axelrod Gunnarson deals 1 damage to player #1. Life is now at [21, 19]
+        Damage Resolved Event DamageResolvedEvent(source=AXELROD GUNNARSON (5/5) TRAMPLE, amt=1, target=1, is_combat=False)
+        ZeroToughnessSBR calls gs.pile_mgr.destroy() for AIR ELEMENTAL (4/4) FLYING <--- why is this SBR being called again !!!!
+        """
 
     def test_backdraft(self):
         """Choose a player who cast one or more sorcery spells this turn. B deals damage to that player =

@@ -1,6 +1,7 @@
 import unittest
 
 from models.constants import KW
+from models.events_all import DamageResolvedEvent
 from models.game_card.modifiers import KWAMod
 from models.systems.phase import Phase
 from tests.setup_helpers import TestGame
@@ -97,6 +98,16 @@ class TestCombat(unittest.TestCase):
         self.assertIn(attacker, self.gs.boards[1])
         self.assertIn(blocker, self.gs.boards[0])
         self.assertIn(attacker, self.gs.card_filter.attackers().result())
+
+    def test_trample_damage_to_player_is_combat_damage(self):
+        attacker = self.g.battlefield('war-mammoth')  # 3/3
+        blocker = self.g.battlefield('monss-goblin-raiders', owner=1)  # 1/1
+
+        self.g.next_turn()
+        self.g.combat(attacker, blocker)
+        damage_resolved_events: list[DamageResolvedEvent] = self.gs.event_mgr.get_events(self.gs.turn_mgr.turn_number,
+                                                                                         DamageResolvedEvent)
+        self.assertTrue(any(e.is_combat is True for e in damage_resolved_events if e.target == 1))
 
     def test_unblocked_attacker_damage(self):
         attacker = self.g.battlefield('white-knight')  # 2/2 First Strike

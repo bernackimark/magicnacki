@@ -170,6 +170,11 @@ class TestGame:
 
         PassTheTurn(self.gs.player_turn_idx, self.gs).play()
 
+    def resolve_stack(self):
+        """Iterates over all actions (including spells) on stack via LIFO and resolves each"""
+        for spell in reversed(self.gs.action_stack.actions):
+            spell.play()
+
     def resolve_spell(self, card: GameCard, target: Any = None, spell: EffSpec | None = None):
         """Executes eff_spec.effect.resolve();
         if the caller is lazy & provides no spell, they are assumed to want the card's first spell ability"""
