@@ -86,7 +86,7 @@ MAP: dict[str, list[EffSpec]] = {
     'animate-dead': [Spell(Do(Reanimate(), Pump(-1, 0)), CF.creatures_in_your_graveyard())],
     'animate-wall': [Spell(HostCanAttack(), CF.walls())],
     'ankh-of-mishra': [GenTrig(On(ZoneChangeEvent).where(EC().to_board().card_is_land()).
-                       then(DealDamage(2, ET.event_card_owner())))],
+                       then(DealDamage(2)).t(ET.event_card_owner()))],
     'anti-magic-aura': [Static(CantBeTargetedByAuras(CF.host())), Static(HostCantBeTargetedBySpells()),
                         Spell(RemoveHostAuras(), CF.creatures())],
     'apprentice-wizard': [Activated('UT', AddMana('C', 3), CF.owner(), is_mana_ability=True)],
@@ -97,7 +97,7 @@ MAP: dict[str, list[EffSpec]] = {
     'arena-of-the-ancients': [Static(DoesntUntapAtUntap(CF.legendary_creatures())),
                               Spell(TapCards(CF.legendary_creatures()))],
     'argivian-archaeologist': [Activated('WWT', Bounce(), CF.artifacts_in_your_graveyard())],
-    'argivian-blacksmith': [Activated('T', PreventNextDamageBy(preventable_amt=2), CF.artifact_creatures())],
+    'argivian-blacksmith': [Activated('T', PreventNextDamageTo(preventable_amt=2), CF.artifact_creatures())],
     'argothian-pixies': [Static(UnblockableCondition(CF.self(), CF.artifact_creatures())),
                          GenTrig(On(DamageProposedEvent).
                                  where(EC().damage_target_in(CF.self()).damage_source_in(CF.artifact_creatures())).
