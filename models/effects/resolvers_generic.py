@@ -371,7 +371,8 @@ class DrawThenDiscard(Resolver):
             gs.pile_mgr.discards(cards, source=source)
             return
         combos = [list(combo) for combo in combinations(cards, self.discard_cnt)]
-        options = [CO(f"Discard {', '.join(combo)}", lambda: gs.pile_mgr.discards(combo)) for combo in combos]
+        options = [CO(f"Discard {', '.join([c.props.name for c in combo])}",
+                      lambda: gs.pile_mgr.discards(combo)) for combo in combos]
         gs.choice_mgr.queue(ChoiceAction(options))
 
 class EmptyResolver(Resolver):

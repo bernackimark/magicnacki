@@ -839,18 +839,44 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_backfire(self):
         """Whenever host deals damage to you, this Aura deals that much damage to that creature's controller."""
+        card = self.g.battlefield('backfire')
+        host = self.g.battlefield('tundra-wolves', owner=1)  # 1/1
+        self.g.attach(card, host)
+
+        self.g.next_turn(True)
+        self.g.combat(host, None)
+        self.assertEqual([19, 19], self.gs.life)
+
+    def test_backfire_your_own_creature(self):
+        """Whenever host deals damage to you, this Aura deals that much damage to that creature's controller."""
+        # This is a negative test; just ensuring that is host deals damage to another party, the effect doesn't trigger
+        card = self.g.battlefield('backfire')
+        host = self.g.battlefield('tundra-wolves')  # 1/1
+        self.g.attach(card, host)
+        self.g.combat(host, None)
+        self.assertEqual([20, 19], self.gs.life)
 
     def test_bad_moon(self):
         """Black creatures get +1/+1."""
+        card = self.g.battlefield('bad-moon')
+        black = self.g.battlefield('hypnotic-specter')  # 2/2
+        non_black = self.g.battlefield('savannah-lions')  # 2/1
+
+        self.assertEqual((3, 3), (black.power, black.toughness))
+        self.assertEqual((2, 1), (non_black.power, non_black.toughness))
+
+        self.gs.pile_mgr.destroy(card)
+        self.assertEqual((2, 2), (black.power, black.toughness))
 
     def test_badlands(self):
-        """({T}: Add {B} or {R}.)u003c/iu003e"""
+        """({T}: Add {B} or {R})"""
+        raise NotImplementedError("Dual land mechanism needs to be developed")
 
     def test_balance(self):
         """The player who owns more lands must sac lands down to the count owned by the player with the fewest;
         Discard in the same manner for cards in hand; sac in the same manner for creatures;
         If a player has no cards in that cat, all are disposed; if the players are tied, move to the next category"""
-        [h.clear() for h in self.gs.hands]
+        self.g.clear_hands()
 
         # Lands: [3, 1]; Hand: [0, 1]; Creatures: [1, 1]
         bears = self.g.hand('grizzly-bears', owner=1)
@@ -881,9 +907,24 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_ball_lightning(self):
         """At the beginning of the end step, sac BL."""
+        card = self.g.hand('ball-lightning')
+        self.g.mana('RRR')
+        CastPermanentAction(0, self.gs, card).play()
+        self.assertTrue(self.gs.perm_querier.can_attack(card))
+
+        self.gs.phase_mgr.set_phase(Phase.END_STEP)
+        self.assertIn(card, self.g.gy[0])
 
     def test_banshee(self):
         """{X}, {T}: B deals X//2 to any target & roundup(X/2) to you."""
+        card = self.g.battlefield('banshee')
+        self.g.mana('BBBBB')
+
+        pipe = AbilityPipeline(0, self.gs, card, card.activated_abilities[0].eff_spec, x_value=5, targets=[1])
+        pipe.advance()
+        pipe.resolve_ability()
+
+        self.assertEqual([17, 18], self.gs.life)
 
     def test_barls_cage(self):
         """{3}: Tap & add a stun counter to target creature"""
@@ -897,15 +938,38 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_bartel_runeaxe(self):
         """Vigilance Bartel Runeaxe can't be the target of Aura spells."""
+        card = self.g.battlefield('bartel-runeaxe')
+        aura = self.g.hand('holy-strength')
+        bolt = self.g.hand('lightning-bolt')
+        self.assertFalse(self.gs.perm_querier.can_target(card, aura, eff_spec=aura.abilities[0]))
+        self.assertTrue(self.gs.perm_querier.can_target(card, bolt, eff_spec=bolt.abilities[0]))
 
     def test_basalt_monolith(self):
         """This artifact doesn't untap during your untap step. {T}: Add {CCC}. {3}: Untap this artifact."""
+        card = self.g.battlefield('basalt-monolith')
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual(3, self.gs.mana_pools[0].available_mana['C'])
+
+        self.g.next_turn()
+        self.assertTrue(card.is_tapped)
+
+        self.g.mana('WWW')
+        self.g.activate_ability(card.activated_abilities[1], card)
+        self.assertFalse(card.is_tapped)
+        self.assertEqual(0, sum(self.gs.mana_pools[0].available_mana.values()))
 
     def test_bayou(self):
-        """({T}: Add {B} or {G}.)u003c/iu003e"""
+        """({T}: Add {B} or {G}.)"""
 
     def test_bazaar_of_baghdad(self):
         """{T}: Draw two cards, then discard three cards."""
+        card = self.g.battlefield('bazaar-of-baghdad')
+        self.g.activate_ability(card.activated_abilities[0])
+        self.assertEqual(9, len(self.gs.hands[0]))
+
+        print("Using combos instead of DrawThenDiscard._State creates too many combos",
+              len(self.gs.pending_choice.get_actions()))
+        raise ValueError("Address in resolvers_generic.py DrawThenDiscard")
 
     def test_beasts_of_bogardan(self):
         """Protection from red This creature gets +1/+1 as long as an opponent controls a nontoken white permanent."""
