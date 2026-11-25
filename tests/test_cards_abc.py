@@ -6,7 +6,8 @@ from models.actions.cast import CastPermanentAction, CastWithNoSpellEffect
 from models.actions.stack_accept_counter import PassPriority
 from models.constants import KW, Zone
 from models.cost import SacCardCost
-from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM, MIRE, PLUS_ONE
+from models.game_card.counter_tokens import PLUS_ONE_ZERO, PUPA, STORAGE, DOOM, WIND, STUN, SCREAM, MIRE, PLUS_ONE, \
+    CHARGE
 from models.effects.listeners_misc import ArtifactPossessionActivation
 from models.effects.resolvers_a_to_e import BloodLust
 from models.events_all import AbilityActivatedEvent, CombatEndEvent, UpkeepEvent, DiscardStepEvent, StateBasedEvent, \
@@ -973,6 +974,15 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_beasts_of_bogardan(self):
         """Protection from red This creature gets +1/+1 as long as an opponent controls a nontoken white permanent."""
+        card = self.g.battlefield('beasts-of-bogardan')  # 3/3
+        opp_creature = self.g.battlefield('savannah-lions', owner=1)
+        self.assertEqual((4, 4), (card.power, card.toughness))
+
+        self.gs.pile_mgr.destroy(opp_creature)
+        self.assertEqual((3, 3), (card.power, card.toughness))
+
+        bolt = self.g.hand('lightning-bolt', owner=1)
+        self.assertFalse(self.gs.perm_querier.can_target(card, bolt))
 
     def test_berserk(self):
         """Cast this spell only before the combat damage step. Target creature gains trample and gets +X/+0 EOT,
@@ -994,13 +1004,35 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_birds_of_paradise(self):
         """Flying {T}: Add one mana of any color."""
+        card = self.g.battlefield('birds-of-paradise')
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual(1, sum(self.gs.mana_pools[0].available_mana.values()))
 
     def test_black_lotus(self):
         """{T}, Sacrifice this artifact: Add three mana of any one color."""
+        card = self.g.battlefield('black-lotus')
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual(3, sum(self.gs.mana_pools[0].available_mana.values()))
+        self.assertIn(card, self.g.gy[0])
 
     def test_black_mana_battery(self):
         """{2}, {T}: Put a charge counter on BMB.
         {T}, Remove X charge counters from BMB: Add {B}, then add {B} * X"""
+        card = self.g.battlefield('black-mana-battery')
+        self.g.mana('UU')
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual(1, card.counters.get_count(CHARGE))
+
+        self.g.next_turn()
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual(2, card.counters.get_count(CHARGE))
+
+        self.g.next_turn()
+        pipeline = AbilityPipeline(0, self.gs, card, card.activated_abilities[1].eff_spec, x_value=2)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(0, card.counters.get_count(CHARGE))
+        self.assertEqual(3, self.gs.mana_pools[0].available_mana['B'])
 
     def test_black_vise(self):
         """As opponent's upkeep, this artifact deals X damage to that player, X is = cards in their hand minus 4"""
@@ -1011,6 +1043,18 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_black_ward(self):
         """Enchant creature Enchanted creature has protection from black. This effect doesn't remove this Aura."""
+        card = self.g.hand('black-ward')
+        host = self.g.battlefield('grizzly-bears')
+        royal = self.g.battlefield('royal-assassin', owner=1)
+        self.g.mana('W')
+
+        host.tap()
+        self.assertTrue(self.gs.perm_querier.can_target(host, royal, eff_spec=royal.activated_abilities[0]))
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[host])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertFalse(self.gs.perm_querier.can_target(host, royal, eff_spec=royal.activated_abilities[0]))
 
     def test_blazing_effigy(self):
         """When BE dies, it deals X damage to target creature.
@@ -1026,9 +1070,27 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_blessing(self):
         """Enchant creature {W}: Enchanted creature gets +1/+1 until end of turn."""
+        card = self.g.battlefield('blessing')
+        host = self.g.battlefield('scryb-sprites')  # 1/1
+        self.g.attach(card, host)
+        self.g.mana('WW')
+        self.assertEqual((1, 1), (host.power, host.toughness))
+
+        self.g.activate_ability(card.activated_abilities[0], host)
+        self.g.activate_ability(card.activated_abilities[0], host)
+        self.assertEqual((3, 3), (host.power, host.toughness))
+
+        self.g.next_turn()
+        self.assertEqual((1, 1), (host.power, host.toughness))
 
     def test_blight(self):
         """Enchant land When enchanted land becomes tapped, destroy it."""
+        card = self.g.battlefield('blight')
+        host = self.g.battlefield('maze-of-ith', owner=1)
+        self.g.attach(card, host)
+        host.tap()
+        self.assertIn(host, self.g.gy[1])
+        self.assertIn(card, self.g.gy[0])
         
     def test_blood_lust(self):
         """If target creature has toughness 5 or greater, it gets +4/-4 until end of turn.
@@ -1045,9 +1107,38 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_blood_moon(self):
         """Nonbasic lands are Mountains."""
+        self.g.battlefield('blood-moon')
+        maze = self.g.battlefield('maze-of-ith')
+        island = self.g.battlefield('island')
+        self.assertEqual(['R'], maze.mana_produced)
+        self.assertEqual(1, len(self.gs.card_filter.mountains().in_play().result()))
+        self.assertEqual(['U'], island.mana_produced)
 
     def test_blood_of_the_martyr(self):
         """EOT, if damage would be dealt to any creature, you may have that damage dealt to you instead."""
+        card = self.g.hand('blood-of-the-martyr')
+        self.g.cast_and_accept(card, eff_spec=card.abilities[0])
+        t1 = self.g.battlefield('grizzly-bears')
+        t2 = self.g.battlefield('scryb-sprites')
+        bolt = self.g.hand('lightning-bolt', owner=1)  # deal three damage
+        self.g.mana('R', owner=1)
+        blocker = self.g.battlefield('beasts-of-bogardan', owner=1)  # 3/3
+
+        bolt_pipe = AbilityPipeline(1, self.gs, bolt, bolt.abilities[0], targets=[t1])
+        bolt_pipe.advance()
+        bolt_pipe.resolve_ability()
+        decline_redirect_to_you = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(decline_redirect_to_you)
+        self.assertIn(t1, self.g.gy[0])
+
+        com = self.gs.combat_mgr.create_combat(t2)
+        com.add_blocker(blocker)
+        self.gs.combat_mgr.handle_damage_step(False)
+        print('AAA', self.gs.pending_choice.get_actions())
+        redirect_from_sprites_to_you = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(redirect_from_sprites_to_you)
+        self.assertNotIn(t2, self.g.gy[0])
+        self.assertEqual(17, self.gs.life[0])
 
     def test_blue_elemental_blast(self):
         """Choose one - * Counter target red spell. * Destroy target red permanent."""
@@ -1055,11 +1146,44 @@ class TestCardsAtoC(unittest.TestCase):
     def test_blue_mana_battery(self):
         """{2}, {T}: Put a charge counter on BMB.
         {T}, Remove X charge counters from BMB: Add {U}, then add {U} * X"""
+        card = self.g.battlefield('blue-mana-battery')
+        self.g.mana('BB')
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual(1, card.counters.get_count(CHARGE))
+
+        self.g.next_turn()
+        self.g.activate_ability(card.activated_abilities[0], 0)
+        self.assertEqual(2, card.counters.get_count(CHARGE))
+
+        self.g.next_turn()
+        pipeline = AbilityPipeline(0, self.gs, card, card.activated_abilities[1].eff_spec, x_value=2)
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(0, card.counters.get_count(CHARGE))
+        self.assertEqual(3, self.gs.mana_pools[0].available_mana['U'])
+
     def test_blue_ward(self):
         """Enchant creature Enchanted creature has protection from blue. This effect doesn't remove this Aura."""
+        card = self.g.hand('blue-ward')
+        host = self.g.battlefield('grizzly-bears')
+        boomerang = self.g.hand('boomerang', owner=1)
+        self.g.mana('W')
+
+        self.assertTrue(self.gs.perm_querier.can_target(host, boomerang, eff_spec=boomerang.abilities[0]))
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[host])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertTrue(card.host is host)
+        self.assertFalse(self.gs.perm_querier.can_target(host, boomerang, eff_spec=boomerang.abilities[0]))
 
     def test_bog_rats(self):
         """This creature can't be blocked by Walls."""
+        card = self.g.battlefield('bog-rats')
+        non_wall = self.g.battlefield('war-mammoth', owner=1)
+        wall = self.g.battlefield('wall-of-wood', owner=1)
+        self.assertTrue(self.gs.perm_querier.can_block(non_wall, card))
+        self.assertFalse(self.gs.perm_querier.can_block(wall, card))
 
     def test_bone_flute(self):
         """2T: All creatures get -1/-0 until end of turn"""
@@ -1085,9 +1209,28 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_boomerang(self):
         """Return target permanent to its owner's hand."""
+        card = self.g.hand('boomerang')
+        self.g.mana('UU')
+        target = self.g.battlefield('sol-ring', owner=1)
+        my_perm = self.g.battlefield('savannah-lions')
+        self.assertTrue(self.gs.perm_querier.can_target(target, card, card.abilities[0]))
+        self.assertTrue(self.gs.perm_querier.can_target(my_perm, card, card.abilities[0]))
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[target])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertIn(target, self.gs.hands[1])
 
     def test_boris_devilboon(self):
         """{2BR}, {T}: Create a 1/1 black and red Demon creature token named Minor Demon."""
+        card = self.g.battlefield('boris-devilboon')  # 3BR (2/2) Legendary Creature – Zombie Wizard
+        self.g.mana('BBRR')
+        self.g.activate_ability(card.activated_abilities[0])
+        self.assertEqual(1, len(self.gs.card_filter.in_play().by_slug('minor-demon').result()))
+        self.assertEqual(1, len(self.gs.card_filter.in_play().by_sub_type('Demon').result()))
+        self.assertEqual(2, len(self.gs.card_filter.in_play().black().result()),
+                         "card.py CardUniverse.create_tokens_from_json() ... tokens are never given a color(s)")
+        self.assertEqual(2, len(self.gs.card_filter.in_play().red().result()))
 
     def test_bottle_of_suleiman(self):
         """{1}, sac BOM: Flip a coin. If you win the flip, create a 5/5 colorless Djinn flying artifact creature.
@@ -1095,12 +1238,55 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_braingeyser(self):
         """Target player draws X cards."""
+        self.g.clear_hands()
+        card = self.g.hand('braingeyser')
+        self.g.mana('UUUUU')
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], x_value=3, targets=[0])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertEqual(3, len(self.gs.hands[0]))
 
     def test_brainwash(self):
         """Enchant creature Enchanted creature can't attack unless its controller pays {3}."""
+        card = self.g.hand('brainwash')
+        host = self.g.battlefield('grizzly-bears', owner=1)
+        self.g.mana('W')
+        self.g.mana('GGG', owner=1)
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[host])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertTrue(card.host is host)
+        self.gs.get_available_actions(1)[0].play()  # pass priority?
+        self.gs.get_available_actions(0)[0].play()  # pass priority?
+
+        self.g.next_turn(True)
+        self.assertFalse(self.gs.perm_querier.can_attack(host))
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        print(self.gs.get_available_actions(1))  # [Move to End Step, Cast Plains, Cast Plains]
+        raise ValueError("'brainwash': "
+                         "Activated('3', HostCanAttack(CF.host()), allowed_activators=A_FUNCS['host_owner']) "
+                         "This activated ability is not showing up for player 1")
 
     def test_brass_man(self):
         """This creature doesn't untap during your untap step. At your upkeep, you may pay {1} to untap BM."""
+        card = self.g.battlefield('brass-man')
+        self.g.mana('W')
+        card.tap()
+
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        pay_to_untap = self.gs.pending_choice.get_actions()[-1]
+        self.gs.choice_mgr.choose(pay_to_untap)
+        self.assertFalse(card.is_tapped)
+
+        card.tap()
+        self.g.next_turn()
+        self.gs.phase_mgr.set_phase(Phase.UPKEEP)
+        leave_tapped = self.gs.pending_choice.get_actions()[0]
+        self.gs.choice_mgr.choose(leave_tapped)
+        self.assertTrue(card.is_tapped)
+        self.assertIsNone(self.gs.pending_choice)
 
     def test_brine_hag(self):
         """When BH dies, change base PT of all creatures that dealt damage to it this turn to 0/2 for as long as that
@@ -1148,9 +1334,31 @@ class TestCardsAtoC(unittest.TestCase):
 
     def test_brothers_of_fire(self):
         """{1RR}: This creature deals 1 damage to any target and 1 damage to you."""
+        card = self.g.battlefield('brothers-of-fire')
+        aa = card.activated_abilities[0]
+        self.g.mana('R' * 6)
+        target = self.g.battlefield('grizzly-bears', owner=1)  # 2/2
+
+        self.g.activate_ability(aa, target)
+        self.g.activate_ability(aa, target)
+        self.assertIn(target, self.g.gy[1])
+        self.assertEqual(18, self.gs.life[0])
 
     def test_burrowing(self):
         """Host has mountainwalk"""
+        card = self.g.hand('burrowing')
+        host = self.g.battlefield('grizzly-bears')
+        blocker = self.g.battlefield('shivan-dragon', owner=1)
+        self.g.mana('RR')
+        self.g.battlefield('mountain', owner=1)
+
+        self.assertTrue(self.gs.perm_querier.can_block(blocker, host))
+
+        pipeline = AbilityPipeline(0, self.gs, card, card.abilities[0], targets=[host])
+        pipeline.advance()
+        pipeline.resolve_ability()
+        self.assertTrue(card.host is host)
+        self.assertFalse(self.gs.perm_querier.can_block(blocker, host))
 
     def test_candelabra_of_tawnos(self):
         """{X}, {T}: Untap X target lands"""
