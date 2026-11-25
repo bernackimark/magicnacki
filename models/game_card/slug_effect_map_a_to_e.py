@@ -180,7 +180,7 @@ MAP: dict[str, list[EffSpec]] = {
     'brine-hag': [Triggered(BrineHag())],
     'bronze-horse': [Static(BronzeHorse())],
     'brothers-of-fire': [Activated('T', Do(DealDamage(1), DealDamage(1, CF.owner())), CF.all_creatures_and_players())],
-    'burrowing': [Spell(KWAModEffect('add', KW.ISLANDWALK), CF.creatures())],
+    'burrowing': [Spell(KWAModEffect('add', KW.MOUNTAINWALK), CF.creatures())],
     'candelabra-of-tawnos': [Activated('XT', UntapCards(), TargetSpec(CF.your_tapped_lands(), 1, None),
                                        max_x_func=your_tapped_land_cnt_and_max_x)],
     'carrion-ants': [self_pump('1', 1, 1)],
