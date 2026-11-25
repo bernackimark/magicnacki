@@ -146,7 +146,7 @@ MAP: dict[str, list[EffSpec]] = {
                         Activated('T', AddMana('C', 3), is_mana_ability=True),
                         Activated('3', UntapCardEffect(), CF.self())],
     'bayou': dual_land_specs('BG'),
-    'bazaar-of-baghdad': [Activated('2T', DrawThenDiscard(2, 3), text='Draw 2 cards; discard 3 cards')],
+    'bazaar-of-baghdad': [Activated('T', DrawThenDiscard(2, 3), text='Draw 2 cards; discard 3 cards')],
     'beasts-of-bogardan': [Static(PumpApplies(CF.self(), (1, 1), cond=C_FUNCS['opp_has_non_token_white_perm']))],
     'berserk': [Spell(Berserk(), CF.creatures(), allowed_phases=[p for p in Phase if p < Phase.COMBAT_DAMAGE])],
     'birds-of-paradise': [Activated('T', AddMana(c), is_mana_ability=True, text=f'Add {{{c}}}') for c in COLOR_LETTERS],
